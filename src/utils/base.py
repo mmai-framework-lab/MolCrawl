@@ -1,4 +1,3 @@
-# import pandas as pd
 from abc import ABC, abstractmethod
 import pyarrow.parquet as pq
 import pyarrow as pa
@@ -67,11 +66,3 @@ def apply_fn_to_parqueet(func):
         )
 
     return inner
-
-# def read_parquet(file_path: str) -> pd.DataFrame:
-#     """
-#     Read parquet file and return as pandas DataFrame
-#     :param file_path: path to parquet file
-#     :return: pandas DataFrame
-#     """
-#     return pd.read_parquet(file_path)

@@ -1,8 +1,15 @@
 from argparse import ArgumentParser, Namespace
-from logging import Formatter, Logger, StreamHandler, getLogger
+import os
+import json
+import logging
+import logging.config
+from pathlib import Path
 
-from src.utilities.common import read_parquet, save_parquet
-from src.utilities.molecules_utilities import MoleculesTokenizer
+from src.utils.base import read_parquet, save_parquet
+from src.molecules.tokenizer_utilities import MoleculesTokenizer
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_script_arguments() -> Namespace:
@@ -50,41 +57,15 @@ def get_script_arguments() -> Namespace:
     return argument_parser.parse_args()
 
 
-def get_script_logger() -> Logger:
-    """
-    Get the script logger.
-
-    :returns: The script logger.
-    """
-
-    logger = getLogger(
-        name="organix13_processing"
-    )
-
-    logger.setLevel(
-        level="INFO"
-    )
-
-    formatter = Formatter(
-        fmt="[{asctime:s}] {levelname:s}: \"{message:s}\"",
-        style="{"
-    )
-
-    stream_handler = StreamHandler()
-
-    stream_handler.setLevel(
-        level="INFO"
-    )
-
-    stream_handler.setFormatter(
-        fmt=formatter
-    )
-
-    logger.addHandler(
-        hdlr=stream_handler
-    )
-
-    return logger
+def setup_logging(output_dir: str, logging_config: str = "assets/logging_config.json"):
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    with open(logging_config, "r") as file:
+        config = json.load(file)
+    logging_file = f"{output_dir}/logging.log"
+    config["handlers"]["file"]["filename"] = logging_file
+    if os.path.exists(logging_file):
+        os.remove(logging_file)
+    logging.config.dictConfig(config=config)
 
 
 def save_dataset(dataset, file_path):
@@ -93,10 +74,10 @@ def save_dataset(dataset, file_path):
     )
 
 if __name__ == "__main__":
-    script_logger = get_script_logger()
+    script_arguments = get_script_arguments()
+    setup_logging(Path(script_arguments.save_path).parent)
 
     try:
-        script_arguments = get_script_arguments()
 
         organix13_dataset = read_parquet(
             file_path=script_arguments.organix13_dataset
@@ -105,12 +86,11 @@ if __name__ == "__main__":
         tokenizer = MoleculesTokenizer(
             script_arguments.vocab_path,
             script_arguments.max_length,
-            script_logger
         )
 
         processed_organix13 = tokenizer.bulk_tokenizer_parquet(organix13_dataset, "smiles")
         
-        script_logger.info(
+        logger.info(
             msg="Saving processed dataset to {}.".format(script_arguments.save_path)
         )
 
@@ -120,7 +100,7 @@ if __name__ == "__main__":
         )
 
     except Exception as exception_handle:
-        script_logger.error(
+        logger.error(
             msg=exception_handle
         )
 
