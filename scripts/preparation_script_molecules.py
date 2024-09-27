@@ -5,7 +5,7 @@ import logging
 import logging.config
 from pathlib import Path
 
-from src.utils.base import read_parquet, save_parquet
+from src.utils.base import read_parquet, save_parquet, multiprocess_tokenization
 from src.molecules.tokenizer_utilities import MoleculesTokenizer
 
 
@@ -56,7 +56,6 @@ def get_script_arguments() -> Namespace:
 
     return argument_parser.parse_args()
 
-
 def setup_logging(output_dir: str, logging_config: str = "assets/logging_config.json"):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     with open(logging_config, "r") as file:
@@ -67,11 +66,6 @@ def setup_logging(output_dir: str, logging_config: str = "assets/logging_config.
         os.remove(logging_file)
     logging.config.dictConfig(config=config)
 
-
-def save_dataset(dataset, file_path):
-    dataset.to_parquet(
-        file_path
-    )
 
 if __name__ == "__main__":
     script_arguments = get_script_arguments()
@@ -88,8 +82,10 @@ if __name__ == "__main__":
             script_arguments.max_length,
         )
 
-        processed_organix13 = tokenizer.bulk_tokenizer_parquet(organix13_dataset, "smiles")
-        
+        logger.info(msg="Tokenizing...")
+        processed_organix13 = multiprocess_tokenization(tokenizer.bulk_tokenizer_parquet, organix13_dataset, column_name="smiles", new_column_name="tokens")
+        logger.info(msg="Tokenizing done.")
+
         logger.info(
             msg="Saving processed dataset to {}.".format(script_arguments.save_path)
         )
