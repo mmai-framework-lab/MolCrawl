@@ -3,3 +3,10 @@
 pyrightconfig.json
 
 __pycache__
+
+download_dir
+downloaded_files
+extracted_files
+extract_dir
+zinc15_download_dir
+*.parquet
