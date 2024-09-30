@@ -17,6 +17,22 @@ Each downloaded script have a set of parameter usually for final destination fol
 We still to regroup all downloaded dataset in one parquet file.
 Some tokenizer have already been developed but it will be a large part of the October development with the GPT2 training.
 
+## Dataset Download
+
+You can find all dataset scripts in dataset subfolder, the following are ready:
+
+- Pubmed: `src/compounds/dataset/pubmed/download_pubmed.py`
+- Zinc (15 / 20): `src/compounds/dataset/zinc/zinc_downloader.py`
+- Zinc (22): `src/compounds/dataset/zinc/zinc22_downloader.py`
+- RefSeq: `src/genome_sequence/dataset/refseq/download_refseq.py`
+- UniProt: `src/protein_sequence/dataset/uniprot/uniprot_download.py`
+- CellxGene: `src/rna/dataset/cellxgene/prepare_cellxgene.py`
+
+Each of those script have parameter to be define, they can be found at the end of the script.
+Most of them mainly define the number of worker and the final location of the download.
+When possible we are checking the md5 sum of downloaded files, in case it is not possible
+we are only checking if the file is already present on disk.
+
 ## Compounds
 
 Molecules dataset uses OrganiX13. The script `scripts/preparation_script_molecules.py` processes the dataset and tokenizes it following the [LLamol](https://github.com/Fraunhofer-SCAI/llamol) repository's tokenizer. The script will preprocess the dataset and generate a parquet file containing the tokenized SMILES from the Molecules Organix13 dataset.
