@@ -6,7 +6,7 @@ import logging.config
 from pathlib import Path
 
 from src.utils.base import read_parquet, save_parquet, multiprocess_tokenization
-from src.molecules.tokenizer_utilities import MoleculesTokenizer
+from src.compounds.tokenizer_utilities import CompoundsTokenizer
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
             file_path=script_arguments.organix13_dataset
         )
 
-        tokenizer = MoleculesTokenizer(
+        tokenizer = CompoundsTokenizer(
             script_arguments.vocab_path,
             script_arguments.max_length,
         )

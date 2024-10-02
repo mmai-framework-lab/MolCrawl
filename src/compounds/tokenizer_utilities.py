@@ -300,7 +300,7 @@ def tokenize_smiles(
     return tokens
 
 
-class MoleculesTokenizer(UnTrainableTokenizer, SmilesTokenizer):
+class CompoundsTokenizer(UnTrainableTokenizer, SmilesTokenizer):
 
     def __init__(self, vocab_file: str, max_len: int = 256):
         self.max_len = max_len
