@@ -1,4 +1,4 @@
-dataset_preparation:
+data_preparation:
   # Output directory where the preparation will be made
   output_dir: "/nasa/datasets/riken/projects/fundamental_models_202407/cellxgene"
 

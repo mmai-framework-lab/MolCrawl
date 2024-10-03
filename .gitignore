@@ -8,3 +8,6 @@ download_dir
 extracted_dir
 zinc15_download_dir
 *.parquet
+
+build
+*.egg-info

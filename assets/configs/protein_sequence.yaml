@@ -1,5 +1,5 @@
 
-dataset_preparation:
+data_preparation:
   # Which uniprot dataset to download must be one of the following:
   # "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
   dataset: "UniRef100"
