@@ -5,8 +5,8 @@ import logging
 import logging.config
 from pathlib import Path
 
-from src.utils.base import read_parquet, save_parquet, multiprocess_tokenization
-from src.compounds.tokenizer_utilities import CompoundsTokenizer
+from utils.base import read_parquet, save_parquet, multiprocess_tokenization
+from compounds.tokenizer_utilities import CompoundsTokenizer
 
 
 logger = logging.getLogger(__name__)
