@@ -6,6 +6,7 @@ import logging
 import concurrent.futures
 import time
 from functools import partial
+from argparse import ArgumentParser
 
 import cellxgene_census
 import numpy as np
@@ -15,6 +16,8 @@ import pandas as pd
 from rich.progress import track
 import anndata
 import tiledbsoma as soma
+
+from rna.utils.config import RnaConfig
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -124,8 +127,9 @@ def download(output_dir, num_worker, size_workload):
 
 
 if __name__ == "__main__":
-    size_workload = 10000
-    num_worker = 8
-    output_dir = "CellxgenePreprocessor"
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = RnaConfig.from_file(args.config).data_preparation
 
-    download(output_dir, num_worker, size_workload)
+    download(cfg.output_dir, cfg.num_worker, cfg.size_workload)

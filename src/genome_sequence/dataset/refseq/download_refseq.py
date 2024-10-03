@@ -12,8 +12,11 @@ from pathlib import Path
 import concurrent.futures
 from functools import partial
 import traceback
+from argparse import ArgumentParser
 
 from rich.progress import track
+
+from genome_sequence.utils.config import GenomeSequenceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +145,10 @@ def setup_logging(output_dir: str):
 
 
 if __name__ == "__main__":
-    output_dir = "/nasa/datasets/riken/projects/fundamental_models_202407/refseq"
-    num_worker = 3  # Max with those server.
-    setup_logging(output_dir)
-    download_refseq(output_dir, num_worker)
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
+
+    setup_logging(cfg.output_dir)
+    download_refseq(cfg.output_dir, cfg.num_worker)

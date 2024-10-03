@@ -2,9 +2,12 @@ import os
 import concurrent.futures
 from pathlib import Path
 from functools import partial
+from argparse import ArgumentParser
 
 import joblib
 from rich.progress import track
+
+from rna.utils.config import RnaConfig
 
 
 def get_file_to_process(output_dir: Path):
@@ -44,6 +47,8 @@ def convert(output_dir, num_worker):
 
 
 if __name__ == "__main__":
-    num_worker = 8
-    output_dir = Path("CellxgenePreprocessor")
-    convert(output_dir, num_worker)
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = RnaConfig.from_file(args.config).data_preparation
+    convert(cfg.output_dir, cfg.num_worker)

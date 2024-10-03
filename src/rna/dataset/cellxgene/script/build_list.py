@@ -1,7 +1,10 @@
 from pathlib import Path
+from argparse import ArgumentParser
 
 import cellxgene_census
 from rich.progress import Progress
+
+from rna.utils.config import RnaConfig
 
 
 def get_tissue_list(census):
@@ -61,6 +64,9 @@ def build_list(output_directory):
 
 
 if __name__ == "__main__":
-    output_dir = "CellxgenePreprocessor"
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = RnaConfig.from_file(args.config).data_preparation
 
-    build_list(output_dir)
+    build_list(cfg.output_dir)

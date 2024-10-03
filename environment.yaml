@@ -10,6 +10,7 @@ dependencies:
   - pandas=1.5.2
   - python=3.9.17
   - python_abi=3.9
+  - pyyaml=5.4.1
   - rdkit=2023.09.1
   - rich=12.6.0
   - typing-extensions=4.4.0

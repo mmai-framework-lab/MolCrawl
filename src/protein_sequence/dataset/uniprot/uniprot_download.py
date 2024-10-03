@@ -10,9 +10,11 @@ from urllib.request import urlretrieve
 import xml.etree.ElementTree as ET
 import concurrent.futures
 import hashlib
-
+from argparse import ArgumentParser
 
 from rich.progress import track
+
+from protein_sequence.utils.configs import ProteinSequenceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -176,11 +178,9 @@ def setup_logging(output_dir: str):
 
 
 if __name__ == "__main__":
-    # ----
-    dataset = UniProtDatasetEnum.UniRef100
-    output_dir = "/nasa/datasets/riken/projects/fundamental_models_202407/uniprot/"
-    # For Uniparc
-    num_worker = 4
-    # ----
-    setup_logging(output_dir)
-    process_dataset(dataset, output_dir, num_worker)
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
+    setup_logging(cfg.output_dir)
+    process_dataset(cfg.dataset, cfg.output_dir, cfg.num_worker)

@@ -1,0 +1,11 @@
+
+dataset_preparation:
+  # Which uniprot dataset to download must be one of the following:
+  # "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
+  dataset: "UniRef100"
+
+  # Output directory where the preparation will be made
+  output_dir: "/nasa/datasets/riken/projects/fundamental_models_202407/uniprot/"
+
+  # Special case for Uniparc download, num of worker to use.
+  num_worker: 4

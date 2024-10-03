@@ -1,3 +1,5 @@
+# TODO modify this script to adapt it or remove it
+
 import joblib
 import numpy as np
 import glob
