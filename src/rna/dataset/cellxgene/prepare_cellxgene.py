@@ -1,8 +1,8 @@
 from argparse import ArgumentParser
 
-from script.build_list import build_list
-from script.download import download
-from script.conv import convert
+from rna.dataset.cellxgene.script.build_list import build_list
+from rna.dataset.cellxgene.script.download import download
+from rna.dataset.cellxgene.script.tokenization import prepare_parquet
 from rna.utils.config import RnaConfig
 
 
@@ -13,5 +13,5 @@ if __name__ == "__main__":
     cfg = RnaConfig.from_file(args.config).data_preparation
 
     build_list(cfg.output_dir)
-    download(cfg.output_dir, cfg.num_worker, cfg.size_workload)
-    convert(cfg.output_dir, cfg.num_worker)
+    download(cfg.output_dir, cfg.census_version, cfg.num_worker, cfg.size_workload)
+    prepare_parquet(cfg.output_dir, cfg.census_version, cfg.num_worker, cfg.min_counts_genes)
