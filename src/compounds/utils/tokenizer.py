@@ -5,6 +5,7 @@ import re
 from typing import List
 from transformers import BertTokenizer
 from utils.base import UnTrainableTokenizer
+from compounds.utils.preprocessing import prepare_scaffolds
 
 
 SMI_REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
@@ -307,7 +308,7 @@ class CompoundsTokenizer(UnTrainableTokenizer, SmilesTokenizer):
         UnTrainableTokenizer.__init__(self)
         SmilesTokenizer.__init__(self, vocab_file)
 
-    def tokenize_text(self, text: str, verbose: bool = False):
+    def tokenize_text(self, text: str, verbose: bool = False):    
         tokens = self.encode(text)
         if len(tokens) > self.max_len:
             if verbose:
@@ -315,3 +316,9 @@ class CompoundsTokenizer(UnTrainableTokenizer, SmilesTokenizer):
             return None
 
         return tokens
+    
+
+class ScaffoldsTokenizer(CompoundsTokenizer):
+
+    def tokenize_text(self, text: str):
+        return super().tokenize_text(prepare_scaffolds(text))

@@ -3,11 +3,16 @@
 pyrightconfig.json
 
 __pycache__
+*.log
 
 download_dir
 extracted_dir
 zinc15_download_dir
 *.parquet
+*.txt
+*.csv
+*.csv.gz
+
 
 build
 *.egg-info

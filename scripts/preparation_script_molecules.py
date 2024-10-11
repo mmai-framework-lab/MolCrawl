@@ -1,103 +1,57 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 import os
-import json
 import logging
-import logging.config
+
 from pathlib import Path
 
 from utils.base import read_parquet, save_parquet, multiprocess_tokenization
-from compounds.tokenizer_utilities import CompoundsTokenizer
+from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
+from compounds.utils.config import CompoundConfig
+from compounds.utils.general import setup_logging, download_datasets
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_script_arguments() -> Namespace:
-    """
-    Get the script arguments.
-
-    :returns: The script arguments.
-    """
-
-    argument_parser = ArgumentParser()
-
-    argument_parser.add_argument(
-        "-o13",
-        "--organix13-dataset",
-        type=str,
-        required=True,
-        help="Path to the root folder of the organix13 dataset."
-    )
-
-    argument_parser.add_argument(
-        "-sp",
-        "--save-path",
-        type=str,
-        required=True,
-        help="Path to save the processed and tokenized dataset."
-    )
-
-    argument_parser.add_argument(
-        "-vp",
-        "--vocab-path",
-        type=str,
-        required=True,
-        help="Path to the vocabulary."
-    )
-    
-    argument_parser.add_argument(
-        "-ml",
-        "--max-length",
-        type=str,
-        required=False,
-        help="Max length of the tokenized sequences.",
-        default=256
-    )
-
-    return argument_parser.parse_args()
-
-def setup_logging(output_dir: str, logging_config: str = "assets/logging_config.json"):
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    with open(logging_config, "r") as file:
-        config = json.load(file)
-    logging_file = f"{output_dir}/logging.log"
-    config["handlers"]["file"]["filename"] = logging_file
-    if os.path.exists(logging_file):
-        os.remove(logging_file)
-    logging.config.dictConfig(config=config)
-
-
 if __name__ == "__main__":
-    script_arguments = get_script_arguments()
-    setup_logging(Path(script_arguments.save_path).parent)
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = CompoundConfig.from_file(args.config).data_preparation
+    
+    setup_logging(Path(cfg.save_path).parent)
 
-    try:
 
-        organix13_dataset = read_parquet(
-            file_path=script_arguments.organix13_dataset
-        )
+    os.path.exists(cfg.raw_data_path) or os.makedirs(cfg.raw_data_path)
+    download_datasets(cfg.raw_data_path, cfg.organix13_dataset)
 
-        tokenizer = CompoundsTokenizer(
-            script_arguments.vocab_path,
-            script_arguments.max_length,
-        )
+    organix13_dataset = read_parquet(
+        file_path=os.path.join(cfg.organix13_dataset, "OrganiX13.parquet")
+    )
 
-        logger.info(msg="Tokenizing...")
-        processed_organix13 = multiprocess_tokenization(tokenizer.bulk_tokenizer_parquet, organix13_dataset, column_name="smiles", new_column_name="tokens")
-        logger.info(msg="Tokenizing done.")
+    mol_tokenizer = CompoundsTokenizer(
+        cfg.vocab_path,
+        cfg.max_length,
+    )
 
-        logger.info(
-            msg="Saving processed dataset to {}.".format(script_arguments.save_path)
-        )
+    logger.info(msg="Tokenizing SMILES...")
+    processed_organix13 = multiprocess_tokenization(mol_tokenizer.bulk_tokenizer_parquet, organix13_dataset, column_name="smiles", new_column_name="tokens")
 
-        save_parquet(
-            table=processed_organix13,
-            file_path=script_arguments.save_path
-        )
+    scaffolds_tokenizer = ScaffoldsTokenizer(
+        cfg.vocab_path,
+        cfg.max_length,
+    )
 
-    except Exception as exception_handle:
-        logger.error(
-            msg=exception_handle
-        )
+    logger.info(msg="Tokenizing Scaffolds...")
+    processed_organix13 = scaffolds_tokenizer.bulk_tokenizer_parquet(organix13_dataset, column_name="smiles", new_column_name="scaffold_tokens")
+    
+    logger.info(msg="Tokenizing done.")
 
-        raise
+    logger.info(
+        msg="Saving processed dataset to {}.".format(cfg.save_path)
+    )
+
+    save_parquet(
+        table=processed_organix13,
+        file_path=cfg.save_path
+    )

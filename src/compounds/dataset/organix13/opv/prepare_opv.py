@@ -196,16 +196,13 @@ class OPV:
     """
 
     train_url = (
-        "https://cscdata.nrel.gov/api/datasets/ad5d2c9a-af0a-4d72-b943-1e433d5750d6/download/"
-        "b69cf9a5-e7e0-405b-88cb-40df8007242e"
+        "https://data.nrel.gov/system/files/236/1712697052-mol_train.csv.gz"
     )
     valid_url = (
-        "https://cscdata.nrel.gov/api/datasets/ad5d2c9a-af0a-4d72-b943-1e433d5750d6/download/"
-        "1c8e7379-3071-4360-ba8e-0c6481c33d2c"
+        "https://data.nrel.gov/system/files/236/1712697052-mol_valid.csv.gz"
     )
     test_url = (
-        "https://cscdata.nrel.gov/api/datasets/ad5d2c9a-af0a-4d72-b943-1e433d5750d6/download/"
-        "4ef40592-0080-4f00-9bb7-34b25f94962a"
+        "https://data.nrel.gov/system/files/236/1712697052-mol_test.csv.gz"
     )
     train_md5 = "16e439b7411ea0a8d3a56ba4802b61b1"
     valid_md5 = "3aa2ac62015932ca84661feb5d29adda"
@@ -289,7 +286,7 @@ class OPV:
         # self.load_smiles(smiles, targets, verbose=verbose, **kwargs)
         print(smiles[:10])
         df_out = pd.DataFrame({"smiles": smiles})
-        df_out.to_parquet(os.path.join(os.path.dirname(__file__), "opv.parquet"))
+        df_out.to_parquet(os.path.join(self.path, "opv.parquet"))
 
 
 if __name__ == "__main__":

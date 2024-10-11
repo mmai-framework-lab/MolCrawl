@@ -42,11 +42,7 @@ def read_parquet(file_path: str) -> pq.ParquetFile:
     :return: pandas DataFrame
     """
 
-    parquet_file = pq.ParquetFile(file_path)
-
-    table = parquet_file.read_row_group(0)
-
-    return table
+    return pq.read_table(file_path)
 
 
 def save_parquet(table: pa.Table, file_path: str):
@@ -71,7 +67,7 @@ def join_tables(chunks):
 
 def multiprocess_tokenization(func, table, column_name, new_column_name=None, processes=24):
     split_tables = split_table(table, 10000)
-    chunksize = len(split_tables) // processes
+    chunksize = len(split_tables) // processes if len(split_tables) // processes > 0 else 1
     
     with Pool(processes) as pool:
         tokenized_tables = [t for t in pool.map(
