@@ -25,7 +25,7 @@ def get_list_files(url: str) -> List[str]:
     response = requests.get(url)
     response.raise_for_status()
     # Use a regex pattern to find all href links in the page
-    files = re.findall(r'href="([^"]+).fna.gz"', response.text)
+    files = re.findall(r'href="([^"]+).genomic.fna.gz"', response.text)
 
     return [f"{file}.fna.gz" for file in files]
 
