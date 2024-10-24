@@ -65,5 +65,6 @@ with torch.no_grad():
     with ctx:
         for x in inputs:
             y = model.generate(x[:256].unsqueeze(0), max_new_tokens, temperature=temperature, top_k=top_k)
+            # y = model.generate(x[:256][None, ...], max_new_tokens, temperature=temperature, top_k=top_k)
             print(tokenizer.decode(y[0].tolist()))
             print('---------------')

@@ -25,15 +25,14 @@ class TrainableTokenizer(ABC):
     def tokenize_text(self, text: str):
         pass
 
-    @abstractmethod
-    def train(self):
-        pass
-
     def __len__(self):
         return len(self.tokenizer)
 
     def decode(self, token_ids):
         return self.tokenizer.decode(token_ids)
+    
+    def train_new_from_iterator(self, iterator):
+        super().train_new_from_iterator(iterator)
 
 
 class UnTrainableTokenizer(ABC):
