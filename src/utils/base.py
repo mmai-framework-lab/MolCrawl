@@ -29,6 +29,12 @@ class TrainableTokenizer(ABC):
     def train(self):
         pass
 
+    def __len__(self):
+        return len(self.tokenizer)
+
+    def decode(self, token_ids):
+        return self.tokenizer.decode(token_ids)
+
 
 class UnTrainableTokenizer(ABC):
 
