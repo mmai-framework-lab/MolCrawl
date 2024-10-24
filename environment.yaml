@@ -21,3 +21,4 @@ dependencies:
     - cellxgene_census
     - rich
     - transformer=4.45.1
+    - scgpt=0.2.1

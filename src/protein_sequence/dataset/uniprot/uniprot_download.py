@@ -1,6 +1,5 @@
 # See https://www.uniprot.org/help/downloads
 from typing import Dict, Optional, Union
-import json
 import os
 import logging
 import logging.config
@@ -174,21 +173,9 @@ def process_dataset(dataset: str, output_dir: Union[str, os.PathLike[str]], num_
         unzip_file(download_path, Path(output_dir) / Path(download_path).with_suffix("").name)
 
 
-def setup_logging(output_dir: str):
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    with open("./assets/logging_config.json", "r") as file:
-        config = json.load(file)
-    logging_file = f"{output_dir}/logging.log"
-    config["handlers"]["file"]["filename"] = logging_file
-    if os.path.exists(logging_file):
-        os.remove(logging_file)
-    logging.config.dictConfig(config=config)
-
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
-    setup_logging(cfg.output_dir)
     process_dataset(cfg.dataset, cfg.output_dir, cfg.num_worker, cfg.use_md5)

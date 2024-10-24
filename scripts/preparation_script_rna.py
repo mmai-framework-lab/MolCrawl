@@ -5,6 +5,10 @@ There will be multiple directory generate in the output_dir provided in the conf
 - download_dir: Raw archive file downloaded from the cellxgene database
 - extract: h5ad file extracted from the archives
 - parquet_files: parquet files containing tokenized gene and expression values
+
+You can call this script with the following command:
+
+python scripts/preparation_script_rna.py assets/configs/rna.yaml
 """
 
 from argparse import ArgumentParser

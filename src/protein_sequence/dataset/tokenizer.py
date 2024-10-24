@@ -156,7 +156,7 @@ def generate_parquet_from_raw(raw_dir: Path, parquet_dir: Path, num_worker=5):
         ):
             token_counts += result
 
-    with open("token_counts.pkl", "wb") as file:
+    with open(raw_dir.parent / "token_counts.pkl", "wb") as file:
         pickle.dump(token_counts, file)
 
 
