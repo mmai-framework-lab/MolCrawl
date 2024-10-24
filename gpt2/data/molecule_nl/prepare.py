@@ -42,7 +42,7 @@ args = parser.parse_args()
 
 data = read_dataset(args.tokenized_file_path)
 
-if args.training_set_subset_len < 1:
+if args.training_set_subset_len <= 1:
     train_num_samples = int(len(data["train"])*args.training_set_subset_len)
     test_num_samples = int(len(data["test"])*args.training_set_subset_len)
 else:
