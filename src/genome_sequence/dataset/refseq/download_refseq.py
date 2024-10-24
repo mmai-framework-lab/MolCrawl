@@ -25,7 +25,7 @@ def get_list_files(url: str) -> List[str]:
     response = requests.get(url)
     response.raise_for_status()
     # Use a regex pattern to find all href links in the page
-    files = re.findall(r'href="([^"]+).fna.gz"', response.text)
+    files = re.findall(r'href="([^"]+).genomic.fna.gz"', response.text)
 
     return [f"{file}.fna.gz" for file in files]
 
@@ -97,7 +97,7 @@ def download_refseq(output_dir: Union[str, os.PathLike[str]], num_worker: int):
     urls = [os.path.join(base_url, file) for file in files]
     paths = [os.path.join(download_dir, file) for file in files]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_worker) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(num_worker, 3)) as executor:
         archive_paths = list(
             track(
                 executor.map(download, urls, paths),
