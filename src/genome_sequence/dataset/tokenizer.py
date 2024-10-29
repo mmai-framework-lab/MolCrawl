@@ -1,61 +1,35 @@
-from typing import Iterator, List
-from pathlib import Path
 from argparse import ArgumentParser
-import concurrent.futures
+from pathlib import Path
+from functools import partial
 
 from tokenizers import Tokenizer
-from tokenizers.models import BPE
-from tokenizers.trainers import BpeTrainer
-from tokenizers.pre_tokenizers import Split
-import numpy as np
+from datasets import load_dataset
 
 from genome_sequence.utils.config import GenomeSequenceConfig
 
 
-def yield_raw_sequences(raw_filepaths: Iterator[str], num_worker) -> Iterator[str]:
-    """
-    Reads sequences from a FASTA file and yields them one by one.
-
-    Parameters:
-    - fasta_filepath: Path to the input FASTA file.
-
-    Yields:
-    - A sequence string (without the header).
-    """
-    with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
-        for lines in executor.map(read_file, raw_filepaths):
-            for line in lines:
-                yield line.strip()
+def tokenize_function(examples, tokenizer):
+    return {"input_ids": tokenizer.encode(examples["text"]).ids}
 
 
-def read_file(file_path: str) -> List[str]:
-    with open(file_path, "r") as file:
-        return file.readlines()
+def raw_to_parquet(output_dir):
+    data = load_dataset("text", data_dir=str(Path(output_dir) / "raw_files"), split="train").select(range(1000))
+
+    tokenizer = Tokenizer.from_file(str(Path(output_dir) / "tokenizer.json"))
+
+    tokenized_datasets = data.map(
+        partial(tokenize_function, tokenizer=tokenizer),
+        batched=True,
+        remove_columns=["text"],
+    )
+
+    tokenized_datasets.to_parquet(str(Path(output_dir) / "parquet_files"))
 
 
 if __name__ == "__main__":
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
 
-    path_dir = Path(cfg.output_dir) / "raw_files"
-
-    tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-    trainer = BpeTrainer(
-        vocab_size=cfg.vocab_size, show_progress=True, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    )
-    pattern = r"[^A-Z]"
-    tokenizer.pre_tokenizer = Split(pattern, behavior="removed")
-
-    files = [str(p) for p in path_dir.glob("*.raw")]
-    np.random.seed(42)
-    np.random.permutation(files)
-    files = files[:1200]
-
-    line_iterator = yield_raw_sequences(files, cfg.num_worker)
-
-    # tokenizer.train(files, trainer)
-    tokenizer.train_from_iterator(line_iterator, trainer)
-    tokenizer.save(str(Path(cfg.output_dir) / "tokenizer.json"))
+    raw_to_parquet(cfg.output_dir)
