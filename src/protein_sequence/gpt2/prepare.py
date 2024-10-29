@@ -43,7 +43,6 @@ def create_chunks(examples, context_length):
 
 
 def tokenize_batch_dataset(path_output, context_length, number_sample):
-
     data = (
         load_dataset(
             "text",
@@ -85,11 +84,11 @@ def tokenize_batch_dataset(path_output, context_length, number_sample):
 
 if __name__ == "__main__":
     number_sample = 50000
+    context_length = 1024
 
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
 
-    output_dir = Path(cfg.output_dir) / cfg.dataset
-    tokenize_batch_dataset(output_dir, cfg.num_worker, number_sample)
+    tokenize_batch_dataset(cfg.dataset, context_length, number_sample)
