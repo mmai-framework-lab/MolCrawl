@@ -39,17 +39,23 @@ If necessary it is possible to rerun only part of the full script by selecting t
 
 - <b>RNA</b> (scRNAseq expression data)
 
+    Size of the dataset: 221G
+
     Samples: 35,822,843-
 
     Tokens: 90,711,564,293
 
 - <b>Protein Sequence</b> (Uniref 50)
 
+    Size of the dataset: 18G
+
     Samples: 66,000,000
 
     Tokens: 19,182,955,286
 
 - <b>Compounds</b>:
+
+    Size of the dataset: 954M
 
     Samples: 13,299,623
 
@@ -59,11 +65,15 @@ If necessary it is possible to rerun only part of the full script by selecting t
 
 - <b>Molecule-related natural language</b>
 
+    Size of the dataset: 8.9G
+
     Samples: 3,342,414
 
     Tokens: 467,530,577
 
-- <b>Genome Sequence</b> (status: outstanding)
+- <b>Genome Sequence</b> (status: not provided since imprecise)
+
+    Size of the dataset 1.6T
 
 
 <!-- ------------------------------------------------------------------------------------------------------------- -->
@@ -107,6 +117,51 @@ Any exceptions encountered during the execution are logged and re-raised, ensuri
 <!-- ------------------------------------------------------------------------------------------------------------- -->
 
 ## Genome Sequence
+
+You can run this script with the following command:
+
+```bash
+python scripts/preparation_script_genome_sequence.py assets/configs/genome_sequence.yaml
+```
+
+However, this scripts has won't be able to finish due to the size of the refseq database 4.2TB. See Separate scripts section
+for more details.
+To compare the dataset used in the reference paper is 32.4GB.
+You can find the original pretraining dataset [here](https://github.com/MAGICS-LAB/DNABERT_2/issues/100).
+
+### Separate scripts
+
+The processing of Refseq is separate in 4 separate scripts. These scripts except the result
+of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
+
+- `src/genome_sequence/dataset/refseq/download_refseq.py`
+
+    Will download all refseq files finishing by .genomic.fna.gz from `https://ftp.ncbi.nlm.nih.gov/refseq/release/complete/` and extract them to fasta files.
+    This dataset is huge, 1.3 TB for the downloaded directory, 4.2TB for the extracted files.
+
+- `src/genome_sequence/dataset/refseq/fasta_to_raw.py`
+
+    Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file` (total of 1.6TB)
+
+- `src/genome_sequence/dataset/train_tokenizer.py`
+
+    As per specification we tried to train a BPE trainer, we even follow the same code as the authors, see
+    [here](https://github.com/MAGICS-LAB/DNABERT_2/issues/74) for the source code.
+    However this code has a huge data usage and we could not use it without getting OOM error.
+    In order to try to get it working we capped the datasize up to 10GB, but even doing so lead to a usage
+    of ~350GB of RAM and the process stop undefinetelly when trying to compute the merge.
+
+    We did manage to compute the BPE on up to 2 files, and even in this condition it took more than 12 hours to finish.
+    One solution might be to go outside of Hugging Face trainer and build a more memory optimized solution for genome sequence.
+    It seems that long sequence make the algorithm of hugging face particularly slow.
+
+    From hugging face issues section, we also saw a recommendation of using Unigram rather than BPE if it is possible for your project.
+
+- `src/genome_sequence/dataset/tokenizer.py`
+
+    Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer (trained on only two file) was used to confirm the usage. Here we used Hugging Face library, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
+
+
 <!-- ------------------------------------------------------------------------------------------------------------- -->
 
 ## Molecule Related Natural Language
@@ -153,7 +208,7 @@ The output will be the a subdir of the output_dir containing a dataset name dire
 
 ### Separate scripts
 
-The processing of Uniprot is separate in 3 separate scripts. Those script except the result
+The processing of Uniprot is separate in 3 separate scripts. These scripts except the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
 - `src/protein_sequence/dataset/uniprot/uniprot_download.py`
@@ -177,6 +232,12 @@ You can call this script with the following command:
 ```bash
 python scripts/preparation_script_rna.py assets/configs/rna.yaml
 ```
+
+One limitation of the rna sequence task is the fact that the sequence data are continuous and therefore
+it creates a challenge for the tokenization and the model. The tokenization is taking into account in the following scripts.
+However we could not provide a gpt2 training example, since the gpt2 masking is non trivial and
+developing the proper architecture for such a task is past the goal of this project.
+See section 3 of the scFormer paper for the details of specific of the model.
 
 ### Configuration
 
@@ -231,3 +292,33 @@ The is 4 separate scripts for cellxgene downloading.
     Create the gene token vocabulary, filter genes have a counts under `min_counts_genes` and save
     gene tokens and expression value in a tuple in a parquet file. All parquet files are saved
     in `parquet_files` the inputs are the extracted h5ad files.
+
+
+# Training of GPT2 model
+
+For the GPT2 base code we use the [nanoGPT](https://github.com/karpathy/nanoGPT) code. We only change
+the way the dataset is loaded.
+
+In order to train a gpt2 model with one the dataset, you will need to run the `prepare_gpt2.py` script in
+`{task}/dataset`, for example for `protein_sequence` you can run the following command.
+
+```bash
+python src/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
+```
+
+This will prepare the dataset in batch and make sure the context_size, here of 1024
+is filled without any padding.
+
+Then the training can be launch, for the prepared protein sequence dataset, by running the following:
+
+```bash
+python gpt2/train.py gpt2/data/protein_sequence/train_gpt2_config.py
+```
+
+this will train a modeland save it in outputdir.
+
+Then you can sample some example with the following
+
+```bash
+python gpt2/sample.py gpt2/data/protein_sequence/train_gpt2_config.py
+```
