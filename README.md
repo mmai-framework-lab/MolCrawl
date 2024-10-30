@@ -10,6 +10,7 @@ Use each script depending on the dataset you want to process for an LLM.
 Each task is separate in it's own subdir. There are some shared functionality that you can
 find in the src/utils folder.
 
+```bash
 ├── assets
 │   ├── configs                                 -> Configuration file for all task
 │   ├── logging_config.json                     -> Logging base configuration
@@ -26,7 +27,7 @@ find in the src/utils folder.
 ├── environment.yaml
 ├── pyproject.toml
 └── README.md
-
+```
 
 # Dataset preparation
 
