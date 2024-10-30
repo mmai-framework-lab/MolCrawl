@@ -73,7 +73,7 @@ def need_download(path: str, use_md5: bool, md5: Optional[str] = None):
         if not need_download:
             logger.warning(f"MD5 is different redownloading {path}")
     else:
-        need_download = not os.path.exists(path)
+        need_download = not os.path.exists(path) or os.path.getsize(path) == 0
     return need_download
 
 

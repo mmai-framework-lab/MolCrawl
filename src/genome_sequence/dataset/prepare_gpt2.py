@@ -1,21 +1,15 @@
-from functools import partial
 from argparse import ArgumentParser
 from pathlib import Path
+from functools import partial
 
+from tokenizers import Tokenizer
 from datasets import load_dataset, DatasetDict
 
-from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
-from protein_sequence.utils.configs import ProteinSequenceConfig
+from genome_sequence.utils.config import GenomeSequenceConfig
 
 
 def tokenize_function(examples, tokenizer):
-    return {
-        "input_ids": tokenizer(
-            examples["text"],
-            truncation=False,
-            add_special_tokens=False,  # We'll add special tokens manually
-        )["input_ids"]
-    }
+    return {"input_ids": tokenizer.encode(examples["text"]).ids}
 
 
 def concatenate_texts(examples, eos_token_id):
@@ -42,23 +36,22 @@ def create_chunks(examples, context_length):
     return {"input_ids": input_ids}
 
 
-def tokenize_batch_dataset(path_output, context_length, number_sample):
+def tokenize_batch_dataset(output_dir, context_length, number_sample):
     data = (
         load_dataset(
-            "text",
-            data_dir=str(Path(path_output) / "raw_files"),
-            split="train",
+            "text", data_dir=str(Path(output_dir) / "raw_files"), cache_dir=str(Path(output_dir) / "hf_cache"), split="train"
         )
         .shuffle()
         .select(range(number_sample))
     )
+
     raw_datasets = data.train_test_split(test_size=0.2)
     valid_test_split = raw_datasets["test"].train_test_split(test_size=0.5)
     raw_datasets = DatasetDict(
         {"train": raw_datasets["train"], "valid": valid_test_split["train"], "test": valid_test_split["test"]}
     )
 
-    tokenizer = EsmSequenceTokenizer()
+    tokenizer = Tokenizer.from_file(str(Path(output_dir) / "tokenizer.json"))
 
     tokenized_datasets = raw_datasets.map(
         partial(tokenize_function, tokenizer=tokenizer),
@@ -78,7 +71,7 @@ def tokenize_batch_dataset(path_output, context_length, number_sample):
         batch_size=-1,
     )
 
-    path_dataset = str(path_output / "training_ready_hf_dataset")
+    path_dataset = str(output_dir / "training_ready_hf_dataset")
     chunked_dataset.save_to_disk(path_dataset)
 
 
@@ -89,7 +82,6 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
-    cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
+    cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
 
-    output_dir = Path(cfg.output_dir) / cfg.dataset
-    tokenize_batch_dataset(output_dir, context_length, number_sample)
+    tokenize_batch_dataset(cfg.output_dir, context_length, number_sample)

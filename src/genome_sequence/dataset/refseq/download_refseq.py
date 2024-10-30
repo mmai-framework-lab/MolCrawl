@@ -40,7 +40,7 @@ def download(url: str, path: str, try_count: int = 0, max_try: int = 3) -> str:
         path (str, optional): path to store the downloaded file. If not specify tmp file.
     """
 
-    if not os.path.exists(path):
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
         logger.info("Downloading %s to %s" % (url, path))
         try:
             path, _ = urlretrieve(url, path)

@@ -13,7 +13,9 @@ def tokenize_function(examples, tokenizer):
 
 
 def raw_to_parquet(output_dir):
-    data = load_dataset("text", data_dir=str(Path(output_dir) / "raw_files"), split="train").select(range(1000))
+    data = load_dataset(
+        "text", data_dir=str(Path(output_dir) / "raw_files"), cache_dir=str(Path(output_dir) / "hf_cache"), split="train"
+    ).select(range(1000))
 
     tokenizer = Tokenizer.from_file(str(Path(output_dir) / "tokenizer.json"))
 
