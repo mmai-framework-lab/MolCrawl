@@ -20,7 +20,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = CompoundConfig.from_file(args.config).data_preparation
 
-    setup_logging(Path(cfg.save_path).parent)
+    setup_logging(Path(cfg.save_path).parent / "compounds_logs")
 
     os.path.exists(cfg.raw_data_path) or os.makedirs(cfg.raw_data_path)
     download_datasets(cfg.raw_data_path, cfg.organix13_dataset)
