@@ -7,6 +7,9 @@ class RefSeqPreparationConfig:
 
     # Output directory where the preparation will be made
     output_dir: str
+    # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
+    # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
+    path_species: str
     # Num of parallel worker to use, note that for download the worker are capped to 3
     num_worker: int = 16
 

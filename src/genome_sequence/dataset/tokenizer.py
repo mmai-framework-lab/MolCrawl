@@ -9,7 +9,8 @@ from genome_sequence.utils.config import GenomeSequenceConfig
 
 
 def tokenize_function(examples, tokenizer):
-    return {"input_ids": tokenizer.encode(examples["text"]).ids}
+    encoded_sequence = tokenizer.encode(examples["text"]).ids
+    return {"input_ids": encoded_sequence, "num_tokens": len(encoded_sequence)}
 
 
 def raw_to_parquet(output_dir):
@@ -21,7 +22,7 @@ def raw_to_parquet(output_dir):
 
     tokenized_datasets = data.map(
         partial(tokenize_function, tokenizer=tokenizer),
-        batched=True,
+        batched=False,
         remove_columns=["text"],
     )
 

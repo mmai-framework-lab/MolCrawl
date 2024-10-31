@@ -11,7 +11,6 @@ download_dir
 extracted_dir
 zinc15_download_dir
 *.parquet
-*.txt
 *.csv
 *.csv.gz
 

@@ -1,0 +1,39 @@
+Aeromonas
+Agrobacterium
+Aliivibrio
+Alphaproteobacteria bacterium
+Amycolatopsis antarctica
+Anaerostipes faecis
+Arthrobacter
+Atopobium
+Christensenella
+Coprobacillus cateniformis
+Cyanobium
+Evtepia gabavorous
+Fulvivirga
+Listeria ilorinensis
+Marinomonas
+Mesorhizobium
+Methyloceanibacter caenitepidi
+Microvirga
+Mycolicibacter engbaekii
+Novosphingobium
+Pantoea
+Paraburkholderia edwinii
+Parerythrobacter lutipelagi
+Providencia
+Pseudomonas promysalinigenes
+Roseobacter
+Salinicola peritrichatus
+Sinorhizobium
+Sodalis ligni
+Sphaerochaeta
+Sphingobacterium
+Sphingomonas carotinifaciens
+Sphingomonas mesophila
+Sporosarcina ureilytica
+Streptococcus
+Thermopetrobacter
+Vibrio
+Victivallis lenta
+Virgibacillus salexigens

@@ -17,6 +17,7 @@ from rna.dataset.cellxgene.script.build_list import build_list
 from rna.dataset.cellxgene.script.download import download
 from rna.dataset.cellxgene.script.tokenization import prepare_parquet
 from rna.utils.config import RnaConfig
+from core.base import setup_logging
 
 
 if __name__ == "__main__":
@@ -24,6 +25,8 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = RnaConfig.from_file(args.config).data_preparation
+
+    setup_logging(cfg.output_dir)
 
     build_list(cfg.output_dir)
     download(cfg.output_dir, cfg.census_version, cfg.num_worker, cfg.size_workload)

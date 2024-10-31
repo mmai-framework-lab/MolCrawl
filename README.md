@@ -14,6 +14,7 @@ find in the src/utils folder.
 ├── assets
 │   ├── configs                                 -> Configuration file for all task
 │   ├── logging_config.json                     -> Logging base configuration
+│   ├── genome_species_refseq                   -> List of species used for refseq downloading
 │   └── molecules                               -> vocab.txt required for tokenizer
 ├── scripts                                     -> Global script for all tasks.
 ├── src                                         -> Main package
@@ -72,9 +73,8 @@ If necessary it is possible to rerun only part of the full script by selecting t
 
     Tokens: 467,530,577
 
-- <b>Genome Sequence</b> (status: not provided since imprecise)
+- <b>Genome Sequence</b> (status: still on going)
 
-    Size of the dataset 1.6T
 
 
 # Dataset Preparation Scripts
@@ -158,10 +158,27 @@ You can run this script with the following command:
 python scripts/preparation_script_genome_sequence.py assets/configs/genome_sequence.yaml
 ```
 
-However, this scripts has won't be able to finish due to the size of the refseq database 4.2TB. See Separate scripts section
-for more details.
-To compare the dataset used in the reference paper is 32.4GB.
-You can find the original pretraining dataset [here](https://github.com/MAGICS-LAB/DNABERT_2/issues/100).
+### Configuration
+
+```yaml
+
+data_preparation:
+  # Output directory where the preparation will be made
+  output_dir: "/nasa/datasets/riken/projects/fundamental_models_202407/refseq"
+
+  # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
+  # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
+  path_species: "assets/genome_species_list/filtered_species_refseq"
+
+  # Num of parallel worker to use, note that for download the worker are capped to 3
+  num_worker: 16
+
+  max_lines_per_file: 10000
+
+  # Size of the vocabulary of the BPE tokenizer
+  vocab_size: 4096
+```
+
 
 ### Separate scripts
 
@@ -170,8 +187,14 @@ of precedding directory to be present in the `output_dir` if that's not the case
 
 - `src/genome_sequence/dataset/refseq/download_refseq.py`
 
-    Will download all refseq files finishing by .genomic.fna.gz from `https://ftp.ncbi.nlm.nih.gov/refseq/release/complete/` and extract them to fasta files.
-    This dataset is huge, 1.3 TB for the downloaded directory, 4.2TB for the extracted files.
+    Uses `https://github.com/kblin/ncbi-genome-download` to download refseq data.
+    `path_species` provide the directory containing one file per group and containing
+    the name of the species to use. You can check the data base names here: https://www.ncbi.nlm.nih.gov/datasets/genome/
+
+    Note that a lot of species used by scFormer where absent from refseq, so we only use the remaining ones.
+    The full original species can be found in `assets/genome_species_list/species`
+    And we used a filter set containing species with at least one sequence in refseq `assets/genome_species_list/filtered_species_refseq`
+
 
 - `src/genome_sequence/dataset/refseq/fasta_to_raw.py`
 
@@ -179,21 +202,11 @@ of precedding directory to be present in the `output_dir` if that's not the case
 
 - `src/genome_sequence/dataset/train_tokenizer.py`
 
-    As per specification we tried to train a BPE trainer, we even follow the same code as the authors, see
-    [here](https://github.com/MAGICS-LAB/DNABERT_2/issues/74) for the source code.
-    However this code has a huge data usage and we could not use it without getting OOM error.
-    In order to try to get it working we capped the datasize up to 10GB, but even doing so lead to a usage
-    of ~350GB of RAM and the process stop undefinetelly when trying to compute the merge.
-
-    We did manage to compute the BPE on up to 2 files, and even in this condition it took more than 12 hours to finish.
-    One solution might be to go outside of Hugging Face trainer and build a more memory optimized solution for genome sequence.
-    It seems that long sequence make the algorithm of hugging face particularly slow.
-
-    From hugging face issues section, we also saw a recommendation of using Unigram rather than BPE if it is possible for your project.
+    As per specification we tried to train a BPE trainer from the raw files we generated.
 
 - `src/genome_sequence/dataset/tokenizer.py`
 
-    Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer (trained on only two file) was used to confirm the usage. Here we used Hugging Face library, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
+    Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer was used to confirm the usage. Here we used Hugging Face library, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
 
 
 <!-- ------------------------------------------------------------------------------------------------------------- -->
@@ -403,7 +416,7 @@ python gpt2/sample.py gpt2/data/protein_sequence/train_gpt2_config.py
 
 ### Generated Samples
 
-After training the datasets with a few iterations with the above-mentioned scripts, we provide some genrated outputs, to show the ability of GPT2 to learn from the datasets -- as requested by the project description.
+After training the datasets with a few iterations with the above-mentioned scripts, we provide some generated outputs, to show the ability of GPT2 to learn from the datasets -- as requested by the project description.
 
 #### Compounds
 
@@ -438,3 +451,15 @@ which show a coherent _instruction_ -> _answer_ exchange. Additionally, valid SM
 
 displaying understanding of the underlying data.
 
+
+#### Protein sequence
+
+We get the following after training around 4,000 iteration on a 10,000 samples dataset:
+
+```
+G G L R I E T T I R D V Y Q T P N L D E C R R I V E G E V Q I K I G E D L P T R I M F <eos> M P T Y L P P N K L L Q K L P I A R N I D P P Y E L F R H K E E Q K I E M L I D N I D N V I Q P S W K T S K D Q E T E K Y F Q W I G N I P G F P C P G T S E W E D P K H H Y E M H R Q H D E W L D N L K G P A F S H Y E T Y A K D I E Q H L S D V I E E M D G S P P I E P C S E L P K S G H P I S G Y F V A Q P T T N E V L C E S P L V Q K I K R A <eos> M P F S R S L F I F L L L L F S L R L R Y R Q G N T Y S D S P Q E D I T L Y V L D A N Q G R F A L M N V A D T F D S G N I V N A G K A L M L K M T V W T D Y Y G V G A R G N I S R K K I N E V A K R P A Y E L W A I S R E R N V V A E N D I A Y I E L R R Q Q T Y K E M A S M T A A I V G R L P V I A S G V Q A L A I L P D V E V S M V R G N A Y T A G T L K P V V R S S R E M L G V A Y I Y V G K G Q D T A F D E A L I N R E A V I P S L L V C V V E Q G N S L T I R E L A L T N P T D T E A E L G V T M S T T E A I V N L R P P Y <eos> M E Q K E V D V T V G W L G E L V V C V G T P S I H I R V
+---------------
+M C Q R F L F L R E D G T L F R E G E F Q F S Y V Y I V D A G N C K I F W R T P C T Q C Q W Y C P V R R S L Q T R G F V L I L D L S S L K K S L I V K A G N S C R Y I K K I T M K R Q Q R R K T V S V P N Q P F I A D N D P N F S T S V P A P T T P P H S E T M P D F I P S P P P I P V T D D R D M S R L K P T F H T T D P P V D D T N L I A H R D P R D T N R P D Y F W L D T N D F Q Q F R S P Y G Y V T E G D S W Q T V G P F P S K A P Q S A L S Q Q S I S P V D E D Y T T F Y E M R E D L I Q A I N T D V V V K F G R N D L L T V P T G G S S G S P S S E E N I A G L I D D L G A V A N K F S S Q Q Y E E P K T F L P S S S G P Q S A S P I Y R P D Q A S G F Y I S G F E S G N I T I K W Q G D V A G L V Q G E V G F K T K L P N D F G P S S S T S I K P S S L L F T Y N S I T I R P D E K F L D T T L S S Q K F T P Y L Q A P T T Q P Q L V S S R P I Y S D K E M S M I T D V Q Q Q Q P V P F E N M F L L V R D N R S K Y D D D T C T I N G P Y S A K H G N H K R E K N C P I F Y T L G R R T K K P A T Y N K T F I R A R R S S K P T K
+```
+
+Evaluating the validity of the protein presented sequences requires deep understanding of the proteins, and is out of the scope of the exercise".

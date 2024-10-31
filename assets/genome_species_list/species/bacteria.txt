@@ -1,0 +1,103 @@
+Aeromonas
+Agrobacterium
+Alcaligenaceae bacterium
+Aliivibrio
+Alphaproteobacteria bacterium
+Amycolatopsis antarctica
+Anaerostipes faecis
+Arthrobacter
+Atopobium
+Bacillus bc15
+Bacillus bs3 2021
+Bacterium
+Bacteroidetes bacterium qs
+Breoghaina corrubedonensis
+Bacterium
+Bacteroidetes bacterium qs
+Breoghaina corrubedonensis
+Caldicoprobacter oshimai
+Candidatus cryptobacteroides excrementipullorum
+Candidatus dadabacteria bacterium rbg combo
+Candidatus dwanyia gallinarum
+Candidatus falkowbacteria bacterium
+Candidatus geothermincola secundus
+Candidatus gottesmanbacteria bacterium
+Candidatus nomurabacteria bacterium full
+Candidatus portnoybacteria bacterium big fil rev
+Candidatus regiella insecticola
+Candidatus roizmanbacteria bacterium combo all
+Candidatus rokubacteria bacterium
+Candidatus saccharibacteria bacterium
+Candidatus staskawiczbacteria bacterium full
+Christensenella
+Clostridiaceae bacterium
+Clostridiales bacterium
+Clostridium cag 505
+Clostridium mcc328
+Clostridium nexile
+Clostridium uba3521
+Collinsella urealycticum
+Coprobacillus cateniformis
+Cyanobium
+Dehalococcoidia bacterium
+Enterobacteriaceae bacterium
+Evtepia gabavorous
+Firmicutes bacterium
+Fulvivirga
+Jeongeupia chitinylytica
+Legionella endosymbiont of polyplax serrata
+Listeria ilorinensis
+Maribacter cobaltudurans
+Marinomonas
+Mesorhizobium
+Methyloceanibacter caenitepidi
+Microvirga
+Mycolicibacter engbaekii
+Novosphingobium
+Omnitrophica wor bacterium rbg
+Pantoea
+Paraburkholderia edwinii
+Parerythrobacter lutipelagi
+Paulownia witches phytoplasma
+Polaromonas eurypotpsychrophila
+Prevotella ag 487 50 53
+Prevotella uba3619
+Prevotella uba634
+Prochlorococcus ag-321-l09
+Prochlorococcus ag-363-b18
+Prochlorococcus ag-402-l19
+Prochlorococcus scb243 498n4
+Providencia
+Pseudomonas 35 e 8
+Pseudomonas bigb0408
+Pseudomonas p867
+Pseudomonas promysalinigenes
+Roseobacter
+Salinicola peritrichatus
+Salmonella s096 02912
+Salmonella zj-f75
+Sinorhizobium
+Sodalis ligni
+Sphaerochaeta
+Sphingobacterium
+Sphingomonas carotinifaciens
+Sphingomonas mesophila
+Sporosarcina jiandaonis
+Sporosarcina ureilytica
+Staphylococcus gdq20d1p
+Staphylococcus m0911
+Streptococcus
+Streptomyces 8401
+Streptomyces di166
+Streptomyces durbertenis
+Streptomyces neau-yj-81
+Streptomyces rk74b
+Thermopetrobacter
+Uncultured kushneria
+Uncultured phascolarctobacterium
+Uncultured proteus
+Verrucomicrobiales bacterium
+Vibrio
+Victivallis lenta
+Virgibacillus salexigens
+Xanthomonadales bacterium

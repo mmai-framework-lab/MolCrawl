@@ -2,6 +2,10 @@ data_preparation:
   # Output directory where the preparation will be made
   output_dir: "/nasa/datasets/riken/projects/fundamental_models_202407/refseq"
 
+  # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
+  # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
+  path_species: "assets/genome_species_list/filtered_species_refseq"
+
   # Num of parallel worker to use, note that for download the worker are capped to 3
   num_worker: 16
 

@@ -115,7 +115,7 @@ def parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker: int, max_lines_p
     - max_lines_per_file: Maximum number of lines per output file.
     """
 
-    fasta_filepaths = [path for path in Path(fasta_dir).iterdir() if path.suffix == ".fna"]
+    fasta_filepaths = [path for path in Path(fasta_dir).rglob("*.fna")]
     chunk_content_iterator = iterate_over_chunk_raw_files(fasta_filepaths, num_worker, max_lines_per_file=max_lines_per_file)
 
     with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
