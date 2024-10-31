@@ -1,5 +1,8 @@
 from argparse import ArgumentParser
 import os
+import matplotlib.pyplot as plt
+import numpy as np
+
 import logging
 import logging.config
 
@@ -12,6 +15,26 @@ from compounds.utils.general import download_datasets
 
 
 logger = logging.getLogger(__name__)
+
+
+def run_statistics(table_row, column_name):
+    series_length = []
+    for i in table_row:
+        if i.is_valid:
+            series_length.append(len(i))
+
+    plt.hist(series_length, bins=np.arange(0, 200, 1))
+    plt.xlabel("Length of tokenized {}".format(column_name))
+    plt.title("Distribution of tokenized {} lengths".format(column_name))
+    plt.savefig("assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name))
+    plt.close()
+    logger.info(msg="Saved distribution of tokenized {} lengths to assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name, column_name))
+
+    return {
+        "Number of Samples for {}".format(column_name): len(series_length),
+        "Number of Tokens for {}".format(column_name): sum(series_length),
+    }
+
 
 
 if __name__ == "__main__":
@@ -51,6 +74,16 @@ if __name__ == "__main__":
     )
 
     logger.info(msg="Tokenizing done.")
+
+    logger.info(msg="Computing Statistics...")
+
+    statistics = {
+        **run_statistics(processed_organix13["tokens"], "SMILES"),
+        **run_statistics(processed_organix13["scaffold_tokens"], "Scaffolds")
+    }
+
+    for key, value in statistics.items():
+        logger.info(msg="{}: {}".format(key, value))
 
     logger.info(msg="Saving processed dataset to {}.".format(cfg.save_path))
 

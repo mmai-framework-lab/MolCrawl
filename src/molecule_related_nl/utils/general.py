@@ -9,16 +9,15 @@ def read_dataset(dataset_path: str):
     return splits
 
 def count_number_of_tokens(dataset):
-    number_of_tokens = 0
-
+    tokens_dis = []
     def internal_count(x):
-        nonlocal number_of_tokens
-        number_of_tokens += len(x["input_ids"]) + len(x["output_ids"])
+        nonlocal tokens_dis
+        tokens_dis.append(x["input_ids"] + x["output_ids"])
         return x
         
     dataset.map(internal_count)
 
-    return number_of_tokens
+    return tokens_dis
 
 def save_dataset(dataset, dataset_path: str):
     for split in dataset.keys():

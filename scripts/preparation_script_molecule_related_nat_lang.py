@@ -2,6 +2,8 @@ from argparse import ArgumentParser
 import os
 import logging
 import logging.config
+import matplotlib.pyplot as plt
+import numpy as np
 
 from pathlib import Path
 
@@ -14,6 +16,16 @@ from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
 
 logger = logging.getLogger(__name__)
+
+
+def run_statistics(series_length, column_name):
+    plt.hist(series_length, bins=np.arange(0, 200, 1))
+    plt.xlabel("Length of tokenized {}".format(column_name))
+    plt.title("Distribution of tokenized {} lengths".format(column_name))
+    plt.savefig("assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name))
+    plt.close()
+    logger.info(msg="Saved distribution of tokenized {} lengths to assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name, column_name))
+
 
 
 if __name__ == "__main__":
@@ -29,7 +41,7 @@ if __name__ == "__main__":
     os.path.exists(cfg.dataset) or os.makedirs(cfg.dataset)
 
     logger.info(msg="Downloading Dataset...")
-    download_hf_dataset(cfg.dataset, cfg.hf_path)
+    download_hf_dataset(cfg.dataset)
 
     dataset = read_dataset(cfg.dataset)
 
@@ -37,17 +49,20 @@ if __name__ == "__main__":
 
     logger.info(msg="Tokenizing Scaffolds...")
 
-    token_counts = {}
+    token_dist = {}
     for split in dataset.keys():
-        dataset[split] = dataset[split].map(tokenizer.tokenize_dict)
-        token_counts[split] = count_number_of_tokens(dataset[split])
+        # dataset[split] = dataset[split].map(tokenizer.tokenize_dict)
+        token_dist[split] = count_number_of_tokens(dataset[split])
 
-    logger.info(msg="Dataset Statistics:")
-    for split in token_counts.keys():
-        logger.info(msg=f"{split}: {token_counts[split]}")
+    logger.info(msg="Computing Dataset Statistics...")
+    for split in token_dist.keys():
+        logger.info(msg=f"{split}: {token_dist[split]}")
         logger.info(msg=f"Number of examples: {len(dataset[split])}")
+        logger.info(msg=f"Number of tokens: {sum(token_dist[split])}")
 
-    logger.info(msg="Total number of tokens: {}".format(sum(token_counts.values())))
+        run_statistics(token_dist[split], split)
+
+    logger.info(msg="Total number of tokens: {}".format(sum(token_dist.values())))
     logger.info(msg="Total number of examples: {}".format(sum([len(dataset[split]) for split in dataset.keys()])))
 
     logger.info(msg="Saving processed dataset to {}.".format(cfg.save_path))

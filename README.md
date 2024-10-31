@@ -58,11 +58,15 @@ If necessary it is possible to rerun only part of the full script by selecting t
 
     Size of the dataset: 954M
 
-    Samples: 13,299,623
+    Samples: 13,288,710
 
     SMILES Tokens: 526,014,485
 
-    Scaffold Tokens: 350,007,581
+    Scaffolds Tokens: 350,007,581
+
+    Samples distribution SMILES: ![smiles sample dist](assets/img/compounds_tokenized_SMILES_lengths_dist.png)
+
+    Samples distribution Scaffolds: ![smiles sample dist](assets/img/compounds_tokenized_Scaffolds_lengths_dist.png)
 
 - <b>Molecule-related natural language</b>
 
