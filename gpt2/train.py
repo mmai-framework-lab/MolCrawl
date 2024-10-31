@@ -82,11 +82,6 @@ exec(open("gpt2/configurator.py").read())  # overrides from command line or conf
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
 
-try:
-    tokenizer = Tokenizer()
-except Exception:
-    raise ImportError("Please initialize the tokenizer in the *_config.py file")
-
 # various inits, derived attributes, I/O setup
 ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?
 if ddp:
@@ -137,7 +132,7 @@ def get_batch(split):
     elif split == "val":
         data = test_data
 
-    ix = np.random.randint(0, len(dataset), batch_size).tolist()
+    ix = np.random.randint(0, len(data), batch_size).tolist()
     batch = torch.stack([data[i] for i in ix])
     x = batch[:, :-1]
     y = batch[:, 1:]

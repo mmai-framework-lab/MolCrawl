@@ -4,6 +4,9 @@
 
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 
+
+tokenizer = Tokenizer()
+
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 12

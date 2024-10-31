@@ -47,8 +47,8 @@ class SmilesTokenizer(BertTokenizer):
 
         super().__init__(vocab_file, **kwargs)
 
-        self.sos = "[SOS]"
-        self.eos = "[EOS]"
+        self.sos = "[CLS]"
+        self.eos = "[CLS]"
 
         if not os.path.isfile(vocab_file):
             raise ValueError("Can't find a vocab file at path '{}'.".format(vocab_file))
@@ -56,6 +56,10 @@ class SmilesTokenizer(BertTokenizer):
         self.highest_unused_index = max([i for i, v in enumerate(self.vocab.keys()) if v.startswith("[unused")])
         self.ids_to_tokens = collections.OrderedDict([(ids, tok) for tok, ids in self.vocab.items()])
         self.basic_tokenizer = BasicSmilesTokenizer()
+
+    @property
+    def eos_token_id(self):
+        return self.added_tokens_encoder[self.eos]
 
     @property
     def vocab_size(self):

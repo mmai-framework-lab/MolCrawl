@@ -2,14 +2,14 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 
 
-tokenizer = Tokenizer()
+tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 12
+batch_size = 6
 block_size = 1024
 gradient_accumulation_steps = 5 * 8
 
@@ -26,8 +26,10 @@ log_interval = 10
 weight_decay = 1e-1
 
 # dataset
-dataset = "molecule_nl"
+dataset = "compounds"
 
 dataset_params = {
-    "dataset_dir": "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/training_ready_hf_dataset"
+    "dataset_dir": "outputs/compounds/training_ready_hf_dataset"
 }
+
+out_dir = "out-compounds"
