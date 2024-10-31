@@ -3,6 +3,4 @@ data_preparation:
   dataset: "src/molecule_related_nl/assets/raw_data/osunlp/SMolInstruct"
 
   # Path to save the processed and tokenized dataset
-  # save_path: "outputs/molecule_related_natural_language_tokenized.parquet"
-
-  save_path: "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/molecule_related_natural_language_tokenized.parquet"
+  save_path: "outputs/molecule_related_natural_language_tokenized.parquet"

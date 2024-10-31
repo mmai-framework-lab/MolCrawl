@@ -1,5 +1,5 @@
 data_preparation:
-  # Path to save the OrganiX13 dataset once is downloaded and processed by the script
+  # Path to save the untokenized OrganiX13 dataset once is downloaded and processed by the script
   organix13_dataset: "src/compounds/dataset/organix13"
 
   # Path to save the processed and tokenized dataset

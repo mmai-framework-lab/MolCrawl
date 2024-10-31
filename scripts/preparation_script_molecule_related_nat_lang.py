@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     token_dist = {}
     for split in dataset.keys():
-        # dataset[split] = dataset[split].map(tokenizer.tokenize_dict)
+        dataset[split] = dataset[split].map(tokenizer.tokenize_dict)
         token_dist[split] = count_number_of_tokens(dataset[split])
 
     logger.info(msg="Computing Dataset Statistics...")
