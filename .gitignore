@@ -6,6 +6,7 @@ __pycache__
 *.log
 *.arrow
 *.json
+*.txt
 
 download_dir
 extracted_dir

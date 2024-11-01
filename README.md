@@ -65,9 +65,9 @@ If necessary it is possible to rerun only part of the full script by selecting t
 
     Scaffolds Tokens: 350,007,581
 
-    Samples distribution SMILES: ![smiles sample dist](assets/img/compounds_tokenized_SMILES_lengths_dist.png)
+    Samples length size distribution SMILES: ![smiles sample dist](assets/img/compounds_tokenized_SMILES_lengths_dist.png)
 
-    Samples distribution Scaffolds: ![smiles sample dist](assets/img/compounds_tokenized_Scaffolds_lengths_dist.png)
+    Samples length size distribution Scaffolds: ![smiles sample dist](assets/img/compounds_tokenized_Scaffolds_lengths_dist.png)
 
 - <b>Molecule-related natural language</b>
 
@@ -76,6 +76,13 @@ If necessary it is possible to rerun only part of the full script by selecting t
     Samples: 3,342,414
 
     Tokens: 467,530,577
+
+    Samples length size distribution Training Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_train_lengths_dist.png)
+    
+    Samples length size distribution Validation Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_validation_lengths_dist.png)
+    
+    Samples length size distribution Test Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_test_lengths_dist.png)
+
 
 - <b>Genome Sequence</b> (status: still on going)
 

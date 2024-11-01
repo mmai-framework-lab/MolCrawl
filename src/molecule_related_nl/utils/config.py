@@ -10,6 +10,9 @@ class MoleculeNLPreparationConfig(Config):
     # Path to save the processed and tokenized dataset
     save_path: str = "outputs/molecule_related_natural_language_tokenized.parquet"
 
+    # Num of workers to use in the data preparation
+    num_workers: int = 12
+
 
 @dataclass
 class MoleculeNLConfig(Config):

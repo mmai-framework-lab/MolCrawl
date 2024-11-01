@@ -10,7 +10,7 @@ from pathlib import Path
 from core.base import setup_logging
 from molecule_related_nl.dataset.download import download_hf_dataset
 from molecule_related_nl.utils.config import MoleculeNLConfig
-from molecule_related_nl.utils.general import read_dataset, count_number_of_tokens, save_dataset
+from molecule_related_nl.utils.general import read_dataset, save_dataset
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
@@ -18,14 +18,23 @@ from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 logger = logging.getLogger(__name__)
 
 
-def run_statistics(series_length, column_name):
+def run_statistics(series, column_name):
+    series_length = [len(i) for i in series]
     plt.hist(series_length, bins=np.arange(0, 200, 1))
     plt.xlabel("Length of tokenized {}".format(column_name))
     plt.title("Distribution of tokenized {} lengths".format(column_name))
-    plt.savefig("assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name))
+    plt.savefig("assets/img/molecule_nl_tokenized_{}_lengths_dist.png".format(column_name))
     plt.close()
     logger.info(msg="Saved distribution of tokenized {} lengths to assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name, column_name))
 
+
+def calculate_statistics(dataset, split):
+    inp_out = [i+j for i,j in zip(dataset[split]["input_ids"], dataset[split]["output_ids"])]
+    num_samples = len(inp_out)
+    num_tokens = sum(len(i) for i in inp_out)
+
+    run_statistics(inp_out, split)
+    return num_samples, num_tokens
 
 
 if __name__ == "__main__":
@@ -49,21 +58,29 @@ if __name__ == "__main__":
 
     logger.info(msg="Tokenizing Scaffolds...")
 
-    token_dist = {}
+    processed_dataset = {}
     for split in dataset.keys():
-        dataset[split] = dataset[split].map(tokenizer.tokenize_dict)
-        token_dist[split] = count_number_of_tokens(dataset[split])
+        processed_dataset[split] = dataset[split].map(
+            tokenizer.tokenize_dict,
+            batched = False,
+            num_proc = cfg.num_workers,
+            load_from_cache_file = False,
+            desc="Tokenizing {}".format(split),
+        )
 
     logger.info(msg="Computing Dataset Statistics...")
-    for split in token_dist.keys():
-        logger.info(msg=f"{split}: {token_dist[split]}")
-        logger.info(msg=f"Number of examples: {len(dataset[split])}")
-        logger.info(msg=f"Number of tokens: {sum(token_dist[split])}")
+    total_num_samples = 0
+    total_num_tokens = 0
+    for split in processed_dataset.keys():
+        logger.info(msg=f"{split}")
+        num_samples, num_tokens = calculate_statistics(processed_dataset, split)
+        logger.info(msg=f"Number of examples: {num_samples}")
+        logger.info(msg=f"Number of tokens: {num_tokens}")
+        total_num_samples += num_samples
+        total_num_tokens += num_tokens
 
-        run_statistics(token_dist[split], split)
-
-    logger.info(msg="Total number of tokens: {}".format(sum(token_dist.values())))
-    logger.info(msg="Total number of examples: {}".format(sum([len(dataset[split]) for split in dataset.keys()])))
+    logger.info(msg="Total number of tokens: {}".format(total_num_samples))
+    logger.info(msg="Total number of examples: {}".format(total_num_tokens))
 
     logger.info(msg="Saving processed dataset to {}.".format(cfg.save_path))
-    save_dataset(dataset, cfg.save_path)
+    save_dataset(processed_dataset, cfg.save_path)
