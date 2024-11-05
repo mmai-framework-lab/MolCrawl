@@ -16,11 +16,30 @@ python scripts/preparation_script_protein_sequence.py assets/configs/protein_seq
 """
 
 from argparse import ArgumentParser
+from pathlib import Path
+import logging
+
+from datasets import load_dataset
+import matplotlib.pyplot as plt
+import numpy as np
 
 from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
 from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw
 from protein_sequence.dataset.tokenizer import tokenize_to_parquet
+from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 from protein_sequence.utils.configs import ProteinSequenceConfig
+from core.base import setup_logging
+
+logger = logging.getLogger(__name__)
+
+
+def create_distribution_plot(data):
+    plt.hist(data["token_count"], bins=np.arange(0, 1000, 1))
+    plt.xlabel("Length of tokenized dataset")
+    plt.title("Distribution of tokenized lengths (cut at 1000)")
+    plt.savefig("assets/img/protein_sequence_tokenized_lengths_dist.png")
+    plt.close()
+    logger.info(msg="Saved distribution of tokenized dataset lengths to assets/img/protein_sequence_tokenized_lengths_dist.png")
 
 
 if __name__ == "__main__":
@@ -29,6 +48,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
 
+    setup_logging(cfg.output_dir)
+
     process_dataset(cfg.dataset, cfg.output_dir, cfg.num_worker, cfg.use_md5)
     fasta_to_raw(cfg.dataset, cfg.output_dir, cfg.max_lines_per_file)
     tokenize_to_parquet(cfg.output_dir, cfg.num_worker)
+
+    data = load_dataset(
+        "parquet",
+        data_dir=str(Path(cfg.output_dir) / cfg.dataset / "parquet_files"),
+        # cache_dir=str(Path(cfg.output_dir) / cfg.dataset / "hf_cache"),
+    )
+    print(f"Number of sequence: {len(data['train'])}")
+    tokenizer = EsmSequenceTokenizer()
+    print(f"Size of the vocabulary: {tokenizer.vocab_size}")
+    print(f"Number of tokens: {sum(data['train']['token_count'])}")
+    create_distribution_plot(data["train"])

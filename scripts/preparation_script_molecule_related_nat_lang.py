@@ -25,11 +25,15 @@ def run_statistics(series, column_name):
     plt.title("Distribution of tokenized {} lengths".format(column_name))
     plt.savefig("assets/img/molecule_nl_tokenized_{}_lengths_dist.png".format(column_name))
     plt.close()
-    logger.info(msg="Saved distribution of tokenized {} lengths to assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name, column_name))
+    logger.info(
+        msg="Saved distribution of tokenized {} lengths to assets/img/molecule_nl_tokenized_{}_lengths_dist.png".format(
+            column_name, column_name
+        )
+    )
 
 
 def calculate_statistics(dataset, split):
-    inp_out = [i+j for i,j in zip(dataset[split]["input_ids"], dataset[split]["output_ids"])]
+    inp_out = [i + j for i, j in zip(dataset[split]["input_ids"], dataset[split]["output_ids"])]
     num_samples = len(inp_out)
     num_tokens = sum(len(i) for i in inp_out)
 
@@ -62,9 +66,9 @@ if __name__ == "__main__":
     for split in dataset.keys():
         processed_dataset[split] = dataset[split].map(
             tokenizer.tokenize_dict,
-            batched = False,
-            num_proc = cfg.num_workers,
-            load_from_cache_file = False,
+            batched=False,
+            num_proc=cfg.num_workers,
+            load_from_cache_file=False,
             desc="Tokenizing {}".format(split),
         )
 

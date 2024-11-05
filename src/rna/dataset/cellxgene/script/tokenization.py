@@ -51,20 +51,6 @@ def preprocess(
 
     # filter genes
     sc.pp.filter_genes(adata, min_counts=min_counts_genes)
-
-    # TODO: add binning in sparse matrix and save in separate datatable
-    # The binning happens in the Collator
-    # preprocessor = Preprocessor(
-    #     use_key="X",  # the key in adata.layers to use as raw data
-    #     filter_gene_by_counts=False,  # step 1
-    #     filter_cell_by_counts=False,  # step 2
-    #     normalize_total=False,  # 3. whether to normalize the raw data and to what sum
-    #     log1p=False,  # 4. whether to log1p the normalized data
-    #     binning=51,  # 6. whether to bin the raw data and to what number of bins
-    #     result_binned_key="X_binned",  # the key in adata.layers to store the binned data
-    # )
-    # preprocessor(adata)
-
     adata.layers[main_table_key] = adata.X.copy()
 
     return adata
