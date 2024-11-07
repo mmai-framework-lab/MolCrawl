@@ -2,23 +2,29 @@ from argparse import ArgumentParser
 from pathlib import Path
 from functools import partial
 
-from tokenizers import Tokenizer
+# from transformers import AutoTokenizer
+import sentencepiece as spm
 from datasets import load_dataset
 
 from genome_sequence.utils.config import GenomeSequenceConfig
 
 
 def tokenize_function(examples, tokenizer):
-    encoded_sequence = tokenizer.encode(examples["text"]).ids
+    # encoded_sequence = tokenizer.encode(examples["text"])["input_ids"] # autoTokenizer case
+    encoded_sequence = tokenizer.encode(examples["text"])
     return {"input_ids": encoded_sequence, "num_tokens": len(encoded_sequence)}
 
 
 def raw_to_parquet(output_dir):
     data = load_dataset(
-        "text", data_dir=str(Path(output_dir) / "raw_files"), cache_dir=str(Path(output_dir) / "hf_cache"), split="train"
-    ).select(range(1000))
+        "text",
+        data_dir=str(Path(output_dir) / "raw_files"),
+        cache_dir=str(Path(output_dir) / "hf_cache"),
+        split="train",
+    )
 
-    tokenizer = Tokenizer.from_file(str(Path(output_dir) / "tokenizer.json"))
+    # tokenizer = AutoTokenizer.from_pretrained("zhihan1996/DNABERT-2-117M", trust_remote_code=True)
+    tokenizer = spm.SentencePieceProcessor(model_file=str(Path(output_dir) / "spm_tokenizer.model"))
 
     tokenized_datasets = data.map(
         partial(tokenize_function, tokenizer=tokenizer),

@@ -18,6 +18,11 @@ class RefSeqPreparationConfig:
     # Size of the vocabulary of the BPE tokenizer
     vocab_size: int = 4096
 
+    # Number of genome sequence to use to train the BPE tokenizer.
+    # We will sample input_sentence_size randomly from input_sentence_size * 2 number of sequence.
+    # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
+    input_sentence_size: int = 700000
+
 
 @dataclass
 class GenomeSequenceConfig(Config):

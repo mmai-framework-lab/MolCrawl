@@ -105,7 +105,7 @@ def extract_refseq(output_dir, num_worker):
 
 
 def download_refseq(output_dir, path_species, num_worker):
-    # download_species_refseq(output_dir, path_species, num_worker)
+    download_species_refseq(output_dir, path_species, num_worker)
     extract_refseq(output_dir, num_worker)
 
 

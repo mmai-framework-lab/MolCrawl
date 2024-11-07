@@ -2,8 +2,9 @@ from argparse import ArgumentParser
 from pathlib import Path
 from functools import partial
 
-from tokenizers import Tokenizer
+# from transformers import AutoTokenizer
 from datasets import load_dataset, DatasetDict
+import sentencepiece as spm
 
 from genome_sequence.utils.config import GenomeSequenceConfig
 
@@ -39,30 +40,30 @@ def create_chunks(examples, context_length):
 def tokenize_batch_dataset(output_dir, context_length, number_sample):
     data = (
         load_dataset(
-            "text", data_dir=str(Path(output_dir) / "raw_files"), cache_dir=str(Path(output_dir) / "hf_cache"), split="train"
+            "parquet",
+            data_files=[str(Path(output_dir) / "parquet_files")],
+            cache_dir=str(Path(output_dir) / "hf_cache"),
+            split="train",
         )
         .shuffle()
         .select(range(number_sample))
     )
 
-    raw_datasets = data.train_test_split(test_size=0.2)
-    valid_test_split = raw_datasets["test"].train_test_split(test_size=0.5)
-    raw_datasets = DatasetDict(
-        {"train": raw_datasets["train"], "valid": valid_test_split["train"], "test": valid_test_split["test"]}
+    tokenized_datasets = data.train_test_split(test_size=0.2)
+    valid_test_split = tokenized_datasets["test"].train_test_split(test_size=0.5)
+    tokenized_datasets = DatasetDict(
+        {"train": tokenized_datasets["train"], "valid": valid_test_split["train"], "test": valid_test_split["test"]}
     )
 
-    tokenizer = Tokenizer.from_file(str(Path(output_dir) / "tokenizer.json"))
-
-    tokenized_datasets = raw_datasets.map(
-        partial(tokenize_function, tokenizer=tokenizer),
-        batched=True,
-        remove_columns=["text"],
-    )
+    tokenizer = spm.SentencePieceProcessor(model_file=str(Path(output_dir) / "spm_tokenizer.model"))
+    # tokenizer = AutoTokenizer.from_pretrained("zhihan1996/DNABERT-2-117M", trust_remote_code=True)
 
     concatenated_dataset = tokenized_datasets.map(
-        partial(concatenate_texts, eos_token_id=tokenizer.eos_token_id),
+        partial(concatenate_texts, eos_token_id=tokenizer.eos_id()),
+        # partial(concatenate_texts, eos_token_id=tokenizer.eos_token_id),
         batched=True,
         batch_size=-1,
+        remove_columns=["num_tokens"],
     )
 
     chunked_dataset = concatenated_dataset.map(
@@ -71,7 +72,7 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
         batch_size=-1,
     )
 
-    path_dataset = str(output_dir / "training_ready_hf_dataset")
+    path_dataset = str(Path(output_dir) / "training_ready_hf_dataset")
     chunked_dataset.save_to_disk(path_dataset)
 
 

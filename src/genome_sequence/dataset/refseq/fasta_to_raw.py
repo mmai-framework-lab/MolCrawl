@@ -45,7 +45,7 @@ def read_fasta_sequences(fasta_filepath: Path) -> Iterator[str]:
                 if current_sequence:
                     sequence_str = "".join(current_sequence)
                     if "N" not in sequence_str:
-                        yield sequence_str + "\n"
+                        yield sequence_str.upper() + "\n"
 
                     current_sequence = []
             else:
