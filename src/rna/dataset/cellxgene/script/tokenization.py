@@ -18,11 +18,10 @@ from scgpt import scbank
 import scgpt as scg
 import cellxgene_census
 import rich
-from datasets.utils.logging import disable_progress_bar
+from datasets.utils.logging import disable_progress_bar, enable_progress_bar
 
 from rna.utils.config import RnaConfig
 
-disable_progress_bar()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -75,7 +74,10 @@ def process_h5ad_to_parquet(
                 token_col="feature_name",
                 immediate_save=False,
             )
-            db.data_tables["counts"].data.to_parquet(parquet_path)
+            data = db.data_tables["counts"].data
+            data = data.map(lambda expression: {"num_tokens": len(expression["genes"])})
+            data.to_parquet(parquet_path)
+            logging.info(f"Saving file to {parquet_path}")
 
             # clean up
             del adata
@@ -87,7 +89,7 @@ def process_h5ad_to_parquet(
             if parquet_path.exists():
                 os.remove(parquet_path)
     else:
-        logging.info(f"Skipping processing since file alreafy exist: {parquet_path}")
+        logging.info(f"Skipping processing since file already exist: {parquet_path}")
 
 
 def get_census_gene_vocab(version: str):
@@ -107,6 +109,7 @@ def get_census_gene_vocab(version: str):
 
 
 def prepare_parquet(output_dir: str, version: str, num_worker: int, min_counts_genes: int):
+    disable_progress_bar()
 
     vocab = get_census_gene_vocab(version)
     vocab.save_json(Path(output_dir) / "gene_vocab.json")
@@ -120,6 +123,8 @@ def prepare_parquet(output_dir: str, version: str, num_worker: int, min_counts_g
     with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
         func = partial(process_h5ad_to_parquet, output_dir=parquet_dir, vocab=vocab, min_counts_genes=min_counts_genes)
         list(rich.progress.track(executor.map(func, files), "Tokenizing h5ad file to parquet...", len(files)))
+
+    enable_progress_bar()
 
 
 if "__main__" == __name__:

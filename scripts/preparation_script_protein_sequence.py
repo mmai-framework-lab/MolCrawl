@@ -57,10 +57,10 @@ if __name__ == "__main__":
     data = load_dataset(
         "parquet",
         data_dir=str(Path(cfg.output_dir) / cfg.dataset / "parquet_files"),
-        # cache_dir=str(Path(cfg.output_dir) / cfg.dataset / "hf_cache"),
+        cache_dir=str(Path(cfg.output_dir) / cfg.dataset / "hf_cache"),
     )
-    print(f"Number of sequence: {len(data['train'])}")
+    logger.info(f"Number of sequence: {len(data['train'])}")
     tokenizer = EsmSequenceTokenizer()
-    print(f"Size of the vocabulary: {tokenizer.vocab_size}")
-    print(f"Number of tokens: {sum(data['train']['token_count'])}")
+    logger.info(f"Size of the vocabulary: {tokenizer.vocab_size}")
+    logger.info(f"Number of tokens: {sum(data['train']['token_count'])}")
     create_distribution_plot(data["train"])

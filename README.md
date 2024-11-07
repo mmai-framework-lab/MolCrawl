@@ -47,6 +47,8 @@ If necessary it is possible to rerun only part of the full script by selecting t
 
     Tokens: 90,711,564,293
 
+    Samples length size distribution of the full data: ![rna sample dist](assets/img/rna_tokenized_lengths_dist.png)
+
 - <b>Protein Sequence</b> (Uniref 50)
 
     Size of the dataset: 18G
@@ -54,6 +56,8 @@ If necessary it is possible to rerun only part of the full script by selecting t
     Samples: 66,000,000
 
     Tokens: 19,182,955,286
+
+    Samples length size distribution of the full data: ![protein sequence sample dist](assets/img/protein_sequence_tokenized_lengths_dist.png)
 
 - <b>Compounds</b>:
 
@@ -106,6 +110,8 @@ If necessary it is possible to rerun only part of the full script by selecting t
     Number of sequence: 248,678
     Size of the vocabulary: 4096
     Number of tokens: 3,025,575,847
+
+    Samples length size distribution of the full data: ![genome sequence sample dist](assets/img/genome_sequence_tokenized_lengths_dist.png)
 
 
 # Dataset Preparation Scripts
