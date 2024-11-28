@@ -50,7 +50,11 @@ if __name__ == "__main__":
     os.path.exists(cfg.dataset) or os.makedirs(cfg.dataset)
 
     logger.info(msg="Downloading Dataset...")
-    download_hf_dataset(cfg.dataset)
+    try:
+        download_hf_dataset(cfg.dataset)
+    except Exception as e:
+        logger.error(msg="Failed to download dataset. This error often occurs as you have already downloaded the dataset.")
+        logger.error(msg=e)
 
     dataset = read_dataset(cfg.dataset)
 

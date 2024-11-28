@@ -11,15 +11,16 @@ dependencies:
   - python=3.9.17
   - python_abi=3.9
   - pyyaml=5.4.1
-  - rdkit=2023.09.1
+  - pip=24.3.1
+  - rdkit=2024.9.2
   - rich=12.6.0
   - typing-extensions=4.4.0
-  - dask=2024.9.1
+  - dask=2024.2.1
   - pip:
-    - ncbi-genome-download
-    - joblib
-    - cellxgene_census
-    - rich
-    - transformer=4.45.1
-    - scgpt=0.2.1
-    - rdchiral
+    - ncbi-genome-download==0.3.3
+    - joblib==1.4.2
+    - cellxgene_census==1.15.0
+    - rich==13.8.0
+    - transformers==4.45.1
+    - scgpt==0.2.1
+    - rdchiral==1.1.0
