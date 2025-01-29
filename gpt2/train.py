@@ -34,6 +34,10 @@ dataset_params = {}
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
+
+tensorboard = False  # log training metrics to tensorboard
+tensorboard_dir = "runs"
+
 out_dir = "out"
 eval_interval = 2000
 log_interval = 1
@@ -81,6 +85,18 @@ config_keys = [k for k, v in globals().items() if not k.startswith("_") and isin
 exec(open("gpt2/configurator.py").read())  # overrides from command line or config file
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
+
+# create empty csv file for logging
+logging_file = os.path.join(out_dir, "logging.csv")
+
+with open(logging_file, "w") as f:
+    f.write("iter, train_loss, val_loss\n")
+
+writer = None
+if tensorboard:
+    from tensorboardX import SummaryWriter
+
+    writer = SummaryWriter(tensorboard_dir)
 
 # various inits, derived attributes, I/O setup
 ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?
@@ -276,6 +292,14 @@ while True:
     if iter_num % eval_interval == 0 and master_process:
         losses = estimate_loss()
         print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        
+        with open(logging_file, "a") as f:
+            f.write("iter_num, losses['train'], losses['val']\n")
+
+        if writer is not None:
+            writer.add_scalar("Val Loss", losses['val'], iter_num)
+            writer.flush()
+
         if losses["val"] < best_val_loss or always_save_checkpoint:
             best_val_loss = losses["val"]
             if iter_num > 0:
@@ -330,6 +354,10 @@ while True:
             mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
         print(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
+        if writer is not None:
+            writer.add_scalar("Loss", lossf, iter_num)
+            writer.add_scalar("Learning Rate", lr, iter_num)
+            writer.flush()
     iter_num += 1
     local_iter_num += 1
 
