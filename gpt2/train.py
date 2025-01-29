@@ -294,7 +294,7 @@ while True:
         print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
         
         with open(logging_file, "a") as f:
-            f.write("iter_num, losses['train'], losses['val']\n")
+            f.write(f"iter_num, {losses['train']:.4f}, {losses['val']:.4f}\n")
 
         if writer is not None:
             writer.add_scalar("Val Loss", losses['val'], iter_num)
