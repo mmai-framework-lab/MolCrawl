@@ -18,3 +18,7 @@ zinc15_download_dir
 
 build
 *.egg-info
+
+*.pt
+runs*
+out/*

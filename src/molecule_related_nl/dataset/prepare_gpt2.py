@@ -13,7 +13,7 @@ from molecule_related_nl.utils.general import read_dataset
 def concatenate_texts(examples, eos_token_id):
     concatenated_ids = []
     for input_ids, output_ids in zip(examples["input_ids"], examples["output_ids"]):
-        concatenated_ids.extend(input_ids + output_ids + [eos_token_id])
+        concatenated_ids.extend(input_ids + output_ids)
     return {"input_ids": concatenated_ids}
 
 

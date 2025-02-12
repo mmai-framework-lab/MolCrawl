@@ -6,8 +6,8 @@ from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Toke
 
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_molecule_nl_small"
-out_dir = "out-molecule-nl"
+tensorboard_dir = "runs_train_gpt2_molecule_nl_small_6e-6wu200-6000-its"
+out_dir = "out-molecule-nl-6e-6wu200-6000-its"
 
 tokenizer = Tokenizer()
 
@@ -15,16 +15,19 @@ tokenizer = Tokenizer()
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 8#12
 block_size = 1024
-gradient_accumulation_steps = 5 * 4
+gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
-max_iters = 600000
-lr_decay_iters = 600000
+max_iters = 6000
+lr_decay_iters = 6000
+warmup_iters = 200  # how many steps to warm up for
+learning_rate = 6e-6  # max learning rate
+min_lr = learning_rate/10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
-eval_interval = 1000
+eval_interval = 200
 eval_iters = 200
-log_interval = 1000
+log_interval = 200
 
 # weight decay
 weight_decay = 1e-1
@@ -33,5 +36,11 @@ weight_decay = 1e-1
 dataset = "molecule_nl"
 
 dataset_params = {
-    "dataset_dir": "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/training_ready_hf_dataset"
+    # "dataset_dir": "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/training_ready_hf_dataset"
+    "dataset_dir": "outputs/training_ready_hf_dataset"
 }
+
+# Special Tokens
+start_instruction = 1
+end_instruction = [518, 29914, 25580, 29962]
+eos_token = 2  # eos

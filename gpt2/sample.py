@@ -9,6 +9,39 @@ from model import GPTConfig, GPT
 
 from core.dataset import PreparedDataset
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+def extract_sublist(lst, start_token, end_sequence):
+
+    start = (lst == start_token).nonzero(as_tuple=True)[0][0].item()
+    
+    end_seq_element = end_sequence[0]
+    possible_end_seq_starts = (lst == end_seq_element).nonzero(as_tuple=True)[0]
+
+    for i in possible_end_seq_starts:
+        if i < start:
+            continue
+
+        if list(lst[i:i+len(end_sequence)]) == end_sequence:
+            end = i + len(end_sequence)
+            return lst[start:end]
+        
+    return None
+
+# Special Tokens
+start_instruction = None
+end_instruction = None
+eos_token = None
+
 dataset_params = {}
 dataset = ""
 # -----------------------------------------------------------------------------
@@ -55,10 +88,10 @@ model.to(device)
 
 
 training_data = PreparedDataset(**dataset_params, split="train")
-test_data = PreparedDataset(**dataset_params, split="valid")
+test_data = PreparedDataset(**dataset_params, split="test")
 
-ix = torch.randint(len(training_data), (10,))
-inputs = torch.stack([training_data[int(i)] for i in ix])
+ix = torch.randint(len(test_data), (10,))
+inputs = torch.stack([test_data[int(i)] for i in ix])
 
 if device_type == "cuda":
     inputs = inputs.pin_memory().to(device, non_blocking=True)
@@ -69,7 +102,16 @@ else:
 with torch.no_grad():
     with ctx:
         for x in inputs:
-            y = model.generate(x[:256].unsqueeze(0), max_new_tokens, temperature=temperature, top_k=top_k)
-            # y = model.generate(x[:256][None, ...], max_new_tokens, temperature=temperature, top_k=top_k)
-            print(tokenizer.decode(y[0].tolist()))
+            if start_instruction is not None:
+                prompt = extract_sublist(x, start_instruction, end_instruction)
+                if prompt is None:
+                    prompt = x[:256]
+            y = model.generate(prompt.unsqueeze(0), max_new_tokens, temperature=temperature, top_k=top_k)
+
+            response = tokenizer.decode(y[0, len(prompt):].tolist())
+
+            if eos_token is not None:
+                response = response.split(tokenizer.decode([eos_token]))[0]
+
+            print(f"{bcolors.WARNING}{tokenizer.decode(prompt.tolist())}{bcolors.ENDC}{bcolors.OKBLUE}{response}{bcolors.ENDC}")
             print("---------------")

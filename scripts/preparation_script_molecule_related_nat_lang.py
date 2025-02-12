@@ -86,7 +86,6 @@ if __name__ == "__main__":
         logger.info(msg=f"Number of tokens: {num_tokens}")
         total_num_samples += num_samples
         total_num_tokens += num_tokens
-
     logger.info(msg="Total number of tokens: {}".format(total_num_samples))
     logger.info(msg="Total number of examples: {}".format(total_num_tokens))
 

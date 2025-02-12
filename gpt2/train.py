@@ -45,10 +45,6 @@ eval_iters = 200
 eval_only = False  # if True, script exits right after the first eval
 always_save_checkpoint = False  # if True, always save a checkpoint after each eval
 init_from = "scratch"  # 'scratch' or 'resume' or 'gpt2*'
-# wandb logging
-wandb_log = False  # disabled by default
-wandb_project = "owt"
-wandb_run_name = "gpt2"  # 'run' + str(time.time())
 # data
 dataset = "openwebtext"
 gradient_accumulation_steps = 5 * 8  # used to simulate larger batch sizes
@@ -85,6 +81,9 @@ config_keys = [k for k, v in globals().items() if not k.startswith("_") and isin
 exec(open("gpt2/configurator.py").read())  # overrides from command line or config file
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
+
+# create folder if it doesn't exist
+os.makedirs(out_dir, exist_ok=True)
 
 # create empty csv file for logging
 logging_file = os.path.join(out_dir, "logging.csv")
@@ -294,7 +293,7 @@ while True:
         print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
         
         with open(logging_file, "a") as f:
-            f.write(f"iter_num, {losses['train']:.4f}, {losses['val']:.4f}\n")
+            f.write(f"{iter_num}, {losses['train']:.4f}, {losses['val']:.4f}\n")
 
         if writer is not None:
             writer.add_scalar("Val Loss", losses['val'], iter_num)
