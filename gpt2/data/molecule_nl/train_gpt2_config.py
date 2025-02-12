@@ -13,7 +13,7 @@ tokenizer = Tokenizer()
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 8#12
+batch_size = 8  # max size in koala
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
@@ -36,7 +36,6 @@ weight_decay = 1e-1
 dataset = "molecule_nl"
 
 dataset_params = {
-    # "dataset_dir": "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/training_ready_hf_dataset"
     "dataset_dir": "outputs/training_ready_hf_dataset"
 }
 
