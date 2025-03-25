@@ -67,9 +67,7 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
     )
 
     chunked_dataset = concatenated_dataset.map(
-        partial(create_chunks, context_length=context_length),
-        batched=True,
-        batch_size=-1,
+        partial(create_chunks, context_length=context_length), batched=True, batch_size=context_length * 10
     )
 
     path_dataset = str(Path(output_dir) / "training_ready_hf_dataset")
