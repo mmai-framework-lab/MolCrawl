@@ -27,7 +27,31 @@ if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
             "Please initialize the variable meta_vocab_size in the *_config.py file with the size of your vocabulary."
         )
 
-model_config = BertConfig(vocab_size=meta_vocab_size, max_position_embeddings=max_length)
+if model_size == "small":
+    model_config = BertConfig(vocab_size=meta_vocab_size, max_position_embeddings=max_length)
+elif model_size == "medium":
+    # Note that this would be bert-large but the size is equivalent to gpt2-medium so we name it medium here as well
+    model_config = BertConfig(
+        vocab_size=meta_vocab_size,
+        max_position_embeddings=max_length,
+        hidden_size=1024,  # Dimensionality of the encoder layers and the pooler layer
+        num_hidden_layers=24,  # Number of hidden layers in the Transformer encoder
+        num_attention_heads=16,  # Number of attention heads
+        intermediate_size=4096,  # Dimensionality of the "intermediate" (feed-forward) layer
+    )
+elif model_size == "large":
+    # Custom config to match the size of gpt2 large model.
+    model_config = BertConfig(
+        vocab_size=meta_vocab_size,
+        max_position_embeddings=max_length,
+        hidden_size=1152,  # Hidden layer size
+        num_hidden_layers=36,  # Number of transformer layers
+        num_attention_heads=18,  # Number of attention heads
+        intermediate_size=4608,  # Size of intermediate (feed-forward) layer
+    )
+else:
+    raise ValueError("model_size: {model_size} is not supported choose between small, medium and large")
+
 model = BertForMaskedLM(config=model_config)
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.2)

@@ -30,3 +30,7 @@ gradient_accumulation_steps = 5 * 16
 start_instruction = 1
 end_instruction = [518, 29914, 25580, 29962]
 eos_token = 2  # eos
+
+
+# Choose between small, medium or large
+model_size = "small"

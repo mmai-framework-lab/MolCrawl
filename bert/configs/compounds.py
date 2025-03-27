@@ -17,3 +17,6 @@ log_interval = 100
 per_device_train_batch_size = 8
 
 gradient_accumulation_steps = 5 * 16
+
+# Choose between small, medium or large
+model_size = "small"

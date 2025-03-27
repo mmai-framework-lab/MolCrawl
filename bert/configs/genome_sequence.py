@@ -39,3 +39,6 @@ tmp_tokenizer.mask_token = "[MASK]"
 tmp_tokenizer.save_pretrained("custom_tokenizer")
 
 tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
+
+# Choose between small, medium or large
+model_size = "small"
