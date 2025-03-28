@@ -1,0 +1,36 @@
+# config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
+# launch as the following (e.g. in a screen session) and wait ~5 days:
+# $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
+
+
+# config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
+# launch as the following (e.g. in a screen session) and wait ~5 days:
+# $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
+
+from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+
+tokenizer = Tokenizer()
+
+max_steps = 600000
+model_path = "runs_train_bert_molecule_nl"
+max_length = 1024
+dataset_dir = (
+    "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/training_ready_hf_dataset"
+)
+learning_rate = 6e-6
+weight_decay = 1e-1
+log_interval = 100
+per_device_train_batch_size = 8
+
+batch_size = 8
+gradient_accumulation_steps = 5 * 16
+
+
+# Special Tokens
+start_instruction = 1
+end_instruction = [518, 29914, 25580, 29962]
+eos_token = 2  # eos
+
+
+# Choose between small, medium or large
+model_size = "small"

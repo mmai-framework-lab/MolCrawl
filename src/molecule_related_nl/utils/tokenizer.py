@@ -190,6 +190,14 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
 
         self.prompter = GeneralPrompter(get_chat_content)
 
+    def __getattr__(self, name):
+        """
+        If an attribute is not found in this class, try to get it from self.tokenizer.
+        """
+        if hasattr(self.tokenizer, name):
+            return getattr(self.tokenizer, name)
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
     def _tokenize(self, text: str, add_eos_token: bool = True):
         # there's probably a way to do this with the tokenizer settings
         result = self.tokenizer(
