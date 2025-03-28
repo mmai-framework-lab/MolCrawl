@@ -2,27 +2,32 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 
+# Medium-Sized GPT2 Model
+
+n_layer = 24
+n_head = 16
+n_embd = 1024
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_compounds_small_6e-6wu200-6000-its"
-out_dir = "out-compounds-small-6e-6wu200-6000-its"
+tensorboard_dir = "runs_train_gpt2_molecule_nl_medium_1e-6wu200-30000-its"
+out_dir = "out-molecule-nl-gpt2-medium-1e-6wu200-30000-its"
 
-tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
+tokenizer = Tokenizer()
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 8  # max size in koala
-eval_batch_size = 40  # max size in koala
+batch_size = 2  # max size in koala
+eval_batch_size = 4  # max size in koala
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
-# this makes total number of tokens be 300B
-max_iters = 6000
-lr_decay_iters = 6000
+# training
+max_iters = 30000
+lr_decay_iters = 30000
 warmup_iters = 200  # how many steps to warm up for
-learning_rate = 6e-6  # max learning rate
+learning_rate = 1e-6  # max learning rate
 min_lr = learning_rate/10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
@@ -34,12 +39,13 @@ log_interval = 200
 weight_decay = 1e-1
 
 # dataset
-dataset = "compounds"
+dataset = "molecule_nl"
 
 dataset_params = {
-    "dataset_dir": "outputs/compounds/training_ready_hf_dataset"
+    "dataset_dir": "outputs/training_ready_hf_dataset"
 }
 
 # Special Tokens
-start_instruction = 12
-eos_token = 12  # eos
+start_instruction = 1
+end_instruction = [518, 29914, 25580, 29962]
+eos_token = 2  # eos

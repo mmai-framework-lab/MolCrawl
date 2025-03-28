@@ -6,36 +6,10 @@ import os
 from contextlib import nullcontext
 import torch
 from model import GPTConfig, GPT
+from tqdm import tqdm
 
 from core.dataset import PreparedDataset
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-def extract_sublist(lst, start_token, end_sequence):
-
-    start = (lst == start_token).nonzero(as_tuple=True)[0][0].item()
-    
-    end_seq_element = end_sequence[0]
-    possible_end_seq_starts = (lst == end_seq_element).nonzero(as_tuple=True)[0]
-
-    for i in possible_end_seq_starts:
-        if i < start:
-            continue
-
-        if list(lst[i:i+len(end_sequence)]) == end_sequence:
-            end = i + len(end_sequence)
-            return lst[start:end]
-        
-    return None
 
 # Special Tokens
 start_instruction = None
@@ -86,31 +60,42 @@ model.load_state_dict(state_dict)
 model.eval()
 model.to(device)
 
+try:
+    eval_batch_size
+except NameError:
+    eval_batch_size = batch_size
 
-training_data = PreparedDataset(**dataset_params, split="train")
-test_data = PreparedDataset(**dataset_params, split="test")
+# data = PreparedDataset(**dataset_params, split="test")
+data = PreparedDataset(**dataset_params, split="valid")
 
-ix = torch.randint(len(test_data), (10,))
-inputs = torch.stack([test_data[int(i)] for i in ix])
+def get_batch(eval_batch_size):
+    current = 0
 
-if device_type == "cuda":
-    inputs = inputs.pin_memory().to(device, non_blocking=True)
-else:
-    inputs = inputs.to(device)
+    while current + eval_batch_size < len(data):
+        batch = data[torch.arange(current, current + eval_batch_size)]
+        x = batch[:, :-1]
+        y = batch[:, 1:]
+        if device_type == "cuda":
+            # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
+            x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
+        else:
+            x, y = x.to(device), y.to(device)
+        yield x, y
+        current += eval_batch_size
 
-# run generation
-with torch.no_grad():
-    with ctx:
-        for x in inputs:
-            prompt = x[:40]
-            if start_instruction is not None and end_instruction is not None:
-                prompt = extract_sublist(x, start_instruction, end_instruction)
-            y = model.generate(prompt.unsqueeze(0), max_new_tokens, temperature=temperature, top_k=top_k)
+@torch.no_grad()
+def estimate_loss():
+    print("Estimating validation loss...")
+    losses = []
+    with tqdm(total=(len(data)//eval_batch_size)) as pbar:
 
-            response = tokenizer.decode(y[0, len(prompt):].tolist())
+        for x, y in get_batch(eval_batch_size):
+            with ctx:
+                logits, loss = model(x, y)
+            losses.append(loss.item())
+            pbar.update(1)
 
-            if eos_token is not None:
-                response = response.split(tokenizer.decode([eos_token]))[0]
+    return torch.tensor(losses).mean().item()
 
-            print(f"{bcolors.WARNING}{tokenizer.decode(prompt.tolist())}{bcolors.ENDC}{bcolors.OKBLUE}{response}{bcolors.ENDC}")
-            print("---------------")
+loss = estimate_loss()
+print(f"File: {out_dir}, val loss {loss:.4f}")

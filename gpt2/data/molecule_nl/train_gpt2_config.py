@@ -7,13 +7,14 @@ from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Toke
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = "runs_train_gpt2_molecule_nl_small_6e-6wu200-6000-its"
-out_dir = "out-molecule-nl-6e-6wu200-6000-its"
+out_dir = "out-molecule-nl-gpt2-small-6e-6wu200-6000-its"
 
 tokenizer = Tokenizer()
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 8  # max size in koala
+eval_batch_size = 16  # max size in koala
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
