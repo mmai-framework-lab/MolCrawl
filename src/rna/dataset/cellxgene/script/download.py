@@ -69,12 +69,12 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
         logging.info(f"{save_filename} exists, skipping download")
         return
 
-    target_var = pd.read_csv(output_dir / "metadata_preparation_dir" / f"{name}.var.tsv", sep="\t", index_col=0)
+    tsv_file = output_dir / "metadata_preparation_dir" / f"{name}.var.tsv"
+    target_var = pd.read_csv(tsv_file, sep="\t", index_col=0)
     target_gene_ids = target_var["soma_joinid"].to_numpy()
-
     target_adata = retrieve_adata(version, id_list, target_gene_ids)
 
-    target_adata.write_h5ad(output_dir / save_filename, compression="gzip")
+    target_adata.write_h5ad(save_filename, compression="gzip")
     # joblib.dump(target_adata, save_filename, compress=3)
     # time.sleep(1)
 
