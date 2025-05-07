@@ -458,6 +458,28 @@ Then you can sample some example with the following
 python gpt2/sample.py gpt2/data/protein_sequence/train_gpt2_config.py
 ```
 
+For more information, check the README in the folder `gpt2`.
+
+# Training of the BERT model
+
+For the BERT model training we are using a custom script based on the Hugging Face Transformers library. The script is located in `src/bert/main.py` and can be run with the following command:
+
+The dataset used are the same as the ones for GPT2, since we already tokenize them we just need to randomly mask part of the tokens.
+
+You can find the list of configs in `bert/configs`. Most parameter are similar to the ones in the gpt configuration. However, there is a `model_size` parameter that let you choose between small medium and large models. Note that medium correspond to BERT-large size, but we call it medium since the size in terms of parameter is close to GPT2-medium. The large model is a custom size bert model witch matches the gpt2 large size.
+
+To run a training you can use the following command:
+
+```bash
+python bert/main.py bert/configs/molecule_nl.py
+```
+
+this will train a model and save it in outputdir.
+
+# Genome sequence training with mixed species GPN-MSA
+
+There is a separate readme inside the `gpn` folder, detailling how to train and run inference for this task.
+
 
 ### Generated Samples
 
@@ -521,22 +543,3 @@ TCCACCGTCTGAGCCAGCAGCTCGGCATCCATCTGGCGCAGAGTGGTCTCGACACTGGCGAGCTGCTCGCGTACCTGGGC
 ```
 
 Here again we leave the validity of such sequence to more advise reviewers. The scope being to properly train such a model.
-
-
-
-
-# Training of the BERT model
-
-For the BERT model training we are using a custom script based on the Hugging Face Transformers library. The script is located in `src/bert/main.py` and can be run with the following command:
-
-The dataset used are the same as the ones for GPT2, since we already tokenize them we just need to randomly mask part of the tokens.
-
-You can find the list of configs in `bert/configs`. Most parameter are similar to the ones in the gpt configuration. However, there is a `model_size` parameter that let you choose between small medium and large models. Note that medium correspond to BERT-large size, but we call it medium since the size in terms of parameter is close to GPT2-medium. The large model is a custom size bert model witch matches the gpt2 large size.
-
-To run a training you can use the following command:
-
-```bash
-python bert/main.py bert/configs/molecule_nl.py
-```
-
-this will train a model and save it in outputdir.

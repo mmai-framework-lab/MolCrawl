@@ -12,9 +12,8 @@ Note: the parameters `--training-set-subset-len` and `--test-set-subset-len` can
 
 2. Train the model by running `python gpt2/train.py path/to/corresponding/dataset/train_gpt2_config.py`
 
-Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset.
+Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset. For example: `python gpt2/train.py riken-dataset-fundational-model/gpt2/data/molecule_nl/train_gpt2_large_config.py` will train the large GPT2 model on the molecule_nl dataset.
 
-This will lunch a training job, and output results in the path `out/ckpt.pt
-The `train_loss` printed during training is an indicator of weather the model is memorizing the data. It should approach 0.
+Running this will lunch a training job, and output results in the path `out/ckpt.pt
 
-3. Generate a sample from the trained checkpoint running `python gpt2/sample.py` (not working yet, I haven't configured it).
+3. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py riken-dataset-fundational-model/gpt2/data/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
