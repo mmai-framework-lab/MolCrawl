@@ -26,3 +26,4 @@ dependencies:
     - scgpt==0.2.1
     - rdchiral==1.1.0
     - loompy==3.0.8
+    - sentencepiece==0.2.0
