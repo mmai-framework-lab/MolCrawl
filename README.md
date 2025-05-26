@@ -370,11 +370,36 @@ the way the dataset is loaded.
 ## Data Preparation
 
 In order to train a gpt2 model with one the dataset, you will need to run the `prepare_gpt2.py` script in
-`{task}/dataset`, for example for `protein_sequence` you can run the following command.
+`{task}/dataset`.
 
+For Protein Sequence, run the following command:
 
 ```bash
 python src/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
+```
+
+For Molecule Related Natural Language, run the following command:
+
+```bash
+python src/molecule_related_nl/dataset/prepare_gpt2.py riken-dataset-fundational-model/assets/configs/molecules_nl.yaml
+```
+
+For Genome Sequence, run the following command:
+
+```bash
+python src/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
+```
+
+For Compounds, run the following command:
+
+```bash
+python src/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
+```
+
+For RNA, run the following command:
+
+```bash
+python src/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
 ```
 
 * IT IS VERY IMPORTANT that you adjust the config files in assets/configs so that for `assets/configs/genome_sequence.yaml`, `assets/configs/protein_sequence.yaml`, and `assets/configs/rna.yaml` the value `output_dir` is correctly pointing to the `output_dir` location where you saved the preprocessed data prepared in the [Modalities Dataset Preparation](#Modalities Dataset Preparation) section. Make sure the same for `assets/configs/compounds.yaml`, and `assets/configs/molecules_nl.yaml`, where you should adjust the parameter `save_path` to match where your data is stored. *
@@ -384,13 +409,38 @@ is filled without any padding.
 
 ## Training
 
-Then the training can be launch, for the prepared protein sequence dataset, by running the following:
+Then the training can be launch for the prepared datasets. In the path `gpt2/data/<dataset-name>`, you will find a folder with 3 files:
+1. `train_gpt2_config.py`: Config for training the small-sized version of the model,
+2. `train_gpt2_medium_config.py`: Config for training the middle-sized version of the model,
+3. `train_gpt2_large_config.py`: Config for training the large-sized version of the model.
+
+Which file you pass to the training command will determine which version of the model it will train.
+
+For Protein Sequence, the small version training can be done by running the following:
 
 ```bash
 python gpt2/train.py gpt2/data/protein_sequence/train_gpt2_config.py
 ```
 
-this will train a model and save it in outputdir.
+For Molecule Related Natural Language, the small version training can can be done by running the following:
+
+```bash
+python gpt2/train.py gpt2/data/molecule_nl/train_gpt2_config.py
+```
+
+For Genome Sequence, the small version training can can be done by running the following:
+
+```bash
+python gpt2/train.py gpt2/data/genome_sequence/train_gpt2_config.py
+```
+
+For Compounds, the small version training can can be done by running the following:
+
+```bash
+python gpt2/train.py gpt2/data/compounds/train_gpt2_config.py
+```
+
+This will train a model and save it in outputdir.
 
 ## Sampling
 

@@ -3,6 +3,7 @@
 This folder is for validating the training ability of GPT2 on subsets of the prepared datasets.
 The model trains on a small subset of the data. By overfitting on the training set, we can validate if the model is able to learn from the dataset.
 
+
 ## Usage
 
 1. Prepare your dataset subset by running `python gpt2/data/<dataset>/prepare.py path/to/the/tokenized/dataset`
@@ -17,3 +18,75 @@ Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py
 Running this will lunch a training job, and output results in the path `out/ckpt.pt
 
 3. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py riken-dataset-fundational-model/gpt2/data/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
+
+
+## 🛠️ Configuration Parameters
+
+In each `path/to/corresponding/dataset/train_gpt2_config.py` config, you can set the following parameters.
+
+### 📊 Logging
+
+* **`tensorboard`**
+  Enables logging of training metrics (e.g., loss, learning rate) to TensorBoard.
+
+* **`tensorboard_dir`**
+  Directory where TensorBoard logs will be saved.
+
+* **`out_dir`**
+  Directory where training outputs (e.g., checkpoints, logs) will be saved.
+
+
+### 📦 Batch Settings
+
+* **`batch_size`**
+  Number of samples per batch per GPU during training.
+
+* **`eval_batch_size`**
+  Number of samples per batch used during evaluation.
+
+* **`block_size`**
+  Maximum sequence length (in tokens) the model processes at once.
+
+* **`gradient_accumulation_steps`**
+  Number of steps to accumulate gradients before performing a backward pass and optimizer step.
+  Allows for an effective large batch size without exceeding GPU memory.
+
+> 🧮 **Effective Batch Size:**
+> `batch_size × block_size × gradient_accumulation_steps × num_GPUs`
+> Example: `8 × 1024 × 80 × 8 = 524,288 tokens`
+
+
+### 📉 Learning Rate Schedule
+
+* **`max_iters`**
+  Total number of training iterations (i.e., batches).
+
+* **`lr_decay_iters`**
+  Number of iterations over which the learning rate linearly decays from `learning_rate` to `min_lr`.
+
+* **`warmup_iters`**
+  Number of iterations during which the learning rate warms up from 0 to `learning_rate`.
+
+* **`learning_rate`**
+  Peak learning rate reached after the warmup period.
+
+* **`min_lr`**
+  Minimum learning rate to decay to by the end of training.
+
+
+### 🧪 Evaluation & Logging
+
+* **`eval_interval`**
+  Frequency (in iterations) of evaluation during training.
+
+* **`eval_iters`**
+  Number of evaluation batches used to compute validation metrics.
+
+* **`log_interval`**
+  Frequency (in iterations) at which training metrics are printed or logged.
+
+
+### 🧹 Regularization
+
+* **`weight_decay`**
+  L2 weight regularization strength to prevent overfitting.
