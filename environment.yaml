@@ -17,7 +17,7 @@ dependencies:
   - typing-extensions=4.4.0
   - dask=2024.2.1
   - pip:
-    - accelerate==0.31.0
+    - accelerate==0.34.2
     - ncbi-genome-download==0.3.3
     - joblib==1.4.2
     - cellxgene_census==1.15.0
