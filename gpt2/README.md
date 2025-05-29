@@ -17,6 +17,19 @@ Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py
 
 Running this will lunch a training job, and output results in the path `out/ckpt.pt
 
+NOTE: If you have `torchrun`, you can run the model over multiple GPUs like:
+
+`torchrun --standalone --nproc_per_node=4 config_file.py`
+
+to run over 4 GPUs.
+
+To run with DDP on 4 gpus across 2 nodes, example:
+- Run on the first (master) node with example IP 123.456.123.456:
+`torchrun --nproc_per_node=8 --nnodes=2 --node_rank=0 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
+- Run on the worker node:
+`torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
+(If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
+
 3. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py riken-dataset-fundational-model/gpt2/data/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
 
 
@@ -57,9 +70,6 @@ In each `path/to/corresponding/dataset/train_gpt2_config.py` config, you can set
 
 * **`batch_size`**
   Number of samples per batch per GPU during training.
-
-* **`eval_batch_size`**
-  Number of samples per batch used during evaluation.
 
 * **`block_size`**
   Maximum sequence length (in tokens) the model processes at once.

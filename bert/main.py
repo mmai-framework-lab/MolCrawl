@@ -9,8 +9,9 @@ weight_decay = 1e-1
 warmup_steps = 200
 max_steps = 600000
 batch_size = 10
+
 gradient_accumulation_steps = 5 * 8
-per_device_eval_batch_size = 64
+per_device_eval_batch_size = 1
 log_interval = 100
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]

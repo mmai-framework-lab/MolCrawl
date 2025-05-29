@@ -16,7 +16,7 @@ tokenizer = Tokenizer()
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 8  # max size in koala
-eval_batch_size = 16  # max size in koala
+
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
