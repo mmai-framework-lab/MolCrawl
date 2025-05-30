@@ -1,5 +1,5 @@
 # Installation
-1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yml`
+1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
 2. Activate the environment by running `conda activate ENV_NAME`
 3. Install the package: `pip install --no-build-isolation -e .`
 

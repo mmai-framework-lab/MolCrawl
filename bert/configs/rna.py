@@ -38,9 +38,9 @@ dataset_dir = "/nasa/datasets/riken/projects/fundamental_models_202407/cellxgene
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100
-per_device_train_batch_size = 8
 
 batch_size = 8
+per_device_eval_batch_size = 1
 gradient_accumulation_steps = 5 * 16
 
 

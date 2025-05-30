@@ -11,7 +11,9 @@ weight_decay = 1e-1
 max_steps = 600000
 
 log_interval = 100
-per_device_train_batch_size = 8
+
+batch_size = 8
+per_device_eval_batch_size = 1
 
 gradient_accumulation_steps = 5 * 16
 
