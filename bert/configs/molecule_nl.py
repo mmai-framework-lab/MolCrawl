@@ -15,7 +15,7 @@ max_steps = 600000
 model_path = "runs_train_bert_molecule_nl"
 max_length = 1024
 dataset_dir = (
-    "/nasa/datasets/riken/projects/fundamental_models_202407/molecule_related_natural_language/training_ready_hf_dataset"
+    "molecule_related_natural_language/training_ready_hf_dataset"
 )
 learning_rate = 6e-6
 weight_decay = 1e-1
