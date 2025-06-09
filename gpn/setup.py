@@ -19,7 +19,9 @@ install_requires = [
     "pyBigWig",
     "joblib",
     "scipy",
-
+    "seaborn",
+    "jupyter",
+    "scikit-learn"
 ]
 
 
