@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from rna.dataset.cellxgene.script.build_list import build_list
 from rna.dataset.cellxgene.script.download import download
 from rna.dataset.cellxgene.script.h5ad_to_loom import h5ad_to_loom
+from rna.dataset.cellxgene.script.scgpt_tokenization import get_census_gene_vocab
 from datasets.utils.logging import enable_progress_bar
 
 from rna.dataset.tokenization import tokenize
@@ -54,6 +55,9 @@ if __name__ == "__main__":
     download(cfg.output_dir, cfg.census_version, cfg.num_worker, cfg.size_workload)
     h5ad_to_loom(cfg.output_dir)
     tokenize(cfg.output_dir)
+
+    vocab = get_census_gene_vocab(cfg.census_version)
+    vocab.save_json(Path(cfg.output_dir) / "gene_vocab.json")
 
     data = load_dataset(
         "parquet",
