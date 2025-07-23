@@ -143,6 +143,7 @@ def get_parquet_paths(raw_paths: List[Path], parquet_dir: Union[Path, str]):
 
 
 def generate_parquet_from_raw(raw_dir: Path, parquet_dir: Path, num_worker=5):
+    print(f"Tokenizing raw files in {raw_dir} to parquet files in {parquet_dir} with {num_worker} workers.")
     raw_paths = [path for path in Path(raw_dir).iterdir() if path.suffix == ".raw"]
     parquet_paths = get_parquet_paths(raw_paths, parquet_dir)
 

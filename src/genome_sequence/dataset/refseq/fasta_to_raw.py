@@ -125,9 +125,9 @@ def parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker: int, max_lines_p
 
 
 def fasta_to_raw(output_dir: Union[str, Path], num_worker: int, max_lines_per_file: int):
-    fasta_dir = Path(output_dir) / "extracted_files"
-
+    fasta_dir = Path(output_dir) / "UniRef50"
     raw_dir = Path(output_dir) / "raw_files"
+    print(f"Parsing fasta files in {fasta_dir} to raw files in {raw_dir} with {num_worker} workers.")
     raw_dir.mkdir(parents=True, exist_ok=True)
     parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker, max_lines_per_file)
 

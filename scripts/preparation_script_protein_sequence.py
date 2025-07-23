@@ -51,9 +51,8 @@ if __name__ == "__main__":
     setup_logging(cfg.output_dir)
 
     process_dataset(cfg.dataset, cfg.output_dir, cfg.num_worker, cfg.use_md5)
-    fasta_to_raw(cfg.dataset, cfg.output_dir, cfg.max_lines_per_file)
     os.makedirs(Path(cfg.output_dir) / "raw_files", exist_ok=True)
-
+    fasta_to_raw(cfg.dataset, cfg.output_dir, cfg.max_lines_per_file)
     tokenize_to_parquet(cfg.output_dir, cfg.num_worker)
 
     data = load_dataset(
