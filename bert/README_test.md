@@ -5,7 +5,24 @@
 ## ファイル構成
 
 - `test_checkpoint.py` - メインのテストスクリプト
-- `generate### Molecule NL（分子関連自然言語）モデルのテスト例
+- `generate### Molecule NL（分### Genome Sequence（ゲノム配列）モデルのテスト例
+
+```bash
+python bert/test_checkpoint.py \
+    --checkpoint_path "runs_train_bert_genome_sequence/checkpoint-1000/" \
+    --domain genome \
+    --vocab_path "fundamental_models_202407/refseq/spm_tokenizer.model" \
+    --test_texts "ATCGATCGATCGATCGATCGATCGATCGATCG" "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA"
+```
+
+### Protein Sequence（タンパク質配列）モデルのテスト例
+
+```bash
+python bert/test_checkpoint.py \
+    --checkpoint_path "runs_train_bert_protein_sequence/checkpoint-10000" \
+    --domain protein_sequence \
+    --test_texts "MKTVRQERLKSIVRILERSKEPVSGAQLAEELSVSRQVIVQDIAYLRSLGYNIVATPRGYVLAGG" "LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHF"
+```デルのテスト例
 
 ```bash
 python bert/test_checkpoint.py \
@@ -110,7 +127,8 @@ python bert/test_checkpoint.py \
 
 - `compounds` - 化合物（SMILES記法）
 - `molecule_nl` - 分子関連自然言語
-- `genome` - ゲノム配列（開発中）
+- `genome` - ゲノム配列（SentencePieceトークナイザー）
+- `protein_sequence` - タンパク質配列（ESMトークナイザー）
 - `rna` - RNA配列（開発中）
 
 ## トラブルシューティング
