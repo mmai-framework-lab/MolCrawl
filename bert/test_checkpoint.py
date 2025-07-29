@@ -46,9 +46,11 @@ def load_domain_tokenizer(domain, vocab_path=None):
             return MoleculeNatLangTokenizer()
 
         elif domain == "genome":
-            # ゲノム配列用のトークナイザー（実装に応じて調整）
-            print("ゲノム配列用のトークナイザーは現在サポートされていません")
-            return None
+            # ゲノム配列用のSentencePieceトークナイザー
+            from genome_sequence.utils.tokenizer import create_genome_tokenizer
+            
+            model_path = vocab_path  # SentencePieceモデルファイルのパス
+            return create_genome_tokenizer(model_path)
 
         elif domain == "rna":
             # RNA配列用のトークナイザー（実装に応じて調整）
@@ -386,7 +388,7 @@ def main():
         choices=["compounds", "molecule_nl", "genome", "rna"],
         help="使用するドメイン（compounds, molecule_nl, genome, rna）",
     )
-    parser.add_argument("--vocab_path", help="語彙ファイルのパス（compoundsドメイン用）")
+    parser.add_argument("--vocab_path", help="語彙ファイルのパス（compounds: vocab.txt, genome: spm_tokenizer.model）")
     parser.add_argument(
         "--test_texts",
         nargs="*",
