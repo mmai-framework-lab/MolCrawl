@@ -16,4 +16,4 @@ data_preparation:
 
   # Number of sequence per files for raw files and parquet. It also reflex the number
   # of sequence loaded in memory during the processing of those files.
-  max_lines_per_file: 10**6
+  max_lines_per_file: 100000

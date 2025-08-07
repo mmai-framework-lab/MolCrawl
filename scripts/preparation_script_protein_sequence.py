@@ -47,6 +47,7 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
+    cfg.max_lines_per_file = int(cfg.max_lines_per_file)
 
     setup_logging(cfg.output_dir)
 
