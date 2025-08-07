@@ -13,8 +13,8 @@ n_embd = 1280
 dataset_dir = "outputs/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_molecule_nl_medium_1e-6wu200-30000-its"
-out_dir = "out-molecule-nl-gpt2-medium-1e-6wu200-30000-its"
+tensorboard_dir = "runs_train_gpt2_molecule_nl_large"
+out_dir = "out-molecule-nl-gpt2-large"
 
 tokenizer = Tokenizer()
 

@@ -11,7 +11,7 @@ tokenizer = TranscriptomeTokenizer()
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = "runs_train_gpt2_rna"
-out_dir = "out-rna"
+out_dir = "out-rna-large"
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
@@ -37,4 +37,4 @@ weight_decay = 1e-1
 # dataset
 dataset = "rna"
 
-dataset_params = {"dataset_dir": "cellxgene/training_ready_hf_dataset"}
+dataset_params = {"dataset_dir": "./fundamental_models_202407/cellxgene/training_ready_hf_dataset"}

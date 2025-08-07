@@ -5,9 +5,9 @@
 
 import sentencepiece as spm
 
-tokenizer_path = "refseq/spm_tokenizer.model"  # Adjust the path as necessary for your generated tokenizer.
+tokenizer_path = "fundamental_models_202407/refseq/spm_tokenizer.model"  # Adjust the path as necessary for your generated tokenizer.
 
-dataset_dir = "refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+dataset_dir = "fundamental_models_202407/refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
 out_dir = "out-genome-sequence"  # output directory for model checkpoints
 

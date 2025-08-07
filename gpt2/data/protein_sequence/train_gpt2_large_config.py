@@ -10,9 +10,9 @@ n_layer = 36
 n_head = 20
 n_embd = 1280
 
-dataset_dir = "uniprot/UniRef50/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
-
-out_dir = "out-protein-sequence"  # output directory for model checkpoints
+dataset_dir = "fundamental_models_202407/uniprot/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+tensorboard_dir = "runs_train_gpt2_protein_sequence_large"
+out_dir = "out-protein-sequence-large"  # output directory for model checkpoints
 
 tokenizer = Tokenizer()
 

@@ -38,7 +38,7 @@ dataset_params = {}
 tensorboard = False  # log training metrics to tensorboard
 tensorboard_dir = "runs"
 
-out_dir = "out"
+out_dir = "out-bert"
 eval_interval = 2000
 log_interval = 1
 eval_iters = 200

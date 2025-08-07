@@ -15,7 +15,7 @@ max_steps = 600000
 model_path = "runs_train_bert_molecule_nl"
 max_length = 1024
 dataset_dir = (
-    "molecule_related_natural_language/training_ready_hf_dataset"
+    "outputs/training_ready_hf_dataset"
 )
 learning_rate = 6e-6
 weight_decay = 1e-1
@@ -35,3 +35,4 @@ eos_token = 2  # eos
 
 # Choose between small, medium or large
 model_size = "small"
+output_dir = "out-bert-molecule-nl"

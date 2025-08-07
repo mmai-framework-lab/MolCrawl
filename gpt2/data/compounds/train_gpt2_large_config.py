@@ -16,8 +16,8 @@ dataset_dir = "outputs/compounds/training_ready_hf_dataset"  # path to the datas
 tokenizer_path = "assets/molecules/vocab.txt"  # path to the tokenizer vocab file
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "out-compounds-medium-6e-7wu200-30000-its"
-out_dir = "out-compounds-medium-6e-7wu200-30000-its"
+tensorboard_dir = "out-compounds-large"
+out_dir = "out-compounds-large"
 
 tokenizer = Tokenizer(tokenizer_path, 256)
 

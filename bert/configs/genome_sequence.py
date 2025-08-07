@@ -5,7 +5,7 @@ import sentencepiece as spm
 
 model_path = "runs_train_bert_genome_sequence"
 max_length = 1024
-dataset_dir = "refseq/training_ready_hf_dataset"
+dataset_dir = "fundamental_models_202407/refseq/training_ready_hf_dataset"
 learning_rate = 6e-6
 weight_decay = 1e-1
 max_steps = 600000
@@ -19,7 +19,7 @@ gradient_accumulation_steps = 5 * 16
 
 # Tokenizer instantiation
 # -----------------------------------------------------------------------------
-sp = spm.SentencePieceProcessor(model_file="refseq/spm_tokenizer.model")
+sp = spm.SentencePieceProcessor(model_file="fundamental_models_202407/refseq/spm_tokenizer.model")
 # Get vocabulary size
 vocab_size = sp.get_piece_size()
 
@@ -44,3 +44,4 @@ tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
 
 # Choose between small, medium or large
 model_size = "small"
+output_dir = "out-bert-genome-sequence"

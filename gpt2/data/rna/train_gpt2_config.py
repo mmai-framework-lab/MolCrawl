@@ -31,4 +31,4 @@ weight_decay = 1e-1
 # dataset
 dataset = "rna"
 
-dataset_params = {"dataset_dir": "cellxgene/training_ready_hf_dataset"}
+dataset_params = {"dataset_dir": "./fundamental_models_202407/cellxgene/training_ready_hf_dataset"}

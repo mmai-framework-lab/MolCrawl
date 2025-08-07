@@ -34,7 +34,7 @@ tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
 max_steps = 600000
 model_path = "runs_train_bert_rna"
 max_length = 1024
-dataset_dir = "cellxgene/training_ready_hf_dataset"
+dataset_dir = "fundamental_models_202407/cellxgene/training_ready_hf_dataset"
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100
@@ -50,3 +50,4 @@ eos_token = 0  # eos
 
 # Choose between small, medium or large
 model_size = "small"
+output_dir = "out-bert-rna"

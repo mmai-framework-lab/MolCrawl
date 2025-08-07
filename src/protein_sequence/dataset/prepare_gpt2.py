@@ -92,5 +92,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
 
-    output_dir = Path(cfg.output_dir) / cfg.dataset
+    output_dir = Path(cfg.output_dir)
     tokenize_batch_dataset(output_dir, context_length, number_sample)
