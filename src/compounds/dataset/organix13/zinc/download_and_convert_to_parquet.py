@@ -12,13 +12,24 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 
-def download_zinc_files(num_parallel : int = 8):
+def download_zinc_files(num_parallel : int = 1):
     shell_file: str = "src/compounds/dataset/organix13/zinc/zinc_complete/download_zinc.sh"
     directory = "src/compounds/dataset/organix13/zinc/zinc_complete"
 
-    def execute_command(command):
+    def execute_command(command, retrycount=5):
         logger.info(msg="Running: {}".format(command))
-        subprocess.run(command, shell=True)
+        n = 0
+        while n < retrycount:
+            n += 1
+            try:
+                err = subprocess.run(command, shell=True)
+                if err.returncode == 0:
+                    break
+            except Exception as e:
+                logger.error(msg="Error in command: {}".format(command))
+                logger.error(msg="Error: {}".format(e))
+                if n == retrycount:
+                    raise e
 
     commands = []
     with open(shell_file, "r") as file:
@@ -37,8 +48,8 @@ def download_zinc_files(num_parallel : int = 8):
             if line.startswith("mkdir") and "wget" in line:
                 commands.append(line)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(execute_command, commands, chunksize=num_parallel)
+    for command in commands:
+        execute_command(command)
 
     logger.info(msg="ZINC downloads completed")
 
