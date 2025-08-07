@@ -1,7 +1,13 @@
 # Installation
 1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
 2. Activate the environment by running `conda activate ENV_NAME`
-3. Install the package: `pip install --no-build-isolation -e .`
+3. Since Anaconda is prohibited, be sure to run the following commands.
+```
+conda config --remove channels defaults
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+```
+4. Install the package: `pip install --no-build-isolation -e .`
 
 # Usage
 
