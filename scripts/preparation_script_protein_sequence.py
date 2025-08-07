@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     data = load_dataset(
         "parquet",
-        data_dir=str(Path(cfg.output_dir) / cfg.dataset / "parquet_files"),
+        data_dir=str(Path(cfg.output_dir) / "parquet_files"),
         cache_dir=str(Path(cfg.output_dir) / cfg.dataset / "hf_cache"),
     )
     logger.info(f"Number of sequence: {len(data['train'])}")
