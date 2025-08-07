@@ -74,7 +74,7 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
 
     target_adata = retrieve_adata(version, id_list, target_gene_ids)
 
-    target_adata.write_h5ad(output_dir / save_filename, compression="gzip")
+    target_adata.write_h5ad(save_filename, compression="gzip")
     # joblib.dump(target_adata, save_filename, compress=3)
     # time.sleep(1)
 
