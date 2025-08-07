@@ -28,3 +28,4 @@ dependencies:
     - loompy==3.0.8
     - sentencepiece==0.2.0
     - tensorboardX==2.6.2.2
+    - flash-attn==1.0.3
