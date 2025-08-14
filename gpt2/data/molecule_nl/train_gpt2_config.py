@@ -6,8 +6,8 @@ from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Toke
 
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_molecule_nl_small_6e-6wu200-6000-its"
-out_dir = "out-molecule-nl-gpt2-small-6e-6wu200-6000-its"
+tensorboard_dir = "gpt2-output/molecule_nl-small"
+out_dir = "gpt2-output/molecule_nl-small"
 
 dataset_dir = "outputs/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 

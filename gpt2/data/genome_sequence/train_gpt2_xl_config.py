@@ -14,8 +14,8 @@ tokenizer_path = "fundamental_models_202407/refseq/spm_tokenizer.model"  # Adjus
 dataset_dir = "fundamental_models_202407/refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_genome_sequence_ex-large"
-out_dir = "out-genome_sequence-ex-large"
+tensorboard_dir = "gpt2-output/genome_sequence-xl"
+out_dir = "gpt2-output/genome_sequence-xl"
 
 tokenizer = spm.SentencePieceProcessor(
     model_file=tokenizer_path

@@ -4,8 +4,9 @@ from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 tokenizer = TranscriptomeTokenizer()
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_rna"
-out_dir = "out-rna"
+
+tensorboard_dir = "gpt2-output/rna-small"
+out_dir = "gpt2-output/rna-small"
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520

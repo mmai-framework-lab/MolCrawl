@@ -15,8 +15,8 @@ dataset_dir = "fundamental_models_202407/refseq/training_ready_hf_dataset"  # Ad
 out_dir = "out-genome-sequence"  # output directory for model checkpoints
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_genome_sequence_medium"
-out_dir = "out-genome_sequence_medium"
+tensorboard_dir = "gpt2-output/genome_sequence-medium"
+out_dir = "gpt2-output/genome_sequence-medium"
 
 tokenizer = spm.SentencePieceProcessor(
     model_file=tokenizer_path

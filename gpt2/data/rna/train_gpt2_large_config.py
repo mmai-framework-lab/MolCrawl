@@ -10,8 +10,9 @@ n_embd = 1280
 tokenizer = TranscriptomeTokenizer()
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_rna"
-out_dir = "out-rna-large"
+
+tensorboard_dir = "gpt2-output/rna-large"
+out_dir = "gpt2-output/rna-large"
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
