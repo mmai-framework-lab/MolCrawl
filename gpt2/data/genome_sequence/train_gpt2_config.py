@@ -6,15 +6,12 @@
 import sentencepiece as spm
 
 tokenizer_path = "fundamental_models_202407/refseq/spm_tokenizer.model"  # Adjust the path as necessary for your generated tokenizer.
-
 dataset_dir = "fundamental_models_202407/refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
-out_dir = "out-genome-sequence"  # output directory for model checkpoints
-
-
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "runs_train_gpt2_genome_sequence"
-out_dir = "out-genome_sequence"
+
+tensorboard_dir = "gpt2-output/genome_sequence-small"
+out_dir = "gpt2-output/genome_sequence-small"
 
 tokenizer = spm.SentencePieceProcessor(
     model_file=tokenizer_path
