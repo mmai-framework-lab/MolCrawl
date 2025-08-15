@@ -91,7 +91,7 @@ python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_compounds/checkpoint-10000" \
     --domain compounds \
     --vocab_path "assets/molecules/vocab.txt" \
-    --dataset_path "outputs/compounds/training_ready_hf_dataset"
+    --dataset_path "learning_source_202508/compounds/training_ready_hf_dataset"
 ```
 
 ### 5. 自動テストスクリプトの使用

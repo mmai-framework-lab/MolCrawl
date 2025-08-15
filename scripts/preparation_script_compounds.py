@@ -13,9 +13,9 @@ from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
 from compounds.utils.config import CompoundConfig
 from compounds.utils.general import download_datasets
 
+from config.paths import COMPOUNDS_DIR
 
 logger = logging.getLogger(__name__)
-
 
 def run_statistics(table_row, column_name):
     series_length = []
@@ -42,13 +42,14 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = CompoundConfig.from_file(args.config).data_preparation
+    organix13_dataset_path = COMPOUNDS_DIR + "organix13"
 
-    setup_logging(Path(cfg.save_path).parent / "compounds_logs")
+    setup_logging(COMPOUNDS_DIR + "compounds_logs")
 
     os.path.exists(cfg.raw_data_path) or os.makedirs(cfg.raw_data_path)
-    download_datasets(cfg.raw_data_path, cfg.organix13_dataset)
+    download_datasets(cfg.raw_data_path, organix13_dataset_path)
 
-    organix13_dataset = read_parquet(file_path=os.path.join(cfg.organix13_dataset, "OrganiX13.parquet"))
+    organix13_dataset = read_parquet(file_path=os.path.join(organix13_dataset_path, "OrganiX13.parquet"))
 
     mol_tokenizer = CompoundsTokenizer(
         cfg.vocab_path,
@@ -85,6 +86,6 @@ if __name__ == "__main__":
     for key, value in statistics.items():
         logger.info(msg="{}: {}".format(key, value))
 
-    logger.info(msg="Saving processed dataset to {}.".format(cfg.save_path))
+    logger.info(msg="Saving processed dataset to {}.".format(COMPOUNDS_DIR))
 
-    save_parquet(table=processed_organix13, file_path=cfg.save_path)
+    save_parquet(table=processed_organix13, file_path=COMPOUNDS_DIR)

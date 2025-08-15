@@ -1,4 +1,8 @@
 from dataclasses import dataclass, field
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from config.paths import get_dataset_path
 from core.config import Config
 
 
@@ -8,7 +12,7 @@ class MoleculeNLPreparationConfig(Config):
     dataset: str = "src/molecule_related_nl/assets/raw_data"
 
     # Path to save the processed and tokenized dataset
-    save_path: str = "outputs/molecule_related_natural_language_tokenized.parquet"
+    save_path: str = get_dataset_path('molecule_nl', 'molecule_related_natural_language_tokenized.parquet')
 
     # Num of workers to use in the data preparation
     num_workers: int = 12

@@ -32,6 +32,7 @@ from core.base import setup_logging
 logger = logging.getLogger(__name__)
 enable_progress_bar()
 
+from config.paths import RNA_DATASET_DIR
 
 def create_distribution_plot(data):
     plt.hist(data["num_tokens"], bins=200)
@@ -49,25 +50,25 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = RnaConfig.from_file(args.config).data_preparation
 
-    setup_logging(cfg.output_dir)
+    setup_logging(Path(RNA_DATASET_DIR))
 
-    build_list(cfg.output_dir, cfg.census_version)
-    download(cfg.output_dir, cfg.census_version, cfg.num_worker, cfg.size_workload)
-    h5ad_to_loom(cfg.output_dir)
-    tokenize(cfg.output_dir)
+    build_list(RNA_DATASET_DIR, cfg.census_version)
+    download(RNA_DATASET_DIR, cfg.census_version, cfg.num_worker, cfg.size_workload)
+    h5ad_to_loom(RNA_DATASET_DIR)
+    tokenize(RNA_DATASET_DIR)
 
     vocab = get_census_gene_vocab(cfg.census_version)
-    vocab.save_json(Path(cfg.output_dir) / "gene_vocab.json")
+    vocab.save_json(Path(RNA_DATASET_DIR) / "gene_vocab.json")
 
     data = load_dataset(
         "parquet",
-        data_dir=str(Path(cfg.output_dir) / "parquet_files"),
+        data_dir=str(Path(RNA_DATASET_DIR) / "parquet_files"),
         split="train",
-        cache_dir=str(Path(cfg.output_dir) / "hf_cache"),
+        cache_dir=str(Path(RNA_DATASET_DIR) / "hf_cache"),
     )
 
     logger.info(f"Number of sequence: {len(data)}")
-    with open(Path(cfg.output_dir) / "gene_vocab.json") as file:
+    with open(Path(RNA_DATASET_DIR) / "gene_vocab.json") as file:
         vocab = json.load(file)
     logger.info(f"Size of the vocabulary: {len(vocab)}")
 

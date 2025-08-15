@@ -2,17 +2,22 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
+from config.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48
 n_head = 25
 n_embd = 1600
 
-dataset_dir = "learning_source_202508/uniprot/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+dataset_dir = UNIPROT_DATASET_DIR
 
-tensorboard_dir = "gpt2-output/protein_sequence-ex-large"
-out_dir = "gpt2-output/protein_sequence-ex-large"
+tensorboard_dir = get_gpt2_output_path("protein_sequence", "xl")
+out_dir = get_gpt2_output_path("protein_sequence", "xl")
 
 tokenizer = Tokenizer()
 

@@ -2,7 +2,12 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from config.paths import COMPOUNDS_DATASET_DIR
 
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
@@ -10,7 +15,7 @@ tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 max_steps = 600000
 model_path = "runs_train_bert_compounds"
 max_length = 1024
-dataset_dir = "outputs/compounds/training_ready_hf_dataset"
+dataset_dir = COMPOUNDS_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100

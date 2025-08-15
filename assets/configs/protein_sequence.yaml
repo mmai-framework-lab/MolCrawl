@@ -4,9 +4,6 @@ data_preparation:
   # "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
   dataset: "UniRef50"
 
-  # Output directory where the preparation will be made
-  output_dir: "learning_source_202508/uniprot/"
-
   # If True use md5 to check if a file needs to be downloaded again, using md5
   # is very time consuming for large file. Otherwise we only check if the path exists.
   use_md5: False

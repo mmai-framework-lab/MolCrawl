@@ -1,5 +1,10 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
 import sentencepiece as spm
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
+from config.paths import CELLXGENE_DATASET_DIR, get_gpt2_output_path
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48
@@ -10,8 +15,8 @@ tokenizer = TranscriptomeTokenizer()
 
 tensorboard = True  # log training metrics to tensorboard
 
-tensorboard_dir = "gpt2-output/rna-ex-large"
-out_dir = "gpt2-output/rna-ex-large"
+tensorboard_dir = get_gpt2_output_path("rna", "xl")
+out_dir = get_gpt2_output_path("rna", "xl")
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
@@ -37,4 +42,4 @@ weight_decay = 1e-1
 # dataset
 dataset = "rna"
 
-dataset_params = {"dataset_dir": "./learning_source_202508/cellxgene/training_ready_hf_dataset"}
+dataset_params = {"dataset_dir": CELLXGENE_DATASET_DIR}

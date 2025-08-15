@@ -2,7 +2,12 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from config.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
 
 
 # Large-Sized GPT2 Model
@@ -11,13 +16,13 @@ n_layer = 36
 n_head = 20
 n_embd = 1280
 
-dataset_dir = "outputs/compounds/training_ready_hf_dataset"  # path to the dataset directory
+dataset_dir = COMPOUNDS_DATASET_DIR  # path to the dataset directory
 
 tokenizer_path = "assets/molecules/vocab.txt"  # path to the tokenizer vocab file
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "gpt2-output/compounds-large"
-out_dir = "gpt2-output/compounds-large"
+tensorboard_dir = get_gpt2_output_path("compounds", "large")
+out_dir = get_gpt2_output_path("compounds", "large")
 
 tokenizer = Tokenizer(tokenizer_path, 256)
 

@@ -1,18 +1,19 @@
 from dataclasses import dataclass, field
 from core.config import Config
 
+from config.paths import PROTEIN_SEQUENCE_DIR
 
 @dataclass
 class UniProtPreparationConfig:
     # Which uniprot dataset to download must be one of the following:
     # "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
-    dataset: str
+    dataset: str = "UniRef50"
     # Output directory where the preparation will be made
-    output_dir: str
+    output_dir: str = PROTEIN_SEQUENCE_DIR
 
     # If True use md5 to check if a file needs to be downloaded again, using md5
     # is very time consuming for large file. Otherwise we only check if the path exists.
-    use_md5: bool
+    use_md5: bool = False
 
     # Special case for Uniparc download, num of worker to use.
     num_worker: int = 4

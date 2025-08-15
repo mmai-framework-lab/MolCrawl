@@ -1,15 +1,17 @@
 from dataclasses import dataclass, field
 from core.config import Config
 
+from config.paths import GENOME_SEQUENCE_DIR
 
 @dataclass
 class RefSeqPreparationConfig:
 
     # Output directory where the preparation will be made
-    output_dir: str
+    output_dir: str = GENOME_SEQUENCE_DIR
     # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
     # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
-    path_species: str
+    path_species: str = "assets/genome_species_list/filtered_species_refseq"
+
     # Num of parallel worker to use, note that for download the worker are capped to 3
     num_worker: int = 16
 

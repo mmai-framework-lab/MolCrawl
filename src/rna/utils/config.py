@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from core.config import Config
-
+from config.paths import RNA_DATASET_DIR
 
 @dataclass
 class CellxGenePreparationConfig:
 
     # Output directory where the preparation will be made
-    output_dir: str
+    output_dir: str = RNA_DATASET_DIR
 
     # Num of worker to use during parallel processing.
     num_worker: int = 8

@@ -1,9 +1,4 @@
 data_preparation:
-  # Path to save the dataset once is downloaded
-  dataset: "src/molecule_related_nl/assets/raw_data/osunlp/SMolInstruct"
-
-  # Path to save the processed and tokenized dataset
-  save_path: "outputs/molecule_related_natural_language_tokenized.parquet"
 
   # Num of workers to use in the data preparation
   num_workers: 1

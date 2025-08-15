@@ -50,11 +50,14 @@ done < "$SAMPLE_FILE"
 
 echo "✓ ${#TEST_TEXTS[@]} 個のテストサンプルを読み込みました"
 
+# 設定ファイルを読み込み
+source src/config/env.sh
+
 # データセットパスの推定
 DATASET_PATH=""
 case "$DOMAIN" in
     "compounds")
-        DATASET_PATH="outputs/compounds/training_ready_hf_dataset"
+        DATASET_PATH="$COMPOUNDS_DATASET_DIR"
         ;;
     "genome")
         DATASET_PATH="outputs/genome_sequence/training_ready_hf_dataset"

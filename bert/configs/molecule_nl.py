@@ -7,16 +7,19 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from config.paths import MOLECULE_NL_DATASET_DIR
 
 tokenizer = Tokenizer()
 
 max_steps = 600000
 model_path = "runs_train_bert_molecule_nl"
 max_length = 1024
-dataset_dir = (
-    "outputs/training_ready_hf_dataset"
-)
+dataset_dir = MOLECULE_NL_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100

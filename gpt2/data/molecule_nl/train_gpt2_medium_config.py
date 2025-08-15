@@ -2,7 +2,12 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from config.paths import MOLECULE_NL_DATASET_DIR, get_gpt2_output_path
 
 # Medium-Sized GPT2 Model
 
@@ -10,11 +15,11 @@ n_layer = 24
 n_head = 16
 n_embd = 1024
 
-dataset_dir = "outputs/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+dataset_dir = MOLECULE_NL_DATASET_DIR  # Adjust the path as necessary for your generated dataset.
 
 tensorboard = True  # log training metrics to tensorboard
-tensorboard_dir = "gpt2-output/molecule_nl-medium"
-out_dir = "gpt2-output/molecule_nl-medium"
+tensorboard_dir = get_gpt2_output_path("molecule_nl", "medium")
+out_dir = get_gpt2_output_path("molecule_nl", "medium")
 
 tokenizer = Tokenizer()
 

@@ -1,11 +1,16 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import PreTrainedTokenizerFast, AutoTokenizer
+from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path
 import sentencepiece as spm
 
 model_path = "runs_train_bert_genome_sequence"
 max_length = 1024
-dataset_dir = "learning_source_202508/refseq/training_ready_hf_dataset"
+dataset_dir = REFSEQ_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 max_steps = 600000
@@ -19,7 +24,7 @@ gradient_accumulation_steps = 5 * 16
 
 # Tokenizer instantiation
 # -----------------------------------------------------------------------------
-sp = spm.SentencePieceProcessor(model_file="learning_source_202508/refseq/spm_tokenizer.model")
+sp = spm.SentencePieceProcessor(model_file=get_refseq_tokenizer_path())
 # Get vocabulary size
 vocab_size = sp.get_piece_size()
 

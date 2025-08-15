@@ -2,16 +2,20 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
 import sentencepiece as spm
+from config.paths import get_refseq_tokenizer_path, REFSEQ_DATASET_DIR, get_gpt2_output_path
 
-tokenizer_path = "learning_source_202508/refseq/spm_tokenizer.model"  # Adjust the path as necessary for your generated tokenizer.
-dataset_dir = "learning_source_202508/refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+tokenizer_path = get_refseq_tokenizer_path()
+dataset_dir = REFSEQ_DATASET_DIR
 
 tensorboard = True  # log training metrics to tensorboard
 
-tensorboard_dir = "gpt2-output/genome_sequence-small"
-out_dir = "gpt2-output/genome_sequence-small"
+tensorboard_dir = get_gpt2_output_path("genome_sequence", "small")
+out_dir = get_gpt2_output_path("genome_sequence", "small")
 
 tokenizer = spm.SentencePieceProcessor(
     model_file=tokenizer_path

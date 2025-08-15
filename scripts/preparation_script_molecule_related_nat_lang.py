@@ -14,6 +14,8 @@ from molecule_related_nl.utils.general import read_dataset, save_dataset
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
+from config.paths import MOLECULE_NL_DATASET_DIR
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,20 +49,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = MoleculeNLConfig.from_file(args.config).data_preparation
 
-    logging_dir = Path(cfg.save_path).parent / "molecule_related_natural_language_logs"
+    base_dataset_dir = Path(MOLECULE_NL_DATASET_DIR) / "osunlp" / "SMolInstruct"
+    logging_dir = Path(MOLECULE_NL_DATASET_DIR) / "molecule_related_natural_language_logs"
+    parquet_file = Path(MOLECULE_NL_DATASET_DIR) / "molecule_related_natural_language_tokenized.parquet"
     os.path.exists(logging_dir) or os.makedirs(logging_dir)
     setup_logging(logging_dir)
 
-    os.path.exists(cfg.dataset) or os.makedirs(cfg.dataset)
+    os.path.exists(base_dataset_dir) or os.makedirs(base_dataset_dir)
 
     logger.info(msg="Downloading Dataset...")
     try:
-        download_hf_dataset(cfg.dataset)
+        download_hf_dataset(base_dataset_dir)
     except Exception as e:
         logger.error(msg="Failed to download dataset. This error often occurs as you have already downloaded the dataset.")
         logger.error(msg=e)
 
-    dataset = read_dataset(cfg.dataset)
+    dataset = read_dataset(base_dataset_dir)
 
     tokenizer = MoleculeNatLangTokenizer()
 
@@ -89,5 +93,5 @@ if __name__ == "__main__":
     logger.info(msg="Total number of tokens: {}".format(total_num_samples))
     logger.info(msg="Total number of examples: {}".format(total_num_tokens))
 
-    logger.info(msg="Saving processed dataset to {}.".format(cfg.save_path))
-    save_dataset(processed_dataset, cfg.save_path)
+    logger.info(msg="Saving processed dataset to {}.".format(parquet_file))
+    save_dataset(processed_dataset, parquet_file)

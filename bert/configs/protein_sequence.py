@@ -2,9 +2,14 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ python bert/main.py bert/configs/protein_sequence.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
 from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 from transformers import DataCollatorForLanguageModeling
 from typing import Dict, List, Any
+from config.paths import UNIPROT_DATASET_DIR
 import torch
 
 
@@ -60,7 +65,7 @@ data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_p
 max_steps = 600000
 model_path = "runs_train_bert_protein_sequence"
 max_length = 1024
-dataset_dir = "learning_source_202508/uniprot/training_ready_hf_dataset"
+dataset_dir = UNIPROT_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100

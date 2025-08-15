@@ -30,6 +30,8 @@ from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 from protein_sequence.utils.configs import ProteinSequenceConfig
 from core.base import setup_logging
 
+from config.paths import PROTEIN_SEQUENCE_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,17 +51,17 @@ if __name__ == "__main__":
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
     cfg.max_lines_per_file = int(cfg.max_lines_per_file)
 
-    setup_logging(cfg.output_dir)
+    setup_logging(PROTEIN_SEQUENCE_DIR)
 
-    process_dataset(cfg.dataset, cfg.output_dir, cfg.num_worker, cfg.use_md5)
-    os.makedirs(Path(cfg.output_dir) / "raw_files", exist_ok=True)
-    fasta_to_raw(cfg.dataset, cfg.output_dir, cfg.max_lines_per_file)
-    tokenize_to_parquet(cfg.output_dir, cfg.num_worker)
+    process_dataset(cfg.dataset, PROTEIN_SEQUENCE_DIR, cfg.num_worker, cfg.use_md5)
+    os.makedirs(Path(PROTEIN_SEQUENCE_DIR) / "raw_files", exist_ok=True)
+    fasta_to_raw(cfg.dataset, PROTEIN_SEQUENCE_DIR, cfg.max_lines_per_file)
+    tokenize_to_parquet(PROTEIN_SEQUENCE_DIR, cfg.num_worker)
 
     data = load_dataset(
         "parquet",
-        data_dir=str(Path(cfg.output_dir) / "parquet_files"),
-        cache_dir=str(Path(cfg.output_dir) / cfg.dataset / "hf_cache"),
+        data_dir=str(Path(PROTEIN_SEQUENCE_DIR) / "parquet_files"),
+        cache_dir=str(Path(PROTEIN_SEQUENCE_DIR) / cfg.dataset / "hf_cache"),
     )
     logger.info(f"Number of sequence: {len(data['train'])}")
     tokenizer = EsmSequenceTokenizer()

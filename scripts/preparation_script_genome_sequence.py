@@ -15,6 +15,8 @@ from genome_sequence.dataset.tokenizer import raw_to_parquet
 from genome_sequence.utils.config import GenomeSequenceConfig
 from core.base import setup_logging
 
+from config.paths import GENOME_SEQUENCE_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,17 +35,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
 
-    setup_logging(cfg.output_dir)
+    setup_logging(GENOME_SEQUENCE_DIR)
 
-    download_refseq(cfg.output_dir, cfg.path_species, cfg.num_worker)
-    fasta_to_raw(cfg.output_dir, cfg.num_worker, cfg.max_lines_per_file)
-    train_tokenizer(cfg.output_dir, cfg.vocab_size, cfg.max_lines_per_file, cfg.input_sentence_size)
-    raw_to_parquet(cfg.output_dir)
+    download_refseq(GENOME_SEQUENCE_DIR, cfg.path_species, cfg.num_worker)
+    fasta_to_raw(GENOME_SEQUENCE_DIR, cfg.num_worker, cfg.max_lines_per_file)
+    train_tokenizer(GENOME_SEQUENCE_DIR, cfg.vocab_size, cfg.max_lines_per_file, cfg.input_sentence_size)
+    raw_to_parquet(GENOME_SEQUENCE_DIR)
 
     data = load_dataset(
         "parquet",
-        data_files=[str(Path(cfg.output_dir) / "parquet_files")],
-        cache_dir=str(Path(cfg.output_dir) / "hf_cache"),
+        data_files=[str(Path(GENOME_SEQUENCE_DIR) / "parquet_files")],
+        cache_dir=str(Path(GENOME_SEQUENCE_DIR) / "hf_cache"),
     )
 
     logger.info(f"Number of sequence: {len(data['train'])}")
