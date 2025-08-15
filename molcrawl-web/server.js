@@ -6,6 +6,10 @@ const { getDirectoryStructure, expandDirectory, getFullDirectoryTree } = require
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// model_dirの値をサーバー起動時に確認
+console.log('Server starting with model_dir configuration...');
+console.log('Current working directory:', process.cwd());
+
 // CORS設定
 app.use(cors({
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],

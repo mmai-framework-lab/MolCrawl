@@ -1,5 +1,11 @@
 const fs = require('fs').promises;
 const path = require('path');
+const model_dir = path.resolve(__dirname, '../../learning_source_202508');
+
+// デバッグ: model_dirの値を確認
+console.log('directory.js loaded with model_dir:', model_dir);
+console.log('model_dir exists?', require('fs').existsSync(model_dir));
+
 
 /**
  * ディレクトリの情報を取得
@@ -79,17 +85,28 @@ function formatFileSize(bytes) {
  * APIエンドポイント: ディレクトリ構造を取得
  */
 async function getDirectoryStructure(req, res) {
-  const targetPath = req.query.path || '/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508';
+  const targetPath = req.query.path || model_dir;
   
   try {
-    // パスの安全性チェック
-    const normalizedPath = path.normalize(targetPath);
-    const basePath = '/data2/user/MolCrawl/riken-dataset-fundational-model';
+    // 相対パスの場合はmodel_dirと結合
+    let resolvedPath;
+    if (path.isAbsolute(targetPath)) {
+      resolvedPath = targetPath;
+    } else {
+      resolvedPath = path.join(model_dir, targetPath);
+    }
+    
+    // パスの正規化
+    const normalizedPath = path.normalize(resolvedPath);
+    const basePath = path.resolve(__dirname, '../..');
     
     if (!normalizedPath.startsWith(basePath)) {
       return res.status(403).json({ 
         error: 'アクセス権限がありません',
-        message: '指定されたパスにはアクセスできません'
+        message: '指定されたパスにはアクセスできません',
+        requestedPath: targetPath,
+        resolvedPath: normalizedPath,
+        basePath: basePath
       });
     }
     
@@ -126,14 +143,24 @@ async function expandDirectory(req, res) {
   }
   
   try {
-    // パスの安全性チェック
-    const normalizedPath = path.normalize(targetPath);
-    const basePath = '/data2/user/MolCrawl/riken-dataset-fundational-model';
+    // 相対パスの場合はmodel_dirと結合
+    let resolvedPath;
+    if (path.isAbsolute(targetPath)) {
+      resolvedPath = targetPath;
+    } else {
+      resolvedPath = path.join(model_dir, targetPath);
+    }
+    
+    // パスの正規化
+    const normalizedPath = path.normalize(resolvedPath);
+    const basePath = path.resolve(__dirname, '../..');
     
     if (!normalizedPath.startsWith(basePath)) {
       return res.status(403).json({ 
         error: 'アクセス権限がありません',
-        message: '指定されたパスにはアクセスできません'
+        message: '指定されたパスにはアクセスできません',
+        requestedPath: targetPath,
+        resolvedPath: normalizedPath
       });
     }
     
@@ -235,19 +262,29 @@ async function expandDirectory(req, res) {
  * APIエンドポイント: 完全なディレクトリツリーを取得
  */
 async function getFullDirectoryTree(req, res) {
-  const targetPath = req.query.path || '/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508';
+  const targetPath = req.query.path || model_dir;
   const maxDepth = parseInt(req.query.maxDepth) || 5;
   const includeFiles = req.query.includeFiles !== 'false';
   
   try {
-    // パスの安全性チェック
-    const normalizedPath = path.normalize(targetPath);
-    const basePath = '/data2/user/MolCrawl/riken-dataset-fundational-model';
+    // 相対パスの場合はmodel_dirと結合
+    let resolvedPath;
+    if (path.isAbsolute(targetPath)) {
+      resolvedPath = targetPath;
+    } else {
+      resolvedPath = path.join(model_dir, targetPath);
+    }
+    
+    // パスの正規化
+    const normalizedPath = path.normalize(resolvedPath);
+    const basePath = path.resolve(__dirname, '../..');
     
     if (!normalizedPath.startsWith(basePath)) {
       return res.status(403).json({ 
         error: 'アクセス権限がありません',
-        message: '指定されたパスにはアクセスできません'
+        message: '指定されたパスにはアクセスできません',
+        requestedPath: targetPath,
+        resolvedPath: normalizedPath
       });
     }
     

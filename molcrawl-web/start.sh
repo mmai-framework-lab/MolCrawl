@@ -4,9 +4,6 @@
 
 echo "🚀 MolCrawl Dataset Browser を起動しています..."
 
-# プロジェクトディレクトリに移動
-cd /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web
-
 # 依存関係の確認
 if [ ! -d "node_modules" ]; then
   echo "📦 依存関係をインストールしています..."

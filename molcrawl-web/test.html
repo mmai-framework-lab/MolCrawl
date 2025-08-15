@@ -116,7 +116,7 @@
             
             <div class="api-test">
                 <h3>🔄 再帰的ディレクトリ展開</h3>
-                <input type="text" id="recursivePath" placeholder="/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508/cellxgene" style="width: 80%; margin-right: 10px;">
+                <input type="text" id="recursivePath" placeholder="cellxgene" style="width: 80%; margin-right: 10px;">
                 <button class="btn" onclick="testRecursiveExpand()">再帰展開</button>
                 <div id="recursive-result" class="result" style="display: none;"></div>
             </div>
@@ -167,7 +167,9 @@
         // 再帰的展開テスト
         async function testRecursiveExpand() {
             const resultDiv = document.getElementById('recursive-result');
-            const path = document.getElementById('recursivePath').value || '/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508/cellxgene';
+            const pathInput = document.getElementById('recursivePath').value;
+            // 相対パスの場合はmodel_dirに結合、絶対パスの場合はそのまま使用
+            const path = pathInput.startsWith('/') ? pathInput : (pathInput ? `cellxgene` : 'cellxgene');
             
             resultDiv.style.display = 'block';
             resultDiv.textContent = '⏳ テスト中...';
@@ -222,7 +224,8 @@
             container.innerHTML = '<div class="loading">🔄 再帰的ディレクトリツリーを読み込み中...</div>';
             
             try {
-                const response = await fetch(`${API_BASE}/api/directory?path=/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508`);
+                // model_dirのパスを使用（APIのデフォルト値を利用）
+                const response = await fetch(`${API_BASE}/api/directory`);
                 const result = await response.json();
                 
                 if (!result.success) {
