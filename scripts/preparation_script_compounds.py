@@ -42,9 +42,10 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = CompoundConfig.from_file(args.config).data_preparation
-    organix13_dataset_path = COMPOUNDS_DIR + "organix13"
+    organix13_dataset_path = COMPOUNDS_DIR + "/organix13"
+    os.path.exists(organix13_dataset_path) or os.makedirs(organix13_dataset_path)
 
-    setup_logging(COMPOUNDS_DIR + "compounds_logs")
+    setup_logging(COMPOUNDS_DIR + "/compounds_logs")
 
     os.path.exists(cfg.raw_data_path) or os.makedirs(cfg.raw_data_path)
     download_datasets(cfg.raw_data_path, organix13_dataset_path)
@@ -58,7 +59,7 @@ if __name__ == "__main__":
 
     logger.info(msg="Tokenizing SMILES...")
     processed_organix13 = multiprocess_tokenization(
-        mol_tokenizer.bulk_tokenizer_parquet, organix13_dataset, column_name="smiles", new_column_name="tokens"
+        mol_tokenizer.bulk_tokenizer_parquet, organix13_dataset, column_name="smiles", new_column_name="tokens", processes=2
     )
 
     scaffolds_tokenizer = ScaffoldsTokenizer(
