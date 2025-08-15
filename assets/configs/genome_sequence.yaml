@@ -1,6 +1,6 @@
 data_preparation:
   # Output directory where the preparation will be made
-  output_dir: "fundamental_models_202407/refseq"
+  output_dir: "learning_source_202508/refseq"
 
   # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
   # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.

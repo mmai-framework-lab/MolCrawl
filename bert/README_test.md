@@ -11,7 +11,7 @@
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome_sequence/checkpoint-1000/" \
     --domain genome \
-    --vocab_path "fundamental_models_202407/refseq/spm_tokenizer.model" \
+    --vocab_path "learning_source_202508/refseq/spm_tokenizer.model" \
     --test_texts "ATCGATCGATCGATCGATCGATCGATCGATCG" "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA"
 ```
 
@@ -37,7 +37,7 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome_sequence/checkpoint-1000/" \
     --domain genome \
-    --vocab_path "fundamental_models_202407/refseq/spm_tokenizer.model" \
+    --vocab_path "learning_source_202508/refseq/spm_tokenizer.model" \
     --test_texts "ATCGATCGATCGATCGATCGATCGATCGATCG" "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA"
 ```ples.py` - ドメイン特化テストサンプル生成
 - `test_bert_checkpoint.sh` - 自動テスト実行スクリプト
@@ -70,7 +70,7 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome/checkpoint-10000" \
     --domain genome \
-    --vocab_path "fundamental_models_202407/refseq/spm_tokenizer.model"
+    --vocab_path "learning_source_202508/refseq/spm_tokenizer.model"
 ```
 
 ### 3. カスタムテストテキストでテスト
@@ -80,7 +80,7 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome/checkpoint-10000" \
     --domain genome \
-    --vocab_path "fundamental_models_202407/refseq/smp_tokenizer.model" \
+    --vocab_path "learning_source_202508/refseq/smp_tokenizer.model" \
     --test_texts "ATCGATCGATCGATCG" "GCTAGCTAGCTAGCTA" "AAATTTCCCGGGATCG"
 ```
 
@@ -180,6 +180,6 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome/checkpoint-10000" \
     --domain genome \
-    --vocab_path "fundamental_models_202407/refseq/spm_tokenizer.model" \
+    --vocab_path "learning_source_202508/refseq/spm_tokenizer.model" \
     --test_texts "ATCGATCGATCGATCGATCGATCGATCGATCG" "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA"
 ```

@@ -1,6 +1,6 @@
 data_preparation:
   # Output directory where the preparation will be made
-  output_dir: "fundamental_models_202407/cellxgene"
+  output_dir: "learning_source_202508/cellxgene"
 
   # Special case for Uniparc download, num of worker to use.
   num_worker: 8

@@ -144,7 +144,7 @@ python scripts/preparation_script_genome_sequence.py assets/configs/genome_seque
 
 data_preparation:
   # Output directory where the preparation will be made
-  output_dir: "fundamental_models_202407/refseq"
+  output_dir: "learning_source_202508/refseq"
 
   # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
   # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
@@ -263,7 +263,7 @@ python scripts/preparation_script_protein_sequence.py assets/configs/protein_seq
   dataset: "UniRef50"
 
   # Output directory where the preparation will be made
-  output_dir: "fundamental_models_202407/uniprot/"
+  output_dir: "learning_source_202508/uniprot/"
 
   # If True use md5 to check if a file needs to be downloaded again, using md5
   # is very time consuming for large file. Otherwise we only check if the path exists.
@@ -321,7 +321,7 @@ it creates a challenge for the tokenization and the model. The tokenization is m
 ```yaml
 data_preparation:
   # Output directory where the preparation will be made
-  output_dir: "fundamental_models_202407/cellxgene"
+  output_dir: "learning_source_202508/cellxgene"
 
   # Special case for Uniparc download, num of worker to use.
   num_worker: 8

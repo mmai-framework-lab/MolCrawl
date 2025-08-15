@@ -10,8 +10,8 @@ n_embd = 1280
 
 import sentencepiece as spm
 
-tokenizer_path = "fundamental_models_202407/refseq/spm_tokenizer.model"  # Adjust the path as necessary for your generated tokenizer.
-dataset_dir = "fundamental_models_202407/refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+tokenizer_path = "learning_source_202508/refseq/spm_tokenizer.model"  # Adjust the path as necessary for your generated tokenizer.
+dataset_dir = "learning_source_202508/refseq/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = "gpt2-output/genome_sequence-large"

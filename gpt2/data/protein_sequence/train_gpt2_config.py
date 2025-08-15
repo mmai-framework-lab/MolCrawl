@@ -5,7 +5,7 @@
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 
 
-dataset_dir = "fundamental_models_202407/uniprot/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+dataset_dir = "learning_source_202508/uniprot/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
 tensorboard_dir = "gpt2-output/protein_sequence-small"
 out_dir = "gpt2-output/protein_sequence-small"

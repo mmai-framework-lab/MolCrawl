@@ -5,7 +5,7 @@ data_preparation:
   dataset: "UniRef50"
 
   # Output directory where the preparation will be made
-  output_dir: "fundamental_models_202407/uniprot/"
+  output_dir: "learning_source_202508/uniprot/"
 
   # If True use md5 to check if a file needs to be downloaded again, using md5
   # is very time consuming for large file. Otherwise we only check if the path exists.

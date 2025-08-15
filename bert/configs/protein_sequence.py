@@ -60,7 +60,7 @@ data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_p
 max_steps = 600000
 model_path = "runs_train_bert_protein_sequence"
 max_length = 1024
-dataset_dir = "fundamental_models_202407/uniprot/training_ready_hf_dataset"
+dataset_dir = "learning_source_202508/uniprot/training_ready_hf_dataset"
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100

@@ -10,7 +10,7 @@ n_layer = 36
 n_head = 20
 n_embd = 1280
 
-dataset_dir = "fundamental_models_202407/uniprot/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
+dataset_dir = "learning_source_202508/uniprot/training_ready_hf_dataset"  # Adjust the path as necessary for your generated dataset.
 
 tensorboard_dir = "gpt2-output/protein_sequence-large"
 out_dir = "gpt2-output/protein_sequence-large"
