@@ -66,7 +66,7 @@ def parse_fasta_to_raw_sequence(fasta_dir, raw_dir, max_lines_per_file: int) -> 
         write_chunk_file(path_chunk, chunks)
 
 
-def fasta_to_raw(dataset: str, output_dir: Union[str, Path], max_lines_per_file: int):
+def fasta_to_raw_protein(dataset: str, output_dir: Union[str, Path], max_lines_per_file: int):
     fasta_dir = Path(output_dir) / dataset
     if dataset == UniProtDatasetEnum.UniParc:
         fasta_dir = Path(output_dir) / "fasta_files"
@@ -81,4 +81,4 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
-    fasta_to_raw(cfg.dataset, cfg.output_dir, cfg.max_lines_per_file)
+    fasta_to_raw_protein(cfg.dataset, cfg.output_dir, cfg.max_lines_per_file)

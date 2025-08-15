@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
-from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw
+from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
 from protein_sequence.dataset.tokenizer import tokenize_to_parquet
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 from protein_sequence.utils.configs import ProteinSequenceConfig
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     process_dataset(cfg.dataset, PROTEIN_SEQUENCE_DIR, cfg.num_worker, cfg.use_md5)
     os.makedirs(Path(PROTEIN_SEQUENCE_DIR) / "raw_files", exist_ok=True)
-    fasta_to_raw(cfg.dataset, PROTEIN_SEQUENCE_DIR, cfg.max_lines_per_file)
+    fasta_to_raw_protein(cfg.dataset, PROTEIN_SEQUENCE_DIR, cfg.max_lines_per_file)
     tokenize_to_parquet(PROTEIN_SEQUENCE_DIR, cfg.num_worker)
 
     data = load_dataset(

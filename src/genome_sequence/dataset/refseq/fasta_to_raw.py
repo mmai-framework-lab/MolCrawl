@@ -124,13 +124,12 @@ def parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker: int, max_lines_p
         list(executor.map(func, enumerate(chunk_content_iterator)))
 
 
-def fasta_to_raw(output_dir: Union[str, Path], num_worker: int, max_lines_per_file: int):
-    fasta_dir = Path(output_dir) / "UniRef50"
+def fasta_to_raw_genome(output_dir: Union[str, Path], num_worker: int, max_lines_per_file: int):
+    fasta_dir = Path(output_dir) / "extracted_files"
     raw_dir = Path(output_dir) / "raw_files"
-    print(f"Parsing fasta files in {fasta_dir} to raw files in {raw_dir} with {num_worker} workers.")
+    print(f"⌛ Parsing fasta files in {fasta_dir} to raw files in {raw_dir} with {num_worker} workers.")
     raw_dir.mkdir(parents=True, exist_ok=True)
     parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker, max_lines_per_file)
-
 
 if __name__ == "__main__":
 
@@ -138,4 +137,4 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
-    fasta_to_raw(cfg.output_dir, cfg.num_worker, cfg.max_lines_per_file)
+    fasta_to_raw_genome(cfg.output_dir, cfg.num_worker, cfg.max_lines_per_file)
