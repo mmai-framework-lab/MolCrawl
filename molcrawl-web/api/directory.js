@@ -8,13 +8,34 @@ function getLearningSourcePath() {
   try {
     const scriptPath = path.join(__dirname, '..', 'get_learning_source_dir.py');
     const projectRoot = path.resolve(__dirname, '../..');
-    const result = execSync(`cd "${projectRoot}" && python3 "${scriptPath}"`, { encoding: 'utf8' });
+    
+    // 環境変数LEARNING_SOURCE_DIRを設定してスクリプトを実行
+    const envVars = {
+      ...process.env,
+      LEARNING_SOURCE_DIR: process.env.LEARNING_SOURCE_DIR || 'learning_source_20250818'
+    };
+    
+    const result = execSync(`cd "${projectRoot}" && python3 "${scriptPath}"`, { 
+      encoding: 'utf8',
+      env: envVars
+    });
+    
     const config = JSON.parse(result.trim());
+    
+    if (config.error) {
+      throw new Error(config.error);
+    }
+    
     return config.absolute_path;
   } catch (error) {
     console.error('Error getting learning source path from paths.py:', error.message);
+    console.error('Please ensure LEARNING_SOURCE_DIR environment variable is set.');
+    console.error('Example: export LEARNING_SOURCE_DIR="learning_source_20250818"');
+    
     // フォールバック: デフォルトパス
-    return path.resolve(__dirname, '../../learning_source_20250818');
+    const fallbackPath = path.resolve(__dirname, '../../learning_source_20250818');
+    console.warn(`Using fallback path: ${fallbackPath}`);
+    return fallbackPath;
   }
 }
 

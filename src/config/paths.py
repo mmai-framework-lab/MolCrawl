@@ -4,9 +4,20 @@
 """
 
 import os
+import sys
 
 # データセット保存先ディレクトリの定数定義
-LEARNING_SOURCE_DIR = 'learning_source_202508'
+# 環境変数LEARNING_SOURCE_DIRから取得（必須）
+LEARNING_SOURCE_DIR = os.environ.get('LEARNING_SOURCE_DIR')
+
+if not LEARNING_SOURCE_DIR:
+    print("ERROR: Environment variable 'LEARNING_SOURCE_DIR' is not set.", file=sys.stderr)
+    print("Please set LEARNING_SOURCE_DIR environment variable before running this script.", file=sys.stderr)
+    print("Example: export LEARNING_SOURCE_DIR='learning_source'", file=sys.stderr)
+    sys.exit(1)
+
+# 環境変数の値をログ出力（デバッグ用）
+print(f"INFO: Using LEARNING_SOURCE_DIR='{LEARNING_SOURCE_DIR}' from environment variable", file=sys.stderr)
 
 # プロジェクトルートディレクトリの取得
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

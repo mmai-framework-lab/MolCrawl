@@ -1,3 +1,25 @@
+# Environment Setup
+
+## Required Environment Variables
+
+Before running any scripts or applications, you must set the `LEARNING_SOURCE_DIR` environment variable:
+
+```bash
+# Set the environment variable
+export LEARNING_SOURCE_DIR="learning_source_20250818"
+```
+
+**Important**: All Python scripts in this project require the `LEARNING_SOURCE_DIR` environment variable to be set. If not set, scripts will exit with an error message.
+
+To make this permanent, add the export command to your shell configuration file:
+```bash
+# For bash users
+echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.bashrc
+
+# For zsh users  
+echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
+```
+
 # Installation
 1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
 2. Activate the environment by running `conda activate ENV_NAME`
