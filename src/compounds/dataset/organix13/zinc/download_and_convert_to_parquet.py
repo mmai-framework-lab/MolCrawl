@@ -27,54 +27,40 @@ logger = logging.getLogger(__name__)
 def generate_zinc_file_list():
     """
     Generate list of ZINC20 files to download.
-    Based on the pattern from download_zinc.sh: 4-character combinations using A-K for first char, A-B for second char
+    Reads from filelist.txt to maintain directory structure and ensure compatibility.
     """
     files = []
     
-    # Extract actual file list from the existing script to ensure compatibility
-    try:
-        shell_file = "src/compounds/dataset/organix13/zinc/zinc_complete/download_zinc.sh"
-        if os.path.exists(shell_file):
-            with open(shell_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if "wget" in line and ".txt" in line:
-                        # Extract filename from wget command
-                        parts = line.split()
-                        for part in parts:
-                            if part.endswith(".txt") and "/" in part:
-                                filename = part.split("/")[-1]
-                                if filename not in [f["filename"] for f in files]:
-                                    # Extract directory from the mkdir command
-                                    dir_name = filename[:2]  # First two characters
-                                    files.append({
-                                        "filename": filename,
-                                        "directory": dir_name,
-                                        "url": f"https://files.docking.org/2D/{dir_name}/{filename}"
-                                    })
-                                break
-    except Exception as e:
-        logger.warning(f"Could not read shell script, falling back to generated list: {e}")
-        
-        # Fallback: generate based on observed patterns
-        # First character: A-K, Second character: A-B, Third and fourth: A,B,C,D,E
-        first_chars = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
-        second_chars = ['A', 'B']
-        third_fourth_chars = ['A', 'B', 'C', 'D', 'E']
-        
-        for first in first_chars:
-            for second in second_chars:
-                for third in third_fourth_chars:
-                    for fourth in third_fourth_chars:
-                        filename = f"{first}{second}{third}{fourth}.txt"
-                        dir_name = f"{first}{second}"
+    # Read file list from filelist.txt
+    filelist_path = "src/compounds/dataset/organix13/zinc/zinc_complete/filelist.txt"
+    if os.path.exists(filelist_path):
+        with open(filelist_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and line.endswith(".txt"):
+                    # Parse directory/filename format (e.g., "AA/AAAA.txt")
+                    if "/" in line:
+                        directory, filename = line.split("/", 1)
+                        files.append({
+                            "filename": filename,
+                            "directory": directory,
+                            "relative_path": line,  # Store original path for reference
+                            "url": f"https://files.docking.org/2D/{line}"
+                        })
+                    else:
+                        # Fallback for files without directory structure
+                        filename = line
+                        dir_name = filename[:2]  # First two characters as directory
                         files.append({
                             "filename": filename,
                             "directory": dir_name,
+                            "relative_path": f"{dir_name}/{filename}",
                             "url": f"https://files.docking.org/2D/{dir_name}/{filename}"
                         })
+    else:
+        logger.warning(f"File list {filelist_path} not found. Cannot generate download list.")
     
-    logger.info(f"Generated {len(files)} ZINC files for download")
+    logger.info(f"Generated {len(files)} ZINC files for download from filelist.txt")
     return files
 
 
