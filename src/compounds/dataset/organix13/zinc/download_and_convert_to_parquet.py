@@ -153,32 +153,73 @@ def download_zinc_files(delay_between_downloads: float = 1.0):
     logger.info(f"Starting sequential download of {len(files_to_download)} ZINC files to {directory}")
     logger.info(f"Using delay of {delay_between_downloads} seconds between downloads")
     
+    import csv
+    import hashlib
+
     successful_downloads = 0
     failed_downloads = 0
-    
+    import csv
+    import hashlib
+
+    csv_header = ["relative_path", "filename", "size_bytes", "num_lines", "md5"]
+    csv_path = os.path.join(directory, "download_results.csv")
+    # ヘッダーがなければ書く
+    if not os.path.exists(csv_path):
+        with open(csv_path, "w", newline="") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=csv_header)
+            writer.writeheader()
+
     # Download files sequentially to avoid 503 errors
     for i, file_info in enumerate(files_to_download):
         logger.info(f"Progress: {i+1}/{len(files_to_download)} - Downloading {file_info['filename']}")
-        
+        file_result = {
+            "relative_path": f"{file_info['directory']}/{file_info['filename']}",
+            "filename": file_info['filename'],
+            "size_bytes": 0,
+            "num_lines": 0,
+            "md5": ""
+        }
         try:
             success = download_single_file(file_info, directory)
-            if success:
+            target_path = os.path.join(directory, file_info["directory"], file_info["filename"])
+            if success and os.path.exists(target_path):
                 successful_downloads += 1
+                # ファイルサイズ
+                file_result["size_bytes"] = os.path.getsize(target_path)
+                # データ数（行数）
+                try:
+                    with open(target_path, "rb") as f:
+                        file_result["num_lines"] = sum(1 for _ in f)
+                except Exception as e:
+                    logger.warning(f"Failed to count lines for {target_path}: {e}")
+                # MD5
+                try:
+                    hash_md5 = hashlib.md5()
+                    with open(target_path, "rb") as f:
+                        for chunk in iter(lambda: f.read(8192), b""):
+                            hash_md5.update(chunk)
+                    file_result["md5"] = hash_md5.hexdigest()
+                except Exception as e:
+                    logger.warning(f"Failed to calculate MD5 for {target_path}: {e}")
             else:
                 failed_downloads += 1
         except Exception as e:
             logger.error(f"Error processing {file_info['filename']}: {e}")
             failed_downloads += 1
-        
+        # 成功・失敗問わず追記
+        try:
+            with open(csv_path, "a", newline="") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_header)
+                writer.writerow(file_result)
+        except Exception as e:
+            logger.error(f"Failed to append to download results CSV: {e}")
         # Add delay between downloads to avoid overwhelming the server
         if i < len(files_to_download) - 1:  # Don't delay after the last file
             time.sleep(delay_between_downloads)
-    
+
     logger.info(f"ZINC downloads completed: {successful_downloads} successful, {failed_downloads} failed")
-    
     if failed_downloads > 0:
         logger.warning(f"{failed_downloads} files failed to download. You may want to retry.")
-    
     return successful_downloads, failed_downloads
 
 
