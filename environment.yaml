@@ -31,3 +31,6 @@ dependencies:
     - tensorboardX==2.6.2.2
     - flash_attn==1.0.3
     - safetensors==0.4.3
+    - biopython==1.8.5
+    - pysam==0.23.3
+    - pyfaidx==0.9.0.1
