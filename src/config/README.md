@@ -67,7 +67,6 @@ export LEARNING_SOURCE_DIR="learning_source_202509"
 - `CELLXGENE_DATASET_DIR`: CellxGeneデータセットパス
 - `COMPOUNDS_DATASET_DIR`: Compoundsデータセットパス (organix13_tokenized.parquetを含む)
 - `MOLECULE_NL_DATASET_DIR`: Molecule_NLデータセットパス (molecule_related_natural_language_tokenized.parquetを含む)
-- `REFSEQ_TOKENIZER_PATH`: RefSeqトークナイザーパス
 - `ABSOLUTE_LEARNING_SOURCE_PATH`: ベースディレクトリの絶対パス
 
 ### Shell (env.sh)
@@ -77,4 +76,3 @@ export LEARNING_SOURCE_DIR="learning_source_202509"
 - `$CELLXGENE_DATASET_DIR`: CellxGeneデータセットパス
 - `$COMPOUNDS_DATASET_DIR`: Compoundsデータセットパス
 - `$MOLECULE_NL_DATASET_DIR`: Molecule_NLデータセットパス
-- `$REFSEQ_TOKENIZER_PATH`: RefSeqトークナイザーパス

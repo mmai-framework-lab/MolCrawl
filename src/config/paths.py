@@ -23,7 +23,26 @@ print(f"INFO: Using LEARNING_SOURCE_DIR='{LEARNING_SOURCE_DIR}' from environment
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def get_refseq_tokenizer_path():
-    return os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, 'refseq', 'spm_tokenizer.model')
+    return os.path.join(PROJECT_ROOT, GENOME_SEQUENCE_DIR, 'spm_tokenizer.model')
+
+def get_genome_tokenizer_path():
+    """
+    ゲノム配列用のトークナイザーパスを取得
+    
+    Returns:
+        str: ゲノム配列用トークナイザーのパス（文字列）
+    """
+    # RefSeqゲノム配列用のトークナイザーを使用
+    return get_refseq_tokenizer_path()
+
+def get_gpt2_output_path():
+    """
+    GPT-2モデル出力ディレクトリのパスを取得
+    
+    Returns:
+        str: GPT-2モデル出力ディレクトリのパス
+    """
+    return os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, 'gpt2_output')
 
 # 各データセットの基本パス
 def get_dataset_path(dataset_type, relative_path=""):
@@ -37,7 +56,7 @@ def get_dataset_path(dataset_type, relative_path=""):
     Returns:
         str: 完全なパス
     """
-    base_path = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, dataset_type)
+    base_path = os.path.join(PROJECT_ROOT, GENOME_SEQUENCE_DIR, dataset_type)
     if relative_path:
         return os.path.join(base_path, relative_path)
     return base_path
@@ -49,11 +68,9 @@ RNA_DATASET_DIR = LEARNING_SOURCE_DIR + '/rna'
 MOLECULE_NL_DATASET_DIR = LEARNING_SOURCE_DIR + '/molecule_nl'
 COMPOUNDS_DIR = LEARNING_SOURCE_DIR + '/compounds'
 UNIPROT_DATASET_DIR = get_dataset_path('protein_sequence', 'training_ready_hf_dataset')
-REFSEQ_DATASET_DIR = get_dataset_path('genome_sequence/refseq', 'training_ready_hf_dataset')
+REFSEQ_DATASET_DIR = get_dataset_path('genome_sequence', 'training_ready_hf_dataset')
 CELLXGENE_DATASET_DIR = get_dataset_path('rna/cellxgene', 'training_ready_hf_dataset')
 COMPOUNDS_DATASET_DIR = get_dataset_path('compounds', 'training_ready_hf_dataset')
-
-REFSEQ_TOKENIZER_PATH = get_dataset_path('refseq', 'spm_tokenizer.model')
 
 # 絶対パス版（WebアプリケーションやAPIで使用）
 ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
