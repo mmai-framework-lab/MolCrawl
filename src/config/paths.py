@@ -86,10 +86,10 @@ GENOME_SEQUENCE_DIR = LEARNING_SOURCE_DIR + '/genome_sequence'
 RNA_DATASET_DIR = LEARNING_SOURCE_DIR + '/rna'
 MOLECULE_NL_DATASET_DIR = LEARNING_SOURCE_DIR + '/molecule_nl'
 COMPOUNDS_DIR = LEARNING_SOURCE_DIR + '/compounds'
-UNIPROT_DATASET_DIR = get_dataset_path('protein_sequence', 'training_ready_hf_dataset')
-REFSEQ_DATASET_DIR = get_dataset_path('genome_sequence', 'training_ready_hf_dataset')
-CELLXGENE_DATASET_DIR = get_dataset_path('rna/cellxgene', 'training_ready_hf_dataset')
-COMPOUNDS_DATASET_DIR = get_dataset_path('compounds', 'training_ready_hf_dataset')
+UNIPROT_DATASET_DIR = get_dataset_path('training_ready_hf_dataset')
+REFSEQ_DATASET_DIR = get_dataset_path('training_ready_hf_dataset')
+CELLXGENE_DATASET_DIR = RNA_DATASET_DIR + '/training_ready_hf_dataset'
+COMPOUNDS_DATASET_DIR = get_dataset_path('training_ready_hf_dataset')
 
 # 絶対パス版（WebアプリケーションやAPIで使用）
 ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
@@ -113,8 +113,8 @@ def get_gpt2_output_path(domain, model_size):
         size_suffix = 'ex-large'
     else:
         size_suffix = model_size
-    
-    return os.path.join(GPT2_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
+
+    return os.path.join(LEARNING_SOURCE_DIR, domain, GPT2_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
 
 # よく使用されるGPT-2出力パスの定数
 def get_gpt2_tensorboard_path(domain, model_size):
