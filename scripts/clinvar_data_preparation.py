@@ -108,21 +108,50 @@ class ClinVarProcessor:
         Returns:
             pd.DataFrame: フィルタリングされたデータ
         """
-        logger.info("Filtering single nucleotide variants")
+        logger.info(f"Starting with {len(df)} total variants")
+        
+        # 利用可能な変異タイプを確認
+        logger.info(f"Available variant types: {df['Type'].value_counts().head(10)}")
         
         # 変異タイプでフィルタリング
         snv_types = ['single nucleotide variant', 'SNV']
         df_snv = df[df['Type'].isin(snv_types)].copy()
+        logger.info(f"After type filtering: {len(df_snv)} variants")
         
-        # 参照アレルと変異アレルが単一文字であることを確認
-        df_snv = df_snv[
-            (df_snv['ReferenceAllele'].str.len() == 1) &
-            (df_snv['AlternateAllele'].str.len() == 1) &
-            (df_snv['ReferenceAllele'].isin(['A', 'T', 'G', 'C'])) &
-            (df_snv['AlternateAllele'].isin(['A', 'T', 'G', 'C']))
-        ].copy()
+        # "na"値を除外して有効なアリル情報のみをフィルタリング
+        valid_alleles = (
+            (df_snv['ReferenceAllele'].notna()) &
+            (df_snv['AlternateAllele'].notna()) &
+            (df_snv['ReferenceAllele'] != 'na') &
+            (df_snv['AlternateAllele'] != 'na') &
+            (df_snv['ReferenceAllele'] != '') &
+            (df_snv['AlternateAllele'] != '') &
+            (df_snv['ReferenceAllele'] != '-') &
+            (df_snv['AlternateAllele'] != '-')
+        )
         
-        logger.info(f"Filtered to {len(df_snv)} single nucleotide variants")
+        df_snv = df_snv[valid_alleles].copy()
+        logger.info(f"After removing 'na' and invalid alleles: {len(df_snv)} variants")
+        
+        # 元のフィルタリング条件
+        if len(df_snv) > 0:
+            valid_ref_len = df_snv['ReferenceAllele'].str.len() == 1
+            valid_alt_len = df_snv['AlternateAllele'].str.len() == 1
+            valid_ref_base = df_snv['ReferenceAllele'].isin(['A', 'T', 'G', 'C'])
+            valid_alt_base = df_snv['AlternateAllele'].isin(['A', 'T', 'G', 'C'])
+            
+            logger.info(f"Valid reference length: {valid_ref_len.sum()}")
+            logger.info(f"Valid alternate length: {valid_alt_len.sum()}")
+            logger.info(f"Valid reference bases: {valid_ref_base.sum()}")
+            logger.info(f"Valid alternate bases: {valid_alt_base.sum()}")
+            
+            df_snv = df_snv[valid_ref_len & valid_alt_len & valid_ref_base & valid_alt_base].copy()
+            logger.info(f"After allele filtering: {len(df_snv)} variants")
+            
+            # フィルタリング後のサンプル値を確認
+            logger.info(f"Final ReferenceAllele values: {df_snv['ReferenceAllele'].value_counts()}")
+            logger.info(f"Final AlternateAllele values: {df_snv['AlternateAllele'].value_counts()}")
+        
         return df_snv
     
     def filter_by_clinical_significance(self, df):
@@ -135,18 +164,20 @@ class ClinVarProcessor:
         Returns:
             pd.DataFrame: フィルタリングされたデータ
         """
-        logger.info("Filtering by clinical significance")
-        
-        # 明確な病原性/非病原性のみを保持
+        logger.info(f"Starting clinical significance filtering with {len(df)} variants")
+    
+        # 実際のClinicalSignificance値を確認
+        logger.info(f"Available clinical significance values:")
+        for value, count in df['ClinicalSignificance'].value_counts().head(20).items():
+            logger.info(f"  {value}: {count}")
+    
         clear_classifications = [
             'Pathogenic', 'Likely pathogenic',
             'Benign', 'Likely benign'
         ]
         
         df_filtered = df[df['ClinicalSignificance'].isin(clear_classifications)].copy()
-        
-        logger.info(f"Filtered to {len(df_filtered)} variants with clear classifications")
-        logger.info(f"Clinical significance distribution:\n{df_filtered['ClinicalSignificance'].value_counts()}")
+        logger.info(f"After clinical significance filtering: {len(df_filtered)} variants")
         
         return df_filtered
     
