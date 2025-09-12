@@ -58,12 +58,35 @@ def main():
 
     args = parser.parse_args()
 
-    dataset = load_dataset("songlab/clinvar")
+    dataset = load_dataset("gonzalobenegas/clinvar")
     df = dataset["test"].to_pandas()
 
     if args.max_samples:
         df = df.head(args.max_samples)
         print(f"Processing only first {args.max_samples} variants for testing")
+
+    # デバッグ: 利用可能なカラムを確認
+    print(f"Available columns in dataset: {df.columns.tolist()}")
+    
+    # ClinicalSignificanceカラムの存在確認
+    clinical_significance_col = None
+    possible_names = ['ClinicalSignificance', 'clinical_significance', 'clin_sig', 'clnsig', 'significance']
+    for col_name in possible_names:
+        if col_name in df.columns:
+            clinical_significance_col = col_name
+            print(f"Found clinical significance column: {col_name}")
+            break
+    
+    if clinical_significance_col is None:
+        print("Warning: Clinical significance column not found. Available columns:")
+        for col in df.columns:
+            print(f"  - {col}")
+    else:
+        # Clinical significanceの分布を表示
+        print(f"\nClinical significance distribution in source data:")
+        clin_sig_counts = df[clinical_significance_col].value_counts()
+        for sig, count in clin_sig_counts.head(10).items():  # 上位10個を表示
+            print(f"  {sig}: {count}")
 
     ref_genome = Fasta(args.ref_fasta)
     mapping = build_chrom_mapping(ref_genome)
@@ -77,22 +100,63 @@ def main():
                 row["ref"], row["alt"],
                 flank=args.flank
             )
-            records.append({
+            
+            # 基本的な変異情報
+            record = {
                 "chrom": row["chrom"],
                 "pos": row["pos"],
                 "ref": row["ref"],
                 "alt": row["alt"],
-                "label": row["label"],
                 "reference_sequence": ref_seq,
                 "variant_sequence": var_seq
-            })
+            }
+            
+            # labelカラムがある場合は追加（後方互換性のため）
+            if "label" in row:
+                record["label"] = row["label"]
+            
+            # ClinicalSignificanceを追加（存在する場合）
+            if clinical_significance_col:
+                record["ClinicalSignificance"] = row[clinical_significance_col]
+            else:
+                record["ClinicalSignificance"] = None
+            
+            records.append(record)
+            
         except Exception as e:
             print(f"Error at {row['chrom']}:{row['pos']} - {e}")
             continue
 
     df_out = pd.DataFrame(records)
     df_out.to_csv(args.output_file, index=False)
+    
+    # 統計情報の出力
     print(f"Saved {len(df_out)} variants with sequences → {args.output_file}")
+    
+    if clinical_significance_col:
+        print("\nClinical Significance distribution:")
+        significance_counts = df_out["ClinicalSignificance"].value_counts()
+        for sig, count in significance_counts.items():
+            print(f"  {sig}: {count}")
+        
+        # 病原性/良性の分布も表示
+        pathogenic_count = df_out["ClinicalSignificance"].str.contains(
+            'pathogenic', case=False, na=False
+        ).sum()
+        benign_count = df_out["ClinicalSignificance"].str.contains(
+            'benign', case=False, na=False
+        ).sum()
+        uncertain_count = df_out["ClinicalSignificance"].str.contains(
+            'uncertain', case=False, na=False
+        ).sum()
+        
+        print(f"\nSummary:")
+        print(f"  Pathogenic variants: {pathogenic_count}")
+        print(f"  Benign variants: {benign_count}")
+        print(f"  Uncertain significance: {uncertain_count}")
+        print(f"  Other/Missing: {len(df_out) - pathogenic_count - benign_count - uncertain_count}")
+    else:
+        print("\nNo ClinicalSignificance data available in the dataset.")
 
 if __name__ == "__main__":
     main()
