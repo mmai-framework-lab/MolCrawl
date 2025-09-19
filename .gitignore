@@ -6,7 +6,6 @@ __pycache__
 *.log
 *.arrow
 *.json
-*.txt
 
 !package.json
 

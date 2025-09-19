@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { execSync } = require('child_process');
-const { checkZincFiles } = require('./zinc-checker');
+const { checkZincFiles, getZincDataCount } = require('./zinc-checker');
 
 // paths.pyからLEARNING_SOURCE_DIRを動的に取得
 function getLearningSourcePath() {
@@ -456,10 +456,55 @@ async function checkZincData(req, res) {
   }
 }
 
+// ZINC20データ件数取得機能
+async function getZincDataCounts(req, res) {
+  try {
+    // compounds/zinc20/ のパスを構築
+    const zincBasePath = path.join(model_dir, 'compounds', 'zinc20');
+    
+    console.log('Counting ZINC data entries at:', zincBasePath);
+    
+    // ディレクトリが存在するかチェック
+    try {
+      await fs.access(zincBasePath);
+    } catch (error) {
+      return res.json({
+        success: true,
+        data: {
+          exists: false,
+          message: 'ZINC20データディレクトリが見つかりません',
+          path: zincBasePath
+        }
+      });
+    }
+
+    // ZINCデータ件数をカウント
+    const dataStats = await getZincDataCount(zincBasePath);
+    
+    res.json({
+      success: true,
+      data: {
+        exists: true,
+        path: zincBasePath,
+        ...dataStats,
+        lastCounted: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('ZINC データ件数取得エラー:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
 module.exports = {
   getDirectoryStructure,
   expandDirectory,
   getFullDirectoryTree,
   checkZincData,
+  getZincDataCounts,
   formatFileSize
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { getDirectoryStructure, expandDirectory, getFullDirectoryTree, checkZincData } = require('./api/directory');
+const { getDirectoryStructure, expandDirectory, getFullDirectoryTree, checkZincData, getZincDataCounts } = require('./api/directory');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +28,7 @@ app.get('/api/directory', getDirectoryStructure);
 app.get('/api/directory/expand', expandDirectory);
 app.get('/api/directory/tree', getFullDirectoryTree);
 app.get('/api/zinc/check', checkZincData);
+app.get('/api/zinc/count', getZincDataCounts);
 
 // ヘルスチェック
 app.get('/api/health', (req, res) => {
@@ -39,7 +40,8 @@ app.get('/api/health', (req, res) => {
       '/api/directory - ルートディレクトリ構造取得',
       '/api/directory/expand?path=<path>&recursive=true - ディレクトリ展開',
       '/api/directory/tree?maxDepth=5&includeFiles=true - 完全ツリー取得',
-      '/api/zinc/check - ZINC20データチェック'
+      '/api/zinc/check - ZINC20データチェック',
+      '/api/zinc/count - ZINC20データ件数取得'
     ]
   });
 });

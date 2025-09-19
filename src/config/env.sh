@@ -2,7 +2,7 @@
 # 環境変数設定用スクリプト
 # 使用方法: source src/config/env.sh
 
-export LEARNING_SOURCE_DIR="learning_source_20250818"
+export LEARNING_SOURCE_DIR="learning_source_20250828"
 #export UNIPROT_DATASET_DIR="$LEARNING_SOURCE_DIR/uniprot/training_ready_hf_dataset"
 #export CELLXGENE_DATASET_DIR="$LEARNING_SOURCE_DIR/cellxgene/training_ready_hf_dataset"
 #export COMPOUNDS_DATASET_DIR="$LEARNING_SOURCE_DIR/compounds/training_ready_hf_dataset"
