@@ -389,14 +389,14 @@ The is 4 separate scripts for cellxgene downloading.
 
 ## Usage Overview
 
-1. Prepare your dataset subset by running `python gpt2/data/<dataset>/prepare.py path/to/the/tokenized/dataset`
+1. Prepare your dataset subset by running `python gpt2/configs/<dataset>/prepare.py path/to/the/tokenized/dataset`
 
 This will load the dataset, sample a subset, and create batches of the same length.
 Note: the parameters `--training-set-subset-len` and `--test-set-subset-len` can be used to select the subset size. If < 1 taken as fracation of full data. If > 1 taken as number of samples.
 
 2. Train the model by running `python gpt2/train.py path/to/corresponding/dataset/train_gpt2_config.py`
 
-Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset. For example: `python gpt2/train.py gpt2/data/molecule_nl/train_gpt2_large_config.py` will train the large GPT2 model on the molecule_nl dataset.
+Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset. For example: `python gpt2/train.py gpt2/configs/molecule_nl/train_gpt2_large_config.py` will train the large GPT2 model on the molecule_nl dataset.
 
 Running this will lunch a training job, and output results in the path `out/ckpt.pt
 
@@ -414,7 +414,7 @@ To run with DDP on 4 gpus across 2 nodes, example:
 `torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
 (If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
 
-3. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py gpt2/data/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
+3. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py gpt2/configs/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
 
 ## Data Preparation
 
@@ -462,7 +462,7 @@ is filled without any padding.
 > [!IMPORTANT]
 > Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT2 Readme](./gpt2/README.md). 
 
-Then the training can be launch for the prepared datasets. In the path `gpt2/data/<dataset-name>`, you will find a folder with 3 files:
+Then the training can be launch for the prepared datasets. In the path `gpt2/configs/<dataset-name>`, you will find a folder with 3 files:
 1. `train_gpt2_config.py`: Config for training the small-sized version of the model,
 2. `train_gpt2_medium_config.py`: Config for training the middle-sized version of the model,
 3. `train_gpt2_large_config.py`: Config for training the large-sized version of the model.
@@ -472,31 +472,31 @@ Which file you pass to the training command will determine which version of the 
 For Protein Sequence, the small version training can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/data/protein_sequence/train_gpt2_config.py
+python gpt2/train.py gpt2/configs/protein_sequence/train_gpt2_config.py
 ```
 
 For Molecule Related Natural Language, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/data/molecule_nl/train_gpt2_config.py
+python gpt2/train.py gpt2/configs/molecule_nl/train_gpt2_config.py
 ```
 
 For Genome Sequence, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/data/genome_sequence/train_gpt2_config.py
+python gpt2/train.py gpt2/configs/genome_sequence/train_gpt2_config.py
 ```
 
 For Compounds, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/data/compounds/train_gpt2_config.py
+python gpt2/train.py gpt2/configs/compounds/train_gpt2_config.py
 ```
 
 For RNA, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/data/rna/train_gpt2_config.py
+python gpt2/train.py gpt2/configs/rna/train_gpt2_config.py
 ```
 
 This will train a model and save it in outputdir.
@@ -508,7 +508,7 @@ FOR MORE INFORMATION REGARDING THE CONFIG FILES, PLEASE REFER TO THE [GPT2 READM
 In a similar way, using the same config files, you can sample some example with the following:
 
 ```bash
-python gpt2/sample.py gpt2/data/<dataset>/train_gpt2_config.py
+python gpt2/sample.py gpt2/configs/<dataset>/train_gpt2_config.py
 ```
 
 For more information, check the README in the folder `gpt2`.
