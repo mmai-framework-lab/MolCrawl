@@ -38,7 +38,7 @@ dataset_params = {}
 tensorboard = False  # log training metrics to tensorboard
 tensorboard_dir = "runs"
 
-out_dir = "out-bert"
+out_dir = "out-gpt2"
 eval_interval = 2000
 log_interval = 1
 eval_iters = 200
@@ -76,6 +76,7 @@ dtype = (
     "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
 )  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
 compile = False  # use PyTorch 2.0 to compile the model to be faster
+
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 exec(open("gpt2/configurator.py").read())  # overrides from command line or config file
