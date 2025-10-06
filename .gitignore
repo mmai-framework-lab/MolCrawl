@@ -6,6 +6,8 @@ __pycache__
 *.log
 *.arrow
 *.json
+*.pyc
+*.pyo
 
 !package.json
 
@@ -16,10 +18,14 @@ zinc15_download_dir
 *.csv
 *.csv.gz
 
-
 build
 *.egg-info
 
 *.pt
 runs*
 out/*
+
+experiments.db
+experiments.db-journal
+*.db-journal
+

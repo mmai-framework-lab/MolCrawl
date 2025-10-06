@@ -2,13 +2,22 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import ZincChecker from './ZincChecker';
 import GenomeSpeciesList from './GenomeSpeciesList';
+import ExperimentDashboard from './ExperimentDashboard';
 
 // データセットタブの定義
 const DATASET_TABS = [
   {
+    id: 'experiments',
+    name: 'Experiments',
+    icon: '🧪',
+    description: '実験管理ダッシュボード',
+    path: null,
+    isSpecial: true
+  },
+  {
     id: 'compounds',
     name: 'Compounds',
-    icon: '🧪',
+    icon: '💊',
     description: '化合物データセット',
     path: 'compounds'
   },
@@ -398,6 +407,10 @@ function App() {
 
           {/* タブコンテンツ */}
           <div className="tab-content">
+            {/* 実験管理ダッシュボード */}
+            {activeTab === 'experiments' ? (
+              <ExperimentDashboard />
+            ) : (
             <div className="tree-container">
               <div className="tree-header">
                 <div className="controls">
@@ -473,6 +486,7 @@ function App() {
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
       </main>
