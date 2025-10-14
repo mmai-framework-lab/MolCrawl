@@ -15,6 +15,7 @@ comes up with a better simple Python solution I am all ears.
 """
 
 import sys
+import os
 from ast import literal_eval
 
 for arg in sys.argv[1:]:
@@ -22,6 +23,15 @@ for arg in sys.argv[1:]:
         # assume it's the name of a config file
         assert not arg.startswith("--")
         config_file = arg
+        # Handle relative paths from different working directories
+        if not os.path.isabs(config_file) and not os.path.exists(config_file):
+            # Try with script directory prefix
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(script_dir)
+            potential_path = os.path.join(parent_dir, config_file)
+            if os.path.exists(potential_path):
+                config_file = potential_path
+        
         print(f"Overriding config with {config_file}:")
         with open(config_file) as f:
             print(f.read())
