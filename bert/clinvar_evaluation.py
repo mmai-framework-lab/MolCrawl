@@ -34,15 +34,13 @@ import warnings
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ログ設定
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(f'logs/bert_clinvar_evaluation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
-        logging.StreamHandler()
-    ]
-)
+# プロジェクトルートを追加
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(PROJECT_ROOT, 'src'))
+
+from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+
+# ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
 class BERTClinVarEvaluator:
@@ -691,8 +689,8 @@ def main():
     parser.add_argument('--dataset_path', type=str, 
                        default='data/clinvar/random_2000_clinvar.csv',
                        help='Path to ClinVar evaluation dataset')
-    parser.add_argument('--output_dir', type=str, default='./bert_clinvar_evaluation_results',
-                       help='Output directory for results')
+    parser.add_argument('--output_dir', type=str, default=None,
+                       help='Output directory for results (auto-generated if not provided)')
     parser.add_argument('--sample_size', type=int, default=None,
                        help='Sample size for testing (default: use all data)')
     parser.add_argument('--device', type=str, default='cuda',
@@ -702,9 +700,16 @@ def main():
     
     args = parser.parse_args()
     
-    # 出力ディレクトリの作成
-    os.makedirs(args.output_dir, exist_ok=True)
-    os.makedirs('logs', exist_ok=True)
+    # 出力ディレクトリを自動生成または指定されたものを使用
+    if args.output_dir is None:
+        model_type = get_model_type_from_path(args.model_path)
+        model_name = get_model_name_from_path(args.model_path)
+        args.output_dir = get_evaluation_output_dir(model_type, 'bert_clinvar', model_name)
+    else:
+        os.makedirs(args.output_dir, exist_ok=True)
+    
+    # ログ設定
+    logger = setup_evaluation_logging(Path(args.output_dir), 'bert_clinvar_evaluation')
     
     logger.info("Starting BERT ClinVar evaluation...")
     logger.info(f"Model path: {args.model_path}")

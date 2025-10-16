@@ -362,7 +362,49 @@ def on_experiment_complete(experiment_id):
     send_slack_notification(f"Experiment {experiment.experiment_name} completed!")
 ```
 
+## 評価レポート統合構造 (2024年10月実装)
+
+### 新しい構造化された評価出力管理
+
+**統一出力ディレクトリ構造**:
+```
+${LEARNING_SOURCE_DIR}/
+├── genome_sequence/
+│   └── report/
+│       ├── clinvar_[model_name]_YYYYMMDD_HHMMSS/
+│       ├── cosmic_[model_name]_YYYYMMDD_HHMMSS/
+│       └── bert_clinvar_[model_name]_YYYYMMDD_HHMMSS/
+└── protein_sequence/
+    └── report/
+        ├── proteingym_[model_name]_YYYYMMDD_HHMMSS/
+        ├── bert_proteingym_[model_name]_YYYYMMDD_HHMMSS/
+        └── protein_classification_[model_name]_YYYYMMDD_HHMMSS/
+```
+
+**統一管理ユーティリティ** (`src/utils/evaluation_output.py`):
+- `get_evaluation_output_dir()`: 自動ディレクトリ生成
+- `get_model_type_from_path()`: モデルタイプ自動推定  
+- `setup_evaluation_logging()`: 統一ログ設定
+- `LEARNING_SOURCE_DIR` 環境変数対応
+
+**更新されたスクリプト**:
+- `scripts/proteingym_evaluation.py`
+- `scripts/clinvar_evaluation.py` 
+- `scripts/cosmic_evaluation.py`
+- `scripts/omim_evaluation.py`
+- `bert/proteingym_evaluation.py`
+- `bert/clinvar_evaluation.py`
+- `bert/protein_classification_evaluation.py`
+
+**利点**:
+1. **整理された出力**: ドメイン別（genome_sequence, protein_sequence）に分類
+2. **タイムスタンプ管理**: 実行ごとに独立したディレクトリ
+3. **自動ディレクトリ生成**: --output_dir オプション不要
+4. **統一ログ形式**: 全スクリプトで共通のログ設定  
+5. **環境変数対応**: `LEARNING_SOURCE_DIR` でベースパス制御
+
 ## まとめ
 
 本システムは、機械学習実験の管理を効率化するために設計された軽量で拡張可能なソリューションです。
+2024年10月のアップデートにより、評価レポートの出力が構造化され、プロジェクトルートの混乱が解消されました。
 既存のワークフローに最小限の変更で統合でき、実験の可視性と再現性を大幅に向上させます。

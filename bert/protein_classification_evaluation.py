@@ -28,16 +28,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
 
 from protein_sequence.utils.bert_tokenizer import EsmSequenceTokenizer
+from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(f'logs/protein_classification_evaluation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
-        logging.StreamHandler()
-    ]
-)
+# ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
 class ProteinClassificationEvaluator:
@@ -406,9 +399,17 @@ def main():
     
     args = parser.parse_args()
     
-    # Create output directory
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(exist_ok=True)
+    # 出力ディレクトリを自動生成または指定されたものを使用
+    if hasattr(args, 'output_dir') and args.output_dir != "./protein_classification_results":
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(exist_ok=True)
+    else:
+        model_type = get_model_type_from_path(args.model_path)
+        model_name = get_model_name_from_path(args.model_path)
+        output_dir = get_evaluation_output_dir(model_type, 'protein_classification', model_name)
+    
+    # ログ設定
+    logger = setup_evaluation_logging(output_dir, 'protein_classification_evaluation')
     
     # Create sample dataset if requested
     if args.create_sample_data or not args.data_path:

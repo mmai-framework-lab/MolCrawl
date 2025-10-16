@@ -26,15 +26,9 @@ from transformers import BertForMaskedLM, BertConfig
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-# ログ設定
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(f'logs/bert_proteingym_evaluation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
-        logging.StreamHandler()
-    ]
-)
+from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+
+# ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
 class BERTProteinGymEvaluator:
@@ -725,8 +719,8 @@ def main():
                        help='Path to trained BERT model checkpoint')
     parser.add_argument('--proteingym_data', type=str, required=True,
                        help='Path to ProteinGym data file (CSV/TSV/JSON)')
-    parser.add_argument('--output_dir', type=str, default='./bert_proteingym_evaluation_results',
-                       help='Output directory for results')
+    parser.add_argument('--output_dir', type=str, default=None,
+                       help='Output directory for results (auto-generated if not provided)')
     parser.add_argument('--batch_size', type=int, default=16,
                        help='Batch size for evaluation')
     parser.add_argument('--sample_size', type=int, default=None,
@@ -740,9 +734,16 @@ def main():
     
     args = parser.parse_args()
     
-    # 出力ディレクトリを作成
-    os.makedirs(args.output_dir, exist_ok=True)
-    os.makedirs('logs', exist_ok=True)
+    # 出力ディレクトリを自動生成または指定されたものを使用
+    if args.output_dir is None:
+        model_type = get_model_type_from_path(args.model_path)
+        model_name = get_model_name_from_path(args.model_path)
+        args.output_dir = get_evaluation_output_dir(model_type, 'bert_proteingym', model_name)
+    else:
+        os.makedirs(args.output_dir, exist_ok=True)
+    
+    # ログ設定
+    logger = setup_evaluation_logging(Path(args.output_dir), 'bert_proteingym_evaluation')
     
     # サンプルデータ作成モード
     if args.create_sample_data:

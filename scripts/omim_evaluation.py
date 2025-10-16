@@ -48,28 +48,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 try:
     from src.config.paths import get_genome_tokenizer_path, get_gpt2_output_path
     from gpt2.model import GPTConfig, GPT
+    from src.utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure you're running from the project root directory")
     sys.exit(1)
 
-def setup_logging(output_dir: str) -> logging.Logger:
-    """ログ設定をセットアップ"""
-    log_dir = os.path.join(output_dir, 'logs')
-    os.makedirs(log_dir, exist_ok=True)
-    
-    log_file = os.path.join(log_dir, f"omim_evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-    
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
-    
-    return logging.getLogger(__name__)
+# setup_logging関数は utils.evaluation_output.setup_evaluation_logging を使用
 
 class OMIMEvaluator:
     """OMIM遺伝性疾患予測評価クラス"""
@@ -450,8 +435,8 @@ def main():
                        help='Path to the trained GPT-2 model (default: dummy_model)')
     parser.add_argument('--data_path', type=str, required=True,
                        help='Path to OMIM evaluation dataset')
-    parser.add_argument('--output_dir', type=str, required=True,
-                       help='Output directory for results')
+    parser.add_argument('--output_dir', type=str, default=None,
+                       help='Output directory for results (auto-generated if not provided)')
     parser.add_argument('--batch_size', type=int, default=16,
                        help='Batch size for evaluation (default: 16)')
     parser.add_argument('--device', type=str, default=None,
@@ -460,9 +445,16 @@ def main():
     args = parser.parse_args()
     
     try:
+        # 出力ディレクトリを自動生成または指定されたものを使用
+        if args.output_dir is None:
+            model_type = get_model_type_from_path(args.model_path)
+            model_name = get_model_name_from_path(args.model_path)
+            args.output_dir = get_evaluation_output_dir(model_type, 'omim', model_name)
+        else:
+            os.makedirs(args.output_dir, exist_ok=True)
+        
         # ログ設定
-        os.makedirs(args.output_dir, exist_ok=True)
-        logger = setup_logging(args.output_dir)
+        logger = setup_evaluation_logging(Path(args.output_dir), 'omim_evaluation')
         
         # トークナイザーパス取得
         tokenizer_path = get_genome_tokenizer_path()
