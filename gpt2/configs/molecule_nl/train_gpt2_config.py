@@ -14,7 +14,8 @@ tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("molecule_nl", "small")
 out_dir = get_gpt2_output_path("molecule_nl", "small")
 
-dataset_dir = MOLECULE_NL_DATASET_DIR  # Adjust the path as necessary for your generated dataset.
+#dataset_dir = MOLECULE_NL_DATASET_DIR  # Adjust the path as necessary for your generated dataset.
+dataset_dir = "learning_source_20251020-molecule-nl/molecule_nl/molecule_related_natural_language_tokenized.parquet"
 
 tokenizer = Tokenizer()
 
@@ -51,3 +52,15 @@ eos_token = 2  # eos
 dataset_params = {
     "dataset_dir": dataset_dir # Adjust the path as necessary for your generated dataset.
 }
+
+# Vocabulary size for the model
+try:
+    if hasattr(tokenizer.tokenizer, 'vocab_size'):
+        meta_vocab_size = tokenizer.tokenizer.vocab_size
+    else:
+        meta_vocab_size = 32000  # CodeLlama default vocab size
+except:
+    meta_vocab_size = 32000  # Fallback value
+
+print(f"Using vocab_size: {meta_vocab_size}")
+

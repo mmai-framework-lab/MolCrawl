@@ -312,6 +312,7 @@ if dataset == "rna":
     # Set vocab size from the RNA dataset
     meta_vocab_size = training_data.vocab_size
 else:
+    print (f"Loading dataset: {dataset_params}")
     training_data = PreparedDataset(**dataset_params, split="train")
     test_data = PreparedDataset(**dataset_params, split="valid")
 
@@ -335,19 +336,22 @@ def get_batch(split):
     # Pad or truncate sequences to block_size
     padded_sequences = []
     for seq in sequences:
+        # Ensure seq is long type for embedding layer compatibility
+        seq = seq.long() if seq.dtype != torch.long else seq
+        
         if len(seq) > block_size:
             # Truncate to block_size
             padded_sequences.append(seq[:block_size])
         elif len(seq) < block_size:
             # Pad with zeros (assuming 0 is padding token)
-            padding = torch.zeros(block_size - len(seq), dtype=seq.dtype)
+            padding = torch.zeros(block_size - len(seq), dtype=torch.long)
             padded_sequences.append(torch.cat([seq, padding]))
         else:
             padded_sequences.append(seq)
     
     batch = torch.stack(padded_sequences)
-    x = batch[:, :-1]
-    y = batch[:, 1:]
+    x = batch[:, :-1].long()  # Ensure long type for embedding
+    y = batch[:, 1:].long()   # Ensure long type for embedding
     
     if device_type == "cuda":
         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
