@@ -33,7 +33,7 @@ from utils.model_evaluator import ModelEvaluator
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
-class ClinVarEvaluator(ModelEvaluator):
+class GPT2ClinVarEvaluator(ModelEvaluator):
     """ClinVarデータを使用したモデル評価クラス"""
     
     def __init__(self, model_path, tokenizer_path, device='cuda'):
@@ -533,7 +533,7 @@ def main():
         tokenizer_path = get_genome_tokenizer_path()
         
         # 評価器の初期化
-        evaluator = ClinVarEvaluator(
+        evaluator = GPT2ClinVarEvaluator(
             model_path=args.model_path,
             tokenizer_path=tokenizer_path,
             device=args.device
