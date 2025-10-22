@@ -28,11 +28,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
 from config.paths import get_genome_tokenizer_path, get_gpt2_output_path
 from model import GPT, GPTConfig
 from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+from utils.model_evaluator import ModelEvaluator
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
-class ClinVarEvaluator:
+class ClinVarEvaluator(ModelEvaluator):
     """ClinVarデータを使用したモデル評価クラス"""
     
     def __init__(self, model_path, tokenizer_path, device='cuda'):
@@ -44,18 +45,36 @@ class ClinVarEvaluator:
             tokenizer_path (str): SentencePieceトークナイザーのパス
             device (str): 使用デバイス
         """
-        self.device = device
-        self.model_path = model_path
-        self.tokenizer_path = tokenizer_path
+        # 親クラスの初期化
+        super().__init__(model_path, tokenizer_path, device)
         
-        # トークナイザーの読み込み
-        logger.info(f"Loading tokenizer from {tokenizer_path}")
-        self.tokenizer = spm.SentencePieceProcessor(model_file=tokenizer_path)
+        # サブクラス固有の初期化
+        self.tokenizer = self._init_tokenizer()
         self.vocab_size = self.tokenizer.vocab_size()
+        self.model = self._init_model()
         
-        # モデルの読み込み
-        logger.info(f"Loading model from {model_path}")
-        self.model = self._load_model()
+    def _init_tokenizer(self):
+        """トークナイザーの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading tokenizer from {self.tokenizer_path}")
+        return spm.SentencePieceProcessor(model_file=self.tokenizer_path)
+        
+    def _init_model(self):
+        """モデルの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading model from {self.model_path}")
+        return self._load_model()
+    
+    def encode_sequence(self, sequence: str, **kwargs):
+        """
+        配列をトークンIDにエンコード（抽象メソッドの実装）
+        
+        Args:
+            sequence: ゲノム配列
+            **kwargs: 追加の引数
+            
+        Returns:
+            トークンIDのリスト
+        """
+        return self.tokenizer.encode(sequence)
         
     def _load_model(self):
         """訓練済みモデルの読み込み"""

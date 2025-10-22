@@ -36,11 +36,12 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(PROJECT_ROOT, 'src'))
 
 from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+from utils.model_evaluator import ModelEvaluator
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
-class BERTClinVarEvaluator:
+class BERTClinVarEvaluator(ModelEvaluator):
     """ClinVarデータを使用したBERTモデル評価クラス"""
     
     def __init__(self, model_path, tokenizer_path, device='cuda', max_length=512):
@@ -53,24 +54,30 @@ class BERTClinVarEvaluator:
             device (str): 使用デバイス
             max_length (int): 最大入力長
         """
-        self.device = device
-        self.model_path = model_path
-        self.tokenizer_path = tokenizer_path
+        # 親クラスの初期化
+        super().__init__(model_path, tokenizer_path, device)
+        
         self.max_length = max_length
         
-        # トークナイザーの読み込み
-        logger.info(f"Loading tokenizer from {tokenizer_path}")
-        self.tokenizer = spm.SentencePieceProcessor(model_file=tokenizer_path)
+        # サブクラス固有の初期化
+        self.tokenizer = self._init_tokenizer()
         self.vocab_size = self.tokenizer.vocab_size()
-        
-        # モデルの読み込み
-        logger.info(f"Loading BERT model from {model_path}")
-        self.model = self._load_model()
+        self.model = self._init_model()
         
         # 特殊トークンのIDを取得
         self.mask_token_id = self._get_mask_token_id()
         self.cls_token_id = self._get_cls_token_id()
         self.sep_token_id = self._get_sep_token_id()
+    
+    def _init_tokenizer(self):
+        """トークナイザーの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading tokenizer from {self.tokenizer_path}")
+        return spm.SentencePieceProcessor(model_file=self.tokenizer_path)
+    
+    def _init_model(self):
+        """モデルの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading BERT model from {self.model_path}")
+        return self._load_model()
         
     def _get_mask_token_id(self):
         """MASKトークンのIDを取得"""

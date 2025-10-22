@@ -29,11 +29,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
 
 from protein_sequence.utils.bert_tokenizer import EsmSequenceTokenizer
 from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+from utils.model_evaluator import ModelEvaluator
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
-class ProteinClassificationEvaluator:
+class ProteinClassificationEvaluator(ModelEvaluator):
     """Protein sequence GPT2 model classification evaluator"""
     
     def __init__(self, model_path: str, tokenizer_path: str):
@@ -44,19 +45,24 @@ class ProteinClassificationEvaluator:
             model_path: Path to trained GPT2 model
             tokenizer_path: Path to tokenizer
         """
-        self.model_path = model_path
-        self.tokenizer_path = tokenizer_path
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # 親クラスの初期化
+        super().__init__(model_path, tokenizer_path)
         
-        # Load tokenizer
-        logger.info(f"Loading tokenizer from {tokenizer_path}")
-        self.tokenizer = EsmSequenceTokenizer(vocab_size=33)
-        
-        # Load model
-        logger.info(f"Loading model from {model_path}")
-        self.model = self._load_model()
+        # サブクラス固有の初期化
+        self.tokenizer = self._init_tokenizer()
+        self.model = self._init_model()
         self.model.to(self.device)
         self.model.eval()
+    
+    def _init_tokenizer(self):
+        """トークナイザーの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading tokenizer from {self.tokenizer_path}")
+        return EsmSequenceTokenizer(vocab_size=33)
+    
+    def _init_model(self):
+        """モデルの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading model from {self.model_path}")
+        return self._load_model()
         
     def _load_model(self):
         """Load the GPT2 model"""
@@ -112,6 +118,19 @@ class ProteinClassificationEvaluator:
         except Exception as e:
             logger.error(f"Error loading model: {e}")
             raise
+    
+    def encode_sequence(self, sequence: str, **kwargs) -> List[int]:
+        """
+        配列をトークンIDにエンコード（抽象メソッドの実装）
+        
+        Args:
+            sequence: タンパク質配列
+            **kwargs: 追加の引数
+            
+        Returns:
+            トークンIDのリスト
+        """
+        return self.tokenizer.encode(sequence)
     
     def calculate_fitness_score(self, sequence: str, variant_pos: int, ref_aa: str, alt_aa: str) -> float:
         """

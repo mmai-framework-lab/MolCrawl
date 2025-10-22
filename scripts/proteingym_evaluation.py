@@ -29,11 +29,12 @@ from config.paths import get_genome_tokenizer_path, get_gpt2_output_path
 from model import GPT, GPTConfig
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+from utils.model_evaluator import ModelEvaluator
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
 
-class ProteinGymEvaluator:
+class ProteinGymEvaluator(ModelEvaluator):
     """ProteinGymデータを使用したモデル評価クラス"""
     
     def __init__(self, model_path, tokenizer_path=None, device='cuda'):
@@ -45,19 +46,15 @@ class ProteinGymEvaluator:
             tokenizer_path (str): トークナイザーのパス（protein_sequenceでは不要）
             device (str): 使用デバイス
         """
-        self.device = device
-        self.model_path = model_path
-        self.tokenizer_path = tokenizer_path
+        # 親クラスの初期化（tokenizer_pathがNoneの場合はmodel_pathを使用）
+        super().__init__(model_path, tokenizer_path or model_path, device)
         
-        # protein_sequence用のトークナイザーを初期化
-        self._init_protein_tokenizer()
-        
-        # モデルの読み込み
-        logger.info(f"Loading model from {model_path}")
-        self.model = self._load_model()
+        # サブクラス固有の初期化
+        self.tokenizer = self._init_tokenizer()
+        self.model = self._init_model()
     
-    def _init_protein_tokenizer(self):
-        """protein_sequence用のトークナイザーを初期化"""
+    def _init_tokenizer(self):
+        """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
             import sys
@@ -66,21 +63,27 @@ class ProteinGymEvaluator:
             from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
             
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")
-            self.tokenizer = EsmSequenceTokenizer()
-            self.vocab_size = len(self.tokenizer.get_vocab())
+            tokenizer = EsmSequenceTokenizer()
+            self.vocab_size = len(tokenizer.get_vocab())
             logger.info(f"EsmSequenceTokenizer initialized with vocab_size: {self.vocab_size}")
             
             # モデルが40のvocab_sizeで学習されている一方、EsmSequenceTokenizerは33のvocab_sizeの場合の対処
             if self.vocab_size != 40:
                 logger.warning(f"Tokenizer vocab_size ({self.vocab_size}) != model vocab_size (40)")
                 logger.info("Falling back to simple amino acid tokenizer with correct vocab_size")
-                self._init_simple_amino_acid_tokenizer()
-                return
+                return self._init_simple_amino_acid_tokenizer()
+            
+            return tokenizer
             
         except ImportError as e:
             logger.warning(f"Could not import EsmSequenceTokenizer: {e}")
             logger.info("Falling back to simple amino acid tokenizer")
-            self._init_simple_amino_acid_tokenizer()
+            return self._init_simple_amino_acid_tokenizer()
+    
+    def _init_model(self):
+        """モデルの初期化（抽象メソッドの実装）"""
+        logger.info(f"Loading model from {self.model_path}")
+        return self._load_model()
     
     def _init_simple_amino_acid_tokenizer(self):
         """シンプルなアミノ酸トークナイザーを初期化（vocab_size=40）"""

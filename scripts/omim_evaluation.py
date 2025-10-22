@@ -49,6 +49,7 @@ try:
     from src.config.paths import get_genome_tokenizer_path, get_gpt2_output_path
     from gpt2.model import GPTConfig, GPT
     from src.utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
+    from src.utils.model_evaluator import ModelEvaluator
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure you're running from the project root directory")
@@ -56,7 +57,7 @@ except ImportError as e:
 
 # setup_logging関数は utils.evaluation_output.setup_evaluation_logging を使用
 
-class OMIMEvaluator:
+class OMIMEvaluator(ModelEvaluator):
     """OMIM遺伝性疾患予測評価クラス"""
     
     def __init__(self, 
@@ -65,19 +66,41 @@ class OMIMEvaluator:
                  device: str = None,
                  logger: Optional[logging.Logger] = None):
         
-        self.model_path = model_path
-        self.tokenizer_path = tokenizer_path
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        # 親クラスの初期化
+        super().__init__(model_path, tokenizer_path, device or ('cuda' if torch.cuda.is_available() else 'cpu'))
+        
         self.logger = logger or logging.getLogger(__name__)
         
-        # モデルとトークナイザーの初期化
-        self.tokenizer = None
-        self.model = None
-        self.load_model_and_tokenizer()
+        # サブクラス固有の初期化
+        self.tokenizer = self._init_tokenizer()
+        self.model = self._init_model()
         
         # 評価結果保存用
         self.results = {}
         self.predictions = []
+    
+    def _init_tokenizer(self):
+        """トークナイザーの初期化（抽象メソッドの実装）"""
+        self.logger.info(f"Loading tokenizer from {self.tokenizer_path}")
+        return spm.SentencePieceProcessor(model_file=self.tokenizer_path)
+    
+    def _init_model(self):
+        """モデルの初期化（抽象メソッドの実装）"""
+        self.logger.info(f"Loading model from {self.model_path}")
+        return self.load_model_and_tokenizer()
+    
+    def encode_sequence(self, sequence: str, **kwargs) -> List[int]:
+        """
+        配列をトークンIDにエンコード（抽象メソッドの実装）
+        
+        Args:
+            sequence: ゲノム配列
+            **kwargs: 追加の引数
+            
+        Returns:
+            トークンIDのリスト
+        """
+        return self.tokenizer.encode(sequence)
         self.true_labels = []
         self.prediction_scores = []
 
