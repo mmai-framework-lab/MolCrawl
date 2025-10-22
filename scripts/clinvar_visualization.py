@@ -17,6 +17,11 @@ from pathlib import Path
 import logging
 from datetime import datetime
 
+# プロジェクトルートを追加
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from utils.base_visualization import BaseVisualizationGenerator
+
 # 日本語フォント設定
 plt.rcParams['font.family'] = ['DejaVu Sans', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
 
@@ -27,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class ClinVarResultsVisualizer:
+class ClinVarResultsVisualizer(BaseVisualizationGenerator):
     """ClinVar評価結果の可視化クラス"""
     
     def __init__(self, results_file, output_dir='./visualization_results'):
@@ -38,21 +43,16 @@ class ClinVarResultsVisualizer:
             results_file (str): 評価結果JSONファイルのパス
             output_dir (str): 可視化結果の出力ディレクトリ
         """
-        self.results_file = results_file
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        # 親クラスの初期化
+        super().__init__(results_file, output_dir, logger)
         
-        # 結果の読み込み
-        with open(results_file, 'r') as f:
-            self.results = json.load(f)
-        
-        # プロット設定
-        plt.style.use('seaborn-v0_8')
-        sns.set_palette("husl")
+        # ClinVar固有の検証
+        required_keys = ['accuracy', 'precision', 'recall', 'f1_score', 'confusion_matrix']
+        self._validate_results(required_keys)
     
     def plot_confusion_matrix(self):
         """混同行列をプロット"""
-        logger.info("Creating confusion matrix plot")
+        self.logger.info("Creating confusion matrix plot")
         
         cm = self.results['confusion_matrix']
         matrix = np.array([
@@ -77,13 +77,11 @@ class ClinVarResultsVisualizer:
         plt.figtext(0.02, 0.02, f'Accuracy: {accuracy:.3f}', fontsize=12)
         
         plt.tight_layout()
-        plt.savefig(self.output_dir / 'confusion_matrix.png', dpi=300, bbox_inches='tight')
-        plt.savefig(self.output_dir / 'confusion_matrix.pdf', bbox_inches='tight')
-        plt.close()
+        self._save_plot('confusion_matrix')
     
     def plot_performance_metrics(self):
         """性能指標の棒グラフをプロット"""
-        logger.info("Creating performance metrics plot")
+        self.logger.info("Creating performance metrics plot")
         
         metrics = {
             'Accuracy': self.results['accuracy'],
@@ -109,13 +107,11 @@ class ClinVarResultsVisualizer:
         
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(self.output_dir / 'performance_metrics.png', dpi=300, bbox_inches='tight')
-        plt.savefig(self.output_dir / 'performance_metrics.pdf', bbox_inches='tight')
-        plt.close()
+        self._save_plot('performance_metrics')
     
     def plot_auc_comparison(self):
         """AUC指標の比較プロット"""
-        logger.info("Creating AUC comparison plot")
+        self.logger.info("Creating AUC comparison plot")
         
         auc_metrics = {
             'ROC-AUC': self.results['roc_auc'],
@@ -140,13 +136,11 @@ class ClinVarResultsVisualizer:
         plt.legend()
         
         plt.tight_layout()
-        plt.savefig(self.output_dir / 'auc_metrics.png', dpi=300, bbox_inches='tight')
-        plt.savefig(self.output_dir / 'auc_metrics.pdf', bbox_inches='tight')
-        plt.close()
+        self._save_plot('auc_metrics')
     
     def create_performance_radar_chart(self):
         """性能指標のレーダーチャートを作成"""
-        logger.info("Creating performance radar chart")
+        self.logger.info("Creating performance radar chart")
         
         metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Sensitivity', 'Specificity']
         values = [
@@ -181,13 +175,11 @@ class ClinVarResultsVisualizer:
         
         plt.title('Model Performance Radar Chart', size=16, y=1.1)
         plt.tight_layout()
-        plt.savefig(self.output_dir / 'performance_radar.png', dpi=300, bbox_inches='tight')
-        plt.savefig(self.output_dir / 'performance_radar.pdf', bbox_inches='tight')
-        plt.close()
+        self._save_plot('performance_radar')
     
     def create_classification_report_table(self):
         """分類レポートテーブルを作成"""
-        logger.info("Creating classification report table")
+        self.logger.info("Creating classification report table")
         
         # 分類レポート用データを準備
         cm = self.results['confusion_matrix']
@@ -258,16 +250,16 @@ class ClinVarResultsVisualizer:
             table[(0, i)].set_text_props(weight='bold', color='white')
         
         plt.title('Classification Report', size=16, pad=20)
-        plt.savefig(self.output_dir / 'classification_report.png', dpi=300, bbox_inches='tight')
-        plt.savefig(self.output_dir / 'classification_report.pdf', bbox_inches='tight')
-        plt.close()
+        self._save_plot('classification_report')
         
         # CSVとしても保存
-        df_report.to_csv(self.output_dir / 'classification_report.csv', index=False)
+        csv_path = self.output_dir / 'classification_report.csv'
+        df_report.to_csv(csv_path, index=False)
+        self.generated_files.append(csv_path)
     
     def create_summary_dashboard(self):
         """全体的なサマリーダッシュボードを作成"""
-        logger.info("Creating summary dashboard")
+        self.logger.info("Creating summary dashboard")
         
         fig = plt.figure(figsize=(16, 12))
         
@@ -337,13 +329,11 @@ class ClinVarResultsVisualizer:
                 verticalalignment='top', bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
         
         plt.suptitle('ClinVar Evaluation Dashboard - Genome Sequence Model', fontsize=16, y=0.98)
-        plt.savefig(self.output_dir / 'summary_dashboard.png', dpi=300, bbox_inches='tight')
-        plt.savefig(self.output_dir / 'summary_dashboard.pdf', bbox_inches='tight')
-        plt.close()
+        self._save_plot('summary_dashboard')
     
     def generate_all_visualizations(self):
         """全ての可視化を生成"""
-        logger.info("Generating all visualizations")
+        self.logger.info("Generating all visualizations")
         
         self.plot_confusion_matrix()
         self.plot_performance_metrics()
@@ -352,68 +342,51 @@ class ClinVarResultsVisualizer:
         self.create_classification_report_table()
         self.create_summary_dashboard()
         
-        logger.info(f"All visualizations saved to {self.output_dir}")
+        self.logger.info(f"All visualizations saved to {self.output_dir}")
+        self.logger.info(f"Generated {len(self.generated_files)} files")
     
     def create_html_report(self):
         """HTML形式の総合レポートを作成"""
-        logger.info("Creating HTML report")
+        self.logger.info("Creating HTML report")
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>ClinVar Evaluation Report</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                .header {{ background-color: #f0f0f0; padding: 20px; border-radius: 5px; }}
-                .metric-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }}
-                .metric-card {{ background-color: #f9f9f9; padding: 15px; border-radius: 5px; text-align: center; }}
-                .metric-value {{ font-size: 24px; font-weight: bold; color: #2196F3; }}
-                .image-container {{ text-align: center; margin: 20px 0; }}
-                img {{ max-width: 100%; height: auto; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>ClinVar Pathogenicity Prediction Evaluation</h1>
-                <p>Genome Sequence Model Performance Report</p>
-                <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            </div>
-            
+        # 基底クラスのヘルパーメソッドを使用
+        html_content = self._create_html_header("ClinVar Pathogenicity Prediction Evaluation")
+        
+        html_content += f"""
             <h2>Performance Metrics</h2>
             <div class="metric-grid">
                 <div class="metric-card">
                     <div class="metric-value">{self.results['accuracy']:.3f}</div>
-                    <div>Accuracy</div>
+                    <div class="metric-label">Accuracy</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{self.results['precision']:.3f}</div>
-                    <div>Precision</div>
+                    <div class="metric-label">Precision</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{self.results['recall']:.3f}</div>
-                    <div>Recall</div>
+                    <div class="metric-label">Recall</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{self.results['f1_score']:.3f}</div>
-                    <div>F1-Score</div>
+                    <div class="metric-label">F1-Score</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{self.results['roc_auc']:.3f}</div>
-                    <div>ROC-AUC</div>
+                    <div class="metric-label">ROC-AUC</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{self.results['pr_auc']:.3f}</div>
-                    <div>PR-AUC</div>
+                    <div class="metric-label">PR-AUC</div>
                 </div>
             </div>
             
-            <h2>Summary Dashboard</h2>
+            <h2 class="section-title">Summary Dashboard</h2>
             <div class="image-container">
                 <img src="summary_dashboard.png" alt="Summary Dashboard">
             </div>
             
-            <h2>Detailed Analysis</h2>
+            <h2 class="section-title">Detailed Analysis</h2>
             
             <h3>Confusion Matrix</h3>
             <div class="image-container">
@@ -434,15 +407,16 @@ class ClinVarResultsVisualizer:
             <div class="image-container">
                 <img src="performance_radar.png" alt="Performance Radar Chart">
             </div>
-            
-        </body>
-        </html>
         """
         
-        with open(self.output_dir / 'evaluation_report.html', 'w', encoding='utf-8') as f:
+        html_content += self._create_html_footer()
+        
+        html_file = self.output_dir / 'evaluation_report.html'
+        with open(html_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         
-        logger.info("HTML report created: evaluation_report.html")
+        self.generated_files.append(html_file)
+        self.logger.info("HTML report created: evaluation_report.html")
 
 def main():
     parser = argparse.ArgumentParser(description='Visualize ClinVar evaluation results')
@@ -466,6 +440,12 @@ def main():
             visualizer.create_html_report()
         
         logger.info("Visualization completed successfully")
+        
+        # 生成されたファイル一覧をログ出力
+        generated_files = visualizer.get_generated_files()
+        logger.info(f"Generated {len(generated_files)} visualization files:")
+        for file_path in generated_files:
+            logger.info(f"  - {file_path}")
         
     except Exception as e:
         logger.error(f"Visualization failed: {e}")
