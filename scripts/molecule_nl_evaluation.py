@@ -207,34 +207,44 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
                 logger.error(f"Fallback tokenization also failed: {e2}")
                 return torch.tensor([0], dtype=torch.long)
     
-    def calculate_perplexity(self, text):
-        """テキストのパープレキシティを計算"""
+    def calculate_perplexity(self, text_or_tokens):
+        """テキストまたはトークンIDsのパープレキシティを計算
+        
+        Args:
+            text_or_tokens: テキスト文字列 または トークンIDのリスト/配列
+        """
         with torch.no_grad():
             try:
-                tokens = self.encode_text(text)
+                # 入力がトークンIDsかテキストかを判定
+                if isinstance(text_or_tokens, (list, tuple)) or (hasattr(text_or_tokens, '__iter__') and not isinstance(text_or_tokens, str)):
+                    # 既にトークン化されている場合
+                    if hasattr(text_or_tokens, 'tolist'):
+                        tokens = torch.tensor(text_or_tokens.tolist(), dtype=torch.long)
+                    else:
+                        tokens = torch.tensor(list(text_or_tokens), dtype=torch.long)
+                else:
+                    # テキストの場合はエンコード
+                    tokens = self.encode_text(text_or_tokens)
                 
                 if len(tokens) < 2:
-                    logger.debug(f"Text too short for perplexity calculation: {len(tokens)} tokens")
+                    logger.info(f"Sequence too short for perplexity calculation: {len(tokens)} tokens")
                     return float('inf')
                 
                 # バッチ次元を追加してデバイスに転送
                 tokens = tokens.unsqueeze(0).to(self.device)
                 
+                # 訓練時と同じように、入力と目標をシフト
+                # x = tokens[:, :-1] (最後のトークンを除く)
+                # y = tokens[:, 1:] (最初のトークンを除く)
+                x = tokens[:, :-1]
+                y = tokens[:, 1:]
+                
                 # モデルの予測
-                logits, _ = self.model(tokens)
+                logits, loss = self.model(x, targets=y)
                 
-                # 損失計算（次のトークン予測）
-                shift_logits = logits[..., :-1, :].contiguous()
-                shift_labels = tokens[..., 1:].contiguous()
-                
-                # ゼロサイズのテンソーをチェック
-                if shift_logits.numel() == 0 or shift_labels.numel() == 0:
-                    logger.debug(f"Empty tensor in perplexity calculation")
+                if loss is None:
+                    logger.info(f"Model returned None for loss")
                     return float('inf')
-                
-                # クロスエントロピー損失
-                loss_fct = torch.nn.CrossEntropyLoss(reduction='mean')
-                loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
                 
                 # パープレキシティは損失の指数
                 perplexity = torch.exp(loss).item()
@@ -242,7 +252,9 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
                 return perplexity
                 
             except Exception as e:
-                logger.debug(f"Error in perplexity calculation: {e}")
+                logger.info(f"Error in perplexity calculation: {e}")
+                import traceback
+                logger.info(f"Traceback: {traceback.format_exc()}")
                 return float('inf')
     
     def generate_text(self, prompt, max_new_tokens=100, temperature=1.0, top_k=50):
@@ -292,6 +304,8 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
             output_dir (str): 出力ディレクトリ
             sample_size (int): サンプルサイズ（None=全データ）
         """
+        print("DEBUG: evaluate_dataset method called!", flush=True)
+        
         # タイムスタンプを追加してoutput_dirを更新
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         output_dir = f"{output_dir}_{timestamp}"
@@ -300,13 +314,37 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
         os.makedirs(output_dir, exist_ok=True)
         
         logger.info("🔬 Starting Molecule NL Model Evaluation")
+        print("DEBUG: After first logger.info", flush=True)
         logger.info("=" * 60)
         
         # データセット読み込み
         logger.info("📚 Loading Molecule NL dataset...")
         try:
             dataset = load_from_disk(dataset_path)
-            df = pd.DataFrame(dataset)
+            
+            # DatasetDictの場合、適切なsplitを選択
+            if hasattr(dataset, 'keys'):
+                # DatasetDictの場合、testまたはvalidationを優先的に使用
+                if 'test' in dataset:
+                    dataset_split = dataset['test']
+                    logger.info(f"Using 'test' split from dataset")
+                elif 'validation' in dataset:
+                    dataset_split = dataset['validation']
+                    logger.info(f"Using 'validation' split from dataset")
+                elif 'train' in dataset:
+                    dataset_split = dataset['train']
+                    logger.info(f"Using 'train' split from dataset")
+                else:
+                    # 最初のsplitを使用
+                    split_name = list(dataset.keys())[0]
+                    dataset_split = dataset[split_name]
+                    logger.info(f"Using '{split_name}' split from dataset")
+            else:
+                # 単一のDatasetの場合
+                dataset_split = dataset
+            
+            # HuggingFace DatasetをpandasのDataFrameに変換
+            df = dataset_split.to_pandas()
             logger.info(f"✅ Dataset loaded successfully: {len(df)} samples")
         except Exception as e:
             logger.error(f"❌ Failed to load dataset: {e}")
@@ -320,9 +358,14 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
         
         # データセット統計
         logger.info(f"   - Total samples: {len(df)}")
+        logger.info(f"   - Available columns: {list(df.columns)}")
         if 'input_ids' in df.columns:
-            avg_length = df['input_ids'].apply(len).mean()
-            logger.info(f"   - Average sequence length: {avg_length:.1f}")
+            # input_idsがリスト型の場合の長さ計算
+            try:
+                avg_length = df['input_ids'].apply(lambda x: len(x) if isinstance(x, (list, tuple)) else 0).mean()
+                logger.info(f"   - Average sequence length: {avg_length:.1f}")
+            except Exception as e:
+                logger.warning(f"   - Could not calculate average sequence length: {e}")
         
         results = []
         perplexities = []
@@ -336,45 +379,44 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
                 logger.info(f"   Progress: {idx}/{len(df)} texts processed, avg perplexity: {avg_perplexity:.2f}")
             
             try:
-                # 入力テキストの取得
+                # input_idsを直接使用（既にトークン化されているため）
                 if 'input_ids' in row:
-                    # トークンIDからテキストを復元
                     input_ids = row['input_ids']
-                    if isinstance(input_ids, list) and len(input_ids) > 0:
-                        try:
-                            # MoleculeNatLangTokenizer.decode()の使用方法を調整
-                            text = self.tokenizer.decode(input_ids)
-                            logger.debug(f"Sample {idx}: Decoded {len(input_ids)} tokens to {len(text)} chars")
-                        except Exception as decode_error:
-                            logger.warning(f"Sample {idx}: Decode failed, using raw token representation: {decode_error}")
-                            text = f"[TOKENS: {input_ids[:10]}...]"  # デバッグ用
+                    
+                    # デバッグ: input_idsの型と内容を確認
+                    if idx == 0:  # 最初のサンプルで詳細確認
+                        logger.info(f"First sample analysis:")
+                        logger.info(f"  input_ids type: {type(input_ids)}")
+                        logger.info(f"  input_ids length: {len(input_ids) if hasattr(input_ids, '__len__') else 'N/A'}")
+                        if hasattr(input_ids, '__iter__'):
+                            sample_ids = list(input_ids)[:10] if len(input_ids) > 10 else list(input_ids)
+                            logger.info(f"  input_ids sample: {sample_ids}")
+                            logger.info(f"  Min/Max IDs: {min(input_ids)}/{max(input_ids)}")
+                    
+                    # numpy配列、リスト、タプルに対応
+                    if hasattr(input_ids, '__len__') and len(input_ids) > 0:
+                        # パープレキシティ計算（input_idsを直接渡す）
+                        logger.info(f"Sample {idx}: Calculating perplexity for {len(input_ids)} tokens...")
+                        perplexity = self.calculate_perplexity(input_ids)
+                        logger.info(f"Sample {idx}: Perplexity = {perplexity}")
+                        
+                        # テキストプレビュー用（表示のみ）
+                        text_preview = row.get('input_text', f'[{len(input_ids)} tokens]')[:100]
                     else:
                         logger.warning(f"Sample {idx}: Empty or invalid input_ids")
                         continue
-                elif 'text' in row:
-                    text = row['text']
-                    logger.debug(f"Sample {idx}: Using text field with {len(text)} chars")
                 else:
-                    logger.warning(f"Sample {idx}: No text or input_ids found")
+                    logger.warning(f"Sample {idx}: No input_ids found in row")
                     continue
-                
-                if not text or len(text.strip()) == 0:
-                    logger.warning(f"Sample {idx}: Empty text after processing")
-                    continue
-                
-                # パープレキシティ計算
-                logger.debug(f"Sample {idx}: Calculating perplexity for text: {text[:50]}...")
-                perplexity = self.calculate_perplexity(text)
-                logger.debug(f"Sample {idx}: Perplexity = {perplexity}")
                 
                 # 結果を記録
                 result = {
                     'index': idx,
-                    'text_length': len(text),
-                    'token_length': len(row.get('input_ids', [])),
+                    'text_length': len(text_preview),
+                    'token_length': len(input_ids),
                     'perplexity': perplexity,
                     'log_perplexity': math.log(perplexity) if perplexity > 0 and perplexity != float('inf') else float('inf'),
-                    'text_preview': text[:100] if len(text) > 100 else text
+                    'text_preview': text_preview
                 }
                 
                 results.append(result)
@@ -392,9 +434,40 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
         logger.info(f"   - Successfully processed: {len(results)} texts")
         logger.info(f"   - Processing errors: {processing_errors}")
         
+        # 結果が空の場合の処理
+        if not results:
+            logger.error("❌ No samples were successfully processed!")
+            logger.error("   Please check:")
+            logger.error("   1. Dataset format (should have 'input_ids' or 'text' field)")
+            logger.error("   2. Tokenizer compatibility")
+            logger.error("   3. Model checkpoint path")
+            
+            # 空のDataFrameを作成（カラムは定義する）
+            results_df = pd.DataFrame(columns=[
+                'index', 'text_length', 'token_length', 'perplexity', 
+                'log_perplexity', 'text_preview'
+            ])
+            
+            # 空のメトリクスを返す
+            metrics = {
+                'mean_perplexity': float('inf'),
+                'median_perplexity': float('inf'),
+                'std_perplexity': 0.0,
+                'total_samples': 0,
+                'valid_samples': 0,
+                'processing_errors': processing_errors
+            }
+            
+            return metrics, results_df
+        
         # 結果の保存と分析
         results_df = pd.DataFrame(results)
         results_df.to_csv(os.path.join(output_dir, 'molecule_nl_detailed_results.csv'), index=False)
+        
+        logger.info(f"📊 Results DataFrame shape: {results_df.shape}")
+        logger.info(f"   Columns: {list(results_df.columns)}")
+        if len(results_df) > 0:
+            logger.info(f"   Sample data:\n{results_df.head()}")
         
         # 性能指標の計算
         metrics = self._calculate_metrics(perplexities, results_df)
@@ -472,6 +545,16 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
         """基本的な結果可視化（フォールバック用）"""
         import matplotlib.pyplot as plt
         import seaborn as sns
+        
+        # 空のDataFrameチェック
+        if results_df is None or len(results_df) == 0:
+            logger.warning("⚠️  No data to visualize (empty results)")
+            return
+        
+        # 必要なカラムの存在チェック
+        if 'perplexity' not in results_df.columns:
+            logger.warning("⚠️  'perplexity' column not found in results")
+            return
         
         plt.style.use("default")
         fig, axes = plt.subplots(2, 2, figsize=(15, 10))
@@ -618,12 +701,97 @@ def main():
                        help='Device to use for evaluation')
     parser.add_argument('--max_length', type=int, default=1024,
                        help='Maximum sequence length')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable debug logging')
+    
+    # 画像再生成オプション
+    parser.add_argument('--visualize-only', action='store_true',
+                       help='Only generate visualizations from existing results (skip evaluation)')
+    parser.add_argument('--result-dir', type=str, default=None,
+                       help='Directory containing existing evaluation results (CSV files) for visualization')
     
     args = parser.parse_args()
     
     # LEARNING_SOURCE_DIRの設定
     learning_source_dir = os.environ.get('LEARNING_SOURCE_DIR', 'learning_source_202508')
     
+    # 画像のみ生成モード
+    if args.visualize_only:
+        if args.result_dir is None:
+            print("Error: --result-dir must be specified when using --visualize-only")
+            sys.exit(1)
+        
+        if not os.path.exists(args.result_dir):
+            print(f"Error: Result directory not found: {args.result_dir}")
+            sys.exit(1)
+        
+        # ログ設定
+        logger = setup_evaluation_logging(Path(args.result_dir), 'molecule_nl_visualization')
+        
+        if args.debug:
+            logging.getLogger().setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
+        
+        logger.info("🎨 Visualization-only mode")
+        logger.info(f"📁 Loading results from: {args.result_dir}")
+        
+        try:
+            # CSVファイルを読み込み
+            csv_file = os.path.join(args.result_dir, 'molecule_nl_detailed_results.csv')
+            if not os.path.exists(csv_file):
+                logger.error(f"❌ CSV file not found: {csv_file}")
+                sys.exit(1)
+            
+            results_df = pd.read_csv(csv_file)
+            logger.info(f"✅ Loaded {len(results_df)} results from CSV")
+            
+            # メトリクスJSONを読み込み（存在する場合）
+            json_file = os.path.join(args.result_dir, 'molecule_nl_evaluation_results.json')
+            if os.path.exists(json_file):
+                with open(json_file, 'r') as f:
+                    metrics = json.load(f)
+                logger.info(f"✅ Loaded metrics from JSON")
+            else:
+                # CSVから再計算
+                logger.info("ℹ️  Metrics JSON not found, recalculating from CSV...")
+                valid_perplexities = results_df[results_df['perplexity'] != float('inf')]['perplexity'].tolist()
+                metrics = {
+                    'total_samples': len(results_df),
+                    'valid_samples': len(valid_perplexities),
+                    'mean_perplexity': float(np.mean(valid_perplexities)) if valid_perplexities else float('inf'),
+                    'median_perplexity': float(np.median(valid_perplexities)) if valid_perplexities else float('inf'),
+                    'std_perplexity': float(np.std(valid_perplexities)) if valid_perplexities else float('inf'),
+                    'min_perplexity': float(np.min(valid_perplexities)) if valid_perplexities else float('inf'),
+                    'max_perplexity': float(np.max(valid_perplexities)) if valid_perplexities else float('inf')
+                }
+            
+            # 可視化生成クラスを使用
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            sys.path.insert(0, script_dir)
+            from molecule_nl_visualization import MoleculeNLVisualizationGenerator
+            
+            visualizer = MoleculeNLVisualizationGenerator(
+                results_file=csv_file,
+                output_dir=args.result_dir
+            )
+            
+            # すべての可視化を生成
+            logger.info("🎨 Generating visualizations...")
+            visualizer.generate_all_visualizations()
+            
+            logger.info("✅ Visualization completed successfully!")
+            logger.info(f"📊 Mean Perplexity: {metrics.get('mean_perplexity', float('inf')):.3f}")
+            logger.info(f"📈 Valid samples: {metrics.get('valid_samples', 0)}/{metrics.get('total_samples', 0)}")
+            
+        except Exception as e:
+            logger.error(f"❌ Visualization failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
+        
+        return
+    
+    # 通常の評価モード
     # デフォルトパスの設定
     if args.dataset_path is None:
         args.dataset_path = f"{learning_source_dir}/molecule_nl/training_ready_hf_dataset/test"
@@ -638,6 +806,12 @@ def main():
     
     # ログ設定
     logger = setup_evaluation_logging(Path(args.output_dir), 'molecule_nl_evaluation')
+    
+    # ログレベルの設定（デバッグモード）
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Debug mode enabled")
     
     logger.info("Starting Molecule NL model evaluation...")
     logger.info(f"Model path: {args.model_path}")
