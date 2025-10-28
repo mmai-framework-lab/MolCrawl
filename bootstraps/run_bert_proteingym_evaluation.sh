@@ -157,48 +157,27 @@ analyze_bert_results() {
     echo "Check the Python execution log above for the exact output directory path."
     
     # Results will be in: ${LEARNING_SOURCE_DIR}/protein_sequence/report/bert_proteingym_*_YYYYMMDD_HHMMSS/
-    echo "Expected location: \${LEARNING_SOURCE_DIR}/protein_sequence/report/bert_proteingym_*/
+    echo "Expected location: \${LEARNING_SOURCE_DIR}/protein_sequence/report/bert_proteingym_*/"
     
     # BERT-specific analysis
     echo -e "${BLUE}🔍 BERT-Specific Analysis${NC}"
     echo "========================="
     
-    if [ -f "$OUTPUT_DIR/bert_proteingym_results.json" ]; then
-        python -c "
-import json
-with open('$OUTPUT_DIR/bert_proteingym_results.json', 'r') as f:
-    results = json.load(f)
-
-print('🧠 BERT Model Insights:')
-spearman = results['spearman_correlation']
-print(f'🎯 Performance Summary:')
-print(f'   Spearman correlation: {spearman:.3f}')
-print(f'   Pearson correlation: {results[\"pearson_correlation\"]:.3f}')
-print(f'   MAE: {results[\"mae\"]:.3f}')
-
-print(f'')
-print(f'🧬 Fitness Analysis:')
-print(f'   True Score Range: {results[\"true_score_stats\"][\"min\"]:.3f} to {results[\"true_score_stats\"][\"max\"]:.3f}')
-print(f'   Predicted Range: {results[\"predicted_score_stats\"][\"min\"]:.3f} to {results[\"predicted_score_stats\"][\"max\"]:.3f}')
-
-print(f'')
-print(f'📊 Model Characteristics:')
-print(f'   • Bidirectional context analysis')
-print(f'   • Masked language modeling approach')
-print(f'   • Sequence representation learning')
-print(f'   • Independent of generative models')
-
-print(f'')
-# Performance assessment
-if spearman > 0.7:
-    print(f'✅ Excellent protein fitness prediction performance')
-elif spearman > 0.5:
-    print(f'🟢 Good protein fitness prediction performance')
-elif spearman > 0.3:
-    print(f'🟡 Moderate protein fitness prediction performance')
-else:
-    print(f'⚠️  Limited protein fitness prediction performance')
-"
+    # Check for results in the expected location
+    RESULT_DIR="${LEARNING_SOURCE_DIR}/protein_sequence/report"
+    if [ -d "$RESULT_DIR" ]; then
+        LATEST_RESULT=$(find "$RESULT_DIR" -name "*bert_proteingym*" -type d | sort | tail -1)
+        if [ -n "$LATEST_RESULT" ] && [ -f "$LATEST_RESULT/bert_proteingym_results.json" ]; then
+            echo "📊 Results found in: $LATEST_RESULT"
+            echo "🧠 BERT Model Insights:"
+            echo "   Check the JSON file for detailed metrics"
+            echo "   Location: $LATEST_RESULT/bert_proteingym_results.json"
+        else
+            echo "📊 Results will be available in the structured output directory"
+            echo "   Expected location: ${LEARNING_SOURCE_DIR}/protein_sequence/report/bert_proteingym_*/"
+        fi
+    else
+        echo "📊 Results will be available after evaluation completes"
     fi
 }
 
@@ -246,7 +225,6 @@ main() {
                 DATASET_PATH="$2"
                 shift 2
                 ;;
-                        --tokenizer_path)
             --sample_size)
                 SAMPLE_SIZE="$2"
                 shift 2
@@ -264,20 +242,20 @@ main() {
                 shift
                 ;;
             --help)
-                echo "Usage: $0 [options]"
-                echo "Options:"
-                echo "  --model_path PATH          Path to trained BERT model"
-                echo "                             (default: runs_train_bert_protein_sequence/checkpoint-2000)"
-                echo "  --tokenizer_path PATH      Path to tokenizer"
-                echo "                             (default: EsmSequenceTokenizer built-in)"
-                echo "  --dataset PATH             Path to ProteinGym dataset (required)"
-                echo "  --output_dir PATH          Output directory"
-                echo "                             (default: ./bert_proteingym_evaluation_results)"
-                echo "  --sample_size N            Number of variants to evaluate (default: all)"
-                echo "  --device DEVICE            Device to use (default: cuda)"
-                echo "  --batch_size N             Batch size (default: 16)"
-                echo "  --create_sample_data       Create sample dataset for testing"
-                echo "  --help                     Show this help message"
+                cat << 'EOF'
+Usage: $0 [options]
+Options:
+  --model_path PATH          Path to trained BERT model
+                             (default: runs_train_bert_protein_sequence/checkpoint-2000)
+  --tokenizer_path PATH      Path to tokenizer
+                             (default: EsmSequenceTokenizer built-in)
+  --dataset PATH             Path to ProteinGym dataset (required)
+  --sample_size N            Number of variants to evaluate (default: all)
+  --device DEVICE            Device to use (default: cuda)
+  --batch_size N             Batch size (default: 16)
+  --create_sample_data       Create sample dataset for testing
+  --help                     Show this help message
+EOF
                 exit 0
                 ;;
             *)
