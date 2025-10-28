@@ -12,4 +12,6 @@ class PreparedDataset:
         return len(self.data)
 
     def __getitem__(self, idx):
-        return torch.tensor(self.data[idx]["input_ids"])
+        input_ids = self.data[idx]["input_ids"]
+        # Ensure tensor is long type for embedding layer compatibility
+        return torch.tensor(input_ids, dtype=torch.long)
