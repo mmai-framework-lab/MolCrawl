@@ -143,21 +143,38 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
         axes[1, 0].grid(True, alpha=0.3)
         
         # 5. パープレキシティのボックスプロット（四分位数別）
-        # テキスト長でビンを作成
-        self.df['length_quartile'] = pd.qcut(self.df['text_length'], 4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
-        
-        box_data = [self.df[self.df['length_quartile'] == q]['perplexity'].values 
-                   for q in ['Q1', 'Q2', 'Q3', 'Q4']]
-        
-        box_plot = axes[1, 1].boxplot(box_data, labels=['Q1', 'Q2', 'Q3', 'Q4'], 
-                                     patch_artist=True)
-        
-        # ボックスプロットの色設定
-        colors_box = [self.colors['primary'], self.colors['secondary'], 
-                     self.colors['info'], self.colors['accent']]
-        for patch, color in zip(box_plot['boxes'], colors_box):
-            patch.set_facecolor(color)
-            patch.set_alpha(0.7)
+        # テキスト長でビンを作成（重複を許可）
+        try:
+            # duplicates='drop'を使用すると、ラベルが自動生成される
+            self.df['length_quartile'] = pd.qcut(self.df['text_length'], 4, duplicates='drop')
+            
+            # 実際に生成されたカテゴリを取得
+            unique_quartiles = sorted(self.df['length_quartile'].unique())
+            
+            box_data = [self.df[self.df['length_quartile'] == q]['perplexity'].values 
+                       for q in unique_quartiles]
+            
+            # ラベルを生成（Q1, Q2, ... または範囲表示）
+            box_labels = [f'Q{i+1}' for i in range(len(unique_quartiles))]
+            
+            if len(box_data) > 0:
+                box_plot = axes[1, 1].boxplot(box_data, labels=box_labels, 
+                                             patch_artist=True)
+                
+                # ボックスプロットの色設定
+                colors_box = [self.colors['primary'], self.colors['secondary'], 
+                             self.colors['info'], self.colors['accent']][:len(box_data)]
+                for patch, color in zip(box_plot['boxes'], colors_box):
+                    patch.set_facecolor(color)
+                    patch.set_alpha(0.7)
+            else:
+                axes[1, 1].text(0.5, 0.5, 'Insufficient data variation for quartiles', 
+                              ha='center', va='center', transform=axes[1, 1].transAxes)
+        except (ValueError, TypeError) as e:
+            # 四分位数が計算できない場合（全ての値が同じなど）
+            logger.warning(f"Could not create quartiles: {e}")
+            axes[1, 1].text(0.5, 0.5, 'Insufficient data variation for quartiles', 
+                          ha='center', va='center', transform=axes[1, 1].transAxes)
         
         axes[1, 1].set_xlabel('Text Length Quartile')
         axes[1, 1].set_ylabel('Perplexity')
@@ -335,16 +352,25 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
         perplexity_scores = self.df['perplexity'].values if hasattr(self, 'df') and self.df is not None else np.random.lognormal(2, 1, n_samples)
         # パープレキシティを0-1スケールのスコア（高いほど良い）に変換
         max_perplexity = np.percentile(perplexity_scores, 95)  # 外れ値を除外
-        sample_data = {
-            'y_true': np.random.choice([0, 1], size=n_samples, p=[0.3, 0.7]),  # 分子理解タスクの正解
-            'y_pred': np.random.choice([0, 1], size=n_samples, p=[0.25, 0.75]),  # 予測結果
-            'y_score': 1.0 - np.clip(perplexity_scores / max_perplexity, 0, 1),  # パープレキシティから導出したスコア
+        
+        # サンプルデータをDataFrameとして作成
+        sample_data = pd.DataFrame({
+            'label': np.random.choice([0, 1], size=n_samples, p=[0.3, 0.7]),  # 分子理解タスクの正解
+            'prediction': np.random.choice([0, 1], size=n_samples, p=[0.25, 0.75]),  # 予測結果
+            'score': 1.0 - np.clip(perplexity_scores / max_perplexity, 0, 1),  # パープレキシティから導出したスコア
             'confidence': np.random.beta(2, 2, n_samples),  # 信頼度
             'similarity': np.random.beta(3, 2, n_samples)  # 分子構造類似度
-        }
+        })
         
         # BaseVisualizationGeneratorの包括的ダッシュボード作成を呼び出し
-        dashboard_path = self._create_comprehensive_dashboard(sample_data)
+        dashboard_path = self._create_comprehensive_dashboard(
+            sample_data,
+            prediction_score_col='score',
+            true_label_col='label',
+            confidence_col='confidence',
+            similarity_col='similarity',
+            custom_title="Molecule NL Evaluation Dashboard"
+        )
         
         logger.info(f"Comprehensive Molecule NL dashboard created: {dashboard_path}")
         return dashboard_path
