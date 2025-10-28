@@ -360,6 +360,11 @@ class BERTClinVarEvaluator(ModelEvaluator):
             output_dir (str): 出力ディレクトリ
             sample_size (int): サンプルサイズ（None=全データ）
         """
+
+        # タイムスタンプを追加してoutput_dirを更新
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = f"{output_dir}_{timestamp}"
+
         logger.info("🔬 Starting Independent BERT ClinVar Evaluation")
         logger.info("=" * 60)
 
