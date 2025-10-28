@@ -15,8 +15,8 @@ echo
 # 設定値
 MODEL_PATH="runs_train_bert_genome_sequence/checkpoint-5000"  # 訓練済みBERTモデル（safetensors）
 TOKENIZER_PATH="learning_source_202508/genome_sequence/spm_tokenizer.model"  # SentencePieceトークナイザー
-DATASET_PATH="data/clinvar/random_2000_clinvar.csv"
-OUTPUT_DIR="./bert_clinvar_evaluation_results"
+DATASET_PATH="./learning_source_202508/genome_sequence/clinvar/balanced_output_2000.csv"
+OUTPUT_DIR="./results/bert_clinvar_evaluation_results-20251016"
 CONFIG_FILE="bert/configs/clinvar_evaluation_config.py"
 
 # パラメータの確認

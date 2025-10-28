@@ -11,7 +11,7 @@ set -e  # エラー時に停止
 # 設定
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_ROOT/clinvar_evaluation_results"
+OUTPUT_DIR="$LEARNING_SOURCE_DIR/$PROJECT_ROOT/clinvar_evaluation_results"
 DATA_DIR="$OUTPUT_DIR/data"
 MODELS_DIR="$PROJECT_ROOT/$LEARNING_SOURCE_DIR/genome_sequence/gpt2-output"
 
