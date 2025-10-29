@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import os
+import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -7,6 +8,9 @@ import logging
 import logging.config
 
 from pathlib import Path
+
+# プロジェクトルートのsrcディレクトリをパスに追加
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from core.base import read_parquet, save_parquet, multiprocess_tokenization, setup_logging
 from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer

@@ -50,6 +50,7 @@ find in the src/utils folder.
 ├── gpn                                         -> Folder containing functionality for training and executing models that use MSA's
 ├── gpt2                                        -> Folder containing functionality for training and executing GPT2-based models
 ├── scripts                                     -> Global script for preprocissing the datasets.
+│   └── preparation
 ├── src                                         -> Main package
 │   ├── compounds
 │   ├── genome_sequence
@@ -82,7 +83,7 @@ In this section it is introduced the scripts that download, process, and tokeniz
 
 Run each script following the syntax:
 
-`python scripts/preparation_script_*.py assets/configs/*.yaml`,
+`python scripts/preparation/preparation_script_*.py assets/configs/*.yaml`,
 
 where * is the intended dataset, and `assets/configs/*.yaml` is the configuration file for the specific dataset.
 
@@ -102,7 +103,7 @@ Any exceptions encountered during the execution are logged and re-raised, ensuri
 
 #### Data Preprocessing
 
-The script `scripts/preparation_script_molecules.py` downloads the necessary files and creates the OrganiX13 dataset, processes it, and tokenizes it following the [LLamol](https://github.com/Fraunhofer-SCAI/llamol) repository's tokenizer.
+The script `scripts/preparation/preparation_script_molecules.py` downloads the necessary files and creates the OrganiX13 dataset, processes it, and tokenizes it following the [LLamol](https://github.com/Fraunhofer-SCAI/llamol) repository's tokenizer.
 
 The resulting is a parquet file that contains a `pyarrow.Table` with rows: "smiles", "logp", "sascore", "mol_weight", "tokens", and "scaffold_tokens". "smiles", "logp", "sascore", and "mol_weight" are contextual data; while "tokens", and "scaffold_tokens" contains the tokenized SMILES string and the tokenized scaffold respectively.
 
@@ -136,7 +137,7 @@ data_preparation:
 You can run this script with the following command:
 
 ```bash
-python scripts/preparation_script_compounds.py assets/configs/compounds.yaml
+python scripts/preparation/preparation_script_compounds.py assets/configs/compounds.yaml
 ```
 
 #### Loading a Processed Dataset
@@ -157,7 +158,7 @@ tokenized_dataset = read_parquet("path/to/{LEARNING_SOURCE_DIR}/compounds/organi
 You can run this script with the following command:
 
 ```bash
-python scripts/preparation_script_genome_sequence.py assets/configs/genome_sequence.yaml
+python scripts/preparation/preparation_script_genome_sequence.py assets/configs/genome_sequence.yaml
 ```
 
 #### Configuration
@@ -222,7 +223,7 @@ of precedding directory to be present in the `output_dir` if that's not the case
 
 ### Molecule Related Natural Language
 
-The script `scripts/preparation_script_molecule_related_nat_lang.py` preprocess and tokenizes a natural language molecule dataset. THe data is downloaded from [SMolInstruct](https://huggingface.co/datasets/osunlp/SMolInstruct). Then following the project's [GitHub repo](https://github.com/OSU-NLP-Group/LLM4Chem/tree/main), the data is preprocessed to have a "chat"-like format, following questions and answers. After this formatting of the data, the samples are tokenized and saved in a folder defined in the config file. This folder is a HuggingFace DatasetDict object which uses parquet.
+The script `scripts/preparation/preparation_script_molecule_related_nat_lang.py` preprocess and tokenizes a natural language molecule dataset. THe data is downloaded from [SMolInstruct](https://huggingface.co/datasets/osunlp/SMolInstruct). Then following the project's [GitHub repo](https://github.com/OSU-NLP-Group/LLM4Chem/tree/main), the data is preprocessed to have a "chat"-like format, following questions and answers. After this formatting of the data, the samples are tokenized and saved in a folder defined in the config file. This folder is a HuggingFace DatasetDict object which uses parquet.
 
 The resulting file is a dictionary for 3 dataset splits: "train", "valid", and "test". Each of them have the features: "sample_id", "input", "output", "raw_input", "raw_output", "split", "task", "input_core_tag_left", "input_core_tag_right", "output_core_tag_left", "output_core_tag_right", "target", "input_text", "real_input_text", "input_ids", "attention_mask", "labels", "output_ids". From these, the most relevant are:
 
@@ -251,7 +252,7 @@ Before running the script, ensure you have the following:
 You can run this script with the following command:
 
 ```bash
-python scripts/preparation_script_molecule_related_nat_lang.py assets/configs/molecules_nl.yaml
+python scripts/preparation/preparation_script_molecule_related_nat_lang.py assets/configs/molecules_nl.yaml
 ```
 
 ##### Loading a Processed Dataset
@@ -271,7 +272,7 @@ tokenized_dataset = DatasetDict(read_dataset("path/to/the/folder/created/by/scri
 You can run this script with the following command:
 
 ```bash
-python scripts/preparation_script_protein_sequence.py assets/configs/protein_sequence.yaml
+python scripts/preparation/preparation_script_protein_sequence.py assets/configs/protein_sequence.yaml
 ```
 
 #### Configuration
@@ -326,7 +327,7 @@ of precedding directory to be present in the `output_dir` if that's not the case
 You can call this script with the following command:
 
 ```bash
-python scripts/preparation_script_rna.py assets/configs/rna.yaml
+python scripts/preparation/preparation_script_rna.py assets/configs/rna.yaml
 ```
 
 One limitation of the rna sequence task is the fact that the sequence data are continuous and therefore

@@ -1,11 +1,15 @@
 from argparse import ArgumentParser
 import os
+import sys
 import logging
 import logging.config
 import matplotlib.pyplot as plt
 import numpy as np
 
 from pathlib import Path
+
+# プロジェクトルートのsrcディレクトリをパスに追加
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from core.base import setup_logging
 from molecule_related_nl.dataset.download import download_hf_dataset

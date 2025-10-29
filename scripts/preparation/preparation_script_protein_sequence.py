@@ -18,10 +18,14 @@ python scripts/preparation_script_protein_sequence.py assets/configs/protein_seq
 from argparse import ArgumentParser
 from pathlib import Path
 import logging, os
+import sys
 
 from datasets import load_dataset
 import matplotlib.pyplot as plt
 import numpy as np
+
+# プロジェクトルートのsrcディレクトリをパスに追加
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
 from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
