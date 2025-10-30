@@ -29,7 +29,7 @@ from typing import Dict, List, Tuple, Optional
 import argparse
 
 # プロジェクトルートを追加
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 # 実データプロセッサをインポート
 try:

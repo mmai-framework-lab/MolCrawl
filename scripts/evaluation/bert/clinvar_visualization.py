@@ -17,7 +17,7 @@ from datetime import datetime
 from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
 
 # プロジェクトルートを追加
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
 from utils.base_visualization import BaseVisualizationGenerator
 

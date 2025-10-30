@@ -23,8 +23,8 @@ from datetime import datetime
 from transformers import BertForMaskedLM, BertConfig
 
 # プロジェクトルートを追加
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
 from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging
 from utils.model_evaluator import ModelEvaluator
@@ -55,7 +55,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
-            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
             from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
             
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")

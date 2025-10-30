@@ -16,10 +16,15 @@ from pathlib import Path
 import logging
 import json
 import datetime
+import os
+import sys
 
 import matplotlib.pyplot as plt
 from datasets import load_dataset
 from datasets.utils.logging import enable_progress_bar
+
+# プロジェクトルートのsrcディレクトリをパスに追加
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from rna.dataset.cellxgene.script.build_list import build_list
 from rna.dataset.cellxgene.script.download import download

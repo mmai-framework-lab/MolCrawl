@@ -1,10 +1,15 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import logging
+import os
+import sys
 
 from datasets import load_dataset
 import numpy as np
 import matplotlib.pyplot as plt
+
+# プロジェクトルートのsrcディレクトリをパスに追加
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from genome_sequence.dataset.refseq.download_refseq import download_refseq
 from genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome

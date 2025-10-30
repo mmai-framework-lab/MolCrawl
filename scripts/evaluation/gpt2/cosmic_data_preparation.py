@@ -21,7 +21,7 @@ import numpy as np
 from urllib.parse import urljoin
 import time
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
 # ログ設定
 logging.basicConfig(

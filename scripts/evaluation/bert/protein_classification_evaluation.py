@@ -24,8 +24,8 @@ import logging
 from typing import Dict, List, Tuple, Optional
 
 # Add src and gpt2 to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'gpt2'))
 
 from protein_sequence.utils.bert_tokenizer import EsmSequenceTokenizer
 from utils.evaluation_output import get_evaluation_output_dir, get_model_type_from_path, get_model_name_from_path, setup_evaluation_logging

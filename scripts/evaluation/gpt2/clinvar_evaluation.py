@@ -22,8 +22,8 @@ import logging
 from datetime import datetime
 
 # プロジェクトルートを追加
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'gpt2'))
 
 from config.paths import get_genome_tokenizer_path, get_gpt2_output_path
 from model import GPT, GPTConfig

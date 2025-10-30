@@ -43,7 +43,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # プロジェクトルートを追加
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
     from src.config.paths import get_genome_tokenizer_path, get_gpt2_output_path
