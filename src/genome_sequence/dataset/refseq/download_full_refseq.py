@@ -2,12 +2,10 @@ from typing import List, Union
 import re
 import os
 import gzip
-import json
 import requests
 from urllib.request import urlretrieve
 import shutil
 import logging
-import logging.config
 from pathlib import Path
 import concurrent.futures
 from functools import partial
@@ -17,6 +15,7 @@ from argparse import ArgumentParser
 from rich.progress import track
 
 from genome_sequence.utils.config import GenomeSequenceConfig
+from core.base import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -117,17 +116,6 @@ def download_refseq(output_dir: Union[str, os.PathLike[str]], num_worker: int):
                 description="Extracting...",
             )
         )
-
-
-def setup_logging(output_dir: str):
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    with open("./assets/logging-config.json", "r") as file:
-        config = json.load(file)
-    logging_file = f"{output_dir}/logging.log"
-    config["handlers"]["file"]["filename"] = logging_file
-    if os.path.exists(logging_file):
-        os.remove(logging_file)
-    logging.config.dictConfig(config=config)
 
 
 if __name__ == "__main__":
