@@ -1,5 +1,8 @@
 # OMIM Real Data Configuration
 # 実際のOMIMデータファイルの設定
+# Note: OMIMのダウンロードには各自適切な必要な認証情報を用いる必要がある。公式サイトで申請して得られた
+# URLに置換して、ファイル名をomim_real_data.yamlに保存して使用すること。
+# 個人情報が残るので、このテンプレートファイルに直接書き込んでリポジトリにコミットするのは厳禁
 
 omim_data_sources:
   # OMIM公式ダウンロードファイル
