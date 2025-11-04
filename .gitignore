@@ -10,7 +10,9 @@ __pycache__
 *.pyo
 
 !package.json
+!molcrawl-web/frontend/public/manifest.json
 
+wandb
 download_dir
 extracted_dir
 zinc15_download_dir
@@ -24,8 +26,24 @@ build
 *.pt
 runs*
 out/*
+dataset/*
+dataset/
+miniconda*/
+reports
+reports/*
+outputs/
+outputs/*
+logs
+logs/*
+temp
+temp/*
+gpt2-output*/
+learning_source*/
+experiments_data/
+experiments_data
 
 experiments.db
 experiments.db-journal
 *.db-journal
 
+configs/omim_real_data.yaml

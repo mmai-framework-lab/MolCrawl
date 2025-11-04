@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # MolCrawl Web Application - 起動スクリプト
+# こちらは古いので折見て削除。
 
 echo "🚀 MolCrawl Dataset Browser を起動しています..."
 
