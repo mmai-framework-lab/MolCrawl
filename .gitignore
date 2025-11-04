@@ -12,6 +12,7 @@ __pycache__
 !package.json
 !molcrawl-web/frontend/public/manifest.json
 
+wandb
 download_dir
 extracted_dir
 zinc15_download_dir
