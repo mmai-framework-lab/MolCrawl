@@ -542,68 +542,10 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
             self._create_basic_visualization(results_df, output_dir)
     
     def _create_basic_visualization(self, results_df, output_dir):
-        """基本的な結果可視化（フォールバック用）"""
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        
-        # 空のDataFrameチェック
-        if results_df is None or len(results_df) == 0:
-            logger.warning("⚠️  No data to visualize (empty results)")
-            return
-        
-        # 必要なカラムの存在チェック
-        if 'perplexity' not in results_df.columns:
-            logger.warning("⚠️  'perplexity' column not found in results")
-            return
-        
-        plt.style.use("default")
-        fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-        
-        # 1. パープレキシティ分布
-        valid_perplexities = results_df[results_df['perplexity'] != float('inf')]['perplexity']
-        if len(valid_perplexities) > 0:
-            axes[0, 0].hist(valid_perplexities, bins=50, alpha=0.7, color='blue')
-            axes[0, 0].set_xlabel('Perplexity')
-            axes[0, 0].set_ylabel('Count')
-            axes[0, 0].set_title('Perplexity Distribution')
-            axes[0, 0].set_yscale('log')
-        else:
-            axes[0, 0].text(0.5, 0.5, 'No valid perplexity values', ha='center', va='center')
-            axes[0, 0].set_title('Perplexity Distribution (No Data)')
-        
-        # 2. テキスト長 vs パープレキシティ
-        valid_data = results_df[results_df['perplexity'] != float('inf')]
-        if len(valid_data) > 0:
-            axes[0, 1].scatter(valid_data['text_length'], valid_data['perplexity'], alpha=0.6)
-            axes[0, 1].set_xlabel('Text Length')
-            axes[0, 1].set_ylabel('Perplexity')
-            axes[0, 1].set_title('Text Length vs Perplexity')
-        else:
-            axes[0, 1].text(0.5, 0.5, 'No valid data', ha='center', va='center')
-            axes[0, 1].set_title('Text Length vs Perplexity (No Data)')
-        
-        # 3. ログパープレキシティ分布
-        valid_log_perplexities = results_df[results_df['log_perplexity'] != float('inf')]['log_perplexity']
-        if len(valid_log_perplexities) > 0:
-            axes[1, 0].hist(valid_log_perplexities, bins=50, alpha=0.7, color='green')
-            axes[1, 0].set_xlabel('Log Perplexity')
-            axes[1, 0].set_ylabel('Count')
-            axes[1, 0].set_title('Log Perplexity Distribution')
-        else:
-            axes[1, 0].text(0.5, 0.5, 'No valid log perplexity values', ha='center', va='center')
-            axes[1, 0].set_title('Log Perplexity Distribution (No Data)')
-        
-        # 4. トークン長分布
-        axes[1, 1].hist(results_df['token_length'], bins=50, alpha=0.7, color='orange')
-        axes[1, 1].set_xlabel('Token Length')
-        axes[1, 1].set_ylabel('Count')
-        axes[1, 1].set_title('Token Length Distribution')
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "molecule_nl_evaluation_plots.png"), dpi=300, bbox_inches="tight")
-        plt.close()
-        
-        logger.info("📊 Basic visualization completed")
+        """⚠️ DEPRECATED: 可視化は molecule_nl_visualization.py を使用してください"""
+        logger.warning("⚠️  Inline visualization is deprecated.")
+        logger.info("Please use: python scripts/evaluation/gpt2/molecule_nl_visualization.py --result-dir <output_dir>")
+        logger.info("Skipping inline visualization.")
     
     def _calculate_metrics(self, perplexities, results_df):
         """性能指標の計算"""

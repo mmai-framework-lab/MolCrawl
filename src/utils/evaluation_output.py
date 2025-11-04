@@ -15,18 +15,23 @@ logger = logging.getLogger(__name__)
 
 def get_learning_source_dir():
     """
-    LEARNING_SOURCE_DIR環境変数を取得し、デフォルト値を設定
+    LEARNING_SOURCE_DIR環境変数を取得（必須）
     
     Returns:
         Path: LEARNING_SOURCE_DIRのパス
+        
+    Raises:
+        SystemExit: LEARNING_SOURCE_DIRが設定されていない場合
     """
     learning_source_dir = os.getenv('LEARNING_SOURCE_DIR')
     
     if not learning_source_dir:
-        # プロジェクトルートから推定
-        project_root = Path(__file__).parent.parent.parent
-        learning_source_dir = project_root / "learning_source_202508"
-        logger.warning(f"LEARNING_SOURCE_DIR not set, using default: {learning_source_dir}")
+        print("ERROR: LEARNING_SOURCE_DIR environment variable is not set.", file=sys.stderr)
+        print("Please set it before running this script:", file=sys.stderr)
+        print("  export LEARNING_SOURCE_DIR=/path/to/learning_source", file=sys.stderr)
+        print("  # or", file=sys.stderr)
+        print("  LEARNING_SOURCE_DIR=learning_20251104 python <script>", file=sys.stderr)
+        sys.exit(1)
     
     return Path(learning_source_dir)
 

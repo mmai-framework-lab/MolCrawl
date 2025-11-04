@@ -4,6 +4,8 @@ COSMICデータダウンロード・前処理スクリプト
 
 COSMICデータベースから癌関連変異データをダウンロードし、
 genome sequenceモデルの評価に適した形式に前処理します。
+
+注意: LEARNING_SOURCE_DIR環境変数の設定が必須です。
 """
 
 import sys
@@ -23,29 +25,60 @@ import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
+def get_learning_source_dir():
+    """LEARNING_SOURCE_DIR環境変数を取得（必須）"""
+    learning_source = os.environ.get('LEARNING_SOURCE_DIR')
+    if not learning_source:
+        print("ERROR: LEARNING_SOURCE_DIR environment variable is not set.", file=sys.stderr)
+        print("Please set it before running this script:", file=sys.stderr)
+        print("  export LEARNING_SOURCE_DIR=/path/to/learning_source", file=sys.stderr)
+        print("  # or", file=sys.stderr)
+        print("  LEARNING_SOURCE_DIR=learning_20251104 python {}".format(sys.argv[0]), file=sys.stderr)
+        sys.exit(1)
+    return learning_source
+
+def get_default_output_dir():
+    """デフォルト出力ディレクトリを取得"""
+    learning_source = get_learning_source_dir()
+    return os.path.join(learning_source, 'genome_sequence', 'data', 'cosmic')
+
+def get_log_dir():
+    """ログディレクトリを取得"""
+    learning_source = get_learning_source_dir()
+    log_dir = os.path.join(learning_source, 'genome_sequence', 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
+
 # ログ設定
+log_dir = get_log_dir()
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f'logs/cosmic_preprocessing_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
+        logging.FileHandler(f'{log_dir}/cosmic_preprocessing_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
+logger.info(f"LEARNING_SOURCE_DIR: {get_learning_source_dir()}")
 
 class COSMICProcessor:
     """COSMICデータの取得・前処理クラス"""
     
-    def __init__(self, output_dir='../cosmic_data'):
+    def __init__(self, output_dir=None):
         """
         初期化
         
         Args:
-            output_dir (str): 出力ディレクトリ
+            output_dir (str): 出力ディレクトリ（Noneの場合は$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）
         """
+        if output_dir is None:
+            output_dir = get_default_output_dir()
+        
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Output directory: {self.output_dir}")
         
         # COSMIC公開データのURL（認証不要のデータセット）
         self.cosmic_urls = {
@@ -289,17 +322,18 @@ class COSMICProcessor:
 
 def main():
     """メイン処理"""
-    parser = argparse.ArgumentParser(description='COSMIC data preparation for genome sequence evaluation')
-    parser.add_argument('--output_dir', default='cosmic_data', help='Output directory')
+    parser = argparse.ArgumentParser(
+        description='COSMIC data preparation for genome sequence evaluation',
+        epilog='Note: LEARNING_SOURCE_DIR environment variable must be set.'
+    )
+    parser.add_argument('--output_dir', default=None, 
+                       help='Output directory (default: $LEARNING_SOURCE_DIR/genome_sequence/data/cosmic)')
     parser.add_argument('--download', action='store_true', help='Download COSMIC data')
     parser.add_argument('--max_samples', type=int, default=1000, help='Maximum samples per class')
     parser.add_argument('--sequence_length', type=int, default=100, help='Sequence length')
     parser.add_argument('--create_sample_data', action='store_true', help='Create sample data instead of downloading')
     
     args = parser.parse_args()
-    
-    # ログディレクトリの作成
-    Path('logs').mkdir(exist_ok=True)
     
     processor = COSMICProcessor(args.output_dir)
     

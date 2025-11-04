@@ -446,53 +446,12 @@ class GPT2ClinVarEvaluator(ModelEvaluator):
 
 def create_sample_clinvar_data(output_file):
     """
-    サンプルClinVarデータを作成（テスト用）
+    ⚠️ DEPRECATED: データ準備機能は clinvar_data_preparation.py に移行してください
+    Use: python scripts/evaluation/gpt2/clinvar_data_preparation.py --mode sample
     """
-    logger.info(f"Creating sample ClinVar data: {output_file}")
-    
-    # サンプルデータ（実際のClinVarデータの形式に基づく）
-    sample_data = [
-        {
-            'variant_id': 'VAR_001',
-            'reference_sequence': 'ATGCGATCGATCGATCGATCGATCG',
-            'variant_sequence': 'ATGCGATCGATCGATCGTTCGATCG',  # A→T変異
-            'ClinicalSignificance': 'Pathogenic',
-            'gene': 'GENE1',
-            'chromosome': 'chr1',
-            'position': 12345
-        },
-        {
-            'variant_id': 'VAR_002',
-            'reference_sequence': 'GCTAGCTAGCTAGCTAGCTAGCTA',
-            'variant_sequence': 'GCTAGCTAGCTAGCTAGCTAGCTA',  # 変異なし
-            'ClinicalSignificance': 'Benign',
-            'gene': 'GENE2',
-            'chromosome': 'chr2',
-            'position': 67890
-        },
-        {
-            'variant_id': 'VAR_003',
-            'reference_sequence': 'TTGCATTGCATTGCATTGCATTGC',
-            'variant_sequence': 'TTGCATTGCATTGCATGGCATTGC',  # T→G変異
-            'ClinicalSignificance': 'Likely benign',
-            'gene': 'GENE3',
-            'chromosome': 'chr3',
-            'position': 11111
-        },
-        {
-            'variant_id': 'VAR_004',
-            'reference_sequence': 'CGATCGATCGATCGATCGATCGAT',
-            'variant_sequence': 'CGATCGATCGATCGAACGATCGAT',  # T→A変異
-            'ClinicalSignificance': 'Likely pathogenic',
-            'gene': 'GENE4',
-            'chromosome': 'chr4',
-            'position': 22222
-        }
-    ]
-    
-    df = pd.DataFrame(sample_data)
-    df.to_csv(output_file, index=False)
-    logger.info(f"Sample data created with {len(df)} variants")
+    logger.warning("⚠️  create_sample_clinvar_data() is deprecated.")
+    logger.warning("Please use: python scripts/evaluation/gpt2/clinvar_data_preparation.py --mode sample")
+    raise DeprecationWarning("Use clinvar_data_preparation.py for data preparation")
 
 def main():
     parser = argparse.ArgumentParser(description='ClinVar evaluation for genome sequence model')

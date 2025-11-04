@@ -533,92 +533,9 @@ class BERTClinVarEvaluator(ModelEvaluator):
         return metrics
 
     def _create_visualizations(self, results_df, output_dir):
-        """結果の可視化"""
-        plt.style.use("default")
-        fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-
-        # 1. MLMスコアの分布
-        pathogenic_scores = results_df[results_df["pathogenic"] == 1]["mlm_score"]
-        benign_scores = results_df[results_df["pathogenic"] == 0]["mlm_score"]
-
-        axes[0, 0].hist(pathogenic_scores, alpha=0.7, label="Pathogenic", bins=30, color="red")
-        axes[0, 0].hist(benign_scores, alpha=0.7, label="Benign", bins=30, color="blue")
-        axes[0, 0].set_xlabel("MLM Score")
-        axes[0, 0].set_ylabel("Count")
-        axes[0, 0].set_title("MLM Score Distribution")
-        axes[0, 0].legend()
-
-        # 2. コサイン類似度の分布
-        pathogenic_sim = results_df[results_df["pathogenic"] == 1]["cosine_similarity"]
-        benign_sim = results_df[results_df["pathogenic"] == 0]["cosine_similarity"]
-
-        axes[0, 1].hist(pathogenic_sim, alpha=0.7, label="Pathogenic", bins=30, color="red")
-        axes[0, 1].hist(benign_sim, alpha=0.7, label="Benign", bins=30, color="blue")
-        axes[0, 1].set_xlabel("Cosine Similarity")
-        axes[0, 1].set_ylabel("Count")
-        axes[0, 1].set_title("Reference-Variant Similarity Distribution")
-        axes[0, 1].legend()
-
-        # 3. 散布図: MLMスコア vs コサイン類似度
-        pathogenic_data = results_df[results_df["pathogenic"] == 1]
-        benign_data = results_df[results_df["pathogenic"] == 0]
-
-        axes[0, 2].scatter(
-            pathogenic_data["mlm_score"], pathogenic_data["cosine_similarity"], alpha=0.6, c="red", label="Pathogenic", s=20
-        )
-        axes[0, 2].scatter(
-            benign_data["mlm_score"], benign_data["cosine_similarity"], alpha=0.6, c="blue", label="Benign", s=20
-        )
-        axes[0, 2].set_xlabel("MLM Score")
-        axes[0, 2].set_ylabel("Cosine Similarity")
-        axes[0, 2].set_title("MLM Score vs Cosine Similarity")
-        axes[0, 2].legend()
-
-        # 4. ROC曲線
-        try:
-            from sklearn.metrics import roc_curve
-
-            fpr, tpr, _ = roc_curve(results_df["pathogenic"], results_df["mlm_score"])
-            axes[1, 0].plot(
-                fpr, tpr, label=f'MLM Score (AUC = {roc_auc_score(results_df["pathogenic"], results_df["mlm_score"]):.3f})'
-            )
-            axes[1, 0].plot([0, 1], [0, 1], "k--", label="Random")
-            axes[1, 0].set_xlabel("False Positive Rate")
-            axes[1, 0].set_ylabel("True Positive Rate")
-            axes[1, 0].set_title("ROC Curve")
-            axes[1, 0].legend()
-        except:
-            axes[1, 0].text(0.5, 0.5, "ROC curve not available", ha="center", va="center")
-
-        # 5. 混同行列
-        try:
-            from sklearn.metrics import confusion_matrix
-
-            predictions = (results_df["mlm_score"] > 0).astype(int)
-            cm = confusion_matrix(results_df["pathogenic"], predictions)
-            sns.heatmap(
-                cm,
-                annot=True,
-                fmt="d",
-                ax=axes[1, 1],
-                xticklabels=["Benign", "Pathogenic"],
-                yticklabels=["Benign", "Pathogenic"],
-            )
-            axes[1, 1].set_title("Confusion Matrix")
-            axes[1, 1].set_xlabel("Predicted")
-            axes[1, 1].set_ylabel("Actual")
-        except:
-            axes[1, 1].text(0.5, 0.5, "Confusion matrix not available", ha="center", va="center")
-
-        # 6. 確信度分布
-        axes[1, 2].hist(results_df["confidence"], bins=30, alpha=0.7, color="green")
-        axes[1, 2].set_xlabel("Confidence Score")
-        axes[1, 2].set_ylabel("Count")
-        axes[1, 2].set_title("Model Confidence Distribution")
-
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "bert_clinvar_evaluation_plots.png"), dpi=300, bbox_inches="tight")
-        plt.close()
+        """結果の可視化 - clinvar_visualization.pyに移行推奨"""
+        logger.warning("⚠️  Visualization code in evaluation script. Please use clinvar_visualization.py instead.")
+        logger.info("Skipping inline visualization. Use: python scripts/evaluation/bert/clinvar_visualization.py --result-dir <output_dir>")
 
     def _generate_report(self, metrics, results_df, output_dir):
         """独立BERT評価レポートの生成"""
