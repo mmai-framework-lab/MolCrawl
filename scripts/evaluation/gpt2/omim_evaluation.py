@@ -461,8 +461,8 @@ def main():
                        help='Output directory for results (auto-generated if not provided)')
     parser.add_argument('--batch_size', type=int, default=16,
                        help='Batch size for evaluation (default: 16)')
-    parser.add_argument('--device', type=str, default=None,
-                       help='Device to use (cuda/cpu, default: auto)')
+    parser.add_argument('--device', type=str, default='cuda',
+                       help='Device to use (cuda/cpu, default: cuda)')
     parser.add_argument('--tokenizer_path', type=str, default=None,
                        help='Path to SentencePiece tokenizer model (auto-detect if not provided)')
     

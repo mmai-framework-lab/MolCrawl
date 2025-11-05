@@ -25,7 +25,9 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
 fi
 
 # デフォルト設定
-MODEL_PATH=""
+MODEL_SIZE="small"  # デフォルトのモデルサイズ
+MODELS_DIR="$PROJECT_ROOT/gpt2-output"
+MODEL_PATH=""  # 空の場合はMODEL_SIZEから自動構築
 DATA_PATH=""
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym"
 DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/gpt2_proteingym"
@@ -44,7 +46,8 @@ GPT-2 ProteinGym Evaluation Pipeline
 Usage: $0 [OPTIONS]
 
 Options:
-    -m, --model_path PATH       Path to trained GPT-2 protein sequence model (required)
+    -m, --model_path PATH       Path to trained GPT-2 protein sequence model (default: gpt2-output/protein_sequence-small/ckpt.pt)
+    --model_size SIZE           Model size (small/medium/large/xl) for auto path (default: small)
     -d, --data_path PATH        Path to ProteinGym data file (required unless --download-data)
     -o, --output_dir PATH       Output directory (default: \$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym)
     -b, --batch_size SIZE       Batch size for evaluation (default: $BATCH_SIZE)
@@ -56,17 +59,20 @@ Options:
     -h, --help                  Show this help message
 
 Examples:
-    # Basic GPT-2 evaluation with existing data
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt -d proteingym_data/sample.csv
+    # Basic GPT-2 evaluation with default model and existing data
+    $0 -d proteingym_data/sample.csv
 
-    # Create sample data and evaluate
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt --create-sample -d sample_data.csv
+    # Specify model size
+    $0 --model_size medium -d proteingym_data/sample.csv
+
+    # Specify custom model path
+    $0 -m gpt2-output/protein_sequence-large/ckpt.pt -d proteingym_data/sample.csv
 
     # Download data, evaluate, and visualize
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt --download-data --visualize
+    $0 --download-data --visualize
 
-    # CPU evaluation with custom settings
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt -d data.csv --device cpu -b 16
+    # Evaluation with custom batch size
+    $0 -d data.csv -b 64
 EOF
 }
 
@@ -75,6 +81,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         -m|--model_path)
             MODEL_PATH="$2"
+            shift 2
+            ;;
+        --model_size)
+            MODEL_SIZE="$2"
             shift 2
             ;;
         -d|--data_path)
@@ -121,10 +131,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# 必要な引数のチェック
+# モデルパスの自動構築（指定されていない場合）
 if [[ -z "$MODEL_PATH" ]]; then
-    echo "エラー: GPT-2モデルパスが必要です (-m/--model_path)"
-    show_help
+    MODEL_PATH="$MODELS_DIR/protein_sequence-$MODEL_SIZE/ckpt.pt"
+    echo "モデルパスが指定されていません。デフォルトを使用: $MODEL_PATH"
+fi
+
+# モデルファイルの存在チェック
+if [[ ! -f "$MODEL_PATH" ]]; then
+    echo "エラー: モデルファイルが見つかりません: $MODEL_PATH"
+    echo "利用可能なモデル:"
+    find "$MODELS_DIR" -name "ckpt.pt" 2>/dev/null || echo "  モデルが見つかりません"
     exit 1
 fi
 

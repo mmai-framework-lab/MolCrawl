@@ -409,7 +409,7 @@ def main():
     parser.add_argument('--cosmic_data', required=True, help='Path to COSMIC evaluation dataset')
     parser.add_argument('--output_dir', default=None, help='Output directory (auto-generated if not provided)')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size for evaluation')
-    parser.add_argument('--device', default=None, help='Device to use (cuda/cpu)')
+    parser.add_argument('--device', type=str, default='cuda', help='Device to use (cuda/cpu, default: cuda)')
     parser.add_argument('--tokenizer_path', type=str, default=None,
                        help='Path to SentencePiece tokenizer model (auto-detect if not provided)')
     

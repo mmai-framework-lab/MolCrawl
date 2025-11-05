@@ -66,8 +66,8 @@ class ProteinGymEvaluator(ModelEvaluator):
             
             # モデルが40のvocab_sizeで学習されている一方、EsmSequenceTokenizerは33のvocab_sizeの場合の対処
             if self.vocab_size != 40:
-                logger.warning(f"Tokenizer vocab_size ({self.vocab_size}) != model vocab_size (40)")
-                logger.info("Falling back to simple amino acid tokenizer with correct vocab_size")
+                logger.info(f"EsmSequenceTokenizer vocab_size ({self.vocab_size}) != model vocab_size (40)")
+                logger.info("Using SimpleTokenizer with padding tokens to match model vocab_size")
                 return self._init_simple_amino_acid_tokenizer()
             
             return tokenizer
@@ -137,10 +137,12 @@ class ProteinGymEvaluator(ModelEvaluator):
             def get_vocab(self):
                 return self.token_to_id
         
-        self.tokenizer = SimpleTokenizer()
+        tokenizer = SimpleTokenizer()
         self.use_protein_tokenizer = True
         # 実際のvocab_sizeを更新
-        self.vocab_size = self.tokenizer.vocab_size
+        self.vocab_size = tokenizer.vocab_size
+        
+        return tokenizer
         
     def _load_model(self):
         """訓練済みモデルの読み込み"""
@@ -395,7 +397,9 @@ class ProteinGymEvaluator(ModelEvaluator):
         Returns:
             dict: 評価結果
         """
-        logger.info("Starting model evaluation on ProteinGym data")
+        logger.info(f"Starting model evaluation on ProteinGym data ({len(proteingym_data)} variants)")
+        logger.info(f"Available columns: {list(proteingym_data.columns)}")
+        logger.info(f"Sample data:\n{proteingym_data.head(3)}")
         
         predictions = []
         true_scores = []
@@ -405,32 +409,61 @@ class ProteinGymEvaluator(ModelEvaluator):
         for i in range(0, len(proteingym_data), batch_size):
             batch = proteingym_data.iloc[i:i+batch_size]
             
-            for _, row in batch.iterrows():
+            for idx, row in batch.iterrows():
                 try:
                     # フィットネススコアを計算
-                    if 'target_seq' in row:
+                    if 'target_seq' in row and pd.notna(row['target_seq']):
                         wt_seq = row['target_seq']
                         mut_seq = row['mutated_sequence']
                     else:
                         # target_seqがない場合は、mutated_sequenceを使用
+                        logger.warning(f"Row {idx}: target_seq not found, using mutated_sequence for both WT and mutant")
                         wt_seq = row['mutated_sequence']  # 仮の処理
                         mut_seq = row['mutated_sequence']
+                    
+                    # DMS_scoreの確認
+                    if pd.isna(row['DMS_score']):
+                        logger.warning(f"Row {idx}: DMS_score is NaN, skipping")
+                        continue
+                    
+                    # 配列の確認
+                    if pd.isna(wt_seq) or pd.isna(mut_seq):
+                        logger.warning(f"Row {idx}: Missing sequence data (wt: {pd.isna(wt_seq)}, mut: {pd.isna(mut_seq)})")
+                        continue
                     
                     score = self.get_variant_fitness_score(wt_seq, mut_seq)
                     
                     fitness_scores.append(score)
                     true_scores.append(row['DMS_score'])
                     
+                    # 最初のバリアントは詳細ログ
+                    if len(fitness_scores) == 1:
+                        logger.info(f"First variant processed successfully: score={score:.4f}, DMS_score={row['DMS_score']:.4f}")
+                    
                     logger.debug(f"Processed variant {len(fitness_scores)}/{len(proteingym_data)}")
                     
                 except Exception as e:
-                    logger.warning(f"Error processing variant: {e}")
+                    logger.warning(f"Row {idx}: Error processing variant: {e}")
+                    import traceback
+                    logger.debug(traceback.format_exc())
                     continue
             
-            if (i // batch_size + 1) % 10 == 0:
-                logger.info(f"Processed {i + len(batch)}/{len(proteingym_data)} variants")
+            # より頻繁に進捗をログ出力
+            batch_num = i // batch_size + 1
+            if batch_num % 5 == 0 or batch_num == 1:
+                logger.info(f"Processed batch {batch_num}: {len(fitness_scores)}/{len(proteingym_data)} variants successfully evaluated")
         
         # 評価指標を計算
+        logger.info(f"Successfully processed {len(fitness_scores)} out of {len(proteingym_data)} variants")
+        
+        if len(fitness_scores) < 2:
+            logger.error(f"Insufficient data for correlation calculation. Need at least 2 samples, got {len(fitness_scores)}")
+            logger.error("Check if:")
+            logger.error("  1. ProteinGym data file contains valid sequences")
+            logger.error("  2. Required columns ('mutated_sequence', 'DMS_score') are present")
+            logger.error("  3. Sequences can be properly tokenized")
+            raise ValueError(f"Need at least 2 valid samples for evaluation, got {len(fitness_scores)}")
+        
         fitness_scores = np.array(fitness_scores)
         true_scores = np.array(true_scores)
         
@@ -645,6 +678,8 @@ def main():
                        help='Number of positive samples in created data (default: 1000)')
     parser.add_argument('--sample_negative_count', type=int, default=1000,
                        help='Number of negative samples in created data (default: 1000)')
+    parser.add_argument('--max_samples', type=int, default=None,
+                       help='Maximum number of samples to evaluate (for testing, default: None = all)')
     
     args = parser.parse_args()
     
@@ -689,6 +724,11 @@ def main():
         
         # ProteinGymデータの読み込み
         proteingym_data = evaluator.load_proteingym_data(args.proteingym_data)
+        
+        # サンプル数の制限（テスト用）
+        if args.max_samples is not None and len(proteingym_data) > args.max_samples:
+            logger.info(f"Limiting evaluation to first {args.max_samples} samples (out of {len(proteingym_data)})")
+            proteingym_data = proteingym_data.head(args.max_samples)
         
         # モデル評価の実行
         results = evaluator.evaluate_model(proteingym_data, batch_size=args.batch_size)
