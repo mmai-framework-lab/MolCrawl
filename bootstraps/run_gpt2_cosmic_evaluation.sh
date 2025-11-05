@@ -219,7 +219,7 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
 fi
 
 python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
-    --result-dir "$OUTPUT_DIR" \
+    --results_file "$RESULTS_FILE" \
     --output_dir "$OUTPUT_DIR/visualizations"
 
 echo "可視化完了"

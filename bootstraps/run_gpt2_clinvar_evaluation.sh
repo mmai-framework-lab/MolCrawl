@@ -235,8 +235,9 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
 fi
 
 python "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_visualization.py" \
-    --result-dir "$OUTPUT_DIR" \
-    --output_dir "$OUTPUT_DIR/visualizations"
+    --results_file "$RESULTS_FILE" \
+    --output_dir "$OUTPUT_DIR/visualizations" \
+    --html_report
 
 echo "可視化完了"
 

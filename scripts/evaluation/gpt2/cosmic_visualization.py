@@ -588,6 +588,78 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
                 ha='center', va='center')
         plt.title('COSMIC Evaluation Summary')
         self._save_plot('cosmic_summary_dashboard')
+    
+    def create_html_report(self):
+        """HTMLレポートの生成（抽象メソッドの実装）"""
+        self.logger.info("Creating COSMIC HTML report")
+        
+        html_path = self.output_dir / 'cosmic_evaluation_report.html'
+        
+        # HTMLレポートの生成
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>COSMIC Evaluation Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        h1 {{ color: #333; }}
+        h2 {{ color: #666; margin-top: 30px; }}
+        .metrics {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0; }}
+        .metric-card {{ background: #f5f5f5; padding: 15px; border-radius: 5px; }}
+        .metric-value {{ font-size: 24px; font-weight: bold; color: #007bff; }}
+        .metric-label {{ font-size: 14px; color: #666; }}
+        img {{ max-width: 100%; height: auto; margin: 10px 0; }}
+    </style>
+</head>
+<body>
+    <h1>COSMIC Evaluation Report</h1>
+    <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    
+    <h2>Performance Metrics</h2>
+    <div class="metrics">
+        <div class="metric-card">
+            <div class="metric-label">Accuracy</div>
+            <div class="metric-value">{self.results.get('accuracy', 0):.3f}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Precision</div>
+            <div class="metric-value">{self.results.get('precision', 0):.3f}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Recall</div>
+            <div class="metric-value">{self.results.get('recall', 0):.3f}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">F1-Score</div>
+            <div class="metric-value">{self.results.get('f1_score', 0):.3f}</div>
+        </div>
+    </div>
+    
+    <h2>Visualizations</h2>
+    <div>
+        <h3>ROC Curve</h3>
+        <img src="roc_curve.png" alt="ROC Curve">
+        
+        <h3>Precision-Recall Curve</h3>
+        <img src="pr_curve.png" alt="PR Curve">
+        
+        <h3>Performance Metrics</h3>
+        <img src="cosmic_performance_metrics.png" alt="Performance Metrics">
+    </div>
+    
+    <h2>Summary</h2>
+    <p>COSMIC evaluation completed successfully. Review the visualizations above for detailed performance analysis.</p>
+</body>
+</html>
+"""
+        
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        self.logger.info(f"HTML report saved to {html_path}")
+        return str(html_path)
 
 def main():
     """メイン処理"""

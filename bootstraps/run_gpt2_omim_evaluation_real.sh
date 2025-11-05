@@ -317,8 +317,7 @@ if [ "$SKIP_VISUALIZATION" = false ]; then
     echo "評価結果の可視化を実行中..."
     
     python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
-        --result-dir "$OUTPUT_DIR" \
-        --output_dir "$OUTPUT_DIR/visualizations"
+        --results_dir "$OUTPUT_DIR"
     
     if [[ $? -ne 0 ]]; then
         echo "エラー: 可視化に失敗しました"
