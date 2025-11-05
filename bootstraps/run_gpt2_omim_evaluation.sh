@@ -1,47 +1,51 @@
 #!/bin/bash
 
 #
-# OMIM評価パイプライン実行スクリプト
+# GPT-2 OMIM評価パイプライン実行スクリプト
 #
 # このスクリプトは、OMIMデータの取得から評価、可視化までの
 # 全プロセスを自動で実行します。
 #
+# 注意: このスクリプトはbootstraps/ディレクトリから実行されることを想定しています
+#
 # 使用方法:
-#   ./run_omim_evaluation.sh [options]
+#   ./run_gpt2_omim_evaluation.sh [options]
 #
 # オプション:
 #   --model_size small|medium|large  モデルサイズ (デフォルト: small)
-#   --sequence_length NUMBER         配列長 (デフォルト: 100)
-#   --max_samples NUMBER             最大サンプル数 (デフォルト: 1000)
+#   --max_samples NUMBER             最大サンプル数 (デフォルト: 50)
 #   --batch_size NUMBER              バッチサイズ (デフォルト: 16)
-#   --output_dir PATH                出力ディレクトリ (デフォルト: omim_evaluation_results)
 #
 # 例:
-#   ./run_omim_evaluation.sh --model_size medium --sequence_length 200 --max_samples 2000
+#   ./run_gpt2_omim_evaluation.sh --model_size medium --max_samples 100
 #
 
 set -e  # エラー時に停止
 
 # スクリプトのディレクトリを取得
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$SCRIPT_DIR"  # bootstrapsディレクトリからの実行を想定
+
+# LEARNING_SOURCE_DIRの確認
+if [ -z "$LEARNING_SOURCE_DIR" ]; then
+    echo "エラー: LEARNING_SOURCE_DIR環境変数が設定されていません"
+    echo "実行前に以下を設定してください:"
+    echo "  export LEARNING_SOURCE_DIR=/path/to/learning_source"
+    exit 1
+fi
 
 # デフォルト設定
 MODEL_SIZE="small"
-SEQUENCE_LENGTH=100
-MAX_SAMPLES=1000
+MAX_SAMPLES=50
 BATCH_SIZE=16
-OUTPUT_DIR="$PROJECT_ROOT/omim_evaluation_results"
+OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation"
+DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/omim"
 
 # 引数パース
 while [[ $# -gt 0 ]]; do
     case $1 in
         --model_size)
             MODEL_SIZE="$2"
-            shift 2
-            ;;
-        --sequence_length)
-            SEQUENCE_LENGTH="$2"
             shift 2
             ;;
         --max_samples)
@@ -52,26 +56,20 @@ while [[ $# -gt 0 ]]; do
             BATCH_SIZE="$2"
             shift 2
             ;;
-        --output_dir)
-            OUTPUT_DIR="$2"
-            shift 2
-            ;;
         -h|--help)
-            echo "OMIM Evaluation Pipeline"
+            echo "GPT-2 OMIM Evaluation Pipeline"
             echo ""
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
             echo "  --model_size SIZE         Model size (small|medium|large, default: small)"
-            echo "  --sequence_length LENGTH  Sequence length (default: 100)"
-            echo "  --max_samples NUMBER      Maximum samples to generate (default: 1000)"
+            echo "  --max_samples NUMBER      Maximum samples to generate (default: 50)"
             echo "  --batch_size SIZE         Batch size for evaluation (default: 16)"
-            echo "  --output_dir PATH         Output directory (default: omim_evaluation_results)"
             echo "  -h, --help               Show this help message"
             echo ""
             echo "Examples:"
-            echo "  $0 --model_size medium --sequence_length 200"
-            echo "  $0 --max_samples 2000 --batch_size 32"
+            echo "  $0 --model_size medium --max_samples 100"
+            echo "  $0 --batch_size 32"
             exit 0
             ;;
         *)
@@ -83,20 +81,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 # 設定表示
-echo "=== OMIM評価パイプライン開始 ==="
+echo "=== GPT-2 OMIM評価パイプライン開始 ==="
 echo "モデルサイズ: $MODEL_SIZE"
-echo "配列長: $SEQUENCE_LENGTH"
 echo "最大サンプル数: $MAX_SAMPLES"
 echo "バッチサイズ: $BATCH_SIZE"
 echo "出力ディレクトリ: $OUTPUT_DIR"
+echo "データディレクトリ: $DATA_DIR"
 echo ""
 
 # 出力ディレクトリ作成
 mkdir -p "$OUTPUT_DIR"
+mkdir -p "$DATA_DIR"
 
 # パス設定
 MODEL_PATH="$PROJECT_ROOT/gpt2-output/genome_sequence-$MODEL_SIZE/ckpt.pt"
-DATA_PATH="$OUTPUT_DIR/data/omim_evaluation_dataset.csv"
+DATA_PATH="$DATA_DIR/data/omim_evaluation_dataset.csv"
 
 # モデルファイル存在チェック
 if [ ! -f "$MODEL_PATH" ]; then
@@ -145,11 +144,10 @@ echo "OMIMサンプルデータを作成中..."
 
 cd "$PROJECT_ROOT"
 
-python "$SCRIPT_DIR/omim_data_preparation.py" \
-    --output_dir "$OUTPUT_DIR" \
-    --num_samples "$MAX_SAMPLES" \
-    --sequence_length "$SEQUENCE_LENGTH" \
-    --seed 42
+python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_data_preparation.py" \
+    --output_dir "$DATA_DIR" \
+    --mode sample \
+    --num_samples "$MAX_SAMPLES"
 
 if [ $? -ne 0 ]; then
     echo "エラー: データ準備に失敗しました"
@@ -170,7 +168,7 @@ echo "モデル評価を実行中..."
 echo "モデル: $MODEL_PATH"
 echo "データ: $DATA_PATH"
 
-python "$SCRIPT_DIR/omim_evaluation.py" \
+python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_evaluation.py" \
     --model_path "$MODEL_PATH" \
     --data_path "$DATA_PATH" \
     --output_dir "$OUTPUT_DIR" \
@@ -187,8 +185,9 @@ echo "モデル評価完了"
 echo "=== 可視化フェーズ ==="
 echo "評価結果の可視化を実行中..."
 
-python "$SCRIPT_DIR/omim_visualization.py" \
-    --results_dir "$OUTPUT_DIR"
+python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
+    --result-dir "$OUTPUT_DIR" \
+    --output_dir "$OUTPUT_DIR/visualizations"
 
 if [ $? -ne 0 ]; then
     echo "エラー: 可視化に失敗しました"
