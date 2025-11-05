@@ -14,24 +14,35 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 🚀 AI Model Evaluation Scripts
 
-### Protein Sequence Models
-| Script | Purpose | Model Type | Dataset | Output Location |
-|--------|---------|------------|---------|----------------|
-| `run_bert_proteingym_evaluation.sh` | BERT protein fitness prediction | BERT | ProteinGym | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_*` |
-| `run_proteingym_evaluation.sh` | GPT-2 protein fitness prediction | GPT-2 | ProteinGym | `$LEARNING_SOURCE_DIR/protein_sequence/report/proteingym_*` |
-| `run_protein_classification_evaluation.sh` | General protein classification | BERT/GPT-2 | Custom datasets | `$LEARNING_SOURCE_DIR/protein_sequence/report/protein_classification_*` |
+### BERT Model Evaluations
+| Script | Purpose | Dataset | Output Location |
+|--------|---------|---------|----------------|
+| `run_bert_proteingym_evaluation.sh` | BERT protein fitness prediction (統合版) | ProteinGym | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_*` |
+| `run_bert_clinvar_evaluation.sh` | BERT variant pathogenicity prediction | ClinVar | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_*` |
 
-### Genome Sequence Models  
-| Script | Purpose | Model Type | Dataset | Output Location |
-|--------|---------|------------|---------|----------------|
-| `run_bert_clinvar_evaluation.sh` | Variant pathogenicity prediction | BERT | ClinVar | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*` |
-| `run_omim_real_evaluation.sh` | Disease variant analysis | GPT-2 | OMIM | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_*` |
+**Note**: BERT ProteinGymスクリプトは、データ準備・評価・可視化の3フェーズを統合した単一スクリプトです。
 
-### Data Processing & Visualization
-| Script | Purpose | Function | Dependencies |
-|--------|---------|----------|-------------|
-| `run_bert_proteingym_data_prep.sh` | ProteinGym data preprocessing | Data pipeline setup | Raw ProteinGym datasets |
-| `run_bert_proteingym_visualization.sh` | Generate evaluation plots | Result visualization | Completed evaluations |
+### GPT-2 Model Evaluations
+
+#### Genome Sequence (ゲノム配列)
+| Script | Purpose | Dataset | Data Type | Output Location |
+|--------|---------|---------|-----------|----------------|
+| `run_gpt2_clinvar_evaluation.sh` | 病原性バリアント予測 | ClinVar | サンプル | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*` |
+| `run_gpt2_cosmic_evaluation.sh` | がん関連バリアント分析 | COSMIC | サンプル | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*` |
+| `run_gpt2_omim_evaluation_dummy.sh` | 遺伝性疾患予測（テスト用） | OMIM | サンプル | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation` |
+| `run_gpt2_omim_evaluation_real.sh` | 遺伝性疾患予測（本番用） | OMIM | 実データ | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
+
+**Note**: 
+- `_dummy.sh`: 開発・テスト用サンプルデータで素早く動作確認
+- `_real.sh`: 本番評価用。OMIM公式データベースから実データを取得（認証必要）
+
+#### Protein Sequence (タンパク質配列)
+| Script | Purpose | Dataset | Output Location |
+|--------|---------|---------|----------------|
+| `run_gpt2_proteingym_evaluation.sh` | タンパク質適応度予測（統合版） | ProteinGym | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
+| `run_gpt2_protein_classification.sh` | タンパク質配列分類（統合版） | Custom | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
+
+**Note**: GPT-2 ProteinGymスクリプトは、データ準備・評価・可視化の3フェーズを統合した単一スクリプトです。
 
 ## 🔧 Development & Debugging
 
@@ -59,69 +70,118 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 📊 Output Structure
 
-All evaluation scripts use the structured output format:
+All evaluation scripts use the structured `LEARNING_SOURCE_DIR` format:
 
 ```
 $LEARNING_SOURCE_DIR/
 ├── genome_sequence/
-│   └── report/
-│       ├── clinvar_bert_YYYYMMDD_HHMMSS/
-│       ├── clinvar_gpt2_YYYYMMDD_HHMMSS/
-│       └── omim_gpt2_YYYYMMDD_HHMMSS/
+│   ├── data/                           # データ準備フェーズの出力
+│   │   ├── clinvar/
+│   │   ├── cosmic/
+│   │   ├── omim/                       # サンプルデータ
+│   │   └── omim_real/                  # 実データ（認証必要）
+│   └── report/                         # 評価結果フェーズの出力
+│       ├── bert_clinvar_YYYYMMDD_HHMMSS/
+│       ├── clinvar_evaluation/         # GPT-2 ClinVar
+│       ├── cosmic_evaluation/          # GPT-2 COSMIC
+│       ├── omim_evaluation/            # GPT-2 OMIM（サンプル）
+│       └── omim_real_evaluation/       # GPT-2 OMIM（実データ）
 └── protein_sequence/
-    └── report/
+    ├── data/                           # データ準備フェーズの出力
+    │   ├── bert_proteingym/
+    │   ├── gpt2_proteingym/
+    │   └── protein_classification/
+    └── report/                         # 評価結果フェーズの出力
         ├── bert_proteingym_YYYYMMDD_HHMMSS/
-        ├── proteingym_gpt2_YYYYMMDD_HHMMSS/
-        └── protein_classification_YYYYMMDD_HHMMSS/
+        ├── gpt2_proteingym/
+        └── gpt2_protein_classification/
 ```
 
-Each evaluation directory contains:
-- `evaluation_results.json` - Structured results
-- `evaluation_report.txt` - Human-readable summary  
-- `evaluation_plots.png` - Visualization charts
-- `detailed_results.csv` - Per-sample predictions
+### 各評価ディレクトリの内容
+- `*_results.json` - 構造化された評価結果
+- `*_report.txt` - 人間が読める形式のサマリー  
+- `*_detailed_results.csv` - サンプルごとの予測結果
+- `visualizations/` - 可視化フェーズで生成されたグラフ・チャート
 
 ## 🎯 Quick Start Examples
 
 ### Standard Evaluations
+
+#### BERT Model Evaluations
 ```bash
-# BERT ProteinGym evaluation
-./bootstraps/run_bert_proteingym_evaluation.sh --dataset data/proteingym/sample.csv
+# BERT ProteinGym evaluation (統合版: データ準備→評価→可視化)
+./bootstraps/run_bert_proteingym_evaluation.sh --max_variants 2000 --batch_size 32
 
-# BERT ProteinGym evaluation with balanced sampling (1000 positive + 1000 negative)
-./bootstraps/run_bert_proteingym_evaluation.sh --dataset data/proteingym/sample.csv --balanced
+# サンプルデータのみ作成
+./bootstraps/run_bert_proteingym_evaluation.sh --sample_only
 
-# GPT-2 ProteinGym evaluation  
-./bootstraps/run_proteingym_evaluation.sh --dataset data/proteingym/sample.csv
+# 評価のみ実行（データ準備をスキップ）
+./bootstraps/run_bert_proteingym_evaluation.sh --skip_data_prep
 
-# ClinVar variant analysis
+# BERT ClinVar評価
 ./bootstraps/run_bert_clinvar_evaluation.sh
 ```
 
-### Balanced Dataset Preparation
+#### GPT-2 Genome Sequence Evaluations
 ```bash
-# Prepare balanced ProteinGym data (1000 positive + 1000 negative samples)
-python scripts/proteingym_data_preparation.py \
-  --prepare_assay BLAT_ECOLX_Ranganathan2015 \
-  --balanced_sampling \
-  --positive_samples 1000 \
-  --negative_samples 1000
+# ClinVar評価
+./bootstraps/run_gpt2_clinvar_evaluation.sh --model_size medium --max_samples 100
 
-# Prepare multiple assays with balanced sampling
-python scripts/proteingym_data_preparation.py \
-  --prepare_multiple_assays BLAT_ECOLX_Ranganathan2015 CALM1_HUMAN_Roth2017 \
-  --positive_samples 500 \
-  --negative_samples 500 \
-  --output_dir ./balanced_proteingym_data
+# COSMIC評価
+./bootstraps/run_gpt2_cosmic_evaluation.sh --model_size small --batch_size 32
 
-# Create balanced sample data for testing
-python scripts/proteingym_evaluation.py \
-  --model_path runs_train_bert_protein_sequence/checkpoint-5000 \
-  --proteingym_data sample_balanced.csv \
-  --create_sample_data \
-  --balanced_samples \
-  --sample_positive_count 1000 \
-  --sample_negative_count 1000
+# OMIM評価（サンプルデータ・開発用）
+./bootstraps/run_gpt2_omim_evaluation_dummy.sh --max_samples 50
+
+# OMIM評価（実データ・本番用、認証必要）
+./bootstraps/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
+```
+
+#### GPT-2 Protein Sequence Evaluations
+```bash
+# ProteinGym評価（統合版）
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m gpt2-output/protein_sequence-small/ckpt.pt \
+  -d proteingym_data/sample.csv
+
+# サンプルデータ作成と評価
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m gpt2-output/protein_sequence-small/ckpt.pt \
+  --create-sample --visualize
+
+# Protein Classification評価
+./bootstraps/run_gpt2_protein_classification.sh \
+  -m gpt2-output/protein_sequence-small/ckpt.pt \
+  -s
+```
+
+### Advanced Options
+
+#### フェーズ別実行（GPT-2スクリプト）
+```bash
+# データ準備のみ
+./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_evaluation --skip_visualization
+
+# 評価のみ（データ準備済みの場合）
+./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_visualization
+
+# 可視化のみ（評価結果がある場合）
+./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
+```
+
+#### カスタム設定
+```bash
+# カスタム出力ディレクトリ指定
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m model.pt -d data.csv -o /custom/output/path
+
+# デバイス指定（CPU使用）
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m model.pt -d data.csv --device cpu
+
+# バッチサイズとサンプル数の調整
+./bootstraps/run_gpt2_clinvar_evaluation.sh \
+  --max_samples 200 --batch_size 8
 ```
 
 ### Experiment System
@@ -168,49 +228,162 @@ source src/config/env.sh
 
 ## 📝 Script Categories
 
-### 🔍 **Evaluation Scripts** (5 scripts)
-Automated evaluation of trained models on various datasets with standardized output formatting.
+### 🔍 **Evaluation Scripts** (8 scripts)
+自動化されたモデル評価スクリプト（データ準備・評価・可視化の3フェーズ統合）
 
-### 🛠️ **Development Scripts** (4 scripts)  
-Debugging, testing, and development utilities for model development workflow.
+**BERT Models:**
+- `run_bert_proteingym_evaluation.sh` - BERT ProteinGym評価
+- `run_bert_clinvar_evaluation.sh` - BERT ClinVar評価
+
+**GPT-2 Genome Sequence:**
+- `run_gpt2_clinvar_evaluation.sh` - GPT-2 ClinVar評価
+- `run_gpt2_cosmic_evaluation.sh` - GPT-2 COSMIC評価
+- `run_gpt2_omim_evaluation_dummy.sh` - GPT-2 OMIM評価（サンプル）
+- `run_gpt2_omim_evaluation_real.sh` - GPT-2 OMIM評価（実データ）
+
+**GPT-2 Protein Sequence:**
+- `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym評価
+- `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification評価
+
+### 🛠️ **Development Scripts** (2 scripts)  
+デバッグ、テスト、開発用ユーティリティ
+- `debug_protein_bert.sh` - BERTモデルのデバッグ
+- `reboot-cause-check.sh` - システムリブート原因の分析
 
 ### 🏭 **Infrastructure Scripts** (4 scripts)
-System setup, service management, and experiment tracking infrastructure.
+システムセットアップ、サービス管理、実験トラッキング基盤
+- `setup_experiment_system.sh` - 実験システムの初期化
+- `start_experiment_system.sh` - 実験サービスの起動
+- `demo_experiment_system.sh` - システムデモンストレーション
+- `start_api_server.py` - Web APIサーバー起動
 
 ### ⚙️ **Utility Scripts** (1 script)
-Helper scripts for data preparation and project setup tasks.
+データ準備とプロジェクトセットアップ用ヘルパースクリプト
+- `create_sample_vocab.sh` - サンプル語彙ファイルの生成
 
-## ⚖️ Balanced Sampling Features
+## 🔄 統合スクリプトの構造
 
-### Dataset Balance
-- **Default Configuration**: 1000 positive + 1000 negative samples
-- **Automatic Threshold**: Uses median DMS score if no threshold specified
-- **Flexible Sampling**: Customizable positive/negative sample counts
-- **Quality Assurance**: Maintains data distribution while ensuring balance
+### 3フェーズパイプライン
+すべての評価スクリプトは以下の3フェーズで構成されています：
 
-### Benefits
-- **Reduced Bias**: Eliminates class imbalance issues in evaluation
-- **Consistent Evaluation**: Standardized dataset sizes across experiments
-- **Fair Comparison**: Enables meaningful model performance comparisons
-- **Resource Efficiency**: Fixed dataset sizes for predictable resource usage
+1. **データ準備フェーズ** (`--skip_data_prep`でスキップ可能)
+   - データセットのダウンロード/生成
+   - 前処理とフォーマット変換
+   - `$LEARNING_SOURCE_DIR/{model_type}/data/`に保存
+
+2. **モデル評価フェーズ** (`--skip_evaluation`でスキップ可能)
+   - 訓練済みモデルのロード
+   - データセットでの推論実行
+   - メトリクス計算と結果保存
+
+3. **可視化フェーズ** (`--skip_visualization`でスキップ可能)
+   - 評価結果のグラフ生成
+   - HTMLレポート作成
+   - `visualizations/`サブディレクトリに保存
+
+### フェーズ別実行の利点
+- **開発効率**: データ準備は1回だけ、評価と可視化を繰り返し実行可能
+- **デバッグ容易性**: 各フェーズを個別にテスト可能
+- **リソース管理**: 必要なフェーズのみ実行してリソースを節約
+- **柔軟性**: 外部で準備したデータを使用する場合はデータ準備をスキップ
 
 ## 🚨 Important Notes
 
-- **Execution Location**: All scripts must be run from project root directory
-- **Output Management**: Results are automatically timestamped and organized
-- **Resource Management**: GPU memory and disk space requirements vary by script
-- **Logging**: Comprehensive logging is provided for all operations
-- **Error Handling**: Scripts include robust error checking and recovery
-- **Balanced Sampling**: New default for ProteinGym evaluations ensures fair model comparison
+### 実行環境
+- **実行場所**: すべてのスクリプトはプロジェクトルートディレクトリから実行
+- **LEARNING_SOURCE_DIR**: 必須環境変数。すべての評価スクリプトで使用
+- **GPU要件**: CUDA対応GPUが推奨（CPU実行も可能だが遅い）
+
+### データ管理
+- **出力管理**: 結果は自動的にタイムスタンプ付きで整理
+- **実データアクセス**: `run_gpt2_omim_evaluation_real.sh`はOMIM認証が必要
+- **サンプルデータ**: `_dummy.sh`スクリプトは認証不要で開発・テスト可能
+
+### スクリプト構造
+- **統合スクリプト**: データ準備・評価・可視化の3フェーズを1つのスクリプトに統合
+- **フェーズスキップ**: `--skip_*`オプションで任意のフェーズをスキップ可能
+- **エラーハンドリング**: 堅牢なエラーチェックとリカバリー機能
+
+### リソース管理
+- **GPUメモリ**: モデルサイズとバッチサイズに応じて変動
+- **ディスク容量**: データセットと結果ファイルのサイズを考慮
+- **ログ**: すべての操作で包括的なログを提供
 
 ## 📞 Troubleshooting
 
-For common issues:
-1. Check `LEARNING_SOURCE_DIR` environment variable is set
-2. Ensure CUDA drivers are properly installed for GPU scripts
-3. Verify model checkpoints exist in expected locations
-4. Review logs in respective output directories for detailed error messages
+### よくある問題と解決方法
+
+1. **環境変数エラー**
+   ```bash
+   # エラー: LEARNING_SOURCE_DIR環境変数が設定されていません
+   export LEARNING_SOURCE_DIR=/path/to/learning_source_202508
+   ```
+
+2. **モデルファイルが見つからない**
+   ```bash
+   # モデルディレクトリを確認
+   ls -la gpt2-output/
+   ls -la runs_train_bert_*/
+   ```
+
+3. **CUDAエラー**
+   ```bash
+   # GPU確認
+   nvidia-smi
+   
+   # CPU使用に切り替え
+   ./bootstraps/run_gpt2_*.sh --device cpu
+   ```
+
+4. **データファイルが見つからない**
+   ```bash
+   # データ準備フェーズを再実行
+   ./bootstraps/run_gpt2_*.sh --force_download
+   
+   # または、データ準備のみ実行
+   ./bootstraps/run_gpt2_*.sh --skip_evaluation --skip_visualization
+   ```
+
+5. **OMIM実データアクセスエラー**
+   ```bash
+   # 設定ファイルに認証URLが正しく設定されているか確認
+   cat configs/omim_real_data.yaml
+   
+   # サンプルデータで動作確認
+   ./bootstraps/run_gpt2_omim_evaluation_dummy.sh
+   ```
+
+6. **Pythonパッケージ不足**
+   ```bash
+   # 必要なパッケージをインストール
+   pip install torch transformers pandas numpy scikit-learn matplotlib seaborn sentencepiece
+   ```
+
+### ログの確認
+各スクリプトは詳細なログを出力します：
+- コンソール出力: リアルタイムの進行状況
+- `logs/`: システムログ（一部のスクリプト）
+- `$OUTPUT_DIR/*_report.txt`: 評価結果の詳細レポート
 
 ## 🔄 Migration Notes
 
-These scripts have been moved from the project root to improve organization. All functionality remains identical when executed from the project root directory.
+### スクリプト構造の変更
+これらのスクリプトは以下の変更が行われました：
+
+1. **ファイル名の明確化**
+   - GPT-2専用スクリプトに`run_gpt2_`プレフィックスを追加
+   - BERT専用スクリプトに`run_bert_`プレフィックスを追加
+   - OMIM実データスクリプトに`_real`サフィックスを追加
+
+2. **3フェーズ統合**
+   - データ準備、評価、可視化スクリプトを統合
+   - フェーズ別スキップオプションを追加
+
+3. **LEARNING_SOURCE_DIR構造の統一**
+   - すべてのスクリプトで統一されたディレクトリ構造を使用
+   - 環境変数チェックを追加
+
+4. **スクリプトパスの統一**
+   - すべてのPython実行パスを`scripts/evaluation/{model_type}/`配下に統一
+
+プロジェクトルートディレクトリから実行する限り、すべての機能は同一です。
