@@ -1,18 +1,29 @@
 #!/bin/bash
 """
-COSMIC評価パイプライン実行スクリプト
+GPT-2 COSMIC評価パイプライン実行スクリプト
 
 このスクリプトは、COSMICデータの取得から評価、可視化までの
 全プロセスを自動で実行します。
+
+注意: このスクリプトはbootstraps/ディレクトリから実行されることを想定しています
 """
 
 set -e  # エラー時に停止
 
 # 設定
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_ROOT/cosmic_evaluation_results"
-DATA_DIR="$OUTPUT_DIR/data"
+PROJECT_ROOT="$SCRIPT_DIR"  # bootstrapsディレクトリからの実行を想定
+
+# LEARNING_SOURCE_DIRの確認
+if [ -z "$LEARNING_SOURCE_DIR" ]; then
+    echo "エラー: LEARNING_SOURCE_DIR環境変数が設定されていません"
+    echo "実行前に以下を設定してください:"
+    echo "  export LEARNING_SOURCE_DIR=/path/to/learning_source"
+    exit 1
+fi
+
+OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_evaluation"
+DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic"
 MODELS_DIR="$PROJECT_ROOT/gpt2-output"
 
 # デフォルト設定
@@ -24,7 +35,7 @@ BATCH_SIZE=16
 # ヘルプ表示
 show_help() {
     cat << EOF
-COSMIC評価パイプライン
+GPT-2 COSMIC評価パイプライン
 
 使用法: $0 [オプション]
 
@@ -122,10 +133,9 @@ if [[ "$VISUALIZE_ONLY" == true ]]; then
         exit 1
     fi
     
-    python scripts/cosmic_visualization.py \
-        --results_file "$RESULTS_FILE" \
-        --output_dir "$OUTPUT_DIR/visualizations" \
-        --html_report
+    python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
+        --result-dir "$OUTPUT_DIR" \
+        --output_dir "$OUTPUT_DIR/visualizations"
     
     echo "可視化完了: $OUTPUT_DIR/visualizations/"
     exit 0
@@ -136,10 +146,9 @@ if [[ "$EVAL_ONLY" != true ]]; then
     echo "=== データ準備フェーズ ==="
     
     echo "COSMICサンプルデータを作成中..."
-    python scripts/cosmic_data_preparation.py \
+    python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_data_preparation.py" \
         --output_dir "$DATA_DIR" \
         --max_samples "$MAX_SAMPLES" \
-        --sequence_length "$SEQUENCE_LENGTH" \
         --create_sample_data
     
     echo "データ準備完了"
@@ -171,7 +180,7 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
     echo "モデル: $MODEL_PATH"
     echo "データ: $COSMIC_DATA"
     
-    python scripts/cosmic_evaluation.py \
+    python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_evaluation.py" \
         --model_path "$MODEL_PATH" \
         --cosmic_data "$COSMIC_DATA" \
         --output_dir "$OUTPUT_DIR" \
@@ -189,10 +198,9 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
     exit 1
 fi
 
-python scripts/cosmic_visualization.py \
-    --results_file "$RESULTS_FILE" \
-    --output_dir "$OUTPUT_DIR/visualizations" \
-    --html_report
+python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
+    --result-dir "$OUTPUT_DIR" \
+    --output_dir "$OUTPUT_DIR/visualizations"
 
 echo "可視化完了"
 
