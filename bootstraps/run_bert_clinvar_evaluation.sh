@@ -12,12 +12,23 @@ echo "📅 Date: $(date)"
 echo "🚀 Using trained BERT model with safetensors"
 echo
 
+# スクリプトのディレクトリを取得
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# LEARNING_SOURCE_DIRの確認
+if [ -z "$LEARNING_SOURCE_DIR" ]; then
+    echo "エラー: LEARNING_SOURCE_DIR環境変数が設定されていません"
+    echo "実行前に以下を設定してください:"
+    echo "  export LEARNING_SOURCE_DIR=/path/to/learning_source"
+    exit 1
+fi
+
 # 設定値
-MODEL_PATH="runs_train_bert_genome_sequence/checkpoint-5000"  # 訓練済みBERTモデル（safetensors）
-TOKENIZER_PATH="learning_source_202508/genome_sequence/spm_tokenizer.model"  # SentencePieceトークナイザー
-DATASET_PATH="./learning_source_202508/genome_sequence/clinvar/balanced_output_2000.csv"
-OUTPUT_DIR="./results/bert_clinvar_evaluation_results-20251016"
-CONFIG_FILE="bert/configs/clinvar_evaluation_config.py"
+MODEL_PATH="$PROJECT_ROOT/runs_train_bert_genome_sequence/checkpoint-5000"  # 訓練済みBERTモデル（safetensors）
+TOKENIZER_PATH="$LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model"  # SentencePieceトークナイザー
+DATASET_PATH="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv"
+OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation"
 
 # パラメータの確認
 echo "Configuration:"
@@ -25,7 +36,6 @@ echo "  Model Path: $MODEL_PATH"
 echo "  Tokenizer Path: $TOKENIZER_PATH"
 echo "  Dataset Path: $DATASET_PATH"
 echo "  Output Directory: $OUTPUT_DIR"
-echo "  Config File: $CONFIG_FILE"
 echo
 
 # 前提条件チェック
@@ -57,12 +67,6 @@ check_requirements() {
     TOTAL_VARIANTS=$(wc -l < "$DATASET_PATH")
     echo "📊 Dataset contains $((TOTAL_VARIANTS - 1)) variants"
     
-    # 設定ファイルの存在確認
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "Error: Config file not found at $CONFIG_FILE"
-        exit 1
-    fi
-    
     # Pythonパッケージの確認
     source miniconda/bin/activate conda 2>/dev/null || {
         echo "Error: Conda environment not available"
@@ -88,7 +92,7 @@ run_evaluation() {
     
     # 出力ディレクトリの作成
     mkdir -p "$OUTPUT_DIR"
-    mkdir -p logs
+    mkdir -p "$PROJECT_ROOT/logs"
     
     # GPU使用可能性の確認
     if python -c "import torch; print('CUDA available:', torch.cuda.is_available())" | grep "True"; then
@@ -102,7 +106,7 @@ run_evaluation() {
     
     # BERT ClinVar評価の実行
     source miniconda/bin/activate conda
-    python bert/clinvar_evaluation.py \
+    python scripts/evaluation/bert/clinvar_evaluation.py \
         --model_path "$MODEL_PATH" \
         --tokenizer_path "$TOKENIZER_PATH" \
         --dataset_path "$DATASET_PATH" \
@@ -110,7 +114,7 @@ run_evaluation() {
         --device "$DEVICE" \
         --max_length 512 \
         $SAMPLE_OPTION \
-        2>&1 | tee logs/bert_clinvar_evaluation_$(date +%Y%m%d_%H%M%S).log
+        2>&1 | tee "$PROJECT_ROOT/logs/bert_clinvar_evaluation_$(date +%Y%m%d_%H%M%S).log"
     
     echo
     echo "BERT ClinVar evaluation completed!"

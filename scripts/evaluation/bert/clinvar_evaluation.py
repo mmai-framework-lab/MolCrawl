@@ -361,9 +361,8 @@ class BERTClinVarEvaluator(ModelEvaluator):
             sample_size (int): サンプルサイズ（None=全データ）
         """
 
-        # タイムスタンプを追加してoutput_dirを更新
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = f"{output_dir}_{timestamp}"
+        # 出力ディレクトリの作成（タイムスタンプは付けない - GPT-2評価と統一）
+        os.makedirs(output_dir, exist_ok=True)
 
         logger.info("🔬 Starting Independent BERT ClinVar Evaluation")
         logger.info("=" * 60)
@@ -372,11 +371,32 @@ class BERTClinVarEvaluator(ModelEvaluator):
         logger.info("📚 Loading ClinVar dataset...")
         df = pd.read_csv(dataset_path)
 
+        # カラム名の標準化（GPT-2形式との互換性）
+        column_mapping = {
+            'Chromosome': 'chrom',
+            'Start': 'pos',
+            'ReferenceAllele': 'ref',
+            'AlternateAllele': 'alt'
+        }
+        # 存在するカラムのみリネーム
+        existing_mappings = {k: v for k, v in column_mapping.items() if k in df.columns}
+        if existing_mappings:
+            df = df.rename(columns=existing_mappings)
+            logger.info(f"Standardized column names: {list(existing_mappings.keys())} → {list(existing_mappings.values())}")
+
         # データの前処理とラベル変換
         logger.info("🔄 Preprocessing ClinVar data...")
         df["pathogenic"] = (df["ClinicalSignificance"] == "Pathogenic").astype(int)
-        df["VariationID"] = range(len(df))  # IDを生成
-        df["GeneSymbol"] = df["chrom"].astype(str) + ":" + df["pos"].astype(str)  # 遺伝子位置情報
+        
+        # VariationIDがない場合は生成
+        if "VariationID" not in df.columns or df["VariationID"].isnull().any():
+            df["VariationID"] = range(len(df))
+        
+        # GeneSymbolの生成（chromとposが利用可能な場合）
+        if "chrom" in df.columns and "pos" in df.columns:
+            df["GeneSymbol"] = df["chrom"].astype(str) + ":" + df["pos"].astype(str)
+        elif "GeneSymbol" not in df.columns:
+            df["GeneSymbol"] = "UNKNOWN"  # フォールバック
 
         if sample_size:
             df = df.sample(n=min(sample_size, len(df)), random_state=42)
@@ -426,11 +446,11 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
                 result = {
                     "VariationID": row["VariationID"],
-                    "GeneSymbol": row["GeneSymbol"],
-                    "chrom": row["chrom"],
-                    "pos": row["pos"],
-                    "ref": row["ref"],
-                    "alt": row["alt"],
+                    "GeneSymbol": row.get("GeneSymbol", "UNKNOWN"),
+                    "chrom": row.get("chrom", "N/A"),
+                    "pos": row.get("pos", "N/A"),
+                    "ref": row.get("ref", "N/A"),
+                    "alt": row.get("alt", "N/A"),
                     "ClinicalSignificance": row["ClinicalSignificance"],
                     "pathogenic": row["pathogenic"],
                     "mlm_score": scores["mlm_score"],
