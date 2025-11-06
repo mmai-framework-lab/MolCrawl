@@ -25,24 +25,31 @@ cd /path/to/riken-dataset-fundational-model
 ### GPT-2 Model Evaluations
 
 #### Genome Sequence (ゲノム配列)
-| Script | Purpose | Dataset | Data Type | Output Location |
-|--------|---------|---------|-----------|----------------|
-| `run_gpt2_clinvar_evaluation.sh` | 病原性バリアント予測 | ClinVar | サンプル | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*` |
-| `run_gpt2_cosmic_evaluation.sh` | がん関連バリアント分析 | COSMIC | サンプル | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*` |
-| `run_gpt2_omim_evaluation_dummy.sh` | 遺伝性疾患予測（テスト用） | OMIM | サンプル | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation` |
-| `run_gpt2_omim_evaluation_real.sh` | 遺伝性疾患予測（本番用） | OMIM | 実データ | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
+| Script | Purpose | Dataset | Data Type | Default Device | Output Location |
+|--------|---------|---------|-----------|----------------|-----------------|
+| `run_gpt2_clinvar_evaluation.sh` | 病原性バリアント予測 | ClinVar | サンプル | GPU (cuda) | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*` |
+| `run_gpt2_cosmic_evaluation.sh` | がん関連バリアント分析 | COSMIC | サンプル | GPU (cuda) | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*` |
+| `run_gpt2_omim_evaluation_dummy.sh` | 遺伝性疾患予測（テスト用） | OMIM | サンプル | GPU (cuda) | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation` |
+| `run_gpt2_omim_evaluation_real.sh` | 遺伝性疾患予測（本番用） | OMIM | 実データ | GPU (cuda) | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
 
 **Note**: 
 - `_dummy.sh`: 開発・テスト用サンプルデータで素早く動作確認
 - `_real.sh`: 本番評価用。OMIM公式データベースから実データを取得（認証必要）
+- **GPU最適化**: すべてのスクリプトはデフォルトでGPU (cuda)を使用（CPUより約4倍高速）
+- **既存データ再利用**: `run_gpt2_omim_evaluation_real.sh`は`--existing_omim_dir`オプションでダウンロード済みデータを再利用可能
 
 #### Protein Sequence (タンパク質配列)
-| Script | Purpose | Dataset | Output Location |
-|--------|---------|---------|----------------|
-| `run_gpt2_proteingym_evaluation.sh` | タンパク質適応度予測（統合版） | ProteinGym | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
-| `run_gpt2_protein_classification.sh` | タンパク質配列分類（統合版） | Custom | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
+| Script | Purpose | Dataset | Default Model | Default Device | Output Location |
+|--------|---------|---------|---------------|----------------|-----------------|
+| `run_gpt2_proteingym_evaluation.sh` | タンパク質適応度予測（統合版） | ProteinGym | 指定必須 | GPU (cuda) | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
+| `run_gpt2_protein_classification.sh` | タンパク質配列分類（統合版） | Custom | protein_sequence-small | GPU (cuda) | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
 
-**Note**: GPT-2 ProteinGymスクリプトは、データ準備・評価・可視化の3フェーズを統合した単一スクリプトです。
+**Note**: 
+- **統合スクリプト**: データ準備・評価・可視化の3フェーズを統合した単一スクリプト
+- **デフォルトモデル**: `run_gpt2_protein_classification.sh`はモデル指定なしで実行可能（`gpt2-output/protein_sequence-small/ckpt.pt`使用）
+- **サンプルデータ作成**: `run_gpt2_proteingym_evaluation.sh --create-sample`で推奨データセットを自動ダウンロード
+- **GPU最適化**: デフォルトでGPU使用、`--device cpu`でCPU実行に切り替え可能
+- **可視化充実**: 10種類以上のグラフとHTML形式の詳細レポートを自動生成
 
 ## 🔧 Development & Debugging
 
@@ -135,6 +142,11 @@ $LEARNING_SOURCE_DIR/
 
 # OMIM評価（実データ・本番用、認証必要）
 ./bootstraps/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
+
+# OMIM評価（既存データを再利用）
+./bootstraps/run_gpt2_omim_evaluation_real.sh \
+  --existing_omim_dir /path/to/downloaded/omim_data \
+  --model_size medium
 ```
 
 #### GPT-2 Protein Sequence Evaluations
@@ -144,15 +156,22 @@ $LEARNING_SOURCE_DIR/
   -m gpt2-output/protein_sequence-small/ckpt.pt \
   -d proteingym_data/sample.csv
 
-# サンプルデータ作成と評価
+# サンプルデータ自動作成と評価（推奨データセットをダウンロード）
 ./bootstraps/run_gpt2_proteingym_evaluation.sh \
   -m gpt2-output/protein_sequence-small/ckpt.pt \
-  --create-sample --visualize
+  --create-sample
 
-# Protein Classification評価
+# Protein Classification評価（デフォルトモデル使用）
+./bootstraps/run_gpt2_protein_classification.sh -s
+
+# Protein Classification評価（カスタムモデル指定）
 ./bootstraps/run_gpt2_protein_classification.sh \
-  -m gpt2-output/protein_sequence-small/ckpt.pt \
+  -m gpt2-output/protein_sequence-medium/ckpt.pt \
   -s
+
+# 可視化のみ実行（評価済みの場合）
+./bootstraps/run_gpt2_protein_classification.sh \
+  -s --skip_data_prep --skip_evaluation
 ```
 
 ### Advanced Options
@@ -169,19 +188,34 @@ $LEARNING_SOURCE_DIR/
 ./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
 ```
 
-#### カスタム設定
+#### デバイスとパフォーマンスの調整
+```bash
+# CPU使用（GPU非搭載環境向け）
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m model.pt -d data.csv --device cpu
+
+# バッチサイズとサンプル数の調整（メモリ節約）
+./bootstraps/run_gpt2_clinvar_evaluation.sh \
+  --max_samples 200 --batch_size 8
+
+# ProteinGym高速テスト（最大サンプル数制限）
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m model.pt -d data.csv --max_samples 100
+```
+
+#### データ管理オプション
 ```bash
 # カスタム出力ディレクトリ指定
 ./bootstraps/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv -o /custom/output/path
 
-# デバイス指定（CPU使用）
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv --device cpu
+# OMIM既存データの再利用（ダウンロードスキップ）
+./bootstraps/run_gpt2_omim_evaluation_real.sh \
+  --existing_omim_dir /path/to/omim_data
 
-# バッチサイズとサンプル数の調整
-./bootstraps/run_gpt2_clinvar_evaluation.sh \
-  --max_samples 200 --batch_size 8
+# ProteinGymサンプルデータの自動作成
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m model.pt --create-sample
 ```
 
 ### Experiment System
@@ -308,6 +342,20 @@ source src/config/env.sh
 - **GPUメモリ**: モデルサイズとバッチサイズに応じて変動
 - **ディスク容量**: データセットと結果ファイルのサイズを考慮
 - **ログ**: すべての操作で包括的なログを提供
+- **パフォーマンス**: GPU使用でCPUより約4倍高速（例: ProteinGym 50サンプル/GPU ≈ 12秒）
+
+### パフォーマンス最適化
+- **デフォルトデバイス**: すべての評価スクリプトはGPU (cuda)をデフォルト使用
+- **CPU切り替え**: `--device cpu`オプションでCPU実行可能（低速）
+- **サンプル数制限**: `--max_samples N`でテスト実行を高速化
+- **バッチサイズ調整**: `--batch_size N`でメモリ使用量を制御
+- **データ再利用**: `--existing_omim_dir`でダウンロード時間を節約
+
+### 新機能
+- **Protein Classification可視化**: 10種類以上のグラフとHTML詳細レポートを自動生成
+- **ProteinGymサンプルデータ**: `--create-sample`で推奨データセットを自動ダウンロード
+- **OMIM既存データ再利用**: `--existing_omim_dir`でダウンロード済みデータを活用
+- **デフォルトモデル**: Protein Classificationはモデル指定なしで実行可能
 
 ## 📞 Troubleshooting
 
@@ -324,6 +372,10 @@ source src/config/env.sh
    # モデルディレクトリを確認
    ls -la gpt2-output/
    ls -la runs_train_bert_*/
+   
+   # Protein Classificationはデフォルトモデルを使用
+   ./bootstraps/run_gpt2_protein_classification.sh -s
+   # → gpt2-output/protein_sequence-small/ckpt.pt を自動使用
    ```
 
 3. **CUDAエラー**
@@ -331,8 +383,10 @@ source src/config/env.sh
    # GPU確認
    nvidia-smi
    
-   # CPU使用に切り替え
+   # CPU使用に切り替え（全スクリプトでサポート）
    ./bootstraps/run_gpt2_*.sh --device cpu
+   
+   # 注意: CPUはGPUより約4倍遅い
    ```
 
 4. **データファイルが見つからない**
@@ -342,6 +396,10 @@ source src/config/env.sh
    
    # または、データ準備のみ実行
    ./bootstraps/run_gpt2_*.sh --skip_evaluation --skip_visualization
+   
+   # ProteinGymサンプルデータの自動作成
+   ./bootstraps/run_gpt2_proteingym_evaluation.sh \
+     -m model.pt --create-sample
    ```
 
 5. **OMIM実データアクセスエラー**
@@ -351,12 +409,40 @@ source src/config/env.sh
    
    # サンプルデータで動作確認
    ./bootstraps/run_gpt2_omim_evaluation_dummy.sh
+   
+   # 既存データを再利用（再ダウンロードを避ける）
+   ./bootstraps/run_gpt2_omim_evaluation_real.sh \
+     --existing_omim_dir /path/to/omim_data
    ```
 
 6. **Pythonパッケージ不足**
    ```bash
    # 必要なパッケージをインストール
-   pip install torch transformers pandas numpy scikit-learn matplotlib seaborn sentencepiece
+   pip install torch transformers pandas numpy scikit-learn matplotlib seaborn sentencepiece scipy
+   ```
+
+7. **ProteinGym評価が遅い**
+   ```bash
+   # GPUを使用（デフォルト、約4倍高速）
+   ./bootstraps/run_gpt2_proteingym_evaluation.sh -m model.pt -d data.csv
+   
+   # サンプル数を制限してテスト
+   ./bootstraps/run_gpt2_proteingym_evaluation.sh \
+     -m model.pt -d data.csv --max_samples 100
+   
+   # 進捗状況: 50サンプル/GPU ≈ 12秒、2770サンプル/GPU ≈ 11分
+   ```
+
+8. **可視化エラー**
+   ```bash
+   # 評価結果があるか確認
+   ls -la $LEARNING_SOURCE_DIR/*/report/*/
+   
+   # 可視化のみ再実行
+   ./bootstraps/run_gpt2_*.sh --skip_data_prep --skip_evaluation
+   
+   # Protein Classificationの詳細レポート
+   # → visualizations/ディレクトリに10種類以上のグラフ + HTML
    ```
 
 ### ログの確認
