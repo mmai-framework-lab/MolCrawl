@@ -27,7 +27,7 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
 fi
 
 # デフォルト設定
-MODEL_PATH=""
+MODEL_PATH="$PROJECT_ROOT/gpt2-output/protein_sequence-small/ckpt.pt"
 DATA_PATH=""
 TOKENIZER_PATH=""  # 空の場合は自動検出
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification"
@@ -46,7 +46,7 @@ GPT-2 Protein Classification評価パイプライン
 使用方法: $0 [options]
 
 オプション:
-    -m, --model_path PATH       GPT-2モデルチェックポイントへのパス (必須)
+    -m, --model_path PATH       GPT-2モデルチェックポイントへのパス (デフォルト: gpt2-output/protein_sequence-small/ckpt.pt)
     -d, --data_path PATH        評価用データセットCSVへのパス
     --tokenizer PATH            トークナイザーパス（指定しない場合は自動検出）
     -o, --output_dir PATH       出力ディレクトリ (デフォルト: \$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification)
@@ -58,14 +58,17 @@ GPT-2 Protein Classification評価パイプライン
     -h, --help                  このヘルプメッセージを表示
 
 例:
-    # サンプルデータで評価
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt -s
+    # サンプルデータで評価（デフォルトモデル使用）
+    $0 -s
     
-    # カスタムデータセットで評価
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt -d my_protein_variants.csv
+    # カスタムデータセットで評価（デフォルトモデル使用）
+    $0 -d my_protein_variants.csv
+    
+    # カスタムモデルとデータセットで評価
+    $0 -m gpt2-output/protein_sequence-medium/ckpt.pt -d my_protein_variants.csv
     
     # 評価のみ実行（データ準備をスキップ）
-    $0 -m gpt2-output/protein_sequence-small/ckpt.pt -d data.csv --skip_data_prep
+    $0 -d data.csv --skip_data_prep
 
 必要なCSVフォーマット:
     評価用データセットには以下のカラムが必要です:
@@ -129,17 +132,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# 必須引数のチェック
-if [[ -z "$MODEL_PATH" ]]; then
-    echo "エラー: GPT-2モデルパスが必要です (-m/--model_path)"
-    usage
-    exit 1
-fi
-
 # モデルファイルの存在確認（評価を実行する場合のみ）
 if [ "$SKIP_EVALUATION" = false ]; then
     if [[ ! -f "$MODEL_PATH" ]]; then
         echo "エラー: GPT-2モデルチェックポイントが見つかりません: $MODEL_PATH"
+        echo ""
+        echo "利用可能なモデル:"
+        ls -la "$PROJECT_ROOT/gpt2-output/" 2>/dev/null || echo "  gpt2-outputディレクトリが存在しません"
         exit 1
     fi
 fi
