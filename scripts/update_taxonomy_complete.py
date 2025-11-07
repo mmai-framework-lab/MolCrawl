@@ -23,7 +23,6 @@ import time
 from pathlib import Path
 from datetime import datetime
 import xml.etree.ElementTree as ET
-from collections import defaultdict
 
 
 class NCBITaxonomyCompleteUpdater:
@@ -145,7 +144,7 @@ class NCBITaxonomyCompleteUpdater:
                         stats[group_name] = count
                         print(f"    Found {count} genera")
                     else:
-                        print(f"    No count found in response")
+                        print("    No count found in response")
                         stats[group_name] = 0
 
                 except json.JSONDecodeError as je:
@@ -377,14 +376,14 @@ class NCBITaxonomyCompleteUpdater:
         report_path = self.output_dir.parent / "taxonomy_update_report.md"
 
         with open(report_path, "w", encoding="utf-8") as f:
-            f.write(f"# NCBI Taxonomy Update Report\n\n")
+            f.write("# NCBI Taxonomy Update Report\n\n")
             f.write(
                 f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
             )
 
-            f.write(f"## Summary\n\n")
-            f.write(f"| Group | Description | Genera | Added | Removed |\n")
-            f.write(f"|-------|-------------|--------|-------|----------|\n")
+            f.write("## Summary\n\n")
+            f.write("| Group | Description | Genera | Added | Removed |\n")
+            f.write("|-------|-------------|--------|-------|----------|\n")
 
             total_genera = 0
             total_added = 0
@@ -409,7 +408,7 @@ class NCBITaxonomyCompleteUpdater:
             )
 
             # 詳細変更
-            f.write(f"## Detailed Changes\n\n")
+            f.write("## Detailed Changes\n\n")
             for group_name, (genera_list, comparison) in all_results.items():
                 if comparison["added"] or comparison["removed"]:
                     desc = self.taxonomy_groups[group_name]["description"]
@@ -457,7 +456,7 @@ class NCBITaxonomyCompleteUpdater:
         print("=" * 50)
 
         # 現在の分類統計をチェック
-        stats = self.check_ncbi_taxonomy_updates()
+        self.check_ncbi_taxonomy_updates()
 
         # バックアップ作成
         backed_up = self.backup_existing_files()
@@ -503,7 +502,7 @@ class NCBITaxonomyCompleteUpdater:
         if all_results:
             self.generate_summary_report(all_results)
 
-        print(f"\n🎉 Update completed!")
+        print("\n🎉 Update completed!")
         print(f"📁 Files saved to: {self.output_dir}")
         if backed_up:
             print(f"💾 Backups saved to: {self.backup_dir}")
@@ -536,7 +535,7 @@ class NCBITaxonomyCompleteUpdater:
                     data = response.json()
                     print(f"  Response: {json.dumps(data, indent=2)}")
                     return True
-                except:
+                except (ValueError, KeyError):
                     print(f"  Raw text: {response.text}")
                     return False
             else:

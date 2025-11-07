@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from pathlib import Path
 from core.config import Config
 import sys
 import os

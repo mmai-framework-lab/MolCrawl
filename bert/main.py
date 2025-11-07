@@ -8,9 +8,7 @@ from transformers import (
 from datasets import load_from_disk, Dataset
 import os
 import json
-import pandas as pd
 import pyarrow as pa
-import numpy as np
 from pathlib import Path
 
 
@@ -73,7 +71,7 @@ class RNADatasetForBERT:
 
                     # Create dataset from pandas DataFrame (bypasses metadata issues)
                     self.dataset = Dataset.from_pandas(df)
-                    print(f"✅ Created HuggingFace Dataset from pandas DataFrame")
+                    print("✅ Created HuggingFace Dataset from pandas DataFrame")
                     print(f"🔍 Dataset columns: {self.dataset.column_names}")
                 else:
                     raise ValueError("No arrow files could be read successfully")
@@ -246,7 +244,7 @@ if "use_custom_rna_dataset" in globals() and use_custom_rna_dataset:
     # Limit test dataset size for faster evaluation
     if len(test_dataset) > 10000:
         test_dataset = test_dataset.select(range(10000))
-        print(f"📊 Limited test dataset to 10000 samples for faster evaluation")
+        print("📊 Limited test dataset to 10000 samples for faster evaluation")
 else:
     print("📂 Using standard HuggingFace dataset loading")
     train_dataset = load_from_disk(dataset_dir)["train"]

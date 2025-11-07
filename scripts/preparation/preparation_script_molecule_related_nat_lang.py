@@ -18,7 +18,6 @@ from molecule_related_nl.utils.general import read_dataset, save_dataset
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
-from config.paths import MOLECULE_NL_DATASET_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +43,6 @@ def validate_smiles_in_sample(sample):
     """Validate SMILES structures in the sample to ensure chemical validity"""
     try:
         from rdkit import Chem
-        from rdkit.Chem import Descriptors
 
         # Extract SMILES from input and output
         input_smiles = extract_smiles_from_text(sample.get("input", ""))
@@ -416,7 +414,7 @@ if __name__ == "__main__":
 
             # Show a sample for understanding the structure
             sample = dataset[split][0]
-            logger.info(f"  Sample structure preview:")
+            logger.info("  Sample structure preview:")
             for key in sample_keys[:5]:  # Show first 5 fields
                 value = (
                     str(sample[key])[:100] + "..."

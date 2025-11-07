@@ -10,7 +10,6 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoModelForTokenClassification,
     AutoModelForPreTraining,
-    PretrainedConfig,
     PreTrainedModel,
     GPT2Config,
     RoFormerConfig,
@@ -19,7 +18,6 @@ from transformers.activations import ACT2FN
 from transformers.modeling_outputs import (
     BaseModelOutput,
     MaskedLMOutput,
-    CausalLMOutputWithCrossAttentions,
     SequenceClassifierOutput,
     TokenClassifierOutput,
 )
@@ -35,7 +33,7 @@ from transformers.models.bert.modeling_bert import BertEncoder
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model, GPT2LMHeadModel
 from transformers.utils import ModelOutput
 
-from .legacy import GPNRoFormerPreTrainedModel, GPNRoFormerConfig, RoFormerOnlyMLMHead
+from .legacy import GPNRoFormerConfig, RoFormerOnlyMLMHead
 
 
 ENCODER_CLASS = {
@@ -624,7 +622,7 @@ class GPNGPT2LMHeadModel(GPT2LMHeadModel):
 
     def forward(self, *args, **kwargs):
         loss_weight = kwargs.pop("loss_weight", None)
-        aux_features = kwargs.pop("aux_features", None)
+        kwargs.pop("aux_features", None)  # Remove but don't use
 
         output = super().forward(*args, **kwargs)
 

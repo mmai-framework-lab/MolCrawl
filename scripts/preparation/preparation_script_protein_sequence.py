@@ -17,7 +17,8 @@ python scripts/preparation_script_protein_sequence.py assets/configs/protein_seq
 
 from argparse import ArgumentParser
 from pathlib import Path
-import logging, os
+import logging
+import os
 import sys
 
 from datasets import load_dataset
@@ -72,7 +73,6 @@ def check_progress_status(base_dir):
 
     # 出力ディレクトリとファイルの存在確認用パス
     raw_files_dir = Path(base_dir) / "raw_files"
-    fasta_dir = Path(base_dir) / "fasta_file"
     processed_parquet = Path(base_dir) / "parquet_files" / "train.parquet"
 
     # 進捗状況の確認

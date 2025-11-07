@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss, MSELoss, BCEWithLogitsLoss
 from transformers import (
-    AutoConfig,
-    AutoModel,
-    AutoModelForMaskedLM,
-    AutoModelForSequenceClassification,
     PretrainedConfig,
     PreTrainedModel,
 )
@@ -18,7 +14,7 @@ from transformers.modeling_outputs import (
 )
 from typing import Optional, Tuple, Union
 
-from transformers import RoFormerConfig, RoFormerModel, RoFormerForMaskedLM
+from transformers import RoFormerConfig
 from transformers.models.roformer.modeling_roformer import (
     RoFormerEncoder,
     RoFormerOnlyMLMHead,

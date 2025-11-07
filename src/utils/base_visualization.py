@@ -7,7 +7,6 @@ evaluation result visualization classes.
 """
 
 from abc import ABC, abstractmethod
-import os
 import json
 import logging
 from pathlib import Path
@@ -16,7 +15,6 @@ from typing import Dict, Any, Optional, List, Union
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-import numpy as np
 
 
 class BaseVisualizationGenerator(ABC):

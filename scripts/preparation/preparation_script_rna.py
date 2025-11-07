@@ -58,7 +58,6 @@ def create_enhanced_gene_list(vocab, data, out_dir):
 
     # 各遺伝子の出現頻度を計算
     n = 0
-    done = False
     gene_counts = {}
     for info in data:
         for token_id in info["token"]:

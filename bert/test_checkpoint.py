@@ -19,7 +19,6 @@ import os
 from pathlib import Path
 from transformers import BertForMaskedLM, BertTokenizer, DataCollatorForLanguageModeling
 from datasets import load_from_disk
-import matplotlib.pyplot as plt
 
 # プロジェクトのsrcディレクトリをパスに追加
 project_root = Path(__file__).parent.parent
@@ -162,7 +161,7 @@ def test_basic_functionality(model, tokenizer, test_texts):
 
                     print(f"  ✓ 推論成功 - 出力形状: {outputs.logits.shape}")
                 else:
-                    print(f"  ! エンコード機能がサポートされていません")
+                    print("  ! エンコード機能がサポートされていません")
             else:
                 # 標準のBertTokenizerの場合
                 inputs = tokenizer(
@@ -427,7 +426,7 @@ def test_batch_processing(model, tokenizer, test_texts):
             inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
-                outputs = model(**inputs)
+                model(**inputs)
 
             end_time = time.time()
             processing_time = end_time - start_time

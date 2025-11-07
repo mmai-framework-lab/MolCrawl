@@ -14,7 +14,6 @@ python gpt2/test_helper.py --search_dir=runs_* --auto_run
 """
 
 import os
-import sys
 import json
 import glob
 import argparse

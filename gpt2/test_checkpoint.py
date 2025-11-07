@@ -18,10 +18,8 @@ import sys
 import os
 from pathlib import Path
 from transformers import GPT2LMHeadModel, GPT2Config, PreTrainedTokenizerFast
-from transformers import DataCollatorForLanguageModeling
 import math
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 # プロジェクトのsrcディレクトリをパスに追加
 project_root = Path(__file__).parent.parent
@@ -252,7 +250,7 @@ def create_simple_tokenizer(vocab_size):
             vocab[token] = i
 
         # PreTrainedTokenizerFastで簡単なトークナイザーを作成
-        from tokenizers import Tokenizer, models, pre_tokenizers, processors
+        from tokenizers import Tokenizer, models, pre_tokenizers
 
         tokenizer_obj = Tokenizer(models.WordLevel(vocab=vocab, unk_token="<unk>"))
         tokenizer_obj.pre_tokenizer = pre_tokenizers.Whitespace()
@@ -279,7 +277,7 @@ def evaluate_perplexity(
     """
     データセットでのパープレキシティを計算する
     """
-    print(f"\n=== パープレキシティ評価 ===")
+    print("\n=== パープレキシティ評価 ===")
     print(f"評価サンプル数: {min(len(dataset), max_samples)}")
 
     model.eval()
@@ -350,7 +348,7 @@ def generate_text_samples(
     """
     テキスト生成のサンプルを作成する
     """
-    print(f"\n=== テキスト生成テスト ===")
+    print("\n=== テキスト生成テスト ===")
 
     if tokenizer is None:
         print("トークナイザーが利用できないため、テキスト生成をスキップします")
@@ -421,7 +419,7 @@ def calculate_accuracy_metrics(
     """
     各種精度メトリクスを計算する
     """
-    print(f"\n=== 精度メトリクス計算 ===")
+    print("\n=== 精度メトリクス計算 ===")
 
     model.eval()
     correct_predictions = 0
@@ -457,7 +455,7 @@ def calculate_accuracy_metrics(
                     [targets[i] in top5_preds[i] for i in range(len(targets))]
                 )
 
-            except Exception as e:
+            except Exception:
                 continue
 
     if total_predictions > 0:
@@ -479,7 +477,7 @@ def test_model_performance(model, model_args, device="cuda"):
     """
     モデルのパフォーマンス統計を取得する
     """
-    print(f"\n=== モデルパフォーマンス統計 ===")
+    print("\n=== モデルパフォーマンス統計 ===")
 
     # パラメータ数
     total_params = sum(p.numel() for p in model.parameters())

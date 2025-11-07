@@ -33,7 +33,7 @@ try:
 except ImportError as e:
     print(json.dumps({"error": f"Cannot import paths: {e}"}), file=sys.stderr)
     sys.exit(1)
-except SystemExit as e:
+except SystemExit:
     # paths.pyでの環境変数チェックによる終了をキャッチ
     print(
         json.dumps({"error": "LEARNING_SOURCE_DIR environment variable is not set"}),

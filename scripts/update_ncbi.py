@@ -1,5 +1,4 @@
 import requests
-import json
 import time
 from pathlib import Path
 from datetime import datetime
@@ -260,7 +259,7 @@ class NCBIBacteriaUpdaterWebAPI:
         all_organisms = set(organisms_from_genome + organisms_from_taxonomy)
         final_list = sorted(list(all_organisms))
 
-        print(f"\n📊 Results:")
+        print("\n📊 Results:")
         print(f"  From genomes: {len(organisms_from_genome)}")
         print(f"  From taxonomy: {len(organisms_from_taxonomy)}")
         print(f"  Combined unique: {len(final_list)}")
@@ -287,7 +286,7 @@ class NCBIBacteriaUpdaterWebAPI:
         added = new_set - current_organisms
         removed = current_organisms - new_set
 
-        print(f"\n📈 Changes:")
+        print("\n📈 Changes:")
         print(f"  Current: {len(current_organisms)}")
         print(f"  New: {len(new_set)}")
         print(f"  Added: {len(added)}")

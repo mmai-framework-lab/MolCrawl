@@ -11,17 +11,14 @@ import sys
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
 import traceback
 
 # プロジェクトルートをパスに追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 try:
-    import pandas as pd
     import numpy as np
     from datasets import load_dataset
-    from config.paths import RNA_DATASET_DIR
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure all required packages are installed")

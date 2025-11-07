@@ -344,7 +344,7 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                         self.tokenizer.add_special_tokens(
                             {"additional_special_tokens": new_tokens}
                         )
-                    except:
+                    except (ValueError, AttributeError):
                         pass  # Ignore if we can't add special tokens
 
             # Set other special tokens

@@ -1,5 +1,5 @@
 import argparse
-from datasets import load_dataset, disable_caching
+from datasets import disable_caching
 import os
 import tempfile
 from transformers import Trainer, TrainingArguments

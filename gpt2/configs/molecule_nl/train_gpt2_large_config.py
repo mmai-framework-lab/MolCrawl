@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
-from config.paths import MOLECULE_NL_DATASET_DIR, get_gpt2_output_path
+from config.paths import get_gpt2_output_path
 
 # Large-Sized GPT2 Model
 
@@ -67,7 +67,7 @@ try:
         meta_vocab_size = tokenizer.tokenizer.vocab_size
     else:
         meta_vocab_size = 32000  # CodeLlama default vocab size
-except:
+except AttributeError:
     meta_vocab_size = 32000  # Fallback value
 
 print(f"Using vocab_size: {meta_vocab_size}")

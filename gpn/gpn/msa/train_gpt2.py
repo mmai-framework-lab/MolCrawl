@@ -27,14 +27,12 @@ import numpy as np
 import os
 import sys
 from dataclasses import dataclass, field
-from itertools import chain
 import torch
-from typing import Any, Callable, Dict, List, NewType, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import datasets
-from datasets import load_dataset, DatasetDict, concatenate_datasets, disable_caching
+from datasets import load_dataset, disable_caching
 
-import gpn.model
 
 # import evaluate
 import transformers
@@ -52,15 +50,10 @@ from transformers import (
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import check_min_version, send_example_telemetry
+from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
 
-from Bio.Seq import Seq
 from gpn.data import GenomeMSA, Tokenizer
-import numpy as np
-import pandas as pd
-from scipy.stats import geom
-from torch.utils.data import DataLoader, IterableDataset, get_worker_info
 
 
 from numpy.lib.stride_tricks import sliding_window_view
@@ -102,7 +95,7 @@ class DataCollatorForMSACausalLanguageModelingSimplified(
             for key in examples[0].keys()
         }
 
-        flip_p = batch.pop("flip_p", None)
+        batch.pop("flip_p", None)  # Remove but don't use
 
         labels = batch["input_ids"].clone()
         if self.tokenizer.pad_token_id is not None:

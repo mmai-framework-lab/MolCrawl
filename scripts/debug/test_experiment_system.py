@@ -15,7 +15,7 @@ def test_imports():
     """モジュールのインポートテスト"""
     print("Testing imports...")
     try:
-        from src.experiment_tracker import (
+        from src.experiment_tracker import (  # noqa: F401
             ExperimentTracker,
             ExperimentStatus,
             ExperimentType,
@@ -94,15 +94,15 @@ def test_tracker():
         tracker.start_step(exp_id, "test_step", "Test Step")
         time.sleep(0.1)
         tracker.complete_step(exp_id, "test_step")
-        print(f"    Added and completed step")
+        print("    Added and completed step")
 
         # ログ追加
         tracker.log(exp_id, "INFO", "Test log message")
-        print(f"    Added log entry")
+        print("    Added log entry")
 
         # 実験完了
         tracker.complete_experiment(exp_id, metrics={"accuracy": 0.95})
-        print(f"    Completed experiment")
+        print("    Completed experiment")
 
         # 取得テスト
         experiment = tracker.get_experiment(exp_id)
@@ -110,7 +110,7 @@ def test_tracker():
         assert len(experiment.steps) == 1
         assert len(experiment.logs) >= 2  # start + test log
         assert experiment.metrics["accuracy"] == 0.95
-        print(f"    Retrieved and verified experiment")
+        print("    Retrieved and verified experiment")
 
         # クリーンアップ
         import shutil
@@ -131,19 +131,16 @@ def test_helpers():
     """ヘルパー関数テスト"""
     print("\nTesting helpers...")
     try:
-        from src.experiment_tracker.helpers import experiment_context, simple_track
+        from src.experiment_tracker.helpers import experiment_context
         from src.experiment_tracker import (
             ExperimentType,
             ModelType,
             DatasetType,
-            ExperimentTracker,
         )
 
         import tempfile
-        import os
 
         temp_dir = tempfile.mkdtemp()
-        db_path = os.path.join(temp_dir, "test.db")
 
         # コンテキストマネージャーテスト
         with experiment_context(
@@ -157,7 +154,7 @@ def test_helpers():
             exp.complete_step("step1")
             exp.add_metric("test_metric", 0.88)
 
-        print(f"    Context manager test passed")
+        print("    Context manager test passed")
 
         # クリーンアップ
         import shutil

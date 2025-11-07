@@ -48,37 +48,6 @@ def get_genome_tokenizer_path():
     return get_refseq_tokenizer_path()
 
 
-def get_gpt2_output_path():
-    """
-    GPT-2モデル出力ディレクトリのパスを取得
-
-    Returns:
-        str: GPT-2モデル出力ディレクトリのパス
-    """
-    return os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, "gpt2_output")
-
-
-def get_genome_tokenizer_path():
-    """
-    ゲノム配列用のトークナイザーパスを取得
-
-    Returns:
-        str: ゲノム配列用トークナイザーのパス（文字列）
-    """
-    # RefSeqゲノム配列用のトークナイザーを使用
-    return get_refseq_tokenizer_path()
-
-
-def get_gpt2_output_path():
-    """
-    GPT-2モデル出力ディレクトリのパスを取得
-
-    Returns:
-        str: GPT-2モデル出力ディレクトリのパス
-    """
-    return os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, "refseq", "gpt2_output")
-
-
 # 各データセットの基本パス
 def get_dataset_path(dataset_type, relative_path=""):
     """

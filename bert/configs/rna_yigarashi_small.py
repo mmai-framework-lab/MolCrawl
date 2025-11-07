@@ -29,7 +29,7 @@ use_custom_rna_dataset = True
 
 # Dataset configuration
 learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR", "learning_source_20250818")
-dataset_dir = f"/wren/yigarashi/molcrawl/parquet_sample_1pct"
+dataset_dir = "/wren/yigarashi/molcrawl/parquet_sample_1pct"
 
 # Try to load vocabulary file
 vocab_files = [
@@ -55,7 +55,6 @@ else:
     meta_vocab_size = 60666  # Default size based on previous RNA experiments
 
 # Import necessary components for custom data collator
-from transformers import DataCollatorForLanguageModeling
 import torch
 
 
@@ -201,7 +200,7 @@ dataset_params = {}
 # Device settings
 device = "cuda" if os.path.exists("/usr/bin/nvidia-smi") else "cpu"
 
-print(f"📋 BERT RNA Configuration Summary:")
+print("📋 BERT RNA Configuration Summary:")
 print(f"   Dataset: {dataset_dir}")
 print(f"   Vocabulary: {meta_vocab_size} tokens")
 print(f"   Model: {model_size}")

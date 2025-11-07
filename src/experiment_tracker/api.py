@@ -5,7 +5,7 @@ molcrawl-webのバックエンドとして動作
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List
+from typing import Optional
 from pathlib import Path
 import sys
 

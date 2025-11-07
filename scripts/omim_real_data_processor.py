@@ -13,9 +13,7 @@ import pandas as pd
 import numpy as np
 import logging
 import yaml
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
-import re
+from typing import Dict, List, Optional
 from datetime import datetime
 
 # プロジェクトルートを追加
@@ -40,7 +38,7 @@ class OMIMRealDataProcessor:
         for dir_path in [self.data_dir, self.cache_dir, self.processed_dir]:
             os.makedirs(dir_path, exist_ok=True)
 
-        self.logger.info(f"OMIM Real Data Processor initialized")
+        self.logger.info("OMIM Real Data Processor initialized")
         self.logger.info(f"Data directory: {self.data_dir}")
 
     def download_omim_files(self, force_download: bool = False) -> Dict[str, str]:
@@ -437,7 +435,7 @@ def process_omim_real_data(
         output_file = os.path.join(output_dir, "omim_real_evaluation_dataset.csv")
         dataset.to_csv(output_file, index=False)
 
-        logger.info(f"OMIM real data processing completed")
+        logger.info("OMIM real data processing completed")
         logger.info(f"Output file: {output_file}")
 
         return output_file

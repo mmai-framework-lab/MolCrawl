@@ -3,9 +3,8 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-import sentencepiece as spm
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
-from config.paths import CELLXGENE_DATASET_DIR, get_gpt2_output_path
+from config.paths import get_gpt2_output_path
 
 tokenizer = TranscriptomeTokenizer()
 

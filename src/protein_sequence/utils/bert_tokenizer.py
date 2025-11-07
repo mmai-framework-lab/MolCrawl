@@ -4,7 +4,6 @@ ESMトークナイザーをBERT学習と互換性のある形式でラップ
 """
 
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
-from typing import Dict, Any, Union, List
 
 
 class BertProteinSequenceTokenizer(EsmSequenceTokenizer):

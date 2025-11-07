@@ -9,7 +9,7 @@ import os
 import logging
 import torch
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 logger = logging.getLogger(__name__)
 

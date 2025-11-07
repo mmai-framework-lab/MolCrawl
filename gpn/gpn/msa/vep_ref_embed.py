@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from transformers import AutoModel
 
-import gpn.model
 from gpn.data import Tokenizer, ReverseComplementer
 
 
