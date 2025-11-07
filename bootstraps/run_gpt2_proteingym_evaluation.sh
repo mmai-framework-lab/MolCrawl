@@ -27,14 +27,20 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # デフォルト設定
 MODEL_SIZE="small"  # デフォルトのモデルサイズ
 MODELS_DIR="$PROJECT_ROOT/gpt2-output"
 MODEL_PATH=""  # 空の場合はMODEL_SIZEから自動構築
 DATA_PATH=""
 # デフォルト出力先（-o/--output-dirで上書き可能）
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym"
-DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/gpt2_proteingym"
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/report/gpt2_proteingym"
+DATA_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/data/gpt2_proteingym"  # データ準備時の出力先
 BATCH_SIZE=32
 DEVICE="cuda"
 TOKENIZER_PATH=""

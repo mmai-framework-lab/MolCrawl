@@ -29,13 +29,19 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # デフォルト設定
 MODEL_PATH="$PROJECT_ROOT/gpt2-output/protein_sequence-small/ckpt.pt"
 DATA_PATH=""
 TOKENIZER_PATH=""  # 空の場合は自動検出
 # デフォルト出力先（-o/--output-dirで上書き可能）
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification"
-DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/protein_classification"
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/report/gpt2_protein_classification"
+DATA_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/data/protein_classification"  # データ準備時の出力先
 CREATE_SAMPLE="false"
 THRESHOLD="0.0"
 SKIP_DATA_PREP=false

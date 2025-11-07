@@ -45,6 +45,12 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # デフォルト設定
 MODEL_PATH="runs_train_bert_protein_sequence/checkpoint-2000"
 TOKENIZER_PATH="None"  # protein_sequenceはEsmSequenceTokenizerを使用
@@ -57,8 +63,8 @@ SKIP_DATA_PREP=false
 SKIP_EVALUATION=false
 SKIP_VISUALIZATION=false
 
-DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/bert_proteingym"
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym"  # デフォルト出力先（-o/--output-dirで上書き可能）
+DATA_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/data/bert_proteingym"  # データ準備時の出力先
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/report/bert_proteingym"  # デフォルト出力先（-o/--output-dirで上書き可能）
 
 # 引数パース
 while [[ $# -gt 0 ]]; do

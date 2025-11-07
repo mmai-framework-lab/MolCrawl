@@ -25,9 +25,15 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # デフォルト出力先（-o/--output-dirで上書き可能）
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation"
-DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar"
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/report/clinvar_evaluation"
+DATA_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/data/clinvar"  # データ準備時の出力先
 MODELS_DIR="$PROJECT_ROOT/gpt2-output"
 
 # デフォルト設定
@@ -45,7 +51,7 @@ ClinVar評価パイプライン
 使用法: $0 [オプション]
 
 オプション:
-    -o, --output-dir PATH       出力ディレクトリ [default: \$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation]
+    -o, --output-dir PATH       出力ディレクトリ [default: \$EVALUATION_OUTPUT_DIR/genome_sequence/report/clinvar_evaluation]
     -m, --model-size SIZE       モデルサイズ (small/medium/large/xl) [default: small]
     -t, --tokenizer PATH        トークナイザーパス（指定しない場合は自動検出）
     -s, --sequence-length LEN   配列長 [default: 100]
@@ -56,6 +62,10 @@ ClinVar評価パイプライン
     -v, --visualize-only        可視化のみ実行
     -h, --help                  このヘルプを表示
 
+環境変数:
+    LEARNING_SOURCE_DIR         入力データディレクトリ（読み取り専用）
+    EVALUATION_OUTPUT_DIR       出力データディレクトリ（デフォルト: LEARNING_SOURCE_DIRと同じ）
+
 例:
     # デフォルト出力先での実行
     $0 --download --model-size medium --max-samples 2000
@@ -63,8 +73,9 @@ ClinVar評価パイプライン
     # カスタム出力ディレクトリを指定
     $0 --download -o /custom/output/clinvar_results
     
-    # 評価のみ実行
-    $0 --eval-only --model-size large --output-dir ./my_results
+    # 環境変数で出力先を分離
+    export EVALUATION_OUTPUT_DIR=/writable/output
+    $0 --eval-only --model-size large
 EOF
 }
 
