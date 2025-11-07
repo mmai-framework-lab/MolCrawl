@@ -28,7 +28,7 @@ fi
 MODEL_PATH="$PROJECT_ROOT/runs_train_bert_genome_sequence/checkpoint-5000"  # 訓練済みBERTモデル（safetensors）
 TOKENIZER_PATH="$LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model"  # SentencePieceトークナイザー
 DATASET_PATH="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv"
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation"
+OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation"  # デフォルト出力先（--output-dirで上書き可能）
 DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar"
 
 # データ準備オプション
@@ -291,6 +291,10 @@ VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -o|--output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
         --prepare-data)
             PREPARE_DATA=true
             shift
@@ -313,11 +317,12 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --prepare-data     Download and prepare balanced ClinVar dataset (1000 benign + 1000 pathogenic)"
-            echo "  --force-download   Force re-download even if dataset exists"
-            echo "  --sample-size N    Use only N samples for testing"
-            echo "  --verbose         Enable verbose output"
-            echo "  --help           Show this help message"
+            echo "  -o, --output-dir DIR  Output directory for results (default: \$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation)"
+            echo "  --prepare-data        Download and prepare balanced ClinVar dataset (1000 benign + 1000 pathogenic)"
+            echo "  --force-download      Force re-download even if dataset exists"
+            echo "  --sample-size N       Use only N samples for testing"
+            echo "  --verbose             Enable verbose output"
+            echo "  --help                Show this help message"
             echo ""
             echo "🤖 Features:"
             echo "  • Trained BERT genome sequence model"
@@ -331,6 +336,16 @@ while [[ $# -gt 0 ]]; do
             echo "  • Download ClinVar dataset from HuggingFace"
             echo "  • Extract balanced samples (50% benign, 50% pathogenic)"
             echo "  • Generate sequences with flanking regions (512bp)"
+            echo ""
+            echo "Examples:"
+            echo "  # Basic evaluation with default output directory"
+            echo "  $0 --prepare-data"
+            echo ""
+            echo "  # Specify custom output directory"
+            echo "  $0 --prepare-data -o /custom/output/path"
+            echo ""
+            echo "  # Evaluation only (skip data preparation)"
+            echo "  $0 -o ./my_results"
             exit 0
             ;;
         *)

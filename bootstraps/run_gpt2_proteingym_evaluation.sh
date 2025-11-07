@@ -29,6 +29,7 @@ MODEL_SIZE="small"  # デフォルトのモデルサイズ
 MODELS_DIR="$PROJECT_ROOT/gpt2-output"
 MODEL_PATH=""  # 空の場合はMODEL_SIZEから自動構築
 DATA_PATH=""
+# デフォルト出力先（-o/--output-dirで上書き可能）
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym"
 DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/gpt2_proteingym"
 BATCH_SIZE=32

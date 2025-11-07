@@ -80,7 +80,7 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 📊 Output Structure
 
-All evaluation scripts use the structured `LEARNING_SOURCE_DIR` format:
+All evaluation scripts use the structured `LEARNING_SOURCE_DIR` format and support custom output directories:
 
 ```
 $LEARNING_SOURCE_DIR/
@@ -106,6 +106,34 @@ $LEARNING_SOURCE_DIR/
         ├── gpt2_proteingym/
         └── gpt2_protein_classification/
 ```
+
+### 出力ディレクトリのカスタマイズ
+
+すべての評価スクリプトは`-o`または`--output_dir`オプションで出力先を指定可能です：
+
+```bash
+# BERT ProteinGym評価 - カスタム出力先
+./bootstraps/run_bert_proteingym_evaluation.sh \
+  --output_dir /custom/path/bert_proteingym_results
+
+# GPT-2 ClinVar評価 - カスタム出力先
+./bootstraps/run_gpt2_clinvar_evaluation.sh \
+  --output_dir /custom/path/clinvar_results
+
+# GPT-2 ProteinGym評価 - カスタム出力先
+./bootstraps/run_gpt2_proteingym_evaluation.sh \
+  -m model.pt -d data.csv \
+  -o /custom/path/proteingym_results
+
+# GPT-2 OMIM実データ評価 - カスタム出力先
+./bootstraps/run_gpt2_omim_evaluation_real.sh \
+  --output_dir /custom/path/omim_real_results
+```
+
+**注意**: 
+- 出力先を指定しない場合は、デフォルトで`$LEARNING_SOURCE_DIR/{model_type}/report/{evaluation_type}`に保存されます
+- データ準備フェーズ（`--data_dir`）とレポート/可視化フェーズ（`--output_dir`）は別々に指定可能
+- 可視化結果は`{output_dir}/visualizations/`サブディレクトリに保存されます
 
 ### 各評価ディレクトリの内容
 - `*_results.json` - 構造化された評価結果
@@ -225,9 +253,18 @@ $LEARNING_SOURCE_DIR/
 
 #### データ管理オプション
 ```bash
-# カスタム出力ディレクトリ指定
+# カスタム出力ディレクトリ指定（すべての評価スクリプト共通）
 ./bootstraps/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv -o /custom/output/path
+
+./bootstraps/run_bert_clinvar_evaluation.sh \
+  --output_dir /custom/clinvar/results
+
+./bootstraps/run_gpt2_omim_evaluation_real.sh \
+  --output_dir /custom/omim/results
+
+# データ準備先とレポート出力先を別々に指定
+# (一部のスクリプトで --data_dir と --output_dir を個別指定可能)
 
 # OMIM既存データの再利用（ダウンロードスキップ）
 ./bootstraps/run_gpt2_omim_evaluation_real.sh \
@@ -324,16 +361,56 @@ source src/config/env.sh
    - データセットのダウンロード/生成
    - 前処理とフォーマット変換
    - `$LEARNING_SOURCE_DIR/{model_type}/data/`に保存
+   - **カスタマイズ**: 一部スクリプトで`--data_dir`オプション使用可能
 
 2. **モデル評価フェーズ** (`--skip_evaluation`でスキップ可能)
    - 訓練済みモデルのロード
    - データセットでの推論実行
    - メトリクス計算と結果保存
+   - **カスタマイズ**: すべてのスクリプトで`-o`または`--output_dir`使用可能
 
 3. **可視化フェーズ** (`--skip_visualization`でスキップ可能)
    - 評価結果のグラフ生成
    - HTMLレポート作成
-   - `visualizations/`サブディレクトリに保存
+   - `{output_dir}/visualizations/`サブディレクトリに保存
+   - **カスタマイズ**: 可視化スクリプトで`--output_dir`使用可能
+
+### 出力ディレクトリの柔軟な指定
+
+すべての評価スクリプトで出力先をカスタマイズ可能：
+
+```bash
+# デフォルト出力先（LEARNING_SOURCE_DIR配下）
+./bootstraps/run_bert_proteingym_evaluation.sh
+# → $LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_YYYYMMDD_HHMMSS/
+
+# カスタム出力先を指定
+./bootstraps/run_bert_proteingym_evaluation.sh \
+  --output_dir /mnt/results/my_proteingym_eval
+# → /mnt/results/my_proteingym_eval/
+
+# 相対パス指定も可能
+./bootstraps/run_gpt2_clinvar_evaluation.sh \
+  -o ./my_clinvar_results
+# → ./my_clinvar_results/
+
+# データ準備とレポート出力を別々に指定（一部スクリプト）
+./bootstraps/run_gpt2_omim_evaluation_real.sh \
+  --output_dir /results/omim_eval \
+  --config /custom/config.yaml
+```
+
+**出力先のデフォルト値:**
+| スクリプト | デフォルト出力先 |
+|-----------|----------------|
+| `run_bert_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation` |
+| `run_bert_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym` |
+| `run_gpt2_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation` |
+| `run_gpt2_cosmic_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_evaluation` |
+| `run_gpt2_omim_evaluation_dummy.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation` |
+| `run_gpt2_omim_evaluation_real.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
+| `run_gpt2_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
+| `run_gpt2_protein_classification.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
 
 ### フェーズ別実行の利点
 - **開発効率**: データ準備は1回だけ、評価と可視化を繰り返し実行可能
@@ -503,9 +580,31 @@ source src/config/env.sh
    
    # Protein Classificationの詳細レポート
    # → visualizations/ディレクトリに10種類以上のグラフ + HTML
+   
+   # カスタム出力先を指定して可視化
+   ./bootstraps/run_gpt2_proteingym_evaluation.sh \
+     --skip_data_prep --skip_evaluation \
+     -o /custom/visualization/path
    ```
 
-9. **ClinVarデータが数件しか抽出されない**
+9. **出力ディレクトリが見つからない**
+   ```bash
+   # デフォルト出力先を確認
+   echo $LEARNING_SOURCE_DIR
+   ls -la $LEARNING_SOURCE_DIR/*/report/
+   
+   # カスタム出力先を使用した場合
+   ls -la /path/to/custom/output/
+   
+   # 出力先を明示的に指定して再実行
+   ./bootstraps/run_bert_proteingym_evaluation.sh \
+     --output_dir /specific/output/path
+   
+   # 最新の評価結果ディレクトリを探す
+   find $LEARNING_SOURCE_DIR -type d -name "*proteingym*" -o -name "*clinvar*" | sort
+   ```
+
+10. **ClinVarデータが数件しか抽出されない**
    ```bash
    # 問題: 従来の方法では少数のサンプルのみ
    # 解決策: バランスサンプリングスクリプトを使用
@@ -526,7 +625,7 @@ source src/config/env.sh
    # 期待結果: 病原性 1000件、良性 1000件
    ```
 
-10. **参照ゲノムファイルが見つからない（ClinVarバランスサンプリング）**
+11. **参照ゲノムファイルが見つからない（ClinVarバランスサンプリング）**
     ```bash
     # 参照ゲノムのダウンロード
     wget -P $LEARNING_SOURCE_DIR/genome_sequence/data/ \

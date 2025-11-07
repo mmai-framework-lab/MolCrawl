@@ -39,12 +39,17 @@ MODEL_SIZE="small"
 MAX_SAMPLES=50
 BATCH_SIZE=16
 TOKENIZER_PATH=""  # 空の場合は自動検出
+# デフォルト出力先（-o/--output-dirで上書き可能）
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation"
 DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/omim"
 
 # 引数パース
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -o|--output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
         --model_size)
             MODEL_SIZE="$2"
             shift 2
@@ -67,6 +72,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
+            echo "  -o, --output-dir PATH     Output directory (default: \$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation)"
             echo "  --model_size SIZE         Model size (small|medium|large, default: small)"
             echo "  --tokenizer PATH          Tokenizer path (auto-detect if not provided)"
             echo "  --max_samples NUMBER      Maximum samples to generate (default: 50)"
@@ -74,9 +80,11 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help               Show this help message"
             echo ""
             echo "Examples:"
+            echo "  # デフォルト出力先での実行"
             echo "  $0 --model_size medium --max_samples 100"
-            echo "  $0 --batch_size 32"
-            echo "  $0 --tokenizer /path/to/spm_tokenizer.model"
+            echo ""
+            echo "  # カスタム出力ディレクトリを指定"
+            echo "  $0 --batch_size 32 -o /custom/output/omim_results"
             exit 0
             ;;
         *)

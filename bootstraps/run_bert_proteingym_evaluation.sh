@@ -55,11 +55,15 @@ SKIP_EVALUATION=false
 SKIP_VISUALIZATION=false
 
 DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/bert_proteingym"
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym"
+OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym"  # デフォルト出力先（-o/--output-dirで上書き可能）
 
 # 引数パース
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -o|--output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
         --model_path)
             MODEL_PATH="$2"
             shift 2
@@ -106,6 +110,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
+            echo "  -o, --output-dir PATH     Output directory (default: \$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym)"
             echo "  --model_path PATH         Model path (default: runs_train_bert_protein_sequence/checkpoint-2000)"
             echo "  --tokenizer_path PATH     Tokenizer path (default: EsmSequenceTokenizer)"
             echo "  --max_variants NUMBER     Maximum variants per assay (default: 1000)"
@@ -116,12 +121,17 @@ while [[ $# -gt 0 ]]; do
             echo "  --skip_data_prep          Skip data preparation phase"
             echo "  --skip_evaluation         Skip evaluation phase"
             echo "  --skip_visualization      Skip visualization phase"
-            echo "  -h, --help               Show this help message"
+            echo "  -h, --help                Show this help message"
             echo ""
             echo "Examples:"
+            echo "  # Basic evaluation with default output"
             echo "  $0 --max_variants 2000 --batch_size 32"
-            echo "  $0 --download --sample_only"
-            echo "  $0 --skip_data_prep"
+            echo ""
+            echo "  # Specify custom output directory"
+            echo "  $0 --download --sample_only -o /custom/output/path"
+            echo ""
+            echo "  # Skip data preparation (use existing data)"
+            echo "  $0 --skip_data_prep --output-dir ./my_results"
             exit 0
             ;;
         *)

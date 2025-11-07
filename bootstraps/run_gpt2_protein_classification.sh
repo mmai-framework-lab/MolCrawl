@@ -30,6 +30,7 @@ fi
 MODEL_PATH="$PROJECT_ROOT/gpt2-output/protein_sequence-small/ckpt.pt"
 DATA_PATH=""
 TOKENIZER_PATH=""  # 空の場合は自動検出
+# デフォルト出力先（-o/--output-dirで上書き可能）
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification"
 DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/protein_classification"
 CREATE_SAMPLE="false"

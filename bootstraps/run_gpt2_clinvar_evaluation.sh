@@ -22,6 +22,7 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# デフォルト出力先（-o/--output-dirで上書き可能）
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation"
 DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar"
 MODELS_DIR="$PROJECT_ROOT/gpt2-output"
@@ -41,6 +42,7 @@ ClinVar評価パイプライン
 使用法: $0 [オプション]
 
 オプション:
+    -o, --output-dir PATH       出力ディレクトリ [default: \$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation]
     -m, --model-size SIZE       モデルサイズ (small/medium/large/xl) [default: small]
     -t, --tokenizer PATH        トークナイザーパス（指定しない場合は自動検出）
     -s, --sequence-length LEN   配列長 [default: 100]
@@ -52,10 +54,14 @@ ClinVar評価パイプライン
     -h, --help                  このヘルプを表示
 
 例:
+    # デフォルト出力先での実行
     $0 --download --model-size medium --max-samples 2000
-    $0 --eval-only --model-size large
-    $0 --visualize-only
-    $0 --tokenizer /path/to/spm_tokenizer.model --download
+    
+    # カスタム出力ディレクトリを指定
+    $0 --download -o /custom/output/clinvar_results
+    
+    # 評価のみ実行
+    $0 --eval-only --model-size large --output-dir ./my_results
 EOF
 }
 
@@ -66,6 +72,10 @@ VISUALIZE_ONLY=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -o|--output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
         -m|--model-size)
             MODEL_SIZE="$2"
             shift 2

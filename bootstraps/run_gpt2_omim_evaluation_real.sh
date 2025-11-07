@@ -58,6 +58,7 @@ fi
 MODEL_SIZE="small"
 BATCH_SIZE=16
 TOKENIZER_PATH=""  # 空の場合は自動検出
+# デフォルト出力先（-o/--output-dirで上書き可能）
 OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation"
 DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/omim_real"
 DEFAULT_CONFIG="$PROJECT_ROOT/configs/omim_real_data.yaml"
@@ -78,7 +79,7 @@ GPT-2 OMIM実データ評価パイプライン
     --model_size SIZE           GPT-2モデルサイズ (small|medium|large, デフォルト: small)
     --tokenizer PATH            トークナイザーパス（指定しない場合は自動検出）
     --batch_size SIZE           バッチサイズ (デフォルト: 16)
-    --output_dir DIR            出力ディレクトリ (デフォルト: \$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation)
+    -o, --output_dir DIR        出力ディレクトリ (デフォルト: \$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation)
     --config FILE               実データ設定ファイル (デフォルト: configs/omim_real_data.yaml)
     --existing_omim_dir DIR     既存のOMIMデータディレクトリを指定（ダウンロード済みファイルの再利用）
     --force_download            データを強制再ダウンロード
@@ -127,7 +128,7 @@ while [[ $# -gt 0 ]]; do
             BATCH_SIZE="$2"
             shift 2
             ;;
-        --output_dir)
+        -o|--output_dir)
             OUTPUT_DIR="$2"
             shift 2
             ;;
