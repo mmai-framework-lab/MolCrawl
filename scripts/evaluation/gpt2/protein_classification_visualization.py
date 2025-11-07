@@ -8,12 +8,9 @@ GPT-2モデルによるタンパク質バリアント分類評価の結果を可
 import sys
 import os
 import argparse
-import json
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 import logging
 from datetime import datetime
 from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve, auc

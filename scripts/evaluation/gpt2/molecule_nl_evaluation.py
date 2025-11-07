@@ -15,13 +15,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
-from sklearn.metrics import (
-    accuracy_score,
-    precision_recall_fscore_support,
-    confusion_matrix,
-    mean_squared_error,
-)
 from datasets import load_from_disk
 import logging
 from datetime import datetime
@@ -31,7 +24,6 @@ import math
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"))
 
-from config.paths import get_gpt2_output_path
 from model import GPT, GPTConfig
 from utils.evaluation_output import (
     get_evaluation_output_dir,
@@ -77,7 +69,7 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
 
     def _init_tokenizer(self):
         """トークナイザーの初期化（抽象メソッドの実装）"""
-        logger.info(f"Loading MoleculeNatLangTokenizer")
+        logger.info("Loading MoleculeNatLangTokenizer")
         try:
             tokenizer = MoleculeNatLangTokenizer()
             logger.info(
@@ -192,7 +184,7 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
 
             # モデル統計の表示
             total_params = sum(p.numel() for p in model.parameters())
-            logger.info(f"📊 Model Statistics:")
+            logger.info("📊 Model Statistics:")
             logger.info(f"   - Total parameters: {total_params:,}")
             logger.info(
                 f"   - Vocabulary size: {model_args.get('vocab_size', 'unknown')}"
@@ -294,7 +286,7 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
                 logits, loss = self.model(x, targets=y)
 
                 if loss is None:
-                    logger.info(f"Model returned None for loss")
+                    logger.info("Model returned None for loss")
                     return float("inf")
 
                 # パープレキシティは損失の指数
@@ -384,13 +376,13 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
                 # DatasetDictの場合、testまたはvalidationを優先的に使用
                 if "test" in dataset:
                     dataset_split = dataset["test"]
-                    logger.info(f"Using 'test' split from dataset")
+                    logger.info("Using 'test' split from dataset")
                 elif "validation" in dataset:
                     dataset_split = dataset["validation"]
-                    logger.info(f"Using 'validation' split from dataset")
+                    logger.info("Using 'validation' split from dataset")
                 elif "train" in dataset:
                     dataset_split = dataset["train"]
-                    logger.info(f"Using 'train' split from dataset")
+                    logger.info("Using 'train' split from dataset")
                 else:
                     # 最初のsplitを使用
                     split_name = list(dataset.keys())[0]
@@ -448,7 +440,7 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
 
                     # デバッグ: input_idsの型と内容を確認
                     if idx == 0:  # 最初のサンプルで詳細確認
-                        logger.info(f"First sample analysis:")
+                        logger.info("First sample analysis:")
                         logger.info(f"  input_ids type: {type(input_ids)}")
                         logger.info(
                             f"  input_ids length: {len(input_ids) if hasattr(input_ids, '__len__') else 'N/A'}"
@@ -508,7 +500,7 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
                 logger.debug(f"Full traceback: {traceback.format_exc()}")
                 continue
 
-        logger.info(f"✅ Processing completed!")
+        logger.info("✅ Processing completed!")
         logger.info(f"   - Successfully processed: {len(results)} texts")
         logger.info(f"   - Processing errors: {processing_errors}")
 
@@ -684,9 +676,9 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
             f.write(
                 f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
-            f.write(f"🧬 Model Type: GPT-2 for Molecule Natural Language\n")
+            f.write("🧬 Model Type: GPT-2 for Molecule Natural Language\n")
             f.write(
-                f"📊 Evaluation Method: Perplexity-based language modeling assessment\n\n"
+                "📊 Evaluation Method: Perplexity-based language modeling assessment\n\n"
             )
 
             f.write("📈 Dataset Summary:\n")
@@ -846,7 +838,7 @@ def main():
             if os.path.exists(json_file):
                 with open(json_file, "r") as f:
                     metrics = json.load(f)
-                logger.info(f"✅ Loaded metrics from JSON")
+                logger.info("✅ Loaded metrics from JSON")
             else:
                 # CSVから再計算
                 logger.info("ℹ️  Metrics JSON not found, recalculating from CSV...")

@@ -11,9 +11,7 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
-from pathlib import Path
 import logging
-from datetime import datetime
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(
@@ -191,7 +189,7 @@ Examples:
         "--output_dir",
         type=str,
         default=None,
-        help=f"Output directory (default: $LEARNING_SOURCE_DIR/protein_sequence/data/protein_classification)",
+        help="Output directory (default: $LEARNING_SOURCE_DIR/protein_sequence/data/protein_classification)",
     )
 
     parser.add_argument(

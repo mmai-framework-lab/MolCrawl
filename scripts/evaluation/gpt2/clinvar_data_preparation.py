@@ -12,13 +12,9 @@ import argparse
 import pandas as pd
 import requests
 import gzip
-import xml.etree.ElementTree as ET
 from pathlib import Path
 import logging
 from datetime import datetime
-from Bio import SeqIO
-from Bio.Seq import Seq
-import re
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
@@ -176,7 +172,7 @@ class ClinVarProcessor:
         logger.info(f"Starting clinical significance filtering with {len(df)} variants")
 
         # 実際のClinicalSignificance値を確認
-        logger.info(f"Available clinical significance values:")
+        logger.info("Available clinical significance values:")
         for value, count in df["ClinicalSignificance"].value_counts().head(20).items():
             logger.info(f"  {value}: {count}")
 

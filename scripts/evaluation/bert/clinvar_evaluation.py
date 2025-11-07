@@ -21,21 +21,16 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
     confusion_matrix,
     roc_auc_score,
-    roc_curve,
 )
-from transformers import BertForMaskedLM, BertConfig, AutoTokenizer, AutoModel
+from transformers import BertForMaskedLM, BertConfig
 import sentencepiece as spm
 import logging
 from datetime import datetime
-import matplotlib.pyplot as plt
-import seaborn as sns
-import warnings
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(
@@ -102,7 +97,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
                 if token_id != self.tokenizer.unk_id():
                     logger.info(f"Using {candidate} as MASK token (ID: {token_id})")
                     return token_id
-            except:
+            except (KeyError, IndexError, AttributeError):
                 continue
 
         # フォールバック: unk_idを使用
@@ -118,7 +113,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
                 if token_id != self.tokenizer.unk_id():
                     logger.info(f"Using {candidate} as CLS token (ID: {token_id})")
                     return token_id
-            except:
+            except (KeyError, IndexError, AttributeError):
                 continue
 
         # フォールバック: 最初のトークンを使用
@@ -134,7 +129,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
                 if token_id != self.tokenizer.unk_id():
                     logger.info(f"Using {candidate} as SEP token (ID: {token_id})")
                     return token_id
-            except:
+            except (KeyError, IndexError, AttributeError):
                 continue
 
         # フォールバック: EOSトークンを使用
@@ -194,7 +189,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
         # モデル統計の表示
         total_params = sum(p.numel() for p in model.parameters())
-        logger.info(f"📊 Model Statistics:")
+        logger.info("📊 Model Statistics:")
         logger.info(f"   - Total parameters: {total_params:,}")
         logger.info(f"   - Hidden size: {model.config.hidden_size}")
         logger.info(f"   - Number of layers: {model.config.num_hidden_layers}")
@@ -347,7 +342,6 @@ class BERTClinVarEvaluator(ModelEvaluator):
     def _find_variant_position(self, ref_tokens, var_tokens):
         """参照配列と変異配列の差分位置を特定（改良版）"""
         min_len = min(len(ref_tokens), len(var_tokens))
-        max_len = max(len(ref_tokens), len(var_tokens))
 
         # 長さが大きく異なる場合は中央付近を変異位置とする
         if abs(len(ref_tokens) - len(var_tokens)) > 5:
@@ -450,7 +444,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
         benign_count = len(df) - pathogenic_count
         logger.info(f"   - Pathogenic variants: {pathogenic_count}")
         logger.info(f"   - Benign variants: {benign_count}")
-        logger.info(f"   - Data format: chrom:pos (ref>alt)")
+        logger.info("   - Data format: chrom:pos (ref>alt)")
 
         # データ品質チェック
         missing_ref = df["reference_sequence"].isnull().sum()
@@ -529,7 +523,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
                 logger.debug(f"Error processing variant {idx}: {e}")
                 continue
 
-        logger.info(f"✅ Processing completed!")
+        logger.info("✅ Processing completed!")
         logger.info(f"   - Successfully processed: {len(results)} variants")
         logger.info(f"   - Processing errors: {processing_errors}")
 
@@ -589,7 +583,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
         mlm_scores = results_df["mlm_score"].values
         try:
             auc = roc_auc_score(true_labels, mlm_scores)
-        except:
+        except (ValueError, RuntimeError):
             auc = 0.5
 
         # 混同行列
@@ -643,8 +637,8 @@ class BERTClinVarEvaluator(ModelEvaluator):
             f.write(
                 f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
-            f.write(f"🧬 Model Type: BERT for Masked Language Modeling\n")
-            f.write(f"📊 Evaluation Method: Independent pathogenicity assessment\n\n")
+            f.write("🧬 Model Type: BERT for Masked Language Modeling\n")
+            f.write("📊 Evaluation Method: Independent pathogenicity assessment\n\n")
 
             f.write("📈 Dataset Summary:\n")
             f.write(f"   • Total variants evaluated: {metrics['total_variants']}\n")

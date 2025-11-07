@@ -21,13 +21,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
-from transformers import BertForMaskedLM, BertConfig, AutoTokenizer
+from transformers import BertForMaskedLM, BertConfig
 from datasets import load_from_disk
 import logging
 from datetime import datetime
 import math
-import warnings
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(
@@ -36,8 +34,6 @@ PROJECT_ROOT = os.path.dirname(
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
 
 from utils.evaluation_output import (
-    get_evaluation_output_dir,
-    get_model_type_from_path,
     get_model_name_from_path,
     setup_evaluation_logging,
 )
@@ -90,7 +86,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
     def _init_tokenizer(self):
         """トークナイザーの初期化（抽象メソッドの実装）"""
-        logger.info(f"Loading MoleculeNatLangTokenizer")
+        logger.info("Loading MoleculeNatLangTokenizer")
         try:
             tokenizer = MoleculeNatLangTokenizer()
             logger.info(
@@ -212,7 +208,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
         # モデル統計の表示
         total_params = sum(p.numel() for p in model.parameters())
-        logger.info(f"📊 Model Statistics:")
+        logger.info("📊 Model Statistics:")
         logger.info(f"   - Total parameters: {total_params:,}")
         logger.info(f"   - Hidden size: {model.config.hidden_size}")
         logger.info(f"   - Number of layers: {model.config.num_hidden_layers}")
@@ -375,13 +371,13 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 # DatasetDictの場合、testまたはvalidationを優先的に使用
                 if "test" in dataset:
                     dataset_split = dataset["test"]
-                    logger.info(f"Using 'test' split from dataset")
+                    logger.info("Using 'test' split from dataset")
                 elif "validation" in dataset:
                     dataset_split = dataset["validation"]
-                    logger.info(f"Using 'validation' split from dataset")
+                    logger.info("Using 'validation' split from dataset")
                 elif "train" in dataset:
                     dataset_split = dataset["train"]
-                    logger.info(f"Using 'train' split from dataset")
+                    logger.info("Using 'train' split from dataset")
                 else:
                     # 最初のsplitを使用
                     split_name = list(dataset.keys())[0]
@@ -425,7 +421,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
         logger.info("🧬 Processing texts...")
         logger.info(
-            f"   Note: Using 'input_text' field and re-tokenizing with BERT tokenizer"
+            "   Note: Using 'input_text' field and re-tokenizing with BERT tokenizer"
         )
 
         for idx, row in df.iterrows():
@@ -443,7 +439,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
                     # デバッグ: 最初のサンプルで確認
                     if idx == 0:
-                        logger.info(f"First sample analysis:")
+                        logger.info("First sample analysis:")
                         logger.info(f"  input_text: {text[:100]}...")
                         logger.info(
                             f"  Re-tokenizing with BERT tokenizer (vocab_size={self.vocab_size})"
@@ -522,7 +518,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 logger.debug(f"Full traceback: {traceback.format_exc()}")
                 continue
 
-        logger.info(f"✅ Processing completed!")
+        logger.info("✅ Processing completed!")
         logger.info(f"   - Successfully processed: {len(results)} texts")
         logger.info(f"   - Processing errors: {processing_errors}")
 

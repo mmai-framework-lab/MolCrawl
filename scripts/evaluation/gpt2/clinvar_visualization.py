@@ -8,14 +8,11 @@ ClinVar評価の結果を可視化し、詳細な分析を行います。
 import sys
 import os
 import argparse
-import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 import logging
-from datetime import datetime
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
@@ -478,15 +475,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
         # 実際の実装では、結果ファイルからDataFrameを読み込むか、
         # 評価時に保存されたDataFrameを使用する
         cm = self.results["confusion_matrix"]
-
-        # サンプルデータフレームを作成（実際の実装では実データを使用）
-        n_samples = (
-            cm["true_positive"]
-            + cm["false_positive"]
-            + cm["true_negative"]
-            + cm["false_negative"]
-        )
-
+        
         # 仮想的な結果データを作成
         import numpy as np
 

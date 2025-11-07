@@ -15,13 +15,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
-from sklearn.metrics import (
-    accuracy_score,
-    precision_recall_fscore_support,
-    confusion_matrix,
-)
-import sentencepiece as spm
 import logging
 from datetime import datetime
 from transformers import BertForMaskedLM, BertConfig
@@ -597,7 +590,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
                     errors += 1
                     continue
 
-        logger.info(f"✅ Processing completed!")
+        logger.info("✅ Processing completed!")
         logger.info(f"   - Successfully processed: {processed} variants")
         logger.info(f"   - Processing errors: {errors}")
 
@@ -686,8 +679,8 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             f.write(
                 f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
-            f.write(f"🧬 Model Type: BERT for Masked Language Modeling\n")
-            f.write(f"📊 Evaluation Method: Independent fitness assessment\n\n")
+            f.write("🧬 Model Type: BERT for Masked Language Modeling\n")
+            f.write("📊 Evaluation Method: Independent fitness assessment\n\n")
 
             f.write("📈 Dataset Summary:\n")
             f.write(f"   • Total variants evaluated: {results['n_variants']}\n")

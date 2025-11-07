@@ -320,7 +320,7 @@ class BERTProteinGymDataProcessor:
                     if 0 <= pos < len(wt_seq) and wt_seq[pos] == mut_aa:
                         wt_seq[pos] = orig_aa
                         return "".join(wt_seq)
-                except:
+                except (ValueError, IndexError, KeyError):
                     pass
 
             return mutated_seq

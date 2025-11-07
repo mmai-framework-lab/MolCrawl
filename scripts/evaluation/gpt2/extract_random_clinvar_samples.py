@@ -113,7 +113,7 @@ def balanced_sampling(df, num_samples, clin_sig_col="ClinicalSignificance", seed
         drop=True
     )
 
-    print(f"\nBalanced sampling result:")
+    print("\nBalanced sampling result:")
     final_counts = balanced_df["classification"].value_counts()
     for cls, count in final_counts.items():
         print(f"  {cls}: {count}")

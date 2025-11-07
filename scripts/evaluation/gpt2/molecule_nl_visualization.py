@@ -11,7 +11,6 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from pathlib import Path
 import logging
 from datetime import datetime
@@ -490,7 +489,7 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
         stats = self.generate_statistics_summary()
 
         # HTMLテンプレートの作成
-        html_content = f"""
+        html_content = """
         <!DOCTYPE html>
         <html lang="ja">
         <head>
@@ -498,107 +497,107 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Molecule NL Model - Evaluation Report</title>
             <style>
-                body {{
+                body {
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                     margin: 0;
                     padding: 20px;
                     background-color: #f5f7fa;
                     color: #333;
-                }}
+                }
                 
-                .container {{
+                .container {
                     max-width: 1200px;
                     margin: 0 auto;
                     background: white;
                     border-radius: 10px;
                     box-shadow: 0 0 20px rgba(0,0,0,0.1);
                     overflow: hidden;
-                }}
+                }
                 
-                .header {{
+                .header {
                     background: linear-gradient(135deg, #2E8B57, #32CD32);
                     color: white;
                     padding: 30px;
                     text-align: center;
-                }}
+                }
                 
-                .header h1 {{
+                .header h1 {
                     margin: 0;
                     font-size: 2.5em;
                     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                }}
+                }
                 
-                .header p {{
+                .header p {
                     margin: 10px 0 0 0;
                     font-size: 1.2em;
                     opacity: 0.9;
-                }}
+                }
                 
-                .content {{
+                .content {
                     padding: 30px;
-                }}
+                }
                 
-                .section {{
+                .section {
                     margin-bottom: 40px;
                     background: #f8fffe;
                     border-radius: 8px;
                     padding: 25px;
                     border-left: 5px solid #2E8B57;
-                }}
+                }
                 
-                .section h2 {{
+                .section h2 {
                     color: #2E8B57;
                     margin-top: 0;
                     border-bottom: 2px solid #e1e8ed;
                     padding-bottom: 10px;
-                }}
+                }
                 
-                .stats-grid {{
+                .stats-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 20px;
                     margin: 20px 0;
-                }}
+                }
                 
-                .stat-card {{
+                .stat-card {
                     background: white;
                     border-radius: 8px;
                     padding: 20px;
                     border: 1px solid #e1e8ed;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }}
+                }
                 
-                .stat-card h3 {{
+                .stat-card h3 {
                     color: #32CD32;
                     margin-top: 0;
-                }}
+                }
                 
-                .stat-item {{
+                .stat-item {
                     display: flex;
                     justify-content: space-between;
                     margin: 8px 0;
                     padding: 5px 0;
                     border-bottom: 1px solid #f0f4f7;
-                }}
+                }
                 
-                .stat-label {{
+                .stat-label {
                     font-weight: 500;
                     color: #555;
-                }}
+                }
                 
-                .stat-value {{
+                .stat-value {
                     font-weight: bold;
                     color: #2E8B57;
-                }}
+                }
                 
-                .timestamp {{
+                .timestamp {
                     text-align: center;
                     color: #666;
                     font-style: italic;
                     border-top: 1px solid #e1e8ed;
                     padding-top: 20px;
                     margin-top: 40px;
-                }}
+                }
             </style>
         </head>
         <body>

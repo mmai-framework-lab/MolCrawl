@@ -18,7 +18,7 @@ import seaborn as sns
 from scipy import stats
 from pathlib import Path
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Optional
 import warnings
 
 # Suppress warnings for cleaner output
@@ -590,7 +590,7 @@ and tested on the ProteinGym dataset for fitness prediction.
 - **High Scores (> median)**: Spearman ρ = {high_corr:.3f} (n = {len(high_scores)})
 """
 
-        report += f"""
+        report += """
 
 ## Evaluation Method
 The BERT model was evaluated using masked language modeling (MLM) based fitness scoring:

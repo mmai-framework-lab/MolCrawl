@@ -15,10 +15,9 @@ import torch
 import torch.nn.functional as F
 import sentencepiece as spm
 import logging
-from datetime import datetime
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.metrics import roc_auc_score, average_precision_score, confusion_matrix
-from sklearn.metrics import roc_curve, precision_recall_curve
+from sklearn.metrics import roc_curve
 import json
 from pathlib import Path
 
@@ -26,7 +25,7 @@ from pathlib import Path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"))
 
-from config.paths import get_genome_tokenizer_path, get_gpt2_output_path
+from config.paths import get_genome_tokenizer_path
 from model import GPT, GPTConfig
 from utils.evaluation_output import (
     get_evaluation_output_dir,

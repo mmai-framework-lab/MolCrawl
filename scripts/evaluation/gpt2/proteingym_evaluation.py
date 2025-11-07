@@ -15,23 +15,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
-from sklearn.metrics import (
-    accuracy_score,
-    precision_recall_fscore_support,
-    confusion_matrix,
-)
-import sentencepiece as spm
 import logging
-from datetime import datetime
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"))
 
-from config.paths import get_genome_tokenizer_path, get_gpt2_output_path
 from model import GPT, GPTConfig
-from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 from utils.evaluation_output import (
     get_evaluation_output_dir,
     get_model_type_from_path,

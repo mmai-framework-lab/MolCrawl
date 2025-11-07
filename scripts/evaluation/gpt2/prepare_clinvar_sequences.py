@@ -130,7 +130,7 @@ def main():
             print(f"  - {col}")
     else:
         # Clinical significanceの分布を表示
-        print(f"\nClinical significance distribution in source data:")
+        print("\nClinical significance distribution in source data:")
         clin_sig_counts = df[clinical_significance_col].value_counts()
         for sig, count in clin_sig_counts.head(10).items():  # 上位10個を表示
             print(f"  {sig}: {count}")
@@ -206,7 +206,7 @@ def main():
             .sum()
         )
 
-        print(f"\nSummary:")
+        print("\nSummary:")
         print(f"  Pathogenic variants: {pathogenic_count}")
         print(f"  Benign variants: {benign_count}")
         print(f"  Uncertain significance: {uncertain_count}")

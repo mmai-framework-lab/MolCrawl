@@ -8,12 +8,9 @@ ProteinGym評価結果の可視化スクリプト
 import os
 import sys
 import argparse
-import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
 import logging
 from scipy.stats import spearmanr, pearsonr
 
@@ -174,7 +171,6 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
         ax1.grid(True, alpha=0.3)
 
         # Q-Qプロット
-        from scipy import stats
 
         true_quantiles = np.percentile(true_scores, np.linspace(0, 100, 100))
         pred_quantiles = np.percentile(predicted_scores, np.linspace(0, 100, 100))

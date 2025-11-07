@@ -14,14 +14,10 @@ import argparse
 import pandas as pd
 import requests
 import gzip
-import json
-import re
 from pathlib import Path
 import logging
 from datetime import datetime
 import numpy as np
-from urllib.parse import urljoin
-import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 

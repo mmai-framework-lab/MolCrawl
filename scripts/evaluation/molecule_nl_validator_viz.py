@@ -13,7 +13,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 from datetime import datetime
 
 # プロジェクトルートを追加
@@ -65,7 +64,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
                 with open(metrics_path, "r") as f:
                     self.metrics = json.load(f)
 
-        print(f"✅ MoleculeNLValidatorVisualization initialized")
+        print("✅ MoleculeNLValidatorVisualization initialized")
         print(f"   Results: {len(self.df)} samples")
 
     def create_summary_dashboard(self, output_path):

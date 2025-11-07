@@ -24,10 +24,8 @@ import random
 import pandas as pd
 import numpy as np
 import logging
-import yaml
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Optional
 import argparse
 
 # プロジェクトルートを追加
@@ -266,7 +264,7 @@ class OMIMDataGenerator:
         pathogenic_count = df["is_disease_causing"].sum()
         benign_count = len(df) - pathogenic_count
 
-        self.logger.info(f"Generated dataset statistics:")
+        self.logger.info("Generated dataset statistics:")
         self.logger.info(f"  Disease-causing variants: {pathogenic_count}")
         self.logger.info(f"  Benign variants: {benign_count}")
         self.logger.info(f"  Total samples: {len(df)}")
@@ -427,7 +425,7 @@ def main():
                 existing_omim_dir=args.existing_omim_dir,
                 force_download=args.force_download,
             )
-            print(f"Real OMIM data processing completed!")
+            print("Real OMIM data processing completed!")
 
         else:
             # サンプルデータモード
@@ -438,7 +436,7 @@ def main():
                 sequence_length=args.sequence_length,
                 seed=args.seed,
             )
-            print(f"Sample OMIM data preparation completed!")
+            print("Sample OMIM data preparation completed!")
 
         print(f"Output file: {output_file}")
 

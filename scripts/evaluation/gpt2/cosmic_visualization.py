@@ -9,12 +9,10 @@ COSMIC評価の結果を様々なグラフとチャートで可視化し、
 import sys
 import os
 import argparse
-import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 import logging
 from datetime import datetime
 

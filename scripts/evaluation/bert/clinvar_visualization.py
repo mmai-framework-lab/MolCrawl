@@ -11,10 +11,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 import logging
-from datetime import datetime
-from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, confusion_matrix
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
@@ -135,7 +133,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 auc = roc_auc_score(
                     self.results_df["pathogenic"], self.results_df["mlm_score"]
                 )
-            except:
+            except (ValueError, RuntimeError):
                 auc = 0.5
 
             metrics = {
@@ -288,7 +286,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 auc = roc_auc_score(
                     self.results_df["pathogenic"], self.results_df["mlm_score"]
                 )
-            except:
+            except (ValueError, RuntimeError):
                 auc = 0.5
 
             # 1. 混同行列
@@ -451,7 +449,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 auc = roc_auc_score(
                     self.results_df["pathogenic"], self.results_df["mlm_score"]
                 )
-            except:
+            except (ValueError, RuntimeError):
                 auc = 0.5
         else:
             accuracy = self.results["accuracy"]

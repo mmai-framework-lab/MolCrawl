@@ -15,7 +15,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
@@ -23,13 +22,12 @@ from sklearn.metrics import (
 )
 import sentencepiece as spm
 import logging
-from datetime import datetime
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"))
 
-from config.paths import get_genome_tokenizer_path, get_gpt2_output_path
+from config.paths import get_genome_tokenizer_path
 from model import GPT, GPTConfig
 from utils.evaluation_output import (
     get_evaluation_output_dir,
@@ -108,7 +106,8 @@ class GPT2ClinVarEvaluator(ModelEvaluator):
         logger.info(f"Model loaded successfully. Config: {config}")
         return model
 
-    def encode_sequence(self, sequence):
+    def calculate_perplexity(self, sequence, variant_pos=None):
+        """シーケンスのパープレキシティを計算"""
         """DNA配列をトークンIDにエンコード"""
         # 配列を適切にフォーマット（大文字変換、無効文字の除去など）
         sequence = sequence.upper().replace("N", "").replace("-", "")
@@ -229,7 +228,6 @@ class GPT2ClinVarEvaluator(ModelEvaluator):
             return torch.tensor(0.0, device=tokens.device)
 
         # 最後のトークンを除く（予測対象がないため）
-        input_tokens = tokens[:, :-1]
         target_tokens = tokens[:, 1:]
         pred_log_probs = log_probs[:, :-1, :]
 

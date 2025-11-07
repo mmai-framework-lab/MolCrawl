@@ -24,9 +24,8 @@ from sklearn.metrics import (
     average_precision_score,
     confusion_matrix,
 )
-from datetime import datetime
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 
 # Add src and gpt2 to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))

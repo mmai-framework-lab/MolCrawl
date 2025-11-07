@@ -864,18 +864,18 @@ def main():
                 ref_df, max_assays=args.get_test_assays
             )
 
-            print(f"\nRecommended test assays for quick evaluation:")
+            print("\nRecommended test assays for quick evaluation:")
             for assay_id in test_assays:
                 print(f"  {assay_id}")
 
             # サンプル実行コマンドを表示
             if test_assays:
-                print(f"\nExample evaluation command:")
-                print(f"python scripts/proteingym_evaluation.py \\")
-                print(f"    --model_path gpt2-output/protein_sequence-small/ckpt.pt \\")
+                print("\nExample evaluation command:")
+                print("python scripts/proteingym_evaluation.py \\")
+                print("    --model_path gpt2-output/protein_sequence-small/ckpt.pt \\")
                 print(f"    --proteingym_data proteingym_data/{test_assays[0]}.csv \\")
                 print(f"    --output_dir results_{test_assays[0]}/")
-                print(f"    --batch_size 16")
+                print("    --batch_size 16")
 
         # アッセイデータ準備（単一アッセイ）
         if args.prepare_assay:
@@ -904,7 +904,7 @@ def main():
 
             positive_count = len(eval_data[eval_data["DMS_score"] >= threshold])
             negative_count = len(eval_data[eval_data["DMS_score"] < threshold])
-            logger.info(f"Final dataset statistics:")
+            logger.info("Final dataset statistics:")
             logger.info(f"  Total samples: {len(eval_data)}")
             logger.info(f"  Positive samples (>= {threshold:.3f}): {positive_count}")
             logger.info(f"  Negative samples (< {threshold:.3f}): {negative_count}")
@@ -948,10 +948,10 @@ def main():
                 if created_datasets:
                     first_assay = list(created_datasets.keys())[0]
                     first_file = created_datasets[first_assay]["file"]
-                    logger.info(f"\nExample usage:")
-                    logger.info(f"python scripts/proteingym_evaluation.py \\")
+                    logger.info("\nExample usage:")
+                    logger.info("python scripts/proteingym_evaluation.py \\")
                     logger.info(
-                        f"  --model_path runs_train_gpt2_protein_sequence/checkpoint-5000 \\"
+                        "  --model_path runs_train_gpt2_protein_sequence/checkpoint-5000 \\"
                     )
                     logger.info(f"  --proteingym_data {first_file}")
 
