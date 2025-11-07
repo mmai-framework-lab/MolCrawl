@@ -80,18 +80,56 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 📊 Output Structure
 
-All evaluation scripts use the structured `LEARNING_SOURCE_DIR` format and support custom output directories:
+All evaluation scripts use the structured directory format and support custom output directories.
+
+### 環境変数
+
+評価スクリプトは以下の環境変数を使用します：
+
+| 環境変数 | 目的 | デフォルト | 必須 |
+|---------|------|-----------|------|
+| `LEARNING_SOURCE_DIR` | 入力データディレクトリ（読み取り専用） | - | ✅ |
+| `EVALUATION_OUTPUT_DIR` | 出力データディレクトリ（書き込み可能） | `$LEARNING_SOURCE_DIR` | ❌ |
+
+**使用例**：
+
+```bash
+# 標準的な使用方法（入力と出力が同じディレクトリ）
+export LEARNING_SOURCE_DIR=/data/learning_source
+./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+
+# 入力と出力を分離（読み取り専用の入力、書き込み可能な出力）
+export LEARNING_SOURCE_DIR=/readonly/learning_source  # 入力（読み取り専用）
+export EVALUATION_OUTPUT_DIR=/writable/outputs        # 出力（書き込み可能）
+./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+
+# 一時的な出力先指定（-oオプションでさらに上書き可能）
+EVALUATION_OUTPUT_DIR=/tmp/eval ./bootstraps/run_gpt2_clinvar_evaluation.sh -o /tmp/results
+```
+
+### ディレクトリ構造
 
 ```
-$LEARNING_SOURCE_DIR/
+$LEARNING_SOURCE_DIR/                   # 入力データ（読み取り専用）
+├── genome_sequence/
+│   ├── spm_tokenizer.model             # トークナイザー（入力）
+│   └── data/
+│       ├── GCA_000001405.28_GRCh38.p13_genomic.fna  # 参照ゲノム（入力）
+│       └── clinvar/
+│           └── clinvar_evaluation_dataset.csv       # 既存データ（入力）
+└── protein_sequence/
+    └── data/
+        └── proteingym/                 # 既存データ（入力）
+
+$EVALUATION_OUTPUT_DIR/                 # 出力データ（書き込み可能）
 ├── genome_sequence/
 │   ├── data/                           # データ準備フェーズの出力
-│   │   ├── clinvar/
+│   │   ├── clinvar/                    # 新規作成データ
 │   │   ├── cosmic/
 │   │   ├── omim/                       # サンプルデータ
 │   │   └── omim_real/                  # 実データ（認証必要）
 │   └── report/                         # 評価結果フェーズの出力
-│       ├── bert_clinvar_YYYYMMDD_HHMMSS/
+│       ├── bert_clinvar_evaluation/
 │       ├── clinvar_evaluation/         # GPT-2 ClinVar
 │       ├── cosmic_evaluation/          # GPT-2 COSMIC
 │       ├── omim_evaluation/            # GPT-2 OMIM（サンプル）
@@ -102,7 +140,7 @@ $LEARNING_SOURCE_DIR/
     │   ├── gpt2_proteingym/
     │   └── protein_classification/
     └── report/                         # 評価結果フェーズの出力
-        ├── bert_proteingym_YYYYMMDD_HHMMSS/
+        ├── bert_proteingym/
         ├── gpt2_proteingym/
         └── gpt2_protein_classification/
 ```

@@ -30,6 +30,9 @@
 
 set -e  # エラー時に停止
 
+# エラー時に行番号を表示
+trap 'echo "エラー: $BASH_SOURCE:$LINENO でコマンドが失敗しました" >&2' ERR
+
 # スクリプトのディレクトリを取得
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"  # プロジェクトルートディレクトリ
@@ -40,6 +43,12 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     echo "実行前に以下を設定してください:"
     echo "  export LEARNING_SOURCE_DIR=/path/to/learning_source"
     exit 1
+fi
+
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
 fi
 
 # デフォルト設定
@@ -54,8 +63,8 @@ SKIP_DATA_PREP=false
 SKIP_EVALUATION=false
 SKIP_VISUALIZATION=false
 
-DATA_DIR="$LEARNING_SOURCE_DIR/protein_sequence/data/bert_proteingym"
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym"  # デフォルト出力先（-o/--output-dirで上書き可能）
+DATA_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/data/bert_proteingym"  # データ準備時の出力先
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/report/bert_proteingym"  # デフォルト出力先（-o/--output-dirで上書き可能）
 
 # 引数パース
 while [[ $# -gt 0 ]]; do

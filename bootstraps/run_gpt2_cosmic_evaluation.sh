@@ -10,6 +10,9 @@ GPT-2 COSMIC評価パイプライン実行スクリプト
 
 set -e  # エラー時に停止
 
+# エラー時に行番号を表示
+trap 'echo "エラー: $BASH_SOURCE:$LINENO でコマンドが失敗しました" >&2' ERR
+
 # 設定
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"  # プロジェクトルートディレクトリ
@@ -22,9 +25,15 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # デフォルト出力先（-o/--output-dirで上書き可能）
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_evaluation"
-DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic"
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/report/cosmic_evaluation"
+DATA_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/data/cosmic"  # データ準備時の出力先
 MODELS_DIR="$PROJECT_ROOT/gpt2-output"
 
 # デフォルト設定

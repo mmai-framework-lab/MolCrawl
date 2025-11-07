@@ -18,6 +18,9 @@
 
 set -e  # エラー時に停止
 
+# エラー時に行番号を表示
+trap 'echo "エラー: $BASH_SOURCE:$LINENO でコマンドが失敗しました" >&2' ERR
+
 # カラー定義
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -54,13 +57,19 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # デフォルト設定
 MODEL_SIZE="small"
 BATCH_SIZE=16
 TOKENIZER_PATH=""  # 空の場合は自動検出
 # デフォルト出力先（-o/--output-dirで上書き可能）
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation"
-DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/omim_real"
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/report/omim_real_evaluation"
+DATA_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/data/omim_real"  # データ準備時の出力先
 DEFAULT_CONFIG="$PROJECT_ROOT/configs/omim_real_data.yaml"
 EXISTING_OMIM_DIR=""  # 既存のOMIMデータディレクトリ
 FORCE_DOWNLOAD=false

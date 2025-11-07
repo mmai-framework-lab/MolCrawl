@@ -5,6 +5,9 @@
 
 set -e  # エラー時に停止
 
+# エラー時に行番号を表示
+trap 'echo "エラー: $BASH_SOURCE:$LINENO でコマンドが失敗しました" >&2' ERR
+
 echo "🧬 Independent BERT Genome Sequence - ClinVar Evaluation"
 echo "================================================================"
 echo "🤖 BERT-based pathogenicity prediction (Independent Implementation)"
@@ -24,12 +27,18 @@ if [ -z "$LEARNING_SOURCE_DIR" ]; then
     exit 1
 fi
 
+# EVALUATION_OUTPUT_DIRの確認（デフォルトは$LEARNING_SOURCE_DIRと同じ）
+if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
+    EVALUATION_OUTPUT_DIR="$LEARNING_SOURCE_DIR"
+    echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
+fi
+
 # 設定値
 MODEL_PATH="$PROJECT_ROOT/runs_train_bert_genome_sequence/checkpoint-5000"  # 訓練済みBERTモデル（safetensors）
-TOKENIZER_PATH="$LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model"  # SentencePieceトークナイザー
-DATASET_PATH="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv"
-OUTPUT_DIR="$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation"  # デフォルト出力先（--output-dirで上書き可能）
-DATA_DIR="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar"
+TOKENIZER_PATH="$LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model"  # SentencePieceトークナイザー（入力）
+DATASET_PATH="$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv"  # 入力データ
+OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/report/bert_clinvar_evaluation"  # デフォルト出力先（--output-dirで上書き可能）
+DATA_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/data/clinvar"  # データ準備時の出力先
 
 # データ準備オプション
 PREPARE_DATA=false
@@ -317,12 +326,16 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  -o, --output-dir DIR  Output directory for results (default: \$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation)"
+            echo "  -o, --output-dir DIR  Output directory for results (default: \$EVALUATION_OUTPUT_DIR/genome_sequence/report/bert_clinvar_evaluation)"
             echo "  --prepare-data        Download and prepare balanced ClinVar dataset (1000 benign + 1000 pathogenic)"
             echo "  --force-download      Force re-download even if dataset exists"
             echo "  --sample-size N       Use only N samples for testing"
             echo "  --verbose             Enable verbose output"
             echo "  --help                Show this help message"
+            echo ""
+            echo "🌍 Environment Variables:"
+            echo "  LEARNING_SOURCE_DIR      Input data directory (read-only)"
+            echo "  EVALUATION_OUTPUT_DIR    Output data directory (default: same as LEARNING_SOURCE_DIR)"
             echo ""
             echo "🤖 Features:"
             echo "  • Trained BERT genome sequence model"
