@@ -4,14 +4,19 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 n_layer = 24
 n_head = 16
 n_embd = 1024
 
 import sentencepiece as spm
-from config.paths import get_refseq_tokenizer_path, REFSEQ_DATASET_DIR, get_gpt2_output_path
+from config.paths import (
+    get_refseq_tokenizer_path,
+    REFSEQ_DATASET_DIR,
+    get_gpt2_output_path,
+)
 
 tokenizer_path = get_refseq_tokenizer_path()
 
@@ -23,9 +28,7 @@ tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("genome_sequence", "medium")
 out_dir = get_gpt2_output_path("genome_sequence", "medium")
 
-tokenizer = spm.SentencePieceProcessor(
-    model_file=tokenizer_path
-)
+tokenizer = spm.SentencePieceProcessor(model_file=tokenizer_path)
 meta_vocab_size = tokenizer.vocab_size()
 
 # these make the total batch size be ~0.5M
@@ -39,7 +42,9 @@ max_iters = 600000
 lr_decay_iters = 600000
 warmup_iters = 200  # how many steps to warm up for
 learning_rate = 6e-6  # max learning rate
-min_lr = learning_rate / 10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+min_lr = (
+    learning_rate / 10
+)  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
 eval_interval = 1000

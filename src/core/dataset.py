@@ -3,7 +3,6 @@ import torch
 
 
 class PreparedDataset:
-
     def __init__(self, dataset_dir, split):
         super().__init__()
         self.data = load_from_disk(dataset_dir)[split]

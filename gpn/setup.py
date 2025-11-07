@@ -21,19 +21,19 @@ install_requires = [
     "scipy",
     "seaborn",
     "jupyter",
-    "scikit-learn"
+    "scikit-learn",
 ]
 
 
 setup(
-    name='gpn',
-    version='0.1.0',
-    description='gpn',
-    url='http://github.com/songlab-cal/gpn',
-    author='Elix Inc addapting Gonzalo Benegas',
-    author_email='',
-    license='MIT',
-    packages=['gpn', 'gpn.msa'],
+    name="gpn",
+    version="0.1.0",
+    description="gpn",
+    url="http://github.com/songlab-cal/gpn",
+    author="Elix Inc addapting Gonzalo Benegas",
+    author_email="",
+    license="MIT",
+    packages=["gpn", "gpn.msa"],
     zip_safe=False,
     install_requires=install_requires,
 )

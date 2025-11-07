@@ -73,15 +73,27 @@ min_lr = 6e-5  # minimum learning rate, should be ~= learning_rate/10 per Chinch
 # DDP settings
 backend = "nccl"  # 'nccl', 'gloo', etc.
 # system
-device = "cuda"  # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
+device = (
+    "cuda"  # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
+)
 dtype = (
-    "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
+    "bfloat16"
+    if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    else "float16"
 )  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
 compile = False  # use PyTorch 2.0 to compile the model to be faster
 # -----------------------------------------------------------------------------
-config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
+config_keys = [
+    k
+    for k, v in globals().items()
+    if not k.startswith("_") and isinstance(v, (int, float, bool, str))
+]
 # Handle configurator path
-configurator_path = "gpt2/configurator.py" if os.path.exists("gpt2/configurator.py") else "configurator.py"
+configurator_path = (
+    "gpt2/configurator.py"
+    if os.path.exists("gpt2/configurator.py")
+    else "configurator.py"
+)
 exec(open(configurator_path).read())  # overrides from command line or config file
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
@@ -131,21 +143,33 @@ torch.backends.cuda.matmul.allow_tf32 = True  # allow tf32 on matmul
 torch.backends.cudnn.allow_tf32 = True  # allow tf32 on cudnn
 device_type = "cuda" if "cuda" in device else "cpu"  # for later use in torch.autocast
 # note: float16 data type will automatically use a GradScaler
-ptdtype = {"float32": torch.float32, "bfloat16": torch.bfloat16, "float16": torch.float16}[dtype]
-ctx = nullcontext() if device_type == "cpu" else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
+ptdtype = {
+    "float32": torch.float32,
+    "bfloat16": torch.bfloat16,
+    "float16": torch.float16,
+}[dtype]
+ctx = (
+    nullcontext()
+    if device_type == "cpu"
+    else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
+)
 
 # RNA data loader
-rna_data_dir = "path-to-rna-parquet" # TODO
-rna_vocab_file = "path-to-rna-vocab" # TODO
+rna_data_dir = "path-to-rna-parquet"  # TODO
+rna_vocab_file = "path-to-rna-vocab"  # TODO
 
 # Use RNADataset if dataset is "rna", otherwise use PreparedDataset
 if dataset == "rna":
-    training_data = RNADataset(rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1)
-    test_data = RNADataset(rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1)
+    training_data = RNADataset(
+        rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1
+    )
+    test_data = RNADataset(
+        rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1
+    )
     # Set vocab size from the RNA dataset
     meta_vocab_size = training_data.vocab_size
 else:
-    print (f"Loading dataset: {dataset_params}")
+    print(f"Loading dataset: {dataset_params}")
     training_data = PreparedDataset(**dataset_params, split="train")
     test_data = PreparedDataset(**dataset_params, split="valid")
 
@@ -162,16 +186,16 @@ def get_batch(split):
         data = test_data
 
     ix = np.random.randint(0, len(data), batch_size).tolist()
-    
+
     # Handle variable length sequences for RNA data
     sequences = [data[i] for i in ix]
-    
+
     # Pad or truncate sequences to block_size
     padded_sequences = []
     for seq in sequences:
         # Ensure seq is long type for embedding layer compatibility
         seq = seq.long() if seq.dtype != torch.long else seq
-        
+
         if len(seq) > block_size:
             # Truncate to block_size
             padded_sequences.append(seq[:block_size])
@@ -181,14 +205,17 @@ def get_batch(split):
             padded_sequences.append(torch.cat([seq, padding]))
         else:
             padded_sequences.append(seq)
-    
+
     batch = torch.stack(padded_sequences)
     x = batch[:, :-1].long()  # Ensure long type for embedding
-    y = batch[:, 1:].long()   # Ensure long type for embedding
-    
+    y = batch[:, 1:].long()  # Ensure long type for embedding
+
     if device_type == "cuda":
         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
-        x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
+        x, y = (
+            x.pin_memory().to(device, non_blocking=True),
+            y.pin_memory().to(device, non_blocking=True),
+        )
     else:
         x, y = x.to(device), y.to(device)
     return x, y
@@ -211,7 +238,13 @@ if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
 
 # model init
 model_args = dict(
-    n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=block_size, bias=bias, vocab_size=None, dropout=dropout
+    n_layer=n_layer,
+    n_head=n_head,
+    n_embd=n_embd,
+    block_size=block_size,
+    bias=bias,
+    vocab_size=None,
+    dropout=dropout,
 )  # start with model_args from command line
 
 if init_from == "scratch":
@@ -219,7 +252,9 @@ if init_from == "scratch":
     print("Initializing a new model from scratch")
     # determine the vocab size we'll use for from-scratch training
     if meta_vocab_size is None:
-        print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
+        print(
+            "defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)"
+        )
     model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
     gptconf = GPTConfig(**model_args)
     model = GPT(gptconf)
@@ -257,14 +292,18 @@ elif init_from.startswith("gpt2"):
 # crop down the model block size if desired, using model surgery
 if block_size < model.config.block_size:
     model.crop_block_size(block_size)
-    model_args["block_size"] = block_size  # so that the checkpoint will have the right value
+    model_args["block_size"] = (
+        block_size  # so that the checkpoint will have the right value
+    )
 model.to(device)
 
 # initialize a GradScaler. If enabled=False scaler is a no-op
 scaler = torch.cuda.amp.GradScaler(enabled=(dtype == "float16"))
 
 # optimizer
-optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
+optimizer = model.configure_optimizers(
+    weight_decay, learning_rate, (beta1, beta2), device_type
+)
 if init_from == "resume":
     optimizer.load_state_dict(checkpoint["optimizer"])
 checkpoint = None  # free up memory
@@ -319,7 +358,6 @@ local_iter_num = 0  # number of iterations in the lifetime of this process
 raw_model = model.module if ddp else model  # unwrap DDP container if needed
 running_mfu = -1.0
 while True:
-
     # determine and set the learning rate for this iteration
     lr = get_lr(iter_num) if decay_lr else learning_rate
     for param_group in optimizer.param_groups:
@@ -328,13 +366,15 @@ while True:
     # evaluate the loss on train/val sets and write checkpoints
     if iter_num % eval_interval == 0 and master_process:
         losses = estimate_loss()
-        print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-        
+        print(
+            f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
+        )
+
         with open(logging_file, "a") as f:
             f.write(f"{iter_num}, {losses['train']:.4f}, {losses['val']:.4f}\n")
 
         if writer is not None:
-            writer.add_scalar("Val Loss", losses['val'], iter_num)
+            writer.add_scalar("Val Loss", losses["val"], iter_num)
             writer.flush()
 
         if losses["val"] < best_val_loss or always_save_checkpoint:
@@ -361,10 +401,14 @@ while True:
             # the official way to do this is with model.no_sync() context manager, but
             # I really dislike that this bloats the code and forces us to repeat code
             # looking at the source of that context manager, it just toggles this variable
-            model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1
+            model.require_backward_grad_sync = (
+                micro_step == gradient_accumulation_steps - 1
+            )
         with ctx:
             logits, loss = model(X, Y)
-            loss = loss / gradient_accumulation_steps  # scale the loss to account for gradient accumulation
+            loss = (
+                loss / gradient_accumulation_steps
+            )  # scale the loss to account for gradient accumulation
         # immediately async prefetch next batch while model is doing the forward pass on the GPU
         X, Y = get_batch("train")
         # backward pass, with gradient scaling if training in fp16
@@ -390,7 +434,9 @@ while True:
         if local_iter_num >= 5:  # let the training loop settle a bit
             mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
-        print(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
+        print(
+            f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%"
+        )
         if writer is not None:
             writer.add_scalar("Loss", lossf, iter_num)
             writer.add_scalar("Learning Rate", lr, iter_num)

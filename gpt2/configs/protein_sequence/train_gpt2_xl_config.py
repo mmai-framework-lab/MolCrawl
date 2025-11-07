@@ -4,7 +4,8 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 from config.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
@@ -43,5 +44,5 @@ weight_decay = 1e-1
 dataset = "protein_sequence"
 
 dataset_params = {
-    "dataset_dir": dataset_dir    # Adjust the path as necessary for your generated dataset.
+    "dataset_dir": dataset_dir  # Adjust the path as necessary for your generated dataset.
 }

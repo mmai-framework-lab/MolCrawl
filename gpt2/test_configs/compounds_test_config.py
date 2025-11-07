@@ -3,7 +3,8 @@
 import sys
 import os
 import torch
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from config.paths import COMPOUNDS_DATASET_DIR
 
 # 基本設定
@@ -12,9 +13,7 @@ max_test_samples = 1000
 convert_to_hf = True
 
 # データセット設定
-dataset_params = {
-    "dataset_dir": COMPOUNDS_DATASET_DIR
-}
+dataset_params = {"dataset_dir": COMPOUNDS_DATASET_DIR}
 
 # 語彙ファイル
 vocab_path = "assets/molecules/vocab.txt"

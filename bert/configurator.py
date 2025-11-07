@@ -31,7 +31,7 @@ for arg in sys.argv[1:]:
             potential_path = os.path.join(parent_dir, config_file)
             if os.path.exists(potential_path):
                 config_file = potential_path
-        
+
         print(f"Overriding config with {config_file}:")
         with open(config_file) as f:
             print(f.read())

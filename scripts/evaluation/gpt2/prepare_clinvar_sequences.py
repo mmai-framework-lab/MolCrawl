@@ -19,6 +19,7 @@ from datasets import load_dataset
 from pyfaidx import Fasta
 import pandas as pd
 
+
 def build_chrom_mapping(ref_genome):
     headers = [ref_genome[seq].long_name for seq in ref_genome.keys()]
     mapping = {}
@@ -32,15 +33,18 @@ def build_chrom_mapping(ref_genome):
             mapping[chrom] = seq_id
     return mapping
 
+
 def get_sequences(ref_genome, mapping, chrom, pos, ref, alt, flank=64):
     seq_id = mapping[str(chrom)]
     start = pos - flank
     end = pos + flank
-    ref_seq = ref_genome[seq_id][start-1:end].seq.upper()
+    ref_seq = ref_genome[seq_id][start - 1 : end].seq.upper()
 
     center_base = ref_seq[flank]
     if center_base != ref.upper():
-        print(f"Warning: reference mismatch at {chrom}:{pos}, expected {ref}, got {center_base}")
+        print(
+            f"Warning: reference mismatch at {chrom}:{pos}, expected {ref}, got {center_base}"
+        )
 
     seq_list = list(ref_seq)
     seq_list[flank] = alt.upper()
@@ -48,32 +52,49 @@ def get_sequences(ref_genome, mapping, chrom, pos, ref, alt, flank=64):
 
     return ref_seq, var_seq
 
+
 def main():
     parser = argparse.ArgumentParser(description="Prepare ClinVar benchmark sequences")
-    parser.add_argument("--ref_fasta", type=str, required=True,
-                        help="Path to GRCh38 genomic FASTA (e.g. GCA_000001405.28_GRCh38.p13_genomic.fna or .fna.gz)")
-    parser.add_argument("--output_file", type=str, default="clinvar_sequences.csv",
-                        help="Output CSV file")
-    parser.add_argument("--flank", type=int, default=64,
-                        help="Number of bp to take on each side (default=64 → 128bp window)")
-    parser.add_argument("--max_samples", type=int, default=None,
-                        help="Limit number of samples to process (default: all)")
+    parser.add_argument(
+        "--ref_fasta",
+        type=str,
+        required=True,
+        help="Path to GRCh38 genomic FASTA (e.g. GCA_000001405.28_GRCh38.p13_genomic.fna or .fna.gz)",
+    )
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        default="clinvar_sequences.csv",
+        help="Output CSV file",
+    )
+    parser.add_argument(
+        "--flank",
+        type=int,
+        default=64,
+        help="Number of bp to take on each side (default=64 → 128bp window)",
+    )
+    parser.add_argument(
+        "--max_samples",
+        type=int,
+        default=None,
+        help="Limit number of samples to process (default: all)",
+    )
 
     args = parser.parse_args()
-    
+
     # ファイル形式の自動対応
     ref_fasta_path = args.ref_fasta
-    if ref_fasta_path.endswith('.gz'):
+    if ref_fasta_path.endswith(".gz"):
         # .gzファイルの場合、展開された版があるかチェック
-        uncompressed_path = ref_fasta_path.replace('.gz', '')
+        uncompressed_path = ref_fasta_path.replace(".gz", "")
         if os.path.exists(uncompressed_path):
             print(f"Using uncompressed FASTA file: {uncompressed_path}")
             ref_fasta_path = uncompressed_path
         else:
             # 展開された版がない場合は一時的に展開
             print(f"Uncompressing {ref_fasta_path} for compatibility...")
-            with gzip.open(ref_fasta_path, 'rb') as f_in:
-                with open(uncompressed_path, 'wb') as f_out:
+            with gzip.open(ref_fasta_path, "rb") as f_in:
+                with open(uncompressed_path, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
             ref_fasta_path = uncompressed_path
             print(f"Uncompressed to: {ref_fasta_path}")
@@ -87,16 +108,22 @@ def main():
 
     # デバッグ: 利用可能なカラムを確認
     print(f"Available columns in dataset: {df.columns.tolist()}")
-    
+
     # ClinicalSignificanceカラムの存在確認
     clinical_significance_col = None
-    possible_names = ['ClinicalSignificance', 'clinical_significance', 'clin_sig', 'clnsig', 'significance']
+    possible_names = [
+        "ClinicalSignificance",
+        "clinical_significance",
+        "clin_sig",
+        "clnsig",
+        "significance",
+    ]
     for col_name in possible_names:
         if col_name in df.columns:
             clinical_significance_col = col_name
             print(f"Found clinical significance column: {col_name}")
             break
-    
+
     if clinical_significance_col is None:
         print("Warning: Clinical significance column not found. Available columns:")
         for col in df.columns:
@@ -115,12 +142,15 @@ def main():
     for i, row in df.iterrows():
         try:
             ref_seq, var_seq = get_sequences(
-                ref_genome, mapping,
-                row["chrom"], row["pos"],
-                row["ref"], row["alt"],
-                flank=args.flank
+                ref_genome,
+                mapping,
+                row["chrom"],
+                row["pos"],
+                row["ref"],
+                row["alt"],
+                flank=args.flank,
             )
-            
+
             # 基本的な変異情報
             record = {
                 "chrom": row["chrom"],
@@ -128,55 +158,64 @@ def main():
                 "ref": row["ref"],
                 "alt": row["alt"],
                 "reference_sequence": ref_seq,
-                "variant_sequence": var_seq
+                "variant_sequence": var_seq,
             }
-            
+
             # labelカラムがある場合は追加（後方互換性のため）
             if "label" in row:
                 record["label"] = row["label"]
-            
+
             # ClinicalSignificanceを追加（存在する場合）
             if clinical_significance_col:
                 record["ClinicalSignificance"] = row[clinical_significance_col]
             else:
                 record["ClinicalSignificance"] = None
-            
+
             records.append(record)
-            
+
         except Exception as e:
             print(f"Error at {row['chrom']}:{row['pos']} - {e}")
             continue
 
     df_out = pd.DataFrame(records)
     df_out.to_csv(args.output_file, index=False)
-    
+
     # 統計情報の出力
     print(f"Saved {len(df_out)} variants with sequences → {args.output_file}")
-    
+
     if clinical_significance_col:
         print("\nClinical Significance distribution:")
         significance_counts = df_out["ClinicalSignificance"].value_counts()
         for sig, count in significance_counts.items():
             print(f"  {sig}: {count}")
-        
+
         # 病原性/良性の分布も表示
-        pathogenic_count = df_out["ClinicalSignificance"].str.contains(
-            'pathogenic', case=False, na=False
-        ).sum()
-        benign_count = df_out["ClinicalSignificance"].str.contains(
-            'benign', case=False, na=False
-        ).sum()
-        uncertain_count = df_out["ClinicalSignificance"].str.contains(
-            'uncertain', case=False, na=False
-        ).sum()
-        
+        pathogenic_count = (
+            df_out["ClinicalSignificance"]
+            .str.contains("pathogenic", case=False, na=False)
+            .sum()
+        )
+        benign_count = (
+            df_out["ClinicalSignificance"]
+            .str.contains("benign", case=False, na=False)
+            .sum()
+        )
+        uncertain_count = (
+            df_out["ClinicalSignificance"]
+            .str.contains("uncertain", case=False, na=False)
+            .sum()
+        )
+
         print(f"\nSummary:")
         print(f"  Pathogenic variants: {pathogenic_count}")
         print(f"  Benign variants: {benign_count}")
         print(f"  Uncertain significance: {uncertain_count}")
-        print(f"  Other/Missing: {len(df_out) - pathogenic_count - benign_count - uncertain_count}")
+        print(
+            f"  Other/Missing: {len(df_out) - pathogenic_count - benign_count - uncertain_count}"
+        )
     else:
         print("\nNo ClinicalSignificance data available in the dataset.")
+
 
 if __name__ == "__main__":
     main()

@@ -88,7 +88,6 @@ def compute_stats(output_dir):
 
 
 if __name__ == "__main__":
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()

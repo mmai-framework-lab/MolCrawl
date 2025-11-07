@@ -88,7 +88,9 @@ def max_smooth(arr, window_size):
     return np.max(windowed_arr, axis=-1).reshape(arr.shape)
 
 
-class DataCollatorForMSACausalLanguageModelingSimplified(DataCollatorForLanguageModeling):
+class DataCollatorForMSACausalLanguageModelingSimplified(
+    DataCollatorForLanguageModeling
+):
     # gbenegas: Simplified to skip padding since we'll assume all sequences have the same length
     def torch_call(
         self, examples: List[Union[List[int], Any, Dict[str, Any]]]
@@ -108,6 +110,7 @@ class DataCollatorForMSACausalLanguageModelingSimplified(DataCollatorForLanguage
         batch["labels"] = labels
 
         return batch
+
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 # check_min_version("4.26.0.dev0")
@@ -335,7 +338,9 @@ def main():
         )
     else:
         logger.info("Training new model from scratch")
-        model = AutoModelForPreTraining.from_config(config)  # Add the other type of automodel
+        model = AutoModelForPreTraining.from_config(
+            config
+        )  # Add the other type of automodel
 
     genome_msa = GenomeMSA(data_args.msa_path, in_memory=False)
 
@@ -440,9 +445,9 @@ def main():
         kwargs["dataset_tags"] = data_args.dataset_name
         if data_args.dataset_config_name is not None:
             kwargs["dataset_args"] = data_args.dataset_config_name
-            kwargs[
-                "dataset"
-            ] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
+            kwargs["dataset"] = (
+                f"{data_args.dataset_name} {data_args.dataset_config_name}"
+            )
         else:
             kwargs["dataset"] = data_args.dataset_name
 

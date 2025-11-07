@@ -42,27 +42,31 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "molecule_nl":
             # 分子関連自然言語用のBERT互換トークナイザー
-            from molecule_related_nl.utils.bert_tokenizer import create_bert_molecule_nl_tokenizer
+            from molecule_related_nl.utils.bert_tokenizer import (
+                create_bert_molecule_nl_tokenizer,
+            )
 
             return create_bert_molecule_nl_tokenizer()
 
         elif domain == "genome":
             # ゲノム配列用のSentencePieceトークナイザー
             from genome_sequence.utils.tokenizer import create_genome_tokenizer
-            
+
             model_path = vocab_path  # SentencePieceモデルファイルのパス
             return create_genome_tokenizer(model_path)
 
         elif domain == "protein_sequence":
             # タンパク質配列用のBERT互換ESMトークナイザー
-            from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
-            
+            from protein_sequence.utils.bert_tokenizer import (
+                create_bert_protein_tokenizer,
+            )
+
             return create_bert_protein_tokenizer()
 
         elif domain == "rna":
             # RNA配列用のBERT互換トークナイザー
             from rna.utils.bert_tokenizer import create_bert_rna_tokenizer
-            
+
             return create_bert_rna_tokenizer()
 
         else:
@@ -124,20 +128,28 @@ def test_basic_functionality(model, tokenizer, test_texts):
     model.eval()
 
     for i, text in enumerate(test_texts):
-        print(f"\nテスト {i+1}: {text}")
+        print(f"\nテスト {i + 1}: {text}")
 
         try:
             # BERT互換トークナイザーの場合（標準のBertTokenizerまたはカスタムラッパー）
-            if hasattr(tokenizer, '__call__') and hasattr(tokenizer, 'model_input_names'):
+            if hasattr(tokenizer, "__call__") and hasattr(
+                tokenizer, "model_input_names"
+            ):
                 # BERT互換のラッパー（RNA, Protein, Genome など）
-                inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+                inputs = tokenizer(
+                    text,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=512,
+                )
                 inputs = {k: v.to(device) for k, v in inputs.items()}
 
                 with torch.no_grad():
                     outputs = model(**inputs)
 
                 print(f"  ✓ 推論成功 - 出力形状: {outputs.logits.shape}")
-                
+
             # ドメイン特化トークナイザーの場合
             elif hasattr(tokenizer, "tokenize_text"):
                 # CompoundsTokenizerなどの場合
@@ -153,7 +165,9 @@ def test_basic_functionality(model, tokenizer, test_texts):
                     print(f"  ! エンコード機能がサポートされていません")
             else:
                 # 標準のBertTokenizerの場合
-                inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+                inputs = tokenizer(
+                    text, return_tensors="pt", padding=True, truncation=True
+                )
                 inputs = {k: v.to(device) for k, v in inputs.items()}
 
                 with torch.no_grad():
@@ -180,17 +194,23 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
     for text in test_texts[:2]:  # 最初の2つのテキストでテスト
         try:
             # BERT互換トークナイザーの場合（標準またはカスタムラッパー）
-            if hasattr(tokenizer, '__call__') and hasattr(tokenizer, 'model_input_names'):
+            if hasattr(tokenizer, "__call__") and hasattr(
+                tokenizer, "model_input_names"
+            ):
                 # 標準のBertTokenizerまたはBERT互換ラッパーの場合
                 tokens = tokenizer.tokenize(text)
                 if len(tokens) > 3:
                     # 中間のトークンをマスク
                     mask_idx = len(tokens) // 2
                     original_token = tokens[mask_idx]
-                    tokens[mask_idx] = tokenizer.mask_token if hasattr(tokenizer, 'mask_token') else "[MASK]"
-                    
+                    tokens[mask_idx] = (
+                        tokenizer.mask_token
+                        if hasattr(tokenizer, "mask_token")
+                        else "[MASK]"
+                    )
+
                     # トークンから文字列を再構築
-                    if hasattr(tokenizer, 'convert_tokens_to_string'):
+                    if hasattr(tokenizer, "convert_tokens_to_string"):
                         masked_text = tokenizer.convert_tokens_to_string(tokens)
                     else:
                         masked_text = " ".join(tokens)
@@ -199,27 +219,40 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                     print(f"マスクされたテキスト: {masked_text}")
 
                     # 予測実行
-                    inputs = tokenizer(masked_text, return_tensors="pt", max_length=512, truncation=True)
+                    inputs = tokenizer(
+                        masked_text,
+                        return_tensors="pt",
+                        max_length=512,
+                        truncation=True,
+                    )
                     inputs = {k: v.to(device) for k, v in inputs.items()}
 
                     with torch.no_grad():
                         outputs = model(**inputs)
 
                     # マスク位置の予測を取得
-                    mask_token_id = getattr(tokenizer, 'mask_token_id', 4)  # デフォルトは4
-                    mask_token_index = torch.where(inputs["input_ids"] == mask_token_id)[1]
+                    mask_token_id = getattr(
+                        tokenizer, "mask_token_id", 4
+                    )  # デフォルトは4
+                    mask_token_index = torch.where(
+                        inputs["input_ids"] == mask_token_id
+                    )[1]
                     if len(mask_token_index) > 0:
                         mask_token_logits = outputs.logits[0, mask_token_index[0], :]
                         top_5_tokens = torch.topk(mask_token_logits, 5, dim=-1)
 
                         print(f"元のトークン: {original_token}")
                         print("予測されたトップ5トークン:")
-                        for i, (score, token_id) in enumerate(zip(top_5_tokens.values, top_5_tokens.indices)):
-                            if hasattr(tokenizer, 'decode'):
-                                token = tokenizer.decode([token_id], skip_special_tokens=True)
+                        for i, (score, token_id) in enumerate(
+                            zip(top_5_tokens.values, top_5_tokens.indices)
+                        ):
+                            if hasattr(tokenizer, "decode"):
+                                token = tokenizer.decode(
+                                    [token_id], skip_special_tokens=True
+                                )
                             else:
                                 token = f"Token_{token_id.item()}"
-                            print(f"  {i+1}. {token} (スコア: {score.item():.3f})")
+                            print(f"  {i + 1}. {token} (スコア: {score.item():.3f})")
 
             # ドメイン特化トークナイザーの場合
             elif hasattr(tokenizer, "tokenize_text"):
@@ -254,14 +287,22 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                         if mask_token_id is not None:
                             mask_positions = torch.where(input_ids == mask_token_id)[1]
                             if len(mask_positions) > 0:
-                                mask_token_logits = outputs.logits[0, mask_positions[0], :]
+                                mask_token_logits = outputs.logits[
+                                    0, mask_positions[0], :
+                                ]
                                 top_5_tokens = torch.topk(mask_token_logits, 5, dim=-1)
 
                                 print(f"元のトークン: {original_token}")
                                 print("予測されたトップ5トークン:")
-                                for i, (score, token_id) in enumerate(zip(top_5_tokens.values, top_5_tokens.indices)):
-                                    token = tokenizer.ids_to_tokens.get(token_id.item(), "[UNK]")
-                                    print(f"  {i+1}. {token} (スコア: {score.item():.3f})")
+                                for i, (score, token_id) in enumerate(
+                                    zip(top_5_tokens.values, top_5_tokens.indices)
+                                ):
+                                    token = tokenizer.ids_to_tokens.get(
+                                        token_id.item(), "[UNK]"
+                                    )
+                                    print(
+                                        f"  {i + 1}. {token} (スコア: {score.item():.3f})"
+                                    )
 
                     except Exception as e:
                         print(f"エンコード/推論エラー: {e}")
@@ -287,16 +328,20 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                         outputs = model(**inputs)
 
                     # マスク位置の予測を取得
-                    mask_token_index = torch.where(inputs["input_ids"] == tokenizer.mask_token_id)[1]
+                    mask_token_index = torch.where(
+                        inputs["input_ids"] == tokenizer.mask_token_id
+                    )[1]
                     if len(mask_token_index) > 0:
                         mask_token_logits = outputs.logits[0, mask_token_index[0], :]
                         top_5_tokens = torch.topk(mask_token_logits, 5, dim=-1)
 
                         print(f"元のトークン: {original_token}")
                         print("予測されたトップ5トークン:")
-                        for i, (score, token_id) in enumerate(zip(top_5_tokens.values, top_5_tokens.indices)):
+                        for i, (score, token_id) in enumerate(
+                            zip(top_5_tokens.values, top_5_tokens.indices)
+                        ):
                             token = tokenizer.decode([token_id])
-                            print(f"  {i+1}. {token} (スコア: {score.item():.3f})")
+                            print(f"  {i + 1}. {token} (スコア: {score.item():.3f})")
 
         except Exception as e:
             print(f"MLMテスト中にエラー: {e}")
@@ -319,17 +364,21 @@ def test_embedding_generation(model, tokenizer, test_texts):
 
     for text in test_texts[:3]:  # 最初の3つのテキストでテスト
         try:
-            inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+            inputs = tokenizer(
+                text, return_tensors="pt", padding=True, truncation=True, max_length=512
+            )
             inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
-                outputs = model.bert(**inputs)  # BertForMaskedLMの場合、bertレイヤーにアクセス
+                outputs = model.bert(
+                    **inputs
+                )  # BertForMaskedLMの場合、bertレイヤーにアクセス
                 # [CLS]トークンのエンベディングを取得
                 cls_embedding = outputs.last_hidden_state[0, 0, :].cpu().numpy()
                 embeddings.append(cls_embedding)
 
             print(f"✓ エンベディング生成成功 - 形状: {cls_embedding.shape}")
-            
+
         except Exception as e:
             print(f"エンベディング生成エラー: {e}")
             continue
@@ -342,7 +391,7 @@ def test_embedding_generation(model, tokenizer, test_texts):
                 similarity = np.dot(embeddings[i], embeddings[j]) / (
                     np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[j])
                 )
-                print(f"  テキスト{i+1} vs テキスト{j+1}: {similarity:.3f}")
+                print(f"  テキスト{i + 1} vs テキスト{j + 1}: {similarity:.3f}")
 
 
 def test_batch_processing(model, tokenizer, test_texts):
@@ -368,7 +417,13 @@ def test_batch_processing(model, tokenizer, test_texts):
 
         try:
             start_time = time.time()
-            inputs = tokenizer(batch_texts, return_tensors="pt", padding=True, truncation=True, max_length=512)
+            inputs = tokenizer(
+                batch_texts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=512,
+            )
             inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
@@ -378,7 +433,7 @@ def test_batch_processing(model, tokenizer, test_texts):
             processing_time = end_time - start_time
 
             print(f"✓ バッチサイズ {batch_size}: {processing_time:.3f}秒")
-            
+
         except Exception as e:
             print(f"✗ バッチサイズ {batch_size}: エラー - {e}")
 
@@ -411,8 +466,12 @@ def test_model_performance(model, tokenizer, dataset_path=None):
             dataset = load_from_disk(dataset_path)
 
             if "test" in dataset:
-                test_dataset = dataset["test"].select(range(min(100, dataset["test"].num_rows)))
-                data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
+                test_dataset = dataset["test"].select(
+                    range(min(100, dataset["test"].num_rows))
+                )
+                data_collator = DataCollatorForLanguageModeling(
+                    tokenizer=tokenizer, mlm=True, mlm_probability=0.15
+                )
 
                 model.eval()
                 total_loss = 0
@@ -441,7 +500,11 @@ def generate_test_report(checkpoint_path, results):
     """テスト結果のレポートを生成"""
     report_path = Path(checkpoint_path).parent / "test_report.json"
 
-    report = {"checkpoint_path": checkpoint_path, "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"), "results": results}
+    report = {
+        "checkpoint_path": checkpoint_path,
+        "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "results": results,
+    }
 
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
@@ -450,15 +513,22 @@ def generate_test_report(checkpoint_path, results):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="BERTチェックポイントの包括的テストスクリプト")
-    parser.add_argument("--checkpoint_path", required=True, help="テストするチェックポイントのパス")
+    parser = argparse.ArgumentParser(
+        description="BERTチェックポイントの包括的テストスクリプト"
+    )
+    parser.add_argument(
+        "--checkpoint_path", required=True, help="テストするチェックポイントのパス"
+    )
     parser.add_argument("--dataset_path", help="評価用データセットのパス（オプション）")
     parser.add_argument(
         "--domain",
         choices=["compounds", "molecule_nl", "genome", "protein_sequence", "rna"],
         help="使用するドメイン（compounds, molecule_nl, genome, protein_sequence, rna）",
     )
-    parser.add_argument("--vocab_path", help="語彙ファイルのパス（compounds: vocab.txt, genome: spm_tokenizer.model）")
+    parser.add_argument(
+        "--vocab_path",
+        help="語彙ファイルのパス（compounds: vocab.txt, genome: spm_tokenizer.model）",
+    )
     parser.add_argument(
         "--test_texts",
         nargs="*",
@@ -489,7 +559,7 @@ def main():
         elif args.domain == "genome":
             args.test_texts = [
                 "ATCGATCGATCGATCG",
-                "GCTAGCTAGCTAGCTA", 
+                "GCTAGCTAGCTAGCTA",
                 "TTTTAAAACCCCGGGG",
                 "AAATTTCCCGGGAAATTTCCCGGG",
                 "ATGCATGCATGCATGC",
@@ -497,7 +567,7 @@ def main():
         elif args.domain == "rna":
             args.test_texts = [
                 "cell_type_B_cell",
-                "cell_type_T_cell", 
+                "cell_type_T_cell",
                 "tissue_brain",
                 "tissue_liver",
                 "gene_expression_high",
@@ -530,7 +600,9 @@ def main():
     results = {}
 
     # モデルとトークナイザーのロード
-    model, tokenizer = load_model_and_tokenizer(args.checkpoint_path, args.domain, args.vocab_path)
+    model, tokenizer = load_model_and_tokenizer(
+        args.checkpoint_path, args.domain, args.vocab_path
+    )
 
     if model is None:
         print("モデルの読み込みに失敗したため、テストを終了します。")
@@ -545,7 +617,13 @@ def main():
         test_model_performance(model, tokenizer, args.dataset_path)
 
         results["status"] = "success"
-        results["tests_completed"] = ["basic_functionality", "mlm", "embedding", "batch_processing", "performance"]
+        results["tests_completed"] = [
+            "basic_functionality",
+            "mlm",
+            "embedding",
+            "batch_processing",
+            "performance",
+        ]
 
     except Exception as e:
         print(f"\nテスト中にエラーが発生しました: {e}")

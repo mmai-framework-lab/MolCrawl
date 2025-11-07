@@ -4,7 +4,8 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from config.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
@@ -31,7 +32,9 @@ max_iters = 6000
 lr_decay_iters = 6000
 warmup_iters = 200  # how many steps to warm up for
 learning_rate = 6e-6  # max learning rate
-min_lr = learning_rate/10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+min_lr = (
+    learning_rate / 10
+)  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
 eval_interval = 200
@@ -48,6 +51,4 @@ dataset = "compounds"
 start_instruction = 12
 eos_token = 12  # eos
 
-dataset_params = {
-    "dataset_dir": dataset_dir
-}
+dataset_params = {"dataset_dir": dataset_dir}

@@ -17,7 +17,6 @@ from tqdm import tqdm
 
 
 class TrainableTokenizer(ABC):
-
     def __init__(self):
         self.bulk_tokenizer_parquet = apply_fn_to_parqueet(self.tokenize_text)
 
@@ -36,7 +35,6 @@ class TrainableTokenizer(ABC):
 
 
 class UnTrainableTokenizer(ABC):
-
     def __init__(self):
         self.bulk_tokenizer_parquet = apply_fn_to_parqueet(self.tokenize_text)
 
@@ -68,16 +66,22 @@ def save_parquet(table: pa.Table, file_path: str):
 
 def split_table(table, chunk_size):
     num_rows = table.num_rows
-    return [table.slice(offset, chunk_size) for offset in range(0, num_rows, chunk_size)]
+    return [
+        table.slice(offset, chunk_size) for offset in range(0, num_rows, chunk_size)
+    ]
 
 
 def join_tables(chunks):
     return pa.concat_tables(chunks)
 
 
-def multiprocess_tokenization(func, table, column_name, new_column_name=None, processes=48):
+def multiprocess_tokenization(
+    func, table, column_name, new_column_name=None, processes=48
+):
     split_tables = split_table(table, 10000)
-    chunksize = len(split_tables) // processes if len(split_tables) // processes > 0 else 1
+    chunksize = (
+        len(split_tables) // processes if len(split_tables) // processes > 0 else 1
+    )
 
     with Pool(processes) as pool:
         tokenized_tables = [
@@ -93,14 +97,15 @@ def multiprocess_tokenization(func, table, column_name, new_column_name=None, pr
 
 
 def apply_fn_to_parqueet(func):
-
     def inner(table, column_name, new_column_name=None):
         column_to_modify = table[column_name]
 
         modified_column = pa.array([func(x.as_py()) for x in column_to_modify])
 
         if new_column_name is None:
-            return table.set_column(table.column_names.index(column_name), column_name, modified_column)
+            return table.set_column(
+                table.column_names.index(column_name), column_name, modified_column
+            )
         else:
             return table.append_column(new_column_name, modified_column)
 

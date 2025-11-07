@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from core.config import Config
 from config.paths import RNA_DATASET_DIR
 
+
 @dataclass
 class CellxGenePreparationConfig:
-
     # Output directory where the preparation will be made
     output_dir: str = RNA_DATASET_DIR
 
@@ -23,7 +23,6 @@ class CellxGenePreparationConfig:
 
 @dataclass
 class RnaConfig(Config):
-
     data_preparation: CellxGenePreparationConfig = field(default_factory=dict)
 
     def __post_init__(self):

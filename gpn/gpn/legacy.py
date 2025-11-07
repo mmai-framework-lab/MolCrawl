@@ -36,18 +36,24 @@ class GPNEmbedding(nn.Module):
         if input_ids is not None:
             res = F.one_hot(input_ids, num_classes=self.config.hidden_size).float()
         elif input_probs is not None:
-            res = F.pad(input_probs, (0, self.config.hidden_size - self.config.vocab_size))
+            res = F.pad(
+                input_probs, (0, self.config.hidden_size - self.config.vocab_size)
+            )
         if aux_features is not None:
             if self.config.aux_features_vocab_size is not None:
                 aux_features = (
                     F.one_hot(
-                        aux_features.long(), num_classes=self.config.aux_features_vocab_size
+                        aux_features.long(),
+                        num_classes=self.config.aux_features_vocab_size,
                     )
                     .reshape(input_ids.shape[0], input_ids.shape[1], -1)
                     .float()
                 )
             res[
-                :, :, self.config.vocab_size : self.config.vocab_size + self.config.n_aux_features
+                :,
+                :,
+                self.config.vocab_size : self.config.vocab_size
+                + self.config.n_aux_features,
             ] = aux_features
         return res
 
@@ -300,7 +306,7 @@ class GPNRoFormerConfig(RoFormerConfig):
         aux_features_vocab_size=5,
         n_aux_features=0,
         group_tokens=1,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.vocab_size = vocab_size
