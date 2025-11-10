@@ -131,7 +131,7 @@ def test_basic_functionality(model, tokenizer, test_texts):
 
         try:
             # BERT互換トークナイザーの場合（標準のBertTokenizerまたはカスタムラッパー）
-            if hasattr(tokenizer, "__call__") and hasattr(
+            if callable(tokenizer) and hasattr(
                 tokenizer, "model_input_names"
             ):
                 # BERT互換のラッパー（RNA, Protein, Genome など）
@@ -193,7 +193,7 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
     for text in test_texts[:2]:  # 最初の2つのテキストでテスト
         try:
             # BERT互換トークナイザーの場合（標準またはカスタムラッパー）
-            if hasattr(tokenizer, "__call__") and hasattr(
+            if callable(tokenizer) and hasattr(
                 tokenizer, "model_input_names"
             ):
                 # 標準のBertTokenizerまたはBERT互換ラッパーの場合

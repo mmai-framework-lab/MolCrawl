@@ -564,7 +564,7 @@ class ProteinGymDataDownloader:
         np.random.seed(42)
 
         # 陽性サンプル生成（高いDMS_score: 0.5〜1.5）
-        for i in range(positive_samples):
+        for _i in range(positive_samples):
             pos = random.randint(1, min(len(target_seq), 200))  # 配列長の制限
             if pos <= len(target_seq):
                 orig_aa = target_seq[pos - 1]
@@ -589,7 +589,7 @@ class ProteinGymDataDownloader:
             )
 
         # 陰性サンプル生成（低いDMS_score: -1.5〜0.0）
-        for i in range(negative_samples):
+        for _i in range(negative_samples):
             pos = random.randint(1, min(len(target_seq), 200))
             if pos <= len(target_seq):
                 orig_aa = target_seq[pos - 1]

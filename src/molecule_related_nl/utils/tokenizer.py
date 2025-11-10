@@ -180,7 +180,7 @@ class GeneralPrompter(object):
         self.response_split = response_split
 
     def generate_prompt(self, chat, tokenize=False, *args, **kargs) -> str:
-        res = self.apply_chat_template_func(chat, tokenize=tokenize, *args, **kargs)
+        res = self.apply_chat_template_func(chat, *args, tokenize=tokenize, **kargs)
         return res
 
     def get_response(self, output: str) -> str:

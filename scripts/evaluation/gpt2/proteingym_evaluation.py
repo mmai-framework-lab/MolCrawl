@@ -706,7 +706,7 @@ def create_sample_proteingym_data(
 
         np.random.seed(42)  # 再現性のため
 
-        for i in range(positive_samples):
+        for _i in range(positive_samples):
             pos = np.random.randint(1, len(base_sequence))
             orig_aa = base_sequence[pos - 1]
             new_aa = np.random.choice([aa for aa in amino_acids if aa != orig_aa])
@@ -727,7 +727,7 @@ def create_sample_proteingym_data(
 
         # 陰性サンプル（低いDMS_score）を生成
         negative_data = []
-        for i in range(negative_samples):
+        for _i in range(negative_samples):
             pos = np.random.randint(1, len(base_sequence))
             orig_aa = base_sequence[pos - 1]
             new_aa = np.random.choice([aa for aa in amino_acids if aa != orig_aa])

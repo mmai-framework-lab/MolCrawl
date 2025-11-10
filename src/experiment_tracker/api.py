@@ -86,7 +86,7 @@ async def list_experiments(
             "experiments": [exp.to_dict() for exp in experiments],
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/experiments/{experiment_id}")

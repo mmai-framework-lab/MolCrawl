@@ -418,7 +418,7 @@ def process_omim_real_data(
             }
 
             # ファイルの存在確認
-            for key, path in downloaded_files.items():
+            for _key, path in downloaded_files.items():
                 if not os.path.exists(path):
                     logger.warning(f"File not found: {path}")
         else:

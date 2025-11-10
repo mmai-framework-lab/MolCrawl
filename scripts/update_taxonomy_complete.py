@@ -296,7 +296,7 @@ class NCBITaxonomyCompleteUpdater:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backed_up_files = []
 
-        for group_name, group_info in self.taxonomy_groups.items():
+        for _group_name, group_info in self.taxonomy_groups.items():
             filename = group_info["filename"]
             file_path = self.output_dir / filename
 
@@ -409,7 +409,7 @@ class NCBITaxonomyCompleteUpdater:
 
             # 詳細変更
             f.write("## Detailed Changes\n\n")
-            for group_name, (genera_list, comparison) in all_results.items():
+            for group_name, (_genera_list, comparison) in all_results.items():
                 if comparison["added"] or comparison["removed"]:
                     desc = self.taxonomy_groups[group_name]["description"]
                     f.write(f"### {desc}\n\n")

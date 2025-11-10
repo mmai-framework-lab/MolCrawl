@@ -55,7 +55,7 @@ def load_gpt2_checkpoint(checkpoint_path, device="cuda"):
 
         # 不要なプレフィックスを削除
         unwanted_prefix = "_orig_mod."
-        for k, v in list(state_dict.items()):
+        for k, _v in list(state_dict.items()):
             if k.startswith(unwanted_prefix):
                 state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
 

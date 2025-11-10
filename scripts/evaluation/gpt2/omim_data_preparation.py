@@ -441,10 +441,6 @@ def main():
         print(f"Output file: {output_file}")
 
     except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-
-    except Exception as e:
         print(f"Error during OMIM data preparation: {e}")
         sys.exit(1)
 

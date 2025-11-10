@@ -80,7 +80,7 @@ class RNADatasetForBERT:
 
         except Exception as e:
             print(f"❌ Arrow loading failed: {e}")
-            raise FileNotFoundError(f"Could not load data from {data_dir}")
+            raise FileNotFoundError(f"Could not load data from {data_dir}") from e
 
         # Split into train/valid if needed
         if (
@@ -160,10 +160,10 @@ config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
     try:
         meta_vocab_size = (len(tokenizer) // 8 + 1) * 8
-    except Exception:
+    except Exception as e:
         raise ImportError(
             "Please initialize the variable meta_vocab_size in the *_config.py file with the size of your vocabulary."
-        )
+        ) from e
 
 if model_size == "small":
     model_config = BertConfig(

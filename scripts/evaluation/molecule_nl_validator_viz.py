@@ -246,7 +246,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
         bars = ax.barh(metric_names, metric_values, color=colors, alpha=0.7)
 
         # 値をバーの横に表示
-        for i, (bar, val) in enumerate(zip(bars, metric_values)):
+        for _i, (bar, val) in enumerate(zip(bars, metric_values)):
             ax.text(
                 val + 0.02,
                 bar.get_y() + bar.get_height() / 2,

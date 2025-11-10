@@ -201,7 +201,7 @@ class GPT2MoleculeNLEvaluator(ModelEvaluator):
 
         except Exception as e:
             logger.error(f"❌ Failed to load model: {e}")
-            raise RuntimeError(f"Model loading failed: {e}")
+            raise RuntimeError(f"Model loading failed: {e}") from e
 
     def encode_sequence(self, sequence: str) -> torch.Tensor:
         """シーケンスをエンコード（抽象メソッドの実装）"""

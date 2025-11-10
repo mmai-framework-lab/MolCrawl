@@ -330,7 +330,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
 
         # 変異タイプ別の分布
         mutation_types = df["mutation_type"].unique()
-        for i, mut_type in enumerate(mutation_types):
+        for mut_type in mutation_types:
             subset = df[df["mutation_type"] == mut_type]
             ax1.scatter(
                 subset["true_score"],
@@ -385,7 +385,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
         ax4.grid(True, alpha=0.3, axis="y")
 
         # 値をバーの上に表示
-        for i, (mt, corr) in enumerate(zip(mutation_types, correlations)):
+        for i, (_mt, corr) in enumerate(zip(mutation_types, correlations)):
             if not np.isnan(corr):
                 ax4.text(i, corr, f"{corr:.3f}", ha="center", va="bottom")
 

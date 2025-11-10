@@ -139,7 +139,7 @@ def main():
     mapping = build_chrom_mapping(ref_genome)
 
     records = []
-    for i, row in df.iterrows():
+    for _i, row in df.iterrows():
         try:
             ref_seq, var_seq = get_sequences(
                 ref_genome,

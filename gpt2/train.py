@@ -274,7 +274,7 @@ elif init_from == "resume":
     # fix the keys of the state dictionary :(
     # honestly no idea how checkpoints sometimes get this prefix, have to debug more
     unwanted_prefix = "_orig_mod."
-    for k, v in list(state_dict.items()):
+    for k, _v in list(state_dict.items()):
         if k.startswith(unwanted_prefix):
             state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
     model.load_state_dict(state_dict)
