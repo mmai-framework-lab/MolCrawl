@@ -109,15 +109,15 @@ class ExperimentDatabase:
 
             # インデックス作成
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_experiments_status 
+                CREATE INDEX IF NOT EXISTS idx_experiments_status
                 ON experiments(status)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_experiments_type 
+                CREATE INDEX IF NOT EXISTS idx_experiments_type
                 ON experiments(experiment_type)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_experiments_created 
+                CREATE INDEX IF NOT EXISTS idx_experiments_created
                 ON experiments(created_at)
             """)
 
@@ -387,8 +387,8 @@ class ExperimentDatabase:
 
             # ステータス別
             cursor.execute("""
-                SELECT status, COUNT(*) as count 
-                FROM experiments 
+                SELECT status, COUNT(*) as count
+                FROM experiments
                 GROUP BY status
             """)
             stats["by_status"] = {
@@ -397,8 +397,8 @@ class ExperimentDatabase:
 
             # タイプ別
             cursor.execute("""
-                SELECT experiment_type, COUNT(*) as count 
-                FROM experiments 
+                SELECT experiment_type, COUNT(*) as count
+                FROM experiments
                 GROUP BY experiment_type
             """)
             stats["by_type"] = {
@@ -407,8 +407,8 @@ class ExperimentDatabase:
 
             # モデル別
             cursor.execute("""
-                SELECT model_type, COUNT(*) as count 
-                FROM experiments 
+                SELECT model_type, COUNT(*) as count
+                FROM experiments
                 GROUP BY model_type
             """)
             stats["by_model"] = {
@@ -417,8 +417,8 @@ class ExperimentDatabase:
 
             # データセット別
             cursor.execute("""
-                SELECT dataset_type, COUNT(*) as count 
-                FROM experiments 
+                SELECT dataset_type, COUNT(*) as count
+                FROM experiments
                 GROUP BY dataset_type
             """)
             stats["by_dataset"] = {

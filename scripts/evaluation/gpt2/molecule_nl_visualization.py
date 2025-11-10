@@ -504,7 +504,7 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                     background-color: #f5f7fa;
                     color: #333;
                 }
-                
+
                 .container {
                     max-width: 1200px;
                     margin: 0 auto;
@@ -513,30 +513,30 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                     box-shadow: 0 0 20px rgba(0,0,0,0.1);
                     overflow: hidden;
                 }
-                
+
                 .header {
                     background: linear-gradient(135deg, #2E8B57, #32CD32);
                     color: white;
                     padding: 30px;
                     text-align: center;
                 }
-                
+
                 .header h1 {
                     margin: 0;
                     font-size: 2.5em;
                     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
                 }
-                
+
                 .header p {
                     margin: 10px 0 0 0;
                     font-size: 1.2em;
                     opacity: 0.9;
                 }
-                
+
                 .content {
                     padding: 30px;
                 }
-                
+
                 .section {
                     margin-bottom: 40px;
                     background: #f8fffe;
@@ -544,21 +544,21 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                     padding: 25px;
                     border-left: 5px solid #2E8B57;
                 }
-                
+
                 .section h2 {
                     color: #2E8B57;
                     margin-top: 0;
                     border-bottom: 2px solid #e1e8ed;
                     padding-bottom: 10px;
                 }
-                
+
                 .stats-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 20px;
                     margin: 20px 0;
                 }
-                
+
                 .stat-card {
                     background: white;
                     border-radius: 8px;
@@ -566,12 +566,12 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                     border: 1px solid #e1e8ed;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }
-                
+
                 .stat-card h3 {
                     color: #32CD32;
                     margin-top: 0;
                 }
-                
+
                 .stat-item {
                     display: flex;
                     justify-content: space-between;
@@ -579,17 +579,17 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                     padding: 5px 0;
                     border-bottom: 1px solid #f0f4f7;
                 }
-                
+
                 .stat-label {
                     font-weight: 500;
                     color: #555;
                 }
-                
+
                 .stat-value {
                     font-weight: bold;
                     color: #2E8B57;
                 }
-                
+
                 .timestamp {
                     text-align: center;
                     color: #666;
@@ -606,14 +606,14 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                     <h1>🧬 Molecule NL Model</h1>
                     <p>分子自然言語理解モデル - 評価レポート</p>
                 </div>
-                
+
                 <div class="content">
                     <div class="section">
                         <h2>📊 評価サマリー</h2>
                         <p>本レポートは、分子自然言語処理に特化したGPT-2モデルの性能評価結果を示しています。
                         パープレキシティを主要指標として、モデルの言語理解能力を定量的に分析しました。</p>
                     </div>
-                    
+
                     <div class="section">
                         <h2>📈 統計データ</h2>
                         <div class="stats-grid">
@@ -637,7 +637,7 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
         html_content += f"""
                         </div>
                     </div>
-                    
+
                     <div class="section">
                         <h2>💡 主要な発見</h2>
                         <ul>
@@ -647,7 +647,7 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                             <li><strong>実用性評価:</strong> 実際の分子情報処理タスクでの適用可能性を検証</li>
                         </ul>
                     </div>
-                    
+
                     <div class="section">
                         <h2>🎯 推奨事項</h2>
                         <ul>
@@ -657,7 +657,7 @@ class MoleculeNLVisualizationGenerator(BaseVisualizationGenerator):
                             <li>ドメイン特化データでの追加ファインチューニングを検討してください</li>
                         </ul>
                     </div>
-                    
+
                     <div class="timestamp">
                         レポート生成日時: {datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")}
                     </div>

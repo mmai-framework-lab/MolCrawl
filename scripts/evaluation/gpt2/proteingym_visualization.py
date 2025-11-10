@@ -583,7 +583,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
                         <div class="metric-label">MSE</div>
                     </div>
                 </div>
-                
+
                 <h2 class="section-title">Visualizations</h2>
                 <div class="image-container">
                     <img src="proteingym_summary_dashboard.png" alt="Summary Dashboard">

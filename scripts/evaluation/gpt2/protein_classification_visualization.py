@@ -456,7 +456,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
         • Total Variants: {len(self.true_labels)}
         • Benign: {np.sum(self.true_labels == 0)} ({np.mean(self.true_labels == 0) * 100:.1f}%)
         • Pathogenic: {np.sum(self.true_labels == 1)} ({np.mean(self.true_labels == 1) * 100:.1f}%)
-        
+
         Performance Summary:
         • Accuracy: {self.metrics["Accuracy"]:.4f}  • Precision: {self.metrics["Precision"]:.4f}  • Recall: {self.metrics["Recall"]:.4f}
         • F1-Score: {self.metrics["F1-score"]:.4f}  • ROC-AUC: {self.metrics["ROC-AUC"]:.4f}  • PR-AUC: {self.metrics["PR-AUC"]:.4f}
@@ -511,13 +511,13 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
 <body>
     <div class="container">
         <h1>🧬 Protein Variant Classification Evaluation Report</h1>
-        
+
         <div class="summary-box">
             <h3>Report Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</h3>
             <p><strong>Total Variants Evaluated:</strong> {len(self.true_labels)}</p>
             <p><strong>Classification Threshold:</strong> {self.threshold}</p>
         </div>
-        
+
         <h2>📊 Performance Metrics</h2>
         <table>
             <tr>
@@ -561,7 +561,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
                 <td>Proportion of actual negatives correctly identified</td>
             </tr>
         </table>
-        
+
         <h2>📈 Visualizations</h2>
         <div class="image-grid">
             <div class="image-item">
@@ -581,13 +581,13 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
                 <img src="fitness_score_distribution.png" alt="Score Distribution">
             </div>
         </div>
-        
+
         <h2>📝 Dataset Information</h2>
         <ul>
             <li><strong>Benign Variants:</strong> {np.sum(self.true_labels == 0)} ({np.mean(self.true_labels == 0) * 100:.1f}%)</li>
             <li><strong>Pathogenic Variants:</strong> {np.sum(self.true_labels == 1)} ({np.mean(self.true_labels == 1) * 100:.1f}%)</li>
         </ul>
-        
+
         <h2>🔍 Score Statistics</h2>
         <table>
             <tr>

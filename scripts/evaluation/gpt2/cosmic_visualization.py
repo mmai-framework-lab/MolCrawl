@@ -405,12 +405,12 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
         <body>
             <div class="container">
                 <h1>🧬 COSMIC Oncogenicity Prediction Evaluation Report</h1>
-                
+
                 <div class="summary-box">
                     <h2>📊 Executive Summary</h2>
                     <p>This report presents the evaluation results of a genome sequence model for oncogenicity prediction using COSMIC database variants. The model was assessed on {self.results["total_samples"]} variants with {self.results["oncogenic_samples"]} oncogenic and {self.results["non_oncogenic_samples"]} non-oncogenic mutations.</p>
                 </div>
-                
+
                 <h2>📈 Performance Metrics</h2>
                 <div class="metrics-grid">
                     <div class="metric-card">
@@ -438,12 +438,12 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
                         <div class="metric-label">Sensitivity</div>
                     </div>
                 </div>
-                
+
                 <h2>🎯 Confusion Matrix</h2>
                 <div class="image-container">
                     <img src="confusion_matrix.png" alt="Confusion Matrix">
                 </div>
-                
+
                 <table>
                     <tr>
                         <th>Metric</th>
@@ -471,27 +471,27 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
                         <td>Oncogenic mutations incorrectly classified as non-oncogenic</td>
                     </tr>
                 </table>
-                
+
                 <h2>📊 Performance Analysis</h2>
                 <div class="image-container">
                     <img src="performance_metrics.png" alt="Performance Metrics">
                 </div>
-                
+
                 <h2>🎪 Radar Chart</h2>
                 <div class="image-container">
                     <img src="performance_radar.png" alt="Performance Radar Chart">
                 </div>
-                
+
                 <h2>📋 Dataset Distribution</h2>
                 <div class="image-container">
                     <img src="class_distribution.png" alt="Class Distribution">
                 </div>
-                
+
                 <h2>⚖️ Baseline Comparison</h2>
                 <div class="image-container">
                     <img src="baseline_comparison.png" alt="Baseline Comparison">
                 </div>
-                
+
                 <div class="interpretation">
                     <h2>🔍 Interpretation & Insights</h2>
                     <ul>
@@ -502,7 +502,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
                         <li><strong>ROC-AUC Interpretation:</strong> {"Excellent discriminative ability" if self.results["roc_auc"] > 0.9 else "Good discriminative ability" if self.results["roc_auc"] > 0.8 else "Fair discriminative ability" if self.results["roc_auc"] > 0.7 else "Limited discriminative ability"}.</li>
                     </ul>
                 </div>
-                
+
                 <div class="summary-box">
                     <h2>💡 Recommendations</h2>
                     <ul>
@@ -512,7 +512,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
                         <li>Validate results on independent cancer genomics datasets</li>
                     </ul>
                 </div>
-                
+
                 <footer style="text-align: center; margin-top: 40px; color: #7f8c8d;">
                     <p>Report generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
                     <p>🧬 Genome Sequence Model - COSMIC Evaluation</p>
@@ -667,7 +667,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
 <body>
     <h1>COSMIC Evaluation Report</h1>
     <p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-    
+
     <h2>Performance Metrics</h2>
     <div class="metrics">
         <div class="metric-card">
@@ -687,19 +687,19 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
             <div class="metric-value">{self.results.get("f1_score", 0):.3f}</div>
         </div>
     </div>
-    
+
     <h2>Visualizations</h2>
     <div>
         <h3>ROC Curve</h3>
         <img src="roc_curve.png" alt="ROC Curve">
-        
+
         <h3>Precision-Recall Curve</h3>
         <img src="pr_curve.png" alt="PR Curve">
-        
+
         <h3>Performance Metrics</h3>
         <img src="cosmic_performance_metrics.png" alt="Performance Metrics">
     </div>
-    
+
     <h2>Summary</h2>
     <p>COSMIC evaluation completed successfully. Review the visualizations above for detailed performance analysis.</p>
 </body>

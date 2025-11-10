@@ -382,18 +382,18 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
 
             stats_text = f"""
             BERT Model Performance Summary
-            
+
             Overall Accuracy: {accuracy:.3f}
             Precision: {precision:.3f}
             Recall: {recall:.3f}
             F1-Score: {f1:.3f}
             AUC-ROC: {auc:.3f}
-            
+
             Dataset Statistics:
             Total Variants: {len(self.results_df)}
             Pathogenic: {self.results_df["pathogenic"].sum()}
             Benign: {len(self.results_df) - self.results_df["pathogenic"].sum()}
-            
+
             MLM Score Means:
             Pathogenic: {pathogenic_scores.mean():.3f}
             Benign: {benign_scores.mean():.3f}
@@ -482,19 +482,19 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                     <div class="metric-label">AUC-ROC</div>
                 </div>
             </div>
-            
+
             <h2 class="section-title">BERT Summary Dashboard</h2>
             <div class="image-container">
                 <img src="bert_summary_dashboard.png" alt="BERT Summary Dashboard">
             </div>
-            
+
             <h2 class="section-title">Detailed BERT Analysis</h2>
-            
+
             <h3>Confusion Matrix</h3>
             <div class="image-container">
                 <img src="bert_confusion_matrix.png" alt="BERT Confusion Matrix">
             </div>
-            
+
             <h3>Performance Metrics</h3>
             <div class="image-container">
                 <img src="bert_performance_metrics.png" alt="BERT Performance Metrics">
@@ -508,7 +508,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
             <div class="image-container">
                 <img src="bert_mlm_score_distribution.png" alt="MLM Score Distribution">
             </div>
-            
+
             <h3>Sequence Similarity Distribution</h3>
             <div class="image-container">
                 <img src="bert_similarity_distribution.png" alt="Similarity Distribution">

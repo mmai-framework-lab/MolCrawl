@@ -469,55 +469,55 @@ class BaseVisualizationGenerator(ABC):
         <head>
             <title>{title}</title>
             <style>
-                body {{ 
-                    font-family: Arial, sans-serif; 
-                    margin: 40px; 
+                body {{
+                    font-family: Arial, sans-serif;
+                    margin: 40px;
                     background-color: #fafafa;
                 }}
-                .header {{ 
-                    background-color: #f0f0f0; 
-                    padding: 20px; 
-                    border-radius: 8px; 
+                .header {{
+                    background-color: #f0f0f0;
+                    padding: 20px;
+                    border-radius: 8px;
                     margin-bottom: 30px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }}
-                .metric-grid {{ 
-                    display: grid; 
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-                    gap: 20px; 
-                    margin: 20px 0; 
+                .metric-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin: 20px 0;
                 }}
-                .metric-card {{ 
-                    background-color: white; 
-                    padding: 20px; 
-                    border-radius: 8px; 
+                .metric-card {{
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
                     text-align: center;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     border-left: 4px solid #2196F3;
                 }}
-                .metric-value {{ 
-                    font-size: 28px; 
-                    font-weight: bold; 
-                    color: #2196F3; 
+                .metric-value {{
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #2196F3;
                     margin-bottom: 5px;
                 }}
-                .metric-label {{ 
-                    color: #666; 
+                .metric-label {{
+                    color: #666;
                     font-size: 14px;
                     text-transform: uppercase;
                     letter-spacing: 1px;
                 }}
-                .image-container {{ 
-                    text-align: center; 
-                    margin: 30px 0; 
+                .image-container {{
+                    text-align: center;
+                    margin: 30px 0;
                     background-color: white;
                     padding: 20px;
                     border-radius: 8px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }}
-                .image-container img {{ 
-                    max-width: 100%; 
-                    height: auto; 
+                .image-container img {{
+                    max-width: 100%;
+                    height: auto;
                     border-radius: 4px;
                 }}
                 .section-title {{

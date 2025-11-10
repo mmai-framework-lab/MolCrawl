@@ -416,19 +416,19 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
 
         stats_text = f"""
         Model Performance Summary
-        
+
         Overall Accuracy: {self.results["accuracy"]:.3f}
-        
+
         Sensitivity (Recall): {self.results["sensitivity"]:.3f}
         Specificity: {self.results["specificity"]:.3f}
-        
+
         Positive Predictive Value: {self.results["precision"]:.3f}
-        
+
         F1-Score: {self.results["f1_score"]:.3f}
-        
+
         ROC-AUC: {self.results["roc_auc"]:.3f}
         PR-AUC: {self.results["pr_auc"]:.3f}
-        
+
         Total Variants Evaluated: {sum(cm.values())}
         """
 
@@ -475,7 +475,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
         # 実際の実装では、結果ファイルからDataFrameを読み込むか、
         # 評価時に保存されたDataFrameを使用する
         cm = self.results["confusion_matrix"]
-        
+
         # 仮想的な結果データを作成
         import numpy as np
 
@@ -552,29 +552,29 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
                     <div class="metric-label">PR-AUC</div>
                 </div>
             </div>
-            
+
             <h2 class="section-title">Summary Dashboard</h2>
             <div class="image-container">
                 <img src="summary_dashboard.png" alt="Summary Dashboard">
             </div>
-            
+
             <h2 class="section-title">Detailed Analysis</h2>
-            
+
             <h3>Confusion Matrix</h3>
             <div class="image-container">
                 <img src="confusion_matrix.png" alt="Confusion Matrix">
             </div>
-            
+
             <h3>Performance Metrics</h3>
             <div class="image-container">
                 <img src="performance_metrics.png" alt="Performance Metrics">
             </div>
-            
+
             <h3>Classification Report</h3>
             <div class="image-container">
                 <img src="classification_report.png" alt="Classification Report">
             </div>
-            
+
             <h3>Performance Radar Chart</h3>
             <div class="image-container">
                 <img src="performance_radar.png" alt="Performance Radar Chart">

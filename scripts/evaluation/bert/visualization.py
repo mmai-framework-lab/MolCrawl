@@ -428,7 +428,7 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
         • Architecture: {self.results.get("model_info", {}).get("num_layers", "N/A")} layers, {self.results.get("model_info", {}).get("hidden_size", "N/A")} hidden size
         • Parameters: {self.results.get("model_info", {}).get("total_parameters", "N/A")}
         • Max Sequence Length: {self.results.get("model_info", {}).get("max_sequence_length", "N/A")}
-        
+
         Evaluation Details:
         • Dataset: ProteinGym
         • Variants Evaluated: {self.results["n_variants"]}
@@ -464,22 +464,22 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
 
         performance_summary = f"""
         Performance Summary:
-        
+
         Correlation Strength: {corr_strength}
         • Spearman ρ = {self.results["spearman_correlation"]:.3f}
         • Pearson r = {self.results["pearson_correlation"]:.3f}
-        
+
         Statistical Significance:
         • Spearman p-value: {self.results["spearman_p_value"]:.3e}
         • Pearson p-value: {self.results["pearson_p_value"]:.3e}
-        
+
         Error Analysis:
         • Mean Absolute Error: {self.results["mae"]:.2f}
         • Root Mean Square Error: {self.results["rmse"]:.2f}
-        
+
         Interpretation:
-        The model shows {corr_strength.lower()} correlation with 
-        experimental fitness scores. This suggests 
+        The model shows {corr_strength.lower()} correlation with
+        experimental fitness scores. This suggests
         {"good" if corr_strength == "Strong" else "moderate" if corr_strength == "Moderate" else "limited"}
         predictive capability for protein fitness.
         """

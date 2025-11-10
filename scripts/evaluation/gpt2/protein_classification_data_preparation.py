@@ -171,10 +171,10 @@ def main():
 Examples:
   # サンプルデータ生成（100サンプル）
   python protein_classification_data_preparation.py --create_sample
-  
+
   # カスタムサンプル数でデータ生成
   python protein_classification_data_preparation.py --create_sample --num_samples 500
-  
+
   # 既存データの処理
   python protein_classification_data_preparation.py --input_csv data.csv --output_dir ./processed
 """,

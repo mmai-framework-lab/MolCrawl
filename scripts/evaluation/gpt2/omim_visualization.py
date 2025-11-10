@@ -668,7 +668,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
 <body>
     <div class="container">
         <h1>🧬 OMIM Hereditary Disease Prediction<br>Evaluation Report</h1>
-        
+
         <div class="summary-section">
             <h2 style="color: white; border-bottom: 3px solid white;">📊 Executive Summary</h2>
             <p>This report presents the evaluation results of genome sequence model performance on OMIM (Online Mendelian Inheritance in Man) hereditary disease prediction task. The model was evaluated on {self.results.get("total_samples", 0)} variants with {self.results.get("positive_samples", 0)} disease-causing and {self.results.get("negative_samples", 0)} benign variants.</p>
