@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from pathlib import Path
 import sys
-from src.experiment_tracker import (  # noqa: E402
+from src.experiment_tracker import (
     ExperimentTracker,
     ExperimentStatus,
     ExperimentType,

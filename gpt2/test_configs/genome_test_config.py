@@ -1,4 +1,5 @@
 # GENOMEドメイン用GPT2テスト設定
+import torch
 
 # 基本設定
 domain = "genome"

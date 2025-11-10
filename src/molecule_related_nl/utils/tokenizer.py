@@ -216,9 +216,6 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                     and only used when no real tokenizer can be loaded locally.
                     """
 
-                    # Create a minimal tokenizer wrapper
-
-                class MinimalTokenizer:
                     def __init__(self):
                         self.basic_tokenizer = BasicTokenizer()
                         self.vocab = {}
@@ -235,40 +232,6 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                         self.eos_token_id = 2  # Common EOS token ID
                         self.pad_token_id = 0  # Common PAD token ID
                         self.unk_token_id = 1  # Common UNK token ID
-
-                    def tokenize(self, text):
-                        return self.basic_tokenizer.tokenize(text)
-
-                    def encode(self, text, **kwargs):
-                        tokens = self.tokenize(text)
-                        return [
-                            hash(token) % 50000 for token in tokens
-                        ]  # Simple hash-based encoding
-
-                    def decode(self, token_ids, **kwargs):
-                        return " ".join([f"token_{tid}" for tid in token_ids])
-
-                    def get_vocab(self):
-                        return self.vocab
-
-                    def __call__(self, text, **kwargs):
-                        ids = self.encode(text)
-                        attention = [1] * len(ids)
-                        return {
-                            "input_ids": ids,
-                            "attention_mask": attention,
-                        }
-
-                    def __getattr__(self, name):
-                        if name in self.special_tokens:
-                            return self.special_tokens[name]
-                        elif name.endswith("_token"):
-                            return self.special_tokens.get(name, "<unk>")
-                        # fallback
-                        return getattr(self.basic_tokenizer, name, None)
-                        # numeric ids for special tokens (simple deterministic scheme)
-                        self.pad_token_id = 0
-                        self.eos_token_id = 1
 
                     def tokenize(self, text):
                         return self.basic_tokenizer.tokenize(text)

@@ -124,6 +124,9 @@ class RNADatasetForBERT:
         """Return the HuggingFace Dataset object"""
         return self.data
 
+model_size = None
+use_custom_rna_dataset = False
+tokenizer = None
 
 model_path = ""
 max_length = 1024
