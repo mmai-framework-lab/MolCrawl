@@ -33,8 +33,16 @@ from transformers.models.bert.modeling_bert import BertEncoder
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model, GPT2LMHeadModel
 from transformers.utils import ModelOutput
 
-from .legacy import GPNRoFormerConfig, RoFormerOnlyMLMHead
-
+from .legacy import (
+    ConvNetConfig,
+    ConvNetModel,
+    ConvNetForMaskedLM,
+    ConvNetForSequenceClassification,
+    GPNRoFormerConfig,
+    RoFormerOnlyMLMHead,
+    GPNRoFormerModel,
+    GPNRoFormerForMaskedLM
+)
 
 ENCODER_CLASS = {
     "bytenet": ByteNetEncoder,
@@ -643,21 +651,12 @@ AutoModelForMaskedLM.register(GPNConfig, GPNForMaskedLM)
 AutoModelForSequenceClassification.register(GPNConfig, GPNForSequenceClassification)
 AutoModelForTokenClassification.register(GPNConfig, GPNForTokenClassification)
 
-from .legacy import (  # noqa: E402
-    ConvNetConfig,
-    ConvNetModel,
-    ConvNetForMaskedLM,
-    ConvNetForSequenceClassification,
-)
-
 AutoConfig.register("ConvNet", ConvNetConfig)
 AutoModel.register(ConvNetConfig, ConvNetModel)
 AutoModelForMaskedLM.register(ConvNetConfig, ConvNetForMaskedLM)
 AutoModelForSequenceClassification.register(
     ConvNetConfig, ConvNetForSequenceClassification
 )
-
-from .legacy import GPNRoFormerConfig, GPNRoFormerModel, GPNRoFormerForMaskedLM  # noqa: E402
 
 AutoConfig.register("GPNRoFormer", GPNRoFormerConfig)
 AutoModel.register(GPNRoFormerConfig, GPNRoFormerModel)

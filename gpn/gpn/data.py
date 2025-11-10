@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 import pyBigWig
 from tqdm import tqdm
+import zarr
 
 tqdm.pandas()
-import zarr  # noqa: E402
 
 
 DEFINED_SYMBOLS = np.frombuffer("ACGTacgt".encode("ascii"), dtype="S1")

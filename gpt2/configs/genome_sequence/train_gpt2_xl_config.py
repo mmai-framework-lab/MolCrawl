@@ -4,6 +4,13 @@
 
 import sys
 import os
+import sentencepiece as spm
+from config.paths import (
+    get_refseq_tokenizer_path,
+    REFSEQ_DATASET_DIR,
+    get_gpt2_output_path,
+)
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
@@ -11,13 +18,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
 n_layer = 48
 n_head = 25
 n_embd = 1600
-
-import sentencepiece as spm  # noqa: E402
-from config.paths import (  # noqa: E402
-    get_refseq_tokenizer_path,
-    REFSEQ_DATASET_DIR,
-    get_gpt2_output_path,
-)
 
 tokenizer_path = get_refseq_tokenizer_path()
 

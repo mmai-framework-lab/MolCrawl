@@ -31,20 +31,19 @@ from transformers import BertForMaskedLM, BertConfig
 import sentencepiece as spm
 import logging
 from datetime import datetime
+from utils.evaluation_output import (
+    get_evaluation_output_dir,
+    get_model_type_from_path,
+    get_model_name_from_path,
+    setup_evaluation_logging,
+)
+from utils.model_evaluator import ModelEvaluator
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
-
-from utils.evaluation_output import (  # noqa: E402
-    get_evaluation_output_dir,
-    get_model_type_from_path,
-    get_model_name_from_path,
-    setup_evaluation_logging,
-)
-from utils.model_evaluator import ModelEvaluator  # noqa: E402
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)

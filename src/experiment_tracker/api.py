@@ -8,11 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from pathlib import Path
 import sys
-
-# プロジェクトルートをパスに追加
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 from src.experiment_tracker import (  # noqa: E402
     ExperimentTracker,
     ExperimentStatus,
@@ -20,6 +15,10 @@ from src.experiment_tracker import (  # noqa: E402
     ModelType,
     DatasetType,
 )
+
+# プロジェクトルートをパスに追加
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 app = FastAPI(
     title="MolCrawl Experiment Management API",

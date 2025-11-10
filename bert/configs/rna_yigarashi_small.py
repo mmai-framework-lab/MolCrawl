@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import torch
 
 # Add src to path
 current_dir = (
@@ -53,10 +54,6 @@ if rna_vocab_file:
 else:
     print("⚠️ No vocabulary file found, using default size")
     meta_vocab_size = 60666  # Default size based on previous RNA experiments
-
-# Import necessary components for custom data collator
-import torch  # noqa: E402
-
 
 # Create a simple tokenizer placeholder (BERT will use its own tokenizer)
 class SimpleTokenizer:

@@ -12,14 +12,13 @@ import argparse
 import pandas as pd
 import numpy as np
 import logging
+from utils.evaluation_output import get_learning_source_dir
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
-
-from utils.evaluation_output import get_learning_source_dir  # noqa: E402
 
 # ロギング設定
 logging.basicConfig(

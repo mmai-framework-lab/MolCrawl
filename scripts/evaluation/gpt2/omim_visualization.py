@@ -28,13 +28,12 @@ from pathlib import Path
 from typing import Dict, Optional
 from sklearn.metrics import roc_curve, precision_recall_curve, confusion_matrix
 import warnings
+from utils.base_visualization import BaseVisualizationGenerator
 
 warnings.filterwarnings("ignore")
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
-
-from utils.base_visualization import BaseVisualizationGenerator  # noqa: E402
 
 # 日本語フォント設定
 plt.rcParams["font.family"] = [
