@@ -92,7 +92,7 @@ const fetchFullDirectoryTree = async (maxDepth = 5, includeFiles = true) => {
 
 // ファイルサイズのフォーマット
 const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -103,7 +103,7 @@ const formatFileSize = (bytes) => {
 const DirectoryTree = ({ data, expandedDirs, onToggle, level = 0 }) => {
   const indent = level * 20;
 
-  if (!data) return null;
+  if (!data) {return null;}
 
   const renderItem = (item, index) => {
     const isExpanded = expandedDirs.has(item.path);
@@ -210,7 +210,7 @@ function App() {
   // 初期データの読み込み（特定のタブ用）
   const loadInitialData = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) return;
+    if (!tabInfo) {return;}
 
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
@@ -228,7 +228,7 @@ function App() {
   // 完全なツリーの読み込み（特定のタブ用）
   const loadFullTree = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) return;
+    if (!tabInfo) {return;}
 
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
@@ -248,7 +248,7 @@ function App() {
 
   // データをパスでフィルタリングするヘルパー関数
   const filterDataByPath = (data, targetPath) => {
-    if (!data || !targetPath) return data;
+    if (!data || !targetPath) {return data;}
     // 実装は後で詳細化
     return data;
   };
@@ -281,6 +281,7 @@ function App() {
   useEffect(() => {
     // 初期タブのデータを読み込み
     loadInitialData(activeTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 

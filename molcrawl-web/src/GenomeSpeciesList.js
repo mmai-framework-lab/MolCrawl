@@ -39,7 +39,6 @@ const GenomeSpeciesList = () => {
         throw new Error(result.error || 'Failed to fetch species data');
       }
       
-      console.log('Fetched species data:', result.data);
       setSpeciesData(result.data);
     } catch (err) {
       console.error('Error fetching species data:', err);
@@ -50,7 +49,7 @@ const GenomeSpeciesList = () => {
   };
 
   const getFilteredSpecies = () => {
-    if (!speciesData) return [];
+    if (!speciesData) {return [];}
 
     let allSpecies = [];
     
@@ -88,7 +87,7 @@ const GenomeSpeciesList = () => {
   };
 
   const renderHierarchicalStats = () => {
-    if (!speciesData?.statistics) return null;
+    if (!speciesData?.statistics) {return null;}
 
     const summary = speciesData.statistics.summary;
     const byCategory = speciesData.statistics.byCategory;
@@ -270,9 +269,9 @@ const GenomeSpeciesList = () => {
 
     return (
       <div className="species-grid">
-        {filteredSpecies.map((species, index) => (
+        {filteredSpecies.map((species) => (
           <div 
-            key={`${species.category}-${index}`} 
+            key={`${species.category}-${species.name}`} 
             className={`species-item ${species.isFiltered ? 'filtered' : 'unfiltered'}`}
           >
             <div className="species-name">{species.name}</div>

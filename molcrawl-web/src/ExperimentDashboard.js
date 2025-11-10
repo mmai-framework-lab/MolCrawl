@@ -22,21 +22,15 @@ function ExperimentDashboard() {
       setLoading(true);
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (value) {params.append(key, value);}
       });
 
       const url = `${API_BASE_URL}/experiments?${params}`;
-      console.log('Fetching experiments from:', url);
       const response = await fetch(url);
-      console.log('Response status:', response.status);
-      if (!response.ok) throw new Error('Failed to fetch experiments');
+      if (!response.ok) {throw new Error('Failed to fetch experiments');}
       
       const data = await response.json();
-      console.log('Experiments data:', data);
-      console.log('Number of experiments:', data.experiments?.length || 0);
-      console.log('Setting experiments state to:', data.experiments);
       setExperiments(data.experiments || []);
-      console.log('Experiments state updated');
       setError(null);
     } catch (err) {
       console.error('Error fetching experiments:', err);
@@ -49,12 +43,10 @@ function ExperimentDashboard() {
   // 統計情報を取得
   const fetchStatistics = async () => {
     try {
-      console.log('Fetching statistics from:', `${API_BASE_URL}/statistics`);
       const response = await fetch(`${API_BASE_URL}/statistics`);
-      if (!response.ok) throw new Error('Failed to fetch statistics');
+      if (!response.ok) {throw new Error('Failed to fetch statistics');}
       
       const data = await response.json();
-      console.log('Statistics data:', data);
       setStatistics(data);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
@@ -65,7 +57,7 @@ function ExperimentDashboard() {
   const fetchExperimentDetail = async (experimentId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`);
-      if (!response.ok) throw new Error('Failed to fetch experiment detail');
+      if (!response.ok) {throw new Error('Failed to fetch experiment detail');}
       
       const data = await response.json();
       setSelectedExperiment(data);
@@ -85,6 +77,7 @@ function ExperimentDashboard() {
     }, 10000);
     
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const handleFilterChange = (key, value) => {
@@ -92,7 +85,7 @@ function ExperimentDashboard() {
   };
 
   const formatDuration = (seconds) => {
-    if (!seconds) return 'N/A';
+    if (!seconds) {return 'N/A';}
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
@@ -100,7 +93,7 @@ function ExperimentDashboard() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) {return 'N/A';}
     return new Date(dateString).toLocaleString('ja-JP');
   };
 
@@ -115,14 +108,6 @@ function ExperimentDashboard() {
     };
     return statusMap[status] || 'status-default';
   };
-
-  // レンダリング時のデバッグログ
-  console.log('Rendering ExperimentDashboard with:', {
-    experimentsCount: experiments.length,
-    loading,
-    error,
-    experimentsData: experiments
-  });
 
   return (
     <div className="experiment-dashboard">
@@ -291,8 +276,9 @@ function ExperimentDashboard() {
               <div className="detail-section">
                 <h3>実行ステップ ({selectedExperiment.steps.length})</h3>
                 <div className="steps-list">
-                  {selectedExperiment.steps.map((step, idx) => (
-                    <div key={idx} className="step-item">
+                  {selectedExperiment.steps?.map((step, idx) => (
+                    // eslint-disable-next-line react/no-array-index-key
+                    <div key={`${selectedExperiment.id}-step-${idx}`} className="step-item">
                       <div className="step-header">
                         <span className="step-number">{idx + 1}</span>
                         <span className="step-name">{step.step_name}</span>
@@ -335,7 +321,7 @@ function ExperimentDashboard() {
                 <h3>最新ログ (最新20件)</h3>
                 <div className="logs-list">
                   {selectedExperiment.logs.slice(-20).reverse().map((log, idx) => (
-                    <div key={idx} className={`log-item log-${log.level.toLowerCase()}`}>
+                    <div key={`${selectedExperiment.id}-log-${log.timestamp || idx}`} className={`log-item log-${log.level.toLowerCase()}`}>
                       <span className="log-time">{formatDate(log.timestamp)}</span>
                       <span className="log-level">{log.level}</span>
                       <span className="log-message">{log.message}</span>

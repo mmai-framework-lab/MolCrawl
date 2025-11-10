@@ -9,7 +9,7 @@ const ZincChecker = () => {
   const [error, setError] = useState(null);
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -73,8 +73,8 @@ const ZincChecker = () => {
   };
 
   const getStatusColor = (rate) => {
-    if (rate >= 95) return '#28a745'; // green
-    if (rate >= 80) return '#ffc107'; // yellow
+    if (rate >= 95) {return '#28a745';} // green
+    if (rate >= 80) {return '#ffc107';} // yellow
     return '#dc3545'; // red
   };
 
@@ -172,8 +172,8 @@ const ZincChecker = () => {
                 <div className="zinc-missing">
                   <h4>⚠️ 不足ファイル ({checkResult.missing.length}個)</h4>
                   <div className="missing-files">
-                    {checkResult.missing.slice(0, 20).map((file, index) => (
-                      <code key={index} className="missing-file">{file}</code>
+                    {checkResult.missing.slice(0, 20).map((file) => (
+                      <code key={file} className="missing-file">{file}</code>
                     ))}
                     {checkResult.missing.length > 20 && (
                       <p>...他 {checkResult.missing.length - 20} ファイル</p>
@@ -225,7 +225,7 @@ const ZincChecker = () => {
                   <h4>📈 データ件数上位ファイル (Top 10)</h4>
                   <div className="file-list">
                     {dataCountResult.largestFiles.map((file, index) => (
-                      <div key={index} className="file-item">
+                      <div key={file.path} className="file-item">
                         <span className="file-rank">#{index + 1}</span>
                         <span className="file-name">{file.path}</span>
                         <span className="file-count">{formatNumber(file.dataCount)} 件</span>
@@ -240,8 +240,8 @@ const ZincChecker = () => {
                 <div className="processing-errors">
                   <h4>⚠️ 処理エラー ({dataCountResult.processingErrors.length}個)</h4>
                   <div className="error-files">
-                    {dataCountResult.processingErrors.slice(0, 10).map((error, index) => (
-                      <div key={index} className="error-item">
+                    {dataCountResult.processingErrors.slice(0, 10).map((error) => (
+                      <div key={error.file} className="error-item">
                         <code>{error.file}</code>
                         <span className="error-message">{error.error}</span>
                       </div>
