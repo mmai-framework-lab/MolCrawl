@@ -10,6 +10,9 @@ __pycache__
 *.pyo
 
 !package.json
+!package-lock.json
+!.eslintrc.json
+!.prettierrc.json
 !molcrawl-web/frontend/public/manifest.json
 
 wandb

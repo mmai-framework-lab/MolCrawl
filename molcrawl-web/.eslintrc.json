@@ -1,0 +1,33 @@
+{
+  "extends": [
+    "react-app",
+    "react-app/jest"
+  ],
+  "rules": {
+    "no-unused-vars": ["warn", { 
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "no-console": ["warn", { 
+      "allow": ["warn", "error"] 
+    }],
+    "eqeqeq": ["error", "always"],
+    "curly": ["error", "all"],
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-arrow-callback": "warn",
+    "no-duplicate-imports": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/no-array-index-key": "warn",
+    "react/no-danger": "warn",
+    "react/prop-types": "off"
+  },
+  "overrides": [
+    {
+      "files": ["*.test.js", "*.test.jsx"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}
