@@ -3,9 +3,9 @@ from core.config import Config
 
 from config.paths import GENOME_SEQUENCE_DIR
 
+
 @dataclass
 class RefSeqPreparationConfig:
-
     # Output directory where the preparation will be made
     output_dir: str = GENOME_SEQUENCE_DIR
     # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
@@ -28,7 +28,6 @@ class RefSeqPreparationConfig:
 
 @dataclass
 class GenomeSequenceConfig(Config):
-
     data_preparation: RefSeqPreparationConfig = field(default_factory=dict)
 
     def __post_init__(self):

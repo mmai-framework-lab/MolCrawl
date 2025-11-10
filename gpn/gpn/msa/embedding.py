@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from transformers import AutoModel
 
-import gpn.model
 
 
 class ModelCenterEmbedding(torch.nn.Module):

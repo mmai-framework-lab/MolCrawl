@@ -4,7 +4,8 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from config.paths import COMPOUNDS_DATASET_DIR

@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from transformers import AutoModelForMaskedLM
 
-import gpn.model
 from gpn.data import Tokenizer
 
 

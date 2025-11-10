@@ -72,7 +72,9 @@ def canonicalize(smiles, isomeric=False, canonical=True, kekulize=False):
             catchErrors=True,
         )
 
-    AssignStereochemistry(new_mol, cleanIt=False, force=True, flagPossibleStereoCenters=True)
+    AssignStereochemistry(
+        new_mol, cleanIt=False, force=True, flagPossibleStereoCenters=True
+    )
 
     new_smiles = Chem.MolToSmiles(new_mol, isomericSmiles=isomeric, canonical=canonical)
     return new_smiles
@@ -102,11 +104,17 @@ def canonicalize_molecule_smiles(
                     return None
                 for atom in mol.GetAtoms():
                     atom.SetAtomMapNum(0)
-                thing_smiles = Chem.MolToSmiles(mol, kekuleSmiles=False, isomericSmiles=isomeric)
+                thing_smiles = Chem.MolToSmiles(
+                    mol, kekuleSmiles=False, isomericSmiles=isomeric
+                )
                 thing_smiles = Chem.MolFromSmiles(thing_smiles)
-                thing_smiles = Chem.MolToSmiles(thing_smiles, kekuleSmiles=False, isomericSmiles=isomeric)
+                thing_smiles = Chem.MolToSmiles(
+                    thing_smiles, kekuleSmiles=False, isomericSmiles=isomeric
+                )
                 thing_smiles = Chem.MolFromSmiles(thing_smiles)
-                thing_smiles = Chem.MolToSmiles(thing_smiles, kekuleSmiles=False, isomericSmiles=isomeric)
+                thing_smiles = Chem.MolToSmiles(
+                    thing_smiles, kekuleSmiles=False, isomericSmiles=isomeric
+                )
                 assert thing_smiles is not None
                 can_in = thing_smiles
                 can_out = canonicalize(thing_smiles, isomeric=isomeric)
@@ -114,8 +122,13 @@ def canonicalize_molecule_smiles(
                 thing_smiles = can_out
                 if kekulization:
                     thing_smiles = keku_mid = Chem.MolFromSmiles(thing_smiles)
-                    assert keku_mid is not None, "Before can: %s\nAfter can: %s" % (can_in, can_out)
-                    thing_smiles = Chem.MolToSmiles(thing_smiles, kekuleSmiles=True, isomericSmiles=isomeric)
+                    assert keku_mid is not None, "Before can: %s\nAfter can: %s" % (
+                        can_in,
+                        can_out,
+                    )
+                    thing_smiles = Chem.MolToSmiles(
+                        thing_smiles, kekuleSmiles=True, isomericSmiles=isomeric
+                    )
             except KeyboardInterrupt:
                 raise
             except Exception:
@@ -162,13 +175,12 @@ def get_chat_content(conversation, tokenize=False):
 
 
 class GeneralPrompter(object):
-
     def __init__(self, apply_chat_template_func, response_split="[/INST]"):
         self.apply_chat_template_func = apply_chat_template_func
         self.response_split = response_split
 
     def generate_prompt(self, chat, tokenize=False, *args, **kargs) -> str:
-        res = self.apply_chat_template_func(chat, tokenize=tokenize, *args, **kargs)
+        res = self.apply_chat_template_func(chat, *args, tokenize=tokenize, **kargs)
         return res
 
     def get_response(self, output: str) -> str:
@@ -176,7 +188,6 @@ class GeneralPrompter(object):
 
 
 class MoleculeNatLangTokenizer(TrainableTokenizer):
-
     def __init__(
         self,
     ):
@@ -184,75 +195,43 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
         try:
             # Try loading with local files first
             self.tokenizer = AutoTokenizer.from_pretrained(
-                "codellama/CodeLlama-7b-hf", 
-                local_files_only=True
+                "codellama/CodeLlama-7b-hf", local_files_only=True
             )
         except Exception as e:
             print(f"Warning: Failed to load CodeLlama tokenizer locally: {e}")
             try:
                 print("Trying GPT-2 tokenizer with local files only...")
-                self.tokenizer = AutoTokenizer.from_pretrained("gpt2", local_files_only=True)
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    "gpt2", local_files_only=True
+                )
             except Exception as e2:
                 print(f"Warning: Failed to load GPT-2 tokenizer locally: {e2}")
                 print("Creating a basic tokenizer using transformers BasicTokenizer...")
                 from transformers import BasicTokenizer
-                
+
                 # Create a minimal tokenizer wrapper
                 class MinimalTokenizer:
                     """A tiny fallback tokenizer that provides the minimal interface
                     expected by the processing pipeline. It is intentionally simple
                     and only used when no real tokenizer can be loaded locally.
                     """
-                    # Create a minimal tokenizer wrapper
-                class MinimalTokenizer:
+
                     def __init__(self):
                         self.basic_tokenizer = BasicTokenizer()
                         self.vocab = {}
                         self.special_tokens = {
-                            'pad_token': '<pad>',
-                            'eos_token': '<eos>',
-                            'unk_token': '<unk>',
-                            'sep_token': '<unk>',
-                            'cls_token': '<unk>',
-                            'mask_token': '<unk>'
+                            "pad_token": "<pad>",
+                            "eos_token": "<eos>",
+                            "unk_token": "<unk>",
+                            "sep_token": "<unk>",
+                            "cls_token": "<unk>",
+                            "mask_token": "<unk>",
                         }
                         self.padding_side = "left"
                         # Add token IDs for special tokens
                         self.eos_token_id = 2  # Common EOS token ID
                         self.pad_token_id = 0  # Common PAD token ID
                         self.unk_token_id = 1  # Common UNK token ID
-                        
-                    def tokenize(self, text):
-                        return self.basic_tokenizer.tokenize(text)
-                    
-                    def encode(self, text, **kwargs):
-                        tokens = self.tokenize(text)
-                        return [hash(token) % 50000 for token in tokens]  # Simple hash-based encoding
-                    
-                    def decode(self, token_ids, **kwargs):
-                        return " ".join([f"token_{tid}" for tid in token_ids])
-                    
-                    def get_vocab(self):
-                        return self.vocab
-                    
-                    def __call__(self, text, **kwargs):
-                        ids = self.encode(text)
-                        attention = [1] * len(ids)
-                        return {
-                            "input_ids": ids,
-                            "attention_mask": attention,
-                        }
-
-                    def __getattr__(self, name):
-                        if name in self.special_tokens:
-                            return self.special_tokens[name]
-                        elif name.endswith('_token'):
-                            return self.special_tokens.get(name, '<unk>')
-                        # fallback
-                        return getattr(self.basic_tokenizer, name, None)
-                        # numeric ids for special tokens (simple deterministic scheme)
-                        self.pad_token_id = 0
-                        self.eos_token_id = 1
 
                     def tokenize(self, text):
                         return self.basic_tokenizer.tokenize(text)
@@ -269,7 +248,14 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                     def get_vocab(self):
                         return self.vocab
 
-                    def __call__(self, text, truncation=False, padding=False, return_tensors=None, add_special_tokens=False):
+                    def __call__(
+                        self,
+                        text,
+                        truncation=False,
+                        padding=False,
+                        return_tensors=None,
+                        add_special_tokens=False,
+                    ):
                         """Mimic the tokenizer(...) call used in the code.
                         Returns a dict with 'input_ids' and 'attention_mask'.
                         """
@@ -291,40 +277,46 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                     def __getattr__(self, name):
                         if name in self.special_tokens:
                             return self.special_tokens[name]
-                        elif name.endswith('_token'):
-                            return self.special_tokens.get(name, '<unk>')
+                        elif name.endswith("_token"):
+                            return self.special_tokens.get(name, "<unk>")
                         # fallback
                         return getattr(self.basic_tokenizer, name, None)
-                
+
                 self.tokenizer = MinimalTokenizer()
-            
+
         # Set padding side
-        if hasattr(self.tokenizer, 'padding_side'):
+        if hasattr(self.tokenizer, "padding_side"):
             self.tokenizer.padding_side = "left"
-        
+
         # Set special tokens with fallback for real tokenizers
-        if hasattr(self.tokenizer, 'pad_token') and hasattr(self.tokenizer, 'eos_token'):
+        if hasattr(self.tokenizer, "pad_token") and hasattr(
+            self.tokenizer, "eos_token"
+        ):
             if self.tokenizer.pad_token is None:
-                self.tokenizer.pad_token = getattr(self.tokenizer, 'eos_token', '<eos>')
-            
+                self.tokenizer.pad_token = getattr(self.tokenizer, "eos_token", "<eos>")
+
             # Add custom special tokens if possible
-            if hasattr(self.tokenizer, 'add_special_tokens') and hasattr(self.tokenizer, 'get_vocab'):
+            if hasattr(self.tokenizer, "add_special_tokens") and hasattr(
+                self.tokenizer, "get_vocab"
+            ):
                 special_tokens = ["<pad>", "<unk>"]
                 vocab = self.tokenizer.get_vocab()
                 new_tokens = [token for token in special_tokens if token not in vocab]
                 if new_tokens:
                     try:
-                        self.tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
-                    except:
+                        self.tokenizer.add_special_tokens(
+                            {"additional_special_tokens": new_tokens}
+                        )
+                    except (ValueError, AttributeError):
                         pass  # Ignore if we can't add special tokens
-                        
+
             # Set other special tokens
-            if hasattr(self.tokenizer, 'get_vocab'):
+            if hasattr(self.tokenizer, "get_vocab"):
                 vocab = self.tokenizer.get_vocab()
-                eos_token = getattr(self.tokenizer, 'eos_token', '<eos>')
-                
+                eos_token = getattr(self.tokenizer, "eos_token", "<eos>")
+
                 self.tokenizer.sep_token = "<unk>" if "<unk>" in vocab else eos_token
-                self.tokenizer.cls_token = "<unk>" if "<unk>" in vocab else eos_token  
+                self.tokenizer.cls_token = "<unk>" if "<unk>" in vocab else eos_token
                 self.tokenizer.mask_token = "<unk>" if "<unk>" in vocab else eos_token
 
         self.prompter = GeneralPrompter(get_chat_content)
@@ -335,7 +327,9 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
         """
         if hasattr(self.tokenizer, name):
             return getattr(self.tokenizer, name)
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
 
     def _tokenize(self, text: str, add_eos_token: bool = True):
         # there's probably a way to do this with the tokenizer settings
@@ -346,22 +340,29 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
             return_tensors=None,
             add_special_tokens=False,
         )
-        
+
         # Handle case where input_ids might be empty or None
         if "input_ids" not in result or result["input_ids"] is None:
             result["input_ids"] = []
         if "attention_mask" not in result or result["attention_mask"] is None:
             result["attention_mask"] = []
-            
+
         # Ensure input_ids and attention_mask are lists
         if not isinstance(result["input_ids"], list):
             result["input_ids"] = list(result["input_ids"])
         if not isinstance(result["attention_mask"], list):
             result["attention_mask"] = list(result["attention_mask"])
-        
+
         # Add EOS token if needed and if tokenizer has eos_token_id
-        if add_eos_token and hasattr(self.tokenizer, 'eos_token_id') and self.tokenizer.eos_token_id is not None:
-            if len(result["input_ids"]) == 0 or result["input_ids"][-1] != self.tokenizer.eos_token_id:
+        if (
+            add_eos_token
+            and hasattr(self.tokenizer, "eos_token_id")
+            and self.tokenizer.eos_token_id is not None
+        ):
+            if (
+                len(result["input_ids"]) == 0
+                or result["input_ids"][-1] != self.tokenizer.eos_token_id
+            ):
                 result["input_ids"].append(self.tokenizer.eos_token_id)
                 result["attention_mask"].append(1)
 
@@ -369,7 +370,9 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
 
         return result
 
-    def tokenize_dict(self, text: str, canonicalize_smiles: bool = True, max_input_tokens: bool = None):
+    def tokenize_dict(
+        self, text: str, canonicalize_smiles: bool = True, max_input_tokens: bool = None
+    ):
         tokenized_output = self.tokenizer(
             text["output"],
             truncation=False,
@@ -377,22 +380,31 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
             return_tensors=None,
             add_special_tokens=False,
         )["input_ids"]
-        
+
         # Ensure tokenized_output is a list
         if not isinstance(tokenized_output, list):
             tokenized_output = list(tokenized_output)
-            
+
         # Add EOS token if available
-        if hasattr(self.tokenizer, 'eos_token_id') and self.tokenizer.eos_token_id is not None:
+        if (
+            hasattr(self.tokenizer, "eos_token_id")
+            and self.tokenizer.eos_token_id is not None
+        ):
             tokenized_output.append(self.tokenizer.eos_token_id)
 
-        sample = self.tokenize_text(text["input"], canonicalize_smiles=canonicalize_smiles, max_input_tokens=max_input_tokens)
+        sample = self.tokenize_text(
+            text["input"],
+            canonicalize_smiles=canonicalize_smiles,
+            max_input_tokens=max_input_tokens,
+        )
 
         sample["output_ids"] = tokenized_output
 
         return sample
 
-    def tokenize_text(self, text, canonicalize_smiles: bool = True, max_input_tokens: bool = None):
+    def tokenize_text(
+        self, text, canonicalize_smiles: bool = True, max_input_tokens: bool = None
+    ):
         if canonicalize_smiles:
             real_text = self.canonicalize_smiles_in_text(text)
         else:
@@ -404,9 +416,12 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
         sample["real_input_text"] = full_prompt
         tokenized_full_prompt = self._tokenize(full_prompt, add_eos_token=False)
         sample.update(tokenized_full_prompt)
-        
+
         # Always include input_too_long field for consistency
-        if max_input_tokens is not None and len(tokenized_full_prompt["input_ids"]) > max_input_tokens:
+        if (
+            max_input_tokens is not None
+            and len(tokenized_full_prompt["input_ids"]) > max_input_tokens
+        ):
             sample["input_too_long"] = True
         else:
             sample["input_too_long"] = False
@@ -415,7 +430,10 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
 
     @staticmethod
     def canonicalize_smiles_in_text(
-        text, tags=("<SMILES>", "</SMILES>"), keep_text_unchanged_if_no_tags=True, keep_text_unchanged_if_error=False
+        text,
+        tags=("<SMILES>", "</SMILES>"),
+        keep_text_unchanged_if_no_tags=True,
+        keep_text_unchanged_if_error=False,
     ):
         try:
             left_tag, right_tag = tags
@@ -425,18 +443,24 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
             left_tag_pos = text.find(left_tag)
             right_tag_pos = None
             if left_tag_pos == -1:
-                assert right_tag not in text, 'The input text "%s" only contains the right tag "%s" but no left tag"%s"' % (
-                    text,
-                    right_tag,
-                    left_tag,
+                assert right_tag not in text, (
+                    'The input text "%s" only contains the right tag "%s" but no left tag"%s"'
+                    % (
+                        text,
+                        right_tag,
+                        left_tag,
+                    )
                 )
                 return text
             else:
                 right_tag_pos = text.find(right_tag)
-                assert right_tag_pos is not None, 'The input text "%s" only contains the left tag "%s" but no right tag"%s"' % (
-                    text,
-                    left_tag,
-                    right_tag,
+                assert right_tag_pos is not None, (
+                    'The input text "%s" only contains the left tag "%s" but no right tag"%s"'
+                    % (
+                        text,
+                        left_tag,
+                        right_tag,
+                    )
                 )
         except AssertionError:
             if keep_text_unchanged_if_no_tags:

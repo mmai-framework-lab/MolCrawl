@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from transformers import AutoModelForMaskedLM
 
-import gpn.model
 from gpn.data import Tokenizer, ReverseComplementer
 
 
@@ -83,9 +82,9 @@ class VEPInference(object):
         def prepare_output(msa, pos, ref, alt):
             ref, alt = self.tokenizer(ref.flatten()), self.tokenizer(alt.flatten())
             input_ids, aux_features = msa[:, :, 0], msa[:, :, 1:]
-            assert (
-                input_ids[:, pos] == ref
-            ).all(), f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
+            assert (input_ids[:, pos] == ref).all(), (
+                f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
+            )
             input_ids[:, pos] = self.tokenizer.mask_token_id()
             input_ids = input_ids.astype(np.int64)
             pos = np.full(len(input_ids), pos)

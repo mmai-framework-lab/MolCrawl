@@ -1,11 +1,12 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import PreTrainedTokenizerFast, AutoTokenizer
-from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path
+from config.paths import REFSEQ_DATASET_DIR
 import sentencepiece as spm
 
 # ClinVar評価用BERT設定

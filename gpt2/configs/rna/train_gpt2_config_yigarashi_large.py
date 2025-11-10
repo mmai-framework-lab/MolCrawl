@@ -2,12 +2,17 @@ import sys
 import os
 
 # Add src to path
-current_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
-src_path = os.path.join(current_dir, '..', '..', '..', 'src')
+current_dir = (
+    os.path.dirname(os.path.abspath(__file__))
+    if "__file__" in globals()
+    else os.getcwd()
+)
+src_path = os.path.join(current_dir, "..", "..", "..", "src")
 sys.path.append(src_path)
 
 try:
     from config.paths import get_gpt2_output_path
+
     tensorboard_dir = get_gpt2_output_path("rna", "yigarashi-2025-10-08-large")
     out_dir = get_gpt2_output_path("rna", "yigarashi-2025-10-08-large")
 except ImportError:

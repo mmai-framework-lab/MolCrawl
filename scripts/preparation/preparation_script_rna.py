@@ -24,7 +24,7 @@ from datasets import load_dataset
 from datasets.utils.logging import enable_progress_bar
 
 # プロジェクトルートのsrcディレクトリをパスに追加
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from rna.dataset.cellxgene.script.build_list import build_list
 from rna.dataset.cellxgene.script.download import download
@@ -58,12 +58,11 @@ def create_enhanced_gene_list(vocab, data, out_dir):
 
     # 各遺伝子の出現頻度を計算
     n = 0
-    done = False
     gene_counts = {}
     for info in data:
         for token_id in info["token"]:
             n += 1
-            if(n % 1_0000_0000 == 0):
+            if n % 1_0000_0000 == 0:
                 logger.info(f"{datetime.datetime.now()} Processed {n} items...")
             if token_id in gene_counts:
                 gene_counts[token_id] += 1
@@ -128,8 +127,10 @@ if __name__ == "__main__":
     else:
         logger.info("⏳ Step 3/5: H5AD to Loom conversion - PENDING")
 
-    if tokenize_marker.exists() and parquet_dir.exists() and any(
-        parquet_dir.glob("*.parquet")
+    if (
+        tokenize_marker.exists()
+        and parquet_dir.exists()
+        and any(parquet_dir.glob("*.parquet"))
     ):
         logger.info("✓ Step 4/5: Tokenization - COMPLETED")
         steps_completed += 1
@@ -179,7 +180,9 @@ if __name__ == "__main__":
 
     # 3. H5AD to Loom conversion
     if not args.force and h5ad_to_loom_marker.exists():
-        logger.info("H5AD to Loom conversion already completed. Skipping conversion step.")
+        logger.info(
+            "H5AD to Loom conversion already completed. Skipping conversion step."
+        )
     else:
         if args.force:
             logger.info("Force option specified. Reconverting H5AD to Loom...")
@@ -189,8 +192,11 @@ if __name__ == "__main__":
         logger.info("H5AD to Loom conversion completed.")
 
     # 4. Tokenization
-    if not args.force and tokenize_marker.exists() and parquet_dir.exists() and any(
-        parquet_dir.glob("*.parquet")
+    if (
+        not args.force
+        and tokenize_marker.exists()
+        and parquet_dir.exists()
+        and any(parquet_dir.glob("*.parquet"))
     ):
         logger.info("Tokenization already completed. Skipping tokenization step.")
     else:
@@ -223,7 +229,7 @@ if __name__ == "__main__":
             split="train",
             cache_dir=str(Path(RNA_DATASET_DIR) / "hf_cache"),
         )
-        
+
         logger.info(f"Number of sequence: {len(data)}")
 
         vocab_file = Path(RNA_DATASET_DIR) / "gene_vocab.json"
@@ -269,5 +275,7 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error(f"Failed to load or process final dataset: {e}")
-        logger.error("Some processing steps may have failed. Please check logs and consider using --force option.")
+        logger.error(
+            "Some processing steps may have failed. Please check logs and consider using --force option."
+        )
         exit(1)

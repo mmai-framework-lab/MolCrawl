@@ -27,14 +27,12 @@ import numpy as np
 import os
 import sys
 from dataclasses import dataclass, field
-from itertools import chain
 import torch
-from typing import Any, Callable, Dict, List, NewType, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import datasets
-from datasets import load_dataset, DatasetDict, concatenate_datasets, disable_caching
+from datasets import load_dataset, disable_caching
 
-import gpn.model
 
 # import evaluate
 import transformers
@@ -52,15 +50,10 @@ from transformers import (
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import check_min_version, send_example_telemetry
+from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
 
-from Bio.Seq import Seq
 from gpn.data import GenomeMSA, Tokenizer
-import numpy as np
-import pandas as pd
-from scipy.stats import geom
-from torch.utils.data import DataLoader, IterableDataset, get_worker_info
 
 
 from numpy.lib.stride_tricks import sliding_window_view
@@ -88,7 +81,9 @@ def max_smooth(arr, window_size):
     return np.max(windowed_arr, axis=-1).reshape(arr.shape)
 
 
-class DataCollatorForMSACausalLanguageModelingSimplified(DataCollatorForLanguageModeling):
+class DataCollatorForMSACausalLanguageModelingSimplified(
+    DataCollatorForLanguageModeling
+):
     # gbenegas: Simplified to skip padding since we'll assume all sequences have the same length
     def torch_call(
         self, examples: List[Union[List[int], Any, Dict[str, Any]]]
@@ -100,7 +95,7 @@ class DataCollatorForMSACausalLanguageModelingSimplified(DataCollatorForLanguage
             for key in examples[0].keys()
         }
 
-        flip_p = batch.pop("flip_p", None)
+        batch.pop("flip_p", None)  # Remove but don't use
 
         labels = batch["input_ids"].clone()
         if self.tokenizer.pad_token_id is not None:
@@ -108,6 +103,7 @@ class DataCollatorForMSACausalLanguageModelingSimplified(DataCollatorForLanguage
         batch["labels"] = labels
 
         return batch
+
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 # check_min_version("4.26.0.dev0")
@@ -335,7 +331,9 @@ def main():
         )
     else:
         logger.info("Training new model from scratch")
-        model = AutoModelForPreTraining.from_config(config)  # Add the other type of automodel
+        model = AutoModelForPreTraining.from_config(
+            config
+        )  # Add the other type of automodel
 
     genome_msa = GenomeMSA(data_args.msa_path, in_memory=False)
 
@@ -440,9 +438,9 @@ def main():
         kwargs["dataset_tags"] = data_args.dataset_name
         if data_args.dataset_config_name is not None:
             kwargs["dataset_args"] = data_args.dataset_config_name
-            kwargs[
-                "dataset"
-            ] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
+            kwargs["dataset"] = (
+                f"{data_args.dataset_name} {data_args.dataset_config_name}"
+            )
         else:
             kwargs["dataset"] = data_args.dataset_name
 

@@ -15,4 +15,6 @@ def download(output_dir: str, url: str, name: str):
     with open(dataset_filename, "wb") as f:
         f.write(downloaded_data)
 
-    logger.info(msg=f"Combined dataframe saved to '{dataset_filename}' as Parquet file.")
+    logger.info(
+        msg=f"Combined dataframe saved to '{dataset_filename}' as Parquet file."
+    )

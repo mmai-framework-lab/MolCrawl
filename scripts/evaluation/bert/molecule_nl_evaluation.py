@@ -21,29 +21,26 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from collections import defaultdict
-from transformers import BertForMaskedLM, BertConfig, AutoTokenizer
+from transformers import BertForMaskedLM, BertConfig
 from datasets import load_from_disk
 import logging
 from datetime import datetime
 import math
-import warnings
 
 # プロジェクトルートを追加
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
 
-from utils.evaluation_output import (
-    get_evaluation_output_dir,
-    get_model_type_from_path,
-    get_model_name_from_path,
+from utils.evaluation_output import (  # noqa: E402
     setup_evaluation_logging,
 )
-from utils.model_evaluator import ModelEvaluator
+from utils.model_evaluator import ModelEvaluator  # noqa: E402
 
 # Molecule NL tokenizer
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
-from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer  # noqa: E402
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
@@ -73,10 +70,10 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
         # トークナイザーを初期化
         self.tokenizer = self._init_tokenizer()
-        
+
         # 語彙サイズを設定（モデル読み込み前に必要）
         self.vocab_size = getattr(self.tokenizer, "vocab_size", 32024)
-        
+
         # モデルを初期化
         self.model = self._init_model()
 
@@ -88,7 +85,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
     def _init_tokenizer(self):
         """トークナイザーの初期化（抽象メソッドの実装）"""
-        logger.info(f"Loading MoleculeNatLangTokenizer")
+        logger.info("Loading MoleculeNatLangTokenizer")
         try:
             tokenizer = MoleculeNatLangTokenizer()
             logger.info(
@@ -113,7 +110,9 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         elif hasattr(self.tokenizer, "tokenizer") and hasattr(
             self.tokenizer.tokenizer, "mask_token_id"
         ):
-            logger.info(f"Using MASK token ID: {self.tokenizer.tokenizer.mask_token_id}")
+            logger.info(
+                f"Using MASK token ID: {self.tokenizer.tokenizer.mask_token_id}"
+            )
             return self.tokenizer.tokenizer.mask_token_id
         else:
             # フォールバック
@@ -208,7 +207,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
         # モデル統計の表示
         total_params = sum(p.numel() for p in model.parameters())
-        logger.info(f"📊 Model Statistics:")
+        logger.info("📊 Model Statistics:")
         logger.info(f"   - Total parameters: {total_params:,}")
         logger.info(f"   - Hidden size: {model.config.hidden_size}")
         logger.info(f"   - Number of layers: {model.config.num_hidden_layers}")
@@ -236,12 +235,14 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 return encoding["input_ids"][0]
         except Exception as e:
             logger.warning(f"Tokenization failed for text: {text[:50]}... Error: {e}")
-            return torch.tensor([self.cls_token_id, self.sep_token_id], dtype=torch.long)
+            return torch.tensor(
+                [self.cls_token_id, self.sep_token_id], dtype=torch.long
+            )
 
     def encode_sequence(self, sequence):
         """
         配列をトークンIDにエンコード（抽象メソッドの実装）
-        
+
         molecule_nlではencode_textと同じ処理
         """
         return self.encode_text(sequence)
@@ -369,13 +370,13 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 # DatasetDictの場合、testまたはvalidationを優先的に使用
                 if "test" in dataset:
                     dataset_split = dataset["test"]
-                    logger.info(f"Using 'test' split from dataset")
+                    logger.info("Using 'test' split from dataset")
                 elif "validation" in dataset:
                     dataset_split = dataset["validation"]
-                    logger.info(f"Using 'validation' split from dataset")
+                    logger.info("Using 'validation' split from dataset")
                 elif "train" in dataset:
                     dataset_split = dataset["train"]
-                    logger.info(f"Using 'train' split from dataset")
+                    logger.info("Using 'train' split from dataset")
                 else:
                     # 最初のsplitを使用
                     split_name = list(dataset.keys())[0]
@@ -418,7 +419,9 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         processing_errors = 0
 
         logger.info("🧬 Processing texts...")
-        logger.info(f"   Note: Using 'input_text' field and re-tokenizing with BERT tokenizer")
+        logger.info(
+            "   Note: Using 'input_text' field and re-tokenizing with BERT tokenizer"
+        )
 
         for idx, row in df.iterrows():
             if idx % 100 == 0 and idx > 0:
@@ -432,34 +435,44 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 # (既存のinput_idsはGPT-2用なので使わない)
                 if "input_text" in row and row["input_text"]:
                     text = row["input_text"]
-                    
+
                     # デバッグ: 最初のサンプルで確認
                     if idx == 0:
-                        logger.info(f"First sample analysis:")
+                        logger.info("First sample analysis:")
                         logger.info(f"  input_text: {text[:100]}...")
-                        logger.info(f"  Re-tokenizing with BERT tokenizer (vocab_size={self.vocab_size})")
-                    
+                        logger.info(
+                            f"  Re-tokenizing with BERT tokenizer (vocab_size={self.vocab_size})"
+                        )
+
                     # BERT tokenizerでテキストをエンコード
                     # encode_textメソッドを使用（内部でMoleculeNatLangTokenizerが使われる）
                     try:
                         tokens = self.encode_text(text)
-                        
+
                         if idx == 0:
                             logger.info(f"  BERT tokenized length: {len(tokens)}")
-                            logger.info(f"  BERT token sample: {tokens[:20].tolist() if hasattr(tokens, 'tolist') else tokens[:20]}")
-                            if hasattr(tokens, '__iter__'):
-                                token_list = tokens.tolist() if hasattr(tokens, 'tolist') else list(tokens)
+                            logger.info(
+                                f"  BERT token sample: {tokens[:20].tolist() if hasattr(tokens, 'tolist') else tokens[:20]}"
+                            )
+                            if hasattr(tokens, "__iter__"):
+                                token_list = (
+                                    tokens.tolist()
+                                    if hasattr(tokens, "tolist")
+                                    else list(tokens)
+                                )
                                 if token_list:
-                                    logger.info(f"  BERT token range: {min(token_list)} - {max(token_list)}")
-                        
+                                    logger.info(
+                                        f"  BERT token range: {min(token_list)} - {max(token_list)}"
+                                    )
+
                         if len(tokens) == 0:
                             logger.warning(f"Sample {idx}: Empty tokens after encoding")
                             continue
-                            
+
                     except Exception as e:
                         logger.warning(f"Sample {idx}: Failed to encode text: {e}")
                         continue
-                    
+
                     # パープレキシティ計算
                     if idx < 5 or idx % 500 == 0:  # 最初の5個と500個おきにログ
                         logger.info(
@@ -473,7 +486,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
                     # テキストプレビュー用
                     text_preview = text[:100]
-                    
+
                 else:
                     logger.warning(f"Sample {idx}: No input_text found in row")
                     continue
@@ -504,7 +517,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 logger.debug(f"Full traceback: {traceback.format_exc()}")
                 continue
 
-        logger.info(f"✅ Processing completed!")
+        logger.info("✅ Processing completed!")
         logger.info(f"   - Successfully processed: {len(results)} texts")
         logger.info(f"   - Processing errors: {processing_errors}")
 
@@ -512,7 +525,9 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         if not results:
             logger.error("❌ No samples were successfully processed!")
             logger.error("   Please check:")
-            logger.error("   1. Dataset format (should have 'input_ids' or 'text' field)")
+            logger.error(
+                "   1. Dataset format (should have 'input_ids' or 'text' field)"
+            )
             logger.error("   2. Tokenizer compatibility")
             logger.error("   3. Model checkpoint path")
 
@@ -576,7 +591,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
             csv_file = os.path.join(output_dir, "molecule_nl_detailed_results.csv")
 
             # 可視化クラスをインポート（GPT-2版と同じクラスを使用）
-            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
+            sys.path.append(os.path.join(os.path.dirname(__file__), "..", "gpt2"))
             from molecule_nl_visualization import MoleculeNLVisualizationGenerator
 
             # 可視化器を初期化
@@ -630,7 +645,9 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         logger.info(f"   - Mean Perplexity: {metrics['mean_perplexity']:.3f}")
         logger.info(f"   - Median Perplexity: {metrics['median_perplexity']:.3f}")
         logger.info(f"   - Std Perplexity: {metrics['std_perplexity']:.3f}")
-        logger.info(f"   - Min/Max Perplexity: {metrics['min_perplexity']:.3f} / {metrics['max_perplexity']:.3f}")
+        logger.info(
+            f"   - Min/Max Perplexity: {metrics['min_perplexity']:.3f} / {metrics['max_perplexity']:.3f}"
+        )
         logger.info(
             f"   - Valid samples: {metrics['valid_samples']}/{metrics['total_samples']}"
         )
@@ -677,7 +694,9 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 )
 
             f.write("=" * 80 + "\n")
-            f.write(f"Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(
+                f"Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            )
             f.write("=" * 80 + "\n")
 
         logger.info(f"📝 Report saved to: {report_path}")
@@ -736,7 +755,6 @@ def main():
     if args.output_dir is None:
         # LEARNING_SOURCE_DIR環境変数を使用
         learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR", ".")
-        model_name = get_model_name_from_path(args.model_path)
         args.output_dir = os.path.join(
             learning_source_dir,
             "molecule_nl",
@@ -749,7 +767,7 @@ def main():
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     # ログ設定（Path型を渡す）
-    log_file = setup_evaluation_logging(output_dir_path, "bert_molecule_nl_evaluation")
+    setup_evaluation_logging(output_dir_path, "bert_molecule_nl_evaluation")
     logger.info("Starting BERT Molecule NL model evaluation...")
     logger.info(f"Model path: {args.model_path}")
     logger.info(f"Dataset path: {args.dataset_path}")
@@ -777,7 +795,7 @@ def main():
 
         # 可視化のみを生成
         try:
-            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'gpt2'))
+            sys.path.append(os.path.join(os.path.dirname(__file__), "..", "gpt2"))
             from molecule_nl_visualization import MoleculeNLVisualizationGenerator
 
             visualizer = MoleculeNLVisualizationGenerator(
@@ -792,7 +810,9 @@ def main():
             if os.path.exists(json_file):
                 with open(json_file, "r") as f:
                     metrics = json.load(f)
-                    logger.info(f"📊 Mean Perplexity: {metrics.get('mean_perplexity', 'N/A'):.3f}")
+                    logger.info(
+                        f"📊 Mean Perplexity: {metrics.get('mean_perplexity', 'N/A'):.3f}"
+                    )
                     logger.info(
                         f"📈 Valid samples: {metrics.get('valid_samples', 'N/A')}/{metrics.get('total_samples', 'N/A')}"
                     )

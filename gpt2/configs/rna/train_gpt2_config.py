@@ -1,8 +1,8 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
-import sentencepiece as spm
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
+
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 from config.paths import CELLXGENE_DATASET_DIR, get_gpt2_output_path
 
@@ -24,7 +24,9 @@ max_iters = 600000
 lr_decay_iters = 600000
 warmup_iters = 200  # how many steps to warm up for
 learning_rate = 6e-6  # max learning rate
-min_lr = learning_rate / 10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+min_lr = (
+    learning_rate / 10
+)  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
 eval_interval = 1000

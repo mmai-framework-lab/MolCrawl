@@ -9,7 +9,8 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 from config.paths import MOLECULE_NL_DATASET_DIR

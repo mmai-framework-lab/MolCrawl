@@ -3,6 +3,7 @@ from core.config import Config
 
 from config.paths import PROTEIN_SEQUENCE_DIR
 
+
 @dataclass
 class UniProtPreparationConfig:
     # Which uniprot dataset to download must be one of the following:
@@ -25,7 +26,6 @@ class UniProtPreparationConfig:
 
 @dataclass
 class ProteinSequenceConfig(Config):
-
     data_preparation: UniProtPreparationConfig = field(default_factory=dict)
 
     def __post_init__(self):

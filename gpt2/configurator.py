@@ -19,9 +19,9 @@ import os
 from ast import literal_eval
 
 for arg in sys.argv[1:]:
-    if '=' not in arg:
+    if "=" not in arg:
         # assume it's the name of a config file
-        assert not arg.startswith('--')
+        assert not arg.startswith("--")
         config_file = arg
         # Handle relative paths from different working directories
         if not os.path.isabs(config_file) and not os.path.exists(config_file):
@@ -31,15 +31,15 @@ for arg in sys.argv[1:]:
             potential_path = os.path.join(parent_dir, config_file)
             if os.path.exists(potential_path):
                 config_file = potential_path
-        
+
         print(f"Overriding config with {config_file}:")
         with open(config_file) as f:
             print(f.read())
         exec(open(config_file).read())
     else:
         # assume it's a --key=value argument
-        assert arg.startswith('--')
-        key, val = arg.split('=')
+        assert arg.startswith("--")
+        key, val = arg.split("=")
         key = key[2:]
         if key in globals():
             try:
@@ -49,7 +49,7 @@ for arg in sys.argv[1:]:
                 # if that goes wrong, just use the string
                 attempt = val
             # ensure the types match ok
-            assert type(attempt) == type(globals()[key])
+            assert type(attempt) is type(globals()[key])
             # cross fingers
             print(f"Overriding: {key} = {attempt}")
             globals()[key] = attempt

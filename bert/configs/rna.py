@@ -4,7 +4,8 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 # config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
 # launch as the following (e.g. in a screen session) and wait ~5 days:
@@ -20,10 +21,14 @@ from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 original_tokenizer = TranscriptomeTokenizer()
 
-pre_tokenizer = Tokenizer(WordLevel(vocab=original_tokenizer.gene_token_dict, unk_token="[UNK]"))
+pre_tokenizer = Tokenizer(
+    WordLevel(vocab=original_tokenizer.gene_token_dict, unk_token="[UNK]")
+)
 
 # Wrap into Hugging Face tokenizer
-tmp_tokenizer = PreTrainedTokenizerFast(tokenizer_object=pre_tokenizer, unk_token="[UNK]", pad_token="[PAD]")
+tmp_tokenizer = PreTrainedTokenizerFast(
+    tokenizer_object=pre_tokenizer, unk_token="[UNK]", pad_token="[PAD]"
+)
 tmp_tokenizer.unk_token = "[UNK]"
 tmp_tokenizer.sep_token = "[SEP]"
 tmp_tokenizer.pad_token = "<pad>"

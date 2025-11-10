@@ -1,43 +1,49 @@
-from transformers import BertConfig, BertForMaskedLM, TrainingArguments, Trainer, DataCollatorForLanguageModeling
+from transformers import (
+    BertConfig,
+    BertForMaskedLM,
+    TrainingArguments,
+    Trainer,
+    DataCollatorForLanguageModeling,
+)
 from datasets import load_from_disk, Dataset
 import os
 import json
-import pandas as pd
 import pyarrow as pa
-import numpy as np
 from pathlib import Path
 
 
 class RNADatasetForBERT:
     """Custom dataset class for loading RNA data"""
-    
+
     def __init__(self, data_dir, split="train", vocab_file=None, test_size=0.1):
         self.data_dir = data_dir
         self.split = split
         self.test_size = test_size
-        
+
         print(f"📂 Attempting to load BERT data from {data_dir}")
-        
+
         # Load vocabulary if provided
         if vocab_file and os.path.exists(vocab_file):
-            with open(vocab_file, 'r') as f:
+            with open(vocab_file, "r") as f:
                 self.vocab = json.load(f)
             print(f"📖 Loaded vocabulary: {len(self.vocab)} tokens")
         else:
             print("⚠️ No vocabulary file provided")
             self.vocab = None
-        
+
         # Load data from Arrow files
         try:
             arrow_files = list(Path(data_dir).glob("*.arrow"))
             if arrow_files:
-                print(f"📁 Found {len(arrow_files)} arrow files: {[f.name for f in arrow_files]}")
-                
+                print(
+                    f"📁 Found {len(arrow_files)} arrow files: {[f.name for f in arrow_files]}"
+                )
+
                 all_batches = []
                 for arrow_file in arrow_files:
                     try:
                         print(f"📖 Reading {arrow_file.name}...")
-                        with pa.memory_map(str(arrow_file), 'r') as mmap:
+                        with pa.memory_map(str(arrow_file), "r") as mmap:
                             with pa.ipc.open_stream(mmap) as reader:
                                 table = reader.read_all()
                                 print(f"🔢 Read table via stream: {len(table)} rows")
@@ -45,53 +51,65 @@ class RNADatasetForBERT:
                     except Exception as e:
                         print(f"❌ Failed to read {arrow_file.name}: {e}")
                         continue
-                
+
                 if all_batches:
                     # Combine all tables
                     combined_table = pa.concat_tables(all_batches)
-                    print(f"📊 Combined {len(all_batches)} tables: {len(combined_table)} total rows")
-                    
+                    print(
+                        f"📊 Combined {len(all_batches)} tables: {len(combined_table)} total rows"
+                    )
+
                     # Convert PyArrow table to pandas DataFrame, then to HuggingFace Dataset
                     df = combined_table.to_pandas()
                     print(f"📋 Converted to pandas DataFrame: {len(df)} rows")
-                    
+
                     # Convert numpy arrays to lists for HuggingFace compatibility
-                    if 'token' in df.columns:
-                        df['token'] = df['token'].apply(lambda x: x.tolist() if hasattr(x, 'tolist') else x)
-                    
+                    if "token" in df.columns:
+                        df["token"] = df["token"].apply(
+                            lambda x: x.tolist() if hasattr(x, "tolist") else x
+                        )
+
                     # Create dataset from pandas DataFrame (bypasses metadata issues)
                     self.dataset = Dataset.from_pandas(df)
-                    print(f"✅ Created HuggingFace Dataset from pandas DataFrame")
+                    print("✅ Created HuggingFace Dataset from pandas DataFrame")
                     print(f"🔍 Dataset columns: {self.dataset.column_names}")
                 else:
                     raise ValueError("No arrow files could be read successfully")
             else:
                 raise FileNotFoundError(f"No .arrow files found in {data_dir}")
-                
+
         except Exception as e:
             print(f"❌ Arrow loading failed: {e}")
-            raise FileNotFoundError(f"Could not load data from {data_dir}")
-        
+            raise FileNotFoundError(f"Could not load data from {data_dir}") from e
+
         # Split into train/valid if needed
-        if hasattr(self.dataset, 'keys') and isinstance(self.dataset, dict) and 'train' in self.dataset:
+        if (
+            hasattr(self.dataset, "keys")
+            and isinstance(self.dataset, dict)
+            and "train" in self.dataset
+        ):
             # Already has splits
             if split == "train":
-                self.data = self.dataset['train']
+                self.data = self.dataset["train"]
             elif split in ["valid", "val", "test"]:
-                self.data = self.dataset.get('valid', self.dataset.get('test', self.dataset['train']))
+                self.data = self.dataset.get(
+                    "valid", self.dataset.get("test", self.dataset["train"])
+                )
         else:
             # Create splits
             if test_size > 0:
-                split_dataset = self.dataset.train_test_split(test_size=test_size, seed=42)
+                split_dataset = self.dataset.train_test_split(
+                    test_size=test_size, seed=42
+                )
                 if split == "train":
-                    self.data = split_dataset['train']
+                    self.data = split_dataset["train"]
                 elif split in ["valid", "val", "test"]:
-                    self.data = split_dataset['test']
+                    self.data = split_dataset["test"]
             else:
                 self.data = self.dataset
-        
+
         print(f"Loaded {len(self.data)} samples for {split}")
-        
+
         # Show sample
         if len(self.data) > 0:
             sample = self.data[0]
@@ -101,11 +119,14 @@ class RNADatasetForBERT:
                     print(f"  {key}: {type(value)} of length {len(value)}")
                 else:
                     print(f"  {key}: {type(value)} = {value}")
-    
+
     def get_dataset(self):
         """Return the HuggingFace Dataset object"""
         return self.data
 
+model_size = None
+use_custom_rna_dataset = False
+tokenizer = None
 
 model_path = ""
 max_length = 1024
@@ -120,9 +141,17 @@ gradient_accumulation_steps = 5 * 8
 per_device_eval_batch_size = 1
 log_interval = 100
 # -----------------------------------------------------------------------------
-config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
+config_keys = [
+    k
+    for k, v in globals().items()
+    if not k.startswith("_") and isinstance(v, (int, float, bool, str))
+]
 # Handle configurator path
-configurator_path = "bert/configurator.py" if os.path.exists("bert/configurator.py") else "configurator.py"
+configurator_path = (
+    "bert/configurator.py"
+    if os.path.exists("bert/configurator.py")
+    else "configurator.py"
+)
 exec(open(configurator_path).read())  # overrides from command line or config file
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
@@ -131,13 +160,15 @@ config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
     try:
         meta_vocab_size = (len(tokenizer) // 8 + 1) * 8
-    except Exception:
+    except Exception as e:
         raise ImportError(
             "Please initialize the variable meta_vocab_size in the *_config.py file with the size of your vocabulary."
-        )
+        ) from e
 
 if model_size == "small":
-    model_config = BertConfig(vocab_size=meta_vocab_size, max_position_embeddings=max_length)
+    model_config = BertConfig(
+        vocab_size=meta_vocab_size, max_position_embeddings=max_length
+    )
 elif model_size == "medium":
     # Note that this would be bert-large but the size is equivalent to gpt2-medium so we name it medium here as well
     model_config = BertConfig(
@@ -159,7 +190,9 @@ elif model_size == "large":
         intermediate_size=4608,  # Size of intermediate (feed-forward) layer
     )
 else:
-    raise ValueError("model_size: {model_size} is not supported choose between small, medium and large")
+    raise ValueError(
+        "model_size: {model_size} is not supported choose between small, medium and large"
+    )
 
 model = BertForMaskedLM(config=model_config)
 
@@ -169,7 +202,9 @@ if "data_collator" in globals():
     # data_collator is already defined in the config file
 else:
     print("Using default DataCollatorForLanguageModeling")
-    data_collator = DataCollatorForLanguageModeling(tokenizer=globals()["tokenizer"], mlm=True, mlm_probability=0.2)
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=globals()["tokenizer"], mlm=True, mlm_probability=0.2
+    )
 
 training_args = TrainingArguments(
     output_dir=model_path,  # output directory to where save model checkpoint
@@ -194,73 +229,82 @@ training_args = TrainingArguments(
 # Check if we should use custom dataset loading (for RNA data)
 if "use_custom_rna_dataset" in globals() and use_custom_rna_dataset:
     print("🧬 Using custom RNA dataset loader")
-    
+
     # Get vocab file path if available
     vocab_file_path = globals().get("rna_vocab_file", None)
-    
+
     # Load training and test datasets using custom loader
-    train_data_loader = RNADatasetForBERT(dataset_dir, split="train", vocab_file=vocab_file_path, test_size=0.1)
-    test_data_loader = RNADatasetForBERT(dataset_dir, split="test", vocab_file=vocab_file_path, test_size=0.1)
-    
+    train_data_loader = RNADatasetForBERT(
+        dataset_dir, split="train", vocab_file=vocab_file_path, test_size=0.1
+    )
+    test_data_loader = RNADatasetForBERT(
+        dataset_dir, split="test", vocab_file=vocab_file_path, test_size=0.1
+    )
+
     train_dataset = train_data_loader.get_dataset()
     test_dataset = test_data_loader.get_dataset()
-    
+
     # Limit test dataset size for faster evaluation
     if len(test_dataset) > 10000:
         test_dataset = test_dataset.select(range(10000))
-        print(f"📊 Limited test dataset to 10000 samples for faster evaluation")
+        print("📊 Limited test dataset to 10000 samples for faster evaluation")
 else:
     print("📂 Using standard HuggingFace dataset loading")
     train_dataset = load_from_disk(dataset_dir)["train"]
-    test_dataset = load_from_disk(dataset_dir)["test"].select(range(min(10000, load_from_disk(dataset_dir)["test"].num_rows)))  # for testing purposes, select only 10000 samples
+    test_dataset = load_from_disk(dataset_dir)["test"].select(
+        range(min(10000, load_from_disk(dataset_dir)["test"].num_rows))
+    )  # for testing purposes, select only 10000 samples
 
 # Apply preprocessing for RNA data if using custom dataset
-if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_dataset", False):
+if "use_custom_rna_dataset" in globals() and globals().get(
+    "use_custom_rna_dataset", False
+):
     print("🧬 Applying RNA-specific preprocessing...")
-    
+
     def preprocess_rna_for_bert(examples):
         """Convert RNA token data to BERT format"""
         input_ids = []
         attention_masks = []
-        
-        for tokens in examples['token']:
+
+        for tokens in examples["token"]:
             # Ensure tokens is a list
             if not isinstance(tokens, list):
-                tokens = tokens.tolist() if hasattr(tokens, 'tolist') else [tokens]
-            
+                tokens = tokens.tolist() if hasattr(tokens, "tolist") else [tokens]
+
             # Truncate or pad to max_length
             if len(tokens) > max_length - 2:  # -2 for [CLS] and [SEP]
-                tokens = tokens[:max_length - 2]
-            
+                tokens = tokens[: max_length - 2]
+
             # Add [CLS] at beginning and [SEP] at end (using token IDs)
             # Note: These should be actual token IDs from vocabulary
             cls_token_id = 1  # Assuming CLS token ID
             sep_token_id = 2  # Assuming SEP token ID
-            
+
             input_id = [cls_token_id] + tokens + [sep_token_id]
             attention_mask = [1] * len(input_id)
-            
+
             # Pad to max_length
             while len(input_id) < max_length:
                 input_id.append(0)  # PAD token ID
                 attention_mask.append(0)
-            
+
             input_ids.append(input_id)
             attention_masks.append(attention_mask)
-        
-        return {
-            'input_ids': input_ids,
-            'attention_mask': attention_masks
-        }
-    
+
+        return {"input_ids": input_ids, "attention_mask": attention_masks}
+
     print("🔄 Mapping preprocessing function to datasets...")
-    train_dataset = train_dataset.map(preprocess_rna_for_bert, batched=True, remove_columns=train_dataset.column_names)
-    test_dataset = test_dataset.map(preprocess_rna_for_bert, batched=True, remove_columns=test_dataset.column_names)
-    
+    train_dataset = train_dataset.map(
+        preprocess_rna_for_bert, batched=True, remove_columns=train_dataset.column_names
+    )
+    test_dataset = test_dataset.map(
+        preprocess_rna_for_bert, batched=True, remove_columns=test_dataset.column_names
+    )
+
     print("✅ RNA preprocessing completed.")
     print("Train dataset columns after preprocessing:", train_dataset.column_names)
     print("Test dataset columns after preprocessing:", test_dataset.column_names)
-    
+
     # Verify format
     sample = train_dataset[0]
     print("Sample keys:", list(sample.keys()))
@@ -275,7 +319,7 @@ elif "preprocess_function" in globals() and callable(globals()["preprocess_funct
     print("Preprocessing completed.")
     print("Train dataset columns after preprocessing:", train_dataset.column_names)
     print("Test dataset columns after preprocessing:", test_dataset.column_names)
-    
+
     # Verify attention_mask was added
     sample = train_dataset[0]
     print("Sample keys:", list(sample.keys()))
