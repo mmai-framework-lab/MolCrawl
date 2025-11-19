@@ -38,11 +38,13 @@ const DATASETS = {
         marker: 'tokenize_to_parquet_complete.marker',
         checkFiles: ['parquet_files/train.parquet'],
         outputDirs: ['parquet_files'],
+        outputFiles: ['parquet_files/train.parquet', 'parquet_files/valid.parquet'],
       },
     ],
     outputs: {
       plot: '../assets/img/protein_sequence_tokenized_lengths_dist.png',
       statistics: null,
+      parquetFiles: 'parquet_files',
     },
   },
   genome_sequence: {
@@ -53,8 +55,8 @@ const DATASETS = {
         id: 'download',
         name: 'RefSeq Download',
         marker: 'download_complete.marker',
-        checkFiles: [],
-        outputDirs: ['downloads', 'fasta_files'],
+        checkFiles: ['download_dir'],
+        outputDirs: ['download_dir'],
       },
       {
         id: 'fasta_to_raw',
@@ -77,11 +79,13 @@ const DATASETS = {
         marker: 'raw_to_parquet_complete.marker',
         checkFiles: ['parquet_files'],
         outputDirs: ['parquet_files'],
+        outputFiles: ['parquet_files/train.parquet', 'parquet_files/valid.parquet'],
       },
     ],
     outputs: {
       plot: '../assets/img/genome_sequence_tokenized_lengths_dist.png',
       statistics: null,
+      parquetFiles: 'parquet_files',
     },
   },
   rna: {
@@ -116,6 +120,7 @@ const DATASETS = {
         marker: 'tokenize_complete.marker',
         checkFiles: ['parquet_files'],
         outputDirs: ['parquet_files'],
+        outputFiles: ['parquet_files/train.parquet', 'parquet_files/valid.parquet'],
       },
       {
         id: 'vocab',
@@ -130,6 +135,7 @@ const DATASETS = {
       plot: '../assets/img/rna_tokenized_lengths_dist.png',
       statistics: 'rna_stats.json',
       geneList: 'gene_list_with_stats.tsv',
+      parquetFiles: 'parquet_files',
     },
   },
   molecule_nl: {
@@ -147,14 +153,15 @@ const DATASETS = {
         id: 'tokenize',
         name: 'Tokenization & Processing',
         marker: null,
-        checkFiles: ['molecule_related_natural_language_tokenized.parquet'],
-        outputDirs: ['.'],
-        outputFiles: ['molecule_related_natural_language_tokenized.parquet'],
+        checkFiles: ['molecule_related_natural_language_tokenized.parquet', 'parquet_files'],
+        outputDirs: ['.', 'parquet_files'],
+        outputFiles: ['molecule_related_natural_language_tokenized.parquet', 'parquet_files/train.parquet', 'parquet_files/valid.parquet'],
       },
     ],
     outputs: {
       plot: '../assets/img/molecule_nl_tokenized_train_lengths_dist.png',
       statistics: null,
+      parquetFiles: 'parquet_files',
     },
   },
   compounds: {
@@ -163,10 +170,10 @@ const DATASETS = {
     steps: [
       {
         id: 'download',
-        name: 'OrganiX13 Download',
+        name: 'ZINC20 Download',
         marker: 'organix13/download_complete.marker',
         checkFiles: [],
-        outputDirs: ['organix13/downloads', 'organix13/raw_data'],
+        outputDirs: ['zinc20'],
       },
       {
         id: 'tokenize',
@@ -180,15 +187,16 @@ const DATASETS = {
         id: 'statistics',
         name: 'Statistics Generation',
         marker: 'organix13/stats_complete.marker',
-        checkFiles: [],
-        outputDirs: ['organix13'],
-        outputFiles: ['organix13/statistics.json'],
+        checkFiles: ['parquet_files'],
+        outputDirs: ['organix13', 'parquet_files'],
+        outputFiles: ['organix13/statistics.json', 'parquet_files/train.parquet', 'parquet_files/valid.parquet'],
       },
     ],
     outputs: {
       plot: '../assets/img/compounds_tokenized_SMILES_lengths_dist.png',
       scaffoldPlot: '../assets/img/compounds_tokenized_Scaffolds_lengths_dist.png',
       statistics: null,
+      parquetFiles: 'parquet_files',
     },
   },
 };
