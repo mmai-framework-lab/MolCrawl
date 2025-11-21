@@ -7,8 +7,8 @@ https://github.com/openai/gpt-2/blob/master/src/model.py
 https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
 """
 
-import math
 import inspect
+import math
 from dataclasses import dataclass
 
 import torch
@@ -362,32 +362,71 @@ class GPT(nn.Module):
         return mfu
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(
+        self,
+        idx,
+        max_new_tokens,
+        temperature=1.0,
+        top_k=None,
+        eos_token_id=None,
+        pad_token_id=None,
+    ):
         """
-        Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
-        the sequence max_new_tokens times, feeding the predictions back into the model each time.
-        Most likely you'll want to make sure to be in model.eval() mode of operation for this.
+        idx: LongTensor [B, T]
+        逐次1トークンずつ追加。各バッチ要素で EOS が出たら以後は PAD（指定が無ければ EOS を繰返し）を出力。
+        全要素が終了したら早期打ち切り。
         """
+        device = idx.device
+        B = idx.size(0)
+
+        # 各行がEOSを出したかどうか
+        finished = torch.zeros(B, dtype=torch.bool, device=device)
+
+        # PAD未指定の場合はEOSを繰返すフォールバック
+        pad_or_eos = pad_token_id if pad_token_id is not None else eos_token_id
+
         for _ in range(max_new_tokens):
-            # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = (
-                idx
-                if idx.size(1) <= self.config.block_size
-                else idx[:, -self.config.block_size :]
-            )
-            # forward the model to get the logits for the index in the sequence
-            logits, _ = self(idx_cond)
-            # pluck the logits at the final step and scale by desired temperature
-            logits = logits[:, -1, :] / temperature
-            # optionally crop the logits to only the top k options
+            # すでに全行終了していれば終わり
+            if eos_token_id is not None and finished.all():
+                break
+
+            # コンテキスト長を block_size に収める
+            if idx.size(1) > self.config.block_size:
+                idx_cond = idx[:, -self.config.block_size :]
+            else:
+                idx_cond = idx
+
+            # 通常の前向き
+            logits, _ = self(idx_cond)  # [B, T_ctx, V]
+            logits = logits[:, -1, :] / temperature  # [B, V]
+
+            # 既に終了した行は sampling させない（PAD or EOS固定に誘導）
+            if eos_token_id is not None and pad_or_eos is not None:
+                # 終了行のロジットを -inf にして pad_or_eos だけ0に（softmax後ほぼ1.0）
+                mask = finished.unsqueeze(1)  # [B,1]
+                if mask.any():
+                    logits = logits.clone()
+                    logits[mask.expand_as(logits)] = -float("inf")
+                    logits[finished, pad_or_eos] = 0.0
+
+            # top-k
             if top_k is not None:
-                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float("Inf")
-            # apply softmax to convert logits to (normalized) probabilities
-            probs = F.softmax(logits, dim=-1)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)
-            # append sampled index to the running sequence and continue
-            idx = torch.cat((idx, idx_next), dim=1)
+                k = min(top_k, logits.size(-1))
+                v, _ = torch.topk(logits, k)
+                # 注意: 既に finished 行は上で pad_or_eos=0.0 にしてあるので除外されない
+                thresh = v[:, [-1]]
+                logits[logits < thresh] = -float("inf")
+
+            # サンプリング
+            probs = F.softmax(logits, dim=-1)  # [B, V]
+            idx_next = torch.multinomial(probs, num_samples=1)  # [B, 1]
+
+            # 連結
+            idx = torch.cat((idx, idx_next), dim=1)  # [B, T+1]
+
+            # 新たにEOSが出た行を finished に反映
+            if eos_token_id is not None:
+                newly_finished = idx_next.squeeze(1) == eos_token_id
+                finished |= newly_finished
 
         return idx

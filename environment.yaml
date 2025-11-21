@@ -29,8 +29,9 @@ dependencies:
     - loompy==3.0.8
     - sentencepiece==0.2.0
     - tensorboardX==2.6.2.2
-    - flash_attn==1.0.3
     - safetensors==0.4.3
-    - biopython==1.8.5
     - pysam==0.23.3
     - pyfaidx==0.9.0.1
+    - fcd==1.2.2
+    - guacamol==0.5.5
+    - deepchem==2.8.0

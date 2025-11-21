@@ -312,7 +312,9 @@ class CompoundsTokenizer(UnTrainableTokenizer, SmilesTokenizer):
         SmilesTokenizer.__init__(self, vocab_file)
 
     def tokenize_text(self, text: str, verbose: bool = False):
-        tokens = self.encode(text)
+        tokens = self.encode(
+            text, padding="max_length", truncation=True, max_length=self.max_len
+        )
         if len(tokens) > self.max_len:
             if verbose:
                 logger.info(f"Removing to long {text} with len of {len(tokens)} ")
