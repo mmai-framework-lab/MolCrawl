@@ -35,7 +35,7 @@ pip install deepchem
   `./assets/configs/compounds.yaml` の `max_len` を **128** に変更。
 
 * **Tokenization**
-  `prepare_gpt2_.py` を用いて GuacaMol データセットを tokenization し、
+  `prepare_gpt2.py` を書き換え，packing処理を行わないように修正．これを用いて GuacaMol データセットを tokenization し、
   Hugging Face Datasets フォーマットに変換。
   出力先: `./benchmark/GuacaMol/compounds/training_ready_hf_dataset`
 

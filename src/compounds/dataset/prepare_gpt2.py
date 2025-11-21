@@ -1,85 +1,61 @@
-from functools import partial
 from argparse import ArgumentParser
 from pathlib import Path
 
-from datasets import DatasetDict, Dataset
-import numpy as np
-
-from compounds.utils.tokenizer import CompoundsTokenizer
+import pandas as pd
 from compounds.utils.config import CompoundConfig
-from core.base import read_parquet
+from compounds.utils.tokenizer import CompoundsTokenizer
+from datasets import Dataset, DatasetDict
 
 
-def concatenate_texts(examples, eos_token_id):
-    concatenated_ids = []
-    for input_ids in examples["input_ids"]:
-        if input_ids is None:
-            continue
-        concatenated_ids.extend(input_ids + [eos_token_id])
-    return {"input_ids": concatenated_ids}
-
-
-def create_chunks(examples, context_length):
-    concatenated_ids = examples["input_ids"]
-
-    # Calculate the total number of chunks
-    total_length = len(concatenated_ids)
-    num_chunks = total_length // context_length
-
-    # Truncate the concatenated_ids to a multiple of context_length
-    total_length = num_chunks * context_length
-    concatenated_ids = concatenated_ids[:total_length]
-
-    # Split into chunks
-    input_ids = [concatenated_ids[i : i + context_length] for i in range(0, total_length, context_length)]
-
-    return {"input_ids": input_ids}
-
-
-def tokenize_batch_dataset(parquet_path, vocab_path, max_length, context_length, number_sample):
-
-    tokenize_dataset = read_parquet(parquet_path)
-
-    indices = np.arange(len(tokenize_dataset))
-    np.random.shuffle(indices)
-
-    d = {
-        "train": Dataset.from_dict({"input_ids": tokenize_dataset["tokens"].to_numpy()[indices[: int(number_sample * 0.8)]]}),
-        "valid": Dataset.from_dict({"input_ids": tokenize_dataset["tokens"].to_numpy()[indices[int(number_sample * 0.8) : int(number_sample * 0.9)]]}),
-        "test": Dataset.from_dict({"input_ids": tokenize_dataset["tokens"].to_numpy()[indices[int(number_sample * 0.9) :]]}),
-    }
-
-    dataset = DatasetDict(d)
-
+def tokenize_batch_dataset(vocab_path, max_length):
     tokenizer = CompoundsTokenizer(
         vocab_path,
         max_length,
     )
 
-    concatenated_dataset = dataset.map(
-        partial(concatenate_texts, eos_token_id=tokenizer.eos_token_id),
-        batched=True,
-        batch_size=-1,
-    )
+    dataset_dic = {}
+    for split in ["train", "valid", "test"]:
+        path = f"/data2/sagawatatsuya/riken-dataset-fundational-model/benchmark/GuacaMol/guacamol_v1_{split}.smiles"
+        with open(path) as f:
+            lines = f.readlines()
+            lines = [line.strip() for line in lines if line]
+        df = pd.DataFrame(lines, columns=["smiles"])
+        df["tokens"] = df["smiles"].apply(tokenizer.tokenize_text)
+        print(tokenizer.decode(df["tokens"].iloc[0]))
+        dataset_dic[split] = df
 
-    chunked_dataset = concatenated_dataset.map(
-        partial(create_chunks, context_length=context_length),
-        batched=True,
-        batch_size=-1,
-    )
+    d = {
+        "train": Dataset.from_dict(
+            {"input_ids": dataset_dic["train"]["tokens"].to_numpy()}
+        ),
+        "valid": Dataset.from_dict(
+            {"input_ids": dataset_dic["valid"]["tokens"].to_numpy()}
+        ),
+        "test": Dataset.from_dict(
+            {"input_ids": dataset_dic["test"]["tokens"].to_numpy()}
+        ),
+    }
 
-    path_dataset = str(Path(parquet_path).parent / "compounds" / "training_ready_hf_dataset")
-    print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
-    chunked_dataset.save_to_disk(path_dataset)
+    dataset = DatasetDict(d)
+
+    path_dataset = str(
+        Path("/data2/sagawatatsuya/riken-dataset-fundational-model/benchmark/GuacaMol/")
+        / "compounds"
+        / "training_ready_hf_dataset"
+    )
+    print(
+        f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter."
+    )
+    dataset.save_to_disk(path_dataset)
 
 
 if __name__ == "__main__":
-    number_sample = 50000
-    context_length = 1024
+    number_sample = None
 
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = CompoundConfig.from_file(args.config).data_preparation
+    context_length = cfg.max_length
 
-    tokenize_batch_dataset(cfg.save_path, cfg.vocab_path, cfg.max_length, context_length, number_sample)
+    tokenize_batch_dataset(cfg.vocab_path, cfg.max_length)
