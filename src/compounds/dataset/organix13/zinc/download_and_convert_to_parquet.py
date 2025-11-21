@@ -144,7 +144,7 @@ def download_zinc_files(delay_between_downloads: float = 1.0):
     Args:
         delay_between_downloads: Delay in seconds between downloads to avoid 503 errors
     """
-    directory = osp.join(COMPOUNDS_DIR, "zinc20")
+    directory = osp.join(COMPOUNDS_DIR, "data", "zinc20")
     os.makedirs(directory, exist_ok=True)
     
     # Generate file list
@@ -235,7 +235,7 @@ def convert_zinc_to_parquet(save_path: str):
         logger.error("dask is required for parquet conversion. Install with: pip install dask[dataframe]")
         return None
     
-    base_directory = osp.join(COMPOUNDS_DIR, "zinc20")
+    base_directory = osp.join(COMPOUNDS_DIR, "data", "zinc20")
     
     if not os.path.exists(base_directory):
         logger.error(f"ZINC directory {base_directory} does not exist. Run download_zinc_files first.")
@@ -322,7 +322,7 @@ def check_download_status():
     Returns:
         Dict with download statistics
     """
-    base_directory = osp.join(COMPOUNDS_DIR, "zinc20")
+    base_directory = osp.join(COMPOUNDS_DIR, "data", "zinc20")
     
     if not os.path.exists(base_directory):
         return {

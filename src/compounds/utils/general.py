@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from compounds.dataset.organix13.zinc.download_and_convert_to_parquet import (
     download_zinc_files,
     convert_zinc_to_parquet,
@@ -16,6 +18,12 @@ def download_zinc20(raw_data_dir: str):
     """
     download_zinc_files()
     convert_zinc_to_parquet(raw_data_dir)
+    
+    # マーカーファイル作成
+    data_dir = os.path.join(raw_data_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    marker_file = Path(data_dir) / "zinc20_download.marker"
+    marker_file.touch()
 
 
 def download_opv(raw_data_dir: str):
@@ -26,6 +34,12 @@ def download_opv(raw_data_dir: str):
         raw_data_dir: 生データ保存ディレクトリ
     """
     OPV(raw_data_dir)
+    
+    # マーカーファイル作成
+    data_dir = os.path.join(raw_data_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    marker_file = Path(data_dir) / "opv_download.marker"
+    marker_file.touch()
 
 
 def download_additional_datasets(raw_data_dir: str):
@@ -36,6 +50,12 @@ def download_additional_datasets(raw_data_dir: str):
         raw_data_dir: 生データ保存ディレクトリ
     """
     download_datasets_from_repo(raw_data_dir)
+    
+    # マーカーファイル作成
+    data_dir = os.path.join(raw_data_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    marker_file = Path(data_dir) / "additional_download.marker"
+    marker_file.touch()
 
 
 def combine_datasets(raw_data_dir: str, output_dir: str):
