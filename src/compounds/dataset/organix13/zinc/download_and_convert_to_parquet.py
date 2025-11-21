@@ -158,8 +158,6 @@ def download_zinc_files(delay_between_downloads: float = 1.0):
 
     successful_downloads = 0
     failed_downloads = 0
-    import csv
-    import hashlib
 
     csv_header = ["relative_path", "filename", "size_bytes", "num_lines", "md5"]
     csv_path = os.path.join(directory, "download_results.csv")

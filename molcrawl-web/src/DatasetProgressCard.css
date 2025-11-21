@@ -198,12 +198,14 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 
 .step-icon {
   font-size: 1.1em;
   width: 20px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .step-card.completed .step-icon {
@@ -214,9 +216,27 @@
   color: #bbb;
 }
 
+.step-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
 .step-name {
   font-size: 0.9em;
   color: #333;
+  font-weight: 600;
+}
+
+.step-description {
+  font-size: 0.75em;
+  color: #666;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .step-status-badge {
@@ -822,5 +842,9 @@
 
   .preview-content pre {
     font-size: 11px;
+  }
+
+  .step-description {
+    display: none;
   }
 }

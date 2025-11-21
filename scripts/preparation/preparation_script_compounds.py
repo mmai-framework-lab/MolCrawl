@@ -20,14 +20,22 @@ from core.base import (
 )
 from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
 from compounds.utils.config import CompoundConfig
-from compounds.utils.general import download_datasets
+from compounds.utils.general import (
+    download_datasets,
+    download_zinc20,
+    download_opv,
+    download_additional_datasets,
+    combine_datasets,
+)
 
 from config.paths import COMPOUNDS_DIR
 
 logger = logging.getLogger(__name__)
 
 
-def download_compound_datasets(cfg, organix13_dataset_path, download_marker, force=False):
+def download_compound_datasets(
+    cfg, organix13_dataset_path, download_marker, force=False, dataset_type="all"
+):
     """
     化合物データセットのダウンロード処理
 
@@ -36,14 +44,36 @@ def download_compound_datasets(cfg, organix13_dataset_path, download_marker, for
         organix13_dataset_path: データセット保存パス
         download_marker: ダウンロード完了マーカーファイル
         force: 強制再ダウンロードフラグ
+        dataset_type: ダウンロードするデータセット種別
+                      ("all", "zinc20", "opv", "additional", "combine")
     """
     if not force and download_marker.exists():
         logger.info("Dataset download already completed. Skipping download step.")
         return
 
-    logger.info("Downloading datasets...")
+    logger.info(f"Downloading datasets (type: {dataset_type})...")
     os.path.exists(cfg.raw_data_path) or os.makedirs(cfg.raw_data_path)
-    download_datasets(cfg.raw_data_path, organix13_dataset_path)
+
+    if dataset_type == "all":
+        download_datasets(cfg.raw_data_path, organix13_dataset_path)
+    elif dataset_type == "zinc20":
+        logger.info("Downloading ZINC20 dataset...")
+        download_zinc20(cfg.raw_data_path)
+    elif dataset_type == "opv":
+        logger.info("Downloading OPV dataset...")
+        download_opv(cfg.raw_data_path)
+    elif dataset_type == "additional":
+        logger.info("Downloading additional datasets from repository...")
+        download_additional_datasets(cfg.raw_data_path)
+    elif dataset_type == "combine":
+        logger.info("Combining all datasets into OrganiX13...")
+        combine_datasets(cfg.raw_data_path, organix13_dataset_path)
+    else:
+        raise ValueError(
+            f"Invalid dataset_type: {dataset_type}. "
+            f"Must be one of: all, zinc20, opv, additional, combine"
+        )
+
     download_marker.touch()
     logger.info("Download completed.")
 
@@ -159,9 +189,21 @@ def main():
         action="store_true",
         help="Force re-download and reprocessing even if files exist",
     )
-    parser.add_argument("--download-only", action="store_true", help="Only perform download step")
-    parser.add_argument("--tokenize-only", action="store_true", help="Only perform tokenization step")
-    parser.add_argument("--stats-only", action="store_true", help="Only perform statistics step")
+    parser.add_argument(
+        "--download-only", action="store_true", help="Only perform download step"
+    )
+    parser.add_argument(
+        "--tokenize-only", action="store_true", help="Only perform tokenization step"
+    )
+    parser.add_argument(
+        "--stats-only", action="store_true", help="Only perform statistics step"
+    )
+    parser.add_argument(
+        "--dataset-type",
+        choices=["all", "zinc20", "opv", "additional", "combine"],
+        default="all",
+        help="Dataset type to download: all (default), zinc20, opv, additional, or combine",
+    )
     args = parser.parse_args()
 
     # 設定とパスの初期化
@@ -184,7 +226,13 @@ def main():
 
     # 1. データダウンロード
     if run_download:
-        download_compound_datasets(cfg, organix13_dataset_path, download_marker, args.force)
+        download_compound_datasets(
+            cfg,
+            organix13_dataset_path,
+            download_marker,
+            args.force,
+            dataset_type=args.dataset_type,
+        )
 
     # 2. トークナイズ処理
     organix13_dataset = None

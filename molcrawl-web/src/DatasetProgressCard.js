@@ -261,7 +261,12 @@ const DatasetProgressCard = ({ datasetKey }) => {
                     <span className="step-icon">
                       {getStepStatusIcon(step.status)}
                     </span>
-                    <span className="step-name">{step.name}</span>
+                    <div className="step-info">
+                      <span className="step-name">{step.name}</span>
+                      {step.description && (
+                        <span className="step-description">{step.description}</span>
+                      )}
+                    </div>
                   </div>
                   <div className={`step-status-badge ${step.status}`}>
                     {step.status === 'completed' ? '完了 📁' : '未完了'}
