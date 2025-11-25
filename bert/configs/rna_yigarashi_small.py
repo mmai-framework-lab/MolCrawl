@@ -4,11 +4,7 @@ import json
 import torch
 
 # Add src to path
-current_dir = (
-    os.path.dirname(os.path.abspath(__file__))
-    if "__file__" in globals()
-    else os.getcwd()
-)
+current_dir = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
 src_path = os.path.join(current_dir, "..", "..", "src")
 sys.path.append(src_path)
 
@@ -54,6 +50,7 @@ if rna_vocab_file:
 else:
     print("⚠️ No vocabulary file found, using default size")
     meta_vocab_size = 60666  # Default size based on previous RNA experiments
+
 
 # Create a simple tokenizer placeholder (BERT will use its own tokenizer)
 class SimpleTokenizer:
@@ -105,18 +102,12 @@ class RNADataCollator:
         batch = {}
 
         # Extract input_ids and attention_mask
-        batch["input_ids"] = torch.tensor(
-            [f["input_ids"] for f in features], dtype=torch.long
-        )
-        batch["attention_mask"] = torch.tensor(
-            [f["attention_mask"] for f in features], dtype=torch.long
-        )
+        batch["input_ids"] = torch.tensor([f["input_ids"] for f in features], dtype=torch.long)
+        batch["attention_mask"] = torch.tensor([f["attention_mask"] for f in features], dtype=torch.long)
 
         if self.mlm:
             # Apply masking for MLM training
-            batch["input_ids"], batch["labels"] = self.torch_mask_tokens(
-                batch["input_ids"]
-            )
+            batch["input_ids"], batch["labels"] = self.torch_mask_tokens(batch["input_ids"])
 
         return batch
 
@@ -152,20 +143,12 @@ class RNADataCollator:
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = (
-            torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
-        )
+        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
         inputs[indices_replaced] = self.tokenizer.mask_token_id
 
         # 10% of the time, we replace masked input tokens with random word
-        indices_random = (
-            torch.bernoulli(torch.full(labels.shape, 0.5)).bool()
-            & masked_indices
-            & ~indices_replaced
-        )
-        random_words = torch.randint(
-            len(self.tokenizer), labels.shape, dtype=torch.long
-        )
+        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).bool() & masked_indices & ~indices_replaced
+        random_words = torch.randint(len(self.tokenizer), labels.shape, dtype=torch.long)
         inputs[indices_random] = random_words[indices_random]
 
         # The rest of the time (10% of the time) we keep the masked input tokens unchanged

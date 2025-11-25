@@ -48,9 +48,7 @@ def create_distribution_plot(data):
         plt.title("Distribution of tokenized lengths (cut at 1000)")
         plt.savefig("assets/img/protein_sequence_tokenized_lengths_dist.png")
         plt.close()
-        logger.info(
-            "Saved distribution of tokenized dataset lengths to assets/img/protein_sequence_tokenized_lengths_dist.png"
-        )
+        logger.info("Saved distribution of tokenized dataset lengths to assets/img/protein_sequence_tokenized_lengths_dist.png")
         return True
     except Exception as e:
         logger.error(f"Failed to create distribution plot: {e}")
@@ -86,11 +84,7 @@ def check_progress_status(base_dir):
     else:
         logger.info("⏳ Step 1/3: Uniprot dataset download - PENDING")
 
-    if (
-        raw_marker.exists()
-        and raw_files_dir.exists()
-        and any(raw_files_dir.glob("*.raw"))
-    ):
+    if raw_marker.exists() and raw_files_dir.exists() and any(raw_files_dir.glob("*.raw")):
         logger.info("✓ Step 2/3: FASTA to raw conversion - COMPLETED")
         steps_completed += 1
     else:
@@ -124,17 +118,13 @@ def process1_download_uniprot(base_dir, dataset, num_worker, use_md5, force=Fals
     download_marker = Path(base_dir) / "download_complete.marker"
 
     if not force and download_marker.exists():
-        logger.info(
-            "👉Process1 : Uniprot dataset download already completed. Skipping..."
-        )
+        logger.info("👉Process1 : Uniprot dataset download already completed. Skipping...")
         logger.info("Use --force option to re-download.")
         return True
 
     try:
         if force:
-            logger.info(
-                "👉Process1 : Force option specified. Re-downloading Uniprot dataset..."
-            )
+            logger.info("👉Process1 : Force option specified. Re-downloading Uniprot dataset...")
         else:
             logger.info("👉Process1 : Downloading Uniprot dataset...")
 
@@ -168,23 +158,14 @@ def process2_fasta_to_raw(base_dir, dataset, max_lines_per_file, force=False):
     raw_marker = Path(base_dir) / "fasta_to_raw_complete.marker"
     raw_files_dir = Path(base_dir) / "raw_files"
 
-    if (
-        not force
-        and raw_marker.exists()
-        and raw_files_dir.exists()
-        and any(raw_files_dir.glob("*.raw"))
-    ):
-        logger.info(
-            "👉Process2 : FASTA to raw conversion already completed. Skipping..."
-        )
+    if not force and raw_marker.exists() and raw_files_dir.exists() and any(raw_files_dir.glob("*.raw")):
+        logger.info("👉Process2 : FASTA to raw conversion already completed. Skipping...")
         logger.info("Use --force option to reconvert.")
         return True
 
     try:
         if force:
-            logger.info(
-                "👉Process2 : Force option specified. Reconverting FASTA to raw text..."
-            )
+            logger.info("👉Process2 : Force option specified. Reconverting FASTA to raw text...")
         else:
             logger.info("👉Process2 : Converting FASTA to raw text...")
 
@@ -220,17 +201,13 @@ def process3_tokenize_to_parquet(base_dir, num_worker, force=False):
     processed_parquet = Path(base_dir) / "parquet_files" / "train.parquet"
 
     if not force and parquet_marker.exists() and processed_parquet.exists():
-        logger.info(
-            "👉Process3 : Tokenization to Parquet already completed. Skipping..."
-        )
+        logger.info("👉Process3 : Tokenization to Parquet already completed. Skipping...")
         logger.info("Use --force option to retokenize.")
         return True
 
     try:
         if force:
-            logger.info(
-                "👉Process3 : Force option specified. Retokenizing to Parquet..."
-            )
+            logger.info("👉Process3 : Force option specified. Retokenizing to Parquet...")
         else:
             logger.info("👉Process3 : Tokenizing to Parquet...")
 
@@ -331,27 +308,21 @@ def main():
     success = True
 
     # Process 1: Download Uniprot dataset
-    success &= process1_download_uniprot(
-        PROTEIN_SEQUENCE_DIR, cfg.dataset, cfg.num_worker, cfg.use_md5, args.force
-    )
+    success &= process1_download_uniprot(PROTEIN_SEQUENCE_DIR, cfg.dataset, cfg.num_worker, cfg.use_md5, args.force)
 
     if not success:
         logger.error("Process 1 failed. Stopping execution.")
         exit(1)
 
     # Process 2: Convert FASTA to raw text
-    success &= process2_fasta_to_raw(
-        PROTEIN_SEQUENCE_DIR, cfg.dataset, cfg.max_lines_per_file, args.force
-    )
+    success &= process2_fasta_to_raw(PROTEIN_SEQUENCE_DIR, cfg.dataset, cfg.max_lines_per_file, args.force)
 
     if not success:
         logger.error("Process 2 failed. Stopping execution.")
         exit(1)
 
     # Process 3: Tokenize to Parquet
-    success &= process3_tokenize_to_parquet(
-        PROTEIN_SEQUENCE_DIR, cfg.num_worker, args.force
-    )
+    success &= process3_tokenize_to_parquet(PROTEIN_SEQUENCE_DIR, cfg.num_worker, args.force)
 
     if not success:
         logger.error("Process 3 failed. Stopping execution.")
@@ -359,14 +330,10 @@ def main():
 
     # Process 4: Generate statistics and plots
     if not args.skip_stats:
-        success &= process4_generate_statistics(
-            PROTEIN_SEQUENCE_DIR, cfg.dataset, args.force
-        )
+        success &= process4_generate_statistics(PROTEIN_SEQUENCE_DIR, cfg.dataset, args.force)
 
         if not success:
-            logger.error(
-                "Process 4 failed. Dataset preparation completed but statistics generation failed."
-            )
+            logger.error("Process 4 failed. Dataset preparation completed but statistics generation failed.")
             exit(1)
 
     logger.info("🎉 Protein sequence dataset preparation completed successfully!")

@@ -11,9 +11,7 @@ import sys
 LEARNING_SOURCE_DIR = os.environ.get("LEARNING_SOURCE_DIR")
 
 if not LEARNING_SOURCE_DIR:
-    print(
-        "ERROR: Environment variable 'LEARNING_SOURCE_DIR' is not set.", file=sys.stderr
-    )
+    print("ERROR: Environment variable 'LEARNING_SOURCE_DIR' is not set.", file=sys.stderr)
     print(
         "Please set LEARNING_SOURCE_DIR environment variable before running this script.",
         file=sys.stderr,
@@ -28,9 +26,7 @@ print(
 )
 
 # プロジェクトルートディレクトリの取得
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def get_refseq_tokenizer_path():
@@ -101,9 +97,7 @@ def get_gpt2_output_path(domain, model_size):
     else:
         size_suffix = model_size
 
-    return os.path.join(
-        LEARNING_SOURCE_DIR, domain, GPT2_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}"
-    )
+    return os.path.join(LEARNING_SOURCE_DIR, domain, GPT2_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
 
 
 # よく使用されるGPT-2出力パスの定数

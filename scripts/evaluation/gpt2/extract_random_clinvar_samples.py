@@ -79,39 +79,29 @@ def balanced_sampling(df, num_samples, clin_sig_col="ClinicalSignificance", seed
     benign_df = df[df["classification"] == "benign"].copy()
     pathogenic_df = df[df["classification"] == "pathogenic"].copy()
 
-    print(
-        f"\nAvailable samples: Benign={len(benign_df)}, Pathogenic={len(pathogenic_df)}"
-    )
+    print(f"\nAvailable samples: Benign={len(benign_df)}, Pathogenic={len(pathogenic_df)}")
 
     # 各クラスから半分ずつサンプリング
     samples_per_class = num_samples // 2
 
     # 利用可能なサンプル数をチェック
     if len(benign_df) < samples_per_class:
-        print(
-            f"Warning: Not enough benign samples ({len(benign_df)} < {samples_per_class})"
-        )
+        print(f"Warning: Not enough benign samples ({len(benign_df)} < {samples_per_class})")
         samples_per_class = min(len(benign_df), len(pathogenic_df))
         print(f"Adjusting to {samples_per_class} samples per class")
 
     if len(pathogenic_df) < samples_per_class:
-        print(
-            f"Warning: Not enough pathogenic samples ({len(pathogenic_df)} < {samples_per_class})"
-        )
+        print(f"Warning: Not enough pathogenic samples ({len(pathogenic_df)} < {samples_per_class})")
         samples_per_class = min(len(benign_df), len(pathogenic_df))
         print(f"Adjusting to {samples_per_class} samples per class")
 
     # サンプリング実行
     sampled_benign = benign_df.sample(n=samples_per_class, random_state=seed)
-    sampled_pathogenic = pathogenic_df.sample(
-        n=samples_per_class, random_state=seed + 1
-    )
+    sampled_pathogenic = pathogenic_df.sample(n=samples_per_class, random_state=seed + 1)
 
     # 結合してシャッフル
     balanced_df = pd.concat([sampled_benign, sampled_pathogenic], ignore_index=True)
-    balanced_df = balanced_df.sample(frac=1, random_state=seed + 2).reset_index(
-        drop=True
-    )
+    balanced_df = balanced_df.sample(frac=1, random_state=seed + 2).reset_index(drop=True)
 
     print("\nBalanced sampling result:")
     final_counts = balanced_df["classification"].value_counts()
@@ -145,9 +135,7 @@ def get_sequences(ref_genome, mapping, chrom, pos, ref, alt, flank=64):
 
     center_base = ref_seq[flank]
     if center_base != ref.upper():
-        print(
-            f"Warning: reference mismatch at {chrom}:{pos}, expected {ref}, got {center_base}"
-        )
+        print(f"Warning: reference mismatch at {chrom}:{pos}, expected {ref}, got {center_base}")
 
     seq_list = list(ref_seq)
     seq_list[flank] = alt.upper()
@@ -205,9 +193,7 @@ def extract_from_csv(csv_path, num_samples, output_path, seed=42):
         if clin_sig_col:
             sampled_df = balanced_sampling(df, num_samples, clin_sig_col, seed=seed)
         else:
-            print(
-                "Warning: No Clinical Significance column found, using random sampling"
-            )
+            print("Warning: No Clinical Significance column found, using random sampling")
             np.random.seed(seed)
             sampled_df = df.sample(n=num_samples, random_state=seed)
 
@@ -229,9 +215,7 @@ def extract_from_dataset(ref_fasta, output_csv, num_samples, flank=64, seed=42):
     print(f"Total dataset size: {len(df)}")
 
     if len(df) < num_samples:
-        print(
-            f"Warning: Dataset has only {len(df)} samples, less than requested {num_samples}"
-        )
+        print(f"Warning: Dataset has only {len(df)} samples, less than requested {num_samples}")
         num_samples = len(df)
 
     # バランスサンプリング実行
@@ -327,9 +311,7 @@ def extract_from_dataset(ref_fasta, output_csv, num_samples, flank=64, seed=42):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Extract random samples from ClinVar data"
-    )
+    parser = argparse.ArgumentParser(description="Extract random samples from ClinVar data")
     parser.add_argument(
         "--input_csv",
         type=str,
@@ -371,9 +353,7 @@ def main():
         extract_from_csv(args.input_csv, args.num_samples, args.output_csv, args.seed)
     elif args.ref_fasta:
         print("Mode: Extracting from dataset with sequence generation")
-        extract_from_dataset(
-            args.ref_fasta, args.output_csv, args.num_samples, args.flank, args.seed
-        )
+        extract_from_dataset(args.ref_fasta, args.output_csv, args.num_samples, args.flank, args.seed)
     else:
         print("Error: Specify either --input_csv or --ref_fasta")
         parser.print_help()

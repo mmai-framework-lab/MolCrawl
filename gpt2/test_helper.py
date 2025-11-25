@@ -130,9 +130,7 @@ def create_test_command(checkpoint_path, domain=None, output_dir=None, max_sampl
 
 def main():
     parser = argparse.ArgumentParser(description="GPT2チェックポイントテスト用ヘルパー")
-    parser.add_argument(
-        "--search_dir", default=".", help="チェックポイントを検索するディレクトリ"
-    )
+    parser.add_argument("--search_dir", default=".", help="チェックポイントを検索するディレクトリ")
     parser.add_argument("--checkpoint_path", help="特定のチェックポイントパス")
     parser.add_argument(
         "--domain",
@@ -142,9 +140,7 @@ def main():
     parser.add_argument("--output_dir", help="出力ディレクトリ")
     parser.add_argument("--max_samples", type=int, default=500, help="テストサンプル数")
     parser.add_argument("--auto_run", action="store_true", help="自動実行する")
-    parser.add_argument(
-        "--list_only", action="store_true", help="チェックポイントをリストアップのみ"
-    )
+    parser.add_argument("--list_only", action="store_true", help="チェックポイントをリストアップのみ")
 
     args = parser.parse_args()
 

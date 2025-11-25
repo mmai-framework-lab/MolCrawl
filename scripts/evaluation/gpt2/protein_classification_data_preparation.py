@@ -15,24 +15,18 @@ import logging
 from utils.evaluation_output import get_learning_source_dir
 
 # プロジェクトルートを追加
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
 
 # ロギング設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def get_default_output_dir():
     """デフォルトの出力ディレクトリを取得"""
     learning_source_dir = get_learning_source_dir()
-    return os.path.join(
-        learning_source_dir, "protein_sequence", "data", "protein_classification"
-    )
+    return os.path.join(learning_source_dir, "protein_sequence", "data", "protein_classification")
 
 
 def create_sample_dataset(output_path: str, num_samples: int = 100):
@@ -46,9 +40,7 @@ def create_sample_dataset(output_path: str, num_samples: int = 100):
     Returns:
         生成されたデータセットのパス
     """
-    logger.info(
-        f"Creating sample protein classification dataset with {num_samples} samples"
-    )
+    logger.info(f"Creating sample protein classification dataset with {num_samples} samples")
 
     # サンプルタンパク質配列（様々な長さとタイプ）
     sample_sequences = [
@@ -114,9 +106,7 @@ def create_sample_dataset(output_path: str, num_samples: int = 100):
     return output_path
 
 
-def prepare_protein_classification_data(
-    input_csv=None, output_dir=None, num_samples=100, create_sample=False
-):
+def prepare_protein_classification_data(input_csv=None, output_dir=None, num_samples=100, create_sample=False):
     """
     タンパク質分類データの準備メイン処理
 
@@ -180,9 +170,7 @@ Examples:
 """,
     )
 
-    parser.add_argument(
-        "--input_csv", type=str, help="Input CSV file with protein variant data"
-    )
+    parser.add_argument("--input_csv", type=str, help="Input CSV file with protein variant data")
 
     parser.add_argument(
         "--output_dir",
@@ -191,9 +179,7 @@ Examples:
         help="Output directory (default: $LEARNING_SOURCE_DIR/protein_sequence/data/protein_classification)",
     )
 
-    parser.add_argument(
-        "--create_sample", action="store_true", help="Create sample dataset for testing"
-    )
+    parser.add_argument("--create_sample", action="store_true", help="Create sample dataset for testing")
 
     parser.add_argument(
         "--num_samples",

@@ -24,9 +24,7 @@ class Config:
                 with open(file_path) as read_handle:
                     cfg = yaml.load(read_handle, Loader=yaml.FullLoader)
             else:
-                raise ValueError(
-                    "The config file should be a json or yaml with a correct suffix"
-                )
+                raise ValueError("The config file should be a json or yaml with a correct suffix")
             return cfg
 
         cfg = get_dict_from_file(file_path)

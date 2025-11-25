@@ -40,9 +40,7 @@ from utils.evaluation_output import (
 from utils.model_evaluator import ModelEvaluator
 
 # プロジェクトルートを追加
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
 
 # ログ設定は後でsetup_evaluation_loggingで行う
@@ -142,15 +140,11 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
             # Hugging Face transformers形式での読み込み
             config = BertConfig.from_pretrained(self.model_path)
-            logger.info(
-                f"Model config loaded: vocab_size={config.vocab_size}, hidden_size={config.hidden_size}"
-            )
+            logger.info(f"Model config loaded: vocab_size={config.vocab_size}, hidden_size={config.hidden_size}")
 
             # トークナイザーのサイズと一致するかチェック
             if config.vocab_size != self.vocab_size:
-                logger.warning(
-                    f"Vocab size mismatch: model={config.vocab_size}, tokenizer={self.vocab_size}"
-                )
+                logger.warning(f"Vocab size mismatch: model={config.vocab_size}, tokenizer={self.vocab_size}")
                 logger.info("Using model's original vocab size for compatibility")
                 # モデルの元のvocab_sizeを保持
                 original_vocab_size = config.vocab_size
@@ -207,9 +201,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
         tokens = self.tokenizer.encode(sequence)
 
         # デバッグ情報
-        logger.debug(
-            f"Sequence processing: {original_length} -> {len(sequence)} -> {len(tokens)} tokens"
-        )
+        logger.debug(f"Sequence processing: {original_length} -> {len(sequence)} -> {len(tokens)} tokens")
 
         if add_special_tokens:
             # [CLS] + sequence + [SEP] の形式
@@ -244,9 +236,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
         for i in range(min_len):
             if ref_clean[i] != var_clean[i]:
-                differences.append(
-                    {"position": i, "ref_base": ref_clean[i], "var_base": var_clean[i]}
-                )
+                differences.append({"position": i, "ref_base": ref_clean[i], "var_base": var_clean[i]})
 
         # 長さの差も記録
         if len(ref_clean) != len(var_clean):
@@ -260,9 +250,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
         return differences
 
-    def get_masked_variant_probability(
-        self, reference_seq, variant_seq, variant_position=None
-    ):
+    def get_masked_variant_probability(self, reference_seq, variant_seq, variant_position=None):
         """
         マスク言語モデルを使用した変異の病原性確率を計算
 
@@ -324,9 +312,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
             confidence = max(ref_prob, var_prob)
 
             # 注意重みの取得（最後の層の平均）
-            attentions = (
-                outputs.attentions[-1].mean(dim=1).squeeze()
-            )  # [seq_len, seq_len]
+            attentions = outputs.attentions[-1].mean(dim=1).squeeze()  # [seq_len, seq_len]
             mask_attention = attentions[variant_position].cpu().numpy()
 
             return {
@@ -414,9 +400,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
         existing_mappings = {k: v for k, v in column_mapping.items() if k in df.columns}
         if existing_mappings:
             df = df.rename(columns=existing_mappings)
-            logger.info(
-                f"Standardized column names: {list(existing_mappings.keys())} → {list(existing_mappings.values())}"
-            )
+            logger.info(f"Standardized column names: {list(existing_mappings.keys())} → {list(existing_mappings.values())}")
 
         # データの前処理とラベル変換
         logger.info("🔄 Preprocessing ClinVar data...")
@@ -449,9 +433,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
         missing_ref = df["reference_sequence"].isnull().sum()
         missing_var = df["variant_sequence"].isnull().sum()
         if missing_ref > 0 or missing_var > 0:
-            logger.warning(
-                f"⚠️  Missing sequences: ref={missing_ref}, var={missing_var}"
-            )
+            logger.warning(f"⚠️  Missing sequences: ref={missing_ref}, var={missing_var}")
             df = df.dropna(subset=["reference_sequence", "variant_sequence"])
 
         results = []
@@ -463,32 +445,22 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
         for idx, row in df.iterrows():
             if idx % 50 == 0 and idx > 0:
-                accuracy_so_far = (
-                    accuracy_score(true_labels, predictions) if predictions else 0
-                )
-                logger.info(
-                    f"   Progress: {idx}/{len(df)} variants processed, accuracy: {accuracy_so_far:.3f}"
-                )
+                accuracy_so_far = accuracy_score(true_labels, predictions) if predictions else 0
+                logger.info(f"   Progress: {idx}/{len(df)} variants processed, accuracy: {accuracy_so_far:.3f}")
 
             try:
                 # MLMベースの評価
-                scores = self.get_masked_variant_probability(
-                    row["reference_sequence"], row["variant_sequence"]
-                )
+                scores = self.get_masked_variant_probability(row["reference_sequence"], row["variant_sequence"])
 
                 # 表現ベクトルベースの評価
                 ref_repr = self.get_sequence_representation(row["reference_sequence"])
                 var_repr = self.get_sequence_representation(row["variant_sequence"])
 
                 # 類似度計算
-                cosine_sim = np.dot(ref_repr, var_repr) / (
-                    np.linalg.norm(ref_repr) * np.linalg.norm(var_repr) + 1e-10
-                )
+                cosine_sim = np.dot(ref_repr, var_repr) / (np.linalg.norm(ref_repr) * np.linalg.norm(var_repr) + 1e-10)
 
                 # BERT独自のスコア計算
-                bert_pathogenicity_score = self._calculate_bert_pathogenicity_score(
-                    scores, cosine_sim
-                )
+                bert_pathogenicity_score = self._calculate_bert_pathogenicity_score(scores, cosine_sim)
 
                 result = {
                     "VariationID": row["VariationID"],
@@ -531,17 +503,13 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
         # 詳細結果をCSVで保存
         results_df = pd.DataFrame(results)
-        results_df.to_csv(
-            os.path.join(output_dir, "bert_clinvar_detailed_results.csv"), index=False
-        )
+        results_df.to_csv(os.path.join(output_dir, "bert_clinvar_detailed_results.csv"), index=False)
 
         # 性能指標の計算
         metrics = self._calculate_metrics(predictions, true_labels, results_df)
 
         # 結果の保存
-        with open(
-            os.path.join(output_dir, "bert_clinvar_evaluation_results.json"), "w"
-        ) as f:
+        with open(os.path.join(output_dir, "bert_clinvar_evaluation_results.json"), "w") as f:
             json.dump(metrics, f, indent=2)
 
         # 可視化
@@ -561,9 +529,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
         confidence_weight = mlm_scores["confidence"]
 
         # 重み付き平均
-        composite_score = (
-            0.6 * mlm_component + 0.3 * similarity_component + 0.1 * confidence_weight
-        )
+        composite_score = 0.6 * mlm_component + 0.3 * similarity_component + 0.1 * confidence_weight
 
         return float(composite_score)
 
@@ -574,9 +540,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
 
         # 基本的な分類指標
         accuracy = accuracy_score(true_labels, predictions)
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            true_labels, predictions, average="binary"
-        )
+        precision, recall, f1, _ = precision_recall_fscore_support(true_labels, predictions, average="binary")
 
         # ROC-AUC（MLMスコアを使用）
         mlm_scores = results_df["mlm_score"].values
@@ -598,27 +562,17 @@ class BERTClinVarEvaluator(ModelEvaluator):
             "confusion_matrix": cm.tolist(),
             "pathogenic_count": int(np.sum(true_labels)),
             "benign_count": int(len(true_labels) - np.sum(true_labels)),
-            "mean_mlm_score_pathogenic": float(
-                results_df[results_df["pathogenic"] == 1]["mlm_score"].mean()
-            ),
-            "mean_mlm_score_benign": float(
-                results_df[results_df["pathogenic"] == 0]["mlm_score"].mean()
-            ),
-            "mean_cosine_similarity_pathogenic": float(
-                results_df[results_df["pathogenic"] == 1]["cosine_similarity"].mean()
-            ),
-            "mean_cosine_similarity_benign": float(
-                results_df[results_df["pathogenic"] == 0]["cosine_similarity"].mean()
-            ),
+            "mean_mlm_score_pathogenic": float(results_df[results_df["pathogenic"] == 1]["mlm_score"].mean()),
+            "mean_mlm_score_benign": float(results_df[results_df["pathogenic"] == 0]["mlm_score"].mean()),
+            "mean_cosine_similarity_pathogenic": float(results_df[results_df["pathogenic"] == 1]["cosine_similarity"].mean()),
+            "mean_cosine_similarity_benign": float(results_df[results_df["pathogenic"] == 0]["cosine_similarity"].mean()),
         }
 
         return metrics
 
     def _create_visualizations(self, results_df, output_dir):
         """結果の可視化 - clinvar_visualization.pyに移行推奨"""
-        logger.warning(
-            "⚠️  Visualization code in evaluation script. Please use clinvar_visualization.py instead."
-        )
+        logger.warning("⚠️  Visualization code in evaluation script. Please use clinvar_visualization.py instead.")
         logger.info(
             "Skipping inline visualization. Use: python scripts/evaluation/bert/clinvar_visualization.py --result-dir <output_dir>"
         )
@@ -628,14 +582,10 @@ class BERTClinVarEvaluator(ModelEvaluator):
         report_path = os.path.join(output_dir, "bert_clinvar_evaluation_report.txt")
 
         with open(report_path, "w") as f:
-            f.write(
-                "Independent BERT Genome Sequence Model - ClinVar Evaluation Report\n"
-            )
+            f.write("Independent BERT Genome Sequence Model - ClinVar Evaluation Report\n")
             f.write("=" * 70 + "\n\n")
 
-            f.write(
-                f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            )
+            f.write(f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("🧬 Model Type: BERT for Masked Language Modeling\n")
             f.write("📊 Evaluation Method: Independent pathogenicity assessment\n\n")
 
@@ -643,9 +593,7 @@ class BERTClinVarEvaluator(ModelEvaluator):
             f.write(f"   • Total variants evaluated: {metrics['total_variants']}\n")
             f.write(f"   • Pathogenic variants: {metrics['pathogenic_count']}\n")
             f.write(f"   • Benign variants: {metrics['benign_count']}\n")
-            f.write(
-                f"   • Class balance: {metrics['pathogenic_count'] / (metrics['total_variants']):.1%} pathogenic\n\n"
-            )
+            f.write(f"   • Class balance: {metrics['pathogenic_count'] / (metrics['total_variants']):.1%} pathogenic\n\n")
 
             f.write("🎯 Performance Metrics:\n")
             f.write(f"   • Accuracy: {metrics['accuracy']:.3f}\n")
@@ -655,33 +603,17 @@ class BERTClinVarEvaluator(ModelEvaluator):
             f.write(f"   • AUC-ROC: {metrics['auc']:.3f}\n\n")
 
             f.write("🧠 BERT-Specific Analysis:\n")
-            f.write(
-                f"   • MLM Score (Pathogenic): {metrics['mean_mlm_score_pathogenic']:.3f}\n"
-            )
-            f.write(
-                f"   • MLM Score (Benign): {metrics['mean_mlm_score_benign']:.3f}\n"
-            )
-            f.write(
-                f"   • Sequence Similarity (Pathogenic): {metrics['mean_cosine_similarity_pathogenic']:.3f}\n"
-            )
-            f.write(
-                f"   • Sequence Similarity (Benign): {metrics['mean_cosine_similarity_benign']:.3f}\n\n"
-            )
+            f.write(f"   • MLM Score (Pathogenic): {metrics['mean_mlm_score_pathogenic']:.3f}\n")
+            f.write(f"   • MLM Score (Benign): {metrics['mean_mlm_score_benign']:.3f}\n")
+            f.write(f"   • Sequence Similarity (Pathogenic): {metrics['mean_cosine_similarity_pathogenic']:.3f}\n")
+            f.write(f"   • Sequence Similarity (Benign): {metrics['mean_cosine_similarity_benign']:.3f}\n\n")
 
             # BERT独自の解釈
             f.write("🔍 BERT Model Interpretation:\n")
-            f.write(
-                "   • MLM Scores: Higher values indicate reference sequence is more probable\n"
-            )
-            f.write(
-                "   • Cosine Similarity: Lower values suggest greater sequence disruption\n"
-            )
-            f.write(
-                "   • BERT Pathogenicity Score: Composite score combining MLM and similarity\n"
-            )
-            f.write(
-                "   • Bidirectional Context: BERT considers both upstream and downstream context\n\n"
-            )
+            f.write("   • MLM Scores: Higher values indicate reference sequence is more probable\n")
+            f.write("   • Cosine Similarity: Lower values suggest greater sequence disruption\n")
+            f.write("   • BERT Pathogenicity Score: Composite score combining MLM and similarity\n")
+            f.write("   • Bidirectional Context: BERT considers both upstream and downstream context\n\n")
 
             # パフォーマンス解釈
             performance_interpretation = ""
@@ -695,32 +627,18 @@ class BERTClinVarEvaluator(ModelEvaluator):
                 performance_interpretation = "🔴 Poor performance"
 
             f.write(f"📊 Overall Assessment: {performance_interpretation}\n")
-            f.write(
-                f"   Accuracy: {metrics['accuracy']:.1%}, F1-Score: {metrics['f1_score']:.3f}\n\n"
-            )
+            f.write(f"   Accuracy: {metrics['accuracy']:.1%}, F1-Score: {metrics['f1_score']:.3f}\n\n")
 
             f.write("💡 Key Insights:\n")
-            f.write(
-                "   • This evaluation is independent of GPT2 or other generative models\n"
-            )
-            f.write(
-                "   • BERT's bidirectional attention enables context-aware variant assessment\n"
-            )
-            f.write(
-                "   • MLM predictions provide direct evidence of sequence disruption\n"
-            )
-            f.write(
-                "   • Results reflect BERT's understanding of genomic sequence patterns\n"
-            )
+            f.write("   • This evaluation is independent of GPT2 or other generative models\n")
+            f.write("   • BERT's bidirectional attention enables context-aware variant assessment\n")
+            f.write("   • MLM predictions provide direct evidence of sequence disruption\n")
+            f.write("   • Results reflect BERT's understanding of genomic sequence patterns\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="BERT ClinVar evaluation for genome sequence model"
-    )
-    parser.add_argument(
-        "--model_path", type=str, required=True, help="Path to trained BERT model"
-    )
+    parser = argparse.ArgumentParser(description="BERT ClinVar evaluation for genome sequence model")
+    parser.add_argument("--model_path", type=str, required=True, help="Path to trained BERT model")
     parser.add_argument(
         "--tokenizer_path",
         type=str,
@@ -745,12 +663,8 @@ def main():
         default=None,
         help="Sample size for testing (default: use all data)",
     )
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="Device to use for evaluation"
-    )
-    parser.add_argument(
-        "--max_length", type=int, default=512, help="Maximum sequence length"
-    )
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use for evaluation")
+    parser.add_argument("--max_length", type=int, default=512, help="Maximum sequence length")
 
     args = parser.parse_args()
 
@@ -758,9 +672,7 @@ def main():
     if args.output_dir is None:
         model_type = get_model_type_from_path(args.model_path)
         model_name = get_model_name_from_path(args.model_path)
-        args.output_dir = get_evaluation_output_dir(
-            model_type, "bert_clinvar", model_name
-        )
+        args.output_dir = get_evaluation_output_dir(model_type, "bert_clinvar", model_name)
     else:
         os.makedirs(args.output_dir, exist_ok=True)
 

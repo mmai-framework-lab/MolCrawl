@@ -47,9 +47,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # プロジェクトルートを追加
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 try:
     from src.config.paths import get_genome_tokenizer_path
@@ -141,11 +139,7 @@ class OMIMEvaluator(ModelEvaluator):
                 self.model = GPT(gptconf)
 
                 state_dict = checkpoint["model"]
-                state_dict = {
-                    k: v
-                    for k, v in state_dict.items()
-                    if not k.startswith("_orig_mod.")
-                }
+                state_dict = {k: v for k, v in state_dict.items() if not k.startswith("_orig_mod.")}
                 self.model.load_state_dict(state_dict)
                 self.model.eval()
                 self.model.to(self.device)
@@ -244,9 +238,7 @@ class OMIMEvaluator(ModelEvaluator):
 
         return df
 
-    def evaluate_variants(
-        self, df: pd.DataFrame, batch_size: int = 16
-    ) -> Dict[str, Any]:
+    def evaluate_variants(self, df: pd.DataFrame, batch_size: int = 16) -> Dict[str, Any]:
         """バリアントを評価"""
         self.logger.info("Starting model evaluation on OMIM data")
 
@@ -283,9 +275,7 @@ class OMIMEvaluator(ModelEvaluator):
         optimal_threshold = self.find_optimal_threshold(true_labels, prediction_scores)
 
         # 予測ラベル生成
-        predictions = [
-            1 if score > optimal_threshold else 0 for score in prediction_scores
-        ]
+        predictions = [1 if score > optimal_threshold else 0 for score in prediction_scores]
 
         # 結果保存
         self.true_labels = true_labels
@@ -293,9 +283,7 @@ class OMIMEvaluator(ModelEvaluator):
         self.prediction_scores = prediction_scores
 
         # 評価指標計算
-        results = self.calculate_metrics(
-            true_labels, predictions, prediction_scores, optimal_threshold
-        )
+        results = self.calculate_metrics(true_labels, predictions, prediction_scores, optimal_threshold)
 
         # 遺伝形式別分析
         if inheritance_patterns:
@@ -308,9 +296,7 @@ class OMIMEvaluator(ModelEvaluator):
 
         return results
 
-    def find_optimal_threshold(
-        self, true_labels: List[int], scores: List[float]
-    ) -> float:
+    def find_optimal_threshold(self, true_labels: List[int], scores: List[float]) -> float:
         """最適な閾値を見つける"""
         try:
             fpr, tpr, thresholds = roc_curve(true_labels, scores)
@@ -396,9 +382,7 @@ class OMIMEvaluator(ModelEvaluator):
 
         for pattern in unique_patterns:
             # パターン別データ抽出
-            pattern_indices = [
-                i for i, p in enumerate(inheritance_patterns) if p == pattern
-            ]
+            pattern_indices = [i for i, p in enumerate(inheritance_patterns) if p == pattern]
             pattern_true = [true_labels[i] for i in pattern_indices]
             pattern_pred = [predictions[i] for i in pattern_indices]
 
@@ -492,18 +476,14 @@ class OMIMEvaluator(ModelEvaluator):
 
 def main():
     """メイン関数"""
-    parser = argparse.ArgumentParser(
-        description="OMIM Evaluation for Genome Sequence Model"
-    )
+    parser = argparse.ArgumentParser(description="OMIM Evaluation for Genome Sequence Model")
     parser.add_argument(
         "--model_path",
         type=str,
         default="dummy_model",
         help="Path to the trained GPT-2 model (default: dummy_model)",
     )
-    parser.add_argument(
-        "--data_path", type=str, required=True, help="Path to OMIM evaluation dataset"
-    )
+    parser.add_argument("--data_path", type=str, required=True, help="Path to OMIM evaluation dataset")
     parser.add_argument(
         "--output_dir",
         type=str,

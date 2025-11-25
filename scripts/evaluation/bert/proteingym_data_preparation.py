@@ -62,9 +62,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(
-            f"{log_dir}/bert_proteingym_prep_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        ),
+        logging.FileHandler(f"{log_dir}/bert_proteingym_prep_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
         logging.StreamHandler(),
     ],
 )
@@ -189,9 +187,7 @@ class BERTProteinGymDataProcessor:
                 break
 
         if not dms_dir:
-            logger.error(
-                f"No ProteinGym CSV files found in {data_dir} or subdirectories"
-            )
+            logger.error(f"No ProteinGym CSV files found in {data_dir} or subdirectories")
             return datasets
 
         # DMS CSVファイルを読み込み
@@ -252,9 +248,7 @@ class BERTProteinGymDataProcessor:
             df_clean = df.dropna(subset=required_columns).copy()
 
             # DMS_scoreの有効性チェック
-            df_clean = df_clean[
-                (df_clean["DMS_score"].notna()) & (np.isfinite(df_clean["DMS_score"]))
-            ].copy()
+            df_clean = df_clean[(df_clean["DMS_score"].notna()) & (np.isfinite(df_clean["DMS_score"]))].copy()
 
             # 配列長の妥当性チェック
             df_clean = df_clean[
@@ -265,9 +259,7 @@ class BERTProteinGymDataProcessor:
             # アッセイごとのサンプリング
             if len(df_clean) > max_variants_per_assay:
                 df_clean = df_clean.sample(n=max_variants_per_assay, random_state=42)
-                logger.info(
-                    f"Sampled {max_variants_per_assay} variants from {dataset_name}"
-                )
+                logger.info(f"Sampled {max_variants_per_assay} variants from {dataset_name}")
 
             # データセット名を追加
             df_clean["assay_name"] = dataset_name
@@ -328,17 +320,13 @@ class BERTProteinGymDataProcessor:
         # mutantカラムがある場合
         if "mutant" in df.columns:
             df["target_seq"] = df.apply(
-                lambda row: infer_wildtype(
-                    row["mutated_sequence"], row.get("mutant", "")
-                ),
+                lambda row: infer_wildtype(row["mutated_sequence"], row.get("mutant", "")),
                 axis=1,
             )
         else:
             # mutant情報がない場合は、mutated_sequenceをそのまま使用
             df["target_seq"] = df["mutated_sequence"]
-            logger.warning(
-                "No mutant information found, using mutated_sequence as target_seq"
-            )
+            logger.warning("No mutant information found, using mutated_sequence as target_seq")
 
         return df
 
@@ -396,9 +384,7 @@ class BERTProteinGymDataProcessor:
         json_data = {
             "metadata": {
                 "total_variants": len(df),
-                "unique_assays": df["assay_name"].nunique()
-                if "assay_name" in df.columns
-                else 1,
+                "unique_assays": df["assay_name"].nunique() if "assay_name" in df.columns else 1,
                 "dms_score_range": [
                     float(df["DMS_score"].min()),
                     float(df["DMS_score"].max()),
@@ -431,9 +417,7 @@ class BERTProteinGymDataProcessor:
             f.write("=" * 50 + "\n\n")
 
             f.write(f"Total variants: {len(df)}\n")
-            f.write(
-                f"Unique assays: {df['assay_name'].nunique() if 'assay_name' in df.columns else 'N/A'}\n\n"
-            )
+            f.write(f"Unique assays: {df['assay_name'].nunique() if 'assay_name' in df.columns else 'N/A'}\n\n")
 
             f.write("DMS Score Distribution:\n")
             f.write(f"{df['DMS_score'].describe()}\n\n")
@@ -465,18 +449,14 @@ def main():
         default=None,
         help="Output directory for processed data (default: $LEARNING_SOURCE_DIR/protein_sequence/data/proteingym)",
     )
-    parser.add_argument(
-        "--download", action="store_true", help="Download ProteinGym data"
-    )
+    parser.add_argument("--download", action="store_true", help="Download ProteinGym data")
     parser.add_argument(
         "--max_variants_per_assay",
         type=int,
         default=1000,
         help="Maximum variants per assay",
     )
-    parser.add_argument(
-        "--sample_only", action="store_true", help="Create sample dataset only"
-    )
+    parser.add_argument("--sample_only", action="store_true", help="Create sample dataset only")
     parser.add_argument(
         "--data_dir",
         type=str,
@@ -530,14 +510,10 @@ def main():
             logger.info("Downloading ProteinGym data")
 
             # 置換変異データをダウンロード
-            zip_file = processor.download_file(
-                processor.PROTEINGYM_URLS["substitutions"]
-            )
+            zip_file = processor.download_file(processor.PROTEINGYM_URLS["substitutions"])
 
             # 参照データをダウンロード
-            ref_file = processor.download_file(
-                processor.PROTEINGYM_URLS["reference_substitutions"]
-            )
+            ref_file = processor.download_file(processor.PROTEINGYM_URLS["reference_substitutions"])
 
             # ZIPを展開
             extract_dir = processor.extract_zip(zip_file)
@@ -553,9 +529,7 @@ def main():
             datasets = processor.load_proteingym_data(data_dir)
 
         # BERT用に前処理
-        processed_df = processor.preprocess_for_bert(
-            datasets, max_variants_per_assay=args.max_variants_per_assay
-        )
+        processed_df = processor.preprocess_for_bert(datasets, max_variants_per_assay=args.max_variants_per_assay)
 
         # 保存
         processor.save_bert_ready_data(processed_df)

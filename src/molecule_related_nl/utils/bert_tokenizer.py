@@ -101,9 +101,7 @@ class BertMoleculeNlTokenizer:
         """
         Decode token IDs back to text
         """
-        return self.tokenizer.tokenizer.decode(
-            token_ids, skip_special_tokens=skip_special_tokens
-        )
+        return self.tokenizer.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
 
     def convert_tokens_to_string(self, tokens: List[str]) -> str:
         """

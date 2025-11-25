@@ -46,9 +46,7 @@ class OMIMRealDataProcessor:
         downloaded_files = {}
 
         for file_key, file_info in self.config["omim_data_sources"].items():
-            local_path = os.path.join(
-                self.data_dir, os.path.basename(file_info["local_path"])
-            )
+            local_path = os.path.join(self.data_dir, os.path.basename(file_info["local_path"]))
 
             if os.path.exists(local_path) and not force_download:
                 self.logger.info(f"File already exists: {local_path}")
@@ -92,9 +90,7 @@ class OMIMRealDataProcessor:
                             "mim_number": parts[0],
                             "mim_entry_type": parts[1],
                             "entrez_gene_id": parts[2] if parts[2] != "" else None,
-                            "approved_gene_symbol": parts[3]
-                            if parts[3] != ""
-                            else None,
+                            "approved_gene_symbol": parts[3] if parts[3] != "" else None,
                             "ensembl_gene_id": parts[4] if parts[4] != "" else None,
                         }
                     )
@@ -170,9 +166,7 @@ class OMIMRealDataProcessor:
                 if len(parts) >= len(column_names):
                     row_data = {}
                     for i, col in enumerate(column_names):
-                        row_data[col] = (
-                            parts[i] if i < len(parts) and parts[i] != "" else None
-                        )
+                        row_data[col] = parts[i] if i < len(parts) and parts[i] != "" else None
                     data.append(row_data)
 
         df = pd.DataFrame(data)
@@ -207,9 +201,7 @@ class OMIMRealDataProcessor:
                             "mim_number": mim_number,
                             "cyto_location": cyto_location,
                             "pathogenicity": pathogenicity,
-                            "is_disease_causing": 1
-                            if pathogenicity in ["pathogenic", "likely_pathogenic"]
-                            else 0,
+                            "is_disease_causing": 1 if pathogenicity in ["pathogenic", "likely_pathogenic"] else 0,
                         }
                     )
 
@@ -261,9 +253,7 @@ class OMIMRealDataProcessor:
         else:
             return "uncertain_significance"
 
-    def generate_sequences_for_genes(
-        self, gene_symbols: List[str], sequence_length: int = 100
-    ) -> Dict[str, str]:
+    def generate_sequences_for_genes(self, gene_symbols: List[str], sequence_length: int = 100) -> Dict[str, str]:
         """遺伝子シンボルに基づいてダミー配列を生成"""
         sequences = {}
 
@@ -278,9 +268,7 @@ class OMIMRealDataProcessor:
 
         return sequences
 
-    def create_evaluation_dataset(
-        self, downloaded_files: Dict[str, str]
-    ) -> pd.DataFrame:
+    def create_evaluation_dataset(self, downloaded_files: Dict[str, str]) -> pd.DataFrame:
         """評価用データセットを作成"""
         self.logger.info("Creating evaluation dataset from OMIM real data")
 
@@ -354,12 +342,8 @@ class OMIMRealDataProcessor:
         merged_df = merged_df[merged_df["sequence"] != ""]
 
         self.logger.info(f"Created evaluation dataset with {len(merged_df)} entries")
-        self.logger.info(
-            f"Disease-causing variants: {merged_df['is_disease_causing'].sum()}"
-        )
-        self.logger.info(
-            f"Benign variants: {(merged_df['is_disease_causing'] == 0).sum()}"
-        )
+        self.logger.info(f"Disease-causing variants: {merged_df['is_disease_causing'].sum()}")
+        self.logger.info(f"Benign variants: {(merged_df['is_disease_causing'] == 0).sum()}")
 
         return merged_df
 
@@ -386,9 +370,7 @@ def process_omim_real_data(
     log_dir = os.path.join(output_dir, "logs")
     os.makedirs(log_dir, exist_ok=True)
 
-    log_file = os.path.join(
-        log_dir, f"omim_real_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-    )
+    log_file = os.path.join(log_dir, f"omim_real_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -449,12 +431,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Process OMIM Real Data")
-    parser.add_argument(
-        "--config", type=str, required=True, help="Path to OMIM real data config file"
-    )
-    parser.add_argument(
-        "--output_dir", type=str, required=True, help="Output directory"
-    )
+    parser.add_argument("--config", type=str, required=True, help="Path to OMIM real data config file")
+    parser.add_argument("--output_dir", type=str, required=True, help="Output directory")
     parser.add_argument(
         "--existing_omim_dir",
         type=str,

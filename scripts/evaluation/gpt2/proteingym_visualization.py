@@ -20,9 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
 from utils.base_visualization import BaseVisualizationGenerator
 
 # ログ設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -134,9 +132,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
 
         logger.info(f"Correlation scatter plot saved to {save_path}")
 
-    def plot_score_distributions(
-        self, true_scores, predicted_scores, save_name="score_distributions.png"
-    ):
+    def plot_score_distributions(self, true_scores, predicted_scores, save_name="score_distributions.png"):
         """
         スコア分布の比較図を作成
 
@@ -346,19 +342,14 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
         ax1.grid(True, alpha=0.3)
 
         # 変異タイプ別のボックスプロット（真の値）
-        mutation_data_true = [
-            df[df["mutation_type"] == mt]["true_score"].values for mt in mutation_types
-        ]
+        mutation_data_true = [df[df["mutation_type"] == mt]["true_score"].values for mt in mutation_types]
         ax2.boxplot(mutation_data_true, labels=mutation_types)
         ax2.set_ylabel("True Score", fontsize=12)
         ax2.set_title("True Score Distribution by Mutation Type", fontsize=14)
         ax2.grid(True, alpha=0.3)
 
         # 変異タイプ別のボックスプロット（予測値）
-        mutation_data_pred = [
-            df[df["mutation_type"] == mt]["predicted_score"].values
-            for mt in mutation_types
-        ]
+        mutation_data_pred = [df[df["mutation_type"] == mt]["predicted_score"].values for mt in mutation_types]
         ax3.boxplot(mutation_data_pred, labels=mutation_types)
         ax3.set_ylabel("Predicted Score", fontsize=12)
         ax3.set_title("Predicted Score Distribution by Mutation Type", fontsize=14)
@@ -410,17 +401,11 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
         # 予測データの読み込み（ある場合）
         if prediction_file and os.path.exists(prediction_file):
             df = self.load_prediction_data(prediction_file)
-            true_scores = (
-                df["true_score"].values
-                if "true_score" in df.columns
-                else df["DMS_score"].values
-            )
+            true_scores = df["true_score"].values if "true_score" in df.columns else df["DMS_score"].values
             predicted_scores = df["predicted_score"].values
         else:
             # 結果から模擬データを生成
-            logger.warning(
-                "No prediction data file provided. Creating mock data for visualization."
-            )
+            logger.warning("No prediction data file provided. Creating mock data for visualization.")
             n_points = results.get("n_variants", 100)
             true_scores = np.random.beta(2, 5, n_points)  # ProteinGymに類似した分布
             noise_level = 0.3
@@ -444,9 +429,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
     # 抽象メソッドの実装
     def plot_confusion_matrix(self):
         """混同行列プロット（ProteinGymでは該当なし）"""
-        self.logger.info(
-            "Confusion matrix not applicable for ProteinGym regression task"
-        )
+        self.logger.info("Confusion matrix not applicable for ProteinGym regression task")
 
     def create_summary_dashboard(self):
         """サマリーダッシュボードの生成"""
@@ -502,9 +485,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
         self.logger.info("Generating all ProteinGym visualizations")
 
         if not self.results:
-            self.logger.warning(
-                "No results data loaded. Use load_evaluation_results() first."
-            )
+            self.logger.warning("No results data loaded. Use load_evaluation_results() first.")
             return
 
         self.create_summary_dashboard()
@@ -532,9 +513,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
 
         # 回帰問題なので、連続値のスコアを生成
         true_scores = np.random.normal(0, 1, n_samples)
-        predicted_scores = true_scores + np.random.normal(
-            0, 0.3, n_samples
-        )  # ノイズを追加
+        predicted_scores = true_scores + np.random.normal(0, 0.3, n_samples)  # ノイズを追加
 
         # 二値分類用のラベルを作成（閾値ベース）
         threshold = np.median(true_scores)
@@ -603,9 +582,7 @@ class ProteinGymVisualizer(BaseVisualizationGenerator):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="ProteinGym evaluation results visualization"
-    )
+    parser = argparse.ArgumentParser(description="ProteinGym evaluation results visualization")
     parser.add_argument(
         "--results_file",
         type=str,

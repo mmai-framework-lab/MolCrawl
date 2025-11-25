@@ -18,16 +18,12 @@ class VEPInfluence(torch.nn.Module):
     def get_log_odds(self, input_ids, aux_features, pos):
         other_pos = torch.ones(input_ids.shape[1], dtype=torch.bool)
         other_pos[pos] = False
-        logits = self.model(input_ids=input_ids, aux_features=aux_features).logits[
-            :, other_pos
-        ]
+        logits = self.model(input_ids=input_ids, aux_features=aux_features).logits[:, other_pos]
         logits = logits[:, :, self.vocab_start : self.vocab_end]
         probs = F.softmax(logits, dim=2)
         return torch.log(probs / (1 - probs))
 
-    def get_score(
-        self, input_ids_ref, aux_features_ref, input_ids_alt, aux_features_alt, pos
-    ):
+    def get_score(self, input_ids_ref, aux_features_ref, input_ids_alt, aux_features_alt, pos):
         log_odds_ref = self.get_log_odds(input_ids_ref, aux_features_ref, pos)
         log_odds_alt = self.get_log_odds(input_ids_alt, aux_features_alt, pos)
         res = torch.abs(log_odds_ref - log_odds_alt)
@@ -92,21 +88,15 @@ class VEPInfluenceInference(object):
         pos_fwd = self.window_size // 2
         pos_rev = pos_fwd - 1 if self.window_size % 2 == 0 else pos_fwd
 
-        ref_fwd = np.array(
-            [np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["ref"]]
-        )
-        alt_fwd = np.array(
-            [np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["alt"]]
-        )
+        ref_fwd = np.array([np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["ref"]])
+        alt_fwd = np.array([np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["alt"]])
         ref_rev = self.reverse_complementer(ref_fwd)
         alt_rev = self.reverse_complementer(alt_fwd)
 
         def prepare_output(msa, pos, ref, alt):
             ref, alt = self.tokenizer(ref.flatten()), self.tokenizer(alt.flatten())
             input_ids, aux_features = msa[:, :, 0], msa[:, :, 1:]
-            assert (input_ids[:, pos] == ref).all(), (
-                f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
-            )
+            assert (input_ids[:, pos] == ref).all(), f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
             input_ids_alt = input_ids.copy()
             input_ids_alt[:, pos] = alt
             input_ids = input_ids.astype(np.int64)

@@ -361,9 +361,7 @@ class NCBITaxonomyCompleteUpdater:
             f.write(f"// Group: {group_info['description']}\n")
             f.write(f"// NCBI Taxon ID: {group_info['taxon_id']}\n")
             f.write(f"// Total genera: {len(genera_list)}\n")
-            f.write(
-                f"// Changes: +{len(comparison['added'])} -{len(comparison['removed'])}\n"
-            )
+            f.write(f"// Changes: +{len(comparison['added'])} -{len(comparison['removed'])}\n")
             f.write("\n")
 
             for genus in genera_list:
@@ -377,9 +375,7 @@ class NCBITaxonomyCompleteUpdater:
 
         with open(report_path, "w", encoding="utf-8") as f:
             f.write("# NCBI Taxonomy Update Report\n\n")
-            f.write(
-                f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-            )
+            f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
             f.write("## Summary\n\n")
             f.write("| Group | Description | Genera | Added | Removed |\n")
@@ -395,17 +391,13 @@ class NCBITaxonomyCompleteUpdater:
                 added = len(comparison["added"])
                 removed = len(comparison["removed"])
 
-                f.write(
-                    f"| {group_name} | {desc} | {count:,} | +{added} | -{removed} |\n"
-                )
+                f.write(f"| {group_name} | {desc} | {count:,} | +{added} | -{removed} |\n")
 
                 total_genera += count
                 total_added += added
                 total_removed += removed
 
-            f.write(
-                f"| **Total** | | **{total_genera:,}** | **+{total_added}** | **-{total_removed}** |\n\n"
-            )
+            f.write(f"| **Total** | | **{total_genera:,}** | **+{total_added}** | **-{total_removed}** |\n\n")
 
             # 詳細変更
             f.write("## Detailed Changes\n\n")
@@ -427,9 +419,7 @@ class NCBITaxonomyCompleteUpdater:
                         for genus in comparison["removed"][:20]:
                             f.write(f"- {genus}\n")
                         if len(comparison["removed"]) > 20:
-                            f.write(
-                                f"- ... and {len(comparison['removed']) - 20} more\n"
-                            )
+                            f.write(f"- ... and {len(comparison['removed']) - 20} more\n")
                         f.write("\n")
 
         print(f"📊 Summary report saved: {report_path}")
@@ -494,9 +484,7 @@ class NCBITaxonomyCompleteUpdater:
             all_results[group_name] = (genera_list, comparison)
 
             # 進捗表示
-            print(
-                f"  ✅ {group_name}: {len(genera_list)} genera (+{len(comparison['added'])} -{len(comparison['removed'])})"
-            )
+            print(f"  ✅ {group_name}: {len(genera_list)} genera (+{len(comparison['added'])} -{len(comparison['removed'])})")
 
         # 全体レポート生成
         if all_results:

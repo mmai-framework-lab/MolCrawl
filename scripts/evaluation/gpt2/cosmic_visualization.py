@@ -253,9 +253,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
         }
 
         # 多数クラス予測（すべて非癌原性と予測）
-        majority_class_acc = (
-            self.results["non_oncogenic_samples"] / self.results["total_samples"]
-        )
+        majority_class_acc = self.results["non_oncogenic_samples"] / self.results["total_samples"]
         majority_baseline = {
             "Accuracy": majority_class_acc,
             "Precision": 0.0,
@@ -276,9 +274,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
 
         plt.bar(x - width, model_values, width, label="Genome Model", color="#1f77b4")
         plt.bar(x, random_values, width, label="Random Baseline", color="#ff7f0e")
-        plt.bar(
-            x + width, majority_values, width, label="Majority Class", color="#2ca02c"
-        )
+        plt.bar(x + width, majority_values, width, label="Majority Class", color="#2ca02c")
 
         plt.xlabel("Metrics")
         plt.ylabel("Score")
@@ -289,15 +285,11 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
 
         # 値をバーの上に表示
         for i, v in enumerate(model_values):
-            plt.text(
-                i - width, v + 0.02, f"{v:.3f}", ha="center", va="bottom", fontsize=9
-            )
+            plt.text(i - width, v + 0.02, f"{v:.3f}", ha="center", va="bottom", fontsize=9)
         for i, v in enumerate(random_values):
             plt.text(i, v + 0.02, f"{v:.3f}", ha="center", va="bottom", fontsize=9)
         for i, v in enumerate(majority_values):
-            plt.text(
-                i + width, v + 0.02, f"{v:.3f}", ha="center", va="bottom", fontsize=9
-            )
+            plt.text(i + width, v + 0.02, f"{v:.3f}", ha="center", va="bottom", fontsize=9)
 
         output_file = self.output_dir / "baseline_comparison.png"
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
@@ -607,9 +599,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
         """混同行列プロット"""
         self.logger.info("Creating COSMIC confusion matrix plot")
         plt.figure(figsize=(8, 6))
-        plt.text(
-            0.5, 0.5, "COSMIC Confusion Matrix\n(Placeholder)", ha="center", va="center"
-        )
+        plt.text(0.5, 0.5, "COSMIC Confusion Matrix\n(Placeholder)", ha="center", va="center")
         plt.title("COSMIC Confusion Matrix")
         self._save_plot("cosmic_confusion_matrix")
 
@@ -715,9 +705,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
 
 def main():
     """メイン処理"""
-    parser = argparse.ArgumentParser(
-        description="Generate COSMIC evaluation visualizations"
-    )
+    parser = argparse.ArgumentParser(description="Generate COSMIC evaluation visualizations")
     parser.add_argument(
         "--results_file",
         required=True,
@@ -728,9 +716,7 @@ def main():
         default="./cosmic_visualizations",
         help="Output directory for visualizations",
     )
-    parser.add_argument(
-        "--html_report", action="store_true", help="Generate HTML report"
-    )
+    parser.add_argument("--html_report", action="store_true", help="Generate HTML report")
 
     args = parser.parse_args()
 

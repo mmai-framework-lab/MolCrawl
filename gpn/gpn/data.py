@@ -21,21 +21,13 @@ UNMASKED_SYMBOLS = np.frombuffer("ACGT".encode("ascii"), dtype="S1")
 def load_fasta(path, subset_chroms=None):
     with gzip.open(path, "rt") if path.endswith(".gz") else open(path) as handle:
         genome = pd.Series(
-            {
-                rec.id: str(rec.seq)
-                for rec in SeqIO.parse(handle, "fasta")
-                if subset_chroms is None or rec.id in subset_chroms
-            }
+            {rec.id: str(rec.seq) for rec in SeqIO.parse(handle, "fasta") if subset_chroms is None or rec.id in subset_chroms}
         )
     return genome
 
 
 def save_fasta(path, genome):
-    with (
-        bgzf.BgzfWriter(path, "wb")
-        if path.endswith(".gz")
-        else open(path, "w") as handle
-    ):
+    with bgzf.BgzfWriter(path, "wb") if path.endswith(".gz") else open(path, "w") as handle:
         SeqIO.write(genome.values(), handle, "fasta")
 
 
@@ -81,9 +73,7 @@ def load_table(path):
 
 
 def load_repeatmasker(path):
-    df = pd.read_csv(path, sep="\t").rename(
-        columns=dict(genoName="chrom", genoStart="start", genoEnd="end")
-    )
+    df = pd.read_csv(path, sep="\t").rename(columns=dict(genoName="chrom", genoStart="start", genoEnd="end"))
     df.chrom = df.chrom.astype(str)
     return df
 
@@ -122,18 +112,11 @@ class Genome:
         return seq_fwd, seq_rev
 
     def get_all_intervals(self):
-        return pd.DataFrame(
-            [
-                {"chrom": chrom, "start": 0, "end": len(seq)}
-                for chrom, seq in self._genome.items()
-            ]
-        )
+        return pd.DataFrame([{"chrom": chrom, "start": 0, "end": len(seq)} for chrom, seq in self._genome.items()])
 
     def get_intervals_matching_symbols(self, symbols):
         def get_intervals_matching_symbols_chrom(chrom):
-            complete_interval = pd.DataFrame(
-                {"chrom": [chrom.name], "start": [0], "end": [len(chrom.seq)]}
-            )
+            complete_interval = pd.DataFrame({"chrom": [chrom.name], "start": [0], "end": [len(chrom.seq)]})
             intervals = pd.DataFrame(
                 dict(
                     start=np.where(
@@ -194,15 +177,13 @@ def token_input_id(token, tokenizer, n_prefix=0):
 
 def get_annotation_features(annotation, feature):
     annotation_features = annotation[annotation.feature == feature]
-    return bf.merge(
-        bf.sanitize_bedframe(annotation_features[["chrom", "start", "end"]])
-    )
+    return bf.merge(bf.sanitize_bedframe(annotation_features[["chrom", "start", "end"]]))
 
 
 def intersect_intervals(a, b):
-    return bf.overlap(a, b, how="inner", return_overlap=True)[
-        ["chrom", "overlap_start", "overlap_end"]
-    ].rename(columns=dict(overlap_start="start", overlap_end="end"))
+    return bf.overlap(a, b, how="inner", return_overlap=True)[["chrom", "overlap_start", "overlap_end"]].rename(
+        columns=dict(overlap_start="start", overlap_end="end")
+    )
 
 
 def union_intervals(a, b):
@@ -303,15 +284,11 @@ def get_random_intervals(intervals, size, n, seed=42):
     return bf.merge(rand_intervals).drop(columns="n_intervals")
 
 
-def get_balanced_intervals(
-    defined_intervals, annotation, window_size, promoter_upstream=1000
-):
+def get_balanced_intervals(defined_intervals, annotation, window_size, promoter_upstream=1000):
     # there's the issue of pseudogenes though... should be aware
     exons = add_flank(get_annotation_features(annotation, "exon"), window_size // 2)
     print("exons: ", intervals_size(exons) / intervals_size(defined_intervals))
-    promoters = add_flank(
-        get_promoters(annotation, promoter_upstream), window_size // 2
-    )
+    promoters = add_flank(get_promoters(annotation, promoter_upstream), window_size // 2)
     print("promoters: ", intervals_size(promoters) / intervals_size(defined_intervals))
     intervals = union_intervals(exons, promoters)
     intervals = intersect_intervals(add_jitter(intervals, 100), defined_intervals)
@@ -320,9 +297,7 @@ def get_balanced_intervals(
     print("intervals: ", intervals_size(intervals) / intervals_size(defined_intervals))
     # maybe add a 0.5 factor
     n_random_intervals = intervals_size(intervals) // window_size
-    random_intervals = get_random_intervals(
-        defined_intervals, window_size, n_random_intervals
-    )
+    random_intervals = get_random_intervals(defined_intervals, window_size, n_random_intervals)
     print(
         "random_intervals: ",
         intervals_size(random_intervals) / intervals_size(defined_intervals),
@@ -337,9 +312,7 @@ def get_balanced_intervals(
 def make_windows(intervals, window_size, step_size, add_rc=False):
     return pd.concat(
         intervals.progress_apply(
-            lambda interval: get_interval_windows(
-                interval, window_size, step_size, add_rc
-            ),
+            lambda interval: get_interval_windows(interval, window_size, step_size, add_rc),
             axis=1,
         ).values,
         ignore_index=True,
@@ -347,9 +320,7 @@ def make_windows(intervals, window_size, step_size, add_rc=False):
 
 
 def get_interval_windows(interval, window_size, step_size, add_rc):
-    windows = pd.DataFrame(
-        dict(start=np.arange(interval.start, interval.end - window_size + 1, step_size))
-    )
+    windows = pd.DataFrame(dict(start=np.arange(interval.start, interval.end - window_size + 1, step_size)))
     windows["end"] = windows.start + window_size
     windows["chrom"] = interval.chrom
     windows = windows[["chrom", "start", "end"]]  # just re-ordering
@@ -428,51 +399,34 @@ class GenomeMSA(object):
             msa_rev = self.tokenizer(msa_rev)
         return msa_fwd, msa_rev
 
-    def get_msa_batch(
-        self, chroms, starts, ends, strands, backend=None, n_jobs=None, **kwargs
-    ):
+    def get_msa_batch(self, chroms, starts, ends, strands, backend=None, n_jobs=None, **kwargs):
         if backend == "multiprocessing":
             with mp.Pool(processes=n_jobs) as pool:
                 msa_batch = pool.starmap(
                     _get_msa,
-                    [
-                        (i, chroms, starts, ends, strands, self, kwargs)
-                        for i in range(len(chroms))
-                    ],
+                    [(i, chroms, starts, ends, strands, self, kwargs) for i in range(len(chroms))],
                 )
         elif backend == "joblib":
             msa_batch = Parallel(n_jobs=n_jobs)(
-                delayed(_get_msa)(i, chroms, starts, ends, strands, self, kwargs)
-                for i in range(len(chroms))
+                delayed(_get_msa)(i, chroms, starts, ends, strands, self, kwargs) for i in range(len(chroms))
             )
         elif backend is None:
-            msa_batch = [
-                _get_msa(i, chroms, starts, ends, strands, self, kwargs)
-                for i in range(len(chroms))
-            ]
+            msa_batch = [_get_msa(i, chroms, starts, ends, strands, self, kwargs) for i in range(len(chroms))]
         msa_batch = np.array(msa_batch)
         return msa_batch
 
-    def get_msa_batch_fwd_rev(
-        self, chroms, starts, ends, backend=None, n_jobs=None, **kwargs
-    ):
+    def get_msa_batch_fwd_rev(self, chroms, starts, ends, backend=None, n_jobs=None, **kwargs):
         if backend == "multiprocessing":
             with mp.Pool(processes=n_jobs) as pool:
                 msa_batch_fwd, msa_batch_rev = zip(
                     *pool.starmap(
                         _get_msa_fwd_rev,
-                        [
-                            (i, chroms, starts, ends, self, kwargs)
-                            for i in range(len(chroms))
-                        ],
+                        [(i, chroms, starts, ends, self, kwargs) for i in range(len(chroms))],
                     )
                 )
         elif backend is None:
             msa_batch_fwd, msa_batch_rev = zip(
-                *[
-                    _get_msa_fwd_rev(i, chroms, starts, ends, self, kwargs)
-                    for i in range(len(chroms))
-                ]
+                *[_get_msa_fwd_rev(i, chroms, starts, ends, self, kwargs) for i in range(len(chroms))]
             )
         msa_batch_fwd = np.array(msa_batch_fwd)
         msa_batch_rev = np.array(msa_batch_rev)
@@ -488,28 +442,19 @@ class GenomeMSA(object):
         alt_prob = alt_count / (ref_count + alt_count)
         return np.log(alt_prob) - np.log(ref_prob)
 
-    def run_vep_batch(
-        self, chroms, poss, refs, alts, backend=None, n_jobs=None, **kwargs
-    ):
+    def run_vep_batch(self, chroms, poss, refs, alts, backend=None, n_jobs=None, **kwargs):
         if backend == "multiprocessing":
             with mp.Pool(processes=n_jobs) as pool:
                 vep_batch = pool.starmap(
                     _run_vep,
-                    [
-                        (i, chroms, poss, refs, alts, self, kwargs)
-                        for i in range(len(chroms))
-                    ],
+                    [(i, chroms, poss, refs, alts, self, kwargs) for i in range(len(chroms))],
                 )
         elif backend == "joblib":
             vep_batch = Parallel(n_jobs=n_jobs)(
-                delayed(_run_vep)(i, chroms, poss, refs, alts, self, kwargs)
-                for i in tqdm(range(len(chroms)))
+                delayed(_run_vep)(i, chroms, poss, refs, alts, self, kwargs) for i in tqdm(range(len(chroms)))
             )
         elif backend is None:
-            vep_batch = [
-                _run_vep(i, chroms, poss, refs, alts, self, kwargs)
-                for i in tqdm(range(len(chroms)))
-            ]
+            vep_batch = [_run_vep(i, chroms, poss, refs, alts, self, kwargs) for i in tqdm(range(len(chroms)))]
         return np.array(vep_batch)
 
 
@@ -569,10 +514,7 @@ class ReverseComplementer(object):
         # Create a translation table that maps each byte to its complement.
         # If a byte does not represent a recognized character, it maps to itself.
         self.table = np.array(
-            [
-                complement_mapping.get(chr(i).encode(), chr(i).encode())
-                for i in range(256)
-            ],
+            [complement_mapping.get(chr(i).encode(), chr(i).encode()) for i in range(256)],
             dtype="|S1",
         )
 

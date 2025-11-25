@@ -48,9 +48,7 @@ class BertRnaTokenizer:
         if hasattr(self.tokenizer, "gene_token_dict"):
             for gene_id, token_id in self.tokenizer.gene_token_dict.items():
                 # Offset by 5 to account for special tokens
-                adjusted_token_id = (
-                    token_id + 5 if isinstance(token_id, int) else token_id
-                )
+                adjusted_token_id = token_id + 5 if isinstance(token_id, int) else token_id
                 self.vocab[gene_id] = adjusted_token_id
 
     def get_vocab(self):
@@ -152,9 +150,7 @@ class BertRnaTokenizer:
                 input_ids.append(encoded)
 
                 # Create attention mask
-                attention_mask = [
-                    1 if token_id != self.pad_token_id else 0 for token_id in encoded
-                ]
+                attention_mask = [1 if token_id != self.pad_token_id else 0 for token_id in encoded]
                 attention_masks.append(attention_mask)
 
             result = {"input_ids": input_ids, "attention_mask": attention_masks}
@@ -175,9 +171,7 @@ class BertRnaTokenizer:
             )
 
             # Create attention mask
-            attention_mask = [
-                1 if token_id != self.pad_token_id else 0 for token_id in input_ids
-            ]
+            attention_mask = [1 if token_id != self.pad_token_id else 0 for token_id in input_ids]
 
             result = {"input_ids": input_ids, "attention_mask": attention_mask}
 

@@ -27,9 +27,7 @@ learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR", "learning_20251121")
 dataset = "molecule_nl"
 
 # Configure dataset parameters for PreparedDataset
-dataset_params = {
-    "dataset_dir": f"{learning_source_dir}/molecule_nl/arrow_splits"
-}
+dataset_params = {"dataset_dir": f"{learning_source_dir}/molecule_nl/arrow_splits"}
 
 # Model
 block_size = 512  # Context length
@@ -68,7 +66,7 @@ meta_vocab_size = (len(tokenizer) // 8 + 1) * 8
 tensorboard = True
 tensorboard_dir = f"{out_dir}/tensorboard"
 
-print(f"📊 GPT-2 Molecule NL Configuration")
+print("📊 GPT-2 Molecule NL Configuration")
 print(f"   Dataset: {dataset_params['dataset_dir']}")
 print(f"   Vocab size: {meta_vocab_size}")
 print(f"   Block size: {block_size}")

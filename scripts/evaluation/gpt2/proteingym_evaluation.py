@@ -57,26 +57,18 @@ class ProteinGymEvaluator(ModelEvaluator):
             import sys
             import os
 
-            sys.path.append(
-                os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
-            )
+            sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
             from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")
             tokenizer = EsmSequenceTokenizer()
             self.vocab_size = len(tokenizer.get_vocab())
-            logger.info(
-                f"EsmSequenceTokenizer initialized with vocab_size: {self.vocab_size}"
-            )
+            logger.info(f"EsmSequenceTokenizer initialized with vocab_size: {self.vocab_size}")
 
             # モデルが40のvocab_sizeで学習されている一方、EsmSequenceTokenizerは33のvocab_sizeの場合の対処
             if self.vocab_size != 40:
-                logger.info(
-                    f"EsmSequenceTokenizer vocab_size ({self.vocab_size}) != model vocab_size (40)"
-                )
-                logger.info(
-                    "Using SimpleTokenizer with padding tokens to match model vocab_size"
-                )
+                logger.info(f"EsmSequenceTokenizer vocab_size ({self.vocab_size}) != model vocab_size (40)")
+                logger.info("Using SimpleTokenizer with padding tokens to match model vocab_size")
                 return self._init_simple_amino_acid_tokenizer()
 
             return tokenizer
@@ -138,9 +130,7 @@ class ProteinGymEvaluator(ModelEvaluator):
         self.id_to_token = {idx: token for idx, token in enumerate(vocab_list)}
         self.vocab_size = len(vocab_list)  # 40
 
-        logger.info(
-            f"Simple amino acid tokenizer initialized with vocab_size: {self.vocab_size}"
-        )
+        logger.info(f"Simple amino acid tokenizer initialized with vocab_size: {self.vocab_size}")
 
         class SimpleTokenizer:
             """シンプルなアミノ酸トークナイザー（フォールバック用）"""
@@ -268,17 +258,9 @@ class ProteinGymEvaluator(ModelEvaluator):
             logger.warning(f"Empty tokenization for sequence: {sequence[:50]}...")
             # 空の場合は未知トークンを返す
             if self.use_protein_tokenizer:
-                tokens = (
-                    [self.tokenizer.unk_token_id]
-                    if hasattr(self.tokenizer, "unk_token_id")
-                    else [3]
-                )  # <unk> token
+                tokens = [self.tokenizer.unk_token_id] if hasattr(self.tokenizer, "unk_token_id") else [3]  # <unk> token
             else:
-                tokens = (
-                    [self.tokenizer.unk_id()]
-                    if hasattr(self.tokenizer, "unk_id")
-                    else [0]
-                )
+                tokens = [self.tokenizer.unk_id()] if hasattr(self.tokenizer, "unk_id") else [0]
 
         return torch.tensor(tokens, dtype=torch.long)
 
@@ -301,9 +283,7 @@ class ProteinGymEvaluator(ModelEvaluator):
 
             # 最小長を確保（1以上）
             if len(wt_tokens) == 0:
-                logger.warning(
-                    "Wildtype sequence tokenization resulted in empty tokens"
-                )
+                logger.warning("Wildtype sequence tokenization resulted in empty tokens")
                 return 0.0
             if len(mut_tokens) == 0:
                 logger.warning("Mutant sequence tokenization resulted in empty tokens")
@@ -319,17 +299,13 @@ class ProteinGymEvaluator(ModelEvaluator):
             wt_tokens = wt_tokens.unsqueeze(0).to(self.device)
             mut_tokens = mut_tokens.unsqueeze(0).to(self.device)
 
-            logger.debug(
-                f"Model input shapes - wt: {wt_tokens.shape}, mut: {mut_tokens.shape}"
-            )
+            logger.debug(f"Model input shapes - wt: {wt_tokens.shape}, mut: {mut_tokens.shape}")
 
             # モデルの予測確率を取得
             wt_logits, _ = self.model(wt_tokens)
             mut_logits, _ = self.model(mut_tokens)
 
-            logger.debug(
-                f"Model output shapes - wt: {wt_logits.shape}, mut: {mut_logits.shape}"
-            )
+            logger.debug(f"Model output shapes - wt: {wt_logits.shape}, mut: {mut_logits.shape}")
 
             # 対数尤度を計算
             if wt_logits.size(1) == wt_tokens.size(1):
@@ -337,12 +313,8 @@ class ProteinGymEvaluator(ModelEvaluator):
                 mut_log_prob = F.log_softmax(mut_logits, dim=-1)
 
                 # 各トークンの尤度を計算
-                wt_likelihood = self._calculate_sequence_likelihood(
-                    wt_tokens, wt_log_prob
-                )
-                mut_likelihood = self._calculate_sequence_likelihood(
-                    mut_tokens, mut_log_prob
-                )
+                wt_likelihood = self._calculate_sequence_likelihood(wt_tokens, wt_log_prob)
+                mut_likelihood = self._calculate_sequence_likelihood(mut_tokens, mut_log_prob)
             else:
                 # トークンごとに処理
                 wt_likelihood = self._calculate_likelihood_token_by_token(wt_tokens)
@@ -358,9 +330,7 @@ class ProteinGymEvaluator(ModelEvaluator):
         """配列の対数尤度を計算"""
         # 入力チェック
         if tokens.size(1) <= 1:
-            logger.warning(
-                f"Sequence too short for likelihood calculation: {tokens.shape}"
-            )
+            logger.warning(f"Sequence too short for likelihood calculation: {tokens.shape}")
             return torch.tensor(0.0, device=tokens.device)
 
         if log_probs.size(1) == 0:
@@ -373,15 +343,11 @@ class ProteinGymEvaluator(ModelEvaluator):
 
         # サイズの再確認
         if pred_log_probs.size(1) != target_tokens.size(1):
-            logger.warning(
-                f"Size mismatch: pred_log_probs={pred_log_probs.shape}, target_tokens={target_tokens.shape}"
-            )
+            logger.warning(f"Size mismatch: pred_log_probs={pred_log_probs.shape}, target_tokens={target_tokens.shape}")
             return torch.tensor(0.0, device=tokens.device)
 
         # 各位置での正解トークンの対数確率を取得
-        token_log_probs = pred_log_probs.gather(2, target_tokens.unsqueeze(2)).squeeze(
-            2
-        )
+        token_log_probs = pred_log_probs.gather(2, target_tokens.unsqueeze(2)).squeeze(2)
 
         # 平均対数尤度を返す
         return token_log_probs.mean()
@@ -401,18 +367,14 @@ class ProteinGymEvaluator(ModelEvaluator):
 
             with torch.no_grad():
                 logits, _ = self.model(context)
-                log_probs = F.log_softmax(
-                    logits[:, -1:, :], dim=-1
-                )  # 最後の位置の予測のみ
+                log_probs = F.log_softmax(logits[:, -1:, :], dim=-1)  # 最後の位置の予測のみ
 
                 # 正解トークンの対数確率
                 token_log_prob = log_probs.gather(2, target.unsqueeze(2)).squeeze()
                 total_log_prob += token_log_prob.item()
                 count += 1
 
-        return torch.tensor(
-            total_log_prob / count if count > 0 else 0.0, device=tokens.device
-        )
+        return torch.tensor(total_log_prob / count if count > 0 else 0.0, device=tokens.device)
 
     def load_proteingym_data(self, proteingym_file):
         """
@@ -446,9 +408,7 @@ class ProteinGymEvaluator(ModelEvaluator):
 
         # target_seqがない場合は、mutated_sequenceから推定
         if "target_seq" not in df.columns and "mutant" in df.columns:
-            logger.info(
-                "Inferring target_seq from mutated_sequence and mutant information"
-            )
+            logger.info("Inferring target_seq from mutated_sequence and mutant information")
             df = self._infer_target_sequence(df)
 
         logger.info(f"Loaded {len(df)} ProteinGym variants")
@@ -482,9 +442,7 @@ class ProteinGymEvaluator(ModelEvaluator):
             return mutated_seq
 
         df["target_seq"] = df.apply(
-            lambda row: reverse_mutation(
-                row["mutated_sequence"], row.get("mutant", "")
-            ),
+            lambda row: reverse_mutation(row["mutated_sequence"], row.get("mutant", "")),
             axis=1,
         )
         return df
@@ -500,9 +458,7 @@ class ProteinGymEvaluator(ModelEvaluator):
         Returns:
             dict: 評価結果
         """
-        logger.info(
-            f"Starting model evaluation on ProteinGym data ({len(proteingym_data)} variants)"
-        )
+        logger.info(f"Starting model evaluation on ProteinGym data ({len(proteingym_data)} variants)")
         logger.info(f"Available columns: {list(proteingym_data.columns)}")
         logger.info(f"Sample data:\n{proteingym_data.head(3)}")
 
@@ -521,9 +477,7 @@ class ProteinGymEvaluator(ModelEvaluator):
                         mut_seq = row["mutated_sequence"]
                     else:
                         # target_seqがない場合は、mutated_sequenceを使用
-                        logger.warning(
-                            f"Row {idx}: target_seq not found, using mutated_sequence for both WT and mutant"
-                        )
+                        logger.warning(f"Row {idx}: target_seq not found, using mutated_sequence for both WT and mutant")
                         wt_seq = row["mutated_sequence"]  # 仮の処理
                         mut_seq = row["mutated_sequence"]
 
@@ -534,9 +488,7 @@ class ProteinGymEvaluator(ModelEvaluator):
 
                     # 配列の確認
                     if pd.isna(wt_seq) or pd.isna(mut_seq):
-                        logger.warning(
-                            f"Row {idx}: Missing sequence data (wt: {pd.isna(wt_seq)}, mut: {pd.isna(mut_seq)})"
-                        )
+                        logger.warning(f"Row {idx}: Missing sequence data (wt: {pd.isna(wt_seq)}, mut: {pd.isna(mut_seq)})")
                         continue
 
                     score = self.get_variant_fitness_score(wt_seq, mut_seq)
@@ -550,9 +502,7 @@ class ProteinGymEvaluator(ModelEvaluator):
                             f"First variant processed successfully: score={score:.4f}, DMS_score={row['DMS_score']:.4f}"
                         )
 
-                    logger.debug(
-                        f"Processed variant {len(fitness_scores)}/{len(proteingym_data)}"
-                    )
+                    logger.debug(f"Processed variant {len(fitness_scores)}/{len(proteingym_data)}")
 
                 except Exception as e:
                     logger.warning(f"Row {idx}: Error processing variant: {e}")
@@ -569,23 +519,15 @@ class ProteinGymEvaluator(ModelEvaluator):
                 )
 
         # 評価指標を計算
-        logger.info(
-            f"Successfully processed {len(fitness_scores)} out of {len(proteingym_data)} variants"
-        )
+        logger.info(f"Successfully processed {len(fitness_scores)} out of {len(proteingym_data)} variants")
 
         if len(fitness_scores) < 2:
-            logger.error(
-                f"Insufficient data for correlation calculation. Need at least 2 samples, got {len(fitness_scores)}"
-            )
+            logger.error(f"Insufficient data for correlation calculation. Need at least 2 samples, got {len(fitness_scores)}")
             logger.error("Check if:")
             logger.error("  1. ProteinGym data file contains valid sequences")
-            logger.error(
-                "  2. Required columns ('mutated_sequence', 'DMS_score') are present"
-            )
+            logger.error("  2. Required columns ('mutated_sequence', 'DMS_score') are present")
             logger.error("  3. Sequences can be properly tokenized")
-            raise ValueError(
-                f"Need at least 2 valid samples for evaluation, got {len(fitness_scores)}"
-            )
+            raise ValueError(f"Need at least 2 valid samples for evaluation, got {len(fitness_scores)}")
 
         fitness_scores = np.array(fitness_scores)
         true_scores = np.array(true_scores)
@@ -659,9 +601,7 @@ class ProteinGymEvaluator(ModelEvaluator):
             return obj
 
 
-def create_sample_proteingym_data(
-    output_file, balanced=True, positive_samples=1000, negative_samples=1000
-):
+def create_sample_proteingym_data(output_file, balanced=True, positive_samples=1000, negative_samples=1000):
     """
     サンプルProteinGymデータを作成（テスト用）
 
@@ -674,9 +614,7 @@ def create_sample_proteingym_data(
     logger.info(f"Creating sample ProteinGym data: {output_file}")
 
     if balanced:
-        logger.info(
-            f"Creating balanced dataset: {positive_samples} positive + {negative_samples} negative samples"
-        )
+        logger.info(f"Creating balanced dataset: {positive_samples} positive + {negative_samples} negative samples")
 
         # 陽性サンプル（高いDMS_score）を生成
         positive_data = []
@@ -790,9 +728,7 @@ def create_sample_proteingym_data(
         threshold = 0.5  # 中間値
         positive_count = len(df[df["DMS_score"] >= threshold])
         negative_count = len(df[df["DMS_score"] < threshold])
-        logger.info(
-            f"Sample balanced data created: {len(df)} total ({positive_count} positive, {negative_count} negative)"
-        )
+        logger.info(f"Sample balanced data created: {len(df)} total ({positive_count} positive, {negative_count} negative)")
     else:
         logger.info(f"Sample data created with {len(df)} variants")
 
@@ -812,12 +748,8 @@ def get_protein_tokenizer_path():
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="ProteinGym evaluation for protein sequence model"
-    )
-    parser.add_argument(
-        "--model_path", type=str, required=True, help="Path to trained model checkpoint"
-    )
+    parser = argparse.ArgumentParser(description="ProteinGym evaluation for protein sequence model")
+    parser.add_argument("--model_path", type=str, required=True, help="Path to trained model checkpoint")
     parser.add_argument(
         "--proteingym_data",
         type=str,
@@ -830,17 +762,13 @@ def main():
         default=None,
         help="Output directory for results (auto-generated if not provided)",
     )
-    parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size for evaluation"
-    )
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for evaluation")
     parser.add_argument(
         "--create_sample_data",
         action="store_true",
         help="Create sample ProteinGym data for testing",
     )
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="Device to use for evaluation"
-    )
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use for evaluation")
     parser.add_argument(
         "--tokenizer_path",
         type=str,
@@ -879,9 +807,7 @@ def main():
     if args.output_dir is None:
         model_type = get_model_type_from_path(args.model_path)
         model_name = get_model_name_from_path(args.model_path)
-        args.output_dir = get_evaluation_output_dir(
-            model_type, "proteingym", model_name
-        )
+        args.output_dir = get_evaluation_output_dir(model_type, "proteingym", model_name)
     else:
         os.makedirs(args.output_dir, exist_ok=True)
 
@@ -901,9 +827,7 @@ def main():
                 f"Balanced sample data created ({args.sample_positive_count} positive + {args.sample_negative_count} negative). Run again without --create_sample_data to evaluate."
             )
         else:
-            logger.info(
-                "Sample data created. Run again without --create_sample_data to evaluate."
-            )
+            logger.info("Sample data created. Run again without --create_sample_data to evaluate.")
         return
 
     try:
@@ -925,9 +849,7 @@ def main():
 
         # サンプル数の制限（テスト用）
         if args.max_samples is not None and len(proteingym_data) > args.max_samples:
-            logger.info(
-                f"Limiting evaluation to first {args.max_samples} samples (out of {len(proteingym_data)})"
-            )
+            logger.info(f"Limiting evaluation to first {args.max_samples} samples (out of {len(proteingym_data)})")
             proteingym_data = proteingym_data.head(args.max_samples)
 
         # モデル評価の実行
@@ -935,12 +857,8 @@ def main():
 
         # 結果の表示
         logger.info("=== Evaluation Results ===")
-        logger.info(
-            f"Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})"
-        )
-        logger.info(
-            f"Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})"
-        )
+        logger.info(f"Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})")
+        logger.info(f"Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})")
         logger.info(f"MAE: {results['mae']:.4f}")
         logger.info(f"RMSE: {results['rmse']:.4f}")
         logger.info(f"Number of variants: {results['n_variants']}")
@@ -959,12 +877,8 @@ def main():
             f.write(f"Tokenizer: {tokenizer_path}\n")
             f.write(f"Total variants evaluated: {results['n_variants']}\n\n")
             f.write("Performance Metrics:\n")
-            f.write(
-                f"  Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})\n"
-            )
-            f.write(
-                f"  Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})\n"
-            )
+            f.write(f"  Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})\n")
+            f.write(f"  Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})\n")
             f.write(f"  MAE: {results['mae']:.4f}\n")
             f.write(f"  RMSE: {results['rmse']:.4f}\n\n")
             f.write("Score Statistics:\n")

@@ -94,9 +94,7 @@ if __name__ == "__main__":
         type=int,
         default=8,
     )
-    parser.add_argument(
-        "--dataloader_num_workers", type=int, default=0, help="Dataloader num workers"
-    )
+    parser.add_argument("--dataloader_num_workers", type=int, default=0, help="Dataloader num workers")
     parser.add_argument(
         "--split",
         type=str,
@@ -125,15 +123,9 @@ if __name__ == "__main__":
         split=args.split,
         is_file=args.is_file,
     )
-    genome_msa = GenomeMSA(
-        args.msa_path, subset_chroms=dataset.unique("chrom"), in_memory=False
-    )
+    genome_msa = GenomeMSA(args.msa_path, subset_chroms=dataset.unique("chrom"), in_memory=False)
     # sorry this is hacky, should use subparsers
-    kwargs = (
-        dict(center_window_size=args.center_window_size)
-        if args.command == "embedding"
-        else {}
-    )
+    kwargs = dict(center_window_size=args.center_window_size) if args.command == "embedding" else {}
     inference = class_mapping[args.command](
         args.model_path,
         genome_msa,

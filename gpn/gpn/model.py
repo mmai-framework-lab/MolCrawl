@@ -41,7 +41,7 @@ from .legacy import (
     GPNRoFormerConfig,
     RoFormerOnlyMLMHead,
     GPNRoFormerModel,
-    GPNRoFormerForMaskedLM
+    GPNRoFormerForMaskedLM,
 )
 
 ENCODER_CLASS = {
@@ -67,9 +67,7 @@ class GPNEmbedding(nn.Module):
         if input_ids is not None:
             res = F.one_hot(input_ids, num_classes=self.config.hidden_size).float()
         elif input_probs is not None:
-            res = F.pad(
-                input_probs, (0, self.config.hidden_size - self.config.vocab_size)
-            )
+            res = F.pad(input_probs, (0, self.config.hidden_size - self.config.vocab_size))
         else:
             raise Exception("Either input_ids or input_probs should be provided")
 
@@ -86,8 +84,7 @@ class GPNEmbedding(nn.Module):
             res[
                 :,
                 :,
-                self.config.vocab_size : self.config.vocab_size
-                + self.config.n_aux_features,
+                self.config.vocab_size : self.config.vocab_size + self.config.n_aux_features,
             ] = aux_features
 
         return res
@@ -96,9 +93,7 @@ class GPNEmbedding(nn.Module):
 class GPNEmbedding2(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.word_embeddings = nn.Embedding(
-            config.vocab_size, config.hidden_size, padding_idx=0
-        )
+        self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=0)
 
     def forward(self, input_ids, **kwargs):
         return self.word_embeddings(input_ids)
@@ -118,9 +113,7 @@ def compute_loss(logits, labels, output_probs, loss_weight, vocab_size):
     elif labels is not None and loss_weight is not None:
         loss_fct = CrossEntropyLoss(reduction="none")
         labels = labels.view(-1)
-        loss = loss_fct(
-            logits.view(-1, vocab_size), labels
-        )  # what if we first exclude the ones with -100??
+        loss = loss_fct(logits.view(-1, vocab_size), labels)  # what if we first exclude the ones with -100??
         loss_weight = loss_weight.view(-1)
         loss_weight[labels == -100] = 0.0
         loss = (loss * loss_weight / loss_weight.sum()).sum()
@@ -151,9 +144,7 @@ class MLMHead(nn.Module):
             )
         else:
             self.transform = nn.Identity()
-        self.decoder = nn.Linear(
-            config.hidden_size, config.vocab_size, bias=config.bias
-        )
+        self.decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=config.bias)
 
     def forward(self, hidden_states):
         hidden_states = self.transform(hidden_states)
@@ -169,9 +160,7 @@ class StandardClassificationHead(nn.Module):
         self.ln = nn.LayerNorm(config.hidden_size, bias=config.bias)
         self.dense = nn.Linear(config.hidden_size, config.hidden_size, bias=config.bias)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.out_proj = nn.Linear(
-            config.hidden_size, config.num_labels, bias=config.bias
-        )
+        self.out_proj = nn.Linear(config.hidden_size, config.num_labels, bias=config.bias)
 
         self.config = config
 
@@ -359,9 +348,7 @@ class GPNModel(GPNPreTrainedModel):
         self.post_init()
 
     def forward(self, input_ids=None, input_probs=None, aux_features=None, **kwargs):
-        x = self.embeddings(
-            input_ids=input_ids, input_probs=input_probs, aux_features=aux_features
-        )
+        x = self.embeddings(input_ids=input_ids, input_probs=input_probs, aux_features=aux_features)
         x = self.encoder(x)
 
         # should be optional
@@ -389,9 +376,7 @@ class GPNForMaskedLM(GPNPreTrainedModel):
     def forward(self, labels=None, output_probs=None, loss_weight=None, **kwargs):
         hidden_state = self.model(**kwargs).last_hidden_state
         logits = self.cls(hidden_state)
-        loss = compute_loss(
-            logits, labels, output_probs, loss_weight, self.config.vocab_size
-        )
+        loss = compute_loss(logits, labels, output_probs, loss_weight, self.config.vocab_size)
         return MaskedLMOutput(
             loss=loss,
             logits=logits,
@@ -429,9 +414,7 @@ class GPNForSequenceClassification(GPNPreTrainedModel):
             config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
         """
-        hidden_state = self.model(
-            input_ids=input_ids, aux_features=aux_features
-        ).last_hidden_state
+        hidden_state = self.model(input_ids=input_ids, aux_features=aux_features).last_hidden_state
         logits = self.classifier(hidden_state)
         if self.regression_softplus:
             logits = F.softplus(logits)
@@ -441,9 +424,7 @@ class GPNForSequenceClassification(GPNPreTrainedModel):
             if self.config.problem_type is None:
                 if self.num_labels == 1:
                     self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (
-                    labels.dtype == torch.long or labels.dtype == torch.int
-                ):
+                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
                     self.config.problem_type = "single_label_classification"
                 else:
                     self.config.problem_type = "multi_label_classification"
@@ -512,9 +493,7 @@ class GPNForTokenClassification(GPNPreTrainedModel):
 class GPNEmbeddingWPosition(GPNEmbedding):
     def __init__(self, config):
         super().__init__(config)
-        self.position_embeddings = nn.Embedding(
-            config.max_position_embeddings, config.hidden_size
-        )
+        self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
 
         self.register_buffer(
             "position_ids",
@@ -553,9 +532,7 @@ class GPNBertModel(GPNBertPreTrainedModel):
         self.post_init()
 
     def forward(self, input_ids=None, input_probs=None, aux_features=None, **kwargs):
-        x = self.embedding(
-            input_ids=input_ids, input_probs=input_probs, aux_features=aux_features
-        )
+        x = self.embedding(input_ids=input_ids, input_probs=input_probs, aux_features=aux_features)
         x = self.encoder(x, **kwargs)
         return x
 
@@ -573,9 +550,7 @@ class GPNBertForMaskedLM(GPNBertPreTrainedModel):
     def forward(self, labels=None, output_probs=None, loss_weight=None, **kwargs):
         hidden_state = self.model(**kwargs).last_hidden_state
         logits = self.cls(hidden_state)
-        loss = compute_loss(
-            logits, labels, output_probs, loss_weight, self.config.vocab_size
-        )
+        loss = compute_loss(logits, labels, output_probs, loss_weight, self.config.vocab_size)
         return MaskedLMOutput(
             loss=loss,
             logits=logits,
@@ -654,9 +629,7 @@ AutoModelForTokenClassification.register(GPNConfig, GPNForTokenClassification)
 AutoConfig.register("ConvNet", ConvNetConfig)
 AutoModel.register(ConvNetConfig, ConvNetModel)
 AutoModelForMaskedLM.register(ConvNetConfig, ConvNetForMaskedLM)
-AutoModelForSequenceClassification.register(
-    ConvNetConfig, ConvNetForSequenceClassification
-)
+AutoModelForSequenceClassification.register(ConvNetConfig, ConvNetForSequenceClassification)
 
 AutoConfig.register("GPNRoFormer", GPNRoFormerConfig)
 AutoModel.register(GPNRoFormerConfig, GPNRoFormerModel)

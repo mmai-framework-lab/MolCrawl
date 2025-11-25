@@ -30,9 +30,7 @@ def check_environment():
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
         print(f"ローカルランク: {local_rank}")
         if local_rank >= torch.cuda.device_count():
-            print(
-                f"⚠️ エラー: LOCAL_RANK({local_rank}) >= GPU数({torch.cuda.device_count()})"
-            )
+            print(f"⚠️ エラー: LOCAL_RANK({local_rank}) >= GPU数({torch.cuda.device_count()})")
             return False
 
     return True

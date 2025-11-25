@@ -12,9 +12,7 @@ class MLMforVEPModel(torch.nn.Module):
         self.model = AutoModelForMaskedLM.from_pretrained(model_path)
 
     def get_llr(self, input_ids, aux_features, pos, ref, alt):
-        logits = self.model.forward(
-            input_ids=input_ids, aux_features=aux_features
-        ).logits
+        logits = self.model.forward(input_ids=input_ids, aux_features=aux_features).logits
         logits = logits[torch.arange(len(pos)), pos]
         # TODO: maybe [:, ref] would work?
         logits_ref = logits[torch.arange(len(ref)), ref]
@@ -35,12 +33,8 @@ class MLMforVEPModel(torch.nn.Module):
         ref_rev=None,
         alt_rev=None,
     ):
-        llr_fwd = self.get_llr(
-            input_ids_fwd, aux_features_fwd, pos_fwd, ref_fwd, alt_fwd
-        )
-        llr_rev = self.get_llr(
-            input_ids_rev, aux_features_rev, pos_rev, ref_rev, alt_rev
-        )
+        llr_fwd = self.get_llr(input_ids_fwd, aux_features_fwd, pos_fwd, ref_fwd, alt_fwd)
+        llr_rev = self.get_llr(input_ids_rev, aux_features_rev, pos_rev, ref_rev, alt_rev)
         llr = (llr_fwd + llr_rev) / 2
         return llr
 
@@ -70,21 +64,15 @@ class VEPInference(object):
         pos_fwd = self.window_size // 2
         pos_rev = pos_fwd - 1 if self.window_size % 2 == 0 else pos_fwd
 
-        ref_fwd = np.array(
-            [np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["ref"]]
-        )
-        alt_fwd = np.array(
-            [np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["alt"]]
-        )
+        ref_fwd = np.array([np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["ref"]])
+        alt_fwd = np.array([np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["alt"]])
         ref_rev = self.reverse_complementer(ref_fwd)
         alt_rev = self.reverse_complementer(alt_fwd)
 
         def prepare_output(msa, pos, ref, alt):
             ref, alt = self.tokenizer(ref.flatten()), self.tokenizer(alt.flatten())
             input_ids, aux_features = msa[:, :, 0], msa[:, :, 1:]
-            assert (input_ids[:, pos] == ref).all(), (
-                f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
-            )
+            assert (input_ids[:, pos] == ref).all(), f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
             input_ids[:, pos] = self.tokenizer.mask_token_id()
             input_ids = input_ids.astype(np.int64)
             pos = np.full(len(input_ids), pos)

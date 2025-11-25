@@ -17,9 +17,7 @@ class MLMforLogitsModel(torch.nn.Module):
         self.id_t = tokenizer.vocab.index("T")
 
     def get_logits(self, input_ids, aux_features, pos):
-        logits = self.model.forward(
-            input_ids=input_ids, aux_features=aux_features
-        ).logits
+        logits = self.model.forward(input_ids=input_ids, aux_features=aux_features).logits
         logits = logits[torch.arange(len(pos)), pos]
         return logits
 
@@ -36,12 +34,8 @@ class MLMforLogitsModel(torch.nn.Module):
         id_c = self.id_c
         id_g = self.id_g
         id_t = self.id_t
-        logits_fwd = self.get_logits(input_ids_fwd, aux_features_fwd, pos_fwd)[
-            :, [id_a, id_c, id_g, id_t]
-        ]
-        logits_rev = self.get_logits(input_ids_rev, aux_features_rev, pos_rev)[
-            :, [id_t, id_g, id_c, id_a]
-        ]
+        logits_fwd = self.get_logits(input_ids_fwd, aux_features_fwd, pos_fwd)[:, [id_a, id_c, id_g, id_t]]
+        logits_rev = self.get_logits(input_ids_rev, aux_features_rev, pos_rev)[:, [id_t, id_g, id_c, id_a]]
         return (logits_fwd + logits_rev) / 2
 
 

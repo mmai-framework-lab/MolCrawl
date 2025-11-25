@@ -42,9 +42,7 @@ def get_sequences(ref_genome, mapping, chrom, pos, ref, alt, flank=64):
 
     center_base = ref_seq[flank]
     if center_base != ref.upper():
-        print(
-            f"Warning: reference mismatch at {chrom}:{pos}, expected {ref}, got {center_base}"
-        )
+        print(f"Warning: reference mismatch at {chrom}:{pos}, expected {ref}, got {center_base}")
 
     seq_list = list(ref_seq)
     seq_list[flank] = alt.upper()
@@ -190,29 +188,15 @@ def main():
             print(f"  {sig}: {count}")
 
         # 病原性/良性の分布も表示
-        pathogenic_count = (
-            df_out["ClinicalSignificance"]
-            .str.contains("pathogenic", case=False, na=False)
-            .sum()
-        )
-        benign_count = (
-            df_out["ClinicalSignificance"]
-            .str.contains("benign", case=False, na=False)
-            .sum()
-        )
-        uncertain_count = (
-            df_out["ClinicalSignificance"]
-            .str.contains("uncertain", case=False, na=False)
-            .sum()
-        )
+        pathogenic_count = df_out["ClinicalSignificance"].str.contains("pathogenic", case=False, na=False).sum()
+        benign_count = df_out["ClinicalSignificance"].str.contains("benign", case=False, na=False).sum()
+        uncertain_count = df_out["ClinicalSignificance"].str.contains("uncertain", case=False, na=False).sum()
 
         print("\nSummary:")
         print(f"  Pathogenic variants: {pathogenic_count}")
         print(f"  Benign variants: {benign_count}")
         print(f"  Uncertain significance: {uncertain_count}")
-        print(
-            f"  Other/Missing: {len(df_out) - pathogenic_count - benign_count - uncertain_count}"
-        )
+        print(f"  Other/Missing: {len(df_out) - pathogenic_count - benign_count - uncertain_count}")
     else:
         print("\nNo ClinicalSignificance data available in the dataset.")
 

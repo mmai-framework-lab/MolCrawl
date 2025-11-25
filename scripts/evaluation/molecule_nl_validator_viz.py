@@ -57,9 +57,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
 
         # メトリクスファイルが存在する場合は読み込み
         if metrics is None:
-            metrics_path = os.path.join(
-                os.path.dirname(results_file), "validation_metrics.json"
-            )
+            metrics_path = os.path.join(os.path.dirname(results_file), "validation_metrics.json")
             if os.path.exists(metrics_path):
                 with open(metrics_path, "r") as f:
                     self.metrics = json.load(f)
@@ -198,9 +196,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
         )
 
         # 6. Label Distribution (右下)
-        self._plot_label_distribution(
-            dashboard_data["y_true"], axes[2, 1], "Dataset Label Distribution"
-        )
+        self._plot_label_distribution(dashboard_data["y_true"], axes[2, 1], "Dataset Label Distribution")
 
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
@@ -238,10 +234,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
             pm["specificity"],
         ]
 
-        colors = [
-            "#3498db" if v >= 0.7 else "#e74c3c" if v < 0.5 else "#f39c12"
-            for v in metric_values
-        ]
+        colors = ["#3498db" if v >= 0.7 else "#e74c3c" if v < 0.5 else "#f39c12" for v in metric_values]
 
         bars = ax.barh(metric_names, metric_values, color=colors, alpha=0.7)
 
@@ -348,9 +341,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
                     color="darkgreen",
                 )
 
-        ax.set_title(
-            "Detailed Confusion Matrix", fontsize=14, fontweight="bold", pad=20
-        )
+        ax.set_title("Detailed Confusion Matrix", fontsize=14, fontweight="bold", pad=20)
         ax.set_xlabel("Predicted Label", fontsize=11)
         ax.set_ylabel("True Label", fontsize=11)
 
@@ -387,9 +378,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
         )
         axes[0].set_xlabel("Prediction Score", fontsize=11)
         axes[0].set_ylabel("Count", fontsize=11)
-        axes[0].set_title(
-            "Confidence Distribution by Correctness", fontsize=12, fontweight="bold"
-        )
+        axes[0].set_title("Confidence Distribution by Correctness", fontsize=12, fontweight="bold")
         axes[0].legend()
         axes[0].grid(True, alpha=0.3)
 
@@ -415,9 +404,7 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
         )
         axes[1].set_xlabel("Prediction Score", fontsize=11)
         axes[1].set_ylabel("Count", fontsize=11)
-        axes[1].set_title(
-            "Confidence Distribution by True Label", fontsize=12, fontweight="bold"
-        )
+        axes[1].set_title("Confidence Distribution by True Label", fontsize=12, fontweight="bold")
         axes[1].legend()
         axes[1].grid(True, alpha=0.3)
 
@@ -445,20 +432,14 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
                 alpha=0.7,
                 edgecolor="black",
             )
-            axes[0].axvline(
-                0.5, color="red", linestyle="--", linewidth=2, label="Threshold"
-            )
+            axes[0].axvline(0.5, color="red", linestyle="--", linewidth=2, label="Threshold")
             axes[0].set_xlabel("Prediction Score", fontsize=11)
             axes[0].set_ylabel("Count", fontsize=11)
-            axes[0].set_title(
-                f"False Positives (n={len(fp)})", fontsize=12, fontweight="bold"
-            )
+            axes[0].set_title(f"False Positives (n={len(fp)})", fontsize=12, fontweight="bold")
             axes[0].legend()
             axes[0].grid(True, alpha=0.3)
         else:
-            axes[0].text(
-                0.5, 0.5, "No False Positives", ha="center", va="center", fontsize=14
-            )
+            axes[0].text(0.5, 0.5, "No False Positives", ha="center", va="center", fontsize=14)
             axes[0].set_title("False Positives", fontsize=12, fontweight="bold")
 
         # False Negativesのスコア分布
@@ -470,20 +451,14 @@ class MoleculeNLValidatorVisualization(BaseVisualizationGenerator):
                 alpha=0.7,
                 edgecolor="black",
             )
-            axes[1].axvline(
-                0.5, color="red", linestyle="--", linewidth=2, label="Threshold"
-            )
+            axes[1].axvline(0.5, color="red", linestyle="--", linewidth=2, label="Threshold")
             axes[1].set_xlabel("Prediction Score", fontsize=11)
             axes[1].set_ylabel("Count", fontsize=11)
-            axes[1].set_title(
-                f"False Negatives (n={len(fn)})", fontsize=12, fontweight="bold"
-            )
+            axes[1].set_title(f"False Negatives (n={len(fn)})", fontsize=12, fontweight="bold")
             axes[1].legend()
             axes[1].grid(True, alpha=0.3)
         else:
-            axes[1].text(
-                0.5, 0.5, "No False Negatives", ha="center", va="center", fontsize=14
-            )
+            axes[1].text(0.5, 0.5, "No False Negatives", ha="center", va="center", fontsize=14)
             axes[1].set_title("False Negatives", fontsize=12, fontweight="bold")
 
         plt.tight_layout()
@@ -796,9 +771,7 @@ def main():
     """スタンドアローン実行用メインルーチン"""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Generate visualizations for Molecule NL validation results"
-    )
+    parser = argparse.ArgumentParser(description="Generate visualizations for Molecule NL validation results")
     parser.add_argument(
         "--results_file",
         type=str,
@@ -822,9 +795,7 @@ def main():
     print(f"Output directory: {args.output_dir}")
 
     # 可視化の生成
-    visualizer = MoleculeNLValidatorVisualization(
-        results_file=args.results_file, output_dir=args.output_dir
-    )
+    visualizer = MoleculeNLValidatorVisualization(results_file=args.results_file, output_dir=args.output_dir)
 
     visualizer.generate_all_visualizations()
     visualizer.create_html_report()

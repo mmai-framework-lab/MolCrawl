@@ -40,9 +40,7 @@ def _digitize(x: np.ndarray, bins: np.ndarray, side="both") -> np.ndarray:
     return digits
 
 
-def binning(
-    row: Union[np.ndarray, torch.Tensor], n_bins: int
-) -> Union[np.ndarray, torch.Tensor]:
+def binning(row: Union[np.ndarray, torch.Tensor], n_bins: int) -> Union[np.ndarray, torch.Tensor]:
     """Binning the row into n_bins."""
     dtype = row.dtype
     return_np = False if isinstance(row, torch.Tensor) else True
@@ -50,14 +48,8 @@ def binning(
     # TODO: use torch.quantile and torch.bucketize
 
     if row.max() == 0:
-        logging.warning(
-            "The input data contains row of zeros. Please make sure this is expected."
-        )
-        return (
-            np.zeros_like(row, dtype=dtype)
-            if return_np
-            else torch.zeros_like(row, dtype=dtype)
-        )
+        logging.warning("The input data contains row of zeros. Please make sure this is expected.")
+        return np.zeros_like(row, dtype=dtype) if return_np else torch.zeros_like(row, dtype=dtype)
 
     if row.min() <= 0:
         non_zero_ids = row.nonzero()

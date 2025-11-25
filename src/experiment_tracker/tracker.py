@@ -83,7 +83,9 @@ class ExperimentTracker:
         Returns:
             実験ID
         """
-        experiment_id = f"{model_type.value}_{dataset_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        experiment_id = (
+            f"{model_type.value}_{dataset_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        )
 
         # 環境情報を取得
         environment = {
@@ -184,9 +186,7 @@ class ExperimentTracker:
                 step.status = ExperimentStatus.COMPLETED
                 step.end_time = datetime.now()
                 if step.start_time:
-                    step.duration_seconds = (
-                        step.end_time - step.start_time
-                    ).total_seconds()
+                    step.duration_seconds = (step.end_time - step.start_time).total_seconds()
                 step.output_path = output_path
                 if metadata:
                     step.metadata.update(metadata)
@@ -213,9 +213,7 @@ class ExperimentTracker:
                 step.status = ExperimentStatus.FAILED
                 step.end_time = datetime.now()
                 if step.start_time:
-                    step.duration_seconds = (
-                        step.end_time - step.start_time
-                    ).total_seconds()
+                    step.duration_seconds = (step.end_time - step.start_time).total_seconds()
                 step.error_message = error_message
                 break
 
@@ -245,9 +243,7 @@ class ExperimentTracker:
         experiment.status = ExperimentStatus.COMPLETED
         experiment.completed_at = datetime.now()
         if experiment.started_at:
-            experiment.total_duration_seconds = (
-                experiment.completed_at - experiment.started_at
-            ).total_seconds()
+            experiment.total_duration_seconds = (experiment.completed_at - experiment.started_at).total_seconds()
 
         if results:
             experiment.results = results
@@ -274,16 +270,12 @@ class ExperimentTracker:
         experiment.status = ExperimentStatus.FAILED
         experiment.completed_at = datetime.now()
         if experiment.started_at:
-            experiment.total_duration_seconds = (
-                experiment.completed_at - experiment.started_at
-            ).total_seconds()
+            experiment.total_duration_seconds = (experiment.completed_at - experiment.started_at).total_seconds()
 
         self.db.save_experiment(experiment)
         self.log(experiment_id, "ERROR", f"Experiment failed: {error_message}")
 
-    def log(
-        self, experiment_id: str, level: str, message: str, source: Optional[str] = None
-    ) -> None:
+    def log(self, experiment_id: str, level: str, message: str, source: Optional[str] = None) -> None:
         """
         ログを追加
 
@@ -293,9 +285,7 @@ class ExperimentTracker:
             message: メッセージ
             source: ソース
         """
-        log = ExperimentLog(
-            timestamp=datetime.now(), level=level, message=message, source=source
-        )
+        log = ExperimentLog(timestamp=datetime.now(), level=level, message=message, source=source)
         self.db.add_log(experiment_id, log)
 
     def get_experiment(self, experiment_id: str) -> Optional[Experiment]:

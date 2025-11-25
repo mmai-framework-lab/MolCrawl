@@ -28,9 +28,7 @@ from datetime import datetime
 import math
 
 # プロジェクトルートを追加
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
 
 from utils.evaluation_output import (  # noqa: E402
@@ -88,9 +86,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         logger.info("Loading MoleculeNatLangTokenizer")
         try:
             tokenizer = MoleculeNatLangTokenizer()
-            logger.info(
-                f"✅ MoleculeNatLangTokenizer loaded successfully. Vocab size: {tokenizer.vocab_size}"
-            )
+            logger.info(f"✅ MoleculeNatLangTokenizer loaded successfully. Vocab size: {tokenizer.vocab_size}")
             return tokenizer
         except Exception as e:
             logger.error(f"❌ Failed to load MoleculeNatLangTokenizer: {e}")
@@ -107,12 +103,8 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         if hasattr(self.tokenizer, "mask_token_id"):
             logger.info(f"Using MASK token ID: {self.tokenizer.mask_token_id}")
             return self.tokenizer.mask_token_id
-        elif hasattr(self.tokenizer, "tokenizer") and hasattr(
-            self.tokenizer.tokenizer, "mask_token_id"
-        ):
-            logger.info(
-                f"Using MASK token ID: {self.tokenizer.tokenizer.mask_token_id}"
-            )
+        elif hasattr(self.tokenizer, "tokenizer") and hasattr(self.tokenizer.tokenizer, "mask_token_id"):
+            logger.info(f"Using MASK token ID: {self.tokenizer.tokenizer.mask_token_id}")
             return self.tokenizer.tokenizer.mask_token_id
         else:
             # フォールバック
@@ -123,9 +115,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         """CLSトークンのIDを取得"""
         if hasattr(self.tokenizer, "cls_token_id"):
             return self.tokenizer.cls_token_id
-        elif hasattr(self.tokenizer, "tokenizer") and hasattr(
-            self.tokenizer.tokenizer, "cls_token_id"
-        ):
+        elif hasattr(self.tokenizer, "tokenizer") and hasattr(self.tokenizer.tokenizer, "cls_token_id"):
             return self.tokenizer.tokenizer.cls_token_id
         else:
             logger.warning("CLS token not found, using ID 101 (BERT default)")
@@ -135,9 +125,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         """SEPトークンのIDを取得"""
         if hasattr(self.tokenizer, "sep_token_id"):
             return self.tokenizer.sep_token_id
-        elif hasattr(self.tokenizer, "tokenizer") and hasattr(
-            self.tokenizer.tokenizer, "sep_token_id"
-        ):
+        elif hasattr(self.tokenizer, "tokenizer") and hasattr(self.tokenizer.tokenizer, "sep_token_id"):
             return self.tokenizer.tokenizer.sep_token_id
         else:
             logger.warning("SEP token not found, using ID 102 (BERT default)")
@@ -147,9 +135,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         """PADトークンのIDを取得"""
         if hasattr(self.tokenizer, "pad_token_id"):
             return self.tokenizer.pad_token_id
-        elif hasattr(self.tokenizer, "tokenizer") and hasattr(
-            self.tokenizer.tokenizer, "pad_token_id"
-        ):
+        elif hasattr(self.tokenizer, "tokenizer") and hasattr(self.tokenizer.tokenizer, "pad_token_id"):
             return self.tokenizer.tokenizer.pad_token_id
         else:
             logger.warning("PAD token not found, using ID 0")
@@ -162,15 +148,11 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
             # Hugging Face transformers形式での読み込み
             config = BertConfig.from_pretrained(self.model_path)
-            logger.info(
-                f"Model config loaded: vocab_size={config.vocab_size}, hidden_size={config.hidden_size}"
-            )
+            logger.info(f"Model config loaded: vocab_size={config.vocab_size}, hidden_size={config.hidden_size}")
 
             # トークナイザーのサイズと一致するかチェック
             if config.vocab_size != self.vocab_size:
-                logger.warning(
-                    f"Vocab size mismatch: model={config.vocab_size}, tokenizer={self.vocab_size}"
-                )
+                logger.warning(f"Vocab size mismatch: model={config.vocab_size}, tokenizer={self.vocab_size}")
                 logger.info("Using model's original vocab size for compatibility")
                 original_vocab_size = config.vocab_size
                 self.vocab_size = original_vocab_size  # トークナイザーのサイズを調整
@@ -235,9 +217,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                 return encoding["input_ids"][0]
         except Exception as e:
             logger.warning(f"Tokenization failed for text: {text[:50]}... Error: {e}")
-            return torch.tensor(
-                [self.cls_token_id, self.sep_token_id], dtype=torch.long
-            )
+            return torch.tensor([self.cls_token_id, self.sep_token_id], dtype=torch.long)
 
     def encode_sequence(self, sequence):
         """
@@ -261,8 +241,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
             try:
                 # 入力がトークンIDsかテキストかを判定
                 if isinstance(text_or_tokens, (list, tuple)) or (
-                    hasattr(text_or_tokens, "__iter__")
-                    and not isinstance(text_or_tokens, str)
+                    hasattr(text_or_tokens, "__iter__") and not isinstance(text_or_tokens, str)
                 ):
                     # 既にトークン化されている場合
                     if hasattr(text_or_tokens, "tolist"):
@@ -274,9 +253,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                     tokens = self.encode_text(text_or_tokens)
 
                 if len(tokens) < 2:
-                    logger.debug(
-                        f"Sequence too short for perplexity calculation: {len(tokens)} tokens"
-                    )
+                    logger.debug(f"Sequence too short for perplexity calculation: {len(tokens)} tokens")
                     return float("inf")
 
                 # バッチ次元を追加してデバイスに転送
@@ -405,11 +382,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         if "input_ids" in df.columns:
             # input_idsがリスト型の場合の長さ計算
             try:
-                avg_length = (
-                    df["input_ids"]
-                    .apply(lambda x: len(x) if isinstance(x, (list, tuple)) else 0)
-                    .mean()
-                )
+                avg_length = df["input_ids"].apply(lambda x: len(x) if isinstance(x, (list, tuple)) else 0).mean()
                 logger.info(f"   - Average sequence length: {avg_length:.1f}")
             except Exception as e:
                 logger.warning(f"   - Could not calculate average sequence length: {e}")
@@ -419,16 +392,12 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         processing_errors = 0
 
         logger.info("🧬 Processing texts...")
-        logger.info(
-            "   Note: Using 'input_text' field and re-tokenizing with BERT tokenizer"
-        )
+        logger.info("   Note: Using 'input_text' field and re-tokenizing with BERT tokenizer")
 
         for idx, row in df.iterrows():
             if idx % 100 == 0 and idx > 0:
                 avg_perplexity = np.mean(perplexities) if perplexities else float("inf")
-                logger.info(
-                    f"   Progress: {idx}/{len(df)} texts processed, avg perplexity: {avg_perplexity:.2f}"
-                )
+                logger.info(f"   Progress: {idx}/{len(df)} texts processed, avg perplexity: {avg_perplexity:.2f}")
 
             try:
                 # input_textを使用してBERT tokenizerで再トークン化
@@ -440,9 +409,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                     if idx == 0:
                         logger.info("First sample analysis:")
                         logger.info(f"  input_text: {text[:100]}...")
-                        logger.info(
-                            f"  Re-tokenizing with BERT tokenizer (vocab_size={self.vocab_size})"
-                        )
+                        logger.info(f"  Re-tokenizing with BERT tokenizer (vocab_size={self.vocab_size})")
 
                     # BERT tokenizerでテキストをエンコード
                     # encode_textメソッドを使用（内部でMoleculeNatLangTokenizerが使われる）
@@ -455,15 +422,9 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                                 f"  BERT token sample: {tokens[:20].tolist() if hasattr(tokens, 'tolist') else tokens[:20]}"
                             )
                             if hasattr(tokens, "__iter__"):
-                                token_list = (
-                                    tokens.tolist()
-                                    if hasattr(tokens, "tolist")
-                                    else list(tokens)
-                                )
+                                token_list = tokens.tolist() if hasattr(tokens, "tolist") else list(tokens)
                                 if token_list:
-                                    logger.info(
-                                        f"  BERT token range: {min(token_list)} - {max(token_list)}"
-                                    )
+                                    logger.info(f"  BERT token range: {min(token_list)} - {max(token_list)}")
 
                         if len(tokens) == 0:
                             logger.warning(f"Sample {idx}: Empty tokens after encoding")
@@ -475,9 +436,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
                     # パープレキシティ計算
                     if idx < 5 or idx % 500 == 0:  # 最初の5個と500個おきにログ
-                        logger.info(
-                            f"Sample {idx}: Calculating perplexity for {len(tokens)} tokens..."
-                        )
+                        logger.info(f"Sample {idx}: Calculating perplexity for {len(tokens)} tokens...")
 
                     perplexity = self.calculate_perplexity(tokens)
 
@@ -497,11 +456,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
                     "text_length": len(text_preview),
                     "token_length": len(tokens),
                     "perplexity": perplexity,
-                    "log_perplexity": (
-                        math.log(perplexity)
-                        if perplexity > 0 and perplexity != float("inf")
-                        else float("inf")
-                    ),
+                    "log_perplexity": (math.log(perplexity) if perplexity > 0 and perplexity != float("inf") else float("inf")),
                     "text_preview": text_preview,
                 }
 
@@ -525,9 +480,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         if not results:
             logger.error("❌ No samples were successfully processed!")
             logger.error("   Please check:")
-            logger.error(
-                "   1. Dataset format (should have 'input_ids' or 'text' field)"
-            )
+            logger.error("   1. Dataset format (should have 'input_ids' or 'text' field)")
             logger.error("   2. Tokenizer compatibility")
             logger.error("   3. Model checkpoint path")
 
@@ -557,9 +510,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
         # 結果の保存と分析（GPT-2版と同じフォーマット）
         results_df = pd.DataFrame(results)
-        results_df.to_csv(
-            os.path.join(output_dir, "molecule_nl_detailed_results.csv"), index=False
-        )
+        results_df.to_csv(os.path.join(output_dir, "molecule_nl_detailed_results.csv"), index=False)
 
         logger.info(f"📊 Results DataFrame shape: {results_df.shape}")
         logger.info(f"   Columns: {list(results_df.columns)}")
@@ -570,9 +521,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         metrics = self._calculate_metrics(perplexities, results_df)
 
         # 結果の保存
-        with open(
-            os.path.join(output_dir, "molecule_nl_evaluation_results.json"), "w"
-        ) as f:
+        with open(os.path.join(output_dir, "molecule_nl_evaluation_results.json"), "w") as f:
             json.dump(metrics, f, indent=2)
 
         # 可視化（GPT-2版と同じクラスを使用）
@@ -595,9 +544,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
             from molecule_nl_visualization import MoleculeNLVisualizationGenerator
 
             # 可視化器を初期化
-            visualizer = MoleculeNLVisualizationGenerator(
-                results_file=csv_file, output_dir=output_dir
-            )
+            visualizer = MoleculeNLVisualizationGenerator(results_file=csv_file, output_dir=output_dir)
 
             # 可視化を生成
             logger.info("📊 Generating visualizations...")
@@ -605,9 +552,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
             logger.info("✅ Visualization completed successfully!")
 
         except ImportError as e:
-            logger.warning(
-                f"Could not import visualization module: {e}. Skipping visualizations."
-            )
+            logger.warning(f"Could not import visualization module: {e}. Skipping visualizations.")
         except Exception as e:
             logger.error(f"Error generating visualizations: {e}")
             import traceback
@@ -645,12 +590,8 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
         logger.info(f"   - Mean Perplexity: {metrics['mean_perplexity']:.3f}")
         logger.info(f"   - Median Perplexity: {metrics['median_perplexity']:.3f}")
         logger.info(f"   - Std Perplexity: {metrics['std_perplexity']:.3f}")
-        logger.info(
-            f"   - Min/Max Perplexity: {metrics['min_perplexity']:.3f} / {metrics['max_perplexity']:.3f}"
-        )
-        logger.info(
-            f"   - Valid samples: {metrics['valid_samples']}/{metrics['total_samples']}"
-        )
+        logger.info(f"   - Min/Max Perplexity: {metrics['min_perplexity']:.3f} / {metrics['max_perplexity']:.3f}")
+        logger.info(f"   - Valid samples: {metrics['valid_samples']}/{metrics['total_samples']}")
 
         return metrics
 
@@ -683,20 +624,12 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
             if len(results_df) > 0:
                 f.write("Token Length Statistics:\n")
-                f.write(
-                    f"  Mean Token Length: {results_df['token_length'].mean():.1f}\n"
-                )
-                f.write(
-                    f"  Median Token Length: {results_df['token_length'].median():.1f}\n"
-                )
-                f.write(
-                    f"  Min/Max Token Length: {results_df['token_length'].min()} / {results_df['token_length'].max()}\n\n"
-                )
+                f.write(f"  Mean Token Length: {results_df['token_length'].mean():.1f}\n")
+                f.write(f"  Median Token Length: {results_df['token_length'].median():.1f}\n")
+                f.write(f"  Min/Max Token Length: {results_df['token_length'].min()} / {results_df['token_length'].max()}\n\n")
 
             f.write("=" * 80 + "\n")
-            f.write(
-                f"Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            )
+            f.write(f"Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n")
 
         logger.info(f"📝 Report saved to: {report_path}")
@@ -704,9 +637,7 @@ class BERTMoleculeNLEvaluator(ModelEvaluator):
 
 def main():
     """メイン評価フロー"""
-    parser = argparse.ArgumentParser(
-        description="Evaluate BERT Molecule NL model on dataset"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate BERT Molecule NL model on dataset")
     parser.add_argument(
         "--model_path",
         type=str,
@@ -731,12 +662,8 @@ def main():
         default=None,
         help="Number of samples to evaluate (None for all)",
     )
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="Device to use (cuda/cpu)"
-    )
-    parser.add_argument(
-        "--max_length", type=int, default=512, help="Maximum sequence length"
-    )
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use (cuda/cpu)")
+    parser.add_argument("--max_length", type=int, default=512, help="Maximum sequence length")
     parser.add_argument(
         "--visualize-only",
         action="store_true",
@@ -798,9 +725,7 @@ def main():
             sys.path.append(os.path.join(os.path.dirname(__file__), "..", "gpt2"))
             from molecule_nl_visualization import MoleculeNLVisualizationGenerator
 
-            visualizer = MoleculeNLVisualizationGenerator(
-                results_file=csv_file, output_dir=args.result_dir
-            )
+            visualizer = MoleculeNLVisualizationGenerator(results_file=csv_file, output_dir=args.result_dir)
 
             logger.info("📊 Generating visualizations from existing results...")
             visualizer.generate_all_visualizations()
@@ -810,9 +735,7 @@ def main():
             if os.path.exists(json_file):
                 with open(json_file, "r") as f:
                     metrics = json.load(f)
-                    logger.info(
-                        f"📊 Mean Perplexity: {metrics.get('mean_perplexity', 'N/A'):.3f}"
-                    )
+                    logger.info(f"📊 Mean Perplexity: {metrics.get('mean_perplexity', 'N/A'):.3f}")
                     logger.info(
                         f"📈 Valid samples: {metrics.get('valid_samples', 'N/A')}/{metrics.get('total_samples', 'N/A')}"
                     )
@@ -844,9 +767,7 @@ def main():
 
         logger.info("Evaluation completed successfully!")
         logger.info(f"Mean Perplexity: {metrics['mean_perplexity']:.3f}")
-        logger.info(
-            f"Valid samples: {metrics['valid_samples']}/{metrics['total_samples']}"
-        )
+        logger.info(f"Valid samples: {metrics['valid_samples']}/{metrics['total_samples']}")
 
     except Exception as e:
         logger.error(f"Evaluation failed: {e}")

@@ -32,9 +32,7 @@ class GPNEmbedding(nn.Module):
         if input_ids is not None:
             res = F.one_hot(input_ids, num_classes=self.config.hidden_size).float()
         elif input_probs is not None:
-            res = F.pad(
-                input_probs, (0, self.config.hidden_size - self.config.vocab_size)
-            )
+            res = F.pad(input_probs, (0, self.config.hidden_size - self.config.vocab_size))
         if aux_features is not None:
             if self.config.aux_features_vocab_size is not None:
                 aux_features = (
@@ -48,8 +46,7 @@ class GPNEmbedding(nn.Module):
             res[
                 :,
                 :,
-                self.config.vocab_size : self.config.vocab_size
-                + self.config.n_aux_features,
+                self.config.vocab_size : self.config.vocab_size + self.config.n_aux_features,
             ] = aux_features
         return res
 
@@ -62,9 +59,7 @@ def compute_loss(logits, labels, output_probs, loss_weight, vocab_size):
     elif labels is not None and loss_weight is not None:
         loss_fct = CrossEntropyLoss(reduction="none")
         labels = labels.view(-1)
-        loss = loss_fct(
-            logits.view(-1, vocab_size), labels
-        )  # what if we first exclude the ones with -100??
+        loss = loss_fct(logits.view(-1, vocab_size), labels)  # what if we first exclude the ones with -100??
         loss_weight = loss_weight.view(-1)
         loss_weight[labels == -100] = 0.0
         loss = (loss * loss_weight / loss_weight.sum()).sum()
@@ -205,9 +200,7 @@ class ConvNetModel(ConvNetPreTrainedModel):
         self.post_init()
 
     def forward(self, input_ids=None, input_probs=None, aux_features=None, **kwargs):
-        x = self.embedding(
-            input_ids=input_ids, input_probs=input_probs, aux_features=aux_features
-        )
+        x = self.embedding(input_ids=input_ids, input_probs=input_probs, aux_features=aux_features)
         x = self.encoder(x)
         return BaseModelOutput(last_hidden_state=x)
 
@@ -226,9 +219,7 @@ class ConvNetForMaskedLM(ConvNetPreTrainedModel):
     def forward(self, labels=None, output_probs=None, loss_weight=None, **kwargs):
         hidden_state = self.model(**kwargs).last_hidden_state
         logits = self.cls(hidden_state)
-        loss = compute_loss(
-            logits, labels, output_probs, loss_weight, self.config.vocab_size
-        )
+        loss = compute_loss(logits, labels, output_probs, loss_weight, self.config.vocab_size)
         return MaskedLMOutput(
             loss=loss,
             logits=logits,
@@ -267,9 +258,7 @@ class ConvNetForSequenceClassification(ConvNetPreTrainedModel):
             if self.config.problem_type is None:
                 if self.num_labels == 1:
                     self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (
-                    labels.dtype == torch.long or labels.dtype == torch.int
-                ):
+                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
                     self.config.problem_type = "single_label_classification"
                 else:
                     self.config.problem_type = "multi_label_classification"
@@ -349,9 +338,7 @@ class GPNRoFormerModel(GPNRoFormerPreTrainedModel):
         self.post_init()
 
     def forward(self, input_ids=None, input_probs=None, aux_features=None, **kwargs):
-        x = self.embedding(
-            input_ids=input_ids, input_probs=input_probs, aux_features=aux_features
-        )
+        x = self.embedding(input_ids=input_ids, input_probs=input_probs, aux_features=aux_features)
         x = self.encoder(x, **kwargs)
         return x
 
@@ -369,9 +356,7 @@ class GPNRoFormerForMaskedLM(GPNRoFormerPreTrainedModel):
     def forward(self, labels=None, output_probs=None, loss_weight=None, **kwargs):
         hidden_state = self.model(**kwargs).last_hidden_state
         logits = self.cls(hidden_state)
-        loss = compute_loss(
-            logits, labels, output_probs, loss_weight, self.config.vocab_size
-        )
+        loss = compute_loss(logits, labels, output_probs, loss_weight, self.config.vocab_size)
         return MaskedLMOutput(
             loss=loss,
             logits=logits,
@@ -436,8 +421,7 @@ def get_dilation_schedule(config):
     return [
         min(
             config.dilation_max,
-            config.dilation_base
-            ** ((i % config.dilation_cycle) // config.dilation_double_every),
+            config.dilation_base ** ((i % config.dilation_cycle) // config.dilation_double_every),
         )
         for i in range(config.n_layers)
     ]

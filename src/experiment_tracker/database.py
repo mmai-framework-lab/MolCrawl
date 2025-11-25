@@ -145,12 +145,8 @@ class ExperimentDatabase:
                     experiment.dataset_type.value,
                     experiment.status.value,
                     experiment.created_at.isoformat(),
-                    experiment.started_at.isoformat()
-                    if experiment.started_at
-                    else None,
-                    experiment.completed_at.isoformat()
-                    if experiment.completed_at
-                    else None,
+                    experiment.started_at.isoformat() if experiment.started_at else None,
+                    experiment.completed_at.isoformat() if experiment.completed_at else None,
                     experiment.total_duration_seconds,
                     experiment.config_path,
                     json.dumps(experiment.config),
@@ -250,49 +246,23 @@ class ExperimentDatabase:
 
             # Experimentオブジェクトを構築
             experiment_data = dict(row)
-            experiment_data["experiment_type"] = ExperimentType(
-                experiment_data["experiment_type"]
-            )
+            experiment_data["experiment_type"] = ExperimentType(experiment_data["experiment_type"])
             experiment_data["model_type"] = ModelType(experiment_data["model_type"])
-            experiment_data["dataset_type"] = DatasetType(
-                experiment_data["dataset_type"]
-            )
+            experiment_data["dataset_type"] = DatasetType(experiment_data["dataset_type"])
             experiment_data["status"] = ExperimentStatus(experiment_data["status"])
-            experiment_data["created_at"] = datetime.fromisoformat(
-                experiment_data["created_at"]
-            )
+            experiment_data["created_at"] = datetime.fromisoformat(experiment_data["created_at"])
 
             if experiment_data.get("started_at"):
-                experiment_data["started_at"] = datetime.fromisoformat(
-                    experiment_data["started_at"]
-                )
+                experiment_data["started_at"] = datetime.fromisoformat(experiment_data["started_at"])
             if experiment_data.get("completed_at"):
-                experiment_data["completed_at"] = datetime.fromisoformat(
-                    experiment_data["completed_at"]
-                )
+                experiment_data["completed_at"] = datetime.fromisoformat(experiment_data["completed_at"])
 
-            experiment_data["config"] = (
-                json.loads(experiment_data["config"])
-                if experiment_data["config"]
-                else {}
-            )
-            experiment_data["results"] = (
-                json.loads(experiment_data["results"])
-                if experiment_data["results"]
-                else {}
-            )
-            experiment_data["metrics"] = (
-                json.loads(experiment_data["metrics"])
-                if experiment_data["metrics"]
-                else {}
-            )
-            experiment_data["tags"] = (
-                json.loads(experiment_data["tags"]) if experiment_data["tags"] else []
-            )
+            experiment_data["config"] = json.loads(experiment_data["config"]) if experiment_data["config"] else {}
+            experiment_data["results"] = json.loads(experiment_data["results"]) if experiment_data["results"] else {}
+            experiment_data["metrics"] = json.loads(experiment_data["metrics"]) if experiment_data["metrics"] else {}
+            experiment_data["tags"] = json.loads(experiment_data["tags"]) if experiment_data["tags"] else []
             experiment_data["environment"] = (
-                json.loads(experiment_data["environment"])
-                if experiment_data["environment"]
-                else {}
+                json.loads(experiment_data["environment"]) if experiment_data["environment"] else {}
             )
 
             # ステップを構築
@@ -301,16 +271,10 @@ class ExperimentDatabase:
                 step_data = dict(step_row)
                 step_data["status"] = ExperimentStatus(step_data["status"])
                 if step_data.get("start_time"):
-                    step_data["start_time"] = datetime.fromisoformat(
-                        step_data["start_time"]
-                    )
+                    step_data["start_time"] = datetime.fromisoformat(step_data["start_time"])
                 if step_data.get("end_time"):
-                    step_data["end_time"] = datetime.fromisoformat(
-                        step_data["end_time"]
-                    )
-                step_data["metadata"] = (
-                    json.loads(step_data["metadata"]) if step_data["metadata"] else {}
-                )
+                    step_data["end_time"] = datetime.fromisoformat(step_data["end_time"])
+                step_data["metadata"] = json.loads(step_data["metadata"]) if step_data["metadata"] else {}
                 # 不要なフィールドを削除
                 del step_data["id"]
                 del step_data["experiment_id"]
@@ -391,9 +355,7 @@ class ExperimentDatabase:
                 FROM experiments
                 GROUP BY status
             """)
-            stats["by_status"] = {
-                row["status"]: row["count"] for row in cursor.fetchall()
-            }
+            stats["by_status"] = {row["status"]: row["count"] for row in cursor.fetchall()}
 
             # タイプ別
             cursor.execute("""
@@ -401,9 +363,7 @@ class ExperimentDatabase:
                 FROM experiments
                 GROUP BY experiment_type
             """)
-            stats["by_type"] = {
-                row["experiment_type"]: row["count"] for row in cursor.fetchall()
-            }
+            stats["by_type"] = {row["experiment_type"]: row["count"] for row in cursor.fetchall()}
 
             # モデル別
             cursor.execute("""
@@ -411,9 +371,7 @@ class ExperimentDatabase:
                 FROM experiments
                 GROUP BY model_type
             """)
-            stats["by_model"] = {
-                row["model_type"]: row["count"] for row in cursor.fetchall()
-            }
+            stats["by_model"] = {row["model_type"]: row["count"] for row in cursor.fetchall()}
 
             # データセット別
             cursor.execute("""
@@ -421,8 +379,6 @@ class ExperimentDatabase:
                 FROM experiments
                 GROUP BY dataset_type
             """)
-            stats["by_dataset"] = {
-                row["dataset_type"]: row["count"] for row in cursor.fetchall()
-            }
+            stats["by_dataset"] = {row["dataset_type"]: row["count"] for row in cursor.fetchall()}
 
             return stats

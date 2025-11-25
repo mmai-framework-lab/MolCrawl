@@ -13,9 +13,7 @@ class MoleculeNLPreparationConfig(Config):
     dataset: str = "src/molecule_related_nl/assets/raw_data"
 
     # Path to save the processed and tokenized dataset
-    save_path: str = get_dataset_path(
-        "molecule_nl", "molecule_related_natural_language_tokenized.parquet"
-    )
+    save_path: str = get_dataset_path("molecule_nl", "molecule_related_natural_language_tokenized.parquet")
 
     # Num of workers to use in the data preparation
     num_workers: int = 12

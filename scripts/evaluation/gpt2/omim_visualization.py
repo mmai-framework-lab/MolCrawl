@@ -68,9 +68,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
         results_file = self._find_results_file(results_dir)
 
         # 親クラスの初期化
-        super().__init__(
-            results_file, results_dir, logger or logging.getLogger(__name__)
-        )
+        super().__init__(results_file, results_dir, logger or logging.getLogger(__name__))
 
         # viz_dir 属性を設定（親クラスのoutput_dirと同じ）
         self.viz_dir = str(self.output_dir)
@@ -169,9 +167,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
         fig, ax = plt.subplots(figsize=(8, 6))
 
         # 混同行列計算
-        cm = confusion_matrix(
-            self.predictions_df["true_label"], self.predictions_df["prediction"]
-        )
+        cm = confusion_matrix(self.predictions_df["true_label"], self.predictions_df["prediction"])
 
         # ヒートマップ作成
         sns.heatmap(
@@ -237,9 +233,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
         # 基本メトリクス棒グラフ
-        basic_metrics = {
-            k: v for k, v in metrics.items() if k not in ["ROC-AUC", "PR-AUC"]
-        }
+        basic_metrics = {k: v for k, v in metrics.items() if k not in ["ROC-AUC", "PR-AUC"]}
         bars1 = ax1.bar(
             basic_metrics.keys(),
             basic_metrics.values(),
@@ -351,9 +345,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
         # サンプル数
         sample_counts = [inheritance_data[p]["sample_count"] for p in patterns]
         bars3 = ax3.bar(patterns, sample_counts, color=self.colors["success"])
-        ax3.set_title(
-            "Sample Count by Inheritance Pattern", fontsize=12, fontweight="bold"
-        )
+        ax3.set_title("Sample Count by Inheritance Pattern", fontsize=12, fontweight="bold")
         ax3.set_ylabel("Sample Count")
         ax3.tick_params(axis="x", rotation=45)
 
@@ -367,10 +359,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
             )
 
         # ポジティブ率
-        positive_rates = [
-            inheritance_data[p]["positive_count"] / inheritance_data[p]["sample_count"]
-            for p in patterns
-        ]
+        positive_rates = [inheritance_data[p]["positive_count"] / inheritance_data[p]["sample_count"] for p in patterns]
         bars4 = ax4.bar(patterns, positive_rates, color=self.colors["danger"])
         ax4.set_title(
             "Disease-causing Rate by Inheritance Pattern",
@@ -389,9 +378,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
                 va="bottom",
             )
 
-        plt.suptitle(
-            "OMIM Inheritance Pattern Analysis", fontsize=16, fontweight="bold"
-        )
+        plt.suptitle("OMIM Inheritance Pattern Analysis", fontsize=16, fontweight="bold")
         plt.tight_layout()
 
         # 保存
@@ -425,9 +412,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
             lw=2,
             label=f"ROC Curve (AUC = {roc_auc:.3f})",
         )
-        ax1.plot(
-            [0, 1], [0, 1], color=self.colors["danger"], lw=2, linestyle="--", alpha=0.8
-        )
+        ax1.plot([0, 1], [0, 1], color=self.colors["danger"], lw=2, linestyle="--", alpha=0.8)
         ax1.set_xlim([0.0, 1.0])
         ax1.set_ylim([0.0, 1.05])
         ax1.set_xlabel("False Positive Rate")
@@ -475,12 +460,8 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
         # クラス別スコア分布
-        disease_scores = self.predictions_df[self.predictions_df["true_label"] == 1][
-            "prediction_score"
-        ]
-        benign_scores = self.predictions_df[self.predictions_df["true_label"] == 0][
-            "prediction_score"
-        ]
+        disease_scores = self.predictions_df[self.predictions_df["true_label"] == 1]["prediction_score"]
+        benign_scores = self.predictions_df[self.predictions_df["true_label"] == 0]["prediction_score"]
 
         ax1.hist(
             benign_scores,
@@ -518,9 +499,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
 
         # ボックスプロット
         data_for_box = [benign_scores, disease_scores]
-        box_plot = ax2.boxplot(
-            data_for_box, labels=["Benign", "Disease-causing"], patch_artist=True
-        )
+        box_plot = ax2.boxplot(data_for_box, labels=["Benign", "Disease-causing"], patch_artist=True)
 
         # ボックスプロットの色設定
         colors = [self.colors["success"], self.colors["danger"]]
@@ -919,9 +898,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
                 if f
             ]
 
-            self.logger.info(
-                f"Generated {len(self.generated_files)} visualization files"
-            )
+            self.logger.info(f"Generated {len(self.generated_files)} visualization files")
             return generated_files
         except Exception as e:
             self.logger.warning(f"Some OMIM-specific visualizations failed: {e}")
@@ -933,9 +910,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
 
         html_content = self._create_html_header("OMIM Evaluation Report")
         html_content += "<h2>OMIM Genetic Disease Analysis</h2>"
-        html_content += (
-            "<p>Evaluation results for genetic variant pathogenicity prediction.</p>"
-        )
+        html_content += "<p>Evaluation results for genetic variant pathogenicity prediction.</p>"
         html_content += self._create_html_footer()
 
         html_file = self.output_dir / "omim_report.html"
@@ -948,9 +923,7 @@ class OMIMVisualizationGenerator(BaseVisualizationGenerator):
 
 def main():
     """メイン関数"""
-    parser = argparse.ArgumentParser(
-        description="OMIM Evaluation Visualization Generator"
-    )
+    parser = argparse.ArgumentParser(description="OMIM Evaluation Visualization Generator")
     parser.add_argument(
         "--results_dir",
         type=str,
@@ -971,9 +944,7 @@ def main():
         logger.info("=== Visualization Generation Completed ===")
         logger.info(f"Output directory: {viz_generator.viz_dir}")
         logger.info(f"Generated {len(generated_files)} visualization files")
-        logger.info(
-            f"HTML report: {os.path.join(viz_generator.viz_dir, 'omim_evaluation_report.html')}"
-        )
+        logger.info(f"HTML report: {os.path.join(viz_generator.viz_dir, 'omim_evaluation_report.html')}")
 
     except Exception as e:
         print(f"Error during visualization generation: {e}")

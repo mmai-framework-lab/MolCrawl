@@ -4,7 +4,6 @@ import torch
 from transformers import AutoModel
 
 
-
 class ModelCenterEmbedding(torch.nn.Module):
     def __init__(self, model_path, center_window_size):
         super().__init__()
@@ -12,9 +11,7 @@ class ModelCenterEmbedding(torch.nn.Module):
         self.center_window_size = center_window_size
 
     def get_center_embedding(self, input_ids, aux_features=None):
-        embedding = self.model.forward(
-            input_ids=input_ids, aux_features=aux_features
-        ).last_hidden_state
+        embedding = self.model.forward(input_ids=input_ids, aux_features=aux_features).last_hidden_state
         center = embedding.shape[1] // 2
         left = center - self.center_window_size // 2
         right = center + self.center_window_size // 2

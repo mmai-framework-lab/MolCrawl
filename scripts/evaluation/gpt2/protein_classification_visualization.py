@@ -34,9 +34,7 @@ plt.rcParams["font.family"] = [
 ]
 
 # ログ設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -140,9 +138,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
         }
 
         plt.figure(figsize=(8, 6))
-        bars = plt.bar(
-            auc_metrics.keys(), auc_metrics.values(), color=["#ff7f0e", "#2ca02c"]
-        )
+        bars = plt.bar(auc_metrics.keys(), auc_metrics.values(), color=["#ff7f0e", "#2ca02c"])
 
         plt.title("Area Under Curve (AUC) Metrics")
         plt.ylabel("AUC Score")
@@ -159,9 +155,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
             )
 
         # ランダム予測の基準線を追加
-        plt.axhline(
-            y=0.5, color="red", linestyle="--", alpha=0.7, label="Random Prediction"
-        )
+        plt.axhline(y=0.5, color="red", linestyle="--", alpha=0.7, label="Random Prediction")
         plt.legend()
 
         plt.tight_layout()
@@ -179,9 +173,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
         roc_auc = auc(fpr, tpr)
 
         plt.figure(figsize=(8, 6))
-        plt.plot(
-            fpr, tpr, color="darkorange", lw=2, label=f"ROC curve (AUC = {roc_auc:.3f})"
-        )
+        plt.plot(fpr, tpr, color="darkorange", lw=2, label=f"ROC curve (AUC = {roc_auc:.3f})")
         plt.plot(
             [0, 1],
             [0, 1],
@@ -210,9 +202,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
         pathogenic_probs = 1 / (1 + np.exp(self.fitness_scores))
 
         # Calculate PR curve
-        precision, recall, thresholds = precision_recall_curve(
-            self.true_labels, pathogenic_probs
-        )
+        precision, recall, thresholds = precision_recall_curve(self.true_labels, pathogenic_probs)
         pr_auc = auc(recall, precision)
 
         plt.figure(figsize=(8, 6))
@@ -411,9 +401,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
 
         # 5. PR曲線（中央中）
         ax5 = fig.add_subplot(gs[1, 1])
-        precision, recall, _ = precision_recall_curve(
-            self.true_labels, pathogenic_probs
-        )
+        precision, recall, _ = precision_recall_curve(self.true_labels, pathogenic_probs)
         ax5.plot(
             recall,
             precision,
@@ -473,9 +461,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
             bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
         )
 
-        plt.suptitle(
-            "Protein Variant Classification - Summary Dashboard", fontsize=16, y=0.995
-        )
+        plt.suptitle("Protein Variant Classification - Summary Dashboard", fontsize=16, y=0.995)
 
         self._save_plot("summary_dashboard")
 
@@ -638,12 +624,8 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
         # データセット情報
         report.append("Dataset Information:")
         report.append(f"  Total variants: {len(self.true_labels)}")
-        report.append(
-            f"  Benign variants: {np.sum(self.true_labels == 0)} ({np.mean(self.true_labels == 0) * 100:.1f}%)"
-        )
-        report.append(
-            f"  Pathogenic variants: {np.sum(self.true_labels == 1)} ({np.mean(self.true_labels == 1) * 100:.1f}%)"
-        )
+        report.append(f"  Benign variants: {np.sum(self.true_labels == 0)} ({np.mean(self.true_labels == 0) * 100:.1f}%)")
+        report.append(f"  Pathogenic variants: {np.sum(self.true_labels == 1)} ({np.mean(self.true_labels == 1) * 100:.1f}%)")
         report.append(f"  Classification threshold: {self.threshold}")
         report.append("")
 
@@ -704,9 +686,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
         elif self.metrics["ROC-AUC"] >= 0.7:
             report.append("  ⚠ Fair discriminative ability (ROC-AUC ≥ 0.7)")
         else:
-            report.append(
-                "  ✗ Poor discriminative ability - model may need improvement"
-            )
+            report.append("  ✗ Poor discriminative ability - model may need improvement")
 
         report.append("")
         report.append("=" * 80)
@@ -747,9 +727,7 @@ class ProteinClassificationVisualizer(BaseVisualizationGenerator):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Visualize Protein Classification Evaluation Results"
-    )
+    parser = argparse.ArgumentParser(description="Visualize Protein Classification Evaluation Results")
     parser.add_argument(
         "--results_file",
         type=str,
@@ -772,9 +750,7 @@ def main():
 
     # 可視化実行
     try:
-        visualizer = ProteinClassificationVisualizer(
-            results_file=args.results_file, output_dir=args.output_dir
-        )
+        visualizer = ProteinClassificationVisualizer(results_file=args.results_file, output_dir=args.output_dir)
 
         visualizer.generate_all_visualizations()
 

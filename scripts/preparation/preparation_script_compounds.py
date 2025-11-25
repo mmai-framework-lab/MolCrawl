@@ -27,9 +27,7 @@ from config.paths import COMPOUNDS_DIR
 logger = logging.getLogger(__name__)
 
 
-def download_compound_datasets(
-    cfg, organix13_dataset_path, download_marker, force=False
-):
+def download_compound_datasets(cfg, organix13_dataset_path, download_marker, force=False):
     """
     化合物データセットのダウンロード処理
 
@@ -50,9 +48,7 @@ def download_compound_datasets(
     logger.info("Download completed.")
 
 
-def tokenize_compound_data(
-    cfg, organix13_dataset_path, tokenized_marker, processed_parquet, force=False
-):
+def tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, processed_parquet, force=False):
     """
     化合物データのトークナイズ処理
 
@@ -71,9 +67,7 @@ def tokenize_compound_data(
         return read_parquet(file_path=str(processed_parquet))
 
     # 元データの読み込み
-    organix13_dataset = read_parquet(
-        file_path=os.path.join(organix13_dataset_path, "OrganiX13.parquet")
-    )
+    organix13_dataset = read_parquet(file_path=os.path.join(organix13_dataset_path, "OrganiX13.parquet"))
 
     # SMILESのトークナイズ
     mol_tokenizer = CompoundsTokenizer(cfg.vocab_path, cfg.max_length)
@@ -128,9 +122,7 @@ def compute_tokenization_statistics(dataset, stats_marker, force=False):
         plt.hist(series_length, bins=np.arange(0, 200, 1))
         plt.xlabel("Length of tokenized {}".format(column_name))
         plt.title("Distribution of tokenized {} lengths".format(column_name))
-        plt.savefig(
-            "assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name)
-        )
+        plt.savefig("assets/img/compounds_tokenized_{}_lengths_dist.png".format(column_name))
         plt.close()
         logger.info(
             "Saved distribution of tokenized {} lengths to assets/img/compounds_tokenized_{}_lengths_dist.png".format(
@@ -167,15 +159,9 @@ def main():
         action="store_true",
         help="Force re-download and reprocessing even if files exist",
     )
-    parser.add_argument(
-        "--download-only", action="store_true", help="Only perform download step"
-    )
-    parser.add_argument(
-        "--tokenize-only", action="store_true", help="Only perform tokenization step"
-    )
-    parser.add_argument(
-        "--stats-only", action="store_true", help="Only perform statistics step"
-    )
+    parser.add_argument("--download-only", action="store_true", help="Only perform download step")
+    parser.add_argument("--tokenize-only", action="store_true", help="Only perform tokenization step")
+    parser.add_argument("--stats-only", action="store_true", help="Only perform statistics step")
     args = parser.parse_args()
 
     # 設定とパスの初期化
@@ -198,16 +184,12 @@ def main():
 
     # 1. データダウンロード
     if run_download:
-        download_compound_datasets(
-            cfg, organix13_dataset_path, download_marker, args.force
-        )
+        download_compound_datasets(cfg, organix13_dataset_path, download_marker, args.force)
 
     # 2. トークナイズ処理
     organix13_dataset = None
     if run_tokenize:
-        organix13_dataset = tokenize_compound_data(
-            cfg, organix13_dataset_path, tokenized_marker, processed_parquet, args.force
-        )
+        organix13_dataset = tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, processed_parquet, args.force)
 
     # 3. 統計処理
     if run_stats:
@@ -221,9 +203,7 @@ def main():
 
         compute_tokenization_statistics(organix13_dataset, stats_marker, args.force)
 
-    logger.info(
-        "Processing completed. Processed dataset saved to {}.".format(COMPOUNDS_DIR)
-    )
+    logger.info("Processing completed. Processed dataset saved to {}.".format(COMPOUNDS_DIR))
 
 
 if __name__ == "__main__":

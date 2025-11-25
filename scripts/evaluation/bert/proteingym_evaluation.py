@@ -58,17 +58,13 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
-            sys.path.append(
-                os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
-            )
+            sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
             from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")
             tokenizer = EsmSequenceTokenizer()
             self.vocab_size = len(tokenizer.get_vocab())
-            logger.info(
-                f"EsmSequenceTokenizer initialized with vocab_size: {self.vocab_size}"
-            )
+            logger.info(f"EsmSequenceTokenizer initialized with vocab_size: {self.vocab_size}")
 
             # 特殊トークンIDの取得（EsmSequenceTokenizerの仕様に合わせる）
             vocab = tokenizer.get_vocab()
@@ -78,15 +74,11 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             self.cls_token_id = vocab.get("<cls>", 0)
             self.sep_token_id = vocab.get("<eos>", 2)
 
-            logger.info(
-                f"Special tokens - CLS: {self.cls_token_id}, SEP: {self.sep_token_id}, MASK: {self.mask_token_id}"
-            )
+            logger.info(f"Special tokens - CLS: {self.cls_token_id}, SEP: {self.sep_token_id}, MASK: {self.mask_token_id}")
 
             # vocab_sizeが想定と異なる場合の対処
             if self.vocab_size != 40:
-                logger.warning(
-                    f"EsmSequenceTokenizer vocab_size ({self.vocab_size}) != expected (40)"
-                )
+                logger.warning(f"EsmSequenceTokenizer vocab_size ({self.vocab_size}) != expected (40)")
                 logger.info("Using tokenizer with current vocab_size")
 
             self.use_esm_tokenizer = True
@@ -155,9 +147,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         self.unk_token_id = 3  # <unk>
         self.mask_token_id = 32  # <mask>
 
-        logger.info(
-            f"Simple amino acid tokenizer initialized with vocab_size: {self.vocab_size}"
-        )
+        logger.info(f"Simple amino acid tokenizer initialized with vocab_size: {self.vocab_size}")
 
         class SimpleTokenizer:
             """シンプルなアミノ酸トークナイザー（フォールバック用）"""
@@ -218,9 +208,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
                 state_dict = load_file(safetensors_path)
                 model.load_state_dict(state_dict, strict=False)
 
-                logger.info(
-                    "✅ Successfully loaded trained BERT model with safetensors"
-                )
+                logger.info("✅ Successfully loaded trained BERT model with safetensors")
 
             elif os.path.exists(pytorch_path):
                 logger.info("Loading from PyTorch format")
@@ -350,30 +338,22 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         """
         try:
             # 野生型と変異型のMLMスコアを計算
-            wt_score = self.get_masked_lm_score(
-                wildtype_seq, context_length=context_length
-            )
-            mut_score = self.get_masked_lm_score(
-                mutant_seq, context_length=context_length
-            )
+            wt_score = self.get_masked_lm_score(wildtype_seq, context_length=context_length)
+            mut_score = self.get_masked_lm_score(mutant_seq, context_length=context_length)
 
             # フィットネススコア = 変異型 - 野生型
             # 正の値 = 変異が有益、負の値 = 変異が有害
             fitness_score = mut_score - wt_score
 
             # 配列表現の類似度も計算
-            similarity = self.get_sequence_similarity(
-                wildtype_seq, mutant_seq, context_length
-            )
+            similarity = self.get_sequence_similarity(wildtype_seq, mutant_seq, context_length)
 
             return {
                 "fitness_score": fitness_score,
                 "wildtype_mlm_score": wt_score,
                 "mutant_mlm_score": mut_score,
                 "sequence_similarity": similarity,
-                "bert_pathogenicity_score": self._calculate_pathogenicity_score(
-                    fitness_score, similarity
-                ),
+                "bert_pathogenicity_score": self._calculate_pathogenicity_score(fitness_score, similarity),
             }
 
         except Exception as e:
@@ -396,22 +376,16 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             # パディングで長さを揃える
             max_len = max(len(tokens1), len(tokens2))
             if len(tokens1) < max_len:
-                tokens1 = F.pad(
-                    tokens1, (0, max_len - len(tokens1)), value=self.pad_token_id
-                )
+                tokens1 = F.pad(tokens1, (0, max_len - len(tokens1)), value=self.pad_token_id)
             if len(tokens2) < max_len:
-                tokens2 = F.pad(
-                    tokens2, (0, max_len - len(tokens2)), value=self.pad_token_id
-                )
+                tokens2 = F.pad(tokens2, (0, max_len - len(tokens2)), value=self.pad_token_id)
 
             # バッチ化してBERTに入力
             input_ids = torch.stack([tokens1, tokens2]).to(self.device)
             attention_mask = (input_ids != self.pad_token_id).float()
 
             # 隠れ状態を取得
-            outputs = self.model.bert(
-                input_ids=input_ids, attention_mask=attention_mask
-            )
+            outputs = self.model.bert(input_ids=input_ids, attention_mask=attention_mask)
             hidden_states = outputs.last_hidden_state
 
             # [CLS]トークンの表現を使用
@@ -471,9 +445,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
         # target_seqがない場合は、mutated_sequenceから推定
         if "target_seq" not in df.columns and "mutant" in df.columns:
-            logger.info(
-                "Inferring target_seq from mutated_sequence and mutant information"
-            )
+            logger.info("Inferring target_seq from mutated_sequence and mutant information")
             df = self._infer_target_sequence(df)
 
         logger.info(f"Loaded {len(df)} ProteinGym variants")
@@ -506,9 +478,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             return mutated_seq
 
         df["target_seq"] = df.apply(
-            lambda row: reverse_mutation(
-                row["mutated_sequence"], row.get("mutant", "")
-            ),
+            lambda row: reverse_mutation(row["mutated_sequence"], row.get("mutant", "")),
             axis=1,
         )
         return df
@@ -572,18 +542,14 @@ class BERTProteinGymEvaluator(ModelEvaluator):
                             "wildtype_mlm_score": result["wildtype_mlm_score"],
                             "mutant_mlm_score": result["mutant_mlm_score"],
                             "sequence_similarity": result["sequence_similarity"],
-                            "bert_pathogenicity_score": result[
-                                "bert_pathogenicity_score"
-                            ],
+                            "bert_pathogenicity_score": result["bert_pathogenicity_score"],
                         }
                     )
 
                     processed += 1
 
                     if processed % 50 == 0:
-                        logger.info(
-                            f"   Progress: {processed}/{len(proteingym_data)} variants processed"
-                        )
+                        logger.info(f"   Progress: {processed}/{len(proteingym_data)} variants processed")
 
                 except Exception as e:
                     logger.warning(f"Error processing variant {idx}: {e}")
@@ -672,13 +638,9 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         report_path = os.path.join(output_dir, "bert_proteingym_evaluation_report.txt")
 
         with open(report_path, "w") as f:
-            f.write(
-                "Independent BERT Protein Sequence Model - ProteinGym Evaluation Report\n"
-            )
+            f.write("Independent BERT Protein Sequence Model - ProteinGym Evaluation Report\n")
             f.write("=" * 80 + "\n\n")
-            f.write(
-                f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            )
+            f.write(f"🕐 Evaluation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("🧬 Model Type: BERT for Masked Language Modeling\n")
             f.write("📊 Evaluation Method: Independent fitness assessment\n\n")
 
@@ -688,12 +650,8 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             f.write(f"   • Processing errors: {results['errors']}\n\n")
 
             f.write("🎯 Performance Metrics:\n")
-            f.write(
-                f"   • Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})\n"
-            )
-            f.write(
-                f"   • Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})\n"
-            )
+            f.write(f"   • Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})\n")
+            f.write(f"   • Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})\n")
             f.write(f"   • MAE: {results['mae']:.4f}\n")
             f.write(f"   • RMSE: {results['rmse']:.4f}\n\n")
 
@@ -712,18 +670,10 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             )
 
             f.write("🔍 BERT Model Interpretation:\n")
-            f.write(
-                "   • MLM Scores: Higher values indicate better sequence likelihood\n"
-            )
-            f.write(
-                "   • Fitness Score: Mutant MLM - Wildtype MLM (positive = beneficial)\n"
-            )
-            f.write(
-                "   • Sequence Similarity: Cosine similarity of [CLS] representations\n"
-            )
-            f.write(
-                "   • Pathogenicity Score: Combined fitness and similarity assessment\n\n"
-            )
+            f.write("   • MLM Scores: Higher values indicate better sequence likelihood\n")
+            f.write("   • Fitness Score: Mutant MLM - Wildtype MLM (positive = beneficial)\n")
+            f.write("   • Sequence Similarity: Cosine similarity of [CLS] representations\n")
+            f.write("   • Pathogenicity Score: Combined fitness and similarity assessment\n\n")
 
             # パフォーマンス評価
             spearman = results["spearman_correlation"]
@@ -740,18 +690,10 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             f.write(f"   Spearman correlation: {spearman:.4f}\n\n")
 
             f.write("💡 Key Insights:\n")
-            f.write(
-                "   • This evaluation is independent of GPT2 or other generative models\n"
-            )
-            f.write(
-                "   • BERT's bidirectional attention enables context-aware variant assessment\n"
-            )
-            f.write(
-                "   • MLM predictions provide direct evidence of sequence disruption\n"
-            )
-            f.write(
-                "   • Results reflect BERT's understanding of protein sequence patterns\n"
-            )
+            f.write("   • This evaluation is independent of GPT2 or other generative models\n")
+            f.write("   • BERT's bidirectional attention enables context-aware variant assessment\n")
+            f.write("   • MLM predictions provide direct evidence of sequence disruption\n")
+            f.write("   • Results reflect BERT's understanding of protein sequence patterns\n")
 
     def _make_serializable(self, obj):
         """オブジェクトをJSON serializable形式に変換"""
@@ -827,9 +769,7 @@ def get_protein_tokenizer_path():
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="BERT ProteinGym evaluation for protein sequence model"
-    )
+    parser = argparse.ArgumentParser(description="BERT ProteinGym evaluation for protein sequence model")
     parser.add_argument(
         "--model_path",
         type=str,
@@ -848,9 +788,7 @@ def main():
         default=None,
         help="Output directory for results (auto-generated if not provided)",
     )
-    parser.add_argument(
-        "--batch_size", type=int, default=16, help="Batch size for evaluation"
-    )
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for evaluation")
     parser.add_argument(
         "--sample_size",
         type=int,
@@ -862,9 +800,7 @@ def main():
         action="store_true",
         help="Create sample ProteinGym data for testing",
     )
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="Device to use for evaluation"
-    )
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use for evaluation")
     parser.add_argument(
         "--tokenizer_path",
         type=str,
@@ -878,23 +814,17 @@ def main():
     if args.output_dir is None:
         model_type = get_model_type_from_path(args.model_path)
         model_name = get_model_name_from_path(args.model_path)
-        args.output_dir = get_evaluation_output_dir(
-            model_type, "bert_proteingym", model_name
-        )
+        args.output_dir = get_evaluation_output_dir(model_type, "bert_proteingym", model_name)
     else:
         os.makedirs(args.output_dir, exist_ok=True)
 
     # ログ設定
-    logger = setup_evaluation_logging(
-        Path(args.output_dir), "bert_proteingym_evaluation"
-    )
+    logger = setup_evaluation_logging(Path(args.output_dir), "bert_proteingym_evaluation")
 
     # サンプルデータ作成モード
     if args.create_sample_data:
         create_sample_proteingym_data(args.proteingym_data)
-        logger.info(
-            "Sample data created. Run again without --create_sample_data to evaluate."
-        )
+        logger.info("Sample data created. Run again without --create_sample_data to evaluate.")
         return
 
     try:
@@ -905,11 +835,7 @@ def main():
             tokenizer_path = get_protein_tokenizer_path()
 
         # protein_sequenceはEsmSequenceTokenizerを使用するため、tokenizer_pathはNoneでも可
-        if (
-            tokenizer_path
-            and tokenizer_path != "None"
-            and not os.path.exists(tokenizer_path)
-        ):
+        if tokenizer_path and tokenizer_path != "None" and not os.path.exists(tokenizer_path):
             raise FileNotFoundError(f"Tokenizer not found: {tokenizer_path}")
 
         # Noneの場合は使用しない
@@ -927,18 +853,12 @@ def main():
         proteingym_data = evaluator.load_proteingym_data(args.proteingym_data)
 
         # モデル評価の実行
-        results = evaluator.evaluate_model(
-            proteingym_data, batch_size=args.batch_size, sample_size=args.sample_size
-        )
+        results = evaluator.evaluate_model(proteingym_data, batch_size=args.batch_size, sample_size=args.sample_size)
 
         # 結果の表示
         logger.info("=== BERT Evaluation Results ===")
-        logger.info(
-            f"Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})"
-        )
-        logger.info(
-            f"Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})"
-        )
+        logger.info(f"Spearman correlation: {results['spearman_correlation']:.4f} (p={results['spearman_p_value']:.4e})")
+        logger.info(f"Pearson correlation: {results['pearson_correlation']:.4f} (p={results['pearson_p_value']:.4e})")
         logger.info(f"MAE: {results['mae']:.4f}")
         logger.info(f"RMSE: {results['rmse']:.4f}")
         logger.info(f"Number of variants: {results['n_variants']}")

@@ -61,9 +61,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(
-            f"{log_dir}/cosmic_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        ),
+        logging.FileHandler(f"{log_dir}/cosmic_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
         logging.StreamHandler(),
     ],
 )
@@ -113,10 +111,7 @@ class COSMICProcessor:
             raise ValueError(f"Unknown dataset type: {dataset_type}")
 
         url = self.cosmic_urls[dataset_type]
-        output_file = (
-            self.output_dir
-            / f"cosmic_{dataset_type}.{'csv' if dataset_type == 'census' else 'tsv.gz'}"
-        )
+        output_file = self.output_dir / f"cosmic_{dataset_type}.{'csv' if dataset_type == 'census' else 'tsv.gz'}"
 
         logger.info(f"Downloading COSMIC {dataset_type} data from {url}")
 
@@ -199,19 +194,13 @@ class COSMICProcessor:
                 significance = "pathogenic"
                 oncogenic = 1
             elif gene in ["KRAS", "PIK3CA"] and "Missense" in mutation_type:
-                significance = (
-                    "likely_pathogenic" if np.random.random() > 0.3 else "pathogenic"
-                )
+                significance = "likely_pathogenic" if np.random.random() > 0.3 else "pathogenic"
                 oncogenic = 1
             elif "Frameshift" in mutation_type:
-                significance = (
-                    "pathogenic" if np.random.random() > 0.2 else "likely_pathogenic"
-                )
+                significance = "pathogenic" if np.random.random() > 0.2 else "likely_pathogenic"
                 oncogenic = 1
             else:
-                significance = np.random.choice(
-                    ["benign", "likely_benign", "uncertain_significance"]
-                )
+                significance = np.random.choice(["benign", "likely_benign", "uncertain_significance"])
                 oncogenic = 0
 
             sample_data.append(
@@ -225,9 +214,7 @@ class COSMICProcessor:
                     "Position": np.random.randint(1000000, 200000000),
                     "Reference_sequence": ref_sequence,
                     "Variant_sequence": var_sequence,
-                    "Primary_site": np.random.choice(
-                        ["lung", "breast", "colon", "prostate", "liver"]
-                    ),
+                    "Primary_site": np.random.choice(["lung", "breast", "colon", "prostate", "liver"]),
                     "Sample_count": np.random.randint(1, 50),
                     "Mutation_somatic_status": "Confirmed somatic",
                 }
@@ -299,9 +286,7 @@ class COSMICProcessor:
 
                     # メモリ使用量制限
                     if line_num > 100000:  # 最初の10万行のみ処理
-                        logger.info(
-                            "Limiting to first 100k variants for memory efficiency"
-                        )
+                        logger.info("Limiting to first 100k variants for memory efficiency")
                         break
 
         except Exception as e:
@@ -331,12 +316,8 @@ class COSMICProcessor:
             half_len = sequence_length // 2
 
             # 参照配列の生成
-            prefix = "".join(
-                np.random.choice(bases, half_len - len(row["reference_allele"]) // 2)
-            )
-            suffix = "".join(
-                np.random.choice(bases, half_len - len(row["reference_allele"]) // 2)
-            )
+            prefix = "".join(np.random.choice(bases, half_len - len(row["reference_allele"]) // 2))
+            suffix = "".join(np.random.choice(bases, half_len - len(row["reference_allele"]) // 2))
             ref_sequence = prefix + row["reference_allele"] + suffix
 
             # 変異配列の生成
@@ -344,22 +325,16 @@ class COSMICProcessor:
 
             # 長さの調整
             if len(ref_sequence) < sequence_length:
-                ref_sequence += "".join(
-                    np.random.choice(bases, sequence_length - len(ref_sequence))
-                )
+                ref_sequence += "".join(np.random.choice(bases, sequence_length - len(ref_sequence)))
             elif len(ref_sequence) > sequence_length:
                 ref_sequence = ref_sequence[:sequence_length]
 
             if len(var_sequence) < sequence_length:
-                var_sequence += "".join(
-                    np.random.choice(bases, sequence_length - len(var_sequence))
-                )
+                var_sequence += "".join(np.random.choice(bases, sequence_length - len(var_sequence)))
             elif len(var_sequence) > sequence_length:
                 var_sequence = var_sequence[:sequence_length]
 
-            sequences.append(
-                {"reference_sequence": ref_sequence, "variant_sequence": var_sequence}
-            )
+            sequences.append({"reference_sequence": ref_sequence, "variant_sequence": var_sequence})
 
         # 元のDataFrameに配列情報を追加
         sequence_df = pd.DataFrame(sequences)
@@ -380,12 +355,8 @@ def main():
         help="Output directory (default: $LEARNING_SOURCE_DIR/genome_sequence/data/cosmic)",
     )
     parser.add_argument("--download", action="store_true", help="Download COSMIC data")
-    parser.add_argument(
-        "--max_samples", type=int, default=1000, help="Maximum samples per class"
-    )
-    parser.add_argument(
-        "--sequence_length", type=int, default=100, help="Sequence length"
-    )
+    parser.add_argument("--max_samples", type=int, default=1000, help="Maximum samples per class")
+    parser.add_argument("--sequence_length", type=int, default=100, help="Sequence length")
     parser.add_argument(
         "--create_sample_data",
         action="store_true",
@@ -402,9 +373,7 @@ def main():
         processor.create_sample_cosmic_data(args.max_samples)
     else:
         logger.info("Sample COSMIC data creation completed")
-        logger.info(
-            "Note: For real COSMIC data, registration and authentication are required"
-        )
+        logger.info("Note: For real COSMIC data, registration and authentication are required")
         logger.info("Creating sample data for demonstration...")
         processor.create_sample_cosmic_data(args.max_samples)
 

@@ -8,7 +8,9 @@ from core.base import UnTrainableTokenizer
 from compounds.utils.preprocessing import prepare_scaffolds
 
 
-SMI_REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
+SMI_REGEX_PATTERN = (
+    r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +53,8 @@ class SmilesTokenizer(BertTokenizer):
         if not os.path.isfile(vocab_file):
             raise ValueError("Can't find a vocab file at path '{}'.".format(vocab_file))
         self.vocab = load_vocab(vocab_file)
-        self.highest_unused_index = max(
-            [i for i, v in enumerate(self.vocab.keys()) if v.startswith("[unused")]
-        )
-        self.ids_to_tokens = collections.OrderedDict(
-            [(ids, tok) for tok, ids in self.vocab.items()]
-        )
+        self.highest_unused_index = max([i for i, v in enumerate(self.vocab.keys()) if v.startswith("[unused")])
+        self.ids_to_tokens = collections.OrderedDict([(ids, tok) for tok, ids in self.vocab.items()])
         self.basic_tokenizer = BasicSmilesTokenizer()
 
     @property
@@ -152,9 +150,7 @@ class SmilesTokenizer(BertTokenizer):
         """
         return [self.cls_token] + tokens + [self.sep_token]
 
-    def add_special_tokens_ids_sequence_pair(
-        self, token_ids_0: List[int], token_ids_1: List[int]
-    ) -> List[int]:
+    def add_special_tokens_ids_sequence_pair(self, token_ids_0: List[int], token_ids_1: List[int]) -> List[int]:
         """
         Adds special tokens to a sequence pair for sequence classification tasks.
         A BERT sequence pair has the following format: [CLS] A [SEP] B [SEP]
@@ -173,9 +169,7 @@ class SmilesTokenizer(BertTokenizer):
 
         return cls + token_ids_0 + sep + token_ids_1 + sep
 
-    def add_padding_tokens(
-        self, token_ids: List[int], length: int, right: bool = True
-    ) -> List[int]:
+    def add_padding_tokens(self, token_ids: List[int], length: int, right: bool = True) -> List[int]:
         """
         Adds padding tokens to return a sequence of length max_length.
         By default padding tokens are added to the right of the sequence.
@@ -205,9 +199,7 @@ class SmilesTokenizer(BertTokenizer):
         else:
             return padding + token_ids
 
-    def save_vocabulary(
-        self, vocab_path: str
-    ):  # -> tuple[str]: doctest issue raised with this return type annotation
+    def save_vocabulary(self, vocab_path: str):  # -> tuple[str]: doctest issue raised with this return type annotation
         """
         Save the tokenizer vocabulary to a file.
 

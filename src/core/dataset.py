@@ -17,7 +17,7 @@ class PreparedDataset:
             # Fall back to standard HuggingFace dataset format
             try:
                 self.data = load_from_disk(str(dataset_path))[split]
-            except Exception as e:
+            except Exception:
                 # Try direct path (no split subdirectory)
                 print(f"Trying to load from {dataset_path} directly...")
                 self.data = load_from_disk(str(dataset_path))

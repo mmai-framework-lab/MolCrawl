@@ -18,9 +18,7 @@ from urllib.parse import urlparse
 from tqdm import tqdm
 
 # ログ設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -162,9 +160,7 @@ class ProteinGymDataDownloader:
         """
         if data_type not in self.PROTEINGYM_URLS:
             available_types = list(self.PROTEINGYM_URLS.keys())
-            raise ValueError(
-                f"Invalid data_type: {data_type}. Choose from {available_types}"
-            )
+            raise ValueError(f"Invalid data_type: {data_type}. Choose from {available_types}")
 
         url = self.PROTEINGYM_URLS[data_type]
         downloaded_file = self.download_file(url, force_download=force_download)
@@ -255,21 +251,15 @@ class ProteinGymDataDownloader:
 
         # バランスサンプリングの実行
         if balanced_sampling:
-            df = self._balanced_sampling(
-                df, positive_samples, negative_samples, score_threshold
-            )
-            logger.info(
-                f"Applied balanced sampling: {original_size} → {len(df)} variants"
-            )
+            df = self._balanced_sampling(df, positive_samples, negative_samples, score_threshold)
+            logger.info(f"Applied balanced sampling: {original_size} → {len(df)} variants")
         elif max_variants and len(df) > max_variants:
             # 従来のランダムサンプリング
             logger.info(f"Limiting to {max_variants} variants (from {len(df)})")
             df = df.sample(n=max_variants, random_state=42)
 
         logger.info(f"Prepared {len(df)} variants for evaluation")
-        logger.info(
-            f"DMS score range: {df['DMS_score'].min():.3f} to {df['DMS_score'].max():.3f}"
-        )
+        logger.info(f"DMS score range: {df['DMS_score'].min():.3f} to {df['DMS_score'].max():.3f}")
 
         return df
 
@@ -323,13 +313,9 @@ class ProteinGymDataDownloader:
         df.to_csv(output_file, index=False)
 
         logger.info(f"Test dataset created: {output_file}")
-        logger.info(
-            f"Score statistics: mean={df['DMS_score'].mean():.3f}, std={df['DMS_score'].std():.3f}"
-        )
+        logger.info(f"Score statistics: mean={df['DMS_score'].mean():.3f}, std={df['DMS_score'].std():.3f}")
 
-    def _balanced_sampling(
-        self, df, positive_samples=1000, negative_samples=1000, score_threshold=None
-    ):
+    def _balanced_sampling(self, df, positive_samples=1000, negative_samples=1000, score_threshold=None):
         """
         陽性と陰性のサンプルをバランス良く抽出
 
@@ -352,9 +338,7 @@ class ProteinGymDataDownloader:
         positive_df = df[df["DMS_score"] >= score_threshold].copy()
         negative_df = df[df["DMS_score"] < score_threshold].copy()
 
-        logger.info(
-            f"Original distribution: {len(positive_df)} positive, {len(negative_df)} negative"
-        )
+        logger.info(f"Original distribution: {len(positive_df)} positive, {len(negative_df)} negative")
 
         # 各クラスからランダムサンプリング
         sampled_dfs = []
@@ -362,28 +346,20 @@ class ProteinGymDataDownloader:
         # 陽性サンプルの抽出
         if len(positive_df) >= positive_samples:
             positive_sampled = positive_df.sample(n=positive_samples, random_state=42)
-            logger.info(
-                f"Sampled {positive_samples} positive samples from {len(positive_df)} available"
-            )
+            logger.info(f"Sampled {positive_samples} positive samples from {len(positive_df)} available")
         else:
             positive_sampled = positive_df.copy()
-            logger.warning(
-                f"Only {len(positive_df)} positive samples available (requested {positive_samples})"
-            )
+            logger.warning(f"Only {len(positive_df)} positive samples available (requested {positive_samples})")
 
         sampled_dfs.append(positive_sampled)
 
         # 陰性サンプルの抽出
         if len(negative_df) >= negative_samples:
             negative_sampled = negative_df.sample(n=negative_samples, random_state=42)
-            logger.info(
-                f"Sampled {negative_samples} negative samples from {len(negative_df)} available"
-            )
+            logger.info(f"Sampled {negative_samples} negative samples from {len(negative_df)} available")
         else:
             negative_sampled = negative_df.copy()
-            logger.warning(
-                f"Only {len(negative_df)} negative samples available (requested {negative_samples})"
-            )
+            logger.warning(f"Only {len(negative_df)} negative samples available (requested {negative_samples})")
 
         sampled_dfs.append(negative_sampled)
 
@@ -394,9 +370,7 @@ class ProteinGymDataDownloader:
         # バランス情報をログ出力
         final_positive = len(balanced_df[balanced_df["DMS_score"] >= score_threshold])
         final_negative = len(balanced_df[balanced_df["DMS_score"] < score_threshold])
-        logger.info(
-            f"Final balanced dataset: {final_positive} positive, {final_negative} negative"
-        )
+        logger.info(f"Final balanced dataset: {final_positive} positive, {final_negative} negative")
 
         return balanced_df
 
@@ -488,9 +462,7 @@ class ProteinGymDataDownloader:
                     break
 
             if metadata_file is None:
-                raise FileNotFoundError(
-                    "No metadata file found. Please download recommended datasets first."
-                )
+                raise FileNotFoundError("No metadata file found. Please download recommended datasets first.")
 
         logger.info(f"Setting up test data from metadata: {metadata_file}")
 
@@ -508,9 +480,7 @@ class ProteinGymDataDownloader:
 
         for _, row in test_assays.iterrows():
             assay_id = row["DMS_id"]
-            target_sequence = row.get(
-                "target_seq", "MKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFVAPFPEVFGKEKVNEL"
-            )  # デフォルト配列
+            target_sequence = row.get("target_seq", "MKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFVAPFPEVFGKEKVNEL")  # デフォルト配列
 
             logger.info(f"Creating test data for assay: {assay_id}")
 
@@ -533,15 +503,11 @@ class ProteinGymDataDownloader:
                 "negative_samples": len(test_data[test_data["DMS_score"] < 0]),
             }
 
-            logger.info(
-                f"Created test dataset: {output_file} ({len(test_data)} samples)"
-            )
+            logger.info(f"Created test dataset: {output_file} ({len(test_data)} samples)")
 
         return created_datasets
 
-    def _generate_sample_mutations(
-        self, assay_id, target_seq, positive_samples, negative_samples
-    ):
+    def _generate_sample_mutations(self, assay_id, target_seq, positive_samples, negative_samples):
         """
         特定のアッセイ用にサンプル変異データを生成
 
@@ -627,9 +593,7 @@ class ProteinGymDataDownloader:
         Returns:
             dict: ダウンロードされたファイルパスの辞書
         """
-        logger.info(
-            "Downloading recommended datasets for protein_sequence evaluation..."
-        )
+        logger.info("Downloading recommended datasets for protein_sequence evaluation...")
 
         recommended_datasets = [
             "substitutions",  # メイン評価用：DMS単一置換データ
@@ -643,9 +607,7 @@ class ProteinGymDataDownloader:
         for dataset in recommended_datasets:
             try:
                 logger.info(f"Downloading {dataset}...")
-                path = self.download_proteingym_data(
-                    dataset, force_download=force_download
-                )
+                path = self.download_proteingym_data(dataset, force_download=force_download)
                 downloaded_paths[dataset] = path
                 logger.info(f"✓ {dataset} downloaded to: {path}")
             except Exception as e:
@@ -654,9 +616,7 @@ class ProteinGymDataDownloader:
 
         return downloaded_paths
 
-    def get_small_test_assays(
-        self, reference_df, max_assays=5, max_variants_per_assay=500
-    ):
+    def get_small_test_assays(self, reference_df, max_assays=5, max_variants_per_assay=500):
         """
         テスト用の小さなアッセイを選択
 
@@ -696,9 +656,7 @@ class ProteinGymDataDownloader:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="ProteinGym data downloader and preparation utility"
-    )
+    parser = argparse.ArgumentParser(description="ProteinGym data downloader and preparation utility")
     parser.add_argument(
         "--data_dir",
         type=str,
@@ -773,18 +731,10 @@ def main():
         default=5,
         help="Number of test assays to create (default: 5)",
     )
-    parser.add_argument(
-        "--max_variants", type=int, help="Maximum number of variants to include"
-    )
-    parser.add_argument(
-        "--create_test", type=str, help="Create test dataset (provide output filename)"
-    )
-    parser.add_argument(
-        "--test_size", type=int, default=100, help="Size of test dataset"
-    )
-    parser.add_argument(
-        "--force", action="store_true", help="Force download even if files exist"
-    )
+    parser.add_argument("--max_variants", type=int, help="Maximum number of variants to include")
+    parser.add_argument("--create_test", type=str, help="Create test dataset (provide output filename)")
+    parser.add_argument("--test_size", type=int, default=100, help="Size of test dataset")
+    parser.add_argument("--force", action="store_true", help="Force download even if files exist")
     parser.add_argument(
         "--list_assays",
         action="store_true",
@@ -812,9 +762,7 @@ def main():
         if args.download:
             if args.download == "recommended":
                 # protein_sequence評価に推奨されるデータセットをダウンロード
-                downloaded_paths = downloader.download_recommended_datasets(
-                    force_download=args.force
-                )
+                downloaded_paths = downloader.download_recommended_datasets(force_download=args.force)
                 logger.info("Recommended datasets downloaded:")
                 for dataset, path in downloaded_paths.items():
                     if path:
@@ -833,15 +781,11 @@ def main():
                 ]
                 for data_type in main_datasets:
                     try:
-                        downloader.download_proteingym_data(
-                            data_type, force_download=args.force
-                        )
+                        downloader.download_proteingym_data(data_type, force_download=args.force)
                     except Exception as e:
                         logger.warning(f"Failed to download {data_type}: {e}")
             else:
-                downloader.download_proteingym_data(
-                    args.download, force_download=args.force
-                )
+                downloader.download_proteingym_data(args.download, force_download=args.force)
 
         # アッセイリスト表示
         if args.list_assays:
@@ -851,18 +795,14 @@ def main():
                 protein_id = row.get("UniProt_ID", row.get("protein_name", "N/A"))
                 n_variants = row.get("DMS_total_number_mutants", "N/A")
                 organism = row.get("taxon", "N/A")
-                print(
-                    f"  {row['DMS_id']}: {protein_id} ({organism}) - {n_variants} variants"
-                )
+                print(f"  {row['DMS_id']}: {protein_id} ({organism}) - {n_variants} variants")
 
             print(f"\nTotal assays: {len(ref_df)}")
 
         # テスト用アッセイの取得
         if args.get_test_assays:
             ref_df = downloader.load_reference_file(data_type=args.data_type)
-            test_assays = downloader.get_small_test_assays(
-                ref_df, max_assays=args.get_test_assays
-            )
+            test_assays = downloader.get_small_test_assays(ref_df, max_assays=args.get_test_assays)
 
             print("\nRecommended test assays for quick evaluation:")
             for assay_id in test_assays:
@@ -919,9 +859,7 @@ def main():
                 output_dir=args.output_dir or "./balanced_proteingym_data",
             )
 
-            logger.info(
-                f"Prepared balanced datasets for {len(balanced_datasets)} assays:"
-            )
+            logger.info(f"Prepared balanced datasets for {len(balanced_datasets)} assays:")
             for assay_id, df in balanced_datasets.items():
                 logger.info(f"  {assay_id}: {len(df)} variants")
 
@@ -934,9 +872,7 @@ def main():
                     test_assay_count=args.test_assay_count,
                 )
 
-                logger.info(
-                    f"Successfully created {len(created_datasets)} test datasets:"
-                )
+                logger.info(f"Successfully created {len(created_datasets)} test datasets:")
                 for assay_id, info in created_datasets.items():
                     logger.info(
                         f"  {assay_id}: {info['total_samples']} samples "
@@ -950,9 +886,7 @@ def main():
                     first_file = created_datasets[first_assay]["file"]
                     logger.info("\nExample usage:")
                     logger.info("python scripts/proteingym_evaluation.py \\")
-                    logger.info(
-                        "  --model_path runs_train_gpt2_protein_sequence/checkpoint-5000 \\"
-                    )
+                    logger.info("  --model_path runs_train_gpt2_protein_sequence/checkpoint-5000 \\")
                     logger.info(f"  --proteingym_data {first_file}")
 
             except Exception as e:

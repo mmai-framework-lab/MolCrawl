@@ -56,17 +56,9 @@ def track_experiment(
 
                 # 結果を記録
                 if isinstance(result, dict):
-                    metrics = {
-                        k: v for k, v in result.items() if isinstance(v, (int, float))
-                    }
-                    other_results = {
-                        k: v
-                        for k, v in result.items()
-                        if not isinstance(v, (int, float))
-                    }
-                    tracker.complete_experiment(
-                        exp_id, results=other_results, metrics=metrics
-                    )
+                    metrics = {k: v for k, v in result.items() if isinstance(v, (int, float))}
+                    other_results = {k: v for k, v in result.items() if not isinstance(v, (int, float))}
+                    tracker.complete_experiment(exp_id, results=other_results, metrics=metrics)
                 else:
                     tracker.complete_experiment(exp_id)
 
@@ -130,13 +122,9 @@ def experiment_context(
             """ログを追加"""
             self.tracker.log(self.experiment_id, level, message, source)
 
-        def start_step(
-            self, step_id: str, step_name: str, command: Optional[str] = None
-        ):
+        def start_step(self, step_id: str, step_name: str, command: Optional[str] = None):
             """ステップを開始"""
-            return self.tracker.start_step(
-                self.experiment_id, step_id, step_name, command
-            )
+            return self.tracker.start_step(self.experiment_id, step_id, step_name, command)
 
         def complete_step(self, step_id: str, output_path: Optional[str] = None):
             """ステップを完了"""

@@ -30,9 +30,7 @@ class ModelEvaluator(ABC):
         vocab_size (int): Size of the vocabulary
     """
 
-    def __init__(
-        self, model_path: str, tokenizer_path: str, device: str = "cuda", **kwargs
-    ):
+    def __init__(self, model_path: str, tokenizer_path: str, device: str = "cuda", **kwargs):
         """
         Initialize the base evaluator.
 

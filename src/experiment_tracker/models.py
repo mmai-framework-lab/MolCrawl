@@ -152,9 +152,7 @@ class Experiment:
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "total_duration_seconds": self.total_duration_seconds,
             "config_path": self.config_path,
             "config": self.config,
@@ -179,9 +177,7 @@ class Experiment:
             data["started_at"] = datetime.fromisoformat(data["started_at"])
         if data.get("completed_at"):
             data["completed_at"] = datetime.fromisoformat(data["completed_at"])
-        data["steps"] = [
-            ExperimentStep.from_dict(step) for step in data.get("steps", [])
-        ]
+        data["steps"] = [ExperimentStep.from_dict(step) for step in data.get("steps", [])]
         data["logs"] = [ExperimentLog.from_dict(log) for log in data.get("logs", [])]
         return cls(**data)
 

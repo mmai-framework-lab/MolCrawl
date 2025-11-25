@@ -18,9 +18,7 @@ class VEPEuclideanDist(torch.nn.Module):
             aux_features=aux_features,
         ).last_hidden_state.reshape(len(input_ids), -1)
 
-    def get_scores(
-        self, input_ids_ref, aux_features_ref, input_ids_alt, aux_features_alt
-    ):
+    def get_scores(self, input_ids_ref, aux_features_ref, input_ids_alt, aux_features_alt):
         embed_ref = self.get_embedding(input_ids_ref, aux_features_ref)
         embed_alt = self.get_embedding(input_ids_alt, aux_features_alt)
         return F.pairwise_distance(embed_ref, embed_alt)
@@ -77,21 +75,15 @@ class VEPEuclideanDistInference(object):
         pos_fwd = self.window_size // 2
         pos_rev = pos_fwd - 1 if self.window_size % 2 == 0 else pos_fwd
 
-        ref_fwd = np.array(
-            [np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["ref"]]
-        )
-        alt_fwd = np.array(
-            [np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["alt"]]
-        )
+        ref_fwd = np.array([np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["ref"]])
+        alt_fwd = np.array([np.frombuffer(x.encode("ascii"), dtype="S1") for x in V["alt"]])
         ref_rev = self.reverse_complementer(ref_fwd)
         alt_rev = self.reverse_complementer(alt_fwd)
 
         def prepare_output(msa, pos, ref, alt):
             ref, alt = self.tokenizer(ref.flatten()), self.tokenizer(alt.flatten())
             input_ids, aux_features = msa[:, :, 0], msa[:, :, 1:]
-            assert (input_ids[:, pos] == ref).all(), (
-                f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
-            )
+            assert (input_ids[:, pos] == ref).all(), f"{input_ids[:, pos].tolist()}, {ref.tolist()}"
             input_ids_alt = input_ids.copy()
             input_ids_alt[:, pos] = alt
             input_ids = input_ids.astype(np.int64)

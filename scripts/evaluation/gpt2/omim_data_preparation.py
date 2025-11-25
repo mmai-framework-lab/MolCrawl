@@ -29,9 +29,7 @@ from typing import Dict, Optional
 import argparse
 
 # プロジェクトルートを追加
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 # scriptsディレクトリをパスに追加
 scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -88,9 +86,7 @@ def setup_logging(output_dir: str) -> logging.Logger:
     log_dir = os.path.join(output_dir, "logs")
     os.makedirs(log_dir, exist_ok=True)
 
-    log_file = os.path.join(
-        log_dir, f"omim_preparation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-    )
+    log_file = os.path.join(log_dir, f"omim_preparation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -107,9 +103,7 @@ def setup_logging(output_dir: str) -> logging.Logger:
 class OMIMDataGenerator:
     """OMIM評価用サンプルデータ生成クラス"""
 
-    def __init__(
-        self, sequence_length: int = 100, logger: Optional[logging.Logger] = None
-    ):
+    def __init__(self, sequence_length: int = 100, logger: Optional[logging.Logger] = None):
         self.sequence_length = sequence_length
         self.logger = logger or logging.getLogger(__name__)
 
@@ -187,9 +181,7 @@ class OMIMDataGenerator:
             # 病原性変異: より多くの変異を含む
             sequence = "".join(random.choices(nucleotides, k=self.sequence_length))
             # 特定の位置に病原性変異パターンを挿入
-            mutation_positions = random.sample(
-                range(self.sequence_length), min(5, self.sequence_length // 20)
-            )
+            mutation_positions = random.sample(range(self.sequence_length), min(5, self.sequence_length // 20))
             sequence_list = list(sequence)
             for pos in mutation_positions:
                 # フレームシフトや停止コドンを模倣
@@ -197,11 +189,7 @@ class OMIMDataGenerator:
             sequence = "".join(sequence_list)
         else:
             # ベニン変異: より保守的な配列
-            sequence = "".join(
-                random.choices(
-                    nucleotides, weights=[0.3, 0.3, 0.2, 0.2], k=self.sequence_length
-                )
-            )
+            sequence = "".join(random.choices(nucleotides, weights=[0.3, 0.3, 0.2, 0.2], k=self.sequence_length))
 
         return sequence
 
@@ -216,9 +204,7 @@ class OMIMDataGenerator:
         )[0]
 
         if is_pathogenic:
-            pathogenicity = random.choices(
-                ["pathogenic", "likely_pathogenic"], weights=[0.7, 0.3]
-            )[0]
+            pathogenicity = random.choices(["pathogenic", "likely_pathogenic"], weights=[0.7, 0.3])[0]
         else:
             pathogenicity = random.choices(
                 ["benign", "likely_benign", "uncertain_significance"],
@@ -241,9 +227,7 @@ class OMIMDataGenerator:
             "clinical_significance": pathogenicity,
             "mim_number": omim_id,
             "disease_name": f"Hereditary {gene.lower()} disorder",
-            "molecular_basis": "Point mutation"
-            if random.random() < 0.6
-            else "Deletion/Duplication",
+            "molecular_basis": "Point mutation" if random.random() < 0.6 else "Deletion/Duplication",
         }
 
     def generate_dataset(self, num_samples: int) -> pd.DataFrame:
@@ -272,9 +256,7 @@ class OMIMDataGenerator:
         return df
 
 
-def prepare_omim_data(
-    output_dir: str, num_samples: int = 1000, sequence_length: int = 100, seed: int = 42
-) -> str:
+def prepare_omim_data(output_dir: str, num_samples: int = 1000, sequence_length: int = 100, seed: int = 42) -> str:
     """OMIM評価データを準備"""
 
     # 出力ディレクトリ作成
@@ -299,9 +281,7 @@ def prepare_omim_data(
     df.to_csv(output_file, index=False)
 
     logger.info(f"Sample OMIM data saved to {output_file}")
-    logger.info(
-        f"Data distribution: {df['is_disease_causing'].value_counts().to_dict()}"
-    )
+    logger.info(f"Data distribution: {df['is_disease_causing'].value_counts().to_dict()}")
 
     # メタデータ保存
     metadata = {

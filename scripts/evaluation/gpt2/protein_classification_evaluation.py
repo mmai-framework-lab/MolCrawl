@@ -103,9 +103,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
                     "dropout",
                     "bias",
                 ]
-                filtered_config = {
-                    k: v for k, v in config.items() if k in valid_config_keys
-                }
+                filtered_config = {k: v for k, v in config.items() if k in valid_config_keys}
 
                 # Override vocab_size from actual checkpoint if different
                 if "transformer.wte.weight" in model_state:
@@ -153,9 +151,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
         """
         return self.tokenizer.encode(sequence)
 
-    def calculate_fitness_score(
-        self, sequence: str, variant_pos: int, ref_aa: str, alt_aa: str
-    ) -> float:
+    def calculate_fitness_score(self, sequence: str, variant_pos: int, ref_aa: str, alt_aa: str) -> float:
         """
         Calculate fitness score for a protein variant using GPT2 likelihood
 
@@ -206,9 +202,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
                 logits = outputs.logits[0]  # Remove batch dimension
             else:
                 # GPT2 returns tuple (logits, past)
-                logits = outputs[0][
-                    0
-                ]  # [batch_size, seq_len, vocab_size] -> [seq_len, vocab_size]
+                logits = outputs[0][0]  # [batch_size, seq_len, vocab_size] -> [seq_len, vocab_size]
 
             # Calculate log probabilities
             log_probs = F.log_softmax(logits, dim=-1)
@@ -304,9 +298,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
             "threshold": threshold,
         }
 
-    def _calculate_metrics(
-        self, y_true: np.ndarray, y_pred: np.ndarray, y_scores: np.ndarray
-    ) -> Dict[str, float]:
+    def _calculate_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, y_scores: np.ndarray) -> Dict[str, float]:
         """Calculate classification metrics"""
 
         # Basic classification metrics
@@ -421,13 +413,9 @@ def get_protein_tokenizer_path():
 
 def main():
     """Main evaluation function"""
-    parser = argparse.ArgumentParser(
-        description="Evaluate protein sequence GPT2 model with classification metrics"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate protein sequence GPT2 model with classification metrics")
 
-    parser.add_argument(
-        "--model_path", required=True, help="Path to trained GPT2 model checkpoint"
-    )
+    parser.add_argument("--model_path", required=True, help="Path to trained GPT2 model checkpoint")
 
     parser.add_argument(
         "--tokenizer_path",
@@ -460,18 +448,13 @@ def main():
     args = parser.parse_args()
 
     # 出力ディレクトリを自動生成または指定されたものを使用
-    if (
-        hasattr(args, "output_dir")
-        and args.output_dir != "./protein_classification_results"
-    ):
+    if hasattr(args, "output_dir") and args.output_dir != "./protein_classification_results":
         output_dir = Path(args.output_dir)
         output_dir.mkdir(exist_ok=True)
     else:
         model_type = get_model_type_from_path(args.model_path)
         model_name = get_model_name_from_path(args.model_path)
-        output_dir = get_evaluation_output_dir(
-            model_type, "protein_classification", model_name
-        )
+        output_dir = get_evaluation_output_dir(model_type, "protein_classification", model_name)
 
     # ログ設定
     logger = setup_evaluation_logging(output_dir, "protein_classification_evaluation")
@@ -495,11 +478,7 @@ def main():
         tokenizer_path = get_protein_tokenizer_path()
 
     # protein_sequenceはEsmSequenceTokenizerを使用するため、tokenizer_pathはNoneでも可
-    if (
-        tokenizer_path
-        and tokenizer_path != "None"
-        and not os.path.exists(tokenizer_path)
-    ):
+    if tokenizer_path and tokenizer_path != "None" and not os.path.exists(tokenizer_path):
         raise FileNotFoundError(f"Tokenizer not found: {tokenizer_path}")
 
     # Noneの場合は使用しない
@@ -508,14 +487,10 @@ def main():
 
     try:
         # Initialize evaluator
-        evaluator = ProteinClassificationEvaluator(
-            model_path=args.model_path, tokenizer_path=tokenizer_path
-        )
+        evaluator = ProteinClassificationEvaluator(model_path=args.model_path, tokenizer_path=tokenizer_path)
 
         # Run evaluation
-        results = evaluator.evaluate_dataset(
-            data_path=args.data_path, threshold=args.threshold
-        )
+        results = evaluator.evaluate_dataset(data_path=args.data_path, threshold=args.threshold)
 
         # Save results
         results_file = output_dir / "protein_classification_results.json"

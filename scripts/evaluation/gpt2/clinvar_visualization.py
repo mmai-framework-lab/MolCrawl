@@ -33,9 +33,7 @@ plt.rcParams["font.family"] = [
 ]
 
 # ログ設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -144,9 +142,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
         }
 
         plt.figure(figsize=(8, 6))
-        bars = plt.bar(
-            auc_metrics.keys(), auc_metrics.values(), color=["#ff7f0e", "#2ca02c"]
-        )
+        bars = plt.bar(auc_metrics.keys(), auc_metrics.values(), color=["#ff7f0e", "#2ca02c"])
 
         plt.title("Area Under Curve (AUC) Metrics")
         plt.ylabel("AUC Score")
@@ -163,9 +159,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
             )
 
         # ランダム予測の基準線を追加
-        plt.axhline(
-            y=0.5, color="red", linestyle="--", alpha=0.7, label="Random Prediction"
-        )
+        plt.axhline(y=0.5, color="red", linestyle="--", alpha=0.7, label="Random Prediction")
         plt.legend()
 
         plt.tight_layout()
@@ -254,15 +248,9 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
                 (benign_precision + pathogenic_precision) / 2,
                 (
                     benign_precision * (cm["true_negative"] + cm["false_positive"])
-                    + pathogenic_precision
-                    * (cm["true_positive"] + cm["false_negative"])
+                    + pathogenic_precision * (cm["true_positive"] + cm["false_negative"])
                 )
-                / (
-                    cm["true_negative"]
-                    + cm["false_positive"]
-                    + cm["true_positive"]
-                    + cm["false_negative"]
-                ),
+                / (cm["true_negative"] + cm["false_positive"] + cm["true_positive"] + cm["false_negative"]),
             ],
             "Recall": [
                 benign_recall,
@@ -272,12 +260,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
                     benign_recall * (cm["true_negative"] + cm["false_positive"])
                     + pathogenic_recall * (cm["true_positive"] + cm["false_negative"])
                 )
-                / (
-                    cm["true_negative"]
-                    + cm["false_positive"]
-                    + cm["true_positive"]
-                    + cm["false_negative"]
-                ),
+                / (cm["true_negative"] + cm["false_positive"] + cm["true_positive"] + cm["false_negative"]),
             ],
             "F1-Score": [
                 benign_f1,
@@ -287,24 +270,13 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
                     benign_f1 * (cm["true_negative"] + cm["false_positive"])
                     + pathogenic_f1 * (cm["true_positive"] + cm["false_negative"])
                 )
-                / (
-                    cm["true_negative"]
-                    + cm["false_positive"]
-                    + cm["true_positive"]
-                    + cm["false_negative"]
-                ),
+                / (cm["true_negative"] + cm["false_positive"] + cm["true_positive"] + cm["false_negative"]),
             ],
             "Support": [
                 cm["true_negative"] + cm["false_positive"],
                 cm["true_positive"] + cm["false_negative"],
-                cm["true_negative"]
-                + cm["false_positive"]
-                + cm["true_positive"]
-                + cm["false_negative"],
-                cm["true_negative"]
-                + cm["false_positive"]
-                + cm["true_positive"]
-                + cm["false_negative"],
+                cm["true_negative"] + cm["false_positive"] + cm["true_positive"] + cm["false_negative"],
+                cm["true_negative"] + cm["false_positive"] + cm["true_positive"] + cm["false_negative"],
             ],
         }
 
@@ -377,9 +349,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
             self.results["recall"],
             self.results["f1_score"],
         ]
-        bars = ax2.bar(
-            metrics, values, color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-        )
+        bars = ax2.bar(metrics, values, color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"])
         ax2.set_title("Performance Metrics")
         ax2.set_ylim(0, 1)
         for bar, value in zip(bars, values):
@@ -442,9 +412,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
             bbox=dict(boxstyle="round", facecolor="lightblue", alpha=0.5),
         )
 
-        plt.suptitle(
-            "ClinVar Evaluation Dashboard - Genome Sequence Model", fontsize=16, y=0.98
-        )
+        plt.suptitle("ClinVar Evaluation Dashboard - Genome Sequence Model", fontsize=16, y=0.98)
         self._save_plot("summary_dashboard")
 
     def generate_all_visualizations(self):
@@ -520,9 +488,7 @@ class ClinVarResultsVisualizer(BaseVisualizationGenerator):
         self.logger.info("Creating HTML report")
 
         # 基底クラスのヘルパーメソッドを使用
-        html_content = self._create_html_header(
-            "ClinVar Pathogenicity Prediction Evaluation"
-        )
+        html_content = self._create_html_header("ClinVar Pathogenicity Prediction Evaluation")
 
         html_content += f"""
             <h2>Performance Metrics</h2>
@@ -605,9 +571,7 @@ def main():
         default="./visualization_results",
         help="Output directory for visualizations",
     )
-    parser.add_argument(
-        "--html_report", action="store_true", help="Generate HTML report"
-    )
+    parser.add_argument("--html_report", action="store_true", help="Generate HTML report")
 
     args = parser.parse_args()
 

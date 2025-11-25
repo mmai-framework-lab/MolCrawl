@@ -57,9 +57,7 @@ class BaseVisualizationGenerator(ABC):
         # 生成されたファイルリスト
         self.generated_files = []
 
-        self.logger.info(
-            f"Visualization generator initialized. Output directory: {self.output_dir}"
-        )
+        self.logger.info(f"Visualization generator initialized. Output directory: {self.output_dir}")
 
     def _setup_logger(self) -> logging.Logger:
         """デフォルトのロガーを設定"""
@@ -69,9 +67,7 @@ class BaseVisualizationGenerator(ABC):
         )
         return logging.getLogger(self.__class__.__name__)
 
-    def _load_results(
-        self, results_source: Union[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def _load_results(self, results_source: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         """
         評価結果データの読み込み
 
@@ -183,15 +179,11 @@ class BaseVisualizationGenerator(ABC):
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
 
         # 予測スコアの分布（ラベル別）
-        self._plot_score_distribution(
-            axes[0, 0], results_df, prediction_score_col, true_label_col
-        )
+        self._plot_score_distribution(axes[0, 0], results_df, prediction_score_col, true_label_col)
 
         # 類似度分布（もし利用可能なら）
         if similarity_col and similarity_col in results_df.columns:
-            self._plot_similarity_distribution(
-                axes[0, 1], results_df, similarity_col, true_label_col
-            )
+            self._plot_similarity_distribution(axes[0, 1], results_df, similarity_col, true_label_col)
         else:
             axes[0, 1].text(
                 0.5,
@@ -224,31 +216,23 @@ class BaseVisualizationGenerator(ABC):
             axes[0, 2].set_title("Score vs Similarity (N/A)")
 
         # ROC曲線
-        self._plot_roc_curve(
-            axes[1, 0], results_df, prediction_score_col, true_label_col
-        )
+        self._plot_roc_curve(axes[1, 0], results_df, prediction_score_col, true_label_col)
 
         # 混同行列
-        self._plot_confusion_matrix_subplot(
-            axes[1, 1], results_df, prediction_score_col, true_label_col
-        )
+        self._plot_confusion_matrix_subplot(axes[1, 1], results_df, prediction_score_col, true_label_col)
 
         # 信頼度分布
         if confidence_col and confidence_col in results_df.columns:
             self._plot_confidence_distribution(axes[1, 2], results_df, confidence_col)
         else:
             # 予測スコアの代替として使用
-            self._plot_confidence_distribution(
-                axes[1, 2], results_df, prediction_score_col
-            )
+            self._plot_confidence_distribution(axes[1, 2], results_df, prediction_score_col)
 
         plt.suptitle(custom_title, fontsize=16, y=0.98)
         plt.tight_layout()
         self._save_plot("comprehensive_dashboard")
 
-    def _plot_score_distribution(
-        self, ax, results_df: pd.DataFrame, score_col: str, label_col: str
-    ):
+    def _plot_score_distribution(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
         """予測スコアの分布をプロット"""
         try:
             positive_scores = results_df[results_df[label_col] == 1][score_col]
@@ -271,9 +255,7 @@ class BaseVisualizationGenerator(ABC):
             )
             ax.set_title("Score Distribution (Error)")
 
-    def _plot_similarity_distribution(
-        self, ax, results_df: pd.DataFrame, sim_col: str, label_col: str
-    ):
+    def _plot_similarity_distribution(self, ax, results_df: pd.DataFrame, sim_col: str, label_col: str):
         """類似度分布をプロット"""
         try:
             positive_sim = results_df[results_df[label_col] == 1][sim_col]
@@ -296,9 +278,7 @@ class BaseVisualizationGenerator(ABC):
             )
             ax.set_title("Similarity Distribution (Error)")
 
-    def _plot_score_vs_similarity_scatter(
-        self, ax, results_df: pd.DataFrame, score_col: str, sim_col: str, label_col: str
-    ):
+    def _plot_score_vs_similarity_scatter(self, ax, results_df: pd.DataFrame, score_col: str, sim_col: str, label_col: str):
         """スコア vs 類似度の散布図"""
         try:
             positive_data = results_df[results_df[label_col] == 1]
@@ -335,9 +315,7 @@ class BaseVisualizationGenerator(ABC):
             )
             ax.set_title("Score vs Similarity (Error)")
 
-    def _plot_roc_curve(
-        self, ax, results_df: pd.DataFrame, score_col: str, label_col: str
-    ):
+    def _plot_roc_curve(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
         """ROC曲線をプロット"""
         try:
             from sklearn.metrics import roc_curve, roc_auc_score
@@ -363,9 +341,7 @@ class BaseVisualizationGenerator(ABC):
             )
             ax.set_title("ROC Curve (Error)")
 
-    def _plot_confusion_matrix_subplot(
-        self, ax, results_df: pd.DataFrame, score_col: str, label_col: str
-    ):
+    def _plot_confusion_matrix_subplot(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
         """混同行列をサブプロットとしてプロット"""
         try:
             from sklearn.metrics import confusion_matrix
@@ -398,9 +374,7 @@ class BaseVisualizationGenerator(ABC):
             )
             ax.set_title("Confusion Matrix (Error)")
 
-    def _plot_confidence_distribution(
-        self, ax, results_df: pd.DataFrame, conf_col: str
-    ):
+    def _plot_confidence_distribution(self, ax, results_df: pd.DataFrame, conf_col: str):
         """信頼度分布をプロット"""
         try:
             ax.hist(results_df[conf_col], bins=30, alpha=0.7, color="green")
@@ -418,9 +392,7 @@ class BaseVisualizationGenerator(ABC):
             )
             ax.set_title("Confidence Distribution (Error)")
 
-    def _create_figure_grid(
-        self, nrows: int, ncols: int, figsize: tuple = None
-    ) -> tuple:
+    def _create_figure_grid(self, nrows: int, ncols: int, figsize: tuple = None) -> tuple:
         """
         グリッド形式の図を作成
 

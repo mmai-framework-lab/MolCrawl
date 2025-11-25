@@ -47,9 +47,7 @@ def create_distribution_plot(data):
     plt.tight_layout()
     plt.savefig("assets/img/rna_tokenized_lengths_dist.png")
     plt.close()
-    logger.info(
-        "Saved distribution of tokenized dataset lengths to assets/img/rna_tokenized_lengths_dist.png"
-    )
+    logger.info("Saved distribution of tokenized dataset lengths to assets/img/rna_tokenized_lengths_dist.png")
 
 
 # より詳細な遺伝子情報を含むTSVファイルの生成
@@ -127,11 +125,7 @@ if __name__ == "__main__":
     else:
         logger.info("⏳ Step 3/5: H5AD to Loom conversion - PENDING")
 
-    if (
-        tokenize_marker.exists()
-        and parquet_dir.exists()
-        and any(parquet_dir.glob("*.parquet"))
-    ):
+    if tokenize_marker.exists() and parquet_dir.exists() and any(parquet_dir.glob("*.parquet")):
         logger.info("✓ Step 4/5: Tokenization - COMPLETED")
         steps_completed += 1
     else:
@@ -180,9 +174,7 @@ if __name__ == "__main__":
 
     # 3. H5AD to Loom conversion
     if not args.force and h5ad_to_loom_marker.exists():
-        logger.info(
-            "H5AD to Loom conversion already completed. Skipping conversion step."
-        )
+        logger.info("H5AD to Loom conversion already completed. Skipping conversion step.")
     else:
         if args.force:
             logger.info("Force option specified. Reconverting H5AD to Loom...")
@@ -192,12 +184,7 @@ if __name__ == "__main__":
         logger.info("H5AD to Loom conversion completed.")
 
     # 4. Tokenization
-    if (
-        not args.force
-        and tokenize_marker.exists()
-        and parquet_dir.exists()
-        and any(parquet_dir.glob("*.parquet"))
-    ):
+    if not args.force and tokenize_marker.exists() and parquet_dir.exists() and any(parquet_dir.glob("*.parquet")):
         logger.info("Tokenization already completed. Skipping tokenization step.")
     else:
         if args.force:
@@ -275,7 +262,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error(f"Failed to load or process final dataset: {e}")
-        logger.error(
-            "Some processing steps may have failed. Please check logs and consider using --force option."
-        )
+        logger.error("Some processing steps may have failed. Please check logs and consider using --force option.")
         exit(1)

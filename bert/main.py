@@ -248,7 +248,7 @@ else:
     # Limit test dataset size for faster evaluation
     if len(test_dataset) > 10000:
         test_dataset = test_dataset.select(range(10000))
-        print(f"📊 Limited test dataset to 10000 samples for faster evaluation")
+        print("📊 Limited test dataset to 10000 samples for faster evaluation")
 
 # Apply preprocessing for RNA data if using custom dataset
 if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_dataset", False):

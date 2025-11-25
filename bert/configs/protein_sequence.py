@@ -33,24 +33,16 @@ def preprocess_function(examples):
             for seq in input_ids:
                 # Assume padding token is 0 or tokenizer.pad_token_id
                 pad_token_id = (
-                    tokenizer.pad_token_id
-                    if hasattr(tokenizer, "pad_token_id")
-                    and tokenizer.pad_token_id is not None
-                    else 0
+                    tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
                 )
                 attention_mask = [1 if token != pad_token_id else 0 for token in seq]
                 attention_masks.append(attention_mask)
             examples["attention_mask"] = attention_masks
         else:  # Single sequence
             pad_token_id = (
-                tokenizer.pad_token_id
-                if hasattr(tokenizer, "pad_token_id")
-                and tokenizer.pad_token_id is not None
-                else 0
+                tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
             )
-            examples["attention_mask"] = [
-                1 if token != pad_token_id else 0 for token in input_ids
-            ]
+            examples["attention_mask"] = [1 if token != pad_token_id else 0 for token in input_ids]
 
     return examples
 
@@ -75,9 +67,7 @@ class ProteinSequenceDataCollator(DataCollatorForLanguageModeling):
 
 
 # Use custom data collator
-data_collator = ProteinSequenceDataCollator(
-    tokenizer=tokenizer, mlm=True, mlm_probability=0.2
-)
+data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_probability=0.2)
 
 # Training configuration
 max_steps = 600000

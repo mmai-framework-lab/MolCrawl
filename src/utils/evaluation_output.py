@@ -34,17 +34,13 @@ def get_learning_source_dir():
         print("Please set it before running this script:", file=sys.stderr)
         print("  export LEARNING_SOURCE_DIR=/path/to/learning_source", file=sys.stderr)
         print("  # or", file=sys.stderr)
-        print(
-            "  LEARNING_SOURCE_DIR=learning_20251104 python <script>", file=sys.stderr
-        )
+        print("  LEARNING_SOURCE_DIR=learning_20251104 python <script>", file=sys.stderr)
         sys.exit(1)
 
     return Path(learning_source_dir)
 
 
-def get_evaluation_output_dir(
-    model_type, evaluation_type, model_name=None, timestamp=None
-):
+def get_evaluation_output_dir(model_type, evaluation_type, model_name=None, timestamp=None):
     """
     評価レポート用の出力ディレクトリパスを生成
 
@@ -157,9 +153,7 @@ def setup_evaluation_logging(output_dir, script_name):
     log_file = output_dir / f"{script_name}.log"
 
     # ログフォーマット
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # ファイルハンドラー
     file_handler = logging.FileHandler(log_file)
@@ -207,9 +201,7 @@ if __name__ == "__main__":
     print(f"Test 1: {output_dir1}")
 
     # テスト2: protein_sequence + proteingym + model name
-    output_dir2 = get_evaluation_output_dir(
-        "protein_sequence", "proteingym", "bert_medium"
-    )
+    output_dir2 = get_evaluation_output_dir("protein_sequence", "proteingym", "bert_medium")
     print(f"Test 2: {output_dir2}")
 
     # テスト3: モデルタイプ推定

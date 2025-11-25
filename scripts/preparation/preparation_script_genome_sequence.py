@@ -33,9 +33,7 @@ def create_distribution_plot(data):
         plt.title("Distribution of tokenized lengths")
         plt.savefig("assets/img/genome_sequence_tokenized_lengths_dist.png")
         plt.close()
-        logger.info(
-            "Saved distribution of tokenized dataset lengths to assets/img/genome_sequence_tokenized_lengths_dist.png"
-        )
+        logger.info("Saved distribution of tokenized dataset lengths to assets/img/genome_sequence_tokenized_lengths_dist.png")
         return True
     except Exception as e:
         logger.error(f"Failed to create distribution plot: {e}")
@@ -73,11 +71,7 @@ def check_progress_status(base_dir):
     else:
         logger.info("⏳ Step 1/4: RefSeq download - PENDING")
 
-    if (
-        fasta_to_raw_marker.exists()
-        and raw_files_dir.exists()
-        and any(raw_files_dir.glob("*.raw"))
-    ):
+    if fasta_to_raw_marker.exists() and raw_files_dir.exists() and any(raw_files_dir.glob("*.raw")):
         logger.info("✓ Step 2/4: FASTA to raw conversion - COMPLETED")
         steps_completed += 1
     else:
@@ -89,11 +83,7 @@ def check_progress_status(base_dir):
     else:
         logger.info("⏳ Step 3/4: Tokenizer training - PENDING")
 
-    if (
-        raw_to_parquet_marker.exists()
-        and parquet_dir.exists()
-        and any(parquet_dir.glob("*.parquet"))
-    ):
+    if raw_to_parquet_marker.exists() and parquet_dir.exists() and any(parquet_dir.glob("*.parquet")):
         logger.info("✓ Step 4/4: Raw to Parquet conversion - COMPLETED")
         steps_completed += 1
     else:
@@ -120,17 +110,13 @@ def process1_download_refseq(base_dir, path_species, num_worker, force=False):
     download_marker = Path(base_dir) / "download_complete.marker"
 
     if not force and download_marker.exists():
-        logger.info(
-            "👉Process1 : RefSeq dataset download already completed. Skipping..."
-        )
+        logger.info("👉Process1 : RefSeq dataset download already completed. Skipping...")
         logger.info("Use --force option to re-download.")
         return True
 
     try:
         if force:
-            logger.info(
-                "👉Process1 : Force option specified. Re-downloading RefSeq dataset..."
-            )
+            logger.info("👉Process1 : Force option specified. Re-downloading RefSeq dataset...")
         else:
             logger.info("👉Process1 : Downloading RefSeq dataset...")
 
@@ -159,23 +145,14 @@ def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False)
     fasta_to_raw_marker = Path(base_dir) / "fasta_to_raw_complete.marker"
     raw_files_dir = Path(base_dir) / "raw_files"
 
-    if (
-        not force
-        and fasta_to_raw_marker.exists()
-        and raw_files_dir.exists()
-        and any(raw_files_dir.glob("*.raw"))
-    ):
-        logger.info(
-            "👉Process2 : FASTA to raw conversion already completed. Skipping..."
-        )
+    if not force and fasta_to_raw_marker.exists() and raw_files_dir.exists() and any(raw_files_dir.glob("*.raw")):
+        logger.info("👉Process2 : FASTA to raw conversion already completed. Skipping...")
         logger.info("Use --force option to reconvert.")
         return True
 
     try:
         if force:
-            logger.info(
-                "👉Process2 : Force option specified. Reconverting FASTA to raw text..."
-            )
+            logger.info("👉Process2 : Force option specified. Reconverting FASTA to raw text...")
         else:
             logger.info("👉Process2 : Converting FASTA to raw text...")
 
@@ -193,9 +170,7 @@ def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False)
         return False
 
 
-def process3_train_tokenizer(
-    base_dir, vocab_size, max_lines_per_file, input_sentence_size, force=False
-):
+def process3_train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sentence_size, force=False):
     """Process 3: Train SentencePiece tokenizer
 
     Args:
@@ -250,23 +225,14 @@ def process4_raw_to_parquet(base_dir, force=False):
     raw_to_parquet_marker = Path(base_dir) / "raw_to_parquet_complete.marker"
     parquet_dir = Path(base_dir) / "parquet_files"
 
-    if (
-        not force
-        and raw_to_parquet_marker.exists()
-        and parquet_dir.exists()
-        and any(parquet_dir.glob("*.parquet"))
-    ):
-        logger.info(
-            "👉Process4 : Raw to Parquet conversion already completed. Skipping..."
-        )
+    if not force and raw_to_parquet_marker.exists() and parquet_dir.exists() and any(parquet_dir.glob("*.parquet")):
+        logger.info("👉Process4 : Raw to Parquet conversion already completed. Skipping...")
         logger.info("Use --force option to reconvert.")
         return True
 
     try:
         if force:
-            logger.info(
-                "👉Process4 : Force option specified. Reconverting raw text to Parquet..."
-            )
+            logger.info("👉Process4 : Force option specified. Reconverting raw text to Parquet...")
         else:
             logger.info("👉Process4 : Converting raw text to Parquet...")
 
@@ -352,27 +318,21 @@ def main():
         logger.info("Use --force option if you want to reprocess everything.")
         if not args.skip_stats:
             # 統計情報のみ生成
-            process5_generate_statistics(
-                GENOME_SEQUENCE_DIR, cfg.vocab_size, args.force
-            )
+            process5_generate_statistics(GENOME_SEQUENCE_DIR, cfg.vocab_size, args.force)
         return
 
     # 各プロセスを順次実行
     success = True
 
     # Process 1: Download RefSeq dataset
-    success &= process1_download_refseq(
-        GENOME_SEQUENCE_DIR, cfg.path_species, cfg.num_worker, args.force
-    )
+    success &= process1_download_refseq(GENOME_SEQUENCE_DIR, cfg.path_species, cfg.num_worker, args.force)
 
     if not success:
         logger.error("Process 1 failed. Stopping execution.")
         exit(1)
 
     # Process 2: Convert FASTA to raw text
-    success &= process2_fasta_to_raw(
-        GENOME_SEQUENCE_DIR, cfg.num_worker, cfg.max_lines_per_file, args.force
-    )
+    success &= process2_fasta_to_raw(GENOME_SEQUENCE_DIR, cfg.num_worker, cfg.max_lines_per_file, args.force)
 
     if not success:
         logger.error("Process 2 failed. Stopping execution.")
@@ -400,14 +360,10 @@ def main():
 
     # Process 5: Generate statistics and plots
     if not args.skip_stats:
-        success &= process5_generate_statistics(
-            GENOME_SEQUENCE_DIR, cfg.vocab_size, args.force
-        )
+        success &= process5_generate_statistics(GENOME_SEQUENCE_DIR, cfg.vocab_size, args.force)
 
         if not success:
-            logger.error(
-                "Process 5 failed. Dataset preparation completed but statistics generation failed."
-            )
+            logger.error("Process 5 failed. Dataset preparation completed but statistics generation failed.")
             exit(1)
 
     logger.info("🎉 Genome sequence dataset preparation completed successfully!")

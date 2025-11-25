@@ -24,9 +24,7 @@ except ImportError as e:
     print("Please ensure all required packages are installed")
     sys.exit(1)
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -119,19 +117,13 @@ class RNAEncodingValidator:
                             out_of_range_count += 1
 
             if invalid_tokens:
-                self.issues.append(
-                    f"Found {out_of_range_count} out-of-range tokens in {len(invalid_tokens)} sequences"
-                )
+                self.issues.append(f"Found {out_of_range_count} out-of-range tokens in {len(invalid_tokens)} sequences")
                 # 最初の10個の無効なトークンを表示
                 for seq_idx, token_id in invalid_tokens[:10]:
-                    self.issues.append(
-                        f"  Sequence {seq_idx}: token_id {token_id} (valid range: 0-{max_vocab_id})"
-                    )
+                    self.issues.append(f"  Sequence {seq_idx}: token_id {token_id} (valid range: 0-{max_vocab_id})")
                 return False
             else:
-                logger.info(
-                    f"✓ All {total_tokens} tokens are within valid range (0-{max_vocab_id})"
-                )
+                logger.info(f"✓ All {total_tokens} tokens are within valid range (0-{max_vocab_id})")
                 return True
 
         except Exception as e:
@@ -165,19 +157,13 @@ class RNAEncodingValidator:
             actual_range = sorted(token_ids)
 
             if actual_range != expected_range:
-                self.issues.append(
-                    f"Token ID range is not continuous: expected 0-{len(token_ids) - 1}, got {min_id}-{max_id}"
-                )
+                self.issues.append(f"Token ID range is not continuous: expected 0-{len(token_ids) - 1}, got {min_id}-{max_id}")
                 missing_ids = set(expected_range) - set(actual_range)
                 if missing_ids:
-                    self.issues.append(
-                        f"Missing token IDs: {sorted(list(missing_ids))[:10]}..."
-                    )  # 最初の10個
+                    self.issues.append(f"Missing token IDs: {sorted(list(missing_ids))[:10]}...")  # 最初の10個
                 return False
 
-            logger.info(
-                f"✓ Vocabulary consistency validated: {len(gene_names)} unique genes, IDs 0-{max_id}"
-            )
+            logger.info(f"✓ Vocabulary consistency validated: {len(gene_names)} unique genes, IDs 0-{max_id}")
             return True
 
         except Exception as e:
@@ -215,18 +201,14 @@ class RNAEncodingValidator:
             max_tokens = np.max(token_counts)
 
             logger.info(f"Tokenization statistics (sample of {total_sequences}):")
-            logger.info(
-                f"  Empty sequences: {empty_sequences} ({empty_sequences / total_sequences * 100:.1f}%)"
-            )
+            logger.info(f"  Empty sequences: {empty_sequences} ({empty_sequences / total_sequences * 100:.1f}%)")
             logger.info(f"  Average tokens per sequence: {avg_tokens:.1f}")
             logger.info(f"  Median tokens per sequence: {median_tokens:.1f}")
             logger.info(f"  Token count range: {min_tokens}-{max_tokens}")
 
             # 品質チェック
             if empty_sequences / total_sequences > 0.5:
-                self.issues.append(
-                    f"Too many empty sequences: {empty_sequences}/{total_sequences}"
-                )
+                self.issues.append(f"Too many empty sequences: {empty_sequences}/{total_sequences}")
                 return False
 
             if avg_tokens < 10:
@@ -264,9 +246,7 @@ class RNAEncodingValidator:
                     inconsistent_counts += 1
 
             if inconsistent_counts > 0:
-                self.issues.append(
-                    f"Token count inconsistencies found: {inconsistent_counts}/{total_checked}"
-                )
+                self.issues.append(f"Token count inconsistencies found: {inconsistent_counts}/{total_checked}")
                 return False
 
             logger.info("✓ Encoding pipeline consistency validated")

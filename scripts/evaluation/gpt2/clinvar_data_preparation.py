@@ -23,9 +23,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(
-            f"logs/clinvar_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        ),
+        logging.FileHandler(f"logs/clinvar_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
         logging.StreamHandler(),
     ],
 )
@@ -144,18 +142,12 @@ class ClinVarProcessor:
             logger.info(f"Valid reference bases: {valid_ref_base.sum()}")
             logger.info(f"Valid alternate bases: {valid_alt_base.sum()}")
 
-            df_snv = df_snv[
-                valid_ref_len & valid_alt_len & valid_ref_base & valid_alt_base
-            ].copy()
+            df_snv = df_snv[valid_ref_len & valid_alt_len & valid_ref_base & valid_alt_base].copy()
             logger.info(f"After allele filtering: {len(df_snv)} variants")
 
             # フィルタリング後のサンプル値を確認
-            logger.info(
-                f"Final ReferenceAllele values: {df_snv['ReferenceAllele'].value_counts()}"
-            )
-            logger.info(
-                f"Final AlternateAllele values: {df_snv['AlternateAllele'].value_counts()}"
-            )
+            logger.info(f"Final ReferenceAllele values: {df_snv['ReferenceAllele'].value_counts()}")
+            logger.info(f"Final AlternateAllele values: {df_snv['AlternateAllele'].value_counts()}")
 
         return df_snv
 
@@ -184,9 +176,7 @@ class ClinVarProcessor:
         ]
 
         df_filtered = df[df["ClinicalSignificance"].isin(clear_classifications)].copy()
-        logger.info(
-            f"After clinical significance filtering: {len(df_filtered)} variants"
-        )
+        logger.info(f"After clinical significance filtering: {len(df_filtered)} variants")
 
         return df_filtered
 
@@ -268,9 +258,7 @@ class ClinVarProcessor:
 
         # サンプル数を制限
         if len(df_pathogenic) > max_samples_per_class:
-            df_pathogenic = df_pathogenic.sample(
-                n=max_samples_per_class, random_state=42
-            )
+            df_pathogenic = df_pathogenic.sample(n=max_samples_per_class, random_state=42)
 
         if len(df_benign) > max_samples_per_class:
             df_benign = df_benign.sample(n=max_samples_per_class, random_state=42)
@@ -279,9 +267,7 @@ class ClinVarProcessor:
         df_eval = pd.concat([df_pathogenic, df_benign], ignore_index=True)
 
         # 標準化されたラベルを追加
-        df_eval["pathogenic"] = df_eval["ClinicalSignificance"].apply(
-            lambda x: 1 if x in pathogenic_terms else 0
-        )
+        df_eval["pathogenic"] = df_eval["ClinicalSignificance"].apply(lambda x: 1 if x in pathogenic_terms else 0)
 
         # 必要なカラムのみを保持
         columns_to_keep = [
@@ -367,30 +353,22 @@ class ClinVarProcessor:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="ClinVar data preprocessing for genome sequence evaluation"
-    )
+    parser = argparse.ArgumentParser(description="ClinVar data preprocessing for genome sequence evaluation")
     parser.add_argument(
         "--output_dir",
         type=str,
         default="./clinvar_data",
         help="Output directory for processed data",
     )
-    parser.add_argument(
-        "--download", action="store_true", help="Download ClinVar data from NCBI"
-    )
-    parser.add_argument(
-        "--max_samples", type=int, default=1000, help="Maximum samples per class"
-    )
+    parser.add_argument("--download", action="store_true", help="Download ClinVar data from NCBI")
+    parser.add_argument("--max_samples", type=int, default=1000, help="Maximum samples per class")
     parser.add_argument(
         "--sequence_length",
         type=int,
         default=100,
         help="Length of reference sequences to generate",
     )
-    parser.add_argument(
-        "--input_file", type=str, help="Input ClinVar file (if not downloading)"
-    )
+    parser.add_argument("--input_file", type=str, help="Input ClinVar file (if not downloading)")
 
     args = parser.parse_args()
 
@@ -426,14 +404,10 @@ def main():
         df_filtered = processor.filter_by_clinical_significance(df_snv)
 
         # 参照配列の取得（モック実装）
-        df_with_sequences = processor.get_reference_sequences(
-            df_filtered, sequence_length=args.sequence_length
-        )
+        df_with_sequences = processor.get_reference_sequences(df_filtered, sequence_length=args.sequence_length)
 
         # 評価用データセットの準備
-        df_eval = processor.prepare_evaluation_dataset(
-            df_with_sequences, max_samples_per_class=args.max_samples
-        )
+        df_eval = processor.prepare_evaluation_dataset(df_with_sequences, max_samples_per_class=args.max_samples)
 
         # データセットの保存
         processor.save_dataset(df_eval, "clinvar_evaluation_dataset.csv")

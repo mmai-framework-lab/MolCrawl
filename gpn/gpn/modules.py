@@ -107,8 +107,7 @@ def get_dilation_schedule(config):
     return [
         min(
             config.dilation_max,
-            config.dilation_base
-            ** ((i % config.dilation_cycle) // config.dilation_double_every),
+            config.dilation_base ** ((i % config.dilation_cycle) // config.dilation_double_every),
         )
         for i in range(config.num_hidden_layers)
     ]
@@ -123,16 +122,12 @@ class ConvNetEncoder(nn.Module):
             *[
                 ConvLayer(
                     hidden_size=config.hidden_size,
-                    kernel_size=config.first_kernel_size
-                    if i == 0
-                    else config.rest_kernel_size,
+                    kernel_size=config.first_kernel_size if i == 0 else config.rest_kernel_size,
                     dilation=dilation_schedule[i],
                     hidden_dropout_prob=config.hidden_dropout_prob,
                     bias=config.bias,
                     intermediate_size=config.intermediate_size,
-                    groups=1
-                    if (not config.depthwise or i == 0)
-                    else config.hidden_size,
+                    groups=1 if (not config.depthwise or i == 0) else config.hidden_size,
                 )
                 for i in range(config.num_hidden_layers)
             ]
@@ -152,14 +147,10 @@ class ByteNetEncoder(nn.Module):
             *[
                 ByteNetLayer(
                     hidden_size=config.hidden_size,
-                    kernel_size=config.first_kernel_size
-                    if i == 0
-                    else config.rest_kernel_size,
+                    kernel_size=config.first_kernel_size if i == 0 else config.rest_kernel_size,
                     dilation=dilation_schedule[i],
                     bias=config.bias,
-                    groups=1
-                    if (not config.depthwise or i == 0)
-                    else config.hidden_size,
+                    groups=1 if (not config.depthwise or i == 0) else config.hidden_size,
                     slim=config.slim,
                 )
                 for i in range(config.num_hidden_layers)
@@ -190,9 +181,7 @@ class MLP(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(
-        self, input_size, hidden_size, output_size, kernel_size=None, **kwargs
-    ):
+    def __init__(self, input_size, hidden_size, output_size, kernel_size=None, **kwargs):
         super().__init__()
         self.layer = nn.Sequential(
             nn.LayerNorm(input_size, bias=False),

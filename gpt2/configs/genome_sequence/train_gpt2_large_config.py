@@ -39,9 +39,7 @@ max_iters = 600000
 lr_decay_iters = 600000
 warmup_iters = 200  # how many steps to warm up for
 learning_rate = 6e-6  # max learning rate
-min_lr = (
-    learning_rate / 10
-)  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+min_lr = learning_rate / 10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
 eval_interval = 1000

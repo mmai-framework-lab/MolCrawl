@@ -105,60 +105,30 @@ def convert_to_hf_format(model, model_args, output_dir):
         # Transformerブロックの重みをマッピング
         for i in range(model_args["n_layer"]):
             # Attention weights
-            state_dict_mapping[f"transformer.h.{i}.attn.c_attn.weight"] = (
-                f"transformer.h.{i}.attn.c_attn.weight"
-            )
-            state_dict_mapping[f"transformer.h.{i}.attn.c_proj.weight"] = (
-                f"transformer.h.{i}.attn.c_proj.weight"
-            )
+            state_dict_mapping[f"transformer.h.{i}.attn.c_attn.weight"] = f"transformer.h.{i}.attn.c_attn.weight"
+            state_dict_mapping[f"transformer.h.{i}.attn.c_proj.weight"] = f"transformer.h.{i}.attn.c_proj.weight"
 
             # LayerNorm weights
-            state_dict_mapping[f"transformer.h.{i}.ln_1.weight"] = (
-                f"transformer.h.{i}.ln_1.weight"
-            )
-            state_dict_mapping[f"transformer.h.{i}.ln_2.weight"] = (
-                f"transformer.h.{i}.ln_2.weight"
-            )
+            state_dict_mapping[f"transformer.h.{i}.ln_1.weight"] = f"transformer.h.{i}.ln_1.weight"
+            state_dict_mapping[f"transformer.h.{i}.ln_2.weight"] = f"transformer.h.{i}.ln_2.weight"
 
             # MLP weights
-            state_dict_mapping[f"transformer.h.{i}.mlp.c_fc.weight"] = (
-                f"transformer.h.{i}.mlp.c_fc.weight"
-            )
-            state_dict_mapping[f"transformer.h.{i}.mlp.c_proj.weight"] = (
-                f"transformer.h.{i}.mlp.c_proj.weight"
-            )
+            state_dict_mapping[f"transformer.h.{i}.mlp.c_fc.weight"] = f"transformer.h.{i}.mlp.c_fc.weight"
+            state_dict_mapping[f"transformer.h.{i}.mlp.c_proj.weight"] = f"transformer.h.{i}.mlp.c_proj.weight"
 
             # Bias terms (if exists)
             if model_args.get("bias", False):
-                state_dict_mapping[f"transformer.h.{i}.attn.c_attn.bias"] = (
-                    f"transformer.h.{i}.attn.c_attn.bias"
-                )
-                state_dict_mapping[f"transformer.h.{i}.attn.c_proj.bias"] = (
-                    f"transformer.h.{i}.attn.c_proj.bias"
-                )
-                state_dict_mapping[f"transformer.h.{i}.ln_1.bias"] = (
-                    f"transformer.h.{i}.ln_1.bias"
-                )
-                state_dict_mapping[f"transformer.h.{i}.ln_2.bias"] = (
-                    f"transformer.h.{i}.ln_2.bias"
-                )
-                state_dict_mapping[f"transformer.h.{i}.mlp.c_fc.bias"] = (
-                    f"transformer.h.{i}.mlp.c_fc.bias"
-                )
-                state_dict_mapping[f"transformer.h.{i}.mlp.c_proj.bias"] = (
-                    f"transformer.h.{i}.mlp.c_proj.bias"
-                )
+                state_dict_mapping[f"transformer.h.{i}.attn.c_attn.bias"] = f"transformer.h.{i}.attn.c_attn.bias"
+                state_dict_mapping[f"transformer.h.{i}.attn.c_proj.bias"] = f"transformer.h.{i}.attn.c_proj.bias"
+                state_dict_mapping[f"transformer.h.{i}.ln_1.bias"] = f"transformer.h.{i}.ln_1.bias"
+                state_dict_mapping[f"transformer.h.{i}.ln_2.bias"] = f"transformer.h.{i}.ln_2.bias"
+                state_dict_mapping[f"transformer.h.{i}.mlp.c_fc.bias"] = f"transformer.h.{i}.mlp.c_fc.bias"
+                state_dict_mapping[f"transformer.h.{i}.mlp.c_proj.bias"] = f"transformer.h.{i}.mlp.c_proj.bias"
 
         # 他の重要な重み
-        state_dict_mapping["transformer.wte.weight"] = (
-            "transformer.wte.weight"  # Token embeddings
-        )
-        state_dict_mapping["transformer.wpe.weight"] = (
-            "transformer.wpe.weight"  # Position embeddings
-        )
-        state_dict_mapping["transformer.ln_f.weight"] = (
-            "transformer.ln_f.weight"  # Final LayerNorm
-        )
+        state_dict_mapping["transformer.wte.weight"] = "transformer.wte.weight"  # Token embeddings
+        state_dict_mapping["transformer.wpe.weight"] = "transformer.wpe.weight"  # Position embeddings
+        state_dict_mapping["transformer.ln_f.weight"] = "transformer.ln_f.weight"  # Final LayerNorm
         state_dict_mapping["lm_head.weight"] = "lm_head.weight"  # Language model head
 
         if model_args.get("bias", False):
@@ -271,9 +241,7 @@ def create_simple_tokenizer(vocab_size):
         return None
 
 
-def evaluate_perplexity(
-    model, dataset, tokenizer=None, max_samples=1000, device="cuda"
-):
+def evaluate_perplexity(model, dataset, tokenizer=None, max_samples=1000, device="cuda"):
     """
     データセットでのパープレキシティを計算する
     """
@@ -286,9 +254,7 @@ def evaluate_perplexity(
     num_batches = 0
 
     with torch.no_grad():
-        for i in tqdm(
-            range(min(len(dataset), max_samples)), desc="パープレキシティ計算中"
-        ):
+        for i in tqdm(range(min(len(dataset), max_samples)), desc="パープレキシティ計算中"):
             try:
                 # データを取得
                 tokens = dataset[i]
@@ -342,9 +308,7 @@ def evaluate_perplexity(
         return float("inf"), float("inf")
 
 
-def generate_text_samples(
-    model, tokenizer, device="cuda", num_samples=5, max_length=100
-):
+def generate_text_samples(model, tokenizer, device="cuda", num_samples=5, max_length=100):
     """
     テキスト生成のサンプルを作成する
     """
@@ -360,10 +324,7 @@ def generate_text_samples(
     try:
         for i in range(num_samples):
             # 開始トークン
-            if (
-                hasattr(tokenizer, "bos_token_id")
-                and tokenizer.bos_token_id is not None
-            ):
+            if hasattr(tokenizer, "bos_token_id") and tokenizer.bos_token_id is not None:
                 start_token = tokenizer.bos_token_id
             else:
                 start_token = 0
@@ -374,35 +335,24 @@ def generate_text_samples(
                 # 生成
                 for _ in range(max_length):
                     outputs = model(input_ids)
-                    logits = (
-                        outputs.logits if hasattr(outputs, "logits") else outputs[0]
-                    )
+                    logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
 
                     # 次のトークンを予測
                     next_token_logits = logits[0, -1, :]
-                    next_token = torch.multinomial(
-                        torch.softmax(next_token_logits, dim=-1), 1
-                    )
+                    next_token = torch.multinomial(torch.softmax(next_token_logits, dim=-1), 1)
 
                     # 入力に追加
                     input_ids = torch.cat([input_ids, next_token.unsqueeze(0)], dim=-1)
 
                     # 終了条件
-                    if (
-                        hasattr(tokenizer, "eos_token_id")
-                        and next_token.item() == tokenizer.eos_token_id
-                    ):
+                    if hasattr(tokenizer, "eos_token_id") and next_token.item() == tokenizer.eos_token_id:
                         break
 
             # デコード
             if hasattr(tokenizer, "decode"):
-                generated_text = tokenizer.decode(
-                    input_ids[0], skip_special_tokens=True
-                )
+                generated_text = tokenizer.decode(input_ids[0], skip_special_tokens=True)
             else:
-                generated_text = " ".join(
-                    [f"token_{tid}" for tid in input_ids[0].tolist()]
-                )
+                generated_text = " ".join([f"token_{tid}" for tid in input_ids[0].tolist()])
 
             generated_samples.append(generated_text)
             print(f"サンプル {i + 1}: {generated_text}")
@@ -413,9 +363,7 @@ def generate_text_samples(
     return generated_samples
 
 
-def calculate_accuracy_metrics(
-    model, dataset, tokenizer=None, max_samples=500, device="cuda"
-):
+def calculate_accuracy_metrics(model, dataset, tokenizer=None, max_samples=500, device="cuda"):
     """
     各種精度メトリクスを計算する
     """
@@ -451,9 +399,7 @@ def calculate_accuracy_metrics(
 
                 # Top-5 精度
                 top5_preds = torch.topk(logits, 5, dim=-1).indices
-                top5_correct += sum(
-                    [targets[i] in top5_preds[i] for i in range(len(targets))]
-                )
+                top5_correct += sum([targets[i] in top5_preds[i] for i in range(len(targets))])
 
             except Exception:
                 continue
@@ -462,9 +408,7 @@ def calculate_accuracy_metrics(
         accuracy = correct_predictions / total_predictions
         top5_accuracy = top5_correct / total_predictions
 
-        print(
-            f"✓ Top-1 精度: {accuracy:.4f} ({correct_predictions}/{total_predictions})"
-        )
+        print(f"✓ Top-1 精度: {accuracy:.4f} ({correct_predictions}/{total_predictions})")
         print(f"✓ Top-5 精度: {top5_accuracy:.4f}")
 
         return accuracy, top5_accuracy
@@ -543,18 +487,10 @@ def generate_test_report(checkpoint_path, results, output_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="GPT2チェックポイントの包括的テスト・検証スクリプト"
-    )
-    parser.add_argument(
-        "--checkpoint_path", required=True, help="テストするチェックポイントのパス"
-    )
-    parser.add_argument(
-        "--output_dir", default="gpt2_test_output", help="出力ディレクトリ"
-    )
-    parser.add_argument(
-        "--convert_to_hf", action="store_true", help="Hugging Face形式に変換"
-    )
+    parser = argparse.ArgumentParser(description="GPT2チェックポイントの包括的テスト・検証スクリプト")
+    parser.add_argument("--checkpoint_path", required=True, help="テストするチェックポイントのパス")
+    parser.add_argument("--output_dir", default="gpt2_test_output", help="出力ディレクトリ")
+    parser.add_argument("--convert_to_hf", action="store_true", help="Hugging Face形式に変換")
     parser.add_argument(
         "--test_dataset_params",
         type=str,
@@ -583,9 +519,7 @@ def main():
     results = {}
 
     # チェックポイントをロード
-    model, model_args, iter_num, best_val_loss, config = load_gpt2_checkpoint(
-        args.checkpoint_path, args.device
-    )
+    model, model_args, iter_num, best_val_loss, config = load_gpt2_checkpoint(args.checkpoint_path, args.device)
 
     if model is None:
         print("チェックポイントの読み込みに失敗したため、テストを終了します。")
@@ -631,10 +565,7 @@ def main():
     if test_dataset is None:
         print("デフォルトのテストデータセットを作成中...")
         # ダミーデータセットを作成（適切なサイズ）
-        dummy_data = [
-            torch.randint(0, model_args["vocab_size"], (model_args["block_size"],))
-            for _ in range(100)
-        ]
+        dummy_data = [torch.randint(0, model_args["vocab_size"], (model_args["block_size"],)) for _ in range(100)]
         test_dataset = dummy_data
 
     try:
@@ -643,16 +574,12 @@ def main():
         results["performance_stats"] = perf_stats
 
         # パープレキシティ評価
-        perplexity, avg_loss = evaluate_perplexity(
-            model, test_dataset, tokenizer, args.max_test_samples, args.device
-        )
+        perplexity, avg_loss = evaluate_perplexity(model, test_dataset, tokenizer, args.max_test_samples, args.device)
         results["perplexity"] = perplexity
         results["avg_loss"] = avg_loss
 
         # 精度メトリクス
-        accuracy, top5_accuracy = calculate_accuracy_metrics(
-            model, test_dataset, tokenizer, args.max_test_samples, args.device
-        )
+        accuracy, top5_accuracy = calculate_accuracy_metrics(model, test_dataset, tokenizer, args.max_test_samples, args.device)
         results["accuracy"] = accuracy
         results["top5_accuracy"] = top5_accuracy
 

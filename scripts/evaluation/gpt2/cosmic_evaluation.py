@@ -173,9 +173,7 @@ class COSMICEvaluator(ModelEvaluator):
                 total_log_prob += token_log_prob.item()
                 count += 1
 
-        return torch.tensor(
-            total_log_prob / count if count > 0 else 0.0, device=tokens.device
-        )
+        return torch.tensor(total_log_prob / count if count > 0 else 0.0, device=tokens.device)
 
     def load_cosmic_data(self, data_path):
         """
@@ -207,9 +205,7 @@ class COSMICEvaluator(ModelEvaluator):
         # 癌原性ラベルの標準化
         df = self._standardize_cancer_significance(df)
 
-        logger.info(
-            f"Cancer significance distribution:\n{df['oncogenic'].value_counts()}"
-        )
+        logger.info(f"Cancer significance distribution:\n{df['oncogenic'].value_counts()}")
 
         return df
 
@@ -258,9 +254,7 @@ class COSMICEvaluator(ModelEvaluator):
         for idx, row in cosmic_data.iterrows():
             try:
                 # 癌原性確率を計算
-                score = self.get_oncogenic_probability(
-                    row["Reference_sequence"], row["Variant_sequence"]
-                )
+                score = self.get_oncogenic_probability(row["Reference_sequence"], row["Variant_sequence"])
 
                 oncogenicity_scores.append(score)
                 true_labels.append(row["oncogenic"])
@@ -280,17 +274,13 @@ class COSMICEvaluator(ModelEvaluator):
         true_labels = np.array(true_labels)
 
         # 最適な閾値を決定
-        optimal_threshold = self._find_optimal_threshold(
-            oncogenicity_scores, true_labels
-        )
+        optimal_threshold = self._find_optimal_threshold(oncogenicity_scores, true_labels)
 
         # 予測ラベルを生成
         predicted_labels = (oncogenicity_scores >= optimal_threshold).astype(int)
 
         # 評価指標を計算
-        results = self._calculate_metrics(
-            true_labels, predicted_labels, oncogenicity_scores, optimal_threshold
-        )
+        results = self._calculate_metrics(true_labels, predicted_labels, oncogenicity_scores, optimal_threshold)
 
         logger.info("Model evaluation completed")
 
@@ -405,21 +395,15 @@ class COSMICEvaluator(ModelEvaluator):
 
 def main():
     """メイン処理"""
-    parser = argparse.ArgumentParser(
-        description="COSMIC-based genome sequence model evaluation"
-    )
+    parser = argparse.ArgumentParser(description="COSMIC-based genome sequence model evaluation")
     parser.add_argument("--model_path", required=True, help="Path to the trained model")
-    parser.add_argument(
-        "--cosmic_data", required=True, help="Path to COSMIC evaluation dataset"
-    )
+    parser.add_argument("--cosmic_data", required=True, help="Path to COSMIC evaluation dataset")
     parser.add_argument(
         "--output_dir",
         default=None,
         help="Output directory (auto-generated if not provided)",
     )
-    parser.add_argument(
-        "--batch_size", type=int, default=16, help="Batch size for evaluation"
-    )
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for evaluation")
     parser.add_argument(
         "--device",
         type=str,

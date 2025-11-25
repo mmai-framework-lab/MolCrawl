@@ -58,9 +58,7 @@ async def list_experiments(
     status: Optional[str] = Query(None, description="ステータスでフィルタ"),
     experiment_type: Optional[str] = Query(None, description="実験タイプでフィルタ"),
     model_type: Optional[str] = Query(None, description="モデルタイプでフィルタ"),
-    dataset_type: Optional[str] = Query(
-        None, description="データセットタイプでフィルタ"
-    ),
+    dataset_type: Optional[str] = Query(None, description="データセットタイプでフィルタ"),
     limit: int = Query(100, description="取得件数"),
     offset: int = Query(0, description="オフセット"),
 ):

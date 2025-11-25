@@ -30,9 +30,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
 from utils.base_visualization import BaseVisualizationGenerator  # noqa: E402
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -146,9 +144,7 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
         y = self.detailed_results["predicted_fitness"]
 
         # Main scatter plot
-        ax1.scatter(
-            x, y, alpha=0.6, s=50, color="steelblue", edgecolors="white", linewidth=0.5
-        )
+        ax1.scatter(x, y, alpha=0.6, s=50, color="steelblue", edgecolors="white", linewidth=0.5)
 
         # Add regression line
         z = np.polyfit(x, y, 1)
@@ -260,12 +256,8 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
 
         # 2. Log-scale distribution (if scores span large range)
         ax2 = axes[0, 1]
-        actual_pos = self.detailed_results["true_score"][
-            self.detailed_results["true_score"] > 0
-        ]
-        bert_pos = self.detailed_results["predicted_fitness"][
-            self.detailed_results["predicted_fitness"] > 0
-        ]
+        actual_pos = self.detailed_results["true_score"][self.detailed_results["true_score"] > 0]
+        bert_pos = self.detailed_results["predicted_fitness"][self.detailed_results["predicted_fitness"] > 0]
 
         if len(actual_pos) > 0 and len(bert_pos) > 0:
             ax2.hist(
@@ -298,9 +290,7 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
                 transform=ax2.transAxes,
                 fontsize=12,
             )
-            ax2.set_title(
-                "Log-Scale Distribution (N/A)", fontsize=14, fontweight="bold"
-            )
+            ax2.set_title("Log-Scale Distribution (N/A)", fontsize=14, fontweight="bold")
         ax2.grid(True, alpha=0.3)
 
         # 3. Q-Q Plot
@@ -373,15 +363,7 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
         # Add p-value annotations
         for bar, p_val in zip(bars1, p_values):
             height = bar.get_height()
-            significance = (
-                "***"
-                if p_val < 0.001
-                else "**"
-                if p_val < 0.01
-                else "*"
-                if p_val < 0.05
-                else "ns"
-            )
+            significance = "***" if p_val < 0.001 else "**" if p_val < 0.01 else "*" if p_val < 0.05 else "ns"
             ax1.text(
                 bar.get_x() + bar.get_width() / 2.0,
                 height + 0.05 * np.sign(height),
@@ -515,26 +497,14 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
 
             # Correlation by score range
             median_score = self.detailed_results["true_score"].median()
-            low_scores = self.detailed_results[
-                self.detailed_results["true_score"] <= median_score
-            ]
-            high_scores = self.detailed_results[
-                self.detailed_results["true_score"] > median_score
-            ]
+            low_scores = self.detailed_results[self.detailed_results["true_score"] <= median_score]
+            high_scores = self.detailed_results[self.detailed_results["true_score"] > median_score]
 
             low_corr = (
-                stats.spearmanr(
-                    low_scores["true_score"], low_scores["predicted_fitness"]
-                )[0]
-                if len(low_scores) > 1
-                else 0
+                stats.spearmanr(low_scores["true_score"], low_scores["predicted_fitness"])[0] if len(low_scores) > 1 else 0
             )
             high_corr = (
-                stats.spearmanr(
-                    high_scores["true_score"], high_scores["predicted_fitness"]
-                )[0]
-                if len(high_scores) > 1
-                else 0
+                stats.spearmanr(high_scores["true_score"], high_scores["predicted_fitness"])[0] if len(high_scores) > 1 else 0
             )
 
         # Create report
@@ -610,7 +580,9 @@ The BERT model was evaluated using masked language modeling (MLM) based fitness 
 
         spearman_r = abs(self.results["spearman_correlation"])
         if spearman_r >= 0.7:
-            interpretation = "The model demonstrates strong predictive capability with high correlation to experimental fitness scores."
+            interpretation = (
+                "The model demonstrates strong predictive capability with high correlation to experimental fitness scores."
+            )
         elif spearman_r >= 0.3:
             interpretation = "The model shows moderate predictive capability. There is room for improvement through further training or architecture modifications."
         else:
@@ -711,8 +683,7 @@ The BERT model was evaluated using masked language modeling (MLM) based fitness 
             {
                 "label": labels,
                 "score": predicted_scores,
-                "confidence": np.abs(predicted_scores)
-                / np.max(np.abs(predicted_scores)),  # 正規化した絶対値
+                "confidence": np.abs(predicted_scores) / np.max(np.abs(predicted_scores)),  # 正規化した絶対値
                 "similarity": np.random.uniform(0.4, 0.9, n_samples),
             }
         )
@@ -746,9 +717,7 @@ The BERT model was evaluated using masked language modeling (MLM) based fitness 
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description="Generate comprehensive visualizations for BERT ProteinGym evaluation results"
-    )
+    parser = argparse.ArgumentParser(description="Generate comprehensive visualizations for BERT ProteinGym evaluation results")
     parser.add_argument(
         "--results_dir",
         required=True,

@@ -15,11 +15,7 @@ class Organix13PreparationConfig:
     organix13_dataset: str = COMPOUNDS_DIR + "/organix13"
 
     # Path to save the processed and tokenized dataset
-    save_path: str = field(
-        default_factory=lambda: get_dataset_path(
-            "compounds", "organix13_tokenized.parquet"
-        )
-    )
+    save_path: str = field(default_factory=lambda: get_dataset_path("compounds", "organix13_tokenized.parquet"))
 
     # Path to the vocabulary
     vocab_path: str = "assets/molecules/vocab.txt"

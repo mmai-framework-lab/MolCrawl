@@ -131,9 +131,7 @@ def test_basic_functionality(model, tokenizer, test_texts):
 
         try:
             # BERT互換トークナイザーの場合（標準のBertTokenizerまたはカスタムラッパー）
-            if callable(tokenizer) and hasattr(
-                tokenizer, "model_input_names"
-            ):
+            if callable(tokenizer) and hasattr(tokenizer, "model_input_names"):
                 # BERT互換のラッパー（RNA, Protein, Genome など）
                 inputs = tokenizer(
                     text,
@@ -164,9 +162,7 @@ def test_basic_functionality(model, tokenizer, test_texts):
                     print("  ! エンコード機能がサポートされていません")
             else:
                 # 標準のBertTokenizerの場合
-                inputs = tokenizer(
-                    text, return_tensors="pt", padding=True, truncation=True
-                )
+                inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
                 inputs = {k: v.to(device) for k, v in inputs.items()}
 
                 with torch.no_grad():
@@ -193,20 +189,14 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
     for text in test_texts[:2]:  # 最初の2つのテキストでテスト
         try:
             # BERT互換トークナイザーの場合（標準またはカスタムラッパー）
-            if callable(tokenizer) and hasattr(
-                tokenizer, "model_input_names"
-            ):
+            if callable(tokenizer) and hasattr(tokenizer, "model_input_names"):
                 # 標準のBertTokenizerまたはBERT互換ラッパーの場合
                 tokens = tokenizer.tokenize(text)
                 if len(tokens) > 3:
                     # 中間のトークンをマスク
                     mask_idx = len(tokens) // 2
                     original_token = tokens[mask_idx]
-                    tokens[mask_idx] = (
-                        tokenizer.mask_token
-                        if hasattr(tokenizer, "mask_token")
-                        else "[MASK]"
-                    )
+                    tokens[mask_idx] = tokenizer.mask_token if hasattr(tokenizer, "mask_token") else "[MASK]"
 
                     # トークンから文字列を再構築
                     if hasattr(tokenizer, "convert_tokens_to_string"):
@@ -230,25 +220,17 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                         outputs = model(**inputs)
 
                     # マスク位置の予測を取得
-                    mask_token_id = getattr(
-                        tokenizer, "mask_token_id", 4
-                    )  # デフォルトは4
-                    mask_token_index = torch.where(
-                        inputs["input_ids"] == mask_token_id
-                    )[1]
+                    mask_token_id = getattr(tokenizer, "mask_token_id", 4)  # デフォルトは4
+                    mask_token_index = torch.where(inputs["input_ids"] == mask_token_id)[1]
                     if len(mask_token_index) > 0:
                         mask_token_logits = outputs.logits[0, mask_token_index[0], :]
                         top_5_tokens = torch.topk(mask_token_logits, 5, dim=-1)
 
                         print(f"元のトークン: {original_token}")
                         print("予測されたトップ5トークン:")
-                        for i, (score, token_id) in enumerate(
-                            zip(top_5_tokens.values, top_5_tokens.indices)
-                        ):
+                        for i, (score, token_id) in enumerate(zip(top_5_tokens.values, top_5_tokens.indices)):
                             if hasattr(tokenizer, "decode"):
-                                token = tokenizer.decode(
-                                    [token_id], skip_special_tokens=True
-                                )
+                                token = tokenizer.decode([token_id], skip_special_tokens=True)
                             else:
                                 token = f"Token_{token_id.item()}"
                             print(f"  {i + 1}. {token} (スコア: {score.item():.3f})")
@@ -286,22 +268,14 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                         if mask_token_id is not None:
                             mask_positions = torch.where(input_ids == mask_token_id)[1]
                             if len(mask_positions) > 0:
-                                mask_token_logits = outputs.logits[
-                                    0, mask_positions[0], :
-                                ]
+                                mask_token_logits = outputs.logits[0, mask_positions[0], :]
                                 top_5_tokens = torch.topk(mask_token_logits, 5, dim=-1)
 
                                 print(f"元のトークン: {original_token}")
                                 print("予測されたトップ5トークン:")
-                                for i, (score, token_id) in enumerate(
-                                    zip(top_5_tokens.values, top_5_tokens.indices)
-                                ):
-                                    token = tokenizer.ids_to_tokens.get(
-                                        token_id.item(), "[UNK]"
-                                    )
-                                    print(
-                                        f"  {i + 1}. {token} (スコア: {score.item():.3f})"
-                                    )
+                                for i, (score, token_id) in enumerate(zip(top_5_tokens.values, top_5_tokens.indices)):
+                                    token = tokenizer.ids_to_tokens.get(token_id.item(), "[UNK]")
+                                    print(f"  {i + 1}. {token} (スコア: {score.item():.3f})")
 
                     except Exception as e:
                         print(f"エンコード/推論エラー: {e}")
@@ -327,18 +301,14 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                         outputs = model(**inputs)
 
                     # マスク位置の予測を取得
-                    mask_token_index = torch.where(
-                        inputs["input_ids"] == tokenizer.mask_token_id
-                    )[1]
+                    mask_token_index = torch.where(inputs["input_ids"] == tokenizer.mask_token_id)[1]
                     if len(mask_token_index) > 0:
                         mask_token_logits = outputs.logits[0, mask_token_index[0], :]
                         top_5_tokens = torch.topk(mask_token_logits, 5, dim=-1)
 
                         print(f"元のトークン: {original_token}")
                         print("予測されたトップ5トークン:")
-                        for i, (score, token_id) in enumerate(
-                            zip(top_5_tokens.values, top_5_tokens.indices)
-                        ):
+                        for i, (score, token_id) in enumerate(zip(top_5_tokens.values, top_5_tokens.indices)):
                             token = tokenizer.decode([token_id])
                             print(f"  {i + 1}. {token} (スコア: {score.item():.3f})")
 
@@ -363,15 +333,11 @@ def test_embedding_generation(model, tokenizer, test_texts):
 
     for text in test_texts[:3]:  # 最初の3つのテキストでテスト
         try:
-            inputs = tokenizer(
-                text, return_tensors="pt", padding=True, truncation=True, max_length=512
-            )
+            inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
             inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
-                outputs = model.bert(
-                    **inputs
-                )  # BertForMaskedLMの場合、bertレイヤーにアクセス
+                outputs = model.bert(**inputs)  # BertForMaskedLMの場合、bertレイヤーにアクセス
                 # [CLS]トークンのエンベディングを取得
                 cls_embedding = outputs.last_hidden_state[0, 0, :].cpu().numpy()
                 embeddings.append(cls_embedding)
@@ -465,12 +431,8 @@ def test_model_performance(model, tokenizer, dataset_path=None):
             dataset = load_from_disk(dataset_path)
 
             if "test" in dataset:
-                test_dataset = dataset["test"].select(
-                    range(min(100, dataset["test"].num_rows))
-                )
-                data_collator = DataCollatorForLanguageModeling(
-                    tokenizer=tokenizer, mlm=True, mlm_probability=0.15
-                )
+                test_dataset = dataset["test"].select(range(min(100, dataset["test"].num_rows)))
+                data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
 
                 model.eval()
                 total_loss = 0
@@ -512,12 +474,8 @@ def generate_test_report(checkpoint_path, results):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="BERTチェックポイントの包括的テストスクリプト"
-    )
-    parser.add_argument(
-        "--checkpoint_path", required=True, help="テストするチェックポイントのパス"
-    )
+    parser = argparse.ArgumentParser(description="BERTチェックポイントの包括的テストスクリプト")
+    parser.add_argument("--checkpoint_path", required=True, help="テストするチェックポイントのパス")
     parser.add_argument("--dataset_path", help="評価用データセットのパス（オプション）")
     parser.add_argument(
         "--domain",
@@ -599,9 +557,7 @@ def main():
     results = {}
 
     # モデルとトークナイザーのロード
-    model, tokenizer = load_model_and_tokenizer(
-        args.checkpoint_path, args.domain, args.vocab_path
-    )
+    model, tokenizer = load_model_and_tokenizer(args.checkpoint_path, args.domain, args.vocab_path)
 
     if model is None:
         print("モデルの読み込みに失敗したため、テストを終了します。")

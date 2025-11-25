@@ -20,9 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
 from utils.base_visualization import BaseVisualizationGenerator
 
 # ログ設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -59,15 +57,11 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
             "cosine_similarity",
             "confidence",
         ]
-        missing_columns = [
-            col for col in required_columns if col not in self.results_df.columns
-        ]
+        missing_columns = [col for col in required_columns if col not in self.results_df.columns]
         if missing_columns:
             raise ValueError(f"Missing required columns in CSV: {missing_columns}")
 
-        self.logger.info(
-            f"Loaded BERT ClinVar results: {len(self.results_df)} variants"
-        )
+        self.logger.info(f"Loaded BERT ClinVar results: {len(self.results_df)} variants")
 
     def plot_confusion_matrix(self):
         """混同行列をプロット"""
@@ -89,9 +83,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
             )
 
             accuracy = (cm[0, 0] + cm[1, 1]) / cm.sum()
-            plt.title(
-                f"BERT Confusion Matrix - ClinVar Pathogenicity Prediction\nAccuracy: {accuracy:.3f}"
-            )
+            plt.title(f"BERT Confusion Matrix - ClinVar Pathogenicity Prediction\nAccuracy: {accuracy:.3f}")
         else:
             # JSONデータから混同行列をプロット
             cm_data = self.results["confusion_matrix"]
@@ -107,9 +99,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 yticklabels=["Actual Benign", "Actual Pathogenic"],
             )
 
-            plt.title(
-                f"BERT Confusion Matrix - ClinVar Pathogenicity Prediction\nAccuracy: {self.results['accuracy']:.3f}"
-            )
+            plt.title(f"BERT Confusion Matrix - ClinVar Pathogenicity Prediction\nAccuracy: {self.results['accuracy']:.3f}")
 
         plt.ylabel("Actual")
         plt.xlabel("Predicted")
@@ -130,9 +120,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 self.results_df["pathogenic"], predictions, average="binary"
             )
             try:
-                auc = roc_auc_score(
-                    self.results_df["pathogenic"], self.results_df["mlm_score"]
-                )
+                auc = roc_auc_score(self.results_df["pathogenic"], self.results_df["mlm_score"])
             except (ValueError, RuntimeError):
                 auc = 0.5
 
@@ -188,9 +176,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
 
         plt.figure(figsize=(10, 6))
 
-        pathogenic_scores = self.results_df[self.results_df["pathogenic"] == 1][
-            "mlm_score"
-        ]
+        pathogenic_scores = self.results_df[self.results_df["pathogenic"] == 1]["mlm_score"]
         benign_scores = self.results_df[self.results_df["pathogenic"] == 0]["mlm_score"]
 
         plt.hist(pathogenic_scores, alpha=0.7, label="Pathogenic", bins=30, color="red")
@@ -230,12 +216,8 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
 
         plt.figure(figsize=(10, 6))
 
-        pathogenic_sim = self.results_df[self.results_df["pathogenic"] == 1][
-            "cosine_similarity"
-        ]
-        benign_sim = self.results_df[self.results_df["pathogenic"] == 0][
-            "cosine_similarity"
-        ]
+        pathogenic_sim = self.results_df[self.results_df["pathogenic"] == 1]["cosine_similarity"]
+        benign_sim = self.results_df[self.results_df["pathogenic"] == 0]["cosine_similarity"]
 
         plt.hist(pathogenic_sim, alpha=0.7, label="Pathogenic", bins=30, color="red")
         plt.hist(benign_sim, alpha=0.7, label="Benign", bins=30, color="blue")
@@ -283,9 +265,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 self.results_df["pathogenic"], predictions, average="binary"
             )
             try:
-                auc = roc_auc_score(
-                    self.results_df["pathogenic"], self.results_df["mlm_score"]
-                )
+                auc = roc_auc_score(self.results_df["pathogenic"], self.results_df["mlm_score"])
             except (ValueError, RuntimeError):
                 auc = 0.5
 
@@ -306,9 +286,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
             ax2 = fig.add_subplot(gs[0, 1])
             metrics = ["Accuracy", "Precision", "Recall", "F1-Score"]
             values = [accuracy, precision, recall, f1]
-            bars = ax2.bar(
-                metrics, values, color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-            )
+            bars = ax2.bar(metrics, values, color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"])
             ax2.set_title("Performance Metrics")
             ax2.set_ylim(0, 1)
             for bar, value in zip(bars, values):
@@ -323,30 +301,18 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
 
             # 3. MLMスコア分布
             ax3 = fig.add_subplot(gs[0, 2])
-            pathogenic_scores = self.results_df[self.results_df["pathogenic"] == 1][
-                "mlm_score"
-            ]
-            benign_scores = self.results_df[self.results_df["pathogenic"] == 0][
-                "mlm_score"
-            ]
-            ax3.hist(
-                pathogenic_scores, alpha=0.7, label="Pathogenic", bins=20, color="red"
-            )
+            pathogenic_scores = self.results_df[self.results_df["pathogenic"] == 1]["mlm_score"]
+            benign_scores = self.results_df[self.results_df["pathogenic"] == 0]["mlm_score"]
+            ax3.hist(pathogenic_scores, alpha=0.7, label="Pathogenic", bins=20, color="red")
             ax3.hist(benign_scores, alpha=0.7, label="Benign", bins=20, color="blue")
             ax3.set_title("MLM Score Distribution")
             ax3.legend()
 
             # 4. 類似度分布
             ax4 = fig.add_subplot(gs[1, 0])
-            pathogenic_sim = self.results_df[self.results_df["pathogenic"] == 1][
-                "cosine_similarity"
-            ]
-            benign_sim = self.results_df[self.results_df["pathogenic"] == 0][
-                "cosine_similarity"
-            ]
-            ax4.hist(
-                pathogenic_sim, alpha=0.7, label="Pathogenic", bins=20, color="red"
-            )
+            pathogenic_sim = self.results_df[self.results_df["pathogenic"] == 1]["cosine_similarity"]
+            benign_sim = self.results_df[self.results_df["pathogenic"] == 0]["cosine_similarity"]
+            ax4.hist(pathogenic_sim, alpha=0.7, label="Pathogenic", bins=20, color="red")
             ax4.hist(benign_sim, alpha=0.7, label="Benign", bins=20, color="blue")
             ax4.set_title("Similarity Distribution")
             ax4.legend()
@@ -433,9 +399,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
         """HTML形式の総合レポートを作成"""
         self.logger.info("Creating BERT HTML report")
 
-        html_content = self._create_html_header(
-            "BERT ClinVar Pathogenicity Prediction Evaluation"
-        )
+        html_content = self._create_html_header("BERT ClinVar Pathogenicity Prediction Evaluation")
 
         if self.results_df is not None:
             predictions = (self.results_df["mlm_score"] > 0).astype(int)
@@ -446,9 +410,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
                 self.results_df["pathogenic"], predictions, average="binary"
             )
             try:
-                auc = roc_auc_score(
-                    self.results_df["pathogenic"], self.results_df["mlm_score"]
-                )
+                auc = roc_auc_score(self.results_df["pathogenic"], self.results_df["mlm_score"])
             except (ValueError, RuntimeError):
                 auc = 0.5
         else:
@@ -528,9 +490,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Visualize BERT ClinVar evaluation results"
-    )
+    parser = argparse.ArgumentParser(description="Visualize BERT ClinVar evaluation results")
     parser.add_argument(
         "--results_file",
         type=str,
@@ -543,16 +503,12 @@ def main():
         default="./bert_clinvar_visualization_results",
         help="Output directory for visualizations",
     )
-    parser.add_argument(
-        "--html_report", action="store_true", help="Generate HTML report"
-    )
+    parser.add_argument("--html_report", action="store_true", help="Generate HTML report")
 
     args = parser.parse_args()
 
     try:
-        visualizer = BERTClinVarVisualizationGenerator(
-            args.results_file, args.output_dir
-        )
+        visualizer = BERTClinVarVisualizationGenerator(args.results_file, args.output_dir)
 
         # 全ての可視化を生成
         visualizer.generate_all_visualizations()

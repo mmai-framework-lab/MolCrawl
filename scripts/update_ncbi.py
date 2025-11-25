@@ -51,9 +51,7 @@ class NCBIBacteriaUpdaterWebAPI:
         # バッチ処理で実行
         for i in range(0, len(genome_ids), batch_size):
             batch_ids = genome_ids[i : i + batch_size]
-            print(
-                f"  Processing batch {i // batch_size + 1}/{(len(genome_ids) - 1) // batch_size + 1}"
-            )
+            print(f"  Processing batch {i // batch_size + 1}/{(len(genome_ids) - 1) // batch_size + 1}")
 
             fetch_url = f"{self.base_url}/efetch.fcgi"
             params = {
@@ -294,9 +292,7 @@ class NCBIBacteriaUpdaterWebAPI:
 
         # バックアップ
         if output_file.exists():
-            backup_file = output_file.with_suffix(
-                f".backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            )
+            backup_file = output_file.with_suffix(f".backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
             backup_file.write_text(output_file.read_text())
             print(f"💾 Backup: {backup_file}")
 
