@@ -80,14 +80,13 @@ def analyze_dataset_tasks(dataset):
     for split in dataset.keys():
         logger.info(f"Analyzing tasks in {split} split...")
 
-        # Check if sample_id exists to determine task types
-        if "sample_id" in dataset[split].features:
-            sample_ids = dataset[split]["sample_id"]
-            for sample_id in sample_ids:
-                task_name = sample_id.split(".")[0] if "." in sample_id else "unknown"
-                task_distribution[task_name] = task_distribution.get(task_name, 0) + 1
+        # Check if task field exists
+        if "task" in dataset[split].features:
+            tasks = dataset[split]["task"]
+            for task in tasks:
+                task_distribution[task] = task_distribution.get(task, 0) + 1
         else:
-            logger.warning(f"No sample_id found in {split} split - cannot analyze task distribution")
+            logger.warning(f"No task field found in {split} split - cannot analyze task distribution")
 
     logger.info("Task distribution:")
     for task, count in sorted(task_distribution.items()):
@@ -220,7 +219,7 @@ if __name__ == "__main__":
                     "input_text": example.get("input", ""),
                     "real_input_text": "",
                     "input_too_long": False,
-                    "task_type": example.get("sample_id", "unknown").split(".")[0] if "sample_id" in example else "unknown",
+                    "task_type": example.get("task", "unknown"),
                 }
 
             try:
@@ -238,12 +237,12 @@ if __name__ == "__main__":
 
                 result.setdefault(
                     "task_type",
-                    example.get("sample_id", "unknown").split(".")[0] if "sample_id" in example else "unknown",
+                    example.get("task", "unknown"),
                 )
                 result["valid_sample"] = True
                 return result
             except Exception as e:
-                logger.warning(f"Error processing sample {example.get('sample_id', 'unknown')}: {e}")
+                logger.warning(f"Error processing sample (task: {example.get('task', 'unknown')}): {e}")
                 return default_result()
 
         # Apply validation and tokenization
