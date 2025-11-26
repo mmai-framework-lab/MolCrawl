@@ -78,44 +78,52 @@ def calculateProperties(df):
 
 
 def combine_all(raw_data_path: str, save_path: str):
-
+    """
+    全データセットを統合してOrganiX13を生成
+    
+    Args:
+        raw_data_path: COMPOUNDS_DIR (例: learning_20251104/compounds)
+        save_path: 出力先ディレクトリ (例: learning_20251104/compounds/organix13)
+    """
+    # データディレクトリのパス
+    data_dir = os.path.join(raw_data_path, "data")
+    llamol_dir = os.path.join(data_dir, "Fraunhofer-SCAI-llamol")
+    
     logging.info("Processing df_pc9")
-    df_pc9 = pd.read_parquet(os.path.join(raw_data_path, "Full_PC9_GAP.parquet"))
+    df_pc9 = pd.read_parquet(os.path.join(llamol_dir, "Full_PC9_GAP.parquet"))
     df_pc9 = calculateProperties(df_pc9)
 
     logging.info("Processing df_zinc_full")
-
-    df_zinc_full = pd.read_parquet(os.path.join(raw_data_path, "zinc_processed.parquet"))
+    df_zinc_full = pd.read_parquet(os.path.join(data_dir, "zinc20", "zinc_processed.parquet"))
     df_zinc_full = df_zinc_full.sample(n=5_000_000)
     df_zinc_full = calculateProperties(df_zinc_full)
 
     logging.info("Processing df_zinc_qm9")
     df_zinc_qm9 = pd.read_parquet(
-        os.path.join(raw_data_path, "qm9_zinc250_cep.parquet")
+        os.path.join(llamol_dir, "qm9_zinc250_cep.parquet")
     )
     df_zinc_qm9 = calculateProperties(df_zinc_qm9)
 
     logging.info("Processing df_opv")
-    df_opv = pd.read_parquet(os.path.join(raw_data_path, "opv.parquet"))
+    df_opv = pd.read_parquet(os.path.join(data_dir, "opv", "opv.parquet"))
     df_opv = calculateProperties(df_opv)
 
     logging.info("Processing df_reddb")
     # Source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/F3QFSQ
-    df_reddb = pd.read_parquet(os.path.join(raw_data_path, "RedDB_Full.parquet"))
+    df_reddb = pd.read_parquet(os.path.join(llamol_dir, "RedDB_Full.parquet"))
     df_reddb = calculateProperties(df_reddb)
 
     logging.info("Processing df_chembl")
-    df_chembl = pd.read_parquet(os.path.join(raw_data_path, "chembl_log_sascore.parquet"))
+    df_chembl = pd.read_parquet(os.path.join(llamol_dir, "chembl_log_sascore.parquet"))
     df_chembl = calculateProperties(df_chembl)
 
     logging.info("Processing df_pubchemqc_2017")
-    df_pubchemqc_2017 = pd.read_parquet(os.path.join(raw_data_path, "pubchemqc_energy.parquet"))
+    df_pubchemqc_2017 = pd.read_parquet(os.path.join(llamol_dir, "pubchemqc_energy.parquet"))
     df_pubchemqc_2017 = calculateProperties(df_pubchemqc_2017)
 
     logging.info("Processing df_pubchemqc_2020")
-
     df_pubchemqc_2020 = pd.read_parquet(
-        os.path.join(raw_data_path, "pubchemqc2020_energy.parquet")
+        os.path.join(llamol_dir, "pubchemqc2020_energy.parquet")
     )
     df_pubchemqc_2020 = calculateProperties(df_pubchemqc_2020)
 

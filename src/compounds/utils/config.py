@@ -24,7 +24,7 @@ class Organix13PreparationConfig:
     max_length: int = 256
 
     # Location to save raw unprocessed datasets
-    raw_data_path: str = "src/compounds/dataset/organix13/raw"
+    raw_data_path: str = COMPOUNDS_DIR
 
 
 @dataclass

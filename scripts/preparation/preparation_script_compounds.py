@@ -24,7 +24,7 @@ from compounds.utils.general import (
     download_datasets,
     download_zinc20,
     download_opv,
-    download_additional_datasets,
+    download_llamol_datasets,
     combine_datasets,
 )
 
@@ -62,16 +62,16 @@ def download_compound_datasets(
     elif dataset_type == "opv":
         logger.info("Downloading OPV dataset...")
         download_opv(cfg.raw_data_path)
-    elif dataset_type == "additional":
-        logger.info("Downloading additional datasets from repository...")
-        download_additional_datasets(cfg.raw_data_path)
+    elif dataset_type == "llamol":
+        logger.info("Downloading LlaMol datasets from Fraunhofer-SCAI/llamol repository...")
+        download_llamol_datasets(cfg.raw_data_path)
     elif dataset_type == "combine":
         logger.info("Combining all datasets into OrganiX13...")
         combine_datasets(cfg.raw_data_path, organix13_dataset_path)
     else:
         raise ValueError(
             f"Invalid dataset_type: {dataset_type}. "
-            f"Must be one of: all, zinc20, opv, additional, combine"
+            f"Must be one of: all, zinc20, opv, llamol, combine"
         )
 
     download_marker.touch()
@@ -200,9 +200,9 @@ def main():
     )
     parser.add_argument(
         "--dataset-type",
-        choices=["all", "zinc20", "opv", "additional", "combine"],
+        choices=["all", "zinc20", "opv", "llamol", "combine"],
         default="all",
-        help="Dataset type to download: all (default), zinc20, opv, additional, or combine",
+        help="Dataset type to download: all (default), zinc20, opv, llamol, or combine",
     )
     args = parser.parse_args()
 
