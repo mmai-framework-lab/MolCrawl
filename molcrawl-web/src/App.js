@@ -17,11 +17,19 @@ const DATASET_TABS = [
   },
   {
     id: 'compounds',
-    name: 'Compounds',
-    icon: '�',
-    description: '化合物データセット',
+    name: 'Compounds (OrganiX13)',
+    icon: '🧪',
+    description: '化合物データセット (OrganiX13)',
     path: 'compounds',
     progressKey: 'compounds'
+  },
+  {
+    id: 'compounds_guacamol',
+    name: 'Compounds (GuacaMol)',
+    icon: '🧪',
+    description: '化合物データセット (GuacaMol Benchmark)',
+    path: 'compounds/benchmark/GuacaMol',
+    progressKey: 'compounds_guacamol'
   },
   {
     id: 'genome_sequence',
@@ -65,40 +73,40 @@ const fetchDirectoryStructure = async (path = null, recursive = false, maxDepth 
   } else {
     url = '/api/directory';
   }
-  
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  
+
   const result = await response.json();
   if (!result.success) {
     throw new Error(result.error || 'APIエラーが発生しました');
   }
-  
+
   return result.data;
 };
 
 // 完全なディレクトリツリーを取得
 const fetchFullDirectoryTree = async (maxDepth = 5, includeFiles = true) => {
   const url = `/api/directory/tree?maxDepth=${maxDepth}&includeFiles=${includeFiles}`;
-  
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  
+
   const result = await response.json();
   if (!result.success) {
     throw new Error(result.error || 'APIエラーが発生しました');
   }
-  
+
   return result.data;
 };
 
 // ファイルサイズのフォーマット
 const formatFileSize = (bytes) => {
-  if (bytes === 0) {return '0 B';}
+  if (bytes === 0) { return '0 B'; }
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -109,7 +117,7 @@ const formatFileSize = (bytes) => {
 const DirectoryTree = ({ data, expandedDirs, onToggle, level = 0 }) => {
   const indent = level * 20;
 
-  if (!data) {return null;}
+  if (!data) { return null; }
 
   const renderItem = (item, index) => {
     const isExpanded = expandedDirs.has(item.path);
@@ -117,12 +125,12 @@ const DirectoryTree = ({ data, expandedDirs, onToggle, level = 0 }) => {
 
     return (
       <div key={`${item.path}-${index}`} className="tree-item">
-        <div 
+        <div
           className={`tree-node ${isDirectory ? 'directory' : 'file'}`}
           style={{ paddingLeft: `${indent}px` }}
         >
           {isDirectory ? (
-            <div 
+            <div
               className="directory-header"
               onClick={() => onToggle(item.path, item)}
             >
@@ -216,7 +224,7 @@ function App() {
   // 初期データの読み込み（特定のタブ用）
   const loadInitialData = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) {return;}
+    if (!tabInfo) { return; }
 
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
@@ -234,7 +242,7 @@ function App() {
   // 完全なツリーの読み込み（特定のタブ用）
   const loadFullTree = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) {return;}
+    if (!tabInfo) { return; }
 
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
@@ -254,7 +262,7 @@ function App() {
 
   // データをパスでフィルタリングするヘルパー関数
   const filterDataByPath = (data, targetPath) => {
-    if (!data || !targetPath) {return data;}
+    if (!data || !targetPath) { return data; }
     // 実装は後で詳細化
     return data;
   };
@@ -296,7 +304,7 @@ function App() {
     const currentExpandedDirs = getTabExpandedDirs(activeTab);
     const currentExpandingDirs = getTabExpandingDirs(activeTab);
     const newExpandedDirs = new Set(currentExpandedDirs);
-    
+
     if (currentExpandedDirs.has(path)) {
       // 折りたたみ
       newExpandedDirs.delete(path);
@@ -305,16 +313,16 @@ function App() {
       // 展開
       newExpandedDirs.add(path);
       updateTabExpandedDirs(activeTab, newExpandedDirs);
-      
+
       // 子要素がまだ読み込まれていない場合は読み込む
       if (item.children.length === 0 && item.count > 0 && viewMode !== 'full') {
         const newExpandingDirs = new Set([...currentExpandingDirs, path]);
         updateTabExpandingDirs(activeTab, newExpandingDirs);
-        
+
         try {
           const isRecursive = viewMode === 'recursive';
           const children = await fetchDirectoryStructure(path, isRecursive, maxDepth);
-          
+
           // directoryDataを更新
           const updateChildren = (data) => {
             if (data.path === path) {
@@ -328,7 +336,7 @@ function App() {
             }
             return data;
           };
-          
+
           const currentData = getTabData(activeTab);
           updateTabData(activeTab, updateChildren(currentData));
         } catch (err) {
@@ -418,88 +426,88 @@ function App() {
             {activeTab === 'experiments' ? (
               <ExperimentDashboard />
             ) : (
-            <div className="tree-container">
-              {/* データセット準備進捗カード */}
-              {DATASET_TABS.find(tab => tab.id === activeTab)?.progressKey && (
-                <DatasetProgressCard 
-                  datasetKey={DATASET_TABS.find(tab => tab.id === activeTab).progressKey}
-                />
-              )}
-              
-              <div className="tree-header">
-                <div className="controls">
-                  <button 
-                    className={`mode-btn ${viewMode === 'lazy' ? 'active' : ''}`}
-                    onClick={() => {setViewMode('lazy'); handleRefresh();}}
-                    title="必要に応じて読み込み"
-                  >
-                    💤 遅延
-                  </button>
-                  <button 
-                    className={`mode-btn ${viewMode === 'recursive' ? 'active' : ''}`}
-                    onClick={toggleRecursiveMode}
-                    title="展開時に子ディレクトリも読み込み"
-                  >
-                    🔄 再帰
-                  </button>
-                  <button 
-                    className={`mode-btn ${viewMode === 'full' ? 'active' : ''}`}
-                    onClick={() => loadFullTree(activeTab)}
-                    title="全体を一度に読み込み"
-                  >
-                    🌳 完全
-                  </button>
-                  <select 
-                    value={maxDepth} 
-                    onChange={(e) => setMaxDepth(parseInt(e.target.value))}
-                    className="depth-select"
-                    title="最大読み込み深度"
-                  >
-                    <option value={2}>深度 2</option>
-                    <option value={3}>深度 3</option>
-                    <option value={4}>深度 4</option>
-                    <option value={5}>深度 5</option>
-                    <option value={10}>深度 10</option>
-                  </select>
-                  <button className="refresh-btn" onClick={handleRefresh}>
-                    🔄
-                  </button>
+              <div className="tree-container">
+                {/* データセット準備進捗カード */}
+                {DATASET_TABS.find(tab => tab.id === activeTab)?.progressKey && (
+                  <DatasetProgressCard
+                    datasetKey={DATASET_TABS.find(tab => tab.id === activeTab).progressKey}
+                  />
+                )}
+
+                <div className="tree-header">
+                  <div className="controls">
+                    <button
+                      className={`mode-btn ${viewMode === 'lazy' ? 'active' : ''}`}
+                      onClick={() => { setViewMode('lazy'); handleRefresh(); }}
+                      title="必要に応じて読み込み"
+                    >
+                      💤 遅延
+                    </button>
+                    <button
+                      className={`mode-btn ${viewMode === 'recursive' ? 'active' : ''}`}
+                      onClick={toggleRecursiveMode}
+                      title="展開時に子ディレクトリも読み込み"
+                    >
+                      🔄 再帰
+                    </button>
+                    <button
+                      className={`mode-btn ${viewMode === 'full' ? 'active' : ''}`}
+                      onClick={() => loadFullTree(activeTab)}
+                      title="全体を一度に読み込み"
+                    >
+                      🌳 完全
+                    </button>
+                    <select
+                      value={maxDepth}
+                      onChange={(e) => setMaxDepth(parseInt(e.target.value))}
+                      className="depth-select"
+                      title="最大読み込み深度"
+                    >
+                      <option value={2}>深度 2</option>
+                      <option value={3}>深度 3</option>
+                      <option value={4}>深度 4</option>
+                      <option value={5}>深度 5</option>
+                      <option value={10}>深度 10</option>
+                    </select>
+                    <button className="refresh-btn" onClick={handleRefresh}>
+                      🔄
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="mode-info">
-                <span className={`mode-indicator mode-${viewMode}`}>
-                  {viewMode === 'lazy' && '💤 遅延読み込みモード: クリック時に個別読み込み'}
-                  {viewMode === 'recursive' && '🔄 再帰読み込みモード: 展開時に子ディレクトリも読み込み'}
-                  {viewMode === 'full' && '🌳 完全読み込みモード: 全体構造を一度に表示'}
-                </span>
-              </div>
-
-              {/* Compoundsタブの特別な機能 */}
-              {activeTab === 'compounds' && (
-                <ZincChecker />
-              )}
-
-              {/* Genome Sequenceタブの特別な機能 */}
-              {activeTab === 'genome_sequence' && (
-                <GenomeSpeciesList />
-              )}
-
-              {currentTabData && (
-                <DirectoryTree
-                  data={currentTabData}
-                  expandedDirs={currentTabExpandedDirs}
-                  onToggle={handleToggleDirectory}
-                />
-              )}
-              {!currentTabData && !currentTabLoading && (
-                <div className="empty-state">
-                  <p>データを読み込んでください</p>
-                  <button onClick={() => loadInitialData(activeTab)}>
-                    📁 {DATASET_TABS.find(tab => tab.id === activeTab)?.name} を読み込み
-                  </button>
+                <div className="mode-info">
+                  <span className={`mode-indicator mode-${viewMode}`}>
+                    {viewMode === 'lazy' && '💤 遅延読み込みモード: クリック時に個別読み込み'}
+                    {viewMode === 'recursive' && '🔄 再帰読み込みモード: 展開時に子ディレクトリも読み込み'}
+                    {viewMode === 'full' && '🌳 完全読み込みモード: 全体構造を一度に表示'}
+                  </span>
                 </div>
-              )}
-            </div>
+
+                {/* Compoundsタブの特別な機能 */}
+                {activeTab === 'compounds' && (
+                  <ZincChecker />
+                )}
+
+                {/* Genome Sequenceタブの特別な機能 */}
+                {activeTab === 'genome_sequence' && (
+                  <GenomeSpeciesList />
+                )}
+
+                {currentTabData && (
+                  <DirectoryTree
+                    data={currentTabData}
+                    expandedDirs={currentTabExpandedDirs}
+                    onToggle={handleToggleDirectory}
+                  />
+                )}
+                {!currentTabData && !currentTabLoading && (
+                  <div className="empty-state">
+                    <p>データを読み込んでください</p>
+                    <button onClick={() => loadInitialData(activeTab)}>
+                      📁 {DATASET_TABS.find(tab => tab.id === activeTab)?.name} を読み込み
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
