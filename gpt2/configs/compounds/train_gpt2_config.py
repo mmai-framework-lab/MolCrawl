@@ -19,6 +19,7 @@ tensorboard_dir = get_gpt2_output_path("compounds", "small")
 out_dir = get_gpt2_output_path("compounds", "small")
 
 tokenizer = Tokenizer(tokenizer_path, 256)
+meta_vocab_size = tokenizer.vocab_size
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
