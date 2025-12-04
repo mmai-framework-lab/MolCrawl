@@ -7,6 +7,9 @@ from rdkit.Chem.AllChem import AssignStereochemistry
 from transformers import AutoTokenizer
 from core.base import TrainableTokenizer
 
+### added by YI 21204
+import os
+
 RDLogger.DisableLog("rdApp.*")
 logger = logging.getLogger(__name__)
 
@@ -189,7 +192,12 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
             print(f"Warning: Failed to load CodeLlama tokenizer locally: {e}")
             try:
                 print("Trying GPT-2 tokenizer with local files only...")
-                self.tokenizer = AutoTokenizer.from_pretrained("gpt2", local_files_only=True)
+
+                ### added by YI 1204
+                gpt2_dir = os.environ.get("GPT2_TOKENIZER_DIR", "gpt2")
+                self.tokenizer = AutoTokenizer.from_pretrained(gpt2_dir, local_files_only=True)                
+                #self.tokenizer = AutoTokenizer.from_pretrained("gpt2", local_files_only=True)
+
             except Exception as e2:
                 print(f"Warning: Failed to load GPT-2 tokenizer locally: {e2}")
                 print("Creating a basic tokenizer using transformers BasicTokenizer...")
