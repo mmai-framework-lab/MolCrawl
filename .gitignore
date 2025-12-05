@@ -8,7 +8,7 @@ __pycache__
 *.json
 *.pyc
 *.pyo
-
+*.smiles
 !package.json
 !package-lock.json
 !.eslintrc.json
