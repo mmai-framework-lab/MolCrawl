@@ -23,19 +23,19 @@ https://huggingface.co/models?filter=fill-mask
 
 import logging
 import math
-import numpy as np
 import os
 import sys
 from dataclasses import dataclass, field
-import torch
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import datasets
-from datasets import load_dataset, disable_caching
-
+import numpy as np
+import torch
 
 # import evaluate
 import transformers
+from datasets import disable_caching, load_dataset
+from numpy.lib.stride_tricks import sliding_window_view
 from transformers import (
     CONFIG_MAPPING,
     MODEL_FOR_MASKED_LM_MAPPING,
@@ -54,10 +54,6 @@ from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
 
 from gpn.data import GenomeMSA, Tokenizer
-
-
-from numpy.lib.stride_tricks import sliding_window_view
-
 
 disable_caching()
 

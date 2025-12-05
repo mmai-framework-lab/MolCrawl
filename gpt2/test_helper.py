@@ -13,10 +13,10 @@ python gpt2/test_helper.py --search_dir=runs_* --auto_run
 
 """
 
-import os
-import json
-import glob
 import argparse
+import glob
+import json
+import os
 from pathlib import Path
 
 
@@ -40,8 +40,8 @@ def find_checkpoint_files(search_dir):
 
 def get_domain_info():
     """各ドメインの情報を返す"""
-    import sys
     import os
+    import sys
 
     sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
     from config.paths import COMPOUNDS_DATASET_DIR, MOLECULE_NL_DATASET_DIR

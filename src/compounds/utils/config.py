@@ -1,12 +1,11 @@
-from dataclasses import dataclass, field
-from core.config import Config
-import sys
 import os
+import sys
+from dataclasses import dataclass, field
+
+from core.config import Config
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from config.paths import get_dataset_path
-
-from config.paths import COMPOUNDS_DIR
+from config.paths import COMPOUNDS_DIR, get_dataset_path
 
 
 @dataclass

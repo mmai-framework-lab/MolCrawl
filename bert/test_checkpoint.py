@@ -9,16 +9,17 @@ BERTチェックポイントの包括的テストスクリプト
 5. モデルのパフォーマンス統計
 """
 
-import torch
 import argparse
-import time
 import json
-import numpy as np
-import sys
 import os
+import sys
+import time
 from pathlib import Path
-from transformers import BertForMaskedLM, BertTokenizer, DataCollatorForLanguageModeling
+
+import numpy as np
+import torch
 from datasets import load_from_disk
+from transformers import BertForMaskedLM, BertTokenizer, DataCollatorForLanguageModeling
 
 # プロジェクトのsrcディレクトリをパスに追加
 project_root = Path(__file__).parent.parent

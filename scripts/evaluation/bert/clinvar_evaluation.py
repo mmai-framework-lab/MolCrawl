@@ -12,29 +12,31 @@ GPT2とは完全に独立した実装で、BERT特有の評価手法を活用し
 4. 配列コンテキスト理解度の定量評価
 """
 
-import sys
-import os
 import argparse
 import json
-import pandas as pd
+import logging
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+import sentencepiece as spm
 import torch
 import torch.nn.functional as F
-from pathlib import Path
 from sklearn.metrics import (
     accuracy_score,
-    precision_recall_fscore_support,
     confusion_matrix,
+    precision_recall_fscore_support,
     roc_auc_score,
 )
-from transformers import BertForMaskedLM, BertConfig
-import sentencepiece as spm
-import logging
-from datetime import datetime
+from transformers import BertConfig, BertForMaskedLM
+
 from utils.evaluation_output import (
     get_evaluation_output_dir,
-    get_model_type_from_path,
     get_model_name_from_path,
+    get_model_type_from_path,
     setup_evaluation_logging,
 )
 from utils.model_evaluator import ModelEvaluator

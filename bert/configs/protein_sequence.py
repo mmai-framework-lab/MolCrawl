@@ -2,17 +2,18 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ python bert/main.py bert/configs/protein_sequence.py
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
-from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
-from transformers import DataCollatorForLanguageModeling
-from typing import Dict, List, Any
-from config.paths import UNIPROT_DATASET_DIR
-import torch
+from typing import Any, Dict, List
 
+import torch
+from transformers import DataCollatorForLanguageModeling
+
+from config.paths import UNIPROT_DATASET_DIR
+from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 
 # Tokenizer instantiation - BERT compatible ESM tokenizer
 tokenizer = create_bert_protein_tokenizer()

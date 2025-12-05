@@ -5,11 +5,11 @@
 
 import functools
 import traceback
-from typing import Optional, Dict, Any, Callable
 from contextlib import contextmanager
+from typing import Any, Callable, Dict, Optional
 
+from .models import DatasetType, ExperimentType, ModelType
 from .tracker import ExperimentTracker
-from .models import ExperimentType, ModelType, DatasetType
 
 
 def track_experiment(

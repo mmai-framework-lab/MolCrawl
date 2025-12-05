@@ -6,26 +6,28 @@ ProteinGymデータベースを使用したprotein sequenceモデルの精度検
 ProteinGymデータベースのタンパク質変異適合性を評価する精度を検証します。
 """
 
-import sys
-import os
 import argparse
 import json
-import pandas as pd
+import logging
+import os
+import sys
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn.functional as F
-from pathlib import Path
-import logging
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"))
 
 from model import GPT, GPTConfig
+
 from utils.evaluation_output import (
     get_evaluation_output_dir,
-    get_model_type_from_path,
     get_model_name_from_path,
+    get_model_type_from_path,
     setup_evaluation_logging,
 )
 from utils.model_evaluator import ModelEvaluator
@@ -54,8 +56,8 @@ class ProteinGymEvaluator(ModelEvaluator):
         """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
-            import sys
             import os
+            import sys
 
             sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
             from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
@@ -539,7 +541,7 @@ class ProteinGymEvaluator(ModelEvaluator):
 
     def _calculate_metrics(self, true_scores, predicted_scores):
         """評価指標を計算"""
-        from scipy.stats import spearmanr, pearsonr
+        from scipy.stats import pearsonr, spearmanr
 
         # 相関係数
         spearman_corr, spearman_p = spearmanr(true_scores, predicted_scores)

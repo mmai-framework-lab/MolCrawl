@@ -3,8 +3,8 @@
 """
 
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 # プロジェクトルートをパスに追加
 project_root = Path(__file__).parent.parent
@@ -16,11 +16,11 @@ def test_imports():
     print("Testing imports...")
     try:
         from src.experiment_tracker import (  # noqa: F401
-            ExperimentTracker,
+            DatasetType,
             ExperimentStatus,
+            ExperimentTracker,
             ExperimentType,
             ModelType,
-            DatasetType,
         )
 
         print("  ✓ Core modules imported successfully")
@@ -34,9 +34,10 @@ def test_database():
     """データベース接続テスト"""
     print("\nTesting database...")
     try:
-        from src.experiment_tracker.database import ExperimentDatabase
-        import tempfile
         import os
+        import tempfile
+
+        from src.experiment_tracker.database import ExperimentDatabase
 
         # 一時ファイルを使用
         temp_dir = tempfile.mkdtemp()
@@ -65,16 +66,17 @@ def test_tracker():
     """トラッカーの基本機能テスト"""
     print("\nTesting tracker...")
     try:
-        from src.experiment_tracker import (
-            ExperimentTracker,
-            ExperimentType,
-            ModelType,
-            DatasetType,
-        )
+        import os
 
         # テスト用の一時データベース
         import tempfile
-        import os
+
+        from src.experiment_tracker import (
+            DatasetType,
+            ExperimentTracker,
+            ExperimentType,
+            ModelType,
+        )
 
         temp_dir = tempfile.mkdtemp()
         db_path = os.path.join(temp_dir, "test.db")
@@ -131,14 +133,14 @@ def test_helpers():
     """ヘルパー関数テスト"""
     print("\nTesting helpers...")
     try:
-        from src.experiment_tracker.helpers import experiment_context
+        import tempfile
+
         from src.experiment_tracker import (
+            DatasetType,
             ExperimentType,
             ModelType,
-            DatasetType,
         )
-
-        import tempfile
+        from src.experiment_tracker.helpers import experiment_context
 
         temp_dir = tempfile.mkdtemp()
 

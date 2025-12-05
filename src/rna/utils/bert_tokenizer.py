@@ -3,9 +3,11 @@ RNA用のBERT互換トークナイザーラッパー
 TranscriptomeTokenizerをBERT学習と互換性のある形式でラップ
 """
 
-from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
-from typing import Dict, Any, Union, List, Optional
+from typing import Any, Dict, List, Optional, Union
+
 import torch
+
+from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 
 class BertRnaTokenizer:

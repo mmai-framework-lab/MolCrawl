@@ -1,12 +1,13 @@
-import logging
 import collections
+import logging
 import os
 import re
 from typing import List
-from transformers import BertTokenizer
-from core.base import UnTrainableTokenizer
-from compounds.utils.preprocessing import prepare_scaffolds
 
+from transformers import BertTokenizer
+
+from compounds.utils.preprocessing import prepare_scaffolds
+from core.base import UnTrainableTokenizer
 
 SMI_REGEX_PATTERN = (
     r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
@@ -304,9 +305,7 @@ class CompoundsTokenizer(UnTrainableTokenizer, SmilesTokenizer):
         SmilesTokenizer.__init__(self, vocab_file)
 
     def tokenize_text(self, text: str, verbose: bool = False):
-        tokens = self.encode(
-            text, padding="max_length", truncation=True, max_length=self.max_len
-        )
+        tokens = self.encode(text, padding="max_length", truncation=True, max_length=self.max_len)
         if len(tokens) > self.max_len:
             if verbose:
                 logger.info(f"Removing to long {text} with len of {len(tokens)} ")

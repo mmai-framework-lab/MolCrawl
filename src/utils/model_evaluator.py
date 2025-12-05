@@ -5,11 +5,12 @@ This module provides a common base class that all evaluator classes should inher
 ensuring consistent interface and shared functionality across different model evaluation tasks.
 """
 
-import os
 import logging
-import torch
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Union
+
+import torch
 
 logger = logging.getLogger(__name__)
 

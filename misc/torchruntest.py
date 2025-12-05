@@ -2,8 +2,9 @@
 GPU環境とDDP設定の確認
 """
 
-import torch
 import os
+
+import torch
 
 
 def check_environment():

@@ -11,13 +11,14 @@ Usage:
 """
 
 import argparse
-import re
-import os
 import gzip
+import os
+import re
 import shutil
+
+import pandas as pd
 from datasets import load_dataset
 from pyfaidx import Fasta
-import pandas as pd
 
 
 def build_chrom_mapping(ref_genome):

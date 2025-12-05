@@ -7,19 +7,20 @@ on ProteinGym dataset, including correlation plots, distribution analysis,
 and performance metrics visualization.
 """
 
+import argparse
+import json
+import logging
 import os
 import sys
-import json
-import argparse
-import pandas as pd
-import numpy as np
+import warnings
+from pathlib import Path
+from typing import Dict, Optional
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 from scipy import stats
-from pathlib import Path
-import logging
-from typing import Dict, Optional
-import warnings
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")

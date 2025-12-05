@@ -9,18 +9,20 @@ GPT2チェックポイントの包括的テスト・検証スクリプト
 5. モデルパフォーマンス統計
 """
 
-import torch
 import argparse
-import time
 import json
-import numpy as np
-import sys
-import os
-from pathlib import Path
-from transformers import GPT2LMHeadModel, GPT2Config, PreTrainedTokenizerFast
 import math
-from tqdm import tqdm
+import os
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import torch
 from model import GPT, GPTConfig
+from tqdm import tqdm
+from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
+
 from core.dataset import PreparedDataset
 
 # プロジェクトのsrcディレクトリをパスに追加

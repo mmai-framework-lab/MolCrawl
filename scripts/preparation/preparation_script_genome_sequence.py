@@ -1,16 +1,18 @@
-from argparse import ArgumentParser
-from pathlib import Path
 import logging
 import os
 import sys
+from argparse import ArgumentParser
+from pathlib import Path
 
-from datasets import load_dataset
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from datasets import load_dataset
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
+from config.paths import GENOME_SEQUENCE_DIR
+from core.base import setup_logging
 from genome_sequence.dataset.refseq.download_refseq import download_refseq
 from genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome
 
@@ -18,9 +20,6 @@ from genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome
 from genome_sequence.dataset.sentence_piece_tokenizer import train_tokenizer
 from genome_sequence.dataset.tokenizer import raw_to_parquet
 from genome_sequence.utils.config import GenomeSequenceConfig
-from core.base import setup_logging
-
-from config.paths import GENOME_SEQUENCE_DIR
 
 logger = logging.getLogger(__name__)
 

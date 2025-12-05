@@ -1,6 +1,5 @@
 from setuptools import setup
 
-
 install_requires = [
     "transformers[torch]==4.45.2",
     "tensorboardX==2.6.2.2",

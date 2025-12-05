@@ -2,8 +2,8 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
@@ -13,7 +13,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
-from transformers import PreTrainedTokenizerFast, AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerFast
+
 from config.paths import CELLXGENE_DATASET_DIR
 
 # Build the tokenizer using the WordLevel model

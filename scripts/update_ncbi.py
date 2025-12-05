@@ -1,8 +1,9 @@
-import requests
 import time
-from pathlib import Path
-from datetime import datetime
 import xml.etree.ElementTree as ET
+from datetime import datetime
+from pathlib import Path
+
+import requests
 
 
 class NCBIBacteriaUpdaterWebAPI:

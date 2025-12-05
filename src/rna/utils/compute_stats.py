@@ -1,14 +1,13 @@
-from argparse import ArgumentParser
-from pathlib import Path
-from collections import Counter
-import pickle
 import json
+import pickle
+from argparse import ArgumentParser
+from collections import Counter
+from pathlib import Path
 
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 
 # from tqdm.dask import TqdmCallback
-
 from rna.utils.config import RnaConfig
 
 

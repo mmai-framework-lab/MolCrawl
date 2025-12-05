@@ -1,41 +1,37 @@
-from argparse import ArgumentParser
-import os
-import sys
-import matplotlib.pyplot as plt
-import numpy as np
-
 import logging
 import logging.config
-
+import os
+import sys
+from argparse import ArgumentParser
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
-from core.base import (
-    read_parquet,
-    save_parquet,
-    multiprocess_tokenization,
-    setup_logging,
-)
-from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
 from compounds.utils.config import CompoundConfig
 from compounds.utils.general import (
-    download_datasets,
-    download_zinc20,
-    download_opv,
-    download_llamol_datasets,
     combine_datasets,
+    download_datasets,
+    download_llamol_datasets,
+    download_opv,
+    download_zinc20,
 )
-
+from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
 from config.paths import COMPOUNDS_DIR
+from core.base import (
+    multiprocess_tokenization,
+    read_parquet,
+    save_parquet,
+    setup_logging,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def download_compound_datasets(
-    cfg, organix13_dataset_path, download_marker, force=False, dataset_type="all"
-):
+def download_compound_datasets(cfg, organix13_dataset_path, download_marker, force=False, dataset_type="all"):
     """
     化合物データセットのダウンロード処理
 
@@ -69,10 +65,7 @@ def download_compound_datasets(
         logger.info("Combining all datasets into OrganiX13...")
         combine_datasets(cfg.raw_data_path, organix13_dataset_path)
     else:
-        raise ValueError(
-            f"Invalid dataset_type: {dataset_type}. "
-            f"Must be one of: all, zinc20, opv, llamol, combine"
-        )
+        raise ValueError(f"Invalid dataset_type: {dataset_type}. Must be one of: all, zinc20, opv, llamol, combine")
 
     download_marker.touch()
     logger.info("Download completed.")
@@ -189,15 +182,9 @@ def main():
         action="store_true",
         help="Force re-download and reprocessing even if files exist",
     )
-    parser.add_argument(
-        "--download-only", action="store_true", help="Only perform download step"
-    )
-    parser.add_argument(
-        "--tokenize-only", action="store_true", help="Only perform tokenization step"
-    )
-    parser.add_argument(
-        "--stats-only", action="store_true", help="Only perform statistics step"
-    )
+    parser.add_argument("--download-only", action="store_true", help="Only perform download step")
+    parser.add_argument("--tokenize-only", action="store_true", help="Only perform tokenization step")
+    parser.add_argument("--stats-only", action="store_true", help="Only perform statistics step")
     parser.add_argument(
         "--dataset-type",
         choices=["all", "zinc20", "opv", "llamol", "combine"],

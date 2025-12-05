@@ -6,12 +6,12 @@ RNA Encoding Validation Script
 RNAデータセットのエンコード整合性を詳細に検証するスクリプト
 """
 
-import os
-import sys
 import json
 import logging
-from pathlib import Path
+import os
+import sys
 import traceback
+from pathlib import Path
 
 # プロジェクトルートをパスに追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))

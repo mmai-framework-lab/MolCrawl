@@ -1,5 +1,5 @@
+from src.experiment_tracker import DatasetType, ExperimentType, ModelType
 from src.experiment_tracker.helpers import experiment_context
-from src.experiment_tracker import ExperimentType, ModelType, DatasetType
 
 with experiment_context(
     name="あなたの実験名",

@@ -5,8 +5,8 @@ Usage:
     python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
 """
 
-import sys
 import os
+import sys
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

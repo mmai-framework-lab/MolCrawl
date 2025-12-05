@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoModel
 
-from gpn.data import Tokenizer, ReverseComplementer
+from gpn.data import ReverseComplementer, Tokenizer
 
 
 class VEPEuclideanDist(torch.nn.Module):

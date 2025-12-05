@@ -1,15 +1,16 @@
-from Bio import SeqIO, bgzf
-from Bio.Seq import Seq
-import bioframe as bf
-from datasets import load_dataset, Dataset
 import gzip
-from joblib import Parallel, delayed
 import multiprocessing as mp
+
+import bioframe as bf
 import numpy as np
 import pandas as pd
 import pyBigWig
-from tqdm import tqdm
 import zarr
+from Bio import SeqIO, bgzf
+from Bio.Seq import Seq
+from datasets import Dataset, load_dataset
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 tqdm.pandas()
 

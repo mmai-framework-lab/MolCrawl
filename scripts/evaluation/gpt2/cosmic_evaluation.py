@@ -6,31 +6,40 @@ COSMICデータベースの癌関連変異データを使用して、
 genome sequenceモデルの変異病原性予測性能を評価します。
 """
 
-import sys
-import os
 import argparse
-import pandas as pd
+import json
+import logging
+import os
+import sys
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+import sentencepiece as spm
 import torch
 import torch.nn.functional as F
-import sentencepiece as spm
-import logging
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.metrics import roc_auc_score, average_precision_score, confusion_matrix
-from sklearn.metrics import roc_curve
-import json
-from pathlib import Path
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"))
 
-from config.paths import get_genome_tokenizer_path
 from model import GPT, GPTConfig
+
+from config.paths import get_genome_tokenizer_path
 from utils.evaluation_output import (
     get_evaluation_output_dir,
-    get_model_type_from_path,
     get_model_name_from_path,
+    get_model_type_from_path,
     setup_evaluation_logging,
 )
 from utils.model_evaluator import ModelEvaluator

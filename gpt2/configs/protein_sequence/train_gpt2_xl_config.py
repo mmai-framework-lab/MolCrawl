@@ -2,13 +2,13 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 from config.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
+from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48

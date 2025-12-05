@@ -2,16 +2,17 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 import sentencepiece as spm
+
 from config.paths import (
-    get_refseq_tokenizer_path,
     REFSEQ_DATASET_DIR,
     get_gpt2_output_path,
+    get_refseq_tokenizer_path,
 )
 
 tokenizer_path = get_refseq_tokenizer_path()

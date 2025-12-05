@@ -8,16 +8,17 @@ genome sequenceモデルの評価に適した形式に前処理します。
 注意: LEARNING_SOURCE_DIR環境変数の設定が必須です。
 """
 
-import sys
-import os
 import argparse
+import gzip
+import logging
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import requests
-import gzip
-from pathlib import Path
-import logging
-from datetime import datetime
-import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 

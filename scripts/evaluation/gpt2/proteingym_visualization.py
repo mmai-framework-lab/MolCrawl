@@ -5,14 +5,15 @@ ProteinGym評価結果の可視化スクリプト
 このスクリプトは、ProteinGym評価の結果を様々なグラフで可視化します。
 """
 
+import argparse
+import logging
 import os
 import sys
-import argparse
-import pandas as pd
-import numpy as np
+
 import matplotlib.pyplot as plt
-import logging
-from scipy.stats import spearmanr, pearsonr
+import numpy as np
+import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))

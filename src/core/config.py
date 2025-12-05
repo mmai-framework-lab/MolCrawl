@@ -1,7 +1,8 @@
-from typing import Type, TypeVar
+import json
 from dataclasses import dataclass
 from pathlib import Path
-import json
+from typing import Type, TypeVar
+
 import yaml
 
 T = TypeVar("T", bound="Config")

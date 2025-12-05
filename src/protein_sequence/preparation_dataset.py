@@ -13,11 +13,10 @@ The output will be the a subdir of the output_dir containing a dataset name dire
 
 from argparse import ArgumentParser
 
-from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
-from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
 from protein_sequence.dataset.tokenizer import tokenize_to_parquet
+from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
+from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
 from protein_sequence.utils.configs import ProteinSequenceConfig
-
 
 if __name__ == "__main__":
     parser = ArgumentParser()

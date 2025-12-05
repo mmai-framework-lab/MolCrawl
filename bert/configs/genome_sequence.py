@@ -1,13 +1,14 @@
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
+import sentencepiece as spm
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
-from transformers import PreTrainedTokenizerFast, AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerFast
+
 from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path
-import sentencepiece as spm
 
 model_path = "runs_train_bert_genome_sequence"
 max_length = 1024

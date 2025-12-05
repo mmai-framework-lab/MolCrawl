@@ -6,15 +6,16 @@ OMIM Real Data Processor
 実際のOMIMデータファイルを処理してゲノム配列評価用データセットを作成するモジュール
 """
 
+import logging
 import os
 import sys
-import requests
-import pandas as pd
-import numpy as np
-import logging
-import yaml
-from typing import Dict, List, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
+
+import numpy as np
+import pandas as pd
+import requests
+import yaml
 
 # プロジェクトルートを追加
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

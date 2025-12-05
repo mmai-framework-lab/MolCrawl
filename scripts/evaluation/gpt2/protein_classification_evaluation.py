@@ -6,26 +6,27 @@ This script evaluates a trained GPT2 protein sequence model using classification
 similar to the genome_sequence ClinVar evaluation approach.
 """
 
+import argparse
+import json
+import logging
 import os
 import sys
-import json
-import argparse
-import pandas as pd
+from pathlib import Path
+from typing import Dict, List, Optional
+
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn.functional as F
-from pathlib import Path
 from sklearn.metrics import (
     accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
     average_precision_score,
     confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
 )
-import logging
-from typing import Dict, List, Optional
 
 # Add src and gpt2 to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
@@ -34,8 +35,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "gpt2"
 from protein_sequence.utils.bert_tokenizer import EsmSequenceTokenizer
 from utils.evaluation_output import (
     get_evaluation_output_dir,
-    get_model_type_from_path,
     get_model_name_from_path,
+    get_model_type_from_path,
     setup_evaluation_logging,
 )
 from utils.model_evaluator import ModelEvaluator
@@ -89,7 +90,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
                 config = None
 
             # Import GPT2 model architecture
-            from model import GPTConfig, GPT
+            from model import GPT, GPTConfig
 
             # Create model with appropriate config
             if config:

@@ -1,7 +1,8 @@
 # MOLECULE_NLドメイン用GPT2テスト設定
 
-import sys
 import os
+import sys
+
 import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))

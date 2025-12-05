@@ -1,15 +1,16 @@
+import json
+import os
+from pathlib import Path
+
+import pyarrow as pa
+from datasets import Dataset, load_from_disk
 from transformers import (
     BertConfig,
     BertForMaskedLM,
-    TrainingArguments,
-    Trainer,
     DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments,
 )
-from datasets import load_from_disk, Dataset
-import os
-import json
-import pyarrow as pa
-from pathlib import Path
 
 
 class RNADatasetForBERT:

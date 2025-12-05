@@ -15,27 +15,25 @@ python scripts/preparation_script_protein_sequence.py assets/configs/protein_seq
 
 """
 
-from argparse import ArgumentParser
-from pathlib import Path
 import logging
 import os
 import sys
+from argparse import ArgumentParser
+from pathlib import Path
 
-from datasets import load_dataset
 import matplotlib.pyplot as plt
 import numpy as np
+from datasets import load_dataset
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
-from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
-from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
-from protein_sequence.dataset.tokenizer import tokenize_to_parquet
-from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
-from protein_sequence.utils.configs import ProteinSequenceConfig
-from core.base import setup_logging
-
 from config.paths import PROTEIN_SEQUENCE_DIR
+from core.base import setup_logging
+from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer, tokenize_to_parquet
+from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
+from protein_sequence.dataset.uniprot.uniprot_download import process_dataset
+from protein_sequence.utils.configs import ProteinSequenceConfig
 
 logger = logging.getLogger(__name__)
 

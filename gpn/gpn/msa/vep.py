@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 from transformers import AutoModelForMaskedLM
 
-from gpn.data import Tokenizer, ReverseComplementer
+from gpn.data import ReverseComplementer, Tokenizer
 
 
 class MLMforVEPModel(torch.nn.Module):

@@ -12,20 +12,21 @@ GPT-2版と同じ評価基準と出力フォーマットを使用します。
 4. GPT-2版と同じ可視化フォーマット
 """
 
-import sys
-import os
 import argparse
 import json
-import pandas as pd
+import logging
+import math
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn.functional as F
-from pathlib import Path
-from transformers import BertForMaskedLM, BertConfig
 from datasets import load_from_disk
-import logging
-from datetime import datetime
-import math
+from transformers import BertConfig, BertForMaskedLM
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

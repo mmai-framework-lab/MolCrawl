@@ -2,17 +2,15 @@ import json
 import logging
 import logging.config
 import os
+import sys
+import uuid
+from abc import ABC, abstractmethod
+from functools import partial
+from multiprocessing import Pool
 from pathlib import Path
 
-from abc import ABC, abstractmethod
-import pyarrow.parquet as pq
 import pyarrow as pa
-import uuid
-import sys
-
-from functools import partial
-
-from multiprocessing import Pool
+import pyarrow.parquet as pq
 from tqdm import tqdm
 
 

@@ -2,13 +2,13 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 from config.paths import get_gpt2_output_path
+from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48

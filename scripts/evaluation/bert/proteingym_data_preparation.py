@@ -8,19 +8,20 @@ BERTモデル用にProteinGymデータセットを前処理し、
 注意: LEARNING_SOURCE_DIR環境変数の設定が必須です。
 """
 
+import argparse
+import json
+import logging
 import os
 import sys
-import argparse
-import requests
-import pandas as pd
-import numpy as np
 import zipfile
-import logging
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
+
+import numpy as np
+import pandas as pd
+import requests
 from tqdm import tqdm
-import json
-from datetime import datetime
 
 
 def get_learning_source_dir():

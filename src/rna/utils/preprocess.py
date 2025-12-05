@@ -1,8 +1,8 @@
+import logging
 from typing import Union
 
-import torch
 import numpy as np
-import logging
+import torch
 
 
 def _digitize(x: np.ndarray, bins: np.ndarray, side="both") -> np.ndarray:

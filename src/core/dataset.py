@@ -1,6 +1,7 @@
-from datasets import load_from_disk
-import torch
 from pathlib import Path
+
+import torch
+from datasets import load_from_disk
 
 
 class PreparedDataset:

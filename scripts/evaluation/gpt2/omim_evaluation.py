@@ -21,28 +21,29 @@ OMIM (Online Mendelian Inheritance in Man) データベースを使用して
 - 感度・特異度
 """
 
+import argparse
+import json
+import logging
 import os
 import sys
-import torch
-import pandas as pd
-import numpy as np
-import sentencepiece as spm
-import logging
-import json
-import argparse
+import warnings
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
+import numpy as np
+import pandas as pd
+import sentencepiece as spm
+import torch
 from sklearn.metrics import (
     accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
     average_precision_score,
     confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
     roc_curve,
 )
-import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -50,12 +51,12 @@ warnings.filterwarnings("ignore")
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 try:
+    from gpt2.model import GPT, GPTConfig
     from src.config.paths import get_genome_tokenizer_path
-    from gpt2.model import GPTConfig, GPT
     from src.utils.evaluation_output import (
         get_evaluation_output_dir,
-        get_model_type_from_path,
         get_model_name_from_path,
+        get_model_type_from_path,
         setup_evaluation_logging,
     )
     from src.utils.model_evaluator import ModelEvaluator

@@ -3,9 +3,11 @@ Molecule Natural Language用のBERT互換トークナイザーラッパー
 MoleculeNatLangTokenizerをBERT学習と互換性のある形式でラップ
 """
 
-from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
-from typing import Dict, Any, Union, List, Optional
+from typing import Any, Dict, List, Optional, Union
+
 import torch
+
+from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
 
 class BertMoleculeNlTokenizer:

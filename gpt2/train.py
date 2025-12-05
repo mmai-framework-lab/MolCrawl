@@ -16,17 +16,16 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 (If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
 """
 
+import math
 import os
 import time
-import math
 from contextlib import nullcontext
 
 import numpy as np
 import torch
+from model import GPT, GPTConfig
+from torch.distributed import destroy_process_group, init_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
-
-from model import GPTConfig, GPT
 
 from core.dataset import PreparedDataset
 from rna.dataset.rna_dataset import RNADataset

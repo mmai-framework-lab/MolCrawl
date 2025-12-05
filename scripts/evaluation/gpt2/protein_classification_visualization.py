@@ -5,15 +5,16 @@ Protein Classification評価結果可視化スクリプト
 GPT-2モデルによるタンパク質バリアント分類評価の結果を可視化し、詳細な分析を行います。
 """
 
-import sys
-import os
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import logging
+import os
+import sys
 from datetime import datetime
-from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve, auc
+
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
 
 # プロジェクトルートを追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))

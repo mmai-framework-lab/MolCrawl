@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import torch
 import wandb
-from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from datasets import Dataset, DatasetDict
 from deepchem import molnet
 from deepchem.trans import NormalizationTransformer
@@ -19,6 +18,8 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+
+from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 
 # -----------------------------
 # 既存の前処理ヘルパ
@@ -161,48 +162,34 @@ for pretrained in [True, False]:
             "tox21",
         ]:
             if benchmark_name == "bace":
-                tasks, datasets, transformers = molnet.load_bace_classification(
-                    featurizer="raw", transforms=[]
-                )
+                tasks, datasets, transformers = molnet.load_bace_classification(featurizer="raw", transforms=[])
                 task_type = "classification"  # 単一ラベル（0/1）
             elif benchmark_name == "bbbp":
                 tasks, datasets, transformers = molnet.load_bbbp(featurizer="raw")
                 task_type = "classification"
             elif benchmark_name == "clearance":
-                tasks, datasets, transformers = molnet.load_clearance(
-                    featurizer="raw", transformers=[]
-                )
+                tasks, datasets, transformers = molnet.load_clearance(featurizer="raw", transformers=[])
                 task_type = "regression"
             elif benchmark_name == "clintox":
                 tasks, datasets, transformers = molnet.load_clintox(featurizer="raw")
                 task_type = "multitask_classification"  # 複数ラベル
             elif benchmark_name == "delaney":
-                tasks, datasets, transformers = molnet.load_delaney(
-                    featurizer="raw", transformers=[]
-                )
+                tasks, datasets, transformers = molnet.load_delaney(featurizer="raw", transformers=[])
                 task_type = "regression"
             elif benchmark_name == "freesolv":
-                tasks, datasets, transformers = molnet.load_freesolv(
-                    featurizer="raw", transformers=[]
-                )
+                tasks, datasets, transformers = molnet.load_freesolv(featurizer="raw", transformers=[])
                 task_type = "regression"
             elif benchmark_name == "hiv":
                 tasks, datasets, transformers = molnet.load_hiv(featurizer="raw")
                 task_type = "classification"
             elif benchmark_name == "lipo":
-                tasks, datasets, transformers = molnet.load_lipo(
-                    featurizer="raw", transformers=[]
-                )
+                tasks, datasets, transformers = molnet.load_lipo(featurizer="raw", transformers=[])
                 task_type = "regression"
             elif benchmark_name == "qm8":
-                tasks, datasets, transformers = molnet.load_qm8(
-                    featurizer="raw", transformers=[]
-                )
+                tasks, datasets, transformers = molnet.load_qm8(featurizer="raw", transformers=[])
                 task_type = "regression"
             elif benchmark_name == "qm9":
-                tasks, datasets, transformers = molnet.load_qm9(
-                    featurizer="raw", transformers=[]
-                )
+                tasks, datasets, transformers = molnet.load_qm9(featurizer="raw", transformers=[])
                 task_type = "regression"
             elif benchmark_name == "sider":
                 tasks, datasets, transformers = molnet.load_sider(featurizer="raw")
@@ -213,9 +200,7 @@ for pretrained in [True, False]:
 
             if task_type == "regression":
                 train, valid, test = datasets
-                transformers = NormalizationTransformer(
-                    transform_y=True, dataset=train
-                )  # 統計はtrainから推定
+                transformers = NormalizationTransformer(transform_y=True, dataset=train)  # 統計はtrainから推定
                 train = transformers.transform(train)
                 valid = transformers.transform(valid)
                 test = transformers.transform(test)
@@ -248,9 +233,7 @@ for pretrained in [True, False]:
             tokenizer = Tokenizer("assets/molecules/vocab.txt", 512)
 
             # 最大長の自動見積り（安全に 512 にクリップ）
-            all_df["token_length"] = all_df["text"].apply(
-                lambda x: len(tokenizer.encode(x))
-            )
+            all_df["token_length"] = all_df["text"].apply(lambda x: len(tokenizer.encode(x)))
             max_length = int(min(all_df["token_length"].max(), 512))
 
             # 語彙サイズ（8の倍数へ丸め）
@@ -333,9 +316,7 @@ for pretrained in [True, False]:
             # -----------------------------
             # Data collator
             # -----------------------------
-            data_collator = DataCollatorWithPadding(
-                tokenizer=tokenizer, pad_to_multiple_of=None
-            )
+            data_collator = DataCollatorWithPadding(tokenizer=tokenizer, pad_to_multiple_of=None)
 
             # -----------------------------
             # 学習設定（epoch ベース）
@@ -355,9 +336,7 @@ for pretrained in [True, False]:
                 save_strategy="epoch",
                 load_best_model_at_end=True,
                 metric_for_best_model=(
-                    "rmse"
-                    if task_type == "regression"
-                    else ("auroc" if task_type == "classification" else "mean_auroc")
+                    "rmse" if task_type == "regression" else ("auroc" if task_type == "classification" else "mean_auroc")
                 ),
                 greater_is_better=(False if task_type == "regression" else True),
                 report_to="wandb",
@@ -381,9 +360,7 @@ for pretrained in [True, False]:
                             "seed": seed,
                         },
                     )
-                    training_args.run_name = (
-                        f"{tasks[i]}_pretrained{pretrained}_seed{seed}"
-                    )
+                    training_args.run_name = f"{tasks[i]}_pretrained{pretrained}_seed{seed}"
                     if pretrained:
                         model = BertForSequenceClassification.from_pretrained(
                             "/data2/matsubara/MolCrawl/riken-dataset-fundational-model/runs_train_bert_compounds/checkpoint-4000",
@@ -396,14 +373,10 @@ for pretrained in [True, False]:
                     # rename task col to 'label' for Trainer
                     raw_ds_ = copy.deepcopy(raw_ds)
                     raw_ds_["train"] = raw_ds_["train"].rename_column(tasks[i], "label")
-                    raw_ds_["validation"] = raw_ds_["validation"].rename_column(
-                        tasks[i], "label"
-                    )
+                    raw_ds_["validation"] = raw_ds_["validation"].rename_column(tasks[i], "label")
                     raw_ds_["test"] = raw_ds_["test"].rename_column(tasks[i], "label")
                     print(f"Training for task {tasks[i]} ({i + 1}/{len(tasks)})")
-                    training_args.output_dir = (
-                        f"{output_dir}/task_{tasks[i]}/seed{seed}"
-                    )
+                    training_args.output_dir = f"{output_dir}/task_{tasks[i]}/seed{seed}"
 
                     tokenized = raw_ds_.map(
                         preprocess_function,
@@ -418,9 +391,7 @@ for pretrained in [True, False]:
                         train_dataset=tokenized["train"],
                         eval_dataset=tokenized["validation"],
                         tokenizer=None,
-                        compute_metrics=partial(
-                            compute_metrics, std=transformers.y_stds[i]
-                        ),
+                        compute_metrics=partial(compute_metrics, std=transformers.y_stds[i]),
                         callbacks=[EarlyStoppingCallback(early_stopping_patience=10)],
                     )
 
@@ -458,9 +429,7 @@ for pretrained in [True, False]:
                     eval_dataset=tokenized["validation"],
                     tokenizer=None,
                     compute_metrics=(
-                        partial(compute_metrics, std=transformers.y_stds[0])
-                        if task_type == "regression"
-                        else compute_metrics
+                        partial(compute_metrics, std=transformers.y_stds[0]) if task_type == "regression" else compute_metrics
                     ),
                     callbacks=[EarlyStoppingCallback(early_stopping_patience=10)],
                 )

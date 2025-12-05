@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from core.config import Config
 
 from config.paths import GENOME_SEQUENCE_DIR
+from core.config import Config
 
 
 @dataclass

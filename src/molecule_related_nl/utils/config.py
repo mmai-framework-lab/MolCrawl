@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
 import os
 import sys
+from dataclasses import dataclass, field
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from config.paths import get_dataset_path

@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 from transformers import AutoModel
 
-from gpn.data import Tokenizer, ReverseComplementer
+from gpn.data import ReverseComplementer, Tokenizer
 
 
 class VEPRefEmbed(torch.nn.Module):

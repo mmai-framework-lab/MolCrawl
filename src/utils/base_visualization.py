@@ -6,15 +6,16 @@ This module provides a common interface and shared functionality for all
 evaluation result visualization classes.
 """
 
-from abc import ABC, abstractmethod
 import json
 import logging
-from pathlib import Path
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, Any, Optional, List, Union
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
+import seaborn as sns
 
 
 class BaseVisualizationGenerator(ABC):
@@ -318,7 +319,7 @@ class BaseVisualizationGenerator(ABC):
     def _plot_roc_curve(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
         """ROC曲線をプロット"""
         try:
-            from sklearn.metrics import roc_curve, roc_auc_score
+            from sklearn.metrics import roc_auc_score, roc_curve
 
             fpr, tpr, _ = roc_curve(results_df[label_col], results_df[score_col])
             auc = roc_auc_score(results_df[label_col], results_df[score_col])

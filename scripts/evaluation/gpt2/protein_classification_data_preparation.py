@@ -6,12 +6,14 @@ Protein Classification Data Preparation
 データ準備・評価・可視化の分離原則に基づいて作成
 """
 
+import argparse
+import logging
 import os
 import sys
-import argparse
-import pandas as pd
+
 import numpy as np
-import logging
+import pandas as pd
+
 from utils.evaluation_output import get_learning_source_dir
 
 # プロジェクトルートを追加
