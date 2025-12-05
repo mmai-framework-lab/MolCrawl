@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './GPT2TrainingStatus.css';
 
 const GPT2TrainingStatus = ({ dataset }) => {
@@ -7,19 +7,7 @@ const GPT2TrainingStatus = ({ dataset }) => {
     const [error, setError] = useState(null);
     const [autoRefresh, setAutoRefresh] = useState(true);
 
-    useEffect(() => {
-        fetchTrainingStatus();
-
-        if (autoRefresh) {
-            const interval = setInterval(() => {
-                fetchTrainingStatus();
-            }, 10000); // Refresh every 10 seconds
-
-            return () => clearInterval(interval);
-        }
-    }, [dataset, autoRefresh]);
-
-    const fetchTrainingStatus = async () => {
+    const fetchTrainingStatus = useCallback(async () => {
         try {
             const url = dataset
                 ? `/api/gpt2-training-status/${dataset}`
@@ -39,7 +27,19 @@ const GPT2TrainingStatus = ({ dataset }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [dataset]);
+
+    useEffect(() => {
+        fetchTrainingStatus();
+
+        if (autoRefresh) {
+            const interval = setInterval(() => {
+                fetchTrainingStatus();
+            }, 10000); // Refresh every 10 seconds
+
+            return () => clearInterval(interval);
+        }
+    }, [dataset, autoRefresh, fetchTrainingStatus]);
 
     const formatNumber = (num) => {
         if (num >= 1e6) {
