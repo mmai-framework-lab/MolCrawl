@@ -28,7 +28,7 @@ def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -> soma.
     except Exception as e:
         if try_count > max_try:
             raise e
-        logging.warning(f"[Error] while retrieving census, retrying (try: {try_count+1})")
+        logging.warning(f"[Error] while retrieving census, retrying (try: {try_count + 1})")
         time.sleep(10)
         return retrieve_census(version, try_count + 1)
 
@@ -54,7 +54,7 @@ def retrieve_adata(
         if try_count > max_try:
             census.close()
             raise e
-        logging.warning(f"[Error] while retrieving adata, retrying (try: {try_count+1})")
+        logging.warning(f"[Error] while retrieving adata, retrying (try: {try_count + 1})")
         time.sleep(10)
         adata = retrieve_adata(version, id_list, target_gene_ids, try_count + 1)
 
@@ -80,6 +80,23 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
 
 
 def divide_workload(path: Union[str, Path], size_workload: int) -> List[Tuple[str, int, int, List[int]]]:
+    """
+    ワークロードを指定されたサイズに分割する関数
+
+    指定されたディレクトリ内の*.obs_id.tsvファイルを読み込み、
+    各ファイルのIDリストを指定されたワークロードサイズに分割する。
+
+    Args:
+        path (Union[str, Path]): メタデータ準備ディレクトリのパス
+        size_workload (int): 各ワークロードのサイズ（サンプル数）
+
+    Returns:
+        List[Tuple[str, int, int, List[int]]]: 分割されたワークロードのリスト
+            - str: ファイル名（拡張子なし）
+            - int: 開始行番号
+            - int: 終了行番号
+            - List[int]: 該当範囲のIDリスト
+    """
     divided_workload = []
     for filename in Path(path).rglob("*.obs_id.tsv"):
         with open(filename, "r") as file:

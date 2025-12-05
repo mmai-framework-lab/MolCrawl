@@ -1,9 +1,10 @@
 data_preparation:
   # Special case for Uniparc download, num of worker to use.
-  num_worker: 8
+  num_worker: 16
 
   # Size of list of ids to give to each worker, save file will have `size_workload` number of ids in them.
-  size_workload: 10000
+  # Reduced from 10000 to 1000 for better progress tracking and faster individual task completion
+  size_workload: 1000
 
   # Version of the CellxGene census
   census_version: "2023-12-15"
