@@ -95,7 +95,15 @@ def check_progress_status(base_dir):
 
 
 def process1_download_refseq(base_dir, path_species, num_worker, force=False):
-    """Process 1: Download RefSeq dataset"""
+    """Process 1: Download RefSeq dataset
+    Args:
+        base_dir (str): Base directory for genome sequence data
+        path_species (str): Path to species list file
+        num_worker (int): Number of workers for parallel processing
+        force (bool): Force re-download even if already completed
+    Returns:
+        bool: True if successful, False otherwise
+    """
     download_marker = Path(base_dir) / "download_complete.marker"
 
     if not force and download_marker.exists():
@@ -120,7 +128,15 @@ def process1_download_refseq(base_dir, path_species, num_worker, force=False):
 
 
 def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False):
-    """Process 2: Convert FASTA files to raw text format"""
+    """Process 2: Convert FASTA files to raw text format
+    Args:
+        base_dir (str): Base directory for genome sequence data
+        num_worker (int): Number of workers for parallel processing
+        max_lines_per_file (int): Maximum lines per output file
+        force (bool): Force reconversion even if already completed
+    Returns:
+        bool: True if successful, False otherwise
+    """
     fasta_to_raw_marker = Path(base_dir) / "fasta_to_raw_complete.marker"
     raw_files_dir = Path(base_dir) / "raw_files"
 
@@ -150,7 +166,16 @@ def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False)
 
 
 def process3_train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sentence_size, force=False):
-    """Process 3: Train SentencePiece tokenizer"""
+    """Process 3: Train SentencePiece tokenizer
+    Args:
+        base_dir (str): Base directory for genome sequence data
+        vocab_size (int): Vocabulary size for tokenizer
+        max_lines_per_file (int): Maximum lines per file for training
+        input_sentence_size (int): Input sentence size for tokenizer
+        force (bool): Force retraining even if already completed
+    Returns:
+        bool: True if successful, False otherwise
+    """
     train_tokenizer_marker = Path(base_dir) / "train_tokenizer_complete.marker"
     tokenizer_model = Path(base_dir) / "spm_tokenizer.model"
 
@@ -215,7 +240,14 @@ def process4_raw_to_parquet(base_dir, num_proc=None, batch_size=None, force=Fals
 
 
 def process5_generate_statistics(base_dir, vocab_size, force=False):
-    """Process 5: Generate statistics and distribution plots"""
+    """Process 5: Generate statistics and distribution plots
+    Args:
+        base_dir (str): Base directory for genome sequence data
+        vocab_size (int): Vocabulary size
+        force (bool): Force regeneration even if already exists
+    Returns:
+        bool: True if successful, False otherwise
+    """
     logger.info("👉Process5 : Loading Parquet dataset and generating statistics...")
 
     try:
