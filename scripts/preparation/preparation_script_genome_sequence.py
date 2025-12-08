@@ -13,13 +13,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from genome_sequence.dataset.refseq.download_refseq import download_refseq
 from genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome
-
-# from genome_sequence.dataset.train_tokenizer import train_tokenizer
 from genome_sequence.dataset.sentence_piece_tokenizer import train_tokenizer
 from genome_sequence.dataset.tokenizer import raw_to_parquet
 from genome_sequence.utils.config import GenomeSequenceConfig
 from core.base import setup_logging
-
 from config.paths import GENOME_SEQUENCE_DIR
 
 logger = logging.getLogger(__name__)
@@ -33,7 +30,9 @@ def create_distribution_plot(data):
         plt.title("Distribution of tokenized lengths")
         plt.savefig("assets/img/genome_sequence_tokenized_lengths_dist.png")
         plt.close()
-        logger.info("Saved distribution of tokenized dataset lengths to assets/img/genome_sequence_tokenized_lengths_dist.png")
+        logger.info(
+            "Saved distribution of tokenized dataset lengths to assets/img/genome_sequence_tokenized_lengths_dist.png"
+        )
         return True
     except Exception as e:
         logger.error(f"Failed to create distribution plot: {e}")
@@ -96,17 +95,7 @@ def check_progress_status(base_dir):
 
 
 def process1_download_refseq(base_dir, path_species, num_worker, force=False):
-    """Process 1: Download RefSeq dataset
-
-    Args:
-        base_dir (str): Base directory for genome sequence data
-        path_species (str): Path to species list file
-        num_worker (int): Number of workers for parallel processing
-        force (bool): Force re-download even if already completed
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Process 1: Download RefSeq dataset"""
     download_marker = Path(base_dir) / "download_complete.marker"
 
     if not force and download_marker.exists():
@@ -131,17 +120,7 @@ def process1_download_refseq(base_dir, path_species, num_worker, force=False):
 
 
 def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False):
-    """Process 2: Convert FASTA files to raw text format
-
-    Args:
-        base_dir (str): Base directory for genome sequence data
-        num_worker (int): Number of workers for parallel processing
-        max_lines_per_file (int): Maximum lines per output file
-        force (bool): Force reconversion even if already completed
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Process 2: Convert FASTA files to raw text format"""
     fasta_to_raw_marker = Path(base_dir) / "fasta_to_raw_complete.marker"
     raw_files_dir = Path(base_dir) / "raw_files"
 
@@ -171,18 +150,7 @@ def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False)
 
 
 def process3_train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sentence_size, force=False):
-    """Process 3: Train SentencePiece tokenizer
-
-    Args:
-        base_dir (str): Base directory for genome sequence data
-        vocab_size (int): Vocabulary size for tokenizer
-        max_lines_per_file (int): Maximum lines per file for training
-        input_sentence_size (int): Input sentence size for tokenizer
-        force (bool): Force retraining even if already completed
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Process 3: Train SentencePiece tokenizer"""
     train_tokenizer_marker = Path(base_dir) / "train_tokenizer_complete.marker"
     tokenizer_model = Path(base_dir) / "spm_tokenizer.model"
 
@@ -212,16 +180,8 @@ def process3_train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sen
         return False
 
 
-def process4_raw_to_parquet(base_dir, force=False):
-    """Process 4: Convert raw text files to Parquet format
-
-    Args:
-        base_dir (str): Base directory for genome sequence data
-        force (bool): Force reconversion even if already completed
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
+def process4_raw_to_parquet(base_dir, num_proc=None, batch_size=None, force=False):
+    """Process 4: Convert raw text files to Parquet format"""
     raw_to_parquet_marker = Path(base_dir) / "raw_to_parquet_complete.marker"
     parquet_dir = Path(base_dir) / "parquet_files"
 
@@ -236,7 +196,15 @@ def process4_raw_to_parquet(base_dir, force=False):
         else:
             logger.info("👉Process4 : Converting raw text to Parquet...")
 
-        raw_to_parquet(base_dir)
+        logger.info(f" - Base Directory : {base_dir}")
+        if num_proc is not None:
+            logger.info(f" - num_proc for map : {num_proc}")
+        if batch_size is not None:
+            logger.info(f" - batch_size for map : {batch_size}")
+
+        # raw_to_parquet 側が num_proc / batch_size を受け取る実装になっている前提
+        raw_to_parquet(base_dir, num_proc=num_proc, batch_size=batch_size)
+
         raw_to_parquet_marker.touch()
         logger.info("Raw to Parquet conversion completed.")
         return True
@@ -247,16 +215,7 @@ def process4_raw_to_parquet(base_dir, force=False):
 
 
 def process5_generate_statistics(base_dir, vocab_size, force=False):
-    """Process 5: Generate statistics and distribution plots
-
-    Args:
-        base_dir (str): Base directory for genome sequence data
-        vocab_size (int): Vocabulary size
-        force (bool): Force regeneration even if already exists
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Process 5: Generate statistics and distribution plots"""
     logger.info("👉Process5 : Loading Parquet dataset and generating statistics...")
 
     try:
@@ -271,7 +230,6 @@ def process5_generate_statistics(base_dir, vocab_size, force=False):
         logger.info(f"Size of the vocabulary: {vocab_size}")
         logger.info(f"Number of tokens: {sum(data['train']['num_tokens'])}")
 
-        # 分布プロットの生成（forceオプションまたはプロットが存在しない場合のみ）
         plot_file = Path("assets/img/genome_sequence_tokenized_lengths_dist.png")
         if force or not plot_file.exists():
             if force:
@@ -310,58 +268,63 @@ def main():
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
     setup_logging(GENOME_SEQUENCE_DIR)
 
+    # 重い処理用 base_dir（ローカルSSDなどに逃がしたい場合は config で指定）
+    base_dir = getattr(cfg, "local_base_dir", GENOME_SEQUENCE_DIR)
+    logger.info(f"Using base_dir: {base_dir}")
+
     # 進捗状況の確認
-    all_completed = check_progress_status(GENOME_SEQUENCE_DIR)
+    all_completed = check_progress_status(base_dir)
 
     if all_completed and not args.force:
         logger.info("All processing steps are already completed!")
         logger.info("Use --force option if you want to reprocess everything.")
         if not args.skip_stats:
-            # 統計情報のみ生成
-            process5_generate_statistics(GENOME_SEQUENCE_DIR, cfg.vocab_size, args.force)
+            process5_generate_statistics(base_dir, cfg.vocab_size, args.force)
         return
 
-    # 各プロセスを順次実行
     success = True
 
     # Process 1: Download RefSeq dataset
-    success &= process1_download_refseq(GENOME_SEQUENCE_DIR, cfg.path_species, cfg.num_worker, args.force)
-
+    success &= process1_download_refseq(base_dir, cfg.path_species, cfg.num_worker, args.force)
     if not success:
         logger.error("Process 1 failed. Stopping execution.")
         exit(1)
 
     # Process 2: Convert FASTA to raw text
-    success &= process2_fasta_to_raw(GENOME_SEQUENCE_DIR, cfg.num_worker, cfg.max_lines_per_file, args.force)
-
+    success &= process2_fasta_to_raw(base_dir, cfg.num_worker, cfg.max_lines_per_file, args.force)
     if not success:
         logger.error("Process 2 failed. Stopping execution.")
         exit(1)
 
     # Process 3: Train tokenizer
     success &= process3_train_tokenizer(
-        GENOME_SEQUENCE_DIR,
+        base_dir,
         cfg.vocab_size,
         cfg.max_lines_per_file,
         cfg.input_sentence_size,
         args.force,
     )
-
     if not success:
         logger.error("Process 3 failed. Stopping execution.")
         exit(1)
 
-    # Process 4: Convert raw to Parquet
-    success &= process4_raw_to_parquet(GENOME_SEQUENCE_DIR, args.force)
+    # Process 4: Convert raw to Parquet（並列＆バッチ設定）
+    num_proc_parquet = getattr(cfg, "num_proc_parquet", cfg.num_worker)
+    batch_size_parquet = getattr(cfg, "parquet_batch_size", 512)
 
+    success &= process4_raw_to_parquet(
+        base_dir,
+        num_proc=num_proc_parquet,
+        batch_size=batch_size_parquet,
+        force=args.force,
+    )
     if not success:
         logger.error("Process 4 failed. Stopping execution.")
         exit(1)
 
     # Process 5: Generate statistics and plots
     if not args.skip_stats:
-        success &= process5_generate_statistics(GENOME_SEQUENCE_DIR, cfg.vocab_size, args.force)
-
+        success &= process5_generate_statistics(base_dir, cfg.vocab_size, args.force)
         if not success:
             logger.error("Process 5 failed. Dataset preparation completed but statistics generation failed.")
             exit(1)
