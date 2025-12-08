@@ -70,6 +70,39 @@ const model_dir = getLearningSourcePath();
 console.log('directory.js loaded with model_dir:', model_dir);
 console.log('model_dir exists?', require('fs').existsSync(model_dir));
 
+// ディレクトリ存在チェック用ミドルウェア
+function validateDirectoryExists(req, res, next) {
+  const fsSync = require('fs');
+  
+  if (!fsSync.existsSync(model_dir)) {
+    const projectRoot = path.resolve(__dirname, '../..');
+    let availableDirs = [];
+    
+    try {
+      availableDirs = fsSync.readdirSync(projectRoot)
+        .filter(name => name.startsWith('learning_'));
+    } catch (err) {
+      console.error('Failed to list directories:', err);
+    }
+
+    return res.status(500).json({
+      error: 'Directory Configuration Error',
+      message: `LEARNING_SOURCE_DIR directory '${process.env.LEARNING_SOURCE_DIR}' does not exist`,
+      details: {
+        specified_dir: process.env.LEARNING_SOURCE_DIR,
+        expected_path: model_dir,
+        available_directories: availableDirs,
+        suggestion: availableDirs.length > 0 
+          ? `Try setting LEARNING_SOURCE_DIR to one of: ${availableDirs.join(', ')}`
+          : 'No learning_* directories found in project root'
+      },
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  next();
+}
+
 
 /**
  * ディレクトリの情報を取得
@@ -727,5 +760,6 @@ module.exports = {
   getFullDirectoryTree,
   checkZincData,
   getZincDataCounts,
-  formatFileSize
+  formatFileSize,
+  validateDirectoryExists
 };

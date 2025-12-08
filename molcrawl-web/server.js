@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 // 環境変数チェック（API読み込み前に実行）
 if (!process.env.LEARNING_SOURCE_DIR) {
@@ -17,7 +18,37 @@ if (!process.env.LEARNING_SOURCE_DIR) {
   process.exit(1);
 }
 
-const { getDirectoryStructure, expandDirectory, getFullDirectoryTree, checkZincData, getZincDataCounts } = require('./api/directory');
+// LEARNING_SOURCE_DIRディレクトリの存在チェック
+const learningSourcePath = path.join(__dirname, '..', process.env.LEARNING_SOURCE_DIR);
+if (!fs.existsSync(learningSourcePath)) {
+  console.error('');
+  console.error('❌ ERROR: LEARNING_SOURCE_DIR directory does not exist!');
+  console.error('');
+  console.error(`Specified directory: ${process.env.LEARNING_SOURCE_DIR}`);
+  console.error(`Expected path: ${learningSourcePath}`);
+  console.error('');
+  console.error('Available directories in project root:');
+  try {
+    const projectRoot = path.join(__dirname, '..');
+    const directories = fs.readdirSync(projectRoot, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory() && dirent.name.startsWith('learning_'))
+      .map(dirent => `  - ${dirent.name}`);
+    
+    if (directories.length > 0) {
+      console.error(directories.join('\n'));
+      console.error('');
+      console.error('Please use one of the above directories or check the directory name spelling.');
+    } else {
+      console.error('  No learning_* directories found');
+    }
+  } catch (err) {
+    console.error('  Unable to list directories:', err.message);
+  }
+  console.error('');
+  process.exit(1);
+}
+
+const { getDirectoryStructure, expandDirectory, getFullDirectoryTree, checkZincData, getZincDataCounts, validateDirectoryExists } = require('./api/directory');
 const { getGenomeSpeciesList, getGenomeSpeciesByCategory } = require('./api/genome-species');
 const datasetProgressRouter = require('./api/dataset-progress');
 const gpt2TrainingStatusRouter = require('./api/gpt2-training-status');
@@ -43,23 +74,34 @@ app.use(express.json());
 // 静的ファイル配信（現在のディレクトリから）
 app.use(express.static(__dirname));
 
-// API Routes
-app.get('/api/directory', getDirectoryStructure);
-app.get('/api/directory/expand', expandDirectory);
-app.get('/api/directory/tree', getFullDirectoryTree);
-app.get('/api/zinc/check', checkZincData);
-app.get('/api/zinc/count', getZincDataCounts);
-app.get('/api/genome/species', getGenomeSpeciesList);
-app.get('/api/genome/species/category', getGenomeSpeciesByCategory);
-app.use('/api/dataset-progress', datasetProgressRouter);
-app.use('/api/gpt2-training-status', gpt2TrainingStatusRouter);
+// API Routes - ディレクトリに依存するエンドポイントにはバリデーションを適用
+app.get('/api/directory', validateDirectoryExists, getDirectoryStructure);
+app.get('/api/directory/expand', validateDirectoryExists, expandDirectory);
+app.get('/api/directory/tree', validateDirectoryExists, getFullDirectoryTree);
+app.get('/api/zinc/check', validateDirectoryExists, checkZincData);
+app.get('/api/zinc/count', validateDirectoryExists, getZincDataCounts);
+app.get('/api/genome/species', validateDirectoryExists, getGenomeSpeciesList);
+app.get('/api/genome/species/category', validateDirectoryExists, getGenomeSpeciesByCategory);
+app.use('/api/dataset-progress', validateDirectoryExists, datasetProgressRouter);
+app.use('/api/gpt2-training-status', validateDirectoryExists, gpt2TrainingStatusRouter);
 
 // ヘルスチェック
 app.get('/api/health', (req, res) => {
+  const fsSync = require('fs');
+  const learningSourcePath = path.join(__dirname, '..', process.env.LEARNING_SOURCE_DIR);
+  const directoryExists = fsSync.existsSync(learningSourcePath);
+  
   res.json({
-    status: 'OK',
+    status: directoryExists ? 'OK' : 'ERROR',
     timestamp: new Date().toISOString(),
-    message: 'MolCrawl Web API Server is running',
+    message: directoryExists 
+      ? 'MolCrawl Web API Server is running'
+      : `LEARNING_SOURCE_DIR directory '${process.env.LEARNING_SOURCE_DIR}' not found`,
+    configuration: {
+      learning_source_dir: process.env.LEARNING_SOURCE_DIR,
+      directory_path: learningSourcePath,
+      directory_exists: directoryExists
+    },
     endpoints: [
       '/api/directory - ルートディレクトリ構造取得',
       '/api/directory/expand?path=<path>&recursive=true - ディレクトリ展開',
