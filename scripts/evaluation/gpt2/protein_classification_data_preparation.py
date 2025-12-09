@@ -14,11 +14,12 @@ import sys
 import numpy as np
 import pandas as pd
 
-from utils.evaluation_output import get_learning_source_dir
+# プロジェクトルートを設定して共通モジュールをインポート
 
-# プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(os.path.join(PROJECT_ROOT, "src"))
+
+from utils.environment_check import check_learning_source_dir
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def get_default_output_dir():
     """デフォルトの出力ディレクトリを取得"""
-    learning_source_dir = get_learning_source_dir()
+    learning_source_dir = check_learning_source_dir()
     return os.path.join(learning_source_dir, "protein_sequence", "data", "protein_classification")
 
 

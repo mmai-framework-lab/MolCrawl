@@ -56,30 +56,9 @@ except ImportError as e:
     traceback.print_exc(file=sys.stderr)
     print("=" * 80, file=sys.stderr)
 
-
-def get_learning_source_dir():
-    """LEARNING_SOURCE_DIR環境変数を取得（必須）"""
-    learning_source = os.environ.get("LEARNING_SOURCE_DIR")
-    if not learning_source:
-        print(
-            "ERROR: LEARNING_SOURCE_DIR environment variable is not set.",
-            file=sys.stderr,
-        )
-        print("Please set it before running this script:", file=sys.stderr)
-        print("  export LEARNING_SOURCE_DIR=/path/to/learning_source", file=sys.stderr)
-        print("  # or", file=sys.stderr)
-        print(
-            "  LEARNING_SOURCE_DIR=learning_20251104 python {}".format(sys.argv[0]),
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    return learning_source
-
-
-def get_default_output_dir():
-    """デフォルト出力ディレクトリを取得"""
-    learning_source = get_learning_source_dir()
-    return os.path.join(learning_source, "genome_sequence", "data", "omim")
+# 共通環境チェックモジュールを追加
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
+from utils.environment_check import check_learning_source_dir
 
 
 def setup_logging(output_dir: str) -> logging.Logger:
@@ -96,7 +75,8 @@ def setup_logging(output_dir: str) -> logging.Logger:
     )
 
     logger = logging.getLogger(__name__)
-    logger.info(f"LEARNING_SOURCE_DIR: {get_learning_source_dir()}")
+    learning_source_dir = check_learning_source_dir()
+    logger.info(f"LEARNING_SOURCE_DIR: {learning_source_dir}")
     logger.info(f"Output directory: {output_dir}")
     return logger
 
@@ -363,7 +343,8 @@ def main():
 
     # output_dirのデフォルト設定
     if args.output_dir is None:
-        args.output_dir = get_default_output_dir()
+        learning_source = check_learning_source_dir()
+        args.output_dir = os.path.join(learning_source, "genome_sequence", "data", "omim")
 
     try:
         if args.mode == "real":

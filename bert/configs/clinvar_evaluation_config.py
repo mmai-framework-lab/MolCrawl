@@ -1,7 +1,7 @@
 import os
 import sys
 
-import sentencepiece as smp
+import sentencepiece as spm
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast

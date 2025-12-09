@@ -22,42 +22,13 @@ import requests
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-
-def get_learning_source_dir():
-    """LEARNING_SOURCE_DIR環境変数を取得（必須）"""
-    learning_source = os.environ.get("LEARNING_SOURCE_DIR")
-    if not learning_source:
-        print(
-            "ERROR: LEARNING_SOURCE_DIR environment variable is not set.",
-            file=sys.stderr,
-        )
-        print("Please set it before running this script:", file=sys.stderr)
-        print("  export LEARNING_SOURCE_DIR=/path/to/learning_source", file=sys.stderr)
-        print("  # or", file=sys.stderr)
-        print(
-            "  LEARNING_SOURCE_DIR=learning_20251104 python {}".format(sys.argv[0]),
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    return learning_source
-
-
-def get_default_output_dir():
-    """デフォルト出力ディレクトリを取得"""
-    learning_source = get_learning_source_dir()
-    return os.path.join(learning_source, "genome_sequence", "data", "cosmic")
-
-
-def get_log_dir():
-    """ログディレクトリを取得"""
-    learning_source = get_learning_source_dir()
-    log_dir = os.path.join(learning_source, "genome_sequence", "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    return log_dir
-
+from utils.environment_check import check_learning_source_dir
 
 # ログ設定
-log_dir = get_log_dir()
+learning_source_dir = check_learning_source_dir()
+log_dir = os.path.join(learning_source_dir, "genome_sequence", "logs")
+os.makedirs(log_dir, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -67,7 +38,7 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
-logger.info(f"LEARNING_SOURCE_DIR: {get_learning_source_dir()}")
+logger.info(f"LEARNING_SOURCE_DIR: {learning_source_dir}")
 
 
 class COSMICProcessor:
@@ -81,7 +52,8 @@ class COSMICProcessor:
             output_dir (str): 出力ディレクトリ（Noneの場合は$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）
         """
         if output_dir is None:
-            output_dir = get_default_output_dir()
+            learning_source = check_learning_source_dir()
+            output_dir = os.path.join(learning_source, "genome_sequence", "data", "cosmic")
 
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)

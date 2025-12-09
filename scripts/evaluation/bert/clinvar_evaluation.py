@@ -13,8 +13,6 @@ GPT2とは完全に独立した実装で、BERT特有の評価手法を活用し
 """
 
 import argparse
-import os
-import sys
 import json
 import logging
 import os
