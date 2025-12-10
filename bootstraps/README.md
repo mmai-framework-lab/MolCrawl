@@ -12,6 +12,64 @@ cd /path/to/riken-dataset-fundational-model
 ./bootstraps/script_name.sh
 ```
 
+## 🛠️ Initial Setup
+
+### Environment Setup
+| Script | Purpose | Function |
+|--------|---------|----------|
+| `00_first.sh` | First-time environment setup | Configure conda channels, create environment, install dependencies |
+
+## 📊 Data Preparation Scripts
+
+### Phase 1: Dataset Preparation
+| Script | Purpose | Model Type | Output |
+|--------|---------|------------|--------|
+| `01_compounds_prepare.sh` | Compounds dataset tokenization | compounds | Tokenized SMILES/Scaffolds data |
+| `01_compounds-guacamol-prepare.sh` | GuacaMol compounds preparation | compounds | GuacaMol benchmark data |
+| `01_genome-sequence_prepare.sh` | Genome sequence data prep | genome_sequence | Tokenized genome sequences |
+| `01_molecule-nl_prepare.sh` | Molecule natural language prep | molecule_nl | Molecule descriptions |
+| `01_protein-sequence_prepare.sh` | Protein sequence data prep | protein_sequence | Tokenized protein sequences |
+| `01_rna_prepare.sh` | RNA sequence data preparation | rna | Tokenized RNA sequences |
+
+### Phase 2: GPT-2 Data Preparation  
+| Script | Purpose | Model Type | Function |
+|--------|---------|------------|----------|
+| `02-compounds-prepare-gpt2.sh` | GPT-2 compounds data | compounds | Convert to GPT-2 format |
+| `02-genome_sequence-prepare-gpt2.sh` | GPT-2 genome data | genome_sequence | Convert to GPT-2 format |
+| `02-molecule_nl-prepare-gpt2.sh` | GPT-2 molecule NL data | molecule_nl | Convert to GPT-2 format |
+| `02-protein_sequence-prepare-gpt2.sh` | GPT-2 protein data | protein_sequence | Convert to GPT-2 format |
+| `02-rna-prepare-gpt2.sh` | GPT-2 RNA data | rna | Convert to GPT-2 format |
+
+### Utility Scripts
+| Script | Purpose | Function |
+|--------|---------|----------|
+| `convert_molecule_nl_to_arrow.sh` | Convert molecule data | Convert to Arrow format |
+| `create_sample_vocab.sh` | Generate sample vocabulary | Development setup |
+
+## 🏋️ Model Training Scripts
+
+### Phase 3a: Standard Training
+| Script | Purpose | Model Size | Training Type |
+|--------|---------|------------|---------------|
+| `03a-compounds-guacamol-train-small.sh` | GuacaMol compounds | Small | Standard |
+| `03a-compounds-guacamol-train-medium.sh` | GuacaMol compounds | Medium | Standard |
+| `03a-compounds-guacamol-train-large.sh` | GuacaMol compounds | Large | Standard |
+| `03a-compounds-guacamol-train-xl.sh` | GuacaMol compounds | XL | Standard |
+| `03a-genome_sequence-train-small.sh` | Genome sequence | Small | Standard |
+| `03a-molecule-train-small.sh` | Molecule NL | Small | Standard |
+| `03a-molecule-train-medium.sh` | Molecule NL | Medium | Standard |
+| `03a-molecule-train-large.sh` | Molecule NL | Large | Standard |
+| `03a-molecule-train-xl.sh` | Molecule NL | XL | Standard |
+| `03a-protein_sequence-train-small.sh` | Protein sequence | Small | Standard |
+| `03a-rna-train-small.sh` | RNA sequence | Small | Standard |
+
+### Phase 3b: Enhanced Training
+| Script | Purpose | Enhancement |
+|--------|---------|-------------|
+| `03b-genome_sequence-train-small-with-wandb.sh` | Genome training with monitoring | Weights & Biases integration |
+| `03b-rna-train-small_y_refined.sh` | Refined RNA training | Yigarashi method |
+| `train_rna_yigarashi.sh` | Alternative RNA training | Yigarashi-specific approach |
+
 ## 🚀 AI Model Evaluation Scripts
 
 ### BERT Model Evaluations
@@ -54,29 +112,34 @@ cd /path/to/riken-dataset-fundational-model
 - **GPU最適化**: デフォルトでGPU使用、`--device cpu`でCPU実行に切り替え可能
 - **可視化充実**: 10種類以上のグラフとHTML形式の詳細レポートを自動生成
 
-## 🔧 Development & Debugging
+## 🔧 Development & Testing
 
-### System Debugging
-| Script | Purpose | Use Case |
-|--------|---------|----------|
-| `debug_protein_bert.sh` | BERT protein model debugging | Troubleshooting training issues |
-| `reboot-cause-check.sh` | System reboot analysis | Infrastructure monitoring |
-| `test_bert_checkpoint.sh` | BERT checkpoint validation | Model testing |
-
-### Development Utilities
+### Testing Scripts
 | Script | Purpose | Function |
 |--------|---------|----------|
-| `create_sample_vocab.sh` | Generate sample vocabulary files | Development setup |
+| `batch_test_gpt2.sh` | Batch GPT-2 model testing | Automated testing suite |
+| `gpt2_test_checkpoint.sh` | GPT-2 checkpoint validation | Model checkpoint testing |
+| `debug_protein_bert.sh` | BERT protein model debugging | Troubleshooting training issues |
 
-## 🏗️ Experiment Management System
+### System Utilities
+| Script | Purpose | Function |
+|--------|---------|----------|
+| `reboot-cause-check.sh` | System reboot analysis | Infrastructure monitoring |
 
-### Infrastructure Scripts
+## 🏗️ Web Interface & Services
+
+### Web Interface
 | Script | Purpose | Function | Port/Service |
 |--------|---------|----------|-------------|
-| `setup_experiment_system.sh` | Initialize experiment tracking | System configuration | - |
-| `start_experiment_system.sh` | Launch experiment services | Service orchestration | Multiple services |
-| `demo_experiment_system.sh` | System demonstration | Testing & validation | Demo mode |
+| `web.sh` | Launch web interface | Dataset browser and visualization | Default: 3001 |
 | `start_api_server.py` | Web API for experiments | RESTful service | Default: 8000 |
+
+### Experiment Management
+| Script | Purpose | Function |
+|--------|---------|----------|
+| `setup_experiment_system.sh` | Initialize experiment tracking | System configuration |
+| `start_experiment_system.sh` | Launch experiment services | Service orchestration |
+| `demo_experiment_system.sh` | System demonstration | Testing & validation |
 
 ## 📊 Output Structure
 
@@ -94,55 +157,78 @@ All evaluation scripts use the structured directory format and support custom ou
 **使用例**：
 
 ```bash
-# 標準的な使用方法（入力と出力が同じディレクトリ）
+# 初回セットアップ
+./bootstraps/00_first.sh
+
+# データ準備の基本フロー
 export LEARNING_SOURCE_DIR=/data/learning_source
+
+# Phase 1: Dataset preparation
+./bootstraps/01_compounds_prepare.sh
+./bootstraps/01_genome-sequence_prepare.sh  
+./bootstraps/01_protein-sequence_prepare.sh
+# ... 他のデータセット
+
+# Phase 2: GPT-2 format conversion (if needed)
+./bootstraps/02-compounds-prepare-gpt2.sh
+# ... 対応するGPT-2準備スクリプト
+
+# Phase 3: Training (optional)
+./bootstraps/03a-compounds-guacamol-train-small.sh
+# ... 対応する訓練スクリプト
+
+# Evaluation (標準的な使用方法)
 ./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
 
-# 入力と出力を分離（読み取り専用の入力、書き込み可能な出力）
+# Web interface
+./bootstraps/web.sh
+
+# 入力と出力を分離する場合
 export LEARNING_SOURCE_DIR=/readonly/learning_source  # 入力（読み取り専用）
 export EVALUATION_OUTPUT_DIR=/writable/outputs        # 出力（書き込み可能）
 ./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
-
-# 一時的な出力先指定（-oオプションでさらに上書き可能）
-EVALUATION_OUTPUT_DIR=/tmp/eval ./bootstraps/run_gpt2_clinvar_evaluation.sh -o /tmp/results
 ```
 
 ### ディレクトリ構造
 
 ```
-$LEARNING_SOURCE_DIR/                   # 入力データ（読み取り専用）
-├── genome_sequence/
-│   ├── spm_tokenizer.model             # トークナイザー（入力）
-│   └── data/
-│       ├── GCA_000001405.28_GRCh38.p13_genomic.fna  # 参照ゲノム（入力）
-│       └── clinvar/
-│           └── clinvar_evaluation_dataset.csv       # 既存データ（入力）
-└── protein_sequence/
-    └── data/
-        └── proteingym/                 # 既存データ（入力）
-
-$EVALUATION_OUTPUT_DIR/                 # 出力データ（書き込み可能）
-├── genome_sequence/
-│   ├── data/                           # データ準備フェーズの出力
-│   │   ├── clinvar/                    # 新規作成データ
-│   │   ├── cosmic/
-│   │   ├── omim/                       # サンプルデータ
-│   │   └── omim_real/                  # 実データ（認証必要）
-│   └── report/                         # 評価結果フェーズの出力
+$LEARNING_SOURCE_DIR/                   # 学習データディレクトリ
+├── compounds/                          # 化合物データ
+│   ├── image/                          # 可視化画像
+│   └── data/                           # トークン化済みデータ
+├── genome_sequence/                    # ゲノム配列データ  
+│   ├── image/                          # 可視化画像
+│   ├── data/                           # トークン化済みデータ
+│   │   ├── clinvar/                    # ClinVarデータ
+│   │   ├── cosmic/                     # COSMICデータ
+│   │   └── omim/                       # OMIMデータ
+│   └── report/                         # 評価結果
 │       ├── bert_clinvar_evaluation/
-│       ├── clinvar_evaluation/         # GPT-2 ClinVar
-│       ├── cosmic_evaluation/          # GPT-2 COSMIC
-│       ├── omim_evaluation/            # GPT-2 OMIM（サンプル）
-│       └── omim_real_evaluation/       # GPT-2 OMIM（実データ）
-└── protein_sequence/
-    ├── data/                           # データ準備フェーズの出力
-    │   ├── bert_proteingym/
-    │   ├── gpt2_proteingym/
-    │   └── protein_classification/
-    └── report/                         # 評価結果フェーズの出力
-        ├── bert_proteingym/
-        ├── gpt2_proteingym/
-        └── gpt2_protein_classification/
+│       ├── clinvar_evaluation/
+│       └── cosmic_evaluation/
+├── protein_sequence/                   # タンパク質配列データ
+│   ├── image/                          # 可視化画像
+│   ├── data/                           # トークン化済みデータ
+│   └── report/                         # 評価結果
+│       ├── bert_proteingym/
+│       └── gpt2_proteingym/
+├── rna/                                # RNA配列データ
+│   ├── image/                          # 可視化画像
+│   └── data/                           # トークン化済みデータ
+└── molecule_nl/                        # 分子自然言語データ
+    ├── image/                          # 可視化画像
+    └── data/                           # トークン化済みデータ
+
+# 学習済みモデル出力
+gpt2-output/                            # GPT-2モデル出力
+├── compounds-small/
+├── genome_sequence-small/
+├── protein_sequence-small/
+└── rna-small/
+
+# 実行ログ
+logs/                                   # スクリプト実行ログ
+└── *.log                               # 各スクリプトのログファイル
 ```
 
 ### 出力ディレクトリのカスタマイズ
