@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './DatasetProgressCard.css';
 
-const DatasetProgressCard = ({ datasetKey }) => {
+function DatasetProgressCard({ datasetKey }) {
+  
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [showFilesModal, setShowFilesModal] = useState(false);
   const [filesData, setFilesData] = useState(null);
   const [filesLoading, setFilesLoading] = useState(false);
@@ -17,12 +18,13 @@ const DatasetProgressCard = ({ datasetKey }) => {
 
   const fetchProgress = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/dataset-progress/${datasetKey}`
-      );
+      const url = `/api/dataset-progress/${datasetKey}`;
+      const response = await fetch(url);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
       setProgress(data);
       setError(null);
@@ -82,7 +84,7 @@ const DatasetProgressCard = ({ datasetKey }) => {
     setModalType('step');
     try {
       const response = await fetch(
-        `http://localhost:3001/api/dataset-progress/${datasetKey}/step/${stepId}/files`
+        `/api/dataset-progress/${datasetKey}/step/${stepId}/files`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -103,7 +105,7 @@ const DatasetProgressCard = ({ datasetKey }) => {
     setModalType('output');
     try {
       const response = await fetch(
-        `http://localhost:3001/api/dataset-progress/${datasetKey}/output/${outputType}/files`
+        `/api/dataset-progress/${datasetKey}/output/${outputType}/files`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -157,7 +159,7 @@ const DatasetProgressCard = ({ datasetKey }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/dataset-progress/file-preview?filePath=${encodeURIComponent(file.path)}&datasetKey=${encodeURIComponent(datasetKey)}`
+        `/api/dataset-progress/file-preview?filePath=${encodeURIComponent(file.path)}&datasetKey=${encodeURIComponent(datasetKey)}`
       );
       if (!response.ok) {
         const errorData = await response.json();
