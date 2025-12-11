@@ -239,6 +239,16 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                     def get_vocab(self):
                         return self.vocab
 
+                    def add_special_tokens(self, special_tokens_dict):
+                        """Add special tokens to the tokenizer (dummy implementation for fallback)"""
+                        # For MinimalTokenizer, we just update our special_tokens dict
+                        if "additional_special_tokens" in special_tokens_dict:
+                            for token in special_tokens_dict["additional_special_tokens"]:
+                                if token not in self.special_tokens.values():
+                                    # Just add to vocab for consistency
+                                    self.vocab[token] = len(self.vocab)
+                        return 0  # Return 0 new tokens added (consistent with transformers)
+
                     def __call__(
                         self,
                         text,
@@ -285,7 +295,7 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                 self.tokenizer.pad_token = getattr(self.tokenizer, "eos_token", "<eos>")
 
             # Add custom special tokens if possible
-            if hasattr(self.tokenizer, "add_special_tokens") and hasattr(self.tokenizer, "get_vocab"):
+            if hasattr(self.tokenizer, "add_special_tokens") and callable(getattr(self.tokenizer, "add_special_tokens", None)) and hasattr(self.tokenizer, "get_vocab"):
                 special_tokens = ["<pad>", "<unk>"]
                 vocab = self.tokenizer.get_vocab()
                 new_tokens = [token for token in special_tokens if token not in vocab]
