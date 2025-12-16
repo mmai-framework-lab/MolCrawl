@@ -78,6 +78,29 @@ def read_dataset(dataset_path: str):
     if not dataset_path.exists():
         raise FileNotFoundError(f"Dataset path does not exist: {dataset_path}")
 
+    ## TODO: duplication check.
+    # Check if this is a parquet file
+    if dataset_path.is_file() and dataset_path.suffix == '.parquet':
+        logger.info(f"Loading parquet file: {dataset_path}")
+        from datasets import Dataset
+        dataset = Dataset.from_parquet(str(dataset_path))
+        
+        # If the dataset has a 'split' column, split it accordingly
+        if 'split' in dataset.column_names:
+            logger.info("Found 'split' column, splitting dataset by split values")
+            split_values = dataset.unique('split')
+            splits = {}
+            for split_name in split_values:
+                split_dataset = dataset.filter(lambda x: x['split'] == split_name)
+                # Remove the split column as it's no longer needed
+                split_dataset = split_dataset.remove_columns(['split'])
+                splits[split_name] = split_dataset
+                logger.info(f"Created {split_name} split with {len(split_dataset)} samples")
+            return DatasetDict(splits)
+        else:
+            # Return as DatasetDict with train split
+            return DatasetDict({"train": dataset})
+
     # Check if this is a SMolInstruct-style directory with raw/ subdirectory
     raw_dir = dataset_path / "raw"
     if raw_dir.exists() and raw_dir.is_dir():
