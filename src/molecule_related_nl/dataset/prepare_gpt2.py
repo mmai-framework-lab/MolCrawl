@@ -42,9 +42,13 @@ def create_chunks(examples, context_length):
 def tokenize_batch_dataset(parquet_path, context_length, number_sample):
 
     tokenize_dataset = DatasetDict(read_dataset(parquet_path))
-    tokenize_dataset["valid"] = tokenize_dataset["validation"]
-
-    del tokenize_dataset["validation"]
+    
+    # Handle validation/valid split naming
+    if "validation" in tokenize_dataset and "valid" not in tokenize_dataset:
+        tokenize_dataset["valid"] = tokenize_dataset["validation"]
+        del tokenize_dataset["validation"]
+    elif "valid" not in tokenize_dataset and "validation" not in tokenize_dataset:
+        raise KeyError("Neither 'valid' nor 'validation' split found in dataset")
 
     tokenize_dataset["train"] = tokenize_dataset["train"].select(
         np.random.choice(len(tokenize_dataset["train"]), int(number_sample * 0.8), replace=False)
@@ -84,5 +88,9 @@ if __name__ == "__main__":
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = MoleculeNLConfig.from_file(args.config).data_preparation
+    
+    # 相対パスを絶対パスに変換
+    from config.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
+    save_path = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, cfg.save_path)
 
-    tokenize_batch_dataset(cfg.save_path, context_length, number_sample)
+    tokenize_batch_dataset(save_path, context_length, number_sample)
