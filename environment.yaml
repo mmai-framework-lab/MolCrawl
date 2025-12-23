@@ -17,14 +17,17 @@ dependencies:
   - dask=2024.2.1
   - matplotlib=3.9.2
   - pip:
-    - torch==2.1.2
+    - torch==2.8.0
+    - torchtext==0.18.0
+    - torchvision==0.23.0
+    - torchaudio==2.8.0
     - accelerate==0.34.2
     - ncbi-genome-download==0.3.3
     - joblib==1.4.2
     - cellxgene_census==1.15.0
     - rich==13.8.0
     - transformers==4.45.1
-    - scgpt==0.2.1
+    - scgpt==0.2.4
     - rdchiral==1.1.0
     - loompy==3.0.8
     - sentencepiece==0.2.0
