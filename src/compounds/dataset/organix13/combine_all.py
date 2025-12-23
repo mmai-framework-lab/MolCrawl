@@ -23,24 +23,23 @@ np.random.seed(42)
 def safe_read_parquet(file_path, dataset_name):
     """
     Safely read a parquet file with error handling
-    
+
     Args:
         file_path: Path to the parquet file
         dataset_name: Name of the dataset for logging
-        
+
     Returns:
         DataFrame or None if file is corrupted
-        
+
     Raises:
         FileNotFoundError: If file doesn't exist
         ValueError: If file is corrupted
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(
-            f"{dataset_name} parquet file not found: {file_path}\n"
-            f"Please re-run the download step to obtain this file."
+            f"{dataset_name} parquet file not found: {file_path}\nPlease re-run the download step to obtain this file."
         )
-    
+
     try:
         logger.info(f"Reading {dataset_name} from {file_path}")
         df = pd.read_parquet(file_path)
@@ -57,7 +56,6 @@ def safe_read_parquet(file_path, dataset_name):
         )
         logger.error(error_msg)
         raise ValueError(error_msg) from e
-
 
 
 def calcLogPIfMol(smi):
@@ -84,7 +82,6 @@ def calcSascore(smi):
 
 
 def calculateValues(smi: pd.Series):
-
     logging.info("Calculating properties")
     with multiprocessing.Pool(16) as pool:
         logging.info("Starting logps")
@@ -103,25 +100,20 @@ def calculateValues(smi: pd.Series):
 
         sascores = pool.map(calcSascore, smi)
 
-
     return smi, logps, mol_weights, sascores
 
 
 def calculateProperties(df):
-
     smi, logps, mol_weights, sascores = calculateValues(df["smiles"])
-    out_df = pd.DataFrame(
-        {"smiles": smi, "logp": logps, "mol_weight": mol_weights, "sascore": sascores}
-    )
+    out_df = pd.DataFrame({"smiles": smi, "logp": logps, "mol_weight": mol_weights, "sascore": sascores})
 
     return out_df
-
 
 
 def combine_all(raw_data_path: str, save_path: str):
     """
     全データセットを統合してOrganiX13を生成
-    
+
     Args:
         raw_data_path: COMPOUNDS_DIR (例: learning_20251104/compounds)
         save_path: 出力先ディレクトリ (例: learning_20251104/compounds/organix13)
@@ -129,63 +121,39 @@ def combine_all(raw_data_path: str, save_path: str):
     # データディレクトリのパス
     data_dir = os.path.join(raw_data_path, "data")
     llamol_dir = os.path.join(data_dir, "Fraunhofer-SCAI-llamol")
-    
+
     logging.info("Processing df_pc9")
-    df_pc9 = safe_read_parquet(
-        os.path.join(llamol_dir, "Full_PC9_GAP.parquet"),
-        "PC9 GAP"
-    )
+    df_pc9 = safe_read_parquet(os.path.join(llamol_dir, "Full_PC9_GAP.parquet"), "PC9 GAP")
     df_pc9 = calculateProperties(df_pc9)
 
     logging.info("Processing df_zinc_full")
-    df_zinc_full = safe_read_parquet(
-        os.path.join(data_dir, "zinc20", "zinc_processed.parquet"),
-        "ZINC20 Full"
-    )
+    df_zinc_full = safe_read_parquet(os.path.join(data_dir, "zinc20", "zinc_processed.parquet"), "ZINC20 Full")
     df_zinc_full = df_zinc_full.sample(n=5_000_000)
     df_zinc_full = calculateProperties(df_zinc_full)
 
     logging.info("Processing df_zinc_qm9")
-    df_zinc_qm9 = safe_read_parquet(
-        os.path.join(llamol_dir, "qm9_zinc250_cep.parquet"),
-        "ZINC QM9"
-    )
+    df_zinc_qm9 = safe_read_parquet(os.path.join(llamol_dir, "qm9_zinc250_cep.parquet"), "ZINC QM9")
     df_zinc_qm9 = calculateProperties(df_zinc_qm9)
 
     logging.info("Processing df_opv")
-    df_opv = safe_read_parquet(
-        os.path.join(data_dir, "opv", "opv.parquet"),
-        "OPV"
-    )
+    df_opv = safe_read_parquet(os.path.join(data_dir, "opv", "opv.parquet"), "OPV")
     df_opv = calculateProperties(df_opv)
 
     logging.info("Processing df_reddb")
     # Source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/F3QFSQ
-    df_reddb = safe_read_parquet(
-        os.path.join(llamol_dir, "RedDB_Full.parquet"),
-        "RedDB"
-    )
+    df_reddb = safe_read_parquet(os.path.join(llamol_dir, "RedDB_Full.parquet"), "RedDB")
     df_reddb = calculateProperties(df_reddb)
 
     logging.info("Processing df_chembl")
-    df_chembl = safe_read_parquet(
-        os.path.join(llamol_dir, "chembl_log_sascore.parquet"),
-        "ChEMBL"
-    )
+    df_chembl = safe_read_parquet(os.path.join(llamol_dir, "chembl_log_sascore.parquet"), "ChEMBL")
     df_chembl = calculateProperties(df_chembl)
 
     logging.info("Processing df_pubchemqc_2017")
-    df_pubchemqc_2017 = safe_read_parquet(
-        os.path.join(llamol_dir, "pubchemqc_energy.parquet"),
-        "PubChemQC 2017"
-    )
+    df_pubchemqc_2017 = safe_read_parquet(os.path.join(llamol_dir, "pubchemqc_energy.parquet"), "PubChemQC 2017")
     df_pubchemqc_2017 = calculateProperties(df_pubchemqc_2017)
 
     logging.info("Processing df_pubchemqc_2020")
-    df_pubchemqc_2020 = safe_read_parquet(
-        os.path.join(llamol_dir, "pubchemqc2020_energy.parquet"),
-        "PubChemQC 2020"
-    )
+    df_pubchemqc_2020 = safe_read_parquet(os.path.join(llamol_dir, "pubchemqc2020_energy.parquet"), "PubChemQC 2020")
     df_pubchemqc_2020 = calculateProperties(df_pubchemqc_2020)
 
     df_list = [
@@ -214,12 +182,10 @@ def combine_all(raw_data_path: str, save_path: str):
         "sascore",
         "mol_weight",
     ]
-    
+
     logging.info("concatenting")
 
-    df = pd.concat(
-        df_list, axis=0, ignore_index=True
-    ) 
+    df = pd.concat(df_list, axis=0, ignore_index=True)
     df = df[all_columns]
     df.reset_index(drop=True, inplace=True)
     df["mol_weight"] = df["mol_weight"] / 100.0
