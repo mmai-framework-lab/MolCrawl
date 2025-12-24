@@ -4,7 +4,6 @@ import os
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 import multiprocessing
-from pathlib import Path
 
 from rdkit.Chem import RDConfig
 import sys
