@@ -14,6 +14,7 @@ __pycache__
 !.eslintrc.json
 !.prettierrc.json
 !molcrawl-web/frontend/public/manifest.json
+!src/compounds/dataset/prepare_gpt2_organix13.py
 
 wandb
 download_dir
@@ -29,8 +30,13 @@ build
 *.pt
 runs*
 out/*
-dataset/*
-dataset/
+/dataset/*
+!src/compounds/dataset/prepare_gpt2_organix13.py
+/dataset/
+!src/
+!src/compounds/
+!src/compounds/dataset/
+!src/compounds/dataset/prepare_gpt2_organix13.py
 miniconda*/
 reports
 reports/*

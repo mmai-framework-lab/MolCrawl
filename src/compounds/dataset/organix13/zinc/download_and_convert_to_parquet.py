@@ -1,6 +1,4 @@
-import subprocess
 import requests
-from urllib.parse import urljoin
 import time
 
 import os.path as osp
@@ -9,7 +7,6 @@ import shutil
 import sys
 
 import logging
-import logging.config
 
 # Add project root to Python path when running as script
 if __name__ == "__main__":
@@ -393,7 +390,7 @@ def main():
         print(f"Download completed: {successful} successful, {failed} failed")
     
     if args.convert:
-        print(f"Converting ZINC data to parquet format...")
+        print("Converting ZINC data to parquet format...")
         result = convert_zinc_to_parquet(args.convert)
         if result:
             print(f"Conversion completed: {result}")

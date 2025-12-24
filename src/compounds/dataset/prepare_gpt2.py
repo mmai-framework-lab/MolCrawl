@@ -72,7 +72,7 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     print(f"Saving dataset to: {output_path}")
-    print(f"Match this path to the train_gpt2_config.py->dataset_dir parameter.")
+    print("Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     dataset.save_to_disk(str(output_path))
     
     # Print statistics
