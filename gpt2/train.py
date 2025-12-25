@@ -19,6 +19,9 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 import math
 import os
 import time
+import json
+import shutil
+import glob
 from contextlib import nullcontext
 
 import numpy as np
@@ -45,6 +48,11 @@ eval_iters = 200
 eval_only = False  # if True, script exits right after the first eval
 always_save_checkpoint = False  # if True, always save a checkpoint after each eval
 init_from = "scratch"  # 'scratch' or 'resume' or 'gpt2*'
+# checkpoint management (Hugging Face style)
+save_hf_checkpoints = True  # if True, save checkpoints in HF format (checkpoint-{step}/)
+save_checkpoint_steps = None  # save checkpoint every N steps (None = use eval_interval)
+max_checkpoints = 3  # maximum number of checkpoints to keep (None = keep all)
+keep_legacy_ckpt = False  # if True, also save ckpt.pt for backward compatibility
 # data
 dataset = "openwebtext"
 gradient_accumulation_steps = 5 * 8  # used to simulate larger batch sizes
@@ -323,6 +331,64 @@ def get_lr(it):
     return min_lr + coeff * (learning_rate - min_lr)
 
 
+# Hugging Face style checkpoint management
+def save_checkpoint_hf(model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir):
+    """Save checkpoint in Hugging Face format to checkpoint-{step}/ directory"""
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    # Save model checkpoint
+    checkpoint = {
+        "model": model_state,
+        "optimizer": optimizer_state,
+        "model_args": model_args,
+        "iter_num": iter_num,
+        "best_val_loss": val_loss,
+        "config": config,
+    }
+    torch.save(checkpoint, os.path.join(checkpoint_dir, "pytorch_model.bin"))
+
+    # Save training args as JSON
+    training_args = {
+        "iteration": iter_num,
+        "best_val_loss": float(val_loss),
+        "learning_rate": config.get("learning_rate"),
+        "batch_size": config.get("batch_size"),
+        "block_size": config.get("block_size"),
+        "model_args": model_args,
+    }
+    with open(os.path.join(checkpoint_dir, "training_args.json"), "w") as f:
+        json.dump(training_args, f, indent=2)
+
+    print(f"Checkpoint saved to {checkpoint_dir}")
+
+
+def cleanup_old_checkpoints(base_dir, max_checkpoints):
+    """Remove old checkpoints, keeping only the most recent max_checkpoints"""
+    if max_checkpoints is None:
+        return
+
+    # Find all checkpoint directories
+    checkpoint_dirs = glob.glob(os.path.join(base_dir, "checkpoint-*"))
+    if not checkpoint_dirs:
+        return
+
+    # Extract step numbers and sort
+    checkpoints = []
+    for ckpt_dir in checkpoint_dirs:
+        try:
+            step = int(os.path.basename(ckpt_dir).split("-")[1])
+            checkpoints.append((step, ckpt_dir))
+        except (ValueError, IndexError):
+            continue
+
+    checkpoints.sort(reverse=True)  # Sort by step, newest first
+
+    # Remove old checkpoints
+    for _step, ckpt_dir in checkpoints[max_checkpoints:]:
+        print(f"Removing old checkpoint: {ckpt_dir}")
+        shutil.rmtree(ckpt_dir, ignore_errors=True)
+
+
 # training loop
 X, Y = get_batch("train")  # fetch the very first batch
 t0 = time.time()
@@ -358,8 +424,25 @@ while True:
                     "best_val_loss": best_val_loss,
                     "config": config,
                 }
-                print(f"saving checkpoint to {out_dir}")
-                torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
+
+                # Save in Hugging Face format
+                if save_hf_checkpoints:
+                    checkpoint_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
+                    save_checkpoint_hf(
+                        raw_model.state_dict(),
+                        optimizer.state_dict(),
+                        model_args,
+                        iter_num,
+                        best_val_loss,
+                        config,
+                        checkpoint_dir,
+                    )
+                    cleanup_old_checkpoints(out_dir, max_checkpoints)
+
+                # Also save legacy ckpt.pt for backward compatibility
+                if keep_legacy_ckpt:
+                    print(f"saving checkpoint to {out_dir}")
+                    torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
     if iter_num == 0 and eval_only:
         break
 
