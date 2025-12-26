@@ -14,9 +14,10 @@ tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("molecule_nl", "small")
 out_dir = get_gpt2_output_path("molecule_nl", "small")
 
-dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "molecule_related_natural_language_tokenized.parquet")
+dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "training_ready_hf_dataset")
 
 tokenizer = Tokenizer()
+meta_vocab_size = tokenizer.vocab_size
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520

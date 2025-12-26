@@ -16,7 +16,7 @@ n_layer = 36
 n_head = 20
 n_embd = 1280
 
-dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "molecule_related_natural_language_tokenized.parquet")
+dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "training_ready_hf_dataset")
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("molecule_nl", "large")
