@@ -29,18 +29,18 @@ const GPT2_CONFIGS = {
         name: 'Genome Sequence',
         sizes: ['small', 'medium', 'large'],
         outputDirs: {
-            small: 'genome_sequence/gpt2-output/genome-small',
-            medium: 'genome_sequence/gpt2-output/genome-medium',
-            large: 'genome_sequence/gpt2-output/genome-large',
+            small: 'genome_sequence/gpt2-output/genome_sequence-small',
+            medium: 'genome_sequence/gpt2-output/genome_sequence-medium',
+            large: 'genome_sequence/gpt2-output/genome_sequence-large',
         },
     },
     protein_sequence: {
         name: 'Protein Sequence',
         sizes: ['small', 'medium', 'large'],
         outputDirs: {
-            small: 'protein_sequence/gpt2-output/protein-small',
-            medium: 'protein_sequence/gpt2-output/protein-medium',
-            large: 'protein_sequence/gpt2-output/protein-large',
+            small: 'protein_sequence/gpt2-output/protein_sequence-small',
+            medium: 'protein_sequence/gpt2-output/protein_sequence-medium',
+            large: 'protein_sequence/gpt2-output/protein_sequence-large',
         },
     },
     rna: {
