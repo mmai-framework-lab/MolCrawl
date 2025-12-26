@@ -53,6 +53,9 @@ save_hf_checkpoints = True  # if True, save checkpoints in HF format (checkpoint
 save_checkpoint_steps = None  # save checkpoint every N steps (None = use eval_interval)
 max_checkpoints = 3  # maximum number of checkpoints to keep (None = keep all)
 keep_legacy_ckpt = False  # if True, also save ckpt.pt for backward compatibility
+# early stopping
+early_stopping = False  # if True, stop training when validation loss stops improving
+early_stopping_patience = 10  # number of eval_intervals to wait before stopping
 # data
 dataset = "openwebtext"
 gradient_accumulation_steps = 5 * 8  # used to simulate larger batch sizes
@@ -145,8 +148,8 @@ ptdtype = {
 ctx = nullcontext() if device_type == "cpu" else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
 # RNA data loader - get paths from config if available
-rna_data_dir = globals().get('rna_data_dir', 'path-to-rna-parquet')
-rna_vocab_file = globals().get('rna_vocab_file', 'path-to-rna-vocab')
+rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
+rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
 
 # Use RNADataset if dataset is "rna", otherwise use PreparedDataset
 if dataset == "rna":
@@ -210,6 +213,7 @@ def get_batch(split):
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
 iter_num = 0
 best_val_loss = 1e9
+early_stopping_counter = 0  # count eval intervals without improvement
 
 if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
     if dataset == "rna":
@@ -265,6 +269,7 @@ elif init_from == "resume":
     model.load_state_dict(state_dict)
     iter_num = checkpoint["iter_num"]
     best_val_loss = checkpoint["best_val_loss"]
+    early_stopping_counter = checkpoint.get("early_stopping_counter", 0)
 elif init_from.startswith("gpt2"):
     print(f"Initializing from OpenAI GPT-2 weights: {init_from}")
     # initialize from OpenAI GPT-2 weights
@@ -280,7 +285,7 @@ if block_size < model.config.block_size:
 model.to(device)
 
 # initialize a GradScaler. If enabled=False scaler is a no-op
-scaler = torch.amp.GradScaler('cuda', enabled=(dtype == "float16"))
+scaler = torch.amp.GradScaler("cuda", enabled=(dtype == "float16"))
 
 # optimizer
 optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
@@ -332,7 +337,9 @@ def get_lr(it):
 
 
 # Hugging Face style checkpoint management
-def save_checkpoint_hf(model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir):
+def save_checkpoint_hf(
+    model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0
+):
     """Save checkpoint in Hugging Face format to checkpoint-{step}/ directory"""
     os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -343,6 +350,7 @@ def save_checkpoint_hf(model_state, optimizer_state, model_args, iter_num, val_l
         "model_args": model_args,
         "iter_num": iter_num,
         "best_val_loss": val_loss,
+        "early_stopping_counter": early_stopping_counter,
         "config": config,
     }
     torch.save(checkpoint, os.path.join(checkpoint_dir, "pytorch_model.bin"))
@@ -413,8 +421,22 @@ while True:
             writer.add_scalar("Val Loss", losses["val"], iter_num)
             writer.flush()
 
-        if losses["val"] < best_val_loss or always_save_checkpoint:
+        # Early stopping check
+        if losses["val"] < best_val_loss:
+            # Validation loss improved
             best_val_loss = losses["val"]
+            early_stopping_counter = 0
+        else:
+            # Validation loss did not improve
+            early_stopping_counter += 1
+            if early_stopping and early_stopping_counter >= early_stopping_patience:
+                print(f"\nEarly stopping triggered after {early_stopping_counter} evaluations without improvement.")
+                print(f"Best validation loss: {best_val_loss:.4f}")
+                if ddp:
+                    destroy_process_group()
+                break
+
+        if losses["val"] < best_val_loss or always_save_checkpoint:
             if iter_num > 0:
                 checkpoint = {
                     "model": raw_model.state_dict(),
@@ -422,6 +444,7 @@ while True:
                     "model_args": model_args,
                     "iter_num": iter_num,
                     "best_val_loss": best_val_loss,
+                    "early_stopping_counter": early_stopping_counter,
                     "config": config,
                 }
 
@@ -436,6 +459,7 @@ while True:
                         best_val_loss,
                         config,
                         checkpoint_dir,
+                        early_stopping_counter,
                     )
                     cleanup_old_checkpoints(out_dir, max_checkpoints)
 
