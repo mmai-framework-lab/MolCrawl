@@ -31,6 +31,7 @@ def get_genome_tokenizer_path():
     # RefSeqゲノム配列用のトークナイザーを使用
     return get_refseq_tokenizer_path()
 
+
 # 各データセットの基本パス
 def get_dataset_path(dataset_type, relative_path=""):
     """
@@ -43,11 +44,11 @@ def get_dataset_path(dataset_type, relative_path=""):
     Returns:
         str: 完全なパス
     """
-    if dataset_type == 'molecule_nl':
+    if dataset_type == "molecule_nl":
         base_path = os.path.join(PROJECT_ROOT, MOLECULE_NL_DATASET_DIR)
     else:
         base_path = os.path.join(PROJECT_ROOT, GENOME_SEQUENCE_DIR, dataset_type)
-    
+
     if relative_path:
         return os.path.join(base_path, relative_path)
     return base_path
@@ -57,11 +58,12 @@ def get_dataset_path(dataset_type, relative_path=""):
 PROTEIN_SEQUENCE_DIR = LEARNING_SOURCE_DIR + "/protein_sequence"
 GENOME_SEQUENCE_DIR = LEARNING_SOURCE_DIR + "/genome_sequence"
 RNA_DATASET_DIR = LEARNING_SOURCE_DIR + "/rna"
-MOLECULE_NL_DATASET_DIR = LEARNING_SOURCE_DIR + "/molecule_nl"
+MOLECULE_NL_DIR = LEARNING_SOURCE_DIR + "/molecule_nl"
 COMPOUNDS_DIR = LEARNING_SOURCE_DIR + "/compounds"
 UNIPROT_DATASET_DIR = PROTEIN_SEQUENCE_DIR + "/training_ready_hf_dataset"
 REFSEQ_DATASET_DIR = GENOME_SEQUENCE_DIR + "/training_ready_hf_dataset"
 CELLXGENE_DATASET_DIR = RNA_DATASET_DIR + "/training_ready_hf_dataset"
+MOLECULE_NL_DATASET_DIR = MOLECULE_NL_DIR + "/training_ready_hf_dataset"
 COMPOUNDS_DATASET_DIR = COMPOUNDS_DIR + "/organix13/compounds/training_ready_hf_dataset"
 
 # 絶対パス版（WebアプリケーションやAPIで使用）
@@ -69,6 +71,7 @@ ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
 
 # GPT-2モデル出力先ディレクトリの基本パス
 GPT2_OUTPUT_BASE_DIR = "gpt2-output"
+BERT_OUTPUT_BASE_DIR = "bert-output"
 
 
 def get_gpt2_output_path(domain, model_size):
@@ -100,3 +103,27 @@ def get_gpt2_tensorboard_path(domain, model_size):
 def get_gpt2_model_output_path(domain, model_size):
     """GPT-2モデル出力パスを取得"""
     return get_gpt2_output_path(domain, model_size)
+
+
+def get_bert_output_path(domain, model_size):
+    """
+    BERTモデルの出力パスを取得する関数
+
+    Args:
+        domain (str): ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nl')
+        model_size (str): モデルサイズ ('small', 'medium', 'large')
+
+    Returns:
+        str: BERT出力ディレクトリのパス
+    """
+    return os.path.join(LEARNING_SOURCE_DIR, domain, BERT_OUTPUT_BASE_DIR, f"{domain}-{model_size}")
+
+
+def get_bert_tensorboard_path(domain, model_size):
+    """BERT TensorBoard出力パスを取得"""
+    return get_bert_output_path(domain, model_size)
+
+
+def get_bert_model_output_path(domain, model_size):
+    """BERTモデル出力パスを取得"""
+    return get_bert_output_path(domain, model_size)

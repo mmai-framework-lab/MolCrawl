@@ -12,13 +12,35 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from config.paths import MOLECULE_NL_DATASET_DIR
+from config.paths import MOLECULE_NL_DATASET_DIR, get_bert_output_path
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 
 tokenizer = Tokenizer()
 
+# Explicitly set vocab size for BERT
+# CodeLlama-7b-hf uses vocab_size of 32016
+# GPT-2 uses vocab_size of 50257
+# We'll use 32016 as default (CodeLlama)
+try:
+    # Try to get vocab size from tokenizer
+    if hasattr(tokenizer, 'vocab_size'):
+        meta_vocab_size = tokenizer.vocab_size
+    elif hasattr(tokenizer, 'tokenizer') and hasattr(tokenizer.tokenizer, 'vocab_size'):
+        meta_vocab_size = tokenizer.tokenizer.vocab_size
+    elif hasattr(tokenizer, 'tokenizer'):
+        vocab = tokenizer.tokenizer.get_vocab()
+        meta_vocab_size = len(vocab) if vocab else 32016
+    else:
+        meta_vocab_size = 32016  # Default to CodeLlama vocab size
+except Exception:
+    meta_vocab_size = 32016  # Fallback to CodeLlama vocab size
+
+# Round up to nearest multiple of 8 for efficiency
+meta_vocab_size = (meta_vocab_size // 8 + 1) * 8
+
 max_steps = 600000
-model_path = "runs_train_bert_molecule_nl"
+model_size = "small"  # Choose between small, medium or large
+model_path = get_bert_output_path("molecule_nl", model_size)
 max_length = 1024
 dataset_dir = MOLECULE_NL_DATASET_DIR
 learning_rate = 6e-6
@@ -35,8 +57,3 @@ gradient_accumulation_steps = 5 * 16
 start_instruction = 1
 end_instruction = [518, 29914, 25580, 29962]
 eos_token = 2  # eos
-
-
-# Choose between small, medium or large
-model_size = "small"
-output_dir = "out-bert-molecule-nl"

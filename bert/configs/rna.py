@@ -15,7 +15,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from config.paths import CELLXGENE_DATASET_DIR
+from config.paths import CELLXGENE_DATASET_DIR, get_bert_output_path
 
 # Build the tokenizer using the WordLevel model
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
@@ -38,7 +38,8 @@ tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
 
 
 max_steps = 600000
-model_path = "runs_train_bert_rna"
+model_size = "small"  # Choose between small, medium or large
+model_path = get_bert_output_path("rna", model_size)
 max_length = 1024
 dataset_dir = CELLXGENE_DATASET_DIR
 learning_rate = 6e-6
@@ -52,8 +53,3 @@ gradient_accumulation_steps = 5 * 16
 
 # Special Tokens
 eos_token = 0  # eos
-
-
-# Choose between small, medium or large
-model_size = "small"
-output_dir = "out-bert-rna"

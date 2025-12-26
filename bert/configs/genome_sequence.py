@@ -8,9 +8,10 @@ from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path
+from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path, get_bert_output_path
 
-model_path = "runs_train_bert_genome_sequence"
+model_size = "small"  # Choose between small, medium or large
+model_path = get_bert_output_path("genome_sequence", model_size)
 max_length = 1024
 dataset_dir = REFSEQ_DATASET_DIR
 learning_rate = 6e-6
@@ -48,7 +49,3 @@ tmp_tokenizer.mask_token = "[MASK]"
 tmp_tokenizer.save_pretrained("custom_tokenizer")
 
 tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
-
-# Choose between small, medium or large
-model_size = "small"
-output_dir = "out-bert-genome-sequence"

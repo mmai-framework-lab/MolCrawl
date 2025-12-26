@@ -8,12 +8,13 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from config.paths import COMPOUNDS_DATASET_DIR
+from config.paths import COMPOUNDS_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
 max_steps = 600000
-model_path = "runs_train_bert_compounds"
+model_size = "small"  # Choose between small, medium or large
+model_path = get_bert_output_path("compounds", model_size)
 max_length = 1024
 dataset_dir = COMPOUNDS_DATASET_DIR
 learning_rate = 6e-6
@@ -24,7 +25,3 @@ batch_size = 8
 per_device_eval_batch_size = 1
 
 gradient_accumulation_steps = 5 * 16
-output_dir = "out-bert-compounds"
-
-# Choose between small, medium or large
-model_size = "small"
