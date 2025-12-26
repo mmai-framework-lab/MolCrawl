@@ -14,7 +14,7 @@ tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("molecule_nl", "small")
 out_dir = get_gpt2_output_path("molecule_nl", "small")
 
-dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "training_ready_hf_dataset")
+dataset_dir = MOLECULE_NL_DATASET_DIR
 
 tokenizer = Tokenizer()
 meta_vocab_size = tokenizer.vocab_size

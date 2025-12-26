@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 import torch
 from transformers import DataCollatorForLanguageModeling
 
-from config.paths import UNIPROT_DATASET_DIR
+from config.paths import UNIPROT_DATASET_DIR, get_bert_output_path
 from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 
 # Tokenizer instantiation - BERT compatible ESM tokenizer
@@ -72,7 +72,8 @@ data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_p
 
 # Training configuration
 max_steps = 600000
-model_path = "runs_train_bert_protein_sequence"
+model_size = "small"  # Choose between small, medium or large
+model_path = get_bert_output_path("protein_sequence", model_size)
 max_length = 1024
 dataset_dir = UNIPROT_DATASET_DIR
 learning_rate = 6e-6
@@ -83,11 +84,6 @@ batch_size = 8
 per_device_eval_batch_size = 1
 
 gradient_accumulation_steps = 5 * 16
-output_dir = "out-bert-protein-sequence"
-
-# Model size configuration
-# Choose between small, medium or large
-model_size = "small"
 
 # Protein sequence specific vocabulary size
 # ESM tokenizer uses character-level tokenization for protein sequences

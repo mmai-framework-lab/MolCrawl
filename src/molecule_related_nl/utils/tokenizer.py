@@ -223,6 +223,12 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                         self.eos_token_id = 2  # Common EOS token ID
                         self.pad_token_id = 0  # Common PAD token ID
                         self.unk_token_id = 1  # Common UNK token ID
+                        # Set vocab_size for compatibility
+                        self.vocab_size = 32016  # Default CodeLlama vocab size
+
+                    def __len__(self):
+                        """Return vocab size for compatibility with len() calls"""
+                        return self.vocab_size
 
                     def tokenize(self, text):
                         return self.basic_tokenizer.tokenize(text)
@@ -295,7 +301,11 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                 self.tokenizer.pad_token = getattr(self.tokenizer, "eos_token", "<eos>")
 
             # Add custom special tokens if possible
-            if hasattr(self.tokenizer, "add_special_tokens") and callable(getattr(self.tokenizer, "add_special_tokens", None)) and hasattr(self.tokenizer, "get_vocab"):
+            if (
+                hasattr(self.tokenizer, "add_special_tokens")
+                and callable(getattr(self.tokenizer, "add_special_tokens", None))
+                and hasattr(self.tokenizer, "get_vocab")
+            ):
                 special_tokens = ["<pad>", "<unk>"]
                 vocab = self.tokenizer.get_vocab()
                 new_tokens = [token for token in special_tokens if token not in vocab]
