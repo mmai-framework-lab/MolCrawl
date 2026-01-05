@@ -178,7 +178,20 @@ if "data_collator" in globals():
     # data_collator is already defined in the config file
 else:
     print("Using default DataCollatorForLanguageModeling")
-    data_collator = DataCollatorForLanguageModeling(tokenizer=globals()["tokenizer"], mlm=True, mlm_probability=0.2)
+    # Get the tokenizer from globals
+    tokenizer_obj = globals().get("tokenizer", None)
+
+    # If tokenizer is a wrapper class (like MoleculeNatLangTokenizer), extract the actual tokenizer
+    if tokenizer_obj is not None and hasattr(tokenizer_obj, "tokenizer"):
+        actual_tokenizer = tokenizer_obj.tokenizer
+    else:
+        actual_tokenizer = tokenizer_obj
+
+    # Verify we have a valid tokenizer
+    if actual_tokenizer is None:
+        raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
+
+    data_collator = DataCollatorForLanguageModeling(tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.2)
 
 training_args = TrainingArguments(
     output_dir=model_path,  # output directory to where save model checkpoint
