@@ -6,6 +6,7 @@ import ExperimentDashboard from './ExperimentDashboard';
 import DatasetProgressCard from './DatasetProgressCard';
 import GPT2TrainingStatus from './GPT2TrainingStatus';
 import BERTTrainingStatus from './BERTTrainingStatus';
+import TrainingProcessStatus from './TrainingProcessStatus';
 
 // データセットタブの定義
 const DATASET_TABS = [

@@ -3,6 +3,7 @@ import './BERTTrainingStatus.css';
 
 const BERTTrainingStatus = ({ dataset }) => {
     const [trainingData, setTrainingData] = useState(null);
+    const [processData, setProcessData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [autoRefresh, setAutoRefresh] = useState(true);
@@ -21,6 +22,17 @@ const BERTTrainingStatus = ({ dataset }) => {
                 setError(null);
             } else {
                 setError(result.error || 'Failed to fetch training status');
+            }
+
+            // Also fetch process status
+            try {
+                const processResponse = await fetch('/api/training-process-status');
+                const processResult = await processResponse.json();
+                if (processResult.success) {
+                    setProcessData(processResult);
+                }
+            } catch (err) {
+                console.log('Could not fetch process status:', err);
             }
         } catch (err) {
             setError(err.message);
@@ -76,7 +88,40 @@ const BERTTrainingStatus = ({ dataset }) => {
     };
 
     const renderModelCard = (modelData, size) => {
+        // Check if process is running for this dataset
+        const runningProcess = processData?.processes?.find(
+            p => p.processType === 'BERT' && 
+                 p.datasetType === dataset &&
+                 p.usesCurrentLearningSource
+        );
+
         if (!modelData || !modelData.exists) {
+            if (runningProcess) {
+                // Process is running but no checkpoint yet
+                return (
+                    <div key={size} className="bert-model-card bert-model-starting">
+                        <div className="bert-model-header">
+                            <h4>{size.toUpperCase()}</h4>
+                            <span className="status-badge status-starting">🚀 Starting</span>
+                        </div>
+                        <p className="bert-model-message">Training process running (waiting for checkpoint...)</p>
+                        <div className="process-info">
+                            <div className="stat-row">
+                                <span className="stat-label">PID:</span>
+                                <span className="stat-value">{runningProcess.pid}</span>
+                            </div>
+                            <div className="stat-row">
+                                <span className="stat-label">CPU:</span>
+                                <span className="stat-value">{runningProcess.cpu.toFixed(1)}%</span>
+                            </div>
+                            <div className="stat-row">
+                                <span className="stat-label">Runtime:</span>
+                                <span className="stat-value">{runningProcess.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
             return (
                 <div key={size} className="bert-model-card bert-model-not-started">
                     <div className="bert-model-header">

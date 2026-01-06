@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './ExperimentDashboard.css';
+import TrainingProcessStatus from './TrainingProcessStatus';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -26,7 +27,12 @@ function ExperimentDashboard() {
       });
 
       const url = `${API_BASE_URL}/experiments?${params}`;
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {throw new Error('Failed to fetch experiments');}
       
       const data = await response.json();
@@ -34,7 +40,11 @@ function ExperimentDashboard() {
       setError(null);
     } catch (err) {
       console.error('Error fetching experiments:', err);
-      setError(err.message);
+      if (err.name === 'AbortError') {
+        setError('実験データベースAPIに接続できません (タイムアウト)');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -43,26 +53,41 @@ function ExperimentDashboard() {
   // 統計情報を取得
   const fetchStatistics = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/statistics`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/statistics`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {throw new Error('Failed to fetch statistics');}
       
       const data = await response.json();
       setStatistics(data);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
+      // Silently fail for statistics
     }
   };
 
   // 実験詳細を取得
   const fetchExperimentDetail = async (experimentId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {throw new Error('Failed to fetch experiment detail');}
       
       const data = await response.json();
       setSelectedExperiment(data);
     } catch (err) {
-      setError(err.message);
+      if (err.name === 'AbortError') {
+        setError('実験詳細の取得がタイムアウトしました');
+      } else {
+        setError(err.message);
+      }
     }
   };
 
@@ -115,6 +140,9 @@ function ExperimentDashboard() {
         <h1>🧪 実験管理ダッシュボード</h1>
         <p>MolCrawl Foundational Model - Experiment Tracking System</p>
       </header>
+
+      {/* 学習プロセス稼働状況 */}
+      <TrainingProcessStatus />
 
       {/* 統計情報 */}
       {statistics && (
@@ -195,7 +223,13 @@ function ExperimentDashboard() {
       {/* エラー表示 */}
       {error && (
         <div className="error-message">
-          ⚠️ エラー: {error}
+          ⚠️ 実験データベース接続エラー: {error}
+          <br />
+          <small style={{marginTop: '8px', display: 'block', color: '#666'}}>
+            実験管理システム (http://localhost:8000) が起動していない可能性があります。
+            <br />
+            学習プロセス監視機能は独立して動作しています。
+          </small>
         </div>
       )}
 
