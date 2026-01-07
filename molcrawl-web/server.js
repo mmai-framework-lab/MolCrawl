@@ -54,6 +54,7 @@ const datasetProgressRouter = require('./api/dataset-progress');
 const gpt2TrainingStatusRouter = require('./api/gpt2-training-status');
 const bertTrainingStatusRouter = require('./api/bert-training-status');
 const trainingProcessStatusRouter = require('./api/training-process-status');
+const { getLogsList, getAllLogsOverview, getLogContent, getTailLog } = require('./api/logs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -92,6 +93,12 @@ app.use('/api/gpt2-training-status', validateDirectoryExists, gpt2TrainingStatus
 app.use('/api/bert-training-status', validateDirectoryExists, bertTrainingStatusRouter);
 app.use('/api/training-process-status', trainingProcessStatusRouter);
 
+// ログAPI
+app.get('/api/logs/list', validateDirectoryExists, getLogsList);
+app.get('/api/logs/overview', validateDirectoryExists, getAllLogsOverview);
+app.get('/api/logs/content', validateDirectoryExists, getLogContent);
+app.get('/api/logs/tail', validateDirectoryExists, getTailLog);
+
 // ヘルスチェック
 app.get('/api/health', (req, res) => {
   const fsSync = require('fs');
@@ -126,6 +133,10 @@ app.get('/api/health', (req, res) => {
       '/api/bert-training-status/:dataset - 特定データセットのBERT学習状況',
       '/api/bert-training-status/:dataset/:size - 特定BERTモデルの詳細情報',
       '/api/training-process-status - 学習プロセス稼働状況チェック',
+      '/api/logs/list?modelPath=<path> - 指定モデルのログファイル一覧取得',
+      '/api/logs/overview - 全モデルのログファイル概要取得',
+      '/api/logs/content?logPath=<path> - ログファイル内容取得',
+      '/api/logs/tail?logPath=<path>&lines=100 - ログファイルの末尾取得',
       '/api/images/:modelType - 指定モデルの画像一覧取得',
       '/api/images/serve/:modelType/:filename - 画像ファイル配信',
       '/api/images/thumbnail/:modelType/:filename - サムネイル画像配信'

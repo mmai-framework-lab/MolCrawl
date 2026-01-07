@@ -1,0 +1,442 @@
+/* LogsViewer.css - ログビューアーのスタイル */
+
+.logs-viewer {
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.logs-header h3 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+}
+
+.refresh-button {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s;
+}
+
+.refresh-button:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.refresh-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.logs-loading,
+.logs-error,
+.logs-empty {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.logs-loading .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.logs-error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.logs-empty {
+    color: #666;
+}
+
+.logs-empty-hint {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #999;
+}
+
+.logs-empty-hint code {
+    background-color: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.logs-list {
+    margin-top: 20px;
+}
+
+.logs-count {
+    margin-bottom: 15px;
+    font-size: 0.95em;
+    color: #666;
+    font-weight: 500;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.logs-table thead {
+    background-color: #f5f5f5;
+}
+
+.logs-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.logs-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.2s;
+}
+
+.logs-table tbody tr:hover {
+    background-color: #f9f9f9;
+    cursor: pointer;
+}
+
+.logs-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.logs-table td {
+    padding: 12px 15px;
+}
+
+.log-name {
+    font-family: 'Monaco', 'Courier New', monospace;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.log-icon {
+    font-size: 1.2em;
+}
+
+.log-size {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.log-time {
+    color: #888;
+    font-size: 0.9em;
+}
+
+/* モーダルスタイル */
+.log-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.log-modal {
+    background-color: white;
+    border-radius: 8px;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 1200px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.log-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 2px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.log-modal-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    word-break: break-all;
+}
+
+.log-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #666;
+    padding: 5px 10px;
+    transition: color 0.2s;
+}
+
+.log-modal-close:hover {
+    color: #d32f2f;
+}
+
+.log-modal-info {
+    padding: 12px 25px;
+    background-color: #f5f5f5;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 0.85em;
+    color: #666;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.log-modal-info span {
+    display: flex;
+    align-items: center;
+}
+
+.log-modal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 25px;
+    background-color: #fafafa;
+}
+
+.log-modal-loading,
+.log-modal-error {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.log-modal-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    border-left: 4px solid #ffc107;
+}
+
+.log-content {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.85em;
+    line-height: 1.5;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+}
+
+.log-modal-footer {
+    padding: 15px 25px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background-color: #f8f9fa;
+}
+
+.button-primary,
+.button-secondary {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.3s;
+}
+
+.button-primary {
+    background-color: #2196F3;
+    color: white;
+}
+
+.button-primary:hover:not(:disabled) {
+    background-color: #1976D2;
+}
+
+.button-primary:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.button-secondary {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.button-secondary:hover {
+    background-color: #d0d0d0;
+}
+
+/* ログ概要スタイル */
+.logs-overview {
+    padding: 20px;
+}
+
+.logs-overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid #e0e0e0;
+}
+
+.logs-overview-header h2 {
+    margin: 0;
+    font-size: 1.8em;
+    color: #333;
+}
+
+.logs-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.logs-overview-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s;
+}
+
+.logs-overview-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.logs-overview-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.2em;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 8px;
+}
+
+.logs-overview-count {
+    font-size: 1.1em;
+    color: #666;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.logs-overview-recent h4 {
+    font-size: 0.95em;
+    color: #555;
+    margin: 15px 0 10px 0;
+}
+
+.logs-overview-recent ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.logs-overview-recent li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.logs-overview-recent li:last-child {
+    border-bottom: none;
+}
+
+.logs-overview-recent .log-name {
+    color: #333;
+    font-family: monospace;
+    flex: 1;
+}
+
+.logs-overview-recent .log-size {
+    color: #888;
+    font-size: 0.85em;
+    margin-left: 10px;
+}
+
+.logs-overview-not-found {
+    color: #999;
+    font-style: italic;
+    padding: 10px 0;
+}
+
+.logs-overview-error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .log-modal {
+        max-width: 95vw;
+        max-height: 95vh;
+    }
+
+    .logs-table th,
+    .logs-table td {
+        padding: 10px 8px;
+        font-size: 0.9em;
+    }
+
+    .logs-overview-grid {
+        grid-template-columns: 1fr;
+    }
+}

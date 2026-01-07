@@ -6,6 +6,7 @@ import ExperimentDashboard from './ExperimentDashboard';
 import DatasetProgressCard from './DatasetProgressCard';
 import GPT2TrainingStatus from './GPT2TrainingStatus';
 import BERTTrainingStatus from './BERTTrainingStatus';
+import LogsViewer from './LogsViewer';
 
 // データセットタブの定義
 const DATASET_TABS = [
@@ -447,6 +448,13 @@ function App() {
                 {DATASET_TABS.find(tab => tab.id === activeTab)?.progressKey && (
                   <BERTTrainingStatus
                     dataset={DATASET_TABS.find(tab => tab.id === activeTab).progressKey.replace('_guacamol', '')}
+                  />
+                )}
+
+                {/* Logs Viewer - Show for all dataset tabs */}
+                {DATASET_TABS.find(tab => tab.id === activeTab)?.progressKey && (
+                  <LogsViewer
+                    modelPath={DATASET_TABS.find(tab => tab.id === activeTab).progressKey.replace('_guacamol', '')}
                   />
                 )}
 
