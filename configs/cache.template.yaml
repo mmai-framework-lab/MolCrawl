@@ -1,0 +1,39 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Cache Configuration Template
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# このファイルはテンプレートです。実際に使用する前に以下の手順を実行してください：
+#
+# 1. このファイルを cache.yaml にコピー:
+#    $ cp configs/cache.template.yaml configs/cache.yaml
+#
+# 2. cache.yaml を編集して、お使いの環境に合わせてパスを設定:
+#    - HF_DATASETS_CACHE: Hugging Face Datasetsのキャッシュディレクトリ
+#    - HF_HOME: Hugging Faceのホームディレクトリ
+#
+# 3. 十分な空き容量があるディレクトリを指定してください
+#    （データセット生成時に大量のディスク容量を使用します）
+#
+# 注意:
+# - cache.yaml は .gitignore に登録されており、Gitで追跡されません
+# - ユーザーごとに異なる設定を持つことができます
+# - ルートパーティション (/) の容量不足を避けるため、
+#   大容量ストレージのパスを指定することを強く推奨します
+#
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Hugging Face Datasets キャッシュディレクトリ
+# デフォルト: ~/.cache/huggingface/datasets
+# 推奨: 大容量ストレージのパス（例: /data2/username/.cache/huggingface/datasets）
+HF_DATASETS_CACHE: "/path/to/large/storage/.cache/huggingface/datasets"
+
+# Hugging Face ホームディレクトリ
+# デフォルト: ~/.cache/huggingface
+# 推奨: 大容量ストレージのパス（例: /data2/username/.cache/huggingface）
+HF_HOME: "/path/to/large/storage/.cache/huggingface"
+
+# 設定例:
+# /data2 に大容量ストレージがある場合:
+#
+# HF_DATASETS_CACHE: "/data2/username/.cache/huggingface/datasets"
+# HF_HOME: "/data2/username/.cache/huggingface"

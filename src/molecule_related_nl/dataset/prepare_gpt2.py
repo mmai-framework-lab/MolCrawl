@@ -7,6 +7,10 @@ from pathlib import Path
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+# データセットキャッシュ設定を読み込み（configs/cache.yamlから）
+from utils.cache_config import setup_cache_env
+setup_cache_env()
+
 from datasets import DatasetDict
 import numpy as np
 

@@ -56,3 +56,4 @@ experiments.db-journal
 *.db-journal
 
 configs/omim_real_data.yaml
+configs/cache.yaml

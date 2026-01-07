@@ -20,6 +20,33 @@ echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.bashrc
 echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
 ```
 
+## Cache Configuration (Required)
+
+**Before running any data preparation scripts**, you must configure the cache directories for Hugging Face libraries to avoid running out of disk space on the root partition.
+
+1. Copy the template configuration file:
+   ```bash
+   cp configs/cache.template.yaml configs/cache.yaml
+   ```
+
+2. Edit `configs/cache.yaml` to set appropriate cache directories:
+   ```bash
+   vi configs/cache.yaml
+   ```
+
+3. Update the paths to point to a directory with sufficient storage space:
+   ```yaml
+   # Example configuration (adjust paths for your environment)
+   HF_DATASETS_CACHE: "/data2/your_username/.cache/huggingface/datasets"
+   HF_HOME: "/data2/your_username/.cache/huggingface"
+   ```
+
+**Important Notes:**
+- The default cache location (`~/.cache/huggingface`) may fill up the root partition during dataset generation
+- Choose a directory with at least **100GB of free space**
+- The `configs/cache.yaml` file is git-ignored and user-specific
+- Dataset preparation scripts will fail if this configuration is not set up properly
+
 # Installation
 1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
 2. Activate the environment by running `conda activate ENV_NAME`

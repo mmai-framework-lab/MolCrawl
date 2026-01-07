@@ -6,6 +6,10 @@ from pathlib import Path
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+# データセットキャッシュ設定を読み込み（configs/cache.yamlから）
+from utils.cache_config import setup_cache_env
+setup_cache_env()
+
 import pandas as pd
 from compounds.utils.config import CompoundConfig
 from compounds.utils.tokenizer import CompoundsTokenizer
@@ -15,7 +19,7 @@ from datasets import Dataset, DatasetDict
 def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
     """
     Tokenize GuacaMol benchmark data for GPT-2 training.
-    
+
     Args:
         compounds_dir: Base directory for compounds data (from LEARNING_SOURCE_DIR)
         vocab_path: Path to vocabulary file
@@ -28,12 +32,12 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
 
     # GuacaMol benchmark data directory
     benchmark_dir = Path(compounds_dir) / "benchmark" / "GuacaMol"
-    
+
     dataset_dic = {}
     for split in ["train", "valid", "test"]:
         # Use relative path from compounds directory
         smiles_file = benchmark_dir / f"guacamol_v1_{split}.smiles"
-        
+
         if not smiles_file.exists():
             raise FileNotFoundError(
                 f"GuacaMol benchmark file not found: {smiles_file}\n\n"
@@ -42,27 +46,21 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
                 f"Or download manually from: https://figshare.com/projects/GuacaMol/56639\n"
                 f"And place the files in: {benchmark_dir}/"
             )
-        
+
         print(f"Loading {split} data from: {smiles_file}")
         with open(smiles_file) as f:
             lines = f.readlines()
             lines = [line.strip() for line in lines if line]
-        
+
         df = pd.DataFrame(lines, columns=["smiles"])
         df["tokens"] = df["smiles"].apply(tokenizer.tokenize_text)
         print(f"{split} - First molecule decoded: {tokenizer.decode(df['tokens'].iloc[0])}")
         dataset_dic[split] = df
 
     d = {
-        "train": Dataset.from_dict(
-            {"input_ids": dataset_dic["train"]["tokens"].to_numpy()}
-        ),
-        "valid": Dataset.from_dict(
-            {"input_ids": dataset_dic["valid"]["tokens"].to_numpy()}
-        ),
-        "test": Dataset.from_dict(
-            {"input_ids": dataset_dic["test"]["tokens"].to_numpy()}
-        ),
+        "train": Dataset.from_dict({"input_ids": dataset_dic["train"]["tokens"].to_numpy()}),
+        "valid": Dataset.from_dict({"input_ids": dataset_dic["valid"]["tokens"].to_numpy()}),
+        "test": Dataset.from_dict({"input_ids": dataset_dic["test"]["tokens"].to_numpy()}),
     }
 
     dataset = DatasetDict(d)
@@ -70,11 +68,11 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
     # Save to compounds directory structure
     output_path = benchmark_dir / "compounds" / "training_ready_hf_dataset"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     print(f"Saving dataset to: {output_path}")
     print("Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     dataset.save_to_disk(str(output_path))
-    
+
     # Print statistics
     print("\nDataset statistics:")
     for split in ["train", "valid", "test"]:
@@ -98,7 +96,7 @@ if __name__ == "__main__":
             "Please set it before running this script:\n"
             "  export LEARNING_SOURCE_DIR='learning_20251104'"
         )
-    
+
     compounds_dir = Path(learning_source_dir) / "compounds"
     print(f"Using compounds directory: {compounds_dir}")
 
