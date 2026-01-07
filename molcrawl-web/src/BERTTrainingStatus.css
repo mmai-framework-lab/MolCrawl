@@ -195,6 +195,11 @@
     animation: pulse 2s ease-in-out infinite;
 }
 
+.status-stopped {
+    background: #fff3cd;
+    color: #856404;
+}
+
 .status-error {
     background: #f8d7da;
     color: #721c24;
@@ -240,6 +245,11 @@
 
 .bert-model-starting {
     border-left: 4px solid #ff9800;
+}
+
+.bert-model-stopped {
+    border-left: 4px solid #ffc107;
+    opacity: 0.85;
 }
 
 .bert-model-stats {
