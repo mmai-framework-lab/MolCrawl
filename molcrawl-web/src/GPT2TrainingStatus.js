@@ -81,6 +81,7 @@ const GPT2TrainingStatus = ({ dataset }) => {
         const badges = {
             not_started: { text: 'Not Started', class: 'status-not-started' },
             training: { text: 'Training', class: 'status-training' },
+            stopped: { text: 'Stopped', class: 'status-stopped' },
             error: { text: 'Error', class: 'status-error' },
         };
         const badge = badges[status] || badges.not_started;
@@ -167,11 +168,17 @@ const GPT2TrainingStatus = ({ dataset }) => {
         }
 
         const { checkpoint } = modelData;
+        
+        // Check if process is actually running
+        const isActuallyTraining = runningProcess !== undefined;
+        const displayStatus = isActuallyTraining ? 'training' : 'stopped';
+        const cardClass = isActuallyTraining ? 'model-training' : 'model-stopped';
+        
         return (
-            <div key={size} className="model-card model-training">
+            <div key={size} className={`model-card ${cardClass}`}>
                 <div className="model-header">
                     <h4>{size.toUpperCase()}</h4>
-                    {getStatusBadge('training')}
+                    {getStatusBadge(displayStatus)}
                     {modelData.checkpoint_format && (
                         <span className="format-badge">
                             {modelData.checkpoint_format === 'huggingface' ? '🤗 HF' : '📦 Legacy'}
@@ -247,6 +254,23 @@ const GPT2TrainingStatus = ({ dataset }) => {
                 <div className="checkpoint-path">
                     <small>{checkpoint.path}/{checkpoint.checkpoint_name}</small>
                 </div>
+                
+                {runningProcess && (
+                    <div className="process-info">
+                        <div className="stat-row">
+                            <span className="stat-label">PID:</span>
+                            <span className="stat-value">{runningProcess.pid}</span>
+                        </div>
+                        <div className="stat-row">
+                            <span className="stat-label">CPU:</span>
+                            <span className="stat-value">{runningProcess.cpu.toFixed(1)}%</span>
+                        </div>
+                        <div className="stat-row">
+                            <span className="stat-label">Runtime:</span>
+                            <span className="stat-value">{runningProcess.time}</span>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
