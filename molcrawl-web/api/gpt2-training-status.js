@@ -59,10 +59,10 @@ const GPT2_CONFIGS = {
         name: 'Molecule NL',
         sizes: ['small', 'medium', 'large', 'xl'],
         outputDirs: {
-            small: 'molecule_nl/gpt2-output/molecule-nl-small',
-            medium: 'molecule_nl/gpt2-output/molecule-nl-medium',
-            large: 'molecule_nl/gpt2-output/molecule-nl-large',
-            xl: 'molecule_nl/gpt2-output/molecule-nl-ex-large',
+            small: 'molecule_nl/gpt2-output/molecule_nl-small',
+            medium: 'molecule_nl/gpt2-output/molecule_nl-medium',
+            large: 'molecule_nl/gpt2-output/molecule_nl-large',
+            xl: 'molecule_nl/gpt2-output/molecule_nl-ex-large',
         },
     },
 };
