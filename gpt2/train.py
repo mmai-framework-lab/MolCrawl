@@ -421,11 +421,13 @@ while True:
             writer.add_scalar("Val Loss", losses["val"], iter_num)
             writer.flush()
 
-        # Early stopping check
+        # Track best validation loss for early stopping
+        is_best_model = False
         if losses["val"] < best_val_loss:
             # Validation loss improved
             best_val_loss = losses["val"]
             early_stopping_counter = 0
+            is_best_model = True
         else:
             # Validation loss did not improve
             early_stopping_counter += 1
@@ -436,37 +438,50 @@ while True:
                     destroy_process_group()
                 break
 
-        if losses["val"] < best_val_loss or always_save_checkpoint:
-            if iter_num > 0:
-                checkpoint = {
-                    "model": raw_model.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "model_args": model_args,
-                    "iter_num": iter_num,
-                    "best_val_loss": best_val_loss,
-                    "early_stopping_counter": early_stopping_counter,
-                    "config": config,
-                }
+        # Checkpoint saving logic (independent of best model tracking)
+        should_save_checkpoint = False
 
-                # Save in Hugging Face format
-                if save_hf_checkpoints:
-                    checkpoint_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
-                    save_checkpoint_hf(
-                        raw_model.state_dict(),
-                        optimizer.state_dict(),
-                        model_args,
-                        iter_num,
-                        best_val_loss,
-                        config,
-                        checkpoint_dir,
-                        early_stopping_counter,
-                    )
-                    cleanup_old_checkpoints(out_dir, max_checkpoints)
+        # Determine if we should save based on configured strategy
+        if always_save_checkpoint:
+            # Save at every eval_interval
+            should_save_checkpoint = True
+        elif save_checkpoint_steps is not None:
+            # Save at specific step intervals
+            should_save_checkpoint = iter_num % save_checkpoint_steps == 0
+        elif is_best_model:
+            # Default: only save when validation improves
+            should_save_checkpoint = True
 
-                # Also save legacy ckpt.pt for backward compatibility
-                if keep_legacy_ckpt:
-                    print(f"saving checkpoint to {out_dir}")
-                    torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
+        if should_save_checkpoint and iter_num > 0:
+            checkpoint = {
+                "model": raw_model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "model_args": model_args,
+                "iter_num": iter_num,
+                "best_val_loss": best_val_loss,
+                "early_stopping_counter": early_stopping_counter,
+                "config": config,
+            }
+
+            # Save in Hugging Face format
+            if save_hf_checkpoints:
+                checkpoint_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
+                save_checkpoint_hf(
+                    raw_model.state_dict(),
+                    optimizer.state_dict(),
+                    model_args,
+                    iter_num,
+                    best_val_loss,
+                    config,
+                    checkpoint_dir,
+                    early_stopping_counter,
+                )
+                cleanup_old_checkpoints(out_dir, max_checkpoints)
+
+            # Also save legacy ckpt.pt for backward compatibility (or best model)
+            if keep_legacy_ckpt or is_best_model:
+                print(f"saving checkpoint to {out_dir}")
+                torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
     if iter_num == 0 and eval_only:
         break
 
