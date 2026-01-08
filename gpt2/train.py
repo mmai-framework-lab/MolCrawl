@@ -23,6 +23,7 @@ import json
 import shutil
 import glob
 from contextlib import nullcontext
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -98,8 +99,9 @@ config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # create folder if it doesn't exist
 os.makedirs(out_dir, exist_ok=True)
 
-# create empty csv file for logging
-logging_file = os.path.join(out_dir, "logging.csv")
+# create empty csv file for logging with timestamp
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+logging_file = os.path.join(out_dir, f"logging_{timestamp}.csv")
 
 with open(logging_file, "w") as f:
     f.write("iter, train_loss, val_loss\n")
