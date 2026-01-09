@@ -55,6 +55,7 @@ const gpt2TrainingStatusRouter = require('./api/gpt2-training-status');
 const bertTrainingStatusRouter = require('./api/bert-training-status');
 const trainingProcessStatusRouter = require('./api/training-process-status');
 const { getLogsList, getAllLogsOverview, getLogContent, getTailLog } = require('./api/logs');
+const { getGpuInfo, getGpuXmlInfo } = require('./api/gpu-resources');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -99,6 +100,10 @@ app.get('/api/logs/overview', validateDirectoryExists, getAllLogsOverview);
 app.get('/api/logs/content', validateDirectoryExists, getLogContent);
 app.get('/api/logs/tail', validateDirectoryExists, getTailLog);
 
+// GPU リソースAPI
+app.get('/api/gpu/info', getGpuInfo);
+app.get('/api/gpu/xml', getGpuXmlInfo);
+
 // ヘルスチェック
 app.get('/api/health', (req, res) => {
   const fsSync = require('fs');
@@ -139,7 +144,9 @@ app.get('/api/health', (req, res) => {
       '/api/logs/tail?logPath=<path>&lines=100 - ログファイルの末尾取得',
       '/api/images/:modelType - 指定モデルの画像一覧取得',
       '/api/images/serve/:modelType/:filename - 画像ファイル配信',
-      '/api/images/thumbnail/:modelType/:filename - サムネイル画像配信'
+      '/api/images/thumbnail/:modelType/:filename - サムネイル画像配信',
+      '/api/gpu/info - GPUリソース情報取得（nvidia-smi）',
+      '/api/gpu/xml - GPUリソース詳細情報取得（nvidia-smi XML）'
     ]
   });
 });

@@ -7,6 +7,7 @@ import DatasetProgressCard from './DatasetProgressCard';
 import GPT2TrainingStatus from './GPT2TrainingStatus';
 import BERTTrainingStatus from './BERTTrainingStatus';
 import LogsViewer from './LogsViewer';
+import GPUResources from './GPUResources';
 
 // データセットタブの定義
 const DATASET_TABS = [
@@ -15,6 +16,14 @@ const DATASET_TABS = [
     name: 'Experiments',
     icon: '🧪',
     description: '実験管理ダッシュボード',
+    path: null,
+    isSpecial: true
+  },
+  {
+    id: 'gpu_resources',
+    name: 'GPU Resources',
+    icon: '🖥️',
+    description: 'GPUリソース情報',
     path: null,
     isSpecial: true
   },
@@ -428,6 +437,8 @@ function App() {
             {/* 実験管理ダッシュボード */}
             {activeTab === 'experiments' ? (
               <ExperimentDashboard />
+            ) : activeTab === 'gpu_resources' ? (
+              <GPUResources />
             ) : (
               <div className="tree-container">
                 {/* データセット準備進捗カード */}
