@@ -23,18 +23,18 @@ function ExperimentDashboard() {
       setLoading(true);
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) {params.append(key, value);}
+        if (value) { params.append(key, value); }
       });
 
       const url = `${API_BASE_URL}/experiments?${params}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
-      
-      if (!response.ok) {throw new Error('Failed to fetch experiments');}
-      
+
+      if (!response.ok) { throw new Error('Failed to fetch experiments'); }
+
       const data = await response.json();
       setExperiments(data.experiments || []);
       setError(null);
@@ -55,12 +55,12 @@ function ExperimentDashboard() {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+
       const response = await fetch(`${API_BASE_URL}/statistics`, { signal: controller.signal });
       clearTimeout(timeoutId);
-      
-      if (!response.ok) {throw new Error('Failed to fetch statistics');}
-      
+
+      if (!response.ok) { throw new Error('Failed to fetch statistics'); }
+
       const data = await response.json();
       setStatistics(data);
     } catch (err) {
@@ -74,12 +74,12 @@ function ExperimentDashboard() {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+
       const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`, { signal: controller.signal });
       clearTimeout(timeoutId);
-      
-      if (!response.ok) {throw new Error('Failed to fetch experiment detail');}
-      
+
+      if (!response.ok) { throw new Error('Failed to fetch experiment detail'); }
+
       const data = await response.json();
       setSelectedExperiment(data);
     } catch (err) {
@@ -94,13 +94,13 @@ function ExperimentDashboard() {
   useEffect(() => {
     fetchExperiments();
     fetchStatistics();
-    
+
     // 10秒ごとに自動更新
     const interval = setInterval(() => {
       fetchExperiments();
       fetchStatistics();
     }, 10000);
-    
+
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
@@ -110,7 +110,7 @@ function ExperimentDashboard() {
   };
 
   const formatDuration = (seconds) => {
-    if (!seconds) {return 'N/A';}
+    if (!seconds) { return 'N/A'; }
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
@@ -118,7 +118,7 @@ function ExperimentDashboard() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) {return 'N/A';}
+    if (!dateString) { return 'N/A'; }
     return new Date(dateString).toLocaleString('ja-JP');
   };
 
@@ -170,8 +170,8 @@ function ExperimentDashboard() {
       <div className="filters-panel">
         <h3>フィルター</h3>
         <div className="filters">
-          <select 
-            value={filters.status} 
+          <select
+            value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
           >
             <option value="">全ステータス</option>
@@ -182,8 +182,8 @@ function ExperimentDashboard() {
             <option value="cancelled">キャンセル</option>
           </select>
 
-          <select 
-            value={filters.model_type} 
+          <select
+            value={filters.model_type}
             onChange={(e) => handleFilterChange('model_type', e.target.value)}
           >
             <option value="">全モデル</option>
@@ -192,8 +192,8 @@ function ExperimentDashboard() {
             <option value="gpn">GPN</option>
           </select>
 
-          <select 
-            value={filters.dataset_type} 
+          <select
+            value={filters.dataset_type}
             onChange={(e) => handleFilterChange('dataset_type', e.target.value)}
           >
             <option value="">全データセット</option>
@@ -207,8 +207,8 @@ function ExperimentDashboard() {
             <option value="omim">OMIM</option>
           </select>
 
-          <select 
-            value={filters.experiment_type} 
+          <select
+            value={filters.experiment_type}
             onChange={(e) => handleFilterChange('experiment_type', e.target.value)}
           >
             <option value="">全タイプ</option>
@@ -225,7 +225,7 @@ function ExperimentDashboard() {
         <div className="error-message">
           ⚠️ 実験データベース接続エラー: {error}
           <br />
-          <small style={{marginTop: '8px', display: 'block', color: '#666'}}>
+          <small style={{ marginTop: '8px', display: 'block', color: '#666' }}>
             実験管理システム (http://localhost:8000) が起動していない可能性があります。
             <br />
             学習プロセス監視機能は独立して動作しています。
@@ -241,8 +241,8 @@ function ExperimentDashboard() {
         ) : (
           <div className="experiments-list">
             {experiments.map((exp) => (
-              <div 
-                key={exp.experiment_id} 
+              <div
+                key={exp.experiment_id}
                 className="experiment-card"
                 onClick={() => fetchExperimentDetail(exp.experiment_id)}
               >
@@ -286,9 +286,9 @@ function ExperimentDashboard() {
             <button className="modal-close" onClick={() => setSelectedExperiment(null)}>
               ✕
             </button>
-            
+
             <h2>{selectedExperiment.experiment_name}</h2>
-            
+
             <div className="detail-section">
               <h3>基本情報</h3>
               <table className="detail-table">
