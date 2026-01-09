@@ -86,34 +86,68 @@ const fetchDirectoryStructure = async (path = null, recursive = false, maxDepth 
     url = '/api/directory';
   }
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
+  console.log('⚠️ fetchDirectoryStructure:', url);
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || 'APIエラーが発生しました');
-  }
+    const result = await response.json();
+    
+    if (!result) {
+      throw new Error('Empty response from server');
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'APIエラーが発生しました');
+    }
+    
+    if (!result.data) {
+      throw new Error('Response missing data field');
+    }
 
-  return result.data;
+    console.log('✅ Directory structure loaded:', path || 'root');
+    return result.data;
+  } catch (err) {
+    console.error('❌ fetchDirectoryStructure failed:', err);
+    throw err; // 再スローして呼び出し側でハンドル
+  }
 };
 
 // 完全なディレクトリツリーを取得
 const fetchFullDirectoryTree = async (maxDepth = 5, includeFiles = true) => {
   const url = `/api/directory/tree?maxDepth=${maxDepth}&includeFiles=${includeFiles}`;
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
+  console.log('⚠️ fetchFullDirectoryTree:', url);
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || 'APIエラーが発生しました');
-  }
+    const result = await response.json();
+    
+    if (!result) {
+      throw new Error('Empty response from server');
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'APIエラーが発生しました');
+    }
+    
+    if (!result.data) {
+      throw new Error('Response missing data field');
+    }
 
-  return result.data;
+    console.log('✅ Full directory tree loaded');
+    return result.data;
+  } catch (err) {
+    console.error('❌ fetchFullDirectoryTree failed:', err);
+    throw err;
+  }
 };
 
 // ファイルサイズのフォーマット
@@ -236,16 +270,23 @@ function App() {
   // 初期データの読み込み（特定のタブ用）
   const loadInitialData = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) { return; }
+    if (!tabInfo) { 
+      console.warn(`⚠️ Tab not found: ${tabId}`);
+      return; 
+    }
 
+    console.log(`Loading initial data for tab: ${tabId}`);
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
+    
     try {
       const data = await fetchDirectoryStructure(tabInfo.path);
       updateTabData(tabId, data);
+      console.log(`✅ Initial data loaded for ${tabId}`);
     } catch (err) {
-      console.error(`初期データ読み込みエラー (${tabId}):`, err);
-      updateTabError(tabId, err.message);
+      console.error(`❌ 初期データ読み込みエラー (${tabId}):`, err);
+      updateTabError(tabId, `Failed to load data: ${err.message}`);
+      updateTabData(tabId, null); // エラー時はnullを設定
     } finally {
       updateTabLoading(tabId, false);
     }
@@ -254,19 +295,26 @@ function App() {
   // 完全なツリーの読み込み（特定のタブ用）
   const loadFullTree = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) { return; }
+    if (!tabInfo) { 
+      console.warn(`⚠️ Tab not found for loadFullTree: ${tabId}`);
+      return; 
+    }
 
+    console.log(`Loading full tree for tab: ${tabId}`);
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
+    
     try {
       const data = await fetchFullDirectoryTree(maxDepth, true);
       // ルートパスからタブのパスにフィルタリング
       const filteredData = filterDataByPath(data, tabInfo.path);
       updateTabData(tabId, filteredData);
       setViewMode('full');
+      console.log(`✅ Full tree loaded for ${tabId}`);
     } catch (err) {
-      console.error(`完全ツリー読み込みエラー (${tabId}):`, err);
-      updateTabError(tabId, err.message);
+      console.error(`❌ 完全ツリー読み込みエラー (${tabId}):`, err);
+      updateTabError(tabId, `Failed to load full tree: ${err.message}`);
+      updateTabData(tabId, null); // エラー時はnullを設定
     } finally {
       updateTabLoading(tabId, false);
     }
@@ -293,10 +341,11 @@ function App() {
   // タブ切り替え時の処理
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    // タブにデータがない場合のみ読み込み
-    if (!getTabData(tabId)) {
-      loadInitialData(tabId);
-    }
+    // 自動ロードを無効化（手動でReloadボタンを使用）
+    console.log(`Tab changed to: ${tabId}. Use Reload button to load data.`);
+    // if (!getTabData(tabId)) {
+    //   loadInitialData(tabId);
+    // }
   };
 
   // リフレッシュ処理
@@ -305,8 +354,16 @@ function App() {
   };
 
   useEffect(() => {
-    // 初期タブのデータを読み込み
-    loadInitialData(activeTab);
+    // 自動ロードを完全に無効化（無限リロード対策）
+    console.log(`App: Auto-load disabled for activeTab: ${activeTab}. Use Reload button to load data.`);
+    
+    // 初期タブのデータ読み込みを無効化
+    // loadInitialData(activeTab).catch(err => {
+    //   console.error('❌ Failed to load initial data on mount:', err);
+    // });
+    
+    // 手動でReloadボタンを使用してください
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

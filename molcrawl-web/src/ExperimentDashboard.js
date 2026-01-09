@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import './ExperimentDashboard.css';
 import TrainingProcessStatus from './TrainingProcessStatus';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// 環境変数からAPIエンドポイントを取得（REACT_APP_プレフィックスが必要）
+// 設定されていない場合はnull（Experiment Dashboardを無効化）
+const API_BASE_URL = process.env.REACT_APP_EXPERIMENT_API_URL || null;
+
+// APIが利用可能かどうかを判定
+const isApiAvailable = () => {
+  if (!API_BASE_URL) {
+    console.warn('⚠️ Experiment Dashboard: API_BASE_URL is not configured. Set REACT_APP_EXPERIMENT_API_URL environment variable.');
+    return false;
+  }
+  return true;
+};
 
 function ExperimentDashboard() {
   const [experiments, setExperiments] = useState([]);
@@ -14,37 +25,45 @@ function ExperimentDashboard() {
     model_type: '',
     dataset_type: ''
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(
+    isApiAvailable()
+      ? null
+      : 'Experiment Dashboard is disabled. Set REACT_APP_EXPERIMENT_API_URL environment variable to enable.'
+  );
 
   // 実験一覧を取得
   const fetchExperiments = async () => {
+    if (!isApiAvailable()) {
+      console.error('❌ Cannot fetch experiments: API is not configured');
+      setError('API endpoint not configured. Set REACT_APP_EXPERIMENT_API_URL environment variable.');
+      return;
+    }
+
+    console.log('⚠️ ExperimentDashboard: Attempting to fetch experiments from', API_BASE_URL);
     try {
       setLoading(true);
+      setError(null);
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value) { params.append(key, value); }
       });
 
       const url = `${API_BASE_URL}/experiments?${params}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) { throw new Error('Failed to fetch experiments'); }
+      console.log('Fetching:', url);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch experiments`);
+      }
 
       const data = await response.json();
       setExperiments(data.experiments || []);
+      console.log('✅ Experiments loaded:', data.experiments?.length);
       setError(null);
     } catch (err) {
-      console.error('Error fetching experiments:', err);
-      if (err.name === 'AbortError') {
-        setError('実験データベースAPIに接続できません (タイムアウト)');
-      } else {
-        setError(err.message);
-      }
+      console.error('❌ Error fetching experiments:', err);
+      setError(`API Error: ${err.message}. Check if the API server is running at ${API_BASE_URL}`);
+      setExperiments([]); // エラー時は空配列を設定
     } finally {
       setLoading(false);
     }
@@ -52,56 +71,67 @@ function ExperimentDashboard() {
 
   // 統計情報を取得
   const fetchStatistics = async () => {
+    if (!isApiAvailable()) {
+      console.error('❌ Cannot fetch statistics: API is not configured');
+      return;
+    }
+
+    console.log('⚠️ ExperimentDashboard: Attempting to fetch statistics');
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(`${API_BASE_URL}/statistics`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) { throw new Error('Failed to fetch statistics'); }
+      const response = await fetch(`${API_BASE_URL}/statistics`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch statistics`);
+      }
 
       const data = await response.json();
       setStatistics(data);
+      console.log('✅ Statistics loaded');
     } catch (err) {
-      console.error('Failed to fetch statistics:', err);
-      // Silently fail for statistics
+      console.error('❌ Failed to fetch statistics:', err);
+      setStatistics(null); // エラー時はnullを設定
     }
   };
 
   // 実験詳細を取得
   const fetchExperimentDetail = async (experimentId) => {
+    if (!isApiAvailable()) {
+      console.error('❌ Cannot fetch experiment detail: API is not configured');
+      setError('API endpoint not configured');
+      return;
+    }
+
+    console.log('⚠️ ExperimentDashboard: Attempting to fetch experiment detail:', experimentId);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) { throw new Error('Failed to fetch experiment detail'); }
+      const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch experiment detail`);
+      }
 
       const data = await response.json();
       setSelectedExperiment(data);
+      console.log('✅ Experiment detail loaded:', experimentId);
     } catch (err) {
-      if (err.name === 'AbortError') {
-        setError('実験詳細の取得がタイムアウトしました');
-      } else {
-        setError(err.message);
-      }
+      console.error('❌ Error fetching experiment detail:', err);
+      setError(`Failed to load experiment details: ${err.message}`);
     }
   };
 
   useEffect(() => {
-    fetchExperiments();
-    fetchStatistics();
+    // 自動更新を無効化（無限リロード対策）
+    // API (localhost:8000) が利用できない場合、無限にfetchを繰り返してしまう問題を回避
+    console.log('ExperimentDashboard: Auto-fetch disabled to prevent infinite reload loop');
 
-    // 10秒ごとに自動更新
-    const interval = setInterval(() => {
-      fetchExperiments();
-      fetchStatistics();
-    }, 10000);
+    // 初回ロードのみ実行（コメントアウト）
+    // fetchExperiments();
+    // fetchStatistics();
 
-    return () => clearInterval(interval);
+    // 10秒ごとの自動更新を無効化
+    // const interval = setInterval(() => {
+    //   fetchExperiments();
+    //   fetchStatistics();
+    // }, 10000);
+
+    // return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 

@@ -4,8 +4,8 @@ import './DatasetProgressCard.css';
 function DatasetProgressCard({ datasetKey }) {
   
   const [progress, setProgress] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false); // falseに変更（自動ロードしない）
+  const [error, setError] = useState('Auto-fetch disabled. Use refresh button to load data.'); // 初期メッセージ
   const [expanded, setExpanded] = useState(true);
   const [showFilesModal, setShowFilesModal] = useState(false);
   const [filesData, setFilesData] = useState(null);
@@ -19,28 +19,45 @@ function DatasetProgressCard({ datasetKey }) {
   const fetchProgress = async () => {
     try {
       const url = `/api/dataset-progress/${datasetKey}`;
+      console.log(`⚠️ Fetching progress for ${datasetKey} from ${url}`);
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
+      
+      // レスポンスの検証
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response data format');
+      }
+      
       setProgress(data);
       setError(null);
+      console.log(`✅ Progress loaded for ${datasetKey}`);
     } catch (err) {
-      console.error(`Failed to fetch progress for ${datasetKey}:`, err);
-      setError(err.message);
+      console.error(`❌ Failed to fetch progress for ${datasetKey}:`, err);
+      setError(`Failed to load progress: ${err.message}`);
+      setProgress(null); // エラー時はnullを設定
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProgress();
-    // 30秒ごとに自動更新
-    const intervalId = setInterval(fetchProgress, 30000);
-    return () => clearInterval(intervalId);
+    // 自動fetchを完全に無効化（無限リロード対策）
+    console.log(`DatasetProgressCard: Auto-fetch disabled for ${datasetKey} to prevent infinite reload`);
+    
+    // 初回ロードも無効化
+    // fetchProgress();
+    
+    // 30秒ごとの自動更新も無効化
+    // const intervalId = setInterval(fetchProgress, 30000);
+    // return () => clearInterval(intervalId);
+    
+    // 手動でリフレッシュボタンを使用してください
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetKey]);
 
