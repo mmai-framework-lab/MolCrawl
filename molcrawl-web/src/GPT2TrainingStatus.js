@@ -90,14 +90,21 @@ const GPT2TrainingStatus = ({ dataset }) => {
 
     // Function to determine model size from config file name
     const getModelSizeFromConfig = (configFileName) => {
-        if (configFileName.includes('train_gpt2_medium_config.py')) {
+        if (!configFileName) {
+            return 'small';
+        }
+
+        // Remove directory path and get just the filename
+        const fileName = configFileName.split('/').pop();
+
+        if (fileName.includes('medium')) {
             return 'medium';
-        } else if (configFileName.includes('train_gpt2_large_config.py')) {
+        } else if (fileName.includes('large') && !fileName.includes('ex-large')) {
             return 'large';
-        } else if (configFileName.includes('train_gpt2_xl_config.py')) {
+        } else if (fileName.includes('xl') || fileName.includes('ex-large')) {
             return 'xl';
         } else {
-            // Default to small (train_gpt2_config.py)
+            // Default to small (train_gpt2_config.py without size modifier)
             return 'small';
         }
     };
@@ -168,12 +175,12 @@ const GPT2TrainingStatus = ({ dataset }) => {
         }
 
         const { checkpoint } = modelData;
-        
+
         // Check if process is actually running
         const isActuallyTraining = runningProcess !== undefined;
         const displayStatus = isActuallyTraining ? 'training' : 'stopped';
         const cardClass = isActuallyTraining ? 'model-training' : 'model-stopped';
-        
+
         return (
             <div key={size} className={`model-card ${cardClass}`}>
                 <div className="model-header">
@@ -254,7 +261,7 @@ const GPT2TrainingStatus = ({ dataset }) => {
                 <div className="checkpoint-path">
                     <small>{checkpoint.path}/{checkpoint.checkpoint_name}</small>
                 </div>
-                
+
                 {runningProcess && (
                     <div className="process-info">
                         <div className="stat-row">

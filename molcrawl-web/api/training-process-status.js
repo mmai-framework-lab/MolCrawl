@@ -119,7 +119,8 @@ async function checkProcessStatus() {
                 }
             } else if (command.includes('gpt2/train.py') && command.includes('gpt2/configs/')) {
                 processType = 'GPT-2';
-                const configMatch = command.match(/gpt2\/configs\/([^\/]+\/train_gpt2_config\.py)/);
+                // Match './gpt2/configs/...', '/gpt2/configs/...', and 'gpt2/configs/...'
+                const configMatch = command.match(/(?:\.?\/)?gpt2\/configs\/([^\/]+\/train_gpt2[^\/\s]*\.py)/);
                 if (configMatch) {
                     configPath = path.join(PROJECT_ROOT, 'gpt2', 'configs', configMatch[1]);
                     const datasetMatch = configMatch[1].match(/([^\/]+)\//);
