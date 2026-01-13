@@ -19,16 +19,16 @@ function TrainingProcessStatus() {
       setLoading(true);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
+
       const response = await fetch('/api/training-process-status', { signal: controller.signal });
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch process status');
       }
@@ -60,18 +60,24 @@ function TrainingProcessStatus() {
 
   // Format uptime
   const formatTime = (timeStr) => {
-    // Parse time like "21228:24" (HH:MM) or "1525:25"
+    // Parse time like "828:24" which is actually MM:SS (minutes:seconds), not HH:MM
     const parts = timeStr.split(':');
     if (parts.length === 2) {
-      const hours = parseInt(parts[0]);
-      const minutes = parseInt(parts[1]);
-      
+      const totalMinutes = parseInt(parts[0]);
+      const seconds = parseInt(parts[1]);
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
       if (hours >= 24) {
         const days = Math.floor(hours / 24);
         const remainingHours = hours % 24;
-        return `${days}d ${remainingHours}h ${minutes}m`;
+        return `${days}d ${remainingHours}h ${minutes}m ${seconds}s`;
       }
-      return `${hours}h ${minutes}m`;
+      if (hours > 0) {
+        return `${hours}h ${minutes}m ${seconds}s`;
+      }
+      return `${minutes}m ${seconds}s`;
     }
     return timeStr;
   };
