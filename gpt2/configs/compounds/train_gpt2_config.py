@@ -41,6 +41,11 @@ eval_interval = 200
 eval_iters = 200
 log_interval = 200
 
+# checkpoint management
+always_save_checkpoint = True  # 検証ロスに関係なく定期的に保存
+save_checkpoint_steps = None  # Noneの場合はeval_intervalで保存
+max_checkpoints = 5  # 最大5個のチェックポイントを保持
+
 # weight decay
 weight_decay = 1e-1
 
