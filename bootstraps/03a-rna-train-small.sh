@@ -8,6 +8,10 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 # Check LEARNING_SOURCE_DIR
 check_learning_source_dir
+
+# Auto-select GPU if not manually specified (small model needs ~10GB)
+auto_select_gpu 10
+
 mkdir -p ${LEARNING_SOURCE_DIR}/rna/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} nohup bash -c 'python gpt2/train.py ./gpt2/configs/rna/train_gpt2_config.py' > \
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c 'python gpt2/train.py ./gpt2/configs/rna/train_gpt2_config.py' > \
     ${LEARNING_SOURCE_DIR}/rna/logs/rna-train-small-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &
