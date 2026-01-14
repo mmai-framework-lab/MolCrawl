@@ -60,6 +60,7 @@ function extractLearningSourceFromConfig(configFilePath) {
 
         return null;
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error(`Error reading config file ${configFilePath}:`, error);
         return null;
     }
@@ -94,7 +95,9 @@ async function checkProcessStatus() {
         for (const line of lines) {
             // Parse ps output
             const parts = line.trim().split(/\s+/);
-            if (parts.length < 11) continue;
+            if (parts.length < 11) {
+                continue;
+            }
 
             const pid = parts[1];
             const cpu = parts[2];
@@ -112,7 +115,7 @@ async function checkProcessStatus() {
 
             if (command.includes('bert/main.py') && command.includes('bert/configs/')) {
                 processType = 'BERT';
-                const configMatch = command.match(/bert\/configs\/([^\/\s]+\.py)/);
+                const configMatch = command.match(/bert\/configs\/([^/\s]+\.py)/);
                 if (configMatch) {
                     configPath = path.join(PROJECT_ROOT, 'bert', 'configs', configMatch[1]);
                     datasetType = configMatch[1].replace('.py', '');
@@ -120,10 +123,10 @@ async function checkProcessStatus() {
             } else if (command.includes('gpt2/train.py') && command.includes('gpt2/configs/')) {
                 processType = 'GPT-2';
                 // Match './gpt2/configs/...', '/gpt2/configs/...', and 'gpt2/configs/...'
-                const configMatch = command.match(/(?:\.?\/)?gpt2\/configs\/([^\/]+\/train_gpt2[^\/\s]*\.py)/);
+                const configMatch = command.match(/(?:\.?\/)?gpt2\/configs\/([^/]+\/train_gpt2[^/\s]*\.py)/);
                 if (configMatch) {
                     configPath = path.join(PROJECT_ROOT, 'gpt2', 'configs', configMatch[1]);
-                    const datasetMatch = configMatch[1].match(/([^\/]+)\//);
+                    const datasetMatch = configMatch[1].match(/([^/]+)\//);
                     if (datasetMatch) {
                         datasetType = datasetMatch[1];
                     }
@@ -178,6 +181,7 @@ async function checkProcessStatus() {
             }
         };
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error checking process status:', error);
         return {
             success: false,
@@ -203,6 +207,7 @@ router.get('/', async (req, res) => {
         const status = await checkProcessStatus();
         res.json(status);
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error in training process status endpoint:', error);
         res.status(500).json({
             success: false,
@@ -247,6 +252,7 @@ router.post('/stop', async (req, res) => {
         }
 
         // Send SIGTERM first (graceful shutdown)
+        // eslint-disable-next-line no-console
         console.log(`Sending SIGTERM to process ${pid} (${processType} - ${datasetType})`);
         try {
             await execPromise(`kill -TERM ${pid}`);
@@ -258,6 +264,7 @@ router.post('/stop', async (req, res) => {
             try {
                 await execPromise(`ps -p ${pid} | grep -v grep`);
                 // Process still running, send SIGKILL
+                // eslint-disable-next-line no-console
                 console.log(`Process ${pid} still running, sending SIGKILL`);
                 await execPromise(`kill -KILL ${pid}`);
 
@@ -288,6 +295,7 @@ router.post('/stop', async (req, res) => {
             throw killError;
         }
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error stopping process:', error);
         res.status(500).json({
             success: false,

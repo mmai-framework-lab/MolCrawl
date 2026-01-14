@@ -93,6 +93,7 @@ function TrainingProcessStatus() {
       setLastUpdate(new Date());
       setError(null);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error fetching process status:', err);
       if (err.name === 'AbortError') {
         setError('リクエストがタイムアウトしました');
@@ -180,6 +181,7 @@ function TrainingProcessStatus() {
         alert(`✗ プロセス停止に失敗しました: ${result.error}`);
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error stopping process:', error);
       alert(`✗ プロセス停止中にエラーが発生しました: ${error.message}`);
     } finally {
