@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 import React, { useState, useEffect } from 'react';
 import './DatasetProgressCard.css';
 
 function DatasetProgressCard({ datasetKey }) {
-  
+
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(false); // falseに変更（自動ロードしない）
   const [error, setError] = useState('Auto-fetch disabled. Use refresh button to load data.'); // 初期メッセージ
@@ -21,30 +22,30 @@ function DatasetProgressCard({ datasetKey }) {
       const url = `/api/dataset-progress/${datasetKey}`;
       console.log(`⚠️ Fetching progress for ${datasetKey} from ${url} (attempt ${retryCount + 1}/${maxRetries + 1})`);
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       // レスポンスの検証
       if (!data || typeof data !== 'object') {
         throw new Error('Invalid response data format');
       }
-      
+
       setProgress(data);
       setError(null);
       console.log(`✅ Progress loaded for ${datasetKey}`);
     } catch (err) {
       console.error(`❌ Failed to fetch progress for ${datasetKey} (attempt ${retryCount + 1}):`, err);
-      
+
       // リトライ処理
       if (retryCount < maxRetries) {
         const delayMs = Math.pow(2, retryCount) * 1000; // 指数バックオフ: 1秒, 2秒, 4秒
         console.log(`⏳ Retrying in ${delayMs / 1000} seconds...`);
         setError(`Failed to load progress. Retrying... (${retryCount + 1}/${maxRetries})`);
-        
+
         setTimeout(() => {
           fetchProgress(retryCount + 1, maxRetries);
         }, delayMs);
@@ -66,17 +67,17 @@ function DatasetProgressCard({ datasetKey }) {
   useEffect(() => {
     // 初回マウント時に遅延ロードを実行（タイミング問題を回避）
     console.log(`DatasetProgressCard: Delayed auto-fetch for ${datasetKey} starting in 1 second...`);
-    
+
     const timeoutId = setTimeout(() => {
       setLoading(true);
       fetchProgress();
     }, 1000); // 1秒遅延
-    
+
     // クリーンアップ: アンマウント時にタイムアウトをクリア
     return () => {
       clearTimeout(timeoutId);
     };
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetKey]);
 
@@ -179,10 +180,10 @@ function DatasetProgressCard({ datasetKey }) {
 
   const handleFileClick = async (file) => {
     // テキストファイルかどうか判定
-    const textExtensions = ['.txt', '.json', '.csv', '.tsv', '.py', '.js', '.md', 
-                           '.log', '.yaml', '.yml', '.xml', '.html', '.css', 
-                           '.sh', '.bash', '.sql', '.r', '.java', '.cpp', '.c'];
-    
+    const textExtensions = ['.txt', '.json', '.csv', '.tsv', '.py', '.js', '.md',
+      '.log', '.yaml', '.yml', '.xml', '.html', '.css',
+      '.sh', '.bash', '.sql', '.r', '.java', '.cpp', '.c'];
+
     const fileExt = '.' + file.type;
     if (!textExtensions.includes(fileExt)) {
       alert('このファイルタイプはプレビューできません');
@@ -446,8 +447,8 @@ function DatasetProgressCard({ datasetKey }) {
                           </h4>
                           <div className="files-list scrollable">
                             {typeGroup.files.map((file) => (
-                              <div 
-                                key={file.path} 
+                              <div
+                                key={file.path}
                                 className="file-item clickable-file"
                                 onClick={() => handleFileClick(file)}
                                 title="クリックしてファイル内容をプレビュー"

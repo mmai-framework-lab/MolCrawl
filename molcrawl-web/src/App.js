@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import ZincChecker from './ZincChecker';
@@ -87,7 +88,7 @@ const fetchDirectoryStructure = async (path = null, recursive = false, maxDepth 
   }
 
   console.log('⚠️ fetchDirectoryStructure:', url);
-  
+
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -95,15 +96,15 @@ const fetchDirectoryStructure = async (path = null, recursive = false, maxDepth 
     }
 
     const result = await response.json();
-    
+
     if (!result) {
       throw new Error('Empty response from server');
     }
-    
+
     if (!result.success) {
       throw new Error(result.error || result.message || 'APIエラーが発生しました');
     }
-    
+
     if (!result.data) {
       throw new Error('Response missing data field');
     }
@@ -121,7 +122,7 @@ const fetchFullDirectoryTree = async (maxDepth = 5, includeFiles = true) => {
   const url = `/api/directory/tree?maxDepth=${maxDepth}&includeFiles=${includeFiles}`;
 
   console.log('⚠️ fetchFullDirectoryTree:', url);
-  
+
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -129,15 +130,15 @@ const fetchFullDirectoryTree = async (maxDepth = 5, includeFiles = true) => {
     }
 
     const result = await response.json();
-    
+
     if (!result) {
       throw new Error('Empty response from server');
     }
-    
+
     if (!result.success) {
       throw new Error(result.error || result.message || 'APIエラーが発生しました');
     }
-    
+
     if (!result.data) {
       throw new Error('Response missing data field');
     }
@@ -270,15 +271,15 @@ function App() {
   // 初期データの読み込み（特定のタブ用）
   const loadInitialData = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) { 
+    if (!tabInfo) {
       console.warn(`⚠️ Tab not found: ${tabId}`);
-      return; 
+      return;
     }
 
     console.log(`Loading initial data for tab: ${tabId}`);
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
-    
+
     try {
       const data = await fetchDirectoryStructure(tabInfo.path);
       updateTabData(tabId, data);
@@ -295,15 +296,15 @@ function App() {
   // 完全なツリーの読み込み（特定のタブ用）
   const loadFullTree = async (tabId) => {
     const tabInfo = DATASET_TABS.find(tab => tab.id === tabId);
-    if (!tabInfo) { 
+    if (!tabInfo) {
       console.warn(`⚠️ Tab not found for loadFullTree: ${tabId}`);
-      return; 
+      return;
     }
 
     console.log(`Loading full tree for tab: ${tabId}`);
     updateTabLoading(tabId, true);
     updateTabError(tabId, null);
-    
+
     try {
       const data = await fetchFullDirectoryTree(maxDepth, true);
       // ルートパスからタブのパスにフィルタリング
@@ -356,14 +357,14 @@ function App() {
   useEffect(() => {
     // 自動ロードを完全に無効化（無限リロード対策）
     console.log(`App: Auto-load disabled for activeTab: ${activeTab}. Use Reload button to load data.`);
-    
+
     // 初期タブのデータ読み込みを無効化
     // loadInitialData(activeTab).catch(err => {
     //   console.error('❌ Failed to load initial data on mount:', err);
     // });
-    
+
     // 手動でReloadボタンを使用してください
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

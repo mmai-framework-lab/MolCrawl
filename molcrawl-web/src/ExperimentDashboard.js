@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useState, useEffect } from 'react';
 import './ExperimentDashboard.css';
 import TrainingProcessStatus from './TrainingProcessStatus';
@@ -33,7 +34,7 @@ function ExperimentDashboard() {
   );
 
   // 実験一覧を取得
-  const fetchExperiments = async () => {
+  const _fetchExperiments = async () => {
     if (!isApiAvailable()) {
       console.error('❌ Cannot fetch experiments: API is not configured');
       setError('API endpoint not configured. Set REACT_APP_EXPERIMENT_API_URL environment variable.');
@@ -70,7 +71,7 @@ function ExperimentDashboard() {
   };
 
   // 統計情報を取得
-  const fetchStatistics = async () => {
+  const _fetchStatistics = async () => {
     if (!isApiAvailable()) {
       console.error('❌ Cannot fetch statistics: API is not configured');
       return;

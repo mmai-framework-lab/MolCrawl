@@ -26,22 +26,22 @@ function extractLearningSourceFromConfig(configFilePath) {
         }
 
         const content = fs.readFileSync(configFilePath, 'utf-8');
-        
+
         // Look for patterns like:
         // from config.paths import LEARNING_SOURCE_DIR
         // from config.paths import ... get_bert_output_path, get_gpt2_output_path
         // These functions use LEARNING_SOURCE_DIR internally
-        
+
         // Direct LEARNING_SOURCE_DIR import
         if (content.includes('from config.paths import') && content.includes('LEARNING_SOURCE_DIR')) {
             return 'uses_config_paths';
         }
-        
+
         // get_bert_output_path or get_gpt2_output_path usage (they use LEARNING_SOURCE_DIR)
         if (content.includes('get_bert_output_path') || content.includes('get_gpt2_output_path')) {
             return 'uses_config_paths';
         }
-        
+
         // Dataset directories that use LEARNING_SOURCE_DIR
         const datasetDirPatterns = [
             'COMPOUNDS_DATASET_DIR',
@@ -51,15 +51,16 @@ function extractLearningSourceFromConfig(configFilePath) {
             'CELLXGENE_DATASET_DIR',
             'MOLECULE_NL_DATASET_DIR'
         ];
-        
+
         for (const pattern of datasetDirPatterns) {
             if (content.includes(pattern)) {
                 return 'uses_config_paths';
             }
         }
-        
+
         return null;
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error(`Error reading config file ${configFilePath}:`, error);
         return null;
     }
@@ -94,14 +95,16 @@ async function checkProcessStatus() {
         for (const line of lines) {
             // Parse ps output
             const parts = line.trim().split(/\s+/);
-            if (parts.length < 11) continue;
+            if (parts.length < 11) {
+                continue;
+            }
 
             const pid = parts[1];
             const cpu = parts[2];
             const mem = parts[3];
             const started = parts[8];
             const time = parts[9];
-            
+
             // Command starts from index 10
             const command = parts.slice(10).join(' ');
 
@@ -112,7 +115,7 @@ async function checkProcessStatus() {
 
             if (command.includes('bert/main.py') && command.includes('bert/configs/')) {
                 processType = 'BERT';
-                const configMatch = command.match(/bert\/configs\/([^\/\s]+\.py)/);
+                const configMatch = command.match(/bert\/configs\/([^/\s]+\.py)/);
                 if (configMatch) {
                     configPath = path.join(PROJECT_ROOT, 'bert', 'configs', configMatch[1]);
                     datasetType = configMatch[1].replace('.py', '');
@@ -120,10 +123,10 @@ async function checkProcessStatus() {
             } else if (command.includes('gpt2/train.py') && command.includes('gpt2/configs/')) {
                 processType = 'GPT-2';
                 // Match './gpt2/configs/...', '/gpt2/configs/...', and 'gpt2/configs/...'
-                const configMatch = command.match(/(?:\.?\/)?gpt2\/configs\/([^\/]+\/train_gpt2[^\/\s]*\.py)/);
+                const configMatch = command.match(/(?:\.?\/)?gpt2\/configs\/([^/]+\/train_gpt2[^/\s]*\.py)/);
                 if (configMatch) {
                     configPath = path.join(PROJECT_ROOT, 'gpt2', 'configs', configMatch[1]);
-                    const datasetMatch = configMatch[1].match(/([^\/]+)\//);
+                    const datasetMatch = configMatch[1].match(/([^/]+)\//);
                     if (datasetMatch) {
                         datasetType = datasetMatch[1];
                     }
@@ -178,6 +181,7 @@ async function checkProcessStatus() {
             }
         };
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error checking process status:', error);
         return {
             success: false,
@@ -203,7 +207,96 @@ router.get('/', async (req, res) => {
         const status = await checkProcessStatus();
         res.json(status);
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error in training process status endpoint:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/training-process-status/stop
+ * Stop a training process by PID
+ */
+router.post('/stop', async (req, res) => {
+    try {
+        const { pid, processType, datasetType } = req.body;
+
+        if (!pid) {
+            return res.status(400).json({
+                success: false,
+                error: 'PID is required'
+            });
+        }
+
+        // Validate that the PID is a number
+        const pidNum = parseInt(pid);
+        if (isNaN(pidNum) || pidNum <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid PID'
+            });
+        }
+
+        // First verify the process exists and belongs to the current user
+        const status = await checkProcessStatus();
+        const process = status.processes.find(p => p.pid === pid.toString());
+
+        if (!process) {
+            return res.status(404).json({
+                success: false,
+                error: 'Process not found or does not belong to current user'
+            });
+        }
+
+        // Send SIGTERM first (graceful shutdown)
+        // eslint-disable-next-line no-console
+        console.log(`Sending SIGTERM to process ${pid} (${processType} - ${datasetType})`);
+        try {
+            await execPromise(`kill -TERM ${pid}`);
+
+            // Wait a moment to see if process terminates
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Check if process is still running
+            try {
+                await execPromise(`ps -p ${pid} | grep -v grep`);
+                // Process still running, send SIGKILL
+                // eslint-disable-next-line no-console
+                console.log(`Process ${pid} still running, sending SIGKILL`);
+                await execPromise(`kill -KILL ${pid}`);
+
+                return res.json({
+                    success: true,
+                    message: 'Process forcefully terminated',
+                    pid,
+                    signal: 'SIGKILL'
+                });
+            } catch (psError) {
+                // Process not found, means it terminated gracefully
+                return res.json({
+                    success: true,
+                    message: 'Process gracefully terminated',
+                    pid,
+                    signal: 'SIGTERM'
+                });
+            }
+        } catch (killError) {
+            // Check if error is because process doesn't exist
+            if (killError.message.includes('No such process')) {
+                return res.json({
+                    success: true,
+                    message: 'Process already terminated',
+                    pid
+                });
+            }
+            throw killError;
+        }
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error stopping process:', error);
         res.status(500).json({
             success: false,
             error: error.message

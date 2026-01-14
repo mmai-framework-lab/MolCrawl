@@ -2,6 +2,60 @@ import React, { useState, useEffect } from 'react';
 import './TrainingProcessStatus.css';
 
 /**
+ * ConfirmDialog Component
+ * Confirmation dialog for critical actions
+ */
+function ConfirmDialog({ isOpen, onClose, onConfirm, processInfo }) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="confirm-dialog-overlay" onClick={onClose}>
+      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-dialog-header">
+          <h3>⚠️ プロセス停止の確認</h3>
+        </div>
+        <div className="confirm-dialog-body">
+          <p className="warning-text">
+            この操作は実行中の学習プロセスを強制終了します。
+          </p>
+          <div className="process-details">
+            <div className="detail-row">
+              <span className="detail-label">プロセスタイプ:</span>
+              <span className="detail-value">{processInfo.processType}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">データセット:</span>
+              <span className="detail-value">{processInfo.datasetType}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">PID:</span>
+              <span className="detail-value">{processInfo.pid}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">実行時間:</span>
+              <span className="detail-value">{processInfo.time}</span>
+            </div>
+          </div>
+          <p className="caution-text">
+            本当にこのプロセスを停止しますか？
+          </p>
+        </div>
+        <div className="confirm-dialog-footer">
+          <button className="cancel-button" onClick={onClose}>
+            キャンセル
+          </button>
+          <button className="confirm-stop-button" onClick={onConfirm}>
+            停止する
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * TrainingProcessStatus Component
  * Displays running training processes and their status
  */
@@ -12,6 +66,8 @@ function TrainingProcessStatus() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, process: null });
+  const [stoppingPid, setStoppingPid] = useState(null);
 
   // Fetch training process status
   const fetchProcessStatus = React.useCallback(async () => {
@@ -37,6 +93,7 @@ function TrainingProcessStatus() {
       setLastUpdate(new Date());
       setError(null);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error fetching process status:', err);
       if (err.name === 'AbortError') {
         setError('リクエストがタイムアウトしました');
@@ -87,6 +144,56 @@ function TrainingProcessStatus() {
     return `${memPercent.toFixed(1)}%`;
   };
 
+  // Handle stop process button click
+  const handleStopClick = (process) => {
+    setConfirmDialog({
+      isOpen: true,
+      process: process
+    });
+  };
+
+  // Confirm and execute process stop
+  const handleConfirmStop = async () => {
+    const process = confirmDialog.process;
+    setConfirmDialog({ isOpen: false, process: null });
+    setStoppingPid(process.pid);
+
+    try {
+      const response = await fetch('/api/training-process-status/stop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pid: process.pid,
+          processType: process.processType,
+          datasetType: process.datasetType,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✓ プロセス ${process.pid} (${process.processType} - ${process.datasetType}) を停止しました。\n信号: ${result.signal || 'SIGTERM'}`);
+        // Refresh the process list
+        await fetchProcessStatus();
+      } else {
+        alert(`✗ プロセス停止に失敗しました: ${result.error}`);
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error stopping process:', error);
+      alert(`✗ プロセス停止中にエラーが発生しました: ${error.message}`);
+    } finally {
+      setStoppingPid(null);
+    }
+  };
+
+  // Close confirm dialog
+  const handleCancelStop = () => {
+    setConfirmDialog({ isOpen: false, process: null });
+  };
+
   if (loading && !processData) {
     return (
       <div className="training-process-status-card">
@@ -120,143 +227,162 @@ function TrainingProcessStatus() {
   const { currentLearningSource, processes, summary } = processData;
 
   return (
-    <div className="training-process-status-card">
-      <div className="status-header">
-        <div className="header-left">
-          <h2>🔄 学習プロセス稼働状況</h2>
-          <span className="learning-source-badge">
-            {currentLearningSource}
-          </span>
+    <>
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={handleCancelStop}
+        onConfirm={handleConfirmStop}
+        processInfo={confirmDialog.process || {}}
+      />
+      <div className="training-process-status-card">
+        <div className="status-header">
+          <div className="header-left">
+            <h2>🔄 学習プロセス稼働状況</h2>
+            <span className="learning-source-badge">
+              {currentLearningSource}
+            </span>
+          </div>
+          <div className="header-right">
+            <label className="auto-refresh-toggle">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+              />
+              自動更新
+            </label>
+            {autoRefresh && (
+              <select
+                value={refreshInterval}
+                onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                className="refresh-interval-select"
+              >
+                <option value={10}>10秒</option>
+                <option value={30}>30秒</option>
+                <option value={60}>1分</option>
+                <option value={300}>5分</option>
+              </select>
+            )}
+            <button onClick={fetchProcessStatus} className="refresh-button" disabled={loading}>
+              {loading ? '更新中...' : '🔄 更新'}
+            </button>
+          </div>
         </div>
-        <div className="header-right">
-          <label className="auto-refresh-toggle">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-            />
-            自動更新
-          </label>
-          {autoRefresh && (
-            <select
-              value={refreshInterval}
-              onChange={(e) => setRefreshInterval(Number(e.target.value))}
-              className="refresh-interval-select"
-            >
-              <option value={10}>10秒</option>
-              <option value={30}>30秒</option>
-              <option value={60}>1分</option>
-              <option value={300}>5分</option>
-            </select>
-          )}
-          <button onClick={fetchProcessStatus} className="refresh-button" disabled={loading}>
-            {loading ? '更新中...' : '🔄 更新'}
-          </button>
-        </div>
-      </div>
 
-      {lastUpdate && (
-        <div className="last-update">
-          最終更新: {lastUpdate.toLocaleTimeString('ja-JP')}
-        </div>
-      )}
+        {lastUpdate && (
+          <div className="last-update">
+            最終更新: {lastUpdate.toLocaleTimeString('ja-JP')}
+          </div>
+        )}
 
-      <div className="summary-section">
-        <div className="summary-item">
-          <span className="summary-label">合計プロセス:</span>
-          <span className="summary-value">{summary.total}</span>
+        <div className="summary-section">
+          <div className="summary-item">
+            <span className="summary-label">合計プロセス:</span>
+            <span className="summary-value">{summary.total}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">現在のソース使用:</span>
+            <span className={`summary-value ${summary.usingCurrentSource > 0 ? 'active' : ''}`}>
+              {summary.usingCurrentSource}
+            </span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">BERT:</span>
+            <span className="summary-value">{summary.bert}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">GPT-2:</span>
+            <span className="summary-value">{summary.gpt2}</span>
+          </div>
         </div>
-        <div className="summary-item">
-          <span className="summary-label">現在のソース使用:</span>
-          <span className={`summary-value ${summary.usingCurrentSource > 0 ? 'active' : ''}`}>
-            {summary.usingCurrentSource}
-          </span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">BERT:</span>
-          <span className="summary-value">{summary.bert}</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">GPT-2:</span>
-          <span className="summary-value">{summary.gpt2}</span>
-        </div>
-      </div>
 
-      {processes.length === 0 ? (
-        <div className="no-processes">
-          <p>現在実行中の学習プロセスはありません</p>
-        </div>
-      ) : (
-        <div className="processes-list">
-          <table className="processes-table">
-            <thead>
-              <tr>
-                <th>タイプ</th>
-                <th>データセット</th>
-                <th>PID</th>
-                <th>CPU %</th>
-                <th>メモリ %</th>
-                <th>開始時刻</th>
-                <th>実行時間</th>
-                <th>ソース一致</th>
-                <th>設定ファイル</th>
-              </tr>
-            </thead>
-            <tbody>
-              {processes.map((process) => (
-                <tr
-                  key={process.pid}
-                  className={process.usesCurrentLearningSource ? 'current-source' : 'different-source'}
-                >
-                  <td>
-                    <span className={`process-type-badge ${process.processType.toLowerCase()}`}>
-                      {process.processType}
-                    </span>
-                  </td>
-                  <td>
-                    <strong>{process.datasetType}</strong>
-                  </td>
-                  <td className="monospace">{process.pid}</td>
-                  <td className="cpu-column">
-                    <div className="cpu-bar-container">
-                      <div
-                        className="cpu-bar"
-                        style={{ width: `${Math.min(process.cpu, 200)}%` }}
-                      ></div>
-                      <span className="cpu-text">{process.cpu.toFixed(1)}%</span>
-                    </div>
-                  </td>
-                  <td>{formatMemory(process.mem)}</td>
-                  <td className="monospace">{process.started}</td>
-                  <td>{formatTime(process.time)}</td>
-                  <td>
-                    {process.usesCurrentLearningSource ? (
-                      <span className="status-badge active">✓ 一致</span>
-                    ) : (
-                      <span className="status-badge inactive">✗ 不一致</span>
-                    )}
-                  </td>
-                  <td className="config-file">
-                    <code>{process.configFileName}</code>
-                  </td>
+        {processes.length === 0 ? (
+          <div className="no-processes">
+            <p>現在実行中の学習プロセスはありません</p>
+          </div>
+        ) : (
+          <div className="processes-list">
+            <table className="processes-table">
+              <thead>
+                <tr>
+                  <th>タイプ</th>
+                  <th>データセット</th>
+                  <th>PID</th>
+                  <th>CPU %</th>
+                  <th>メモリ %</th>
+                  <th>開始時刻</th>
+                  <th>実行時間</th>
+                  <th>ソース一致</th>
+                  <th>設定ファイル</th>
+                  <th>操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {processes.map((process) => (
+                  <tr
+                    key={process.pid}
+                    className={process.usesCurrentLearningSource ? 'current-source' : 'different-source'}
+                  >
+                    <td>
+                      <span className={`process-type-badge ${process.processType.toLowerCase()}`}>
+                        {process.processType}
+                      </span>
+                    </td>
+                    <td>
+                      <strong>{process.datasetType}</strong>
+                    </td>
+                    <td className="monospace">{process.pid}</td>
+                    <td className="cpu-column">
+                      <div className="cpu-bar-container">
+                        <div
+                          className="cpu-bar"
+                          style={{ width: `${Math.min(process.cpu, 200)}%` }}
+                        ></div>
+                        <span className="cpu-text">{process.cpu.toFixed(1)}%</span>
+                      </div>
+                    </td>
+                    <td>{formatMemory(process.mem)}</td>
+                    <td className="monospace">{process.started}</td>
+                    <td>{formatTime(process.time)}</td>
+                    <td>
+                      {process.usesCurrentLearningSource ? (
+                        <span className="status-badge active">✓ 一致</span>
+                      ) : (
+                        <span className="status-badge inactive">✗ 不一致</span>
+                      )}
+                    </td>
+                    <td className="config-file">
+                      <code>{process.configFileName}</code>
+                    </td>
+                    <td className="action-column">
+                      <button
+                        className="stop-process-button"
+                        onClick={() => handleStopClick(process)}
+                        disabled={stoppingPid === process.pid}
+                        title="プロセスを停止"
+                      >
+                        {stoppingPid === process.pid ? '停止中...' : '⏹ 停止'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      <div className="legend">
-        <div className="legend-item">
-          <span className="legend-badge current-source-sample"></span>
-          <span>現在のLEARNING_SOURCE_DIRを使用</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-badge different-source-sample"></span>
-          <span>異なるソースまたは不明</span>
+        <div className="legend">
+          <div className="legend-item">
+            <span className="legend-badge current-source-sample"></span>
+            <span>現在のLEARNING_SOURCE_DIRを使用</span>
+          </div>
+          <div className="legend-item">
+            <span className="legend-badge different-source-sample"></span>
+            <span>異なるソースまたは不明</span>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
