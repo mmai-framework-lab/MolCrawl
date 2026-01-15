@@ -209,6 +209,7 @@ training_args = TrainingArguments(
     warmup_steps=warmup_steps,
     learning_rate=learning_rate,
     weight_decay=weight_decay,
+    report_to="none",  # Disable MLflow and other integrations to avoid pydantic import errors
     # load_best_model_at_end=True,  # whether to load the best model (in terms of loss) at the end of training
     # save_total_limit=3,           # whether you don't have much space so you let only 3 model weights saved in the disk
 )
@@ -344,4 +345,33 @@ trainer = Trainer(
 )
 
 # Resume from checkpoint by default if available
-trainer.train(resume_from_checkpoint=True)
+# Check if checkpoints exist in output directory
+resume_checkpoint = None
+if os.path.exists(model_path):
+    checkpoints = [d for d in os.listdir(model_path) if d.startswith("checkpoint-")]
+    if checkpoints:
+        # Find the latest checkpoint
+        checkpoints.sort(key=lambda x: int(x.split("-")[1]))
+        latest_checkpoint = os.path.join(model_path, checkpoints[-1])
+        resume_checkpoint = latest_checkpoint
+        print(f"✅ Found {len(checkpoints)} checkpoint(s) in {model_path}")
+        print(f"   Resuming training from: {latest_checkpoint}")
+    else:
+        print(f"ℹ️  No checkpoints found in {model_path}")
+        print("   Starting training from scratch...")
+else:
+    print(f"ℹ️  Output directory {model_path} does not exist")
+    print("   Starting training from scratch...")
+
+# Train with or without checkpoint
+# If resume_checkpoint is None, training starts from scratch
+# If resume_checkpoint is provided, training resumes from that checkpoint
+try:
+    trainer.train(resume_from_checkpoint=resume_checkpoint)
+except Exception as e:
+    if "checkpoint" in str(e).lower() and resume_checkpoint:
+        print(f"⚠️  Failed to resume from checkpoint: {e}")
+        print("   Starting training from scratch instead...")
+        trainer.train(resume_from_checkpoint=None)
+    else:
+        raise
