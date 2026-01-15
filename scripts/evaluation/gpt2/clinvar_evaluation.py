@@ -161,9 +161,9 @@ class GPT2ClinVarEvaluator(ModelEvaluator):
             if len(var_tokens) > context_length:
                 var_tokens = var_tokens[:context_length]
 
-            # バッチ次元を追加してデバイスに転送
-            ref_tokens = ref_tokens.unsqueeze(0).to(self.device)
-            var_tokens = var_tokens.unsqueeze(0).to(self.device)
+            # リストをテンソルに変換してからバッチ次元を追加
+            ref_tokens = torch.tensor(ref_tokens, dtype=torch.long).unsqueeze(0).to(self.device)
+            var_tokens = torch.tensor(var_tokens, dtype=torch.long).unsqueeze(0).to(self.device)
 
             logger.debug(f"Model input shapes - ref: {ref_tokens.shape}, var: {var_tokens.shape}")
 

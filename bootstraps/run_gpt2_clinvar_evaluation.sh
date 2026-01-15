@@ -31,6 +31,16 @@ if [ -z "$EVALUATION_OUTPUT_DIR" ]; then
     echo "EVALUATION_OUTPUT_DIRが未設定のため、LEARNING_SOURCE_DIRを使用します"
 fi
 
+# ログファイルの設定
+mkdir -p "${LEARNING_SOURCE_DIR}/genome_sequence/logs/"
+LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-clinvar-evaluation-$(date +%Y-%m-%d_%H-%M-%S).log"
+
+# 全出力をログファイルと画面の両方に出力
+exec > >(tee -a "${LOG_FILE}") 2>&1
+
+echo "ログファイル: ${LOG_FILE}"
+echo ""
+
 # デフォルト出力先（-o/--output-dirで上書き可能）
 OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/report/clinvar_evaluation"
 DATA_DIR="$EVALUATION_OUTPUT_DIR/genome_sequence/data/clinvar"  # データ準備時の出力先
@@ -227,16 +237,61 @@ if [[ "$EVAL_ONLY" != true ]]; then
             fi
         fi
     else
-        echo "サンプルClinVarデータを作成中（モック実装）..."
-        # --downloadなしの場合は既存データを使用、または手動でサンプルを作成
-        # 既存のファイルがない場合はエラーメッセージを表示
+        # --downloadなしの場合は既存データを使用、存在しない場合は自動ダウンロード
         if [[ ! -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
-            echo "警告: ClinVarデータが存在しません"
-            echo "初回実行時は --download オプションを使用してデータをダウンロードしてください"
-            echo "例: $0 --download"
-            exit 1
+            echo "ClinVarデータが存在しないため、自動的にダウンロードします..."
+            
+            # 参照ゲノムファイルのパスを設定
+            REF_FASTA="$LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna"
+            
+            if [[ ! -f "$REF_FASTA" ]]; then
+                # .gzファイルを確認
+                if [[ -f "$REF_FASTA.gz" ]]; then
+                    REF_FASTA="$REF_FASTA.gz"
+                    echo "参照ゲノム: $REF_FASTA (圧縮版)"
+                else
+                    echo "警告: 参照ゲノムが見つかりません: $REF_FASTA"
+                    echo "HuggingFace Datasetsから直接取得します（配列生成なし）"
+                    REF_FASTA=""
+                fi
+            else
+                echo "参照ゲノム: $REF_FASTA"
+            fi
+            
+            # extract_random_clinvar_samples.pyを使用してバランスサンプリング
+            if [[ -n "$REF_FASTA" ]]; then
+                # 参照ゲノムがある場合: データセットから直接抽出して配列生成
+                python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+                    --ref_fasta "$REF_FASTA" \
+                    --output_csv "$DATA_DIR/clinvar_evaluation_dataset.csv" \
+                    --num_samples 2000 \
+                    --flank "$((SEQUENCE_LENGTH / 2))" \
+                    --seed 42
+            else
+                # 参照ゲノムがない場合: 既存の前処理スクリプトで取得後にサンプリング
+                echo "従来の方法でデータ準備..."
+                python "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_data_preparation.py" \
+                    --download \
+                    --output_dir "$DATA_DIR" \
+                    --max_samples "$MAX_SAMPLES" \
+                    --sequence_length "$SEQUENCE_LENGTH"
+                
+                # 生成されたファイルからバランスサンプリング
+                if [[ -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
+                    echo "バランスサンプリングを適用中..."
+                    python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+                        --input_csv "$DATA_DIR/clinvar_evaluation_dataset.csv" \
+                        --output_csv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" \
+                        --num_samples 2000 \
+                        --seed 42
+                    
+                    # バランス版を使用
+                    mv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" "$DATA_DIR/clinvar_evaluation_dataset.csv"
+                fi
+            fi
+        else
+            echo "既存のClinVarデータを使用: $DATA_DIR/clinvar_evaluation_dataset.csv"
         fi
-        echo "既存のClinVarデータを使用: $DATA_DIR/clinvar_evaluation_dataset.csv"
     fi
     
     echo "データ準備完了"
