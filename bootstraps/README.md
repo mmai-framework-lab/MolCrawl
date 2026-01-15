@@ -2,9 +2,38 @@
 
 Project initialization, evaluation, and maintenance scripts for the RIKEN Dataset Foundational Model project.
 
-## 📋 Overview
+**最終更新**: 2026年1月15日  
+**スクリプト総数**: 61 (Shell: 60, Python: 1)
 
-This directory contains shell scripts for various project operations. All scripts should be executed from the project root directory unless otherwise specified.
+## Table of Contents
+
+- [Overview](#-overview)
+- [Initial Setup](#-initial-setup)
+- [Data Preparation Scripts](#-data-preparation-scripts)
+- [Model Training Scripts](#-model-training-scripts)
+- [AI Model Evaluation Scripts](#-ai-model-evaluation-scripts)
+- [Development & Testing](#-development--testing)
+- [Web Interface & Services](#-web-interface--services)
+- [Output Structure](#-output-structure)
+- [Quick Start Examples](#-quick-start-examples)
+- [Prerequisites](#-prerequisites)
+- [Script Categories](#-script-categories)
+- [統合スクリプトの構造](#-統合スクリプトの構造)
+- [Important Notes](#-important-notes)
+- [Troubleshooting](#-troubleshooting)
+- [Migration Notes](#-migration-notes)
+
+## Overview
+
+This directory contains shell scripts for various project operations including data preparation, model training, evaluation, testing, and system maintenance. All scripts should be executed from the project root directory unless otherwise specified.
+
+The bootstrap scripts are organized into several categories:
+- **Data Preparation** (Phase 01-02): Dataset tokenization and format conversion - 13 scripts
+- **Model Training** (Phase 03a-03c): Standard and enhanced training workflows - 28 scripts
+- **Model Evaluation**: Comprehensive evaluation with visualization - 8 scripts
+- **Development & Testing**: Debugging, batch testing, and validation tools - 4 scripts
+- **System Infrastructure**: Web services, experiment tracking, and utilities - 7 scripts
+- **Common Library**: Shared utility functions - 1 script
 
 ```bash
 # Usage pattern
@@ -20,6 +49,8 @@ cd /path/to/riken-dataset-fundational-model
 | `00_first.sh` | First-time environment setup | Configure conda channels, create environment, install dependencies |
 
 ## 📊 Data Preparation Scripts
+
+このセクションには**13個のデータ準備スクリプト**が含まれています（Phase 1: 6個、Phase 2: 5個、Utility: 2個）
 
 ### Phase 1: Dataset Preparation
 | Script | Purpose | Model Type | Output |
@@ -43,31 +74,56 @@ cd /path/to/riken-dataset-fundational-model
 ### Utility Scripts
 | Script | Purpose | Function |
 |--------|---------|----------|
+| `common_functions.sh` | 共通関数ライブラリ | GPU選択、メモリチェック、環境変数検証などのヘルパー関数 |
 | `convert_molecule_nl_to_arrow.sh` | Convert molecule data | Convert to Arrow format |
 | `create_sample_vocab.sh` | Generate sample vocabulary | Development setup |
 
 ## 🏋️ Model Training Scripts
 
+このセクションには**28個のトレーニングスクリプト**が含まれています（Phase 3a: 20個、Phase 3b: 2個、Phase 3c: 5個、Special: 1個）
+
 ### Phase 3a: Standard Training
 | Script | Purpose | Model Size | Training Type |
 |--------|---------|------------|---------------|
-| `03a-compounds-guacamol-train-small.sh` | GuacaMol compounds | Small | Standard |
-| `03a-compounds-guacamol-train-medium.sh` | GuacaMol compounds | Medium | Standard |
-| `03a-compounds-guacamol-train-large.sh` | GuacaMol compounds | Large | Standard |
-| `03a-compounds-guacamol-train-xl.sh` | GuacaMol compounds | XL | Standard |
+| `03a-compounds_guacamol-train-small.sh` | GuacaMol compounds | Small | Standard |
+| `03a-compounds_guacamol-train-medium.sh` | GuacaMol compounds | Medium | Standard |
+| `03a-compounds_guacamol-train-large.sh` | GuacaMol compounds | Large | Standard |
+| `03a-compounds_guacamol-train-xl.sh` | GuacaMol compounds | XL | Standard |
 | `03a-genome_sequence-train-small.sh` | Genome sequence | Small | Standard |
-| `03a-molecule-train-small.sh` | Molecule NL | Small | Standard |
-| `03a-molecule-train-medium.sh` | Molecule NL | Medium | Standard |
-| `03a-molecule-train-large.sh` | Molecule NL | Large | Standard |
-| `03a-molecule-train-xl.sh` | Molecule NL | XL | Standard |
+| `03a-genome_sequence-train-medium.sh` | Genome sequence | Medium | Standard |
+| `03a-genome_sequence-train-large.sh` | Genome sequence | Large | Standard |
+| `03a-genome_sequence-train-xl.sh` | Genome sequence | XL | Standard |
+| `03a-molecule_nl-train-small.sh` | Molecule NL | Small | Standard |
+| `03a-molecule_nl-train-medium.sh` | Molecule NL | Medium | Standard |
+| `03a-molecule_nl-train-large.sh` | Molecule NL | Large | Standard |
+| `03a-molecule_nl-train-xl.sh` | Molecule NL | XL | Standard |
 | `03a-protein_sequence-train-small.sh` | Protein sequence | Small | Standard |
+| `03a-protein_sequence-train-medium.sh` | Protein sequence | Medium | Standard |
+| `03a-protein_sequence-train-large.sh` | Protein sequence | Large | Standard |
+| `03a-protein_sequence-train-xl.sh` | Protein sequence | XL | Standard |
 | `03a-rna-train-small.sh` | RNA sequence | Small | Standard |
+| `03a-rna-train-medium.sh` | RNA sequence | Medium | Standard |
+| `03a-rna-train-large.sh` | RNA sequence | Large | Standard |
+| `03a-rna-train-xl.sh` | RNA sequence | XL | Standard |
 
 ### Phase 3b: Enhanced Training
 | Script | Purpose | Enhancement |
 |--------|---------|-------------|
-| `03b-genome_sequence-train-small-with-wandb.sh` | Genome training with monitoring | Weights & Biases integration |
-| `03b-rna-train-small_y_refined.sh` | Refined RNA training | Yigarashi method |
+| `03b-genome_sequence-train-wandb-small.sh` | Genome training with monitoring | Weights & Biases integration |
+| `03b-rna-train-yigarashi_refined-small.sh` | Refined RNA training | Yigarashi method |
+
+### Phase 3c: BERT Model Training
+| Script | Purpose | Model Type |
+|--------|---------|------------|
+| `03c-compounds-train-bert-small.sh` | Compounds BERT training | Small |
+| `03c-genome_sequence-train-bert-small.sh` | Genome BERT training | Small |
+| `03c-molecule_nl-train-bert-small.sh` | Molecule NL BERT training | Small |
+| `03c-protein_sequence-train-bert-small.sh` | Protein BERT training | Small |
+| `03c-rna-train-bert-small.sh` | RNA BERT training | Small |
+
+### Special Training Scripts
+| Script | Purpose | Function |
+|--------|---------|----------|
 | `train_rna_yigarashi.sh` | Alternative RNA training | Yigarashi-specific approach |
 
 ## 🚀 AI Model Evaluation Scripts
@@ -117,7 +173,7 @@ cd /path/to/riken-dataset-fundational-model
 ### Testing Scripts
 | Script | Purpose | Function |
 |--------|---------|----------|
-| `batch_test_gpt2.sh` | Batch GPT-2 model testing | Automated testing suite |
+| `batch_test_gpt2.sh` | GPT-2モデル一括テスト | 複数ドメイン（compounds, molecule_nl, genome, protein_sequence, rna）のチェックポイントを自動検索して一括テスト実行 |
 | `gpt2_test_checkpoint.sh` | GPT-2 checkpoint validation | Model checkpoint testing |
 | `debug_protein_bert.sh` | BERT protein model debugging | Troubleshooting training issues |
 
@@ -127,6 +183,8 @@ cd /path/to/riken-dataset-fundational-model
 | `reboot-cause-check.sh` | System reboot analysis | Infrastructure monitoring |
 
 ## 🏗️ Web Interface & Services
+
+このセクションには**5個のスクリプト**が含まれています（Web: 2個、Experiment Management: 3個）
 
 ### Web Interface
 | Script | Purpose | Function | Port/Service |
@@ -413,17 +471,43 @@ logs/                                   # スクリプト実行ログ
 
 ### Development Workflow
 ```bash
+# Batch test all GPT-2 checkpoints
+./bootstraps/batch_test_gpt2.sh gpt2-output/
+
+# Test specific GPT-2 checkpoint
+./bootstraps/gpt2_test_checkpoint.sh
+
 # Debug BERT training
 ./bootstraps/debug_protein_bert.sh
-
-# Test model checkpoints
-./bootstraps/test_bert_checkpoint.sh
 
 # Create development vocabularies
 ./bootstraps/create_sample_vocab.sh
 ```
 
 ## 🔧 Prerequisites
+
+### Common Functions Library
+
+`common_functions.sh` provides shared utility functions used across multiple bootstrap scripts:
+
+**主な機能**:
+- `check_learning_source_dir()` - LEARNING_SOURCE_DIR環境変数の検証
+- `select_best_gpu()` - 最も空きメモリが多いGPUを自動選択
+- `check_gpu_memory(gpu_id, min_memory_gb)` - GPU空きメモリの確認
+- その他のエラーハンドリングとログ機能
+
+**使用例**:
+```bash
+# 他のスクリプトから読み込み
+source "$(dirname "$0")/common_functions.sh"
+
+# 環境変数チェック
+check_learning_source_dir
+
+# 最適なGPUを選択
+BEST_GPU=$(select_best_gpu)
+export CUDA_VISIBLE_DEVICES=$BEST_GPU
+```
 
 ### Environment Setup
 ```bash
@@ -443,6 +527,8 @@ source src/config/env.sh
 
 ## 📝 Script Categories
 
+このディレクトリには61個のスクリプト（Shell: 60, Python: 1）が含まれています：
+
 ### 🔍 **Evaluation Scripts** (8 scripts)
 自動化されたモデル評価スクリプト（データ準備・評価・可視化の3フェーズ統合）
 
@@ -460,8 +546,10 @@ source src/config/env.sh
 - `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym評価
 - `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification評価
 
-### 🛠️ **Development Scripts** (2 scripts)  
+### 🛠️ **Development Scripts** (4 scripts)  
 デバッグ、テスト、開発用ユーティリティ
+- `batch_test_gpt2.sh` - GPT-2チェックポイント一括テスト（全ドメイン対応）
+- `gpt2_test_checkpoint.sh` - GPT-2チェックポイント検証
 - `debug_protein_bert.sh` - BERTモデルのデバッグ
 - `reboot-cause-check.sh` - システムリブート原因の分析
 
@@ -472,8 +560,9 @@ source src/config/env.sh
 - `demo_experiment_system.sh` - システムデモンストレーション
 - `start_api_server.py` - Web APIサーバー起動
 
-### ⚙️ **Utility Scripts** (1 script)
+### ⚙️ **Utility Scripts** (2 scripts)
 データ準備とプロジェクトセットアップ用ヘルパースクリプト
+- `common_functions.sh` - 共通関数ライブラリ（GPU選択、メモリチェック、環境変数検証）
 - `create_sample_vocab.sh` - サンプル語彙ファイルの生成
 
 ## 🔄 統合スクリプトの構造
@@ -759,6 +848,25 @@ source src/config/env.sh
     ls -lh $LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna*
     
     # .gzファイルはそのまま使用可能（スクリプトが自動展開）
+    ```
+
+12. **複数のGPT-2チェックポイントをまとめてテストしたい**
+    ```bash
+    # 全ドメインのチェックポイントを一括テスト
+    ./bootstraps/batch_test_gpt2.sh gpt2-output/
+    
+    # 特定のディレクトリ配下のみテスト
+    ./bootstraps/batch_test_gpt2.sh path/to/checkpoints/
+    
+    # テスト結果は gpt2_test_results_TIMESTAMP/ に保存
+    ls -la gpt2_test_results_*/
+    
+    # ドメイン別の結果を確認
+    # - compounds: 化合物生成の妥当性
+    # - genome_sequence: ゲノム配列の整合性
+    # - protein_sequence: タンパク質配列の品質
+    # - rna: RNA配列の構造妥当性
+    # - molecule_nl: 分子記述テキストの品質
     ```
 
 ### ログの確認
