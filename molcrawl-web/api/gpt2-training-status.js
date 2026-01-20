@@ -68,7 +68,7 @@ const GPT2_CONFIGS = {
 };
 
 /**
- * Find all HuggingFace checkpoint directories (checkpoint-{step}/)
+ * Find all HuggingFace checkpoint directories (checkpoint-{step}/ or _checkpoint-{step}/)
  */
 function findCheckpointDirectories(outputDir) {
     try {
@@ -78,16 +78,29 @@ function findCheckpointDirectories(outputDir) {
         
         const entries = fs.readdirSync(outputDir, { withFileTypes: true });
         const checkpoints = entries
-            .filter(entry => entry.isDirectory() && entry.name.startsWith('checkpoint-'))
+            .filter(entry => {
+                // Support both "checkpoint-" and "_checkpoint-" prefixes
+                return entry.isDirectory() && 
+                       (entry.name.startsWith('checkpoint-') || entry.name.startsWith('_checkpoint-'));
+            })
             .map(entry => {
-                const step = parseInt(entry.name.split('-')[1]);
+                // Extract step number from both "checkpoint-123" and "_checkpoint-123"
+                const parts = entry.name.split('-');
+                const step = parseInt(parts[parts.length - 1]);
+                const checkpointPath = path.join(outputDir, entry.name);
+                
+                // Check if training_args.json exists (valid checkpoint)
+                const trainingArgsPath = path.join(checkpointPath, 'training_args.json');
+                const hasTrainingArgs = fs.existsSync(trainingArgsPath);
+                
                 return {
                     name: entry.name,
                     step: step,
-                    path: path.join(outputDir, entry.name),
+                    path: checkpointPath,
+                    hasTrainingArgs: hasTrainingArgs,
                 };
             })
-            .filter(cp => !isNaN(cp.step))
+            .filter(cp => !isNaN(cp.step) && cp.hasTrainingArgs) // Only include valid checkpoints with training_args.json
             .sort((a, b) => b.step - a.step); // Sort by step descending
         
         return checkpoints;
