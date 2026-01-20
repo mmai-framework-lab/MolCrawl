@@ -116,6 +116,13 @@ model_size = None
 use_custom_rna_dataset = False
 tokenizer = None
 
+# wandb settings (can be overridden by environment variables, config file, or command line args)
+use_wandb = os.environ.get("USE_WANDB", "False").lower() in ("true", "1", "yes")  # log training metrics to wandb
+wandb_project = os.environ.get("WANDB_PROJECT", "bert-training")  # wandb project name
+wandb_run_name = os.environ.get("WANDB_RUN_NAME", None)  # wandb run name (None = auto-generate)
+wandb_entity = os.environ.get("WANDB_ENTITY", None)  # wandb entity/team name (None = default)
+wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in ("true", "1", "yes")  # log model checkpoints as wandb artifacts
+
 model_path = ""
 max_length = 1024
 dataset_dir = ""
@@ -173,6 +180,27 @@ else:
 
 model = BertForMaskedLM(config=model_config)
 
+# Initialize wandb if enabled
+wandb_run = None
+if use_wandb:
+    import wandb
+    from datetime import datetime
+
+    # Generate run name if not provided
+    if wandb_run_name is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        wandb_run_name = f"bert-{model_size}-{timestamp}"
+
+    # Initialize wandb
+    wandb_run = wandb.init(
+        project=wandb_project,
+        entity=wandb_entity,
+        name=wandb_run_name,
+        config=config,
+        resume="allow",  # Allow resuming if run exists
+    )
+    print(f"Wandb initialized: {wandb_run.url}")
+
 # Use custom data collator if defined in config, otherwise use default
 if "data_collator" in globals():
     print("Using custom data collator from config")
@@ -209,7 +237,7 @@ training_args = TrainingArguments(
     warmup_steps=warmup_steps,
     learning_rate=learning_rate,
     weight_decay=weight_decay,
-    report_to="none",  # Disable MLflow and other integrations to avoid pydantic import errors
+    report_to="wandb" if use_wandb else "none",  # Enable wandb if configured, otherwise disable integrations
     # load_best_model_at_end=True,  # whether to load the best model (in terms of loss) at the end of training
     # save_total_limit=3,           # whether you don't have much space so you let only 3 model weights saved in the disk
 )
@@ -375,3 +403,8 @@ except Exception as e:
         trainer.train(resume_from_checkpoint=None)
     else:
         raise
+finally:
+    # Finish wandb run
+    if wandb_run is not None:
+        wandb_run.finish()
+        print("Wandb run finished.")

@@ -41,12 +41,12 @@ dataset_params = {}
 
 tensorboard = False  # log training metrics to tensorboard
 tensorboard_dir = "runs"
-# wandb settings
-use_wandb = False  # log training metrics to wandb
-wandb_project = "gpt2-training"  # wandb project name
-wandb_run_name = None  # wandb run name (None = auto-generate)
-wandb_entity = None  # wandb entity/team name (None = default)
-wandb_log_model = True  # log model checkpoints as wandb artifacts
+# wandb settings (can be overridden by environment variables, config file, or command line args)
+use_wandb = os.environ.get("USE_WANDB", "False").lower() in ("true", "1", "yes")  # log training metrics to wandb
+wandb_project = os.environ.get("WANDB_PROJECT", "gpt2-training")  # wandb project name
+wandb_run_name = os.environ.get("WANDB_RUN_NAME", None)  # wandb run name (None = auto-generate)
+wandb_entity = os.environ.get("WANDB_ENTITY", None)  # wandb entity/team name (None = default)
+wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in ("true", "1", "yes")  # log model checkpoints as wandb artifacts
 
 out_dir = "out-gpt2"
 eval_interval = 2000
