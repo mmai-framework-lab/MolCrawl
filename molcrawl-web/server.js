@@ -52,6 +52,7 @@ const { getDirectoryStructure, expandDirectory, getFullDirectoryTree, checkZincD
 const { getGenomeSpeciesList, getGenomeSpeciesByCategory } = require('./api/genome-species');
 const datasetProgressRouter = require('./api/dataset-progress');
 const gpt2TrainingStatusRouter = require('./api/gpt2-training-status');
+const gpt2InferenceRouter = require('./api/gpt2-inference');
 const bertTrainingStatusRouter = require('./api/bert-training-status');
 const trainingProcessStatusRouter = require('./api/training-process-status');
 const { getLogsList, getAllLogsOverview, getLogContent, getTailLog } = require('./api/logs');
@@ -91,6 +92,7 @@ app.get('/api/genome/species', validateDirectoryExists, getGenomeSpeciesList);
 app.get('/api/genome/species/category', validateDirectoryExists, getGenomeSpeciesByCategory);
 app.use('/api/dataset-progress', validateDirectoryExists, datasetProgressRouter);
 app.use('/api/gpt2-training-status', validateDirectoryExists, gpt2TrainingStatusRouter);
+app.use('/api/gpt2-inference', validateDirectoryExists, gpt2InferenceRouter);
 app.use('/api/bert-training-status', validateDirectoryExists, bertTrainingStatusRouter);
 app.use('/api/training-process-status', trainingProcessStatusRouter);
 
