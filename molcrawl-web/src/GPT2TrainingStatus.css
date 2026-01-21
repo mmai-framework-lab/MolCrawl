@@ -119,11 +119,25 @@
   padding: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
 }
 
 .model-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.model-clickable {
+  cursor: pointer;
+}
+
+.model-clickable:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+
+.model-clickable:active {
+  transform: translateY(0);
 }
 
 .model-header {

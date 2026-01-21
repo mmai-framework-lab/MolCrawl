@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import InferenceModal from './InferenceModal';
 import './GPT2TrainingStatus.css';
 
 const GPT2TrainingStatus = ({ dataset }) => {
@@ -7,6 +8,8 @@ const GPT2TrainingStatus = ({ dataset }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [autoRefresh, setAutoRefresh] = useState(true);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedModel, setSelectedModel] = useState(null);
 
     const fetchTrainingStatus = useCallback(async () => {
         try {
@@ -109,6 +112,22 @@ const GPT2TrainingStatus = ({ dataset }) => {
         }
     };
 
+    const handleModelClick = (modelData, size) => {
+        if (modelData && modelData.exists && modelData.checkpoint) {
+            setSelectedModel({
+                dataset,
+                size,
+                modelData,
+            });
+            setModalOpen(true);
+        }
+    };
+
+    const handleModalClose = () => {
+        setModalOpen(false);
+        setSelectedModel(null);
+    };
+
     const renderModelCard = (modelData, size) => {
         // Check if process is running for this dataset and size
         const runningProcess = processData?.processes?.find(
@@ -180,9 +199,15 @@ const GPT2TrainingStatus = ({ dataset }) => {
         const isActuallyTraining = runningProcess !== undefined;
         const displayStatus = isActuallyTraining ? 'training' : 'stopped';
         const cardClass = isActuallyTraining ? 'model-training' : 'model-stopped';
+        const isClickable = modelData.exists && modelData.checkpoint;
 
         return (
-            <div key={size} className={`model-card ${cardClass}`}>
+            <div 
+                key={size} 
+                className={`model-card ${cardClass} ${isClickable ? 'model-clickable' : ''}`}
+                onClick={() => isClickable && handleModelClick(modelData, size)}
+                title={isClickable ? 'Click to run inference' : ''}
+            >
                 <div className="model-header">
                     <h4>{size.toUpperCase()}</h4>
                     {getStatusBadge(displayStatus)}
@@ -351,6 +376,17 @@ const GPT2TrainingStatus = ({ dataset }) => {
                     )
                 )}
             </div>
+
+            {/* Inference Modal */}
+            {selectedModel && (
+                <InferenceModal
+                    isOpen={modalOpen}
+                    onClose={handleModalClose}
+                    dataset={selectedModel.dataset}
+                    size={selectedModel.size}
+                    modelData={selectedModel.modelData}
+                />
+            )}
         </div>
     );
 };
