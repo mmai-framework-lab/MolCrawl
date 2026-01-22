@@ -38,7 +38,7 @@ model_path = os.path.join(
 )
 
 # DNABERT-2 optimized settings
-max_length = 512  # DNABERT-2標準値（より長い配列が必要な場合は1024に）
+max_length = 1024  # データセットに合わせて1024に設定（REFSEQ dataset uses 1024）
 dataset_dir = REFSEQ_DATASET_DIR
 learning_rate = 3e-5  # DNABERT-2推奨値（BERTの6e-6より高い）
 weight_decay = 0.01  # 正則化
