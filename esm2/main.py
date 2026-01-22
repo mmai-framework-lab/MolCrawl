@@ -1,14 +1,18 @@
 """
-DNABERT-2 Training Script for Genome Sequence Data
+ESM-2 Training Script for Protein Sequence Data
 
-DNABERT-2は、DNA配列解析に特化したBERTベースモデルです。
-主な改良点：
-- BPE (Byte Pair Encoding) トークナイゼーション（k-mer不要）
-- より効率的なアテンション機構
-- DNA特有の特性を考慮したアーキテクチャ
+ESM-2 (Evolutionary Scale Modeling 2) は、Metaが開発したタンパク質配列専用の
+最先端トランスフォーマーモデルです。
 
-参考: DNABERT-2: Efficient Foundation Model and Benchmark for Multi-Species Genome
-https://github.com/MAGICS-LAB/DNABERT_2
+主な特徴:
+- タンパク質配列に特化した事前学習
+- 6.5億パラメータまでのスケーラブルなアーキテクチャ
+- Structure prediction, function annotation, variant effect predictionなど幅広いタスクに対応
+- ESM-1bよりも高速で高精度
+
+参考: 
+- Language models of protein sequences at the scale of evolution enable accurate structure prediction
+- https://github.com/facebookresearch/esm
 """
 
 import os
@@ -17,20 +21,20 @@ from pathlib import Path
 import pyarrow as pa
 from datasets import Dataset, load_from_disk
 from transformers import (
-    BertConfig,
-    BertForMaskedLM,
+    EsmConfig,
+    EsmForMaskedLM,
     DataCollatorForLanguageModeling,
     Trainer,
     TrainingArguments,
 )
 
 
-class DNADatasetLoader:
+class ProteinDatasetLoader:
     """
-    DNA配列データセット用のローダー
+    タンパク質配列データセット用のローダー
     
-    既存のgenome_sequenceデータセットを読み込み、
-    DNABERT-2用に前処理を行います。
+    既存のprotein_sequenceデータセットを読み込み、
+    ESM-2用に前処理を行います。
     """
 
     def __init__(self, data_dir, split="train", test_size=0.1):
@@ -38,7 +42,7 @@ class DNADatasetLoader:
         self.split = split
         self.test_size = test_size
 
-        print(f"📂 Loading DNA dataset from {data_dir}")
+        print(f"📂 Loading protein dataset from {data_dir}")
 
         # Load data from Arrow files or HuggingFace format
         try:
@@ -66,6 +70,8 @@ class DNADatasetLoader:
                     # Convert numpy arrays to lists for HuggingFace compatibility
                     if "token" in df.columns:
                         df["token"] = df["token"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
+                    if "sequence_tokens" in df.columns:
+                        df["sequence_tokens"] = df["sequence_tokens"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
 
                     self.dataset = Dataset.from_pandas(df)
                     print("✅ Created HuggingFace Dataset")
@@ -118,21 +124,21 @@ tokenizer = None
 
 # wandb settings
 use_wandb = os.environ.get("USE_WANDB", "False").lower() in ("true", "1", "yes")
-wandb_project = os.environ.get("WANDB_PROJECT", "dnabert2-training")
+wandb_project = os.environ.get("WANDB_PROJECT", "esm2-training")
 wandb_run_name = os.environ.get("WANDB_RUN_NAME", None)
 wandb_entity = os.environ.get("WANDB_ENTITY", None)
 wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in ("true", "1", "yes")
 
 model_path = ""
-max_length = 512  # DNABERT-2 default: 512 (より長い配列の場合は増やす)
+max_length = 1024  # ESM-2 default: 1024
 dataset_dir = ""
-learning_rate = 3e-5  # DNABERT-2推奨値
+learning_rate = 4e-4  # ESM-2推奨値（論文より）
 weight_decay = 0.01
-warmup_steps = 10000
-max_steps = 200000
-batch_size = 16
-gradient_accumulation_steps = 4
-per_device_eval_batch_size = 8
+warmup_steps = 2000
+max_steps = 500000
+batch_size = 4  # タンパク質配列は長いためバッチサイズは小さめ
+gradient_accumulation_steps = 32  # Effective batch size = 4 * 32 = 128
+per_device_eval_batch_size = 2
 log_interval = 100
 save_steps = 5000
 
@@ -140,7 +146,7 @@ save_steps = 5000
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 
 # Load config from file
-configurator_path = "dnabert2/configurator.py" if os.path.exists("dnabert2/configurator.py") else "configurator.py"
+configurator_path = "esm2/configurator.py" if os.path.exists("esm2/configurator.py") else "configurator.py"
 if os.path.exists(configurator_path):
     exec(open(configurator_path).read())
 
@@ -158,59 +164,74 @@ if not dataset_dir:
 # Get vocab size from tokenizer
 if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
     try:
-        meta_vocab_size = (len(tokenizer) // 8 + 1) * 8
+        meta_vocab_size = len(tokenizer.get_vocab())
         print(f"📊 Calculated meta_vocab_size: {meta_vocab_size}")
     except Exception as e:
         raise ImportError(
             "Please initialize the variable meta_vocab_size in the config.py file with the size of your vocabulary."
         ) from e
 
-# DNABERT-2 Model Configuration
-# Based on original DNABERT-2 architecture but adapted for different sizes
+# ESM-2 Model Configuration
+# Based on original ESM-2 architecture
+# ESM-2のモデルサイズ: 8M, 35M, 150M, 650M, 3B, 15B
+# ここでは学習可能なサイズとして small/medium/large を定義
 if model_size == "small":
-    model_config = BertConfig(
+    # ESM-2 8M parameters equivalent
+    model_config = EsmConfig(
         vocab_size=meta_vocab_size,
-        max_position_embeddings=max_length,
-        hidden_size=768,
-        num_hidden_layers=12,
-        num_attention_heads=12,
-        intermediate_size=3072,
-        hidden_dropout_prob=0.1,
-        attention_probs_dropout_prob=0.1,
+        mask_token_id=tokenizer.mask_token_id if hasattr(tokenizer, 'mask_token_id') else 32,
+        pad_token_id=tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') else 1,
+        hidden_size=320,
+        num_hidden_layers=6,
+        num_attention_heads=20,
+        intermediate_size=1280,
+        max_position_embeddings=max_length + 2,  # +2 for BOS/EOS
+        hidden_dropout_prob=0.0,
+        attention_probs_dropout_prob=0.0,
+        layer_norm_eps=1e-5,
     )
 elif model_size == "medium":
-    model_config = BertConfig(
+    # ESM-2 35M parameters equivalent
+    model_config = EsmConfig(
         vocab_size=meta_vocab_size,
-        max_position_embeddings=max_length,
-        hidden_size=1024,
-        num_hidden_layers=24,
-        num_attention_heads=16,
-        intermediate_size=4096,
-        hidden_dropout_prob=0.1,
-        attention_probs_dropout_prob=0.1,
+        mask_token_id=tokenizer.mask_token_id if hasattr(tokenizer, 'mask_token_id') else 32,
+        pad_token_id=tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') else 1,
+        hidden_size=480,
+        num_hidden_layers=12,
+        num_attention_heads=20,
+        intermediate_size=1920,
+        max_position_embeddings=max_length + 2,
+        hidden_dropout_prob=0.0,
+        attention_probs_dropout_prob=0.0,
+        layer_norm_eps=1e-5,
     )
 elif model_size == "large":
-    model_config = BertConfig(
+    # ESM-2 150M parameters equivalent
+    model_config = EsmConfig(
         vocab_size=meta_vocab_size,
-        max_position_embeddings=max_length,
-        hidden_size=1280,
-        num_hidden_layers=32,
+        mask_token_id=tokenizer.mask_token_id if hasattr(tokenizer, 'mask_token_id') else 32,
+        pad_token_id=tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') else 1,
+        hidden_size=640,
+        num_hidden_layers=30,
         num_attention_heads=20,
-        intermediate_size=5120,
-        hidden_dropout_prob=0.1,
-        attention_probs_dropout_prob=0.1,
+        intermediate_size=2560,
+        max_position_embeddings=max_length + 2,
+        hidden_dropout_prob=0.0,
+        attention_probs_dropout_prob=0.0,
+        layer_norm_eps=1e-5,
     )
 else:
     raise ValueError(f"model_size: {model_size} is not supported. Choose between small, medium, and large")
 
-print(f"🧬 DNABERT-2 Model Configuration ({model_size}):")
+print(f"🧬 ESM-2 Model Configuration ({model_size}):")
 print(f"   - Vocab size: {meta_vocab_size}")
 print(f"   - Max length: {max_length}")
 print(f"   - Hidden size: {model_config.hidden_size}")
 print(f"   - Layers: {model_config.num_hidden_layers}")
 print(f"   - Attention heads: {model_config.num_attention_heads}")
+print(f"   - Parameters: ~{model_config.hidden_size * model_config.num_hidden_layers * 12 // 1_000_000}M")
 
-model = BertForMaskedLM(config=model_config)
+model = EsmForMaskedLM(config=model_config)
 
 # Initialize wandb if enabled
 wandb_run = None
@@ -220,7 +241,7 @@ if use_wandb:
 
     if wandb_run_name is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        wandb_run_name = f"dnabert2-{model_size}-{timestamp}"
+        wandb_run_name = f"esm2-{model_size}-{timestamp}"
 
     wandb_run = wandb.init(
         project=wandb_project,
@@ -246,7 +267,7 @@ else:
     if actual_tokenizer is None:
         raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
 
-    # DNABERT-2: MLM probability 0.15 (BERT standard)
+    # ESM-2: MLM probability 0.15 (BERT standard)
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=actual_tokenizer, 
         mlm=True, 
@@ -259,7 +280,7 @@ training_args = TrainingArguments(
     logging_strategy="steps",
     logging_steps=log_interval,
     eval_strategy="steps",
-    eval_steps=log_interval * 10,  # Evaluate less frequently for efficiency
+    eval_steps=log_interval * 10,
     overwrite_output_dir=True,
     max_steps=max_steps,
     per_device_train_batch_size=batch_size,
@@ -269,19 +290,19 @@ training_args = TrainingArguments(
     warmup_steps=warmup_steps,
     learning_rate=learning_rate,
     weight_decay=weight_decay,
-    fp16=True,  # Enable mixed precision training for efficiency
-    dataloader_num_workers=4,  # Parallel data loading
+    fp16=True,  # Enable mixed precision training
+    dataloader_num_workers=4,
     report_to="wandb" if use_wandb else "none",
-    save_total_limit=3,  # Keep only 3 most recent checkpoints
-    load_best_model_at_end=False,  # Don't load best model (saves memory)
+    save_total_limit=3,
+    load_best_model_at_end=False,
 )
 
 # Load datasets
 print("📂 Loading datasets...")
 if "use_custom_dataset_loader" in globals() and globals()["use_custom_dataset_loader"]:
-    print("🧬 Using custom DNA dataset loader")
-    train_data_loader = DNADatasetLoader(dataset_dir, split="train", test_size=0.1)
-    test_data_loader = DNADatasetLoader(dataset_dir, split="test", test_size=0.1)
+    print("🧬 Using custom protein dataset loader")
+    train_data_loader = ProteinDatasetLoader(dataset_dir, split="train", test_size=0.1)
+    test_data_loader = ProteinDatasetLoader(dataset_dir, split="test", test_size=0.1)
     train_dataset = train_data_loader.get_dataset()
     test_dataset = test_data_loader.get_dataset()
 else:
@@ -358,7 +379,7 @@ else:
     print("   Starting training from scratch...")
 
 # Train
-print("🚀 Starting DNABERT-2 training...")
+print("🚀 Starting ESM-2 training...")
 try:
     trainer.train(resume_from_checkpoint=resume_checkpoint)
     print("✅ Training completed successfully!")
@@ -374,4 +395,4 @@ finally:
         wandb_run.finish()
         print("📊 Wandb run finished.")
 
-print("🎉 DNABERT-2 training script completed!")
+print("🎉 ESM-2 training script completed!")
