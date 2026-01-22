@@ -278,7 +278,7 @@ training_args = TrainingArguments(
 
 # Load datasets
 print("📂 Loading datasets...")
-if "use_custom_dataset_loader" in globals() and globals()["use_custom_dataset_loader"]:
+if "use_custom_dataset_loader" in globals() and use_custom_dataset_loader:
     print("🧬 Using custom DNA dataset loader")
     train_data_loader = DNADatasetLoader(dataset_dir, split="train", test_size=0.1)
     test_data_loader = DNADatasetLoader(dataset_dir, split="test", test_size=0.1)
