@@ -21,9 +21,9 @@
    - Organix13 dataset integration
 
 ### Bootstrap Scripts
-4. **bootstraps/03g-compounds-train-chemberta2-small.sh**
-5. **bootstraps/03g-compounds-train-chemberta2-medium.sh**
-6. **bootstraps/03g-compounds-train-chemberta2-large.sh**
+4. **workflows/03g-compounds-train-chemberta2-small.sh**
+5. **workflows/03g-compounds-train-chemberta2-medium.sh**
+6. **workflows/03g-compounds-train-chemberta2-large.sh**
    - Executable training scripts for 3 model sizes
    - Environment variable configuration
    - Automatic logging
@@ -41,19 +41,19 @@
 
 ```bash
 # Small model (recommended for testing)
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03g-compounds-train-chemberta2-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03g-compounds-train-chemberta2-small.sh
 
 # Medium model
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03g-compounds-train-chemberta2-medium.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03g-compounds-train-chemberta2-medium.sh
 
 # Large model
-CUDA_VISIBLE_DEVICES=0,1,2,3 ./bootstraps/03g-compounds-train-chemberta2-large.sh
+CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03g-compounds-train-chemberta2-large.sh
 
 # With Weights & Biases
 LEARNING_SOURCE_DIR=learning_source_20251210 \
 USE_WANDB=True \
 WANDB_PROJECT=chemberta2-compounds \
-  ./bootstraps/03g-compounds-train-chemberta2-small.sh
+  ./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
 ## 🔧 Model Specifications

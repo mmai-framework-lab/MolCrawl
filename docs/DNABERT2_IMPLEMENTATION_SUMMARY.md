@@ -12,9 +12,9 @@
 
 ### 2. 実行スクリプト
 
-- ✅ [bootstraps/03d-genome_sequence-train-dnabert2-small.sh](../bootstraps/03d-genome_sequence-train-dnabert2-small.sh)
-- ✅ [bootstraps/03d-genome_sequence-train-dnabert2-medium.sh](../bootstraps/03d-genome_sequence-train-dnabert2-medium.sh)
-- ✅ [bootstraps/03d-genome_sequence-train-dnabert2-large.sh](../bootstraps/03d-genome_sequence-train-dnabert2-large.sh)
+- ✅ [workflows/03d-genome_sequence-train-dnabert2-small.sh](../workflows/03d-genome_sequence-train-dnabert2-small.sh)
+- ✅ [workflows/03d-genome_sequence-train-dnabert2-medium.sh](../workflows/03d-genome_sequence-train-dnabert2-medium.sh)
+- ✅ [workflows/03d-genome_sequence-train-dnabert2-large.sh](../workflows/03d-genome_sequence-train-dnabert2-large.sh)
 
 ### 3. ドキュメント
 
@@ -47,14 +47,14 @@
 ```bash
 # Smallモデルで学習開始
 cd /wren/matsubara/riken-dataset-fundational-model
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03d-genome_sequence-train-dnabert2-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03d-genome_sequence-train-dnabert2-small.sh
 ```
 
 ### Wandb有効化
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 USE_WANDB=True WANDB_PROJECT=dnabert2-genome \
-  ./bootstraps/03d-genome_sequence-train-dnabert2-small.sh
+  ./workflows/03d-genome_sequence-train-dnabert2-small.sh
 ```
 
 ### ログ確認

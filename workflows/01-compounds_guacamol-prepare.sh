@@ -3,7 +3,7 @@
 # GuacaMol Dataset Download Script
 #
 # Usage:
-#   LEARNING_SOURCE_DIR="learning_20251104" bash bootstraps/download_guacamol.sh
+#   LEARNING_SOURCE_DIR="learning_20251104" bash workflows/download_guacamol.sh
 #
 
 set -e

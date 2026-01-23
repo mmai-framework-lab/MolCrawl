@@ -41,17 +41,17 @@ ls -la learning_source_20250904-rna-refined/rna/training_ready_hf_dataset/
 
 #### Small Model
 ```bash
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-small.sh
 ```
 
 #### Medium Model
 ```bash
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-medium.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-medium.sh
 ```
 
 #### Large Model
 ```bash
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-large.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-large.sh
 ```
 
 ### 3. Weights & Biases Integration
@@ -61,7 +61,7 @@ CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-large.sh
 LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined \
 USE_WANDB=True \
 WANDB_PROJECT=rnaformer-transcriptome \
-  ./bootstraps/03f-rna-train-rnaformer-small.sh
+  ./workflows/03f-rna-train-rnaformer-small.sh
 ```
 
 ## Dataset Format
@@ -90,7 +90,7 @@ rnaformer/
 └── configs/
     └── rna.py                   # RNA transcriptome設定
 
-bootstraps/
+workflows/
 ├── 03f-rna-train-rnaformer-small.sh
 ├── 03f-rna-train-rnaformer-medium.sh
 └── 03f-rna-train-rnaformer-large.sh
@@ -158,7 +158,7 @@ python rnaformer/main.py \
 ```bash
 # LEARNING_SOURCE_DIRを設定
 export LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined
-./bootstraps/03f-rna-train-rnaformer-small.sh
+./workflows/03f-rna-train-rnaformer-small.sh
 ```
 
 ## Performance Benchmarks
@@ -189,7 +189,7 @@ batch_size = 16       # バッチサイズの変更
 チェックポイントから自動的に再開：
 ```bash
 # 同じコマンドを実行するだけで、最新のチェックポイントから再開
-./bootstraps/03f-rna-train-rnaformer-small.sh
+./workflows/03f-rna-train-rnaformer-small.sh
 ```
 
 ## Comparison with Other Models

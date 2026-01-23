@@ -3,7 +3,7 @@
 # Convert molecule NL parquet file to split arrow files
 #
 # Usage:
-#   bash bootstraps/convert_molecule_nl_to_arrow.sh
+#   bash workflows/convert_molecule_nl_to_arrow.sh
 #
 
 set -e
@@ -28,7 +28,7 @@ OUTPUT_DIR="${LEARNING_SOURCE_DIR}/molecule_nl/arrow_splits"
 if [ ! -f "${PARQUET_FILE}" ]; then
     echo "ERROR: Parquet file not found: ${PARQUET_FILE}"
     echo "Please run the preparation script first:"
-    echo "  LEARNING_SOURCE_DIR='${LEARNING_SOURCE_DIR}' bash bootstraps/01_molecule-nl_prepare.sh"
+    echo "  LEARNING_SOURCE_DIR='${LEARNING_SOURCE_DIR}' bash workflows/01_molecule-nl_prepare.sh"
     exit 1
 fi
 

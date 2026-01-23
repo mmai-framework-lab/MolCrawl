@@ -42,17 +42,17 @@ ls -la learning_source_20251210/compounds/organix13/compounds/training_ready_hf_
 
 #### Small Model
 ```bash
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03g-compounds-train-chemberta2-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
 #### Medium Model
 ```bash
-CUDA_VISIBLE_DEVICES=0,1 ./bootstraps/03g-compounds-train-chemberta2-medium.sh
+CUDA_VISIBLE_DEVICES=0,1 ./workflows/03g-compounds-train-chemberta2-medium.sh
 ```
 
 #### Large Model
 ```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3 ./bootstraps/03g-compounds-train-chemberta2-large.sh
+CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03g-compounds-train-chemberta2-large.sh
 ```
 
 ### 3. Weights & Biases Integration
@@ -62,7 +62,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 ./bootstraps/03g-compounds-train-chemberta2-large.s
 LEARNING_SOURCE_DIR=learning_source_20251210 \
 USE_WANDB=True \
 WANDB_PROJECT=chemberta2-compounds \
-  ./bootstraps/03g-compounds-train-chemberta2-small.sh
+  ./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
 ## Dataset Format
@@ -98,7 +98,7 @@ chemberta2/
 └── configs/
     └── compounds.py             # SMILES化合物設定
 
-bootstraps/
+workflows/
 ├── 03g-compounds-train-chemberta2-small.sh
 ├── 03g-compounds-train-chemberta2-medium.sh
 └── 03g-compounds-train-chemberta2-large.sh
@@ -169,7 +169,7 @@ python chemberta2/main.py \
 ```bash
 # LEARNING_SOURCE_DIRを設定
 export LEARNING_SOURCE_DIR=learning_source_20251210
-./bootstraps/03g-compounds-train-chemberta2-small.sh
+./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
 ## Performance Benchmarks
@@ -200,7 +200,7 @@ batch_size = 256      # バッチサイズの変更
 チェックポイントから自動的に再開：
 ```bash
 # 同じコマンドを実行するだけで、最新のチェックポイントから再開
-./bootstraps/03g-compounds-train-chemberta2-small.sh
+./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
 ### Fine-tuning for Downstream Tasks

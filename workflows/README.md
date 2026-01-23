@@ -1,6 +1,6 @@
-# Bootstrap Scripts
+# Workflow Scripts
 
-Project initialization, evaluation, and maintenance scripts for the RIKEN Dataset Foundational Model project.
+Workflow scripts for data preparation, model training, evaluation, and maintenance for the RIKEN Dataset Foundational Model project.
 
 **最終更新**: 2026年1月15日  
 **スクリプト総数**: 61 (Shell: 60, Python: 1)
@@ -27,7 +27,7 @@ Project initialization, evaluation, and maintenance scripts for the RIKEN Datase
 
 This directory contains shell scripts for various project operations including data preparation, model training, evaluation, testing, and system maintenance. All scripts should be executed from the project root directory unless otherwise specified.
 
-The bootstrap scripts are organized into several categories:
+The workflow scripts are organized into several categories:
 - **Data Preparation** (Phase 01-02): Dataset tokenization and format conversion - 13 scripts
 - **Model Training** (Phase 03a-03c): Standard and enhanced training workflows - 28 scripts
 - **Model Evaluation**: Comprehensive evaluation with visualization - 8 scripts
@@ -38,7 +38,7 @@ The bootstrap scripts are organized into several categories:
 ```bash
 # Usage pattern
 cd /path/to/riken-dataset-fundational-model
-./bootstraps/script_name.sh
+./workflows/script_name.sh
 ```
 
 ## 🛠️ Initial Setup
@@ -216,35 +216,35 @@ All evaluation scripts use the structured directory format and support custom ou
 
 ```bash
 # 初回セットアップ
-./bootstraps/00_first.sh
+./workflows/00_first.sh
 
 # データ準備の基本フロー
 export LEARNING_SOURCE_DIR=/data/learning_source
 
 # Phase 1: Dataset preparation
-./bootstraps/01_compounds_prepare.sh
-./bootstraps/01_genome-sequence_prepare.sh  
-./bootstraps/01_protein-sequence_prepare.sh
+./workflows/01_compounds_prepare.sh
+./workflows/01_genome-sequence_prepare.sh  
+./workflows/01_protein-sequence_prepare.sh
 # ... 他のデータセット
 
 # Phase 2: GPT-2 format conversion (if needed)
-./bootstraps/02-compounds-prepare-gpt2.sh
+./workflows/02-compounds-prepare-gpt2.sh
 # ... 対応するGPT-2準備スクリプト
 
 # Phase 3: Training (optional)
-./bootstraps/03a-compounds-guacamol-train-small.sh
+./workflows/03a-compounds-guacamol-train-small.sh
 # ... 対応する訓練スクリプト
 
 # Evaluation (標準的な使用方法)
-./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 
 # Web interface
-./bootstraps/web.sh
+./workflows/web.sh
 
 # 入力と出力を分離する場合
 export LEARNING_SOURCE_DIR=/readonly/learning_source  # 入力（読み取り専用）
 export EVALUATION_OUTPUT_DIR=/writable/outputs        # 出力（書き込み可能）
-./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 ```
 
 ### ディレクトリ構造
@@ -295,20 +295,20 @@ logs/                                   # スクリプト実行ログ
 
 ```bash
 # BERT ProteinGym評価 - カスタム出力先
-./bootstraps/run_bert_proteingym_evaluation.sh \
+./workflows/run_bert_proteingym_evaluation.sh \
   --output_dir /custom/path/bert_proteingym_results
 
 # GPT-2 ClinVar評価 - カスタム出力先
-./bootstraps/run_gpt2_clinvar_evaluation.sh \
+./workflows/run_gpt2_clinvar_evaluation.sh \
   --output_dir /custom/path/clinvar_results
 
 # GPT-2 ProteinGym評価 - カスタム出力先
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv \
   -o /custom/path/proteingym_results
 
 # GPT-2 OMIM実データ評価 - カスタム出力先
-./bootstraps/run_gpt2_omim_evaluation_real.sh \
+./workflows/run_gpt2_omim_evaluation_real.sh \
   --output_dir /custom/path/omim_real_results
 ```
 
@@ -330,51 +330,51 @@ logs/                                   # スクリプト実行ログ
 #### BERT Model Evaluations
 ```bash
 # BERT ProteinGym evaluation (統合版: データ準備→評価→可視化)
-./bootstraps/run_bert_proteingym_evaluation.sh --max_variants 2000 --batch_size 32
+./workflows/run_bert_proteingym_evaluation.sh --max_variants 2000 --batch_size 32
 
 # サンプルデータのみ作成
-./bootstraps/run_bert_proteingym_evaluation.sh --sample_only
+./workflows/run_bert_proteingym_evaluation.sh --sample_only
 
 # 評価のみ実行（データ準備をスキップ）
-./bootstraps/run_bert_proteingym_evaluation.sh --skip_data_prep
+./workflows/run_bert_proteingym_evaluation.sh --skip_data_prep
 
 # BERT ClinVar評価（バランスサンプリング: 陽性1000件+陰性1000件）
 # 初回実行: データ準備から実行
-./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 
 # データ準備済みの場合: 評価のみ実行
-./bootstraps/run_bert_clinvar_evaluation.sh
+./workflows/run_bert_clinvar_evaluation.sh
 
 # データ再ダウンロード（強制）
-./bootstraps/run_bert_clinvar_evaluation.sh --force-download
+./workflows/run_bert_clinvar_evaluation.sh --force-download
 ```
 
 #### GPT-2 Genome Sequence Evaluations
 ```bash
 # ClinVar評価（バランスサンプリング: 陽性1000件+陰性1000件）
 # 初回実行: HuggingFaceからデータダウンロード＆バランスサンプリング
-./bootstraps/run_gpt2_clinvar_evaluation.sh --download --model-size medium
+./workflows/run_gpt2_clinvar_evaluation.sh --download --model-size medium
 
 # データ準備済みの場合: 評価のみ実行
-./bootstraps/run_gpt2_clinvar_evaluation.sh --model-size small
+./workflows/run_gpt2_clinvar_evaluation.sh --model-size small
 
 # 評価のみ（データ準備スキップ）
-./bootstraps/run_gpt2_clinvar_evaluation.sh --eval-only --model-size medium
+./workflows/run_gpt2_clinvar_evaluation.sh --eval-only --model-size medium
 
 # 可視化のみ実行
-./bootstraps/run_gpt2_clinvar_evaluation.sh --visualize-only
+./workflows/run_gpt2_clinvar_evaluation.sh --visualize-only
 
 # COSMIC評価
-./bootstraps/run_gpt2_cosmic_evaluation.sh --model_size small --batch_size 32
+./workflows/run_gpt2_cosmic_evaluation.sh --model_size small --batch_size 32
 
 # OMIM評価（サンプルデータ・開発用）
-./bootstraps/run_gpt2_omim_evaluation_dummy.sh --max_samples 50
+./workflows/run_gpt2_omim_evaluation_dummy.sh --max_samples 50
 
 # OMIM評価（実データ・本番用、認証必要）
-./bootstraps/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
+./workflows/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
 
 # OMIM評価（既存データを再利用）
-./bootstraps/run_gpt2_omim_evaluation_real.sh \
+./workflows/run_gpt2_omim_evaluation_real.sh \
   --existing_omim_dir /path/to/downloaded/omim_data \
   --model_size medium
 ```
@@ -382,25 +382,25 @@ logs/                                   # スクリプト実行ログ
 #### GPT-2 Protein Sequence Evaluations
 ```bash
 # ProteinGym評価（統合版）
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m gpt2-output/protein_sequence-small/ckpt.pt \
   -d proteingym_data/sample.csv
 
 # サンプルデータ自動作成と評価（推奨データセットをダウンロード）
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m gpt2-output/protein_sequence-small/ckpt.pt \
   --create-sample
 
 # Protein Classification評価（デフォルトモデル使用）
-./bootstraps/run_gpt2_protein_classification.sh -s
+./workflows/run_gpt2_protein_classification.sh -s
 
 # Protein Classification評価（カスタムモデル指定）
-./bootstraps/run_gpt2_protein_classification.sh \
+./workflows/run_gpt2_protein_classification.sh \
   -m gpt2-output/protein_sequence-medium/ckpt.pt \
   -s
 
 # 可視化のみ実行（評価済みの場合）
-./bootstraps/run_gpt2_protein_classification.sh \
+./workflows/run_gpt2_protein_classification.sh \
   -s --skip_data_prep --skip_evaluation
 ```
 
@@ -409,79 +409,79 @@ logs/                                   # スクリプト実行ログ
 #### フェーズ別実行（GPT-2スクリプト）
 ```bash
 # データ準備のみ
-./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_evaluation --skip_visualization
+./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_evaluation --skip_visualization
 
 # 評価のみ（データ準備済みの場合）
-./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_visualization
+./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_visualization
 
 # 可視化のみ（評価結果がある場合）
-./bootstraps/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
+./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
 ```
 
 #### デバイスとパフォーマンスの調整
 ```bash
 # CPU使用（GPU非搭載環境向け）
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv --device cpu
 
 # バッチサイズとサンプル数の調整（メモリ節約）
-./bootstraps/run_gpt2_clinvar_evaluation.sh \
+./workflows/run_gpt2_clinvar_evaluation.sh \
   --max_samples 200 --batch_size 8
 
 # ProteinGym高速テスト（最大サンプル数制限）
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv --max_samples 100
 ```
 
 #### データ管理オプション
 ```bash
 # カスタム出力ディレクトリ指定（すべての評価スクリプト共通）
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv -o /custom/output/path
 
-./bootstraps/run_bert_clinvar_evaluation.sh \
+./workflows/run_bert_clinvar_evaluation.sh \
   --output_dir /custom/clinvar/results
 
-./bootstraps/run_gpt2_omim_evaluation_real.sh \
+./workflows/run_gpt2_omim_evaluation_real.sh \
   --output_dir /custom/omim/results
 
 # データ準備先とレポート出力先を別々に指定
 # (一部のスクリプトで --data_dir と --output_dir を個別指定可能)
 
 # OMIM既存データの再利用（ダウンロードスキップ）
-./bootstraps/run_gpt2_omim_evaluation_real.sh \
+./workflows/run_gpt2_omim_evaluation_real.sh \
   --existing_omim_dir /path/to/omim_data
 
 # ProteinGymサンプルデータの自動作成
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt --create-sample
 ```
 
 ### Experiment System
 ```bash
 # Complete system setup
-./bootstraps/setup_experiment_system.sh
+./workflows/setup_experiment_system.sh
 
 # Start all services
-./bootstraps/start_experiment_system.sh
+./workflows/start_experiment_system.sh
 
 # Demo the system
-./bootstraps/demo_experiment_system.sh
+./workflows/demo_experiment_system.sh
 ```
 
 ### Development Workflow
 ```bash
 # Batch test all GPT-2 checkpoints
-./bootstraps/batch_test_gpt2.sh gpt2-output/
+./workflows/batch_test_gpt2.sh gpt2-output/
 
 # Test specific GPT-2 checkpoint
-./bootstraps/gpt2_test_checkpoint.sh
+./workflows/gpt2_test_checkpoint.sh
 
 # Debug BERT training
-./bootstraps/debug_protein_bert.sh
+./workflows/debug_protein_bert.sh
 
 # Create development vocabularies
-./bootstraps/create_sample_vocab.sh
+./workflows/create_sample_vocab.sh
 ```
 
 ## 🔧 Prerequisites
@@ -594,21 +594,21 @@ source src/config/env.sh
 
 ```bash
 # デフォルト出力先（LEARNING_SOURCE_DIR配下）
-./bootstraps/run_bert_proteingym_evaluation.sh
+./workflows/run_bert_proteingym_evaluation.sh
 # → $LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_YYYYMMDD_HHMMSS/
 
 # カスタム出力先を指定
-./bootstraps/run_bert_proteingym_evaluation.sh \
+./workflows/run_bert_proteingym_evaluation.sh \
   --output_dir /mnt/results/my_proteingym_eval
 # → /mnt/results/my_proteingym_eval/
 
 # 相対パス指定も可能
-./bootstraps/run_gpt2_clinvar_evaluation.sh \
+./workflows/run_gpt2_clinvar_evaluation.sh \
   -o ./my_clinvar_results
 # → ./my_clinvar_results/
 
 # データ準備とレポート出力を別々に指定（一部スクリプト）
-./bootstraps/run_gpt2_omim_evaluation_real.sh \
+./workflows/run_gpt2_omim_evaluation_real.sh \
   --output_dir /results/omim_eval \
   --config /custom/config.yaml
 ```
@@ -695,10 +695,10 @@ source src/config/env.sh
 **使用方法**:
 ```bash
 # GPT-2 ClinVar評価
-./bootstraps/run_gpt2_clinvar_evaluation.sh --download
+./workflows/run_gpt2_clinvar_evaluation.sh --download
 
 # BERT ClinVar評価
-./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 ```
 
 ## 📞 Troubleshooting
@@ -718,7 +718,7 @@ source src/config/env.sh
    ls -la runs_train_bert_*/
    
    # Protein Classificationはデフォルトモデルを使用
-   ./bootstraps/run_gpt2_protein_classification.sh -s
+   ./workflows/run_gpt2_protein_classification.sh -s
    # → gpt2-output/protein_sequence-small/ckpt.pt を自動使用
    ```
 
@@ -728,7 +728,7 @@ source src/config/env.sh
    nvidia-smi
    
    # CPU使用に切り替え（全スクリプトでサポート）
-   ./bootstraps/run_gpt2_*.sh --device cpu
+   ./workflows/run_gpt2_*.sh --device cpu
    
    # 注意: CPUはGPUより約4倍遅い
    ```
@@ -736,20 +736,20 @@ source src/config/env.sh
 4. **データファイルが見つからない**
    ```bash
    # データ準備フェーズを再実行
-   ./bootstraps/run_gpt2_*.sh --force_download
+   ./workflows/run_gpt2_*.sh --force_download
    
    # または、データ準備のみ実行
-   ./bootstraps/run_gpt2_*.sh --skip_evaluation --skip_visualization
+   ./workflows/run_gpt2_*.sh --skip_evaluation --skip_visualization
    
    # ProteinGymサンプルデータの自動作成
-   ./bootstraps/run_gpt2_proteingym_evaluation.sh \
+   ./workflows/run_gpt2_proteingym_evaluation.sh \
      -m model.pt --create-sample
    
    # ClinVarバランスサンプリングデータの作成
    # GPT-2の場合
-   ./bootstraps/run_gpt2_clinvar_evaluation.sh --download
+   ./workflows/run_gpt2_clinvar_evaluation.sh --download
    # BERTの場合
-   ./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+   ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
    ```
 
 5. **OMIM実データアクセスエラー**
@@ -758,10 +758,10 @@ source src/config/env.sh
    cat configs/omim_real_data.yaml
    
    # サンプルデータで動作確認
-   ./bootstraps/run_gpt2_omim_evaluation_dummy.sh
+   ./workflows/run_gpt2_omim_evaluation_dummy.sh
    
    # 既存データを再利用（再ダウンロードを避ける）
-   ./bootstraps/run_gpt2_omim_evaluation_real.sh \
+   ./workflows/run_gpt2_omim_evaluation_real.sh \
      --existing_omim_dir /path/to/omim_data
    ```
 
@@ -774,10 +774,10 @@ source src/config/env.sh
 7. **ProteinGym評価が遅い**
    ```bash
    # GPUを使用（デフォルト、約4倍高速）
-   ./bootstraps/run_gpt2_proteingym_evaluation.sh -m model.pt -d data.csv
+   ./workflows/run_gpt2_proteingym_evaluation.sh -m model.pt -d data.csv
    
    # サンプル数を制限してテスト
-   ./bootstraps/run_gpt2_proteingym_evaluation.sh \
+   ./workflows/run_gpt2_proteingym_evaluation.sh \
      -m model.pt -d data.csv --max_samples 100
    
    # 進捗状況: 50サンプル/GPU ≈ 12秒、2770サンプル/GPU ≈ 11分
@@ -789,13 +789,13 @@ source src/config/env.sh
    ls -la $LEARNING_SOURCE_DIR/*/report/*/
    
    # 可視化のみ再実行
-   ./bootstraps/run_gpt2_*.sh --skip_data_prep --skip_evaluation
+   ./workflows/run_gpt2_*.sh --skip_data_prep --skip_evaluation
    
    # Protein Classificationの詳細レポート
    # → visualizations/ディレクトリに10種類以上のグラフ + HTML
    
    # カスタム出力先を指定して可視化
-   ./bootstraps/run_gpt2_proteingym_evaluation.sh \
+   ./workflows/run_gpt2_proteingym_evaluation.sh \
      --skip_data_prep --skip_evaluation \
      -o /custom/visualization/path
    ```
@@ -810,7 +810,7 @@ source src/config/env.sh
    ls -la /path/to/custom/output/
    
    # 出力先を明示的に指定して再実行
-   ./bootstraps/run_bert_proteingym_evaluation.sh \
+   ./workflows/run_bert_proteingym_evaluation.sh \
      --output_dir /specific/output/path
    
    # 最新の評価結果ディレクトリを探す
@@ -823,10 +823,10 @@ source src/config/env.sh
    # 解決策: バランスサンプリングスクリプトを使用
    
    # GPT-2の場合（2000件のバランスデータを自動生成）
-   ./bootstraps/run_gpt2_clinvar_evaluation.sh --download
+   ./workflows/run_gpt2_clinvar_evaluation.sh --download
    
    # BERTの場合（2000件のバランスデータを自動生成）
-   ./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+   ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
    
    # データセットの統計を確認
    python -c "
@@ -853,10 +853,10 @@ source src/config/env.sh
 12. **複数のGPT-2チェックポイントをまとめてテストしたい**
     ```bash
     # 全ドメインのチェックポイントを一括テスト
-    ./bootstraps/batch_test_gpt2.sh gpt2-output/
+    ./workflows/batch_test_gpt2.sh gpt2-output/
     
     # 特定のディレクトリ配下のみテスト
-    ./bootstraps/batch_test_gpt2.sh path/to/checkpoints/
+    ./workflows/batch_test_gpt2.sh path/to/checkpoints/
     
     # テスト結果は gpt2_test_results_TIMESTAMP/ に保存
     ls -la gpt2_test_results_*/

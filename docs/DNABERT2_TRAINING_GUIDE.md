@@ -48,7 +48,7 @@ dnabert2/
 └── configs/
     └── genome_sequence.py      # genome_sequence用の設定
 
-bootstraps/
+workflows/
 ├── 03d-genome_sequence-train-dnabert2-small.sh
 ├── 03d-genome_sequence-train-dnabert2-medium.sh
 └── 03d-genome_sequence-train-dnabert2-large.sh
@@ -62,25 +62,25 @@ bootstraps/
 
 ```bash
 # 単一GPU
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03d-genome_sequence-train-dnabert2-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03d-genome_sequence-train-dnabert2-small.sh
 
 # Weights & Biases ログ有効化
 CUDA_VISIBLE_DEVICES=0 USE_WANDB=True WANDB_PROJECT=dnabert2-genome \
-  ./bootstraps/03d-genome_sequence-train-dnabert2-small.sh
+  ./workflows/03d-genome_sequence-train-dnabert2-small.sh
 ```
 
 #### Medium モデル (推奨: 実験用)
 
 ```bash
 # 2 GPUs推奨
-CUDA_VISIBLE_DEVICES=0,1 ./bootstraps/03d-genome_sequence-train-dnabert2-medium.sh
+CUDA_VISIBLE_DEVICES=0,1 ./workflows/03d-genome_sequence-train-dnabert2-medium.sh
 ```
 
 #### Large モデル (推奨: 本番用)
 
 ```bash
 # 4 GPUs推奨 (A100 40GB以上)
-CUDA_VISIBLE_DEVICES=0,1,2,3 ./bootstraps/03d-genome_sequence-train-dnabert2-large.sh
+CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03d-genome_sequence-train-dnabert2-large.sh
 ```
 
 ### ログの確認
@@ -180,8 +180,8 @@ $LEARNING_SOURCE_DIR/genome_sequence/training_ready_hf_dataset/
 
 ```bash
 # genome_sequenceデータセット準備
-./bootstraps/01-genome_sequence-prepare.sh
-./bootstraps/02-genome_sequence-prepare-gpt2.sh
+./workflows/01-genome_sequence-prepare.sh
+./workflows/02-genome_sequence-prepare-gpt2.sh
 ```
 
 ## トラブルシューティング
@@ -250,7 +250,7 @@ model_config.gradient_checkpointing = True
 
 1. **ClinVar評価** (変異予測)
    ```bash
-   ./bootstraps/run_bert_clinvar_evaluation.sh \
+   ./workflows/run_bert_clinvar_evaluation.sh \
      --model-path $LEARNING_SOURCE_DIR/genome_sequence/dnabert2-output/dnabert2-small/checkpoint-100000
    ```
 

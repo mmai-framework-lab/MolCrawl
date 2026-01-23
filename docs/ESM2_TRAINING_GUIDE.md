@@ -51,7 +51,7 @@ esm2/
 └── configs/
     └── protein_sequence.py     # protein_sequence用の設定
 
-bootstraps/
+workflows/
 ├── 03e-protein_sequence-train-esm2-small.sh
 ├── 03e-protein_sequence-train-esm2-medium.sh
 └── 03e-protein_sequence-train-esm2-large.sh
@@ -65,25 +65,25 @@ bootstraps/
 
 ```bash
 # 単一GPU
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03e-protein_sequence-train-esm2-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03e-protein_sequence-train-esm2-small.sh
 
 # Weights & Biases ログ有効化
 CUDA_VISIBLE_DEVICES=0 USE_WANDB=True WANDB_PROJECT=esm2-protein \
-  ./bootstraps/03e-protein_sequence-train-esm2-small.sh
+  ./workflows/03e-protein_sequence-train-esm2-small.sh
 ```
 
 #### Medium モデル (推奨: 実験用)
 
 ```bash
 # 2 GPUs推奨
-CUDA_VISIBLE_DEVICES=0,1 ./bootstraps/03e-protein_sequence-train-esm2-medium.sh
+CUDA_VISIBLE_DEVICES=0,1 ./workflows/03e-protein_sequence-train-esm2-medium.sh
 ```
 
 #### Large モデル (推奨: 本番用)
 
 ```bash
 # 4 GPUs推奨 (A100 40GB以上)
-CUDA_VISIBLE_DEVICES=0,1,2,3 ./bootstraps/03e-protein_sequence-train-esm2-large.sh
+CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03e-protein_sequence-train-esm2-large.sh
 ```
 
 ### ログの確認
@@ -249,7 +249,7 @@ gradient_accumulation_steps = 32
 
 1. **ProteinGym評価** (変異効果予測)
    ```bash
-   ./bootstraps/run_bert_proteingym_evaluation.sh \
+   ./workflows/run_bert_proteingym_evaluation.sh \
      --model_path $LEARNING_SOURCE_DIR/protein_sequence/esm2-output/esm2-small/checkpoint-100000
    ```
 

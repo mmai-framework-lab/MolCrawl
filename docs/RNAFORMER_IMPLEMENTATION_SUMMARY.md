@@ -20,9 +20,9 @@
    - Preprocessing functions
 
 ### Bootstrap Scripts
-4. **bootstraps/03f-rna-train-rnaformer-small.sh**
-5. **bootstraps/03f-rna-train-rnaformer-medium.sh**
-6. **bootstraps/03f-rna-train-rnaformer-large.sh**
+4. **workflows/03f-rna-train-rnaformer-small.sh**
+5. **workflows/03f-rna-train-rnaformer-medium.sh**
+6. **workflows/03f-rna-train-rnaformer-large.sh**
    - Executable training scripts for 3 model sizes
    - Environment variable configuration
    - Automatic logging
@@ -40,19 +40,19 @@
 
 ```bash
 # Small model (recommended for testing)
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-small.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-small.sh
 
 # Medium model
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-medium.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-medium.sh
 
 # Large model
-CUDA_VISIBLE_DEVICES=0 ./bootstraps/03f-rna-train-rnaformer-large.sh
+CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-large.sh
 
 # With Weights & Biases
 LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined \
 USE_WANDB=True \
 WANDB_PROJECT=rnaformer-transcriptome \
-  ./bootstraps/03f-rna-train-rnaformer-small.sh
+  ./workflows/03f-rna-train-rnaformer-small.sh
 ```
 
 ## 🔧 Model Specifications

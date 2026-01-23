@@ -144,7 +144,7 @@ genome_sequenceの学習には以下が必要:
 **データ準備コマンド:**
 ```bash
 # 既存のbootstrapスクリプトを使用
-bash bootstraps/02-genome_sequence-prepare-gpt2.sh
+bash workflows/02-genome_sequence-prepare-gpt2.sh
 ```
 
 または
@@ -242,7 +242,7 @@ FASTA → Raw chunks → HF Cache → training_ready_hf_dataset → PreparedData
 export LEARNING_SOURCE_DIR="learning_20251104"
 
 # データ準備スクリプト実行
-bash bootstraps/02-genome_sequence-prepare-gpt2.sh
+bash workflows/02-genome_sequence-prepare-gpt2.sh
 
 # または直接実行
 python src/genome_sequence/dataset/prepare_gpt2.py \
@@ -255,7 +255,7 @@ python src/genome_sequence/dataset/prepare_gpt2.py \
 python gpt2/train.py gpt2/configs/genome_sequence/train_gpt2_config.py
 
 # または分散学習
-bash bootstraps/03a-genome_sequence-train-small.sh
+bash workflows/03a-genome_sequence-train-small.sh
 ```
 
 #### Step 3: 学習監視
@@ -323,11 +323,11 @@ ls -lh learning_20251104/genome_sequence/spm_tokenizer.model
 
 **データ準備:**
 - `src/genome_sequence/dataset/prepare_gpt2.py` - データ準備スクリプト
-- `bootstraps/02-genome_sequence-prepare-gpt2.sh` - 実行用シェルスクリプト
+- `workflows/02-genome_sequence-prepare-gpt2.sh` - 実行用シェルスクリプト
 
 **Bootstrap スクリプト:**
-- `bootstraps/03a-genome_sequence-train-small.sh` - Small学習
-- `bootstraps/03b-genome_sequence-train-small-with-wandb.sh` - W&B統合
+- `workflows/03a-genome_sequence-train-small.sh` - Small学習
+- `workflows/03b-genome_sequence-train-small-with-wandb.sh` - W&B統合
 
 ---
 
@@ -345,7 +345,7 @@ ls -lh learning_20251104/genome_sequence/spm_tokenizer.model
 ### 次のステップ
 
 1. **データ準備** (必要に応じて)
-   - `bootstraps/02-genome_sequence-prepare-gpt2.sh`を実行
+   - `workflows/02-genome_sequence-prepare-gpt2.sh`を実行
    
 2. **学習開始** (データ準備完了後)
    - 既存の設定ファイルで学習可能

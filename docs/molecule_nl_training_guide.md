@@ -30,7 +30,7 @@ Arrow形式で保存されたデータセットには以下のフィールドが
 
 ```bash
 # データセットの準備（まだの場合）
-LEARNING_SOURCE_DIR="learning_20251121" bash bootstraps/01_molecule-nl_prepare.sh
+LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 ```
 
 ### 2. 学習の実行
@@ -77,7 +77,7 @@ BERTと同じデータセットを使用します：
 
 ```bash
 # データセットの準備（まだの場合）
-LEARNING_SOURCE_DIR="learning_20251121" bash bootstraps/01_molecule-nl_prepare.sh
+LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 ```
 
 ### 2. 学習の実行
@@ -159,7 +159,7 @@ learning_20251121/
 
 ```bash
 # データセットを再準備
-LEARNING_SOURCE_DIR="learning_20251121" bash bootstraps/01_molecule-nl_prepare.sh
+LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 ```
 
 ### メモリ不足エラー
@@ -240,7 +240,7 @@ gradient_accumulation_steps = 16  # より大きな実効バッチサイズ
 
 ## 次のステップ
 
-1. **データの準備**: `bash bootstraps/01_molecule-nl_prepare.sh`
+1. **データの準備**: `bash workflows/01_molecule-nl_prepare.sh`
 2. **互換性テスト**: `python scripts/preparation/test_molecule_nl_compatibility.py`
 3. **BERT学習開始**: `python bert/main.py bert/molecule_nl_bert_config.py`
 4. **GPT-2学習開始**: `python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py`

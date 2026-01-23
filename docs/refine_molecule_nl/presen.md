@@ -203,10 +203,10 @@ python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
 ### 2. 評価実行
 ```bash
 # BERT ClinVar評価
-./bootstraps/run_bert_clinvar_evaluation.sh --prepare-data
+./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 
 # GPT-2 ProteinGym評価
-./bootstraps/run_gpt2_proteingym_evaluation.sh \
+./workflows/run_gpt2_proteingym_evaluation.sh \
     -m gpt2-output/protein_sequence-large/ckpt.pt \
     -o results/proteingym
 ```
@@ -290,7 +290,7 @@ riken-dataset-fundational-model/
 │   └── evaluation/           # 8つの評価パイプライン
 │       ├── bert/
 │       └── gpt2/
-├── bootstraps/               # 8つの評価実行スクリプト
+├── workflows/               # 8つの評価実行スクリプト
 │   ├── run_bert_clinvar_evaluation.sh
 │   ├── run_bert_proteingym_evaluation.sh
 │   ├── run_gpt2_clinvar_evaluation.sh
