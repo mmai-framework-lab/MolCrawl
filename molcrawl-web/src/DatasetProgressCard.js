@@ -12,10 +12,18 @@ function DatasetProgressCard({ datasetKey }) {
   const [filesData, setFilesData] = useState(null);
   const [filesLoading, setFilesLoading] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
-  const [modalType, setModalType] = useState(null); // 'step' or 'output'
+  const [modalType, setModalType] = useState(null); // 'step', 'output', or 'log'
   const [filePreview, setFilePreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  
+  // 準備スクリプト実行関連
+  const [showRunnerModal, setShowRunnerModal] = useState(false);
+  const [runnerPhase, setRunnerPhase] = useState(null); // 'phase01' or 'phase02'
+  const [runnerStatus, setRunnerStatus] = useState(null);
+  const [runnerLog, setRunnerLog] = useState('');
+  const [runnerLogLoading, setRunnerLogLoading] = useState(false);
+  const [logPollInterval, setLogPollInterval] = useState(null);
 
   const fetchProgress = async (retryCount = 0, maxRetries = 3) => {
     try {
@@ -222,6 +230,150 @@ function DatasetProgressCard({ datasetKey }) {
     setFilePreview(null);
   };
 
+  // 準備スクリプト実行関連の関数
+  const startPreparationScript = async (phase) => {
+    setRunnerPhase(phase);
+    setShowRunnerModal(true);
+    setRunnerLog('スクリプトを開始しています...\n');
+    setRunnerStatus({ status: 'starting' });
+
+    try {
+      const response = await fetch('/api/preparation-runner/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataset: datasetKey, phase }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'スクリプトの開始に失敗しました');
+      }
+
+      // 既に実行中の場合
+      if (data.alreadyRunning) {
+        setRunnerLog(`⚠️ ${data.message}\nPID: ${data.pid}\n${data.hasLog ? `ログファイル: ${data.logFile}` : 'ログファイル検出待ち'}\n\n`);
+      } else {
+        setRunnerLog(`✅ スクリプトを開始しました\nPID: ${data.pid}\n\n`);
+      }
+      
+      // ログのポーリング開始
+      startLogPolling(phase);
+    } catch (error) {
+      console.error('Failed to start preparation script:', error);
+      setRunnerLog(`❌ エラー: ${error.message}\n`);
+      setRunnerStatus({ status: 'error', error: error.message });
+    }
+  };
+
+  const startLogPolling = (phase) => {
+    // 既存のポーリングをクリア
+    if (logPollInterval) {
+      clearInterval(logPollInterval);
+    }
+
+    // 初回ログ取得
+    fetchRunnerLog(phase);
+
+    // 2秒ごとにログを更新
+    const interval = setInterval(() => {
+      fetchRunnerLog(phase);
+      checkRunnerStatus(phase);
+    }, 2000);
+
+    setLogPollInterval(interval);
+  };
+
+  const fetchRunnerLog = async (phase) => {
+    try {
+      setRunnerLogLoading(true);
+      const response = await fetch(`/api/preparation-runner/log/${datasetKey}/${phase}?lines=200`);
+      const data = await response.json();
+
+      if (data.success) {
+        setRunnerLog(data.content || '(ログが空です)');
+      }
+    } catch (error) {
+      console.error('Failed to fetch runner log:', error);
+    } finally {
+      setRunnerLogLoading(false);
+    }
+  };
+
+  const checkRunnerStatus = async (phase) => {
+    try {
+      const response = await fetch(`/api/preparation-runner/status/${datasetKey}/${phase}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setRunnerStatus(data);
+        
+        // 完了または失敗したらポーリングを停止
+        if (!data.running && logPollInterval) {
+          clearInterval(logPollInterval);
+          setLogPollInterval(null);
+          
+          // 最後にログを1回取得
+          fetchRunnerLog(phase);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check runner status:', error);
+    }
+  };
+
+  const stopPreparationScript = async () => {
+    if (!runnerPhase) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/preparation-runner/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataset: datasetKey, phase: runnerPhase }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setRunnerLog((prev) => prev + '\n\n🛑 スクリプトを停止しました\n');
+        if (logPollInterval) {
+          clearInterval(logPollInterval);
+          setLogPollInterval(null);
+        }
+      } else {
+        throw new Error(data.error || 'スクリプトの停止に失敗しました');
+      }
+    } catch (error) {
+      console.error('Failed to stop preparation script:', error);
+      alert(`エラー: ${error.message}`);
+    }
+  };
+
+  const closeRunnerModal = () => {
+    if (logPollInterval) {
+      clearInterval(logPollInterval);
+      setLogPollInterval(null);
+    }
+    setShowRunnerModal(false);
+    setRunnerPhase(null);
+    setRunnerStatus(null);
+    setRunnerLog('');
+    
+    // モーダルを閉じたら進捗を再取得
+    fetchProgress();
+  };
+
+  // クリーンアップ: コンポーネントがアンマウントされたらポーリングを停止
+  useEffect(() => {
+    return () => {
+      if (logPollInterval) {
+        clearInterval(logPollInterval);
+      }
+    };
+  }, [logPollInterval]);
+
   if (loading) {
     return (
       <div className="dataset-progress-card loading-card">
@@ -263,6 +415,28 @@ function DatasetProgressCard({ datasetKey }) {
           </div>
         </div>
         <div className="header-right">
+          <div className="header-actions">
+            <button 
+              className="action-btn phase01-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                startPreparationScript('phase01');
+              }}
+              title="Phase 01準備スクリプトを実行"
+            >
+              ▶ Phase 01
+            </button>
+            <button 
+              className="action-btn phase02-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                startPreparationScript('phase02');
+              }}
+              title="Phase 02準備スクリプトを実行"
+            >
+              ▶ Phase 02
+            </button>
+          </div>
           <button className="expand-btn" onClick={(e) => {
             e.stopPropagation();
             setExpanded(!expanded);
@@ -545,6 +719,89 @@ function DatasetProgressCard({ datasetKey }) {
                   <p>プレビューの読み込みに失敗しました</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 準備スクリプト実行ログモーダル */}
+      {showRunnerModal && (
+        <div className="modal-overlay" onClick={(_e) => {
+          if (runnerStatus?.running) {
+            if (window.confirm('スクリプトが実行中です。モーダルを閉じますか？')) {
+              closeRunnerModal();
+            }
+          } else {
+            closeRunnerModal();
+          }
+        }}>
+          <div className="modal-content runner-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                {runnerPhase === 'phase01' ? '📥 Phase 01' : '🔧 Phase 02'} 準備スクリプト実行
+                {runnerStatus?.running && <span className="status-badge running">実行中</span>}
+                {runnerStatus?.status === 'completed' && <span className="status-badge completed">完了</span>}
+                {runnerStatus?.status === 'failed' && <span className="status-badge failed">失敗</span>}
+              </h3>
+              <div className="modal-header-actions">
+                {runnerStatus?.running && (
+                  <button 
+                    className="modal-action-btn stop-btn" 
+                    onClick={stopPreparationScript}
+                    title="スクリプトを停止"
+                  >
+                    ⏹ 停止
+                  </button>
+                )}
+                <button className="modal-close-btn" onClick={() => {
+                  if (runnerStatus?.running) {
+                    if (window.confirm('スクリプトが実行中です。モーダルを閉じますか？\n（スクリプトはバックグラウンドで実行され続けます）')) {
+                      closeRunnerModal();
+                    }
+                  } else {
+                    closeRunnerModal();
+                  }
+                }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="modal-body runner-log-container">
+              {runnerStatus && (
+                <div className="runner-status-info">
+                  <div className="status-item">
+                    <span className="status-label">状態:</span>
+                    <span className="status-value">{runnerStatus.status || '不明'}</span>
+                  </div>
+                  {runnerStatus.scriptName && (
+                    <div className="status-item">
+                      <span className="status-label">スクリプト:</span>
+                      <span className="status-value">{runnerStatus.scriptName}</span>
+                    </div>
+                  )}
+                  {runnerStatus.pid && (
+                    <div className="status-item">
+                      <span className="status-label">PID:</span>
+                      <span className="status-value">{runnerStatus.pid}</span>
+                    </div>
+                  )}
+                  {runnerStatus.duration !== undefined && (
+                    <div className="status-item">
+                      <span className="status-label">実行時間:</span>
+                      <span className="status-value">
+                        {Math.floor(runnerStatus.duration / 1000)}秒
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="log-viewer">
+                <div className="log-header">
+                  <span className="log-title">📋 実行ログ</span>
+                  {runnerLogLoading && <span className="log-loading">更新中...</span>}
+                </div>
+                <pre className="log-content">{runnerLog || '(ログがありません)'}</pre>
+              </div>
             </div>
           </div>
         </div>

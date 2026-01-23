@@ -848,3 +848,281 @@
     display: none;
   }
 }
+
+/* 準備スクリプト実行関連のスタイル */
+.header-actions {
+  display: flex;
+  gap: 8px;
+  margin-right: 12px;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.phase01-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.phase01-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.phase02-btn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.phase02-btn:hover {
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+}
+
+/* 準備スクリプト実行ログモーダル */
+.runner-modal {
+  width: 90%;
+  max-width: 1000px;
+  max-height: 85vh;
+}
+
+.runner-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.runner-modal .modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.running {
+  background: #ffc107;
+  color: #000;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.status-badge.completed {
+  background: #4caf50;
+  color: white;
+}
+
+.status-badge.failed {
+  background: #f44336;
+  color: white;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.modal-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.modal-action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stop-btn {
+  background: #ff5252;
+  color: white;
+}
+
+.stop-btn:hover {
+  background: #ff1744;
+}
+
+.runner-log-container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(85vh - 200px);
+  overflow-y: auto;
+}
+
+.runner-status-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  font-family: 'Courier New', monospace;
+}
+
+.log-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #37474f;
+  color: white;
+  border-radius: 6px 6px 0 0;
+}
+
+.log-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.log-loading {
+  font-size: 11px;
+  color: #ffc107;
+  animation: pulse-text 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.log-content {
+  flex: 1;
+  margin: 0;
+  padding: 16px;
+  background: #263238;
+  color: #aed581;
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  overflow-y: auto;
+  border-radius: 0 0 6px 6px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 500px;
+  min-height: 300px;
+}
+
+.log-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.log-content::-webkit-scrollbar-track {
+  background: #1e272e;
+}
+
+.log-content::-webkit-scrollbar-thumb {
+  background: #546e7a;
+  border-radius: 4px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: #78909c;
+}
+
+/* レスポンシブ対応 - 準備スクリプト実行 */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+    margin-right: 0;
+    margin-top: 8px;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .runner-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .runner-status-info {
+    grid-template-columns: 1fr;
+  }
+
+  .log-content {
+    font-size: 11px;
+    min-height: 200px;
+    max-height: 400px;
+  }
+}

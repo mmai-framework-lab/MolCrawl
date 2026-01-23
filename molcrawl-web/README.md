@@ -28,17 +28,42 @@ npm run check-env
 
 ### 3. サーバーを起動
 
+**推奨方法（両方同時起動）**:
 ```bash
 # 環境変数を設定して起動
 LEARNING_SOURCE_DIR="learning_source_202508" npm run dev
 ```
 
-または
-
+**または簡単起動スクリプト**:
 ```bash
-# 環境変数をエクスポートして起動
+# 環境変数をエクスポート
 export LEARNING_SOURCE_DIR="learning_source_202508"
-npm run dev
+
+# 両方のサーバーを起動
+./start-both.sh
+```
+
+**手動起動（別々のターミナルで）**:
+```bash
+# ターミナル1: バックエンド
+LEARNING_SOURCE_DIR="learning_source_202508" npm run server
+
+# ターミナル2: フロントエンド
+npm start
+```
+
+**重要**: `npm run dev`を使う場合、両方のサーバー（バックエンドとフロントエンド）が起動していることを確認してください。
+- バックエンド: ポート3001
+- フロントエンド: ポート3000
+
+起動確認：
+```bash
+# バックエンドの確認
+curl http://localhost:3001/api/health
+
+# ポートの確認
+lsof -i :3001  # バックエンド
+lsof -i :3000  # フロントエンド
 ```
 
 ### 4. ブラウザでアクセス
@@ -115,11 +140,42 @@ source ~/.bashrc  # または source ~/.zshrc
 LEARNING_SOURCE_DIR="learning_source_202508" npm run dev
 ```
 
+#### プロキシエラー: ECONNREFUSED
+
+```
+Proxy error: Could not proxy request /api/... from localhost:XXXXX to http://localhost:3001.
+(ECONNREFUSED)
+```
+
+**原因**: バックエンドサーバー（ポート3001）が起動していない
+
+**解決方法**:
+
+1. バックエンドが起動しているか確認
+   ```bash
+   lsof -i :3001
+   ```
+
+2. 起動していない場合、別ターミナルで起動
+   ```bash
+   cd molcrawl-web
+   LEARNING_SOURCE_DIR="learning_source_202508" npm run server
+   ```
+
+3. または、`./start-both.sh`を使用
+   ```bash
+   export LEARNING_SOURCE_DIR="learning_source_202508"
+   ./start-both.sh
+   ```
+
+4. `npm run dev`を使う場合、`concurrently`が両方を起動するはずですが、
+   エラーが出た場合は手動で起動してください
+
 #### 500エラーが発生する
 
 バックエンドサーバーが起動していない可能性があります。
 
-**解決方法**: `npm start`ではなく`npm run dev`を使用してください
+**解決方法**: `npm start`ではなく`npm run dev`または`./start-both.sh`を使用してください
 
 ## 機能
 
@@ -140,7 +196,30 @@ LEARNING_SOURCE_DIR="learning_source_202508" npm run dev
 
 各データセットの進捗状況は、マーカーファイルと出力ファイルの存在で自動判定されます。
 
-#### 使用方法
+#### 🚀 準備スクリプト実行機能（新機能）
+
+各データセットの「準備進捗」カードから、準備スクリプトを直接実行できます：
+
+- **Phase 01ボタン**: データダウンロードと基本前処理スクリプトを実行
+  - 例: `01-protein_sequence-prepare.sh`
+- **Phase 02ボタン**: GPT-2用データセット準備スクリプトを実行
+  - 例: `02-protein_sequence-prepare-gpt2.sh`
+
+**機能詳細**:
+- ✅ ワンクリックでスクリプトを実行開始
+- 📋 リアルタイムでログをモーダル表示（2秒間隔で自動更新）
+- ⏹️ 実行中のスクリプトを停止可能
+- 📊 実行状態（PID、実行時間、ステータス）を表示
+- 🔄 スクリプト完了後に自動で進捗を再取得
+
+**使用方法**:
+1. 各データセットタブの「準備進捗」カードを確認
+2. 「▶ Phase 01」または「▶ Phase 02」ボタンをクリック
+3. ログモーダルが開き、リアルタイムでログを表示
+4. スクリプトが完了するまで待機、または「⏹ 停止」ボタンで停止
+5. モーダルを閉じても、スクリプトはバックグラウンドで実行継続
+
+#### 使用方法（進捗確認）
 
 1. Webブラウザで http://localhost:3000 にアクセス
 2. 「Preparation」タブをクリック
@@ -190,6 +269,16 @@ molcrawl-web/
 - `GET /api/dataset-progress` - 全データセットの準備進捗取得
 - `GET /api/dataset-progress/:datasetKey` - 特定データセットの詳細進捗取得
   - `datasetKey`: `protein_sequence`, `genome_sequence`, `rna`, `molecule_nl`, `compounds`
+
+### 準備スクリプト実行（新機能）
+- `GET /api/preparation-runner/scripts` - 利用可能なスクリプト一覧
+- `POST /api/preparation-runner/start` - 準備スクリプトを実行
+  - Body: `{ dataset: 'protein_sequence', phase: 'phase01' }`
+- `GET /api/preparation-runner/status/:dataset/:phase` - 実行状態を取得
+- `GET /api/preparation-runner/log/:dataset/:phase?lines=200` - 実行ログを取得
+- `POST /api/preparation-runner/stop` - スクリプトを停止
+  - Body: `{ dataset: 'protein_sequence', phase: 'phase01' }`
+- `GET /api/preparation-runner/all-status` - すべての実行状態を取得
 
 ## 開発
 
