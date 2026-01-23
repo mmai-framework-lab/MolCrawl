@@ -95,6 +95,7 @@ app.use('/api/gpt2-training-status', validateDirectoryExists, gpt2TrainingStatus
 app.use('/api/gpt2-inference', validateDirectoryExists, gpt2InferenceRouter);
 app.use('/api/bert-training-status', validateDirectoryExists, bertTrainingStatusRouter);
 app.use('/api/training-process-status', trainingProcessStatusRouter);
+app.use('/api/preparation-runner', require('./api/preparation-runner'));
 
 // ログAPI
 app.get('/api/logs/list', validateDirectoryExists, getLogsList);
