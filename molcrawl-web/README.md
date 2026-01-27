@@ -66,6 +66,46 @@ lsof -i :3001  # バックエンド
 lsof -i :3000  # フロントエンド
 ```
 
+#### ポート番号を変更する場合
+
+デフォルトではバックエンドポート3001、フロントエンドポート3000が使用されます。
+ポートが既に使用されている場合は、以下の方法でポート番号を変更できます。
+
+**方法1: 環境変数で指定**
+
+```bash
+# バックエンドのポートを変更
+PORT=8080 LEARNING_SOURCE_DIR="learning_source_202508" node server.js
+
+# フロントエンドのポートを変更
+PORT=3002 npm start
+```
+
+**方法2: コマンドライン引数で指定（バックエンドのみ）**
+
+```bash
+# バックエンドのポート指定
+LEARNING_SOURCE_DIR="learning_source_202508" node server.js --port 8080
+# または
+LEARNING_SOURCE_DIR="learning_source_202508" node server.js -p 8080
+```
+
+**両方のポートを変更する例**
+
+```bash
+# ターミナル1: バックエンドを8080で起動
+LEARNING_SOURCE_DIR="learning_source_202508" node server.js --port 8080
+
+# ターミナル2: フロントエンドを3002で起動
+PORT=3002 npm start
+```
+
+**ヘルプを表示**
+
+```bash
+node server.js --help
+```
+
 ### 4. ブラウザでアクセス
 
 - **フロントエンド**: http://localhost:3000
@@ -108,12 +148,23 @@ export LEARNING_SOURCE_DIR="learning_source_202508"
 - `learning_source_20251006_genome_all`
 - `learning_source_20251020-molecule-nl`
 
+### PORT（オプション）
+
+バックエンドサーバーのポート番号を指定します（デフォルト: 3001）。
+
+```bash
+export PORT=8080
+```
+
+注: コマンドライン引数 `--port` で指定した値が優先されます。
+
 ### 永続的に設定する場合
 
 `~/.bashrc`または`~/.zshrc`に追加:
 
 ```bash
 export LEARNING_SOURCE_DIR="learning_source_202508"
+export PORT=8080  # オプション
 ```
 
 設定を反映:
@@ -170,6 +221,22 @@ Proxy error: Could not proxy request /api/... from localhost:XXXXX to http://loc
 
 4. `npm run dev`を使う場合、`concurrently`が両方を起動するはずですが、
    エラーが出た場合は手動で起動してください
+
+#### ポートが既に使用されている
+
+```bash
+Error: listen EADDRINUSE: address already in use :::3001
+```
+
+**解決方法**: 別のポート番号を指定してください
+
+```bash
+# 方法1: 環境変数
+PORT=8080 LEARNING_SOURCE_DIR="learning_source_202508" node server.js
+
+# 方法2: コマンドライン引数
+LEARNING_SOURCE_DIR="learning_source_202508" node server.js --port 8080
+```
 
 #### 500エラーが発生する
 
