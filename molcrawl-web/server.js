@@ -3,6 +3,44 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
+// コマンドライン引数の解析
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const parsed = {};
+  
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--port' || args[i] === '-p') {
+      parsed.port = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === '--help' || args[i] === '-h') {
+      console.log('');
+      console.log('MolCrawl Web Server');
+      console.log('');
+      console.log('Usage:');
+      console.log('  node server.js [options]');
+      console.log('');
+      console.log('Options:');
+      console.log('  -p, --port <port>    Specify the port number (default: 3001)');
+      console.log('  -h, --help           Show this help message');
+      console.log('');
+      console.log('Environment Variables:');
+      console.log('  PORT                     Port number (can be overridden by --port)');
+      console.log('  LEARNING_SOURCE_DIR      Required: Learning source directory name');
+      console.log('');
+      console.log('Examples:');
+      console.log('  PORT=3002 node server.js');
+      console.log('  node server.js --port 3002');
+      console.log('  LEARNING_SOURCE_DIR="learning_source_202508" node server.js --port 8080');
+      console.log('');
+      process.exit(0);
+    }
+  }
+  
+  return parsed;
+}
+
+const cmdArgs = parseArgs();
+
 // 環境変数チェック（API読み込み前に実行）
 if (!process.env.LEARNING_SOURCE_DIR) {
   console.error('');
@@ -59,11 +97,26 @@ const { getLogsList, getAllLogsOverview, getLogContent, getTailLog } = require('
 const { getGpuInfo, getGpuXmlInfo } = require('./api/gpu-resources');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+// ポート番号の優先順位: コマンドライン引数 > PORT環境変数 > デフォルト(3001)
+const PORT = cmdArgs.port || process.env.PORT || 3001;
+
+// ポート番号のバリデーション
+if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
+  console.error('');
+  console.error('❌ ERROR: Invalid port number!');
+  console.error('');
+  console.error(`Specified port: ${PORT}`);
+  console.error('Port number must be between 1 and 65535.');
+  console.error('');
+  console.error('Use --help for usage information.');
+  console.error('');
+  process.exit(1);
+}
 
 // model_dirの値をサーバー起動時に確認
 console.log('✅ Server starting with configuration:');
 console.log('   LEARNING_SOURCE_DIR:', process.env.LEARNING_SOURCE_DIR);
+console.log('   PORT:', PORT);
 console.log('   Working directory:', process.cwd());
 
 // CORS設定
