@@ -120,6 +120,7 @@ node server.js --help
 ### 開発用
 
 - `npm run dev` - フロントエンドとバックエンドを同時起動（推奨）
+- `npm run dev:nfs` - NFSマウント環境用（polling有効）
 - `npm start` - フロントエンドのみ起動
 - `npm run server` - バックエンドのみ起動
 - `npm run check-env` - 環境変数と設定を確認
@@ -129,6 +130,8 @@ node server.js --help
 - `npm run build` - プロダクションビルド
 - `npm test` - テスト実行
 - `npm run prod` - ビルド後にサーバー起動
+- `npm run prod:serve` - ビルド済みファイルを配信（NFSで安定）
+- `npm run serve:build` - ビルドディレクトリを静的ファイルとして配信
 
 ### コード品質
 
@@ -136,6 +139,48 @@ node server.js --help
 - `npm run lint:fix` - ESLintで自動修正
 - `npm run format` - Prettierでフォーマット
 - `npm run format:check` - フォーマットチェックのみ
+
+## NFSマウント環境での起動
+
+NFSマウントされたディレクトリ（例: `/wren`）上でプロジェクトを実行する場合は、特別な設定が必要です。
+
+### 問題と原因
+
+NFSファイルシステムでは `inotify`（ファイル変更監視）が正しく機能しないため、webpack-dev-server が正常に動作しないことがあります。
+
+### 解決方法
+
+#### 方法1: start-dev.sh を使用（推奨・自動検出）
+
+```bash
+# NFSマウントを自動検出し、polling モードを有効化
+LEARNING_SOURCE_DIR="learning_source_20251210" ./start-dev.sh 9090 9091
+```
+
+#### 方法2: npm run dev:nfs を使用
+
+```bash
+LEARNING_SOURCE_DIR="learning_source_20251210" PORT=9090 API_PORT=9091 npm run dev:nfs
+```
+
+#### 方法3: 環境変数を明示的に設定
+
+```bash
+CHOKIDAR_USEPOLLING=true WATCHPACK_POLLING=true \
+LEARNING_SOURCE_DIR="learning_source_20251210" PORT=9090 API_PORT=9091 npm run dev
+```
+
+#### 方法4: Production Build を使用（最も安定）
+
+```bash
+# ビルド
+npm run build
+
+# APIサーバー + 静的ファイル配信
+LEARNING_SOURCE_DIR="learning_source_20251210" API_PORT=9091 npm run prod:serve -- -l 9090
+```
+
+詳細は [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) を参照してください。
 
 ## 環境変数
 

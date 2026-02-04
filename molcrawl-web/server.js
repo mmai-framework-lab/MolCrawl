@@ -94,6 +94,7 @@ const datasetProgressRouter = require('./api/dataset-progress');
 const gpt2TrainingStatusRouter = require('./api/gpt2-training-status');
 const gpt2InferenceRouter = require('./api/gpt2-inference');
 const bertTrainingStatusRouter = require('./api/bert-training-status');
+const bertInferenceRouter = require('./api/bert-inference');
 const trainingProcessStatusRouter = require('./api/training-process-status');
 const { getLogsList, getAllLogsOverview, getLogContent, getTailLog } = require('./api/logs');
 const { getGpuInfo, getGpuXmlInfo } = require('./api/gpu-resources');
@@ -124,7 +125,7 @@ console.log('   Working directory:', process.cwd());
 
 // CORS設定
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', `http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`],
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -134,6 +135,13 @@ app.use(express.json());
 
 // 静的ファイル配信（現在のディレクトリから）
 app.use(express.static(__dirname));
+
+// Production: buildディレクトリの静的ファイル配信
+const buildPath = path.join(__dirname, 'build');
+if (fs.existsSync(buildPath)) {
+  console.log('📦 Serving static files from build directory');
+  app.use(express.static(buildPath));
+}
 
 // API Routes - ディレクトリに依存するエンドポイントにはバリデーションを適用
 app.get('/api/directory', validateDirectoryExists, getDirectoryStructure);
@@ -150,6 +158,7 @@ app.use('/api/dataset-progress', validateDirectoryExists, datasetProgressRouter)
 app.use('/api/gpt2-training-status', validateDirectoryExists, gpt2TrainingStatusRouter);
 app.use('/api/gpt2-inference', validateDirectoryExists, gpt2InferenceRouter);
 app.use('/api/bert-training-status', validateDirectoryExists, bertTrainingStatusRouter);
+app.use('/api/bert-inference', validateDirectoryExists, bertInferenceRouter);
 app.use('/api/training-process-status', trainingProcessStatusRouter);
 app.use('/api/preparation-runner', require('./api/preparation-runner'));
 
@@ -193,9 +202,13 @@ app.get('/api/health', (req, res) => {
       '/api/gpt2-training-status - 全GPT-2モデルの学習状況取得',
       '/api/gpt2-training-status/:dataset - 特定データセットのGPT-2学習状況',
       '/api/gpt2-training-status/:dataset/:size - 特定モデルの詳細情報',
+      '/api/gpt2-inference - GPT-2推論実行',
+      '/api/gpt2-inference/config/:dataset - GPT-2推論設定取得',
       '/api/bert-training-status - 全BERTモデルの学習状況取得',
       '/api/bert-training-status/:dataset - 特定データセットのBERT学習状況',
       '/api/bert-training-status/:dataset/:size - 特定BERTモデルの詳細情報',
+      '/api/bert-inference - BERT穴埋め推論実行',
+      '/api/bert-inference/config/:dataset - BERT推論設定取得',
       '/api/training-process-status - 学習プロセス稼働状況チェック',
       '/api/logs/list?modelPath=<path> - 指定モデルのログファイル一覧取得',
       '/api/logs/overview - 全モデルのログファイル概要取得',
@@ -220,14 +233,32 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404ハンドリング
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.method} ${req.url} not found`,
-    timestamp: new Date().toISOString()
+// Production: React SPA のフォールバック（APIルート以外）
+// すべての非APIリクエストをindex.htmlに転送
+const buildPath2 = path.join(__dirname, 'build');
+if (fs.existsSync(buildPath2)) {
+  app.get('*', (req, res) => {
+    // APIリクエストは404を返す
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: `API Route ${req.method} ${req.url} not found`,
+        timestamp: new Date().toISOString()
+      });
+    }
+    // それ以外はindex.htmlを返す（React Router対応）
+    res.sendFile(path.join(buildPath2, 'index.html'));
   });
-});
+} else {
+  // 404ハンドリング（開発モード用）
+  app.use((req, res) => {
+    res.status(404).json({
+      error: 'Not Found',
+      message: `Route ${req.method} ${req.url} not found`,
+      timestamp: new Date().toISOString()
+    });
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

@@ -12,7 +12,10 @@
     "preserver": "node check-config.js",
     "server": "node server.js",
     "dev": "concurrently \"npm run server\" \"BROWSER=none npm start\"",
+    "dev:nfs": "concurrently \"npm run server\" \"CHOKIDAR_USEPOLLING=true WATCHPACK_POLLING=true BROWSER=none npm start\"",
+    "serve:build": "npx serve build -l ${PORT:-3000}",
     "prod": "npm run build && npm run server",
+    "prod:serve": "npm run server",
     "lint": "npx eslint src --ext .js,.jsx",
     "lint:fix": "npx eslint src --ext .js,.jsx --fix",
     "format": "npx prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
@@ -35,7 +38,8 @@
     "concurrently": "^7.6.0",
     "eslint": "^8.57.0",
     "http-proxy-middleware": "^3.0.5",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "serve": "^14.2.5"
   },
   "browserslist": {
     "production": [
