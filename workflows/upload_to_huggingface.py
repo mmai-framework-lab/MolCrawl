@@ -119,6 +119,35 @@ def detect_data_type(model_path: Path) -> Optional[str]:
     return None
 
 
+def find_latest_checkpoint_dir(model_path: Path) -> Optional[Path]:
+    """
+    Find the latest HuggingFace format checkpoint directory (checkpoint-{step}/).
+    Returns the path to the latest checkpoint directory, or None if not found.
+    """
+    if not model_path.is_dir():
+        return None
+    
+    checkpoint_dirs = []
+    for entry in model_path.iterdir():
+        if entry.is_dir() and entry.name.startswith("checkpoint-"):
+            try:
+                step = int(entry.name.split("-")[1])
+                # Check if it has required HF files
+                config_json = entry / "config.json"
+                pytorch_model = entry / "pytorch_model.bin"
+                if config_json.exists() and pytorch_model.exists():
+                    checkpoint_dirs.append((step, entry))
+            except (ValueError, IndexError):
+                continue
+    
+    if not checkpoint_dirs:
+        return None
+    
+    # Sort by step number and return the latest
+    checkpoint_dirs.sort(reverse=True)
+    return checkpoint_dirs[0][1]
+
+
 def find_checkpoint_files(model_path: Path) -> list[Path]:
     """チェックポイントファイルを検索"""
     files = []
@@ -277,9 +306,16 @@ def upload_model(
     if data_type:
         print(f"[INFO] データタイプを自動検出: {data_type}")
 
+    # HuggingFace互換チェックポイントディレクトリを探す
+    upload_path = model_path
+    latest_checkpoint_dir = find_latest_checkpoint_dir(model_path)
+    if latest_checkpoint_dir:
+        print(f"[INFO] HuggingFace互換チェックポイントを検出: {latest_checkpoint_dir.name}")
+        upload_path = latest_checkpoint_dir
+    
     # アップロードするファイルを検索
-    checkpoint_files = find_checkpoint_files(model_path)
-    tokenizer_files = find_tokenizer_files(model_path, tokenizer_path)
+    checkpoint_files = find_checkpoint_files(upload_path)
+    tokenizer_files = find_tokenizer_files(upload_path, tokenizer_path)
 
     all_files = list(set(checkpoint_files + tokenizer_files))
 
@@ -316,15 +352,16 @@ def upload_model(
         return False
 
     # ディレクトリ全体をアップロード
-    if model_path.is_dir():
-        print(f"\n[INFO] ディレクトリをアップロード中: {model_path}")
+    if upload_path.is_dir():
+        print(f"\n[INFO] ディレクトリをアップロード中: {upload_path}")
         try:
+            # training_state.binはアップロードしない（学習再開用のファイルで、HF互換ではない）
             upload_folder(
-                folder_path=str(model_path),
+                folder_path=str(upload_path),
                 repo_id=repo_id,
                 repo_type="model",
                 commit_message=commit_message,
-                ignore_patterns=["*.tfevents.*", "*.csv", "__pycache__", "*.pyc"],
+                ignore_patterns=["*.tfevents.*", "*.csv", "__pycache__", "*.pyc", "training_state.bin"],
             )
             print("[SUCCESS] ディレクトリのアップロード完了")
         except Exception as e:
@@ -332,11 +369,11 @@ def upload_model(
             return False
     else:
         # 単一ファイルをアップロード
-        print(f"\n[INFO] ファイルをアップロード中: {model_path.name}")
+        print(f"\n[INFO] ファイルをアップロード中: {upload_path.name}")
         try:
             upload_file(
-                path_or_fileobj=str(model_path),
-                path_in_repo=model_path.name,
+                path_or_fileobj=str(upload_path),
+                path_in_repo=upload_path.name,
                 repo_id=repo_id,
                 repo_type="model",
                 commit_message=commit_message,
