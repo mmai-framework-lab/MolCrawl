@@ -279,9 +279,41 @@ if init_from == "scratch":
 elif init_from == "resume":
     print(f"Resuming training from {out_dir}")
     # resume training from a checkpoint.
-    ckpt_path = os.path.join(out_dir, "ckpt.pt")
-    if not os.path.exists(ckpt_path):
-        print(f"Checkpoint file not found at {ckpt_path}")
+    # Try new HuggingFace format first (checkpoint-{step}/training_state.bin)
+    # Fall back to legacy format (ckpt.pt)
+    checkpoint_loaded = False
+    
+    # Find the latest checkpoint directory
+    checkpoint_dirs = glob.glob(os.path.join(out_dir, "checkpoint-*"))
+    if checkpoint_dirs:
+        # Sort by step number to find the latest
+        checkpoint_steps = []
+        for ckpt_dir in checkpoint_dirs:
+            try:
+                step = int(os.path.basename(ckpt_dir).split("-")[1])
+                training_state_path = os.path.join(ckpt_dir, "training_state.bin")
+                if os.path.exists(training_state_path):
+                    checkpoint_steps.append((step, training_state_path))
+            except (ValueError, IndexError):
+                continue
+        
+        if checkpoint_steps:
+            checkpoint_steps.sort(reverse=True)
+            latest_step, latest_ckpt_path = checkpoint_steps[0]
+            print(f"Found HuggingFace format checkpoint at step {latest_step}")
+            checkpoint = torch.load(latest_ckpt_path, map_location=device)
+            checkpoint_loaded = True
+    
+    # Fall back to legacy ckpt.pt
+    if not checkpoint_loaded:
+        ckpt_path = os.path.join(out_dir, "ckpt.pt")
+        if os.path.exists(ckpt_path):
+            print(f"Loading legacy checkpoint from {ckpt_path}")
+            checkpoint = torch.load(ckpt_path, map_location=device)
+            checkpoint_loaded = True
+    
+    if not checkpoint_loaded:
+        print(f"No checkpoint found in {out_dir}")
         print("Starting training from scratch instead")
         # Initialize from scratch if checkpoint doesn't exist
         if meta_vocab_size is None:
@@ -290,7 +322,6 @@ elif init_from == "resume":
         gptconf = GPTConfig(**model_args)
         model = GPT(gptconf)
     else:
-        checkpoint = torch.load(ckpt_path, map_location=device)
         checkpoint_model_args = checkpoint["model_args"]
         # force these config attributes to be equal otherwise we can't even resume training
         # the rest of the attributes (e.g. dropout) can stay as desired from command line
@@ -377,15 +408,90 @@ def get_lr(it):
 
 
 # Hugging Face style checkpoint management
+def convert_nanogpt_to_hf_state_dict(model_state, model_args):
+    """
+    Convert nanoGPT state_dict to HuggingFace GPT2LMHeadModel compatible format.
+    
+    nanoGPT uses nn.Linear for attention, while HuggingFace uses Conv1D.
+    Conv1D weights are transposed compared to Linear weights.
+    """
+    hf_state_dict = {}
+    
+    # Keys that need to be transposed (Conv1D in HF vs Linear in nanoGPT)
+    transposed_keys = [
+        "attn.c_attn.weight",
+        "attn.c_proj.weight",
+        "mlp.c_fc.weight",
+        "mlp.c_proj.weight",
+    ]
+    
+    for key, value in model_state.items():
+        # Skip attention mask buffers
+        if key.endswith(".attn.bias"):
+            continue
+        
+        # Check if this key needs transposition
+        needs_transpose = any(key.endswith(t) for t in transposed_keys)
+        
+        if needs_transpose:
+            hf_state_dict[key] = value.t().contiguous()
+        else:
+            hf_state_dict[key] = value
+    
+    return hf_state_dict
+
+
 def save_checkpoint_hf(
     model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0
 ):
-    """Save checkpoint in Hugging Face format to checkpoint-{step}/ directory"""
+    """
+    Save checkpoint in HuggingFace Transformers compatible format.
+    
+    This creates:
+    - config.json: Model configuration (GPT2Config compatible)
+    - pytorch_model.bin: Model weights (HuggingFace compatible state_dict)
+    - training_state.bin: Training state (optimizer, iteration, etc.) for resuming
+    - training_args.json: Training arguments as JSON
+    """
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # Save model checkpoint
-    checkpoint = {
-        "model": model_state,
+    # 1. Save HuggingFace compatible config.json
+    hf_config = {
+        "architectures": ["GPT2LMHeadModel"],
+        "model_type": "gpt2",
+        "vocab_size": model_args["vocab_size"],
+        "n_positions": model_args["block_size"],
+        "n_ctx": model_args["block_size"],
+        "n_embd": model_args["n_embd"],
+        "n_layer": model_args["n_layer"],
+        "n_head": model_args["n_head"],
+        "n_inner": model_args["n_embd"] * 4,  # GPT-2 uses 4x expansion
+        "activation_function": "gelu_new",
+        "resid_pdrop": model_args.get("dropout", 0.0),
+        "embd_pdrop": model_args.get("dropout", 0.0),
+        "attn_pdrop": model_args.get("dropout", 0.0),
+        "layer_norm_epsilon": 1e-5,
+        "initializer_range": 0.02,
+        "use_cache": True,
+        "bos_token_id": 0,
+        "eos_token_id": 0,
+        "transformers_version": "4.0.0",
+        # Custom fields for our training
+        "_name_or_path": "riken-gpt2",
+        "_riken_model_args": model_args,
+        "_riken_bias": model_args.get("bias", False),
+    }
+    with open(os.path.join(checkpoint_dir, "config.json"), "w") as f:
+        json.dump(hf_config, f, indent=2)
+
+    # 2. Save model weights in HuggingFace compatible format
+    # Convert nanoGPT state_dict to HuggingFace format
+    hf_state_dict = convert_nanogpt_to_hf_state_dict(model_state, model_args)
+    torch.save(hf_state_dict, os.path.join(checkpoint_dir, "pytorch_model.bin"))
+
+    # 3. Save training state separately (for resuming training)
+    training_state = {
+        "model": model_state,  # Original nanoGPT format for resume
         "optimizer": optimizer_state,
         "model_args": model_args,
         "iter_num": iter_num,
@@ -393,12 +499,13 @@ def save_checkpoint_hf(
         "early_stopping_counter": early_stopping_counter,
         "config": config,
     }
-    torch.save(checkpoint, os.path.join(checkpoint_dir, "pytorch_model.bin"))
+    torch.save(training_state, os.path.join(checkpoint_dir, "training_state.bin"))
 
-    # Save training args as JSON
+    # 4. Save training args as JSON
     training_args = {
         "iteration": iter_num,
-        "best_val_loss": float(val_loss),
+        "best_val_loss": float(val_loss) if val_loss is not None else None,
+        "early_stopping_counter": early_stopping_counter,
         "learning_rate": config.get("learning_rate"),
         "batch_size": config.get("batch_size"),
         "block_size": config.get("block_size"),
@@ -407,7 +514,7 @@ def save_checkpoint_hf(
     with open(os.path.join(checkpoint_dir, "training_args.json"), "w") as f:
         json.dump(training_args, f, indent=2)
 
-    print(f"Checkpoint saved to {checkpoint_dir}")
+    print(f"Checkpoint saved to {checkpoint_dir} (HuggingFace compatible format)")
 
 
 def cleanup_old_checkpoints(base_dir, max_checkpoints):

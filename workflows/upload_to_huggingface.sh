@@ -141,9 +141,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# モデルパスを絶対パスに変換
+# モデルパスを絶対パスに変換（現在の作業ディレクトリからの相対パスとして処理）
 if [[ ! "$MODEL_PATH" = /* ]]; then
-    MODEL_PATH="$(cd "$SCRIPT_DIR" && cd "$(dirname "$MODEL_PATH")" && pwd)/$(basename "$MODEL_PATH")"
+    # 末尾のスラッシュを除去
+    MODEL_PATH="${MODEL_PATH%/}"
+    if [ -d "$MODEL_PATH" ]; then
+        MODEL_PATH="$(cd "$MODEL_PATH" && pwd)"
+    elif [ -d "$(dirname "$MODEL_PATH")" ]; then
+        MODEL_PATH="$(cd "$(dirname "$MODEL_PATH")" && pwd)/$(basename "$MODEL_PATH")"
+    else
+        log_error "パスが見つかりません: $MODEL_PATH"
+        exit 1
+    fi
 fi
 
 # モデルパスの存在確認
