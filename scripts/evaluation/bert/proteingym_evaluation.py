@@ -14,10 +14,14 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import math
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from tqdm import tqdm
 from transformers import BertConfig, BertForMaskedLM
 
 # プロジェクトルートを追加
@@ -39,7 +43,7 @@ logger = logging.getLogger(__name__)
 class BERTProteinGymEvaluator(ModelEvaluator):
     """BERT版ProteinGymデータを使用したモデル評価クラス"""
 
-    def __init__(self, model_path, tokenizer_path, device="cuda"):
+    def __init__(self, model_path: str, tokenizer_path: Optional[str], device: str = "cuda") -> None:
         """
         初期化
 
@@ -55,7 +59,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         self.tokenizer = self._init_tokenizer()
         self.model = self._init_model()
 
-    def _init_tokenizer(self):
+    def _init_tokenizer(self) -> Any:
         """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
@@ -90,12 +94,12 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             logger.info("Falling back to simple amino acid tokenizer")
             return self._init_simple_amino_acid_tokenizer()
 
-    def _init_model(self):
+    def _init_model(self) -> BertForMaskedLM:
         """モデルの初期化（抽象メソッドの実装）"""
         logger.info(f"Loading BERT model from {self.model_path}")
         return self._load_model()
 
-    def _init_simple_amino_acid_tokenizer(self):
+    def _init_simple_amino_acid_tokenizer(self) -> None:
         """シンプルなアミノ酸トークナイザーを初期化（フォールバック用）"""
         # EsmSequenceTokenizerと同じvocab構成
         vocab_list = [
@@ -153,14 +157,14 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         class SimpleTokenizer:
             """シンプルなアミノ酸トークナイザー（フォールバック用）"""
 
-            def __init__(self, vocab):
-                self.vocab = vocab
-                self.id_to_token = {idx: token for token, idx in vocab.items()}
-                self.unk_token_id = 3
+            def __init__(self, vocab: Dict[str, int]) -> None:
+                self.vocab: Dict[str, int] = vocab
+                self.id_to_token: Dict[int, str] = {idx: token for token, idx in vocab.items()}
+                self.unk_token_id: int = 3
 
-            def encode(self, sequence):
+            def encode(self, sequence: str) -> List[int]:
                 """アミノ酸配列をトークンIDに変換"""
-                tokens = []
+                tokens: List[int] = []
                 for char in sequence.upper():
                     if char in self.vocab:
                         tokens.append(self.vocab[char])
@@ -168,13 +172,13 @@ class BERTProteinGymEvaluator(ModelEvaluator):
                         tokens.append(self.unk_token_id)
                 return tokens
 
-            def get_vocab(self):
+            def get_vocab(self) -> Dict[str, int]:
                 return self.vocab
 
         self.tokenizer = SimpleTokenizer(self.vocab)
         self.use_esm_tokenizer = False
 
-    def _load_model(self):
+    def _load_model(self) -> BertForMaskedLM:
         """訓練済みBERTモデルの読み込み"""
         try:
             # Safetensorsファイルのチェック
@@ -238,7 +242,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             logger.error(f"Failed to load BERT model: {e}")
             raise
 
-    def encode_sequence(self, sequence, max_length=512):
+    def encode_sequence(self, sequence: str, max_length: int = 512) -> torch.Tensor:
         """アミノ酸配列をトークンIDにエンコード"""
         # 配列を適切にフォーマット（大文字変換、無効文字の除去など）
         sequence = sequence.upper().replace("X", "").replace("-", "").replace("*", "")
@@ -285,7 +289,12 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
         return torch.tensor(bert_tokens, dtype=torch.long)
 
-    def get_masked_lm_score(self, sequence, mutation_pos=None, context_length=512):
+    def get_masked_lm_score(
+        self,
+        sequence: str,
+        mutation_pos: Optional[int] = None,
+        context_length: int = 512,
+    ) -> float:
         """
         マスク言語モデルスコアを計算
 
@@ -313,7 +322,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             log_probs = F.log_softmax(logits, dim=-1)
 
             # 各トークンの尤度を計算（CLSとSEPを除く）
-            token_log_probs = []
+            token_log_probs: List[float] = []
             for i in range(1, len(tokens) - 1):  # CLS(0)とSEP(最後)を除く
                 token_id = tokens[i].item()
                 token_log_prob = log_probs[0, i, token_id]
@@ -325,7 +334,12 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             else:
                 return 0.0
 
-    def get_variant_fitness_score(self, wildtype_seq, mutant_seq, context_length=512):
+    def get_variant_fitness_score(
+        self,
+        wildtype_seq: str,
+        mutant_seq: str,
+        context_length: int = 512,
+    ) -> Dict[str, float]:
         """
         変異のフィットネススコアを計算（BERT版）
 
@@ -367,7 +381,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
                 "bert_pathogenicity_score": 0.5,
             }
 
-    def get_sequence_similarity(self, seq1, seq2, context_length=512):
+    def get_sequence_similarity(self, seq1: str, seq2: str, context_length: int = 512) -> float:
         """配列表現のコサイン類似度を計算"""
         with torch.no_grad():
             # 両配列をエンコード
@@ -398,7 +412,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
             return similarity.item()
 
-    def _calculate_pathogenicity_score(self, fitness_score, similarity):
+    def _calculate_pathogenicity_score(self, fitness_score: float, similarity: float) -> float:
         """病原性スコアを計算（0-1の範囲）"""
         # フィットネススコアと類似度を組み合わせて病原性スコアを算出
         # 低いフィットネス + 低い類似度 = 高い病原性
@@ -414,7 +428,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
         return pathogenicity
 
-    def load_proteingym_data(self, proteingym_file):
+    def load_proteingym_data(self, proteingym_file: str) -> pd.DataFrame:
         """
         ProteinGymデータの読み込み
 
@@ -454,7 +468,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
         return df
 
-    def _infer_target_sequence(self, df):
+    def _infer_target_sequence(self, df: pd.DataFrame) -> pd.DataFrame:
         """mutated_sequenceとmutant情報から野生型配列を推定"""
 
         def reverse_mutation(mutated_seq, mutant):
@@ -484,7 +498,12 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         )
         return df
 
-    def evaluate_model(self, proteingym_data, batch_size=16, sample_size=None):
+    def evaluate_model(
+        self,
+        proteingym_data: pd.DataFrame,
+        batch_size: int = 16,
+        sample_size: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
         モデルの評価実行
 
@@ -503,15 +522,35 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             proteingym_data = proteingym_data.sample(n=sample_size, random_state=42)
             logger.info(f"Using sample of {sample_size} variants")
 
-        predictions = []
-        true_scores = []
-        detailed_results = []
+        predictions: List[float] = []
+        true_scores: List[float] = []
+        detailed_results: List[Dict[str, Any]] = []
 
         # バッチ処理で評価
-        processed = 0
-        errors = 0
+        processed: int = 0
+        errors: int = 0
+        last_percent: int = -1
+        total_variants: int = len(proteingym_data)
+        total_batches: int = math.ceil(total_variants / batch_size)
 
-        for i in range(0, len(proteingym_data), batch_size):
+        logger.info(f"Total variants to evaluate: {total_variants}")
+        logger.info(f"Batch size: {batch_size} (total batches: {total_batches})")
+
+        for batch_index, i in enumerate(
+            tqdm(
+                range(0, total_variants, batch_size),
+                desc="Evaluating variants",
+                unit="batch",
+            ),
+            start=1,
+        ):
+            # 進捗がログに残るよう、一定間隔で出力
+            if batch_index == 1 or batch_index % 10 == 0 or batch_index == total_batches:
+                logger.info(
+                    f"Batch progress: {batch_index}/{total_batches} "
+                    f"({batch_index / total_batches * 100:.1f}%)"
+                )
+
             batch = proteingym_data.iloc[i : i + batch_size]
 
             for idx, row in batch.iterrows():
@@ -549,8 +588,14 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
                     processed += 1
 
-                    if processed % 50 == 0:
-                        logger.info(f"   Progress: {processed}/{len(proteingym_data)} variants processed")
+                    if total_variants > 0:
+                        percent: int = int(processed / total_variants * 100)
+                        if percent != last_percent:
+                            logger.info(
+                                f"Step: evaluation Progress: {percent}% "
+                                f"({processed}/{total_variants} variants processed)"
+                            )
+                            last_percent = percent
 
                 except Exception as e:
                     logger.warning(f"Error processing variant {idx}: {e}")
@@ -573,7 +618,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         logger.info("BERT model evaluation completed")
         return results
 
-    def _calculate_metrics(self, true_scores, predicted_scores):
+    def _calculate_metrics(self, true_scores: np.ndarray, predicted_scores: np.ndarray) -> Dict[str, Any]:
         """評価指標を計算"""
         from scipy.stats import pearsonr, spearmanr
 
@@ -611,7 +656,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
 
         return results
 
-    def save_results(self, results, output_dir):
+    def save_results(self, results: Dict[str, Any], output_dir: str) -> None:
         """評価結果を保存"""
         logger.info(f"Saving results to {output_dir}")
         os.makedirs(output_dir, exist_ok=True)
@@ -634,7 +679,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         # レポート作成
         self._create_report(results, output_dir)
 
-    def _create_report(self, results, output_dir):
+    def _create_report(self, results: Dict[str, Any], output_dir: str) -> None:
         """評価レポートを作成"""
         report_path = os.path.join(output_dir, "bert_proteingym_evaluation_report.txt")
 
@@ -696,7 +741,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             f.write("   • MLM predictions provide direct evidence of sequence disruption\n")
             f.write("   • Results reflect BERT's understanding of protein sequence patterns\n")
 
-    def _make_serializable(self, obj):
+    def _make_serializable(self, obj: Any) -> Any:
         """オブジェクトをJSON serializable形式に変換"""
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -712,7 +757,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             return obj
 
 
-def create_sample_proteingym_data(output_file):
+def create_sample_proteingym_data(output_file: str) -> None:
     """
     サンプルProteinGymデータを作成（テスト用）
     """
@@ -755,7 +800,7 @@ def create_sample_proteingym_data(output_file):
     logger.info(f"Sample data created with {len(df)} variants")
 
 
-def get_protein_tokenizer_path():
+def get_protein_tokenizer_path() -> Optional[str]:
     """
     protein_sequence用のトークナイザーパスを取得
     protein_sequenceはEsmSequenceTokenizerを使用するため、Noneを返す
@@ -769,7 +814,7 @@ def get_protein_tokenizer_path():
     return None
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="BERT ProteinGym evaluation for protein sequence model")
     parser.add_argument(
         "--model_path",

@@ -4,6 +4,7 @@
 
 import os
 import sys
+from typing import Dict, List
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
@@ -37,30 +38,33 @@ tmp_tokenizer.save_pretrained("custom_tokenizer")
 tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
 
 
-max_steps = 600000
-model_size = "small"  # Choose between small, medium or large
-model_path = get_bert_output_path("rna", model_size)
-max_length = 1024
-dataset_dir = CELLXGENE_DATASET_DIR
-learning_rate = 6e-6
-weight_decay = 1e-1
-log_interval = 100
-save_steps = 100  # Save checkpoint every 100 steps instead of default 1000
+max_steps: int = 600000
+model_size: str = "small"  # Choose between small, medium or large
+model_path: str = get_bert_output_path("rna", model_size)
+max_length: int = 1024
+dataset_dir: str = CELLXGENE_DATASET_DIR
+learning_rate: float = 6e-6
+weight_decay: float = 1e-1
+log_interval: int = 100
+save_steps: int = 100  # Save checkpoint every 100 steps instead of default 1000
 
-batch_size = 8
-per_device_eval_batch_size = 1
-gradient_accumulation_steps = 5 * 16
+batch_size: int = 8
+per_device_eval_batch_size: int = 1
+gradient_accumulation_steps: int = 5 * 16
+
+# Parallel preprocessing for attention_mask creation
+preprocess_num_proc: int = 18
 
 
 # Add preprocessing function to create attention_mask
-def preprocess_function(examples):
+def preprocess_function(examples: Dict[str, List[List[int]]]) -> Dict[str, List[List[int]]]:
     """Add attention_mask to the dataset"""
     if "input_ids" in examples:
         # Create attention_mask: 1 for real tokens, 0 for padding
-        attention_masks = []
+        attention_masks: List[List[int]] = []
         for input_ids in examples["input_ids"]:
             # Assuming pad_token_id is tokenizer.pad_token_id or 0
-            pad_token_id = (
+            pad_token_id: int = (
                 tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
             )
             attention_mask = [1 if token_id != pad_token_id else 0 for token_id in input_ids]
@@ -72,4 +76,4 @@ def preprocess_function(examples):
 
 
 # Special Tokens
-eos_token = 0  # eos
+eos_token: int = 0  # eos

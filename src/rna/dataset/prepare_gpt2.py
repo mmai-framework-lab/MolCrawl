@@ -8,8 +8,17 @@ from functools import partial
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # データセットキャッシュ設定を読み込み（configs/cache.yamlから）
-from utils.cache_config import setup_cache_env
-setup_cache_env()
+try:
+    # 任意のキャッシュ設定。存在しない環境でも学習は継続できる。
+    from utils.cache_config import setup_cache_env
+except ModuleNotFoundError:
+    setup_cache_env = None
+
+if setup_cache_env is not None:
+    setup_cache_env()
+else:
+    # cache_configが無い環境でも動作は可能
+    print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 
 # from transformers import AutoTokenizer
 from datasets import load_dataset, DatasetDict

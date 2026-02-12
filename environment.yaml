@@ -39,4 +39,4 @@ dependencies:
     - fcd==1.2.2
     - guacamol==0.5.5
     - deepchem==2.8.0
-    - wandb==0.18.9
+    - wandb>=0.18.0,<0.19

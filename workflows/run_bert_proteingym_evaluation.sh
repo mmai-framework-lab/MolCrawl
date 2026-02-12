@@ -63,7 +63,7 @@ SKIP_DATA_PREP=false
 SKIP_EVALUATION=false
 SKIP_VISUALIZATION=false
 
-DATA_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/data/bert_proteingym"  # データ準備時の出力先
+DATA_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/data/proteingym"  # データ準備時の出力先
 OUTPUT_DIR="$EVALUATION_OUTPUT_DIR/protein_sequence/report/bert_proteingym"  # デフォルト出力先（-o/--output-dirで上書き可能）
 
 # 引数パース
@@ -166,8 +166,17 @@ echo "データディレクトリ: $DATA_DIR"
 echo "出力ディレクトリ: $OUTPUT_DIR"
 echo ""
 
-# 出力ディレクトリ作成
+# 出力ディレクトリ作成（既存の場合はスキップ）
+if [ -e "$DATA_DIR" ] && [ ! -d "$DATA_DIR" ]; then
+    echo "エラー: データディレクトリのパスが既存ファイルと衝突しています: $DATA_DIR"
+    exit 1
+fi
 mkdir -p "$DATA_DIR"
+
+if [ -e "$OUTPUT_DIR" ] && [ ! -d "$OUTPUT_DIR" ]; then
+    echo "エラー: 出力ディレクトリのパスが既存ファイルと衝突しています: $OUTPUT_DIR"
+    exit 1
+fi
 mkdir -p "$OUTPUT_DIR"
 
 # パス設定

@@ -331,8 +331,20 @@ if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_datas
         return {"input_ids": input_ids, "attention_mask": attention_masks}
 
     print("🔄 Mapping preprocessing function to datasets...")
-    train_dataset = train_dataset.map(preprocess_rna_for_bert, batched=True, remove_columns=train_dataset.column_names)
-    test_dataset = test_dataset.map(preprocess_rna_for_bert, batched=True, remove_columns=test_dataset.column_names)
+    # Use parallel preprocessing when configured
+    preprocess_num_proc: int = int(globals().get("preprocess_num_proc", 1))
+    train_dataset = train_dataset.map(
+        preprocess_rna_for_bert,
+        batched=True,
+        remove_columns=train_dataset.column_names,
+        num_proc=preprocess_num_proc,
+    )
+    test_dataset = test_dataset.map(
+        preprocess_rna_for_bert,
+        batched=True,
+        remove_columns=test_dataset.column_names,
+        num_proc=preprocess_num_proc,
+    )
 
     print("✅ RNA preprocessing completed.")
     print("Train dataset columns after preprocessing:", train_dataset.column_names)
@@ -347,8 +359,10 @@ if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_datas
 # Apply preprocessing function if it exists in config (for non-RNA datasets)
 elif "preprocess_function" in globals() and callable(globals()["preprocess_function"]):
     print("Applying preprocessing function to add attention_mask...")
-    train_dataset = train_dataset.map(globals()["preprocess_function"], batched=True)
-    test_dataset = test_dataset.map(globals()["preprocess_function"], batched=True)
+    # Use parallel preprocessing when configured
+    preprocess_num_proc: int = int(globals().get("preprocess_num_proc", 1))
+    train_dataset = train_dataset.map(globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc)
+    test_dataset = test_dataset.map(globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc)
     print("Preprocessing completed.")
     print("Train dataset columns after preprocessing:", train_dataset.column_names)
     print("Test dataset columns after preprocessing:", test_dataset.column_names)

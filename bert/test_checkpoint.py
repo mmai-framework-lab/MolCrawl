@@ -15,6 +15,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Any, Sequence
 
 import numpy as np
 import torch
@@ -115,6 +116,18 @@ def load_model_and_tokenizer(checkpoint_path, domain=None, vocab_path=None):
         return None, None
 
 
+def safe_convert_tokens_to_string(tokenizer: Any, tokens: Sequence[str]) -> str:
+    """トークン列を文字列へ安全に復元する（decoder未設定のfast tokenizer対策）"""
+    if hasattr(tokenizer, "convert_tokens_to_string"):
+        try:
+            return tokenizer.convert_tokens_to_string(list(tokens))
+        except Exception:
+            # decoderが未設定のfast tokenizerでは例外になるためフォールバック
+            pass
+    # 文字単位トークナイザー向けに空白なし結合
+    return "".join(tokens)
+
+
 def test_basic_functionality(model, tokenizer, test_texts):
     """基本的な機能のテスト"""
     print("\n=== 基本機能テスト ===")
@@ -199,11 +212,8 @@ def test_masked_language_modeling(model, tokenizer, test_texts):
                     original_token = tokens[mask_idx]
                     tokens[mask_idx] = tokenizer.mask_token if hasattr(tokenizer, "mask_token") else "[MASK]"
 
-                    # トークンから文字列を再構築
-                    if hasattr(tokenizer, "convert_tokens_to_string"):
-                        masked_text = tokenizer.convert_tokens_to_string(tokens)
-                    else:
-                        masked_text = " ".join(tokens)
+                    # トークンから文字列を再構築（decoder未設定のfast tokenizer対策）
+                    masked_text = safe_convert_tokens_to_string(tokenizer, tokens)
 
                     print(f"\n元のテキスト: {text}")
                     print(f"マスクされたテキスト: {masked_text}")
