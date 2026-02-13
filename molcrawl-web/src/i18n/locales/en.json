@@ -1,0 +1,176 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "items": "items",
+    "notAvailable": "N/A"
+  },
+  "header": {
+    "title": "MolCrawl Dataset Browser",
+    "subtitle": "Fundamental Models Dataset Explorer - Deep Learning Model Datasets"
+  },
+  "tabs": {
+    "systemMonitor": "System Monitor",
+    "compounds": "Compounds (OrganiX13)",
+    "compoundsGuacamol": "Compounds (GuacaMol)",
+    "genomeSequence": "Genome Sequence",
+    "proteinSequence": "Protein Sequence",
+    "rna": "RNA",
+    "moleculeNl": "Molecule NL"
+  },
+  "tabDescriptions": {
+    "systemMonitor": "System Monitor (Experiment Management & GPU Resources)",
+    "compounds": "Compound Dataset (OrganiX13)",
+    "compoundsGuacamol": "Compound Dataset (GuacaMol Benchmark)",
+    "genomeSequence": "Genome Sequence Dataset",
+    "proteinSequence": "Protein Sequence Dataset",
+    "rna": "RNA Dataset",
+    "moleculeNl": "Molecule Natural Language Dataset"
+  },
+  "directory": {
+    "loadingStructure": "Loading directory structure...",
+    "errorOccurred": "An error occurred",
+    "loadData": "Please load data",
+    "loadButton": "Load {{name}}"
+  },
+  "viewMode": {
+    "lazy": "Lazy",
+    "recursive": "Recursive",
+    "full": "Full",
+    "lazyDesc": "Lazy loading mode: Load individually on click",
+    "recursiveDesc": "Recursive loading mode: Load child directories on expand",
+    "fullDesc": "Full loading mode: Display entire structure at once",
+    "depth": "Depth"
+  },
+  "gpt2": {
+    "title": "GPT-2 Training Status",
+    "noData": "No GPT-2 training data available",
+    "autoRefresh": "Auto Refresh",
+    "modelSize": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "xl": "XL"
+    },
+    "status": {
+      "notStarted": "Not Started",
+      "training": "Training",
+      "stopped": "Stopped",
+      "error": "Error",
+      "starting": "Starting",
+      "completed": "Completed"
+    },
+    "metrics": {
+      "iteration": "Iteration",
+      "loss": "Loss",
+      "learningRate": "Learning Rate",
+      "elapsed": "Elapsed",
+      "eta": "ETA",
+      "tokensPerSec": "Tokens/sec",
+      "progress": "Progress"
+    },
+    "checkpoint": {
+      "latest": "Latest Checkpoint",
+      "lastUpdate": "Last Update",
+      "size": "Size"
+    },
+    "process": {
+      "running": "Process Running",
+      "noCheckpoint": "No checkpoint yet",
+      "waitingForData": "Waiting for first training data..."
+    },
+    "hfCompatibility": {
+      "warning": "HuggingFace Incompatible",
+      "missingFiles": "Missing files",
+      "compatible": "HuggingFace Compatible"
+    },
+    "inference": {
+      "title": "Inference",
+      "runInference": "Run Inference",
+      "generate": "Generate",
+      "inputPrompt": "Input Prompt",
+      "output": "Output",
+      "maxLength": "Max Length",
+      "temperature": "Temperature",
+      "topK": "Top-K",
+      "topP": "Top-P"
+    }
+  },
+  "bert": {
+    "title": "BERT Training Status",
+    "noData": "No BERT training data available",
+    "autoRefresh": "Auto Refresh",
+    "status": {
+      "notStarted": "Not Started",
+      "training": "Training",
+      "stopped": "Stopped",
+      "error": "Error"
+    },
+    "metrics": {
+      "epoch": "Epoch",
+      "step": "Step",
+      "loss": "Loss",
+      "accuracy": "Accuracy"
+    }
+  },
+  "dataset": {
+    "progress": "Dataset Preparation Progress",
+    "preparing": "Preparing",
+    "completed": "Completed",
+    "pending": "Pending",
+    "totalFiles": "Total Files",
+    "processedFiles": "Processed Files",
+    "totalSize": "Total Size"
+  },
+  "gpu": {
+    "title": "GPU Resources",
+    "noGpu": "No GPU detected",
+    "utilization": "Utilization",
+    "memory": "Memory",
+    "temperature": "Temperature",
+    "power": "Power",
+    "processes": "Running Processes"
+  },
+  "experiment": {
+    "title": "Experiment Dashboard",
+    "runningExperiments": "Running Experiments",
+    "noExperiments": "No experiments running",
+    "processType": "Process Type",
+    "datasetType": "Dataset Type",
+    "startTime": "Start Time",
+    "elapsedTime": "Elapsed Time",
+    "memory": "Memory Usage"
+  },
+  "logs": {
+    "title": "Logs",
+    "noLogs": "No logs available",
+    "showLogs": "Show Logs",
+    "hideLogs": "Hide Logs",
+    "autoScroll": "Auto Scroll",
+    "clearLogs": "Clear",
+    "downloadLogs": "Download"
+  },
+  "zinc": {
+    "title": "ZINC Database Status",
+    "checking": "Checking...",
+    "available": "Available",
+    "unavailable": "Unavailable"
+  },
+  "genome": {
+    "title": "Species List",
+    "totalSpecies": "Total Species",
+    "searchPlaceholder": "Search species..."
+  },
+  "language": {
+    "switch": "Language",
+    "en": "English",
+    "ja": "日本語"
+  }
+}

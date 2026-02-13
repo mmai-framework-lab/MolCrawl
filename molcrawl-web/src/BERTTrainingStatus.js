@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './BERTTrainingStatus.css';
 import BERTInferenceModal from './BERTInferenceModal';
+import { useI18n } from './i18n';
 
 const BERTTrainingStatus = ({ dataset }) => {
+    const { t } = useI18n();
     const [trainingData, setTrainingData] = useState(null);
     const [processData, setProcessData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -81,13 +83,13 @@ const BERTTrainingStatus = ({ dataset }) => {
 
     const getStatusBadge = (status) => {
         const badges = {
-            not_started: { text: 'Not Started', class: 'status-not-started' },
-            training: { text: 'Training', class: 'status-training' },
-            stopped: { text: 'Stopped', class: 'status-stopped' },
-            error: { text: 'Error', class: 'status-error' },
+            not_started: { textKey: 'bert.status.notStarted', class: 'status-not-started' },
+            training: { textKey: 'bert.status.training', class: 'status-training' },
+            stopped: { textKey: 'bert.status.stopped', class: 'status-stopped' },
+            error: { textKey: 'bert.status.error', class: 'status-error' },
         };
         const badge = badges[status] || badges.not_started;
-        return <span className={`status-badge ${badge.class}`}>{badge.text}</span>;
+        return <span className={`status-badge ${badge.class}`}>{t(badge.textKey)}</span>;
     };
 
     const handleModelClick = (modelData, datasetKey) => {
@@ -313,7 +315,7 @@ const BERTTrainingStatus = ({ dataset }) => {
         return (
             <div className="bert-training-status loading">
                 <div className="loading-spinner"></div>
-                <p>Loading BERT training status...</p>
+                <p>{t('common.loading')}</p>
             </div>
         );
     }
@@ -321,10 +323,10 @@ const BERTTrainingStatus = ({ dataset }) => {
     if (error) {
         return (
             <div className="bert-training-status error">
-                <h3>Error Loading BERT Training Status</h3>
+                <h3>{t('common.error')}</h3>
                 <p>{error}</p>
                 <button onClick={fetchTrainingStatus} className="retry-button">
-                    Retry
+                    {t('common.retry')}
                 </button>
             </div>
         );
@@ -334,9 +336,9 @@ const BERTTrainingStatus = ({ dataset }) => {
         <div className="bert-training-status">
             <div className="status-header">
                 <div className="header-left">
-                    <h2>🤖 BERT Training Status (Development)</h2>
+                    <h2>🤖 {t('bert.title')} (Development)</h2>
                     <p className="learning-source">
-                        Learning Source: <code>{trainingData.learning_source_dir || 'N/A'}</code>
+                        Learning Source: <code>{trainingData.learning_source_dir || t('common.notAvailable')}</code>
                     </p>
                 </div>
                 <div className="header-controls">
@@ -346,10 +348,10 @@ const BERTTrainingStatus = ({ dataset }) => {
                             checked={autoRefresh}
                             onChange={(e) => setAutoRefresh(e.target.checked)}
                         />
-                        <span>Auto Refresh (10s)</span>
+                        <span>{t('bert.autoRefresh')} (10s)</span>
                     </label>
                     <button onClick={fetchTrainingStatus} className="refresh-button">
-                        🔄 Refresh
+                        🔄 {t('common.refresh')}
                     </button>
                 </div>
             </div>

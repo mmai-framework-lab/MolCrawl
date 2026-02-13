@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import InferenceModal from './InferenceModal';
+import { useI18n } from './i18n';
 import './GPT2TrainingStatus.css';
 
 const GPT2TrainingStatus = ({ dataset }) => {
+    const { t } = useI18n();
     const [trainingData, setTrainingData] = useState(null);
     const [processData, setProcessData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -82,13 +84,13 @@ const GPT2TrainingStatus = ({ dataset }) => {
 
     const getStatusBadge = (status) => {
         const badges = {
-            not_started: { text: 'Not Started', class: 'status-not-started' },
-            training: { text: 'Training', class: 'status-training' },
-            stopped: { text: 'Stopped', class: 'status-stopped' },
-            error: { text: 'Error', class: 'status-error' },
+            not_started: { textKey: 'gpt2.status.notStarted', class: 'status-not-started' },
+            training: { textKey: 'gpt2.status.training', class: 'status-training' },
+            stopped: { textKey: 'gpt2.status.stopped', class: 'status-stopped' },
+            error: { textKey: 'gpt2.status.error', class: 'status-error' },
         };
         const badge = badges[status] || badges.not_started;
-        return <span className={`status-badge ${badge.class}`}>{badge.text}</span>;
+        return <span className={`status-badge ${badge.class}`}>{t(badge.textKey)}</span>;
     };
 
     // Function to determine model size from config file name
@@ -376,7 +378,7 @@ const GPT2TrainingStatus = ({ dataset }) => {
         return (
             <div className="gpt2-training-status loading">
                 <div className="loading-spinner"></div>
-                <p>Loading training status...</p>
+                <p>{t('common.loading')}</p>
             </div>
         );
     }
@@ -384,10 +386,10 @@ const GPT2TrainingStatus = ({ dataset }) => {
     if (error) {
         return (
             <div className="gpt2-training-status error">
-                <h3>Error Loading Training Status</h3>
+                <h3>{t('common.error')}</h3>
                 <p>{error}</p>
                 <button onClick={fetchTrainingStatus} className="retry-button">
-                    Retry
+                    {t('common.retry')}
                 </button>
             </div>
         );
@@ -397,9 +399,9 @@ const GPT2TrainingStatus = ({ dataset }) => {
         <div className="gpt2-training-status">
             <div className="status-header">
                 <div className="header-left">
-                    <h2>🚀 GPT-2 Training Status</h2>
+                    <h2>🚀 {t('gpt2.title')}</h2>
                     <p className="learning-source">
-                        Learning Source: <code>{trainingData.learning_source_dir || 'N/A'}</code>
+                        Learning Source: <code>{trainingData.learning_source_dir || t('common.notAvailable')}</code>
                     </p>
                 </div>
                 <div className="header-controls">
@@ -409,10 +411,10 @@ const GPT2TrainingStatus = ({ dataset }) => {
                             checked={autoRefresh}
                             onChange={(e) => setAutoRefresh(e.target.checked)}
                         />
-                        <span>Auto Refresh (10s)</span>
+                        <span>{t('gpt2.autoRefresh')} (10s)</span>
                     </label>
                     <button onClick={fetchTrainingStatus} className="refresh-button">
-                        🔄 Refresh
+                        🔄 {t('common.refresh')}
                     </button>
                 </div>
             </div>

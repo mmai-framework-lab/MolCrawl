@@ -1,0 +1,176 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "retry": "再試行",
+    "refresh": "更新",
+    "close": "閉じる",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "yes": "はい",
+    "no": "いいえ",
+    "items": "項目",
+    "notAvailable": "N/A"
+  },
+  "header": {
+    "title": "MolCrawl Dataset Browser",
+    "subtitle": "Fundamental Models Dataset Explorer - 深層学習モデルデータセット"
+  },
+  "tabs": {
+    "systemMonitor": "System Monitor",
+    "compounds": "Compounds (OrganiX13)",
+    "compoundsGuacamol": "Compounds (GuacaMol)",
+    "genomeSequence": "Genome Sequence",
+    "proteinSequence": "Protein Sequence",
+    "rna": "RNA",
+    "moleculeNl": "Molecule NL"
+  },
+  "tabDescriptions": {
+    "systemMonitor": "システムモニター（実験管理・GPUリソース）",
+    "compounds": "化合物データセット (OrganiX13)",
+    "compoundsGuacamol": "化合物データセット (GuacaMol Benchmark)",
+    "genomeSequence": "ゲノム配列データセット",
+    "proteinSequence": "タンパク質配列データセット",
+    "rna": "RNAデータセット",
+    "moleculeNl": "分子自然言語データセット"
+  },
+  "directory": {
+    "loadingStructure": "ディレクトリ構造を読み込み中...",
+    "errorOccurred": "エラーが発生しました",
+    "loadData": "データを読み込んでください",
+    "loadButton": "{{name}} を読み込み"
+  },
+  "viewMode": {
+    "lazy": "遅延",
+    "recursive": "再帰",
+    "full": "完全",
+    "lazyDesc": "遅延読み込みモード: クリック時に個別読み込み",
+    "recursiveDesc": "再帰読み込みモード: 展開時に子ディレクトリも読み込み",
+    "fullDesc": "完全読み込みモード: 全体構造を一度に表示",
+    "depth": "深度"
+  },
+  "gpt2": {
+    "title": "GPT-2 トレーニング状況",
+    "noData": "GPT-2のトレーニングデータがありません",
+    "autoRefresh": "自動更新",
+    "modelSize": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "xl": "XL"
+    },
+    "status": {
+      "notStarted": "未開始",
+      "training": "トレーニング中",
+      "stopped": "停止済み",
+      "error": "エラー",
+      "starting": "開始中",
+      "completed": "完了"
+    },
+    "metrics": {
+      "iteration": "イテレーション",
+      "loss": "Loss",
+      "learningRate": "学習率",
+      "elapsed": "経過時間",
+      "eta": "推定残り時間",
+      "tokensPerSec": "Tokens/秒",
+      "progress": "進捗"
+    },
+    "checkpoint": {
+      "latest": "最新チェックポイント",
+      "lastUpdate": "最終更新",
+      "size": "サイズ"
+    },
+    "process": {
+      "running": "プロセス実行中",
+      "noCheckpoint": "チェックポイントなし",
+      "waitingForData": "最初のトレーニングデータを待機中..."
+    },
+    "hfCompatibility": {
+      "warning": "HuggingFace非互換",
+      "missingFiles": "不足ファイル",
+      "compatible": "HuggingFace互換"
+    },
+    "inference": {
+      "title": "推論",
+      "runInference": "推論を実行",
+      "generate": "生成",
+      "inputPrompt": "入力プロンプト",
+      "output": "出力",
+      "maxLength": "最大長",
+      "temperature": "Temperature",
+      "topK": "Top-K",
+      "topP": "Top-P"
+    }
+  },
+  "bert": {
+    "title": "BERT トレーニング状況",
+    "noData": "BERTのトレーニングデータがありません",
+    "autoRefresh": "自動更新",
+    "status": {
+      "notStarted": "未開始",
+      "training": "トレーニング中",
+      "stopped": "停止済み",
+      "error": "エラー"
+    },
+    "metrics": {
+      "epoch": "エポック",
+      "step": "ステップ",
+      "loss": "Loss",
+      "accuracy": "精度"
+    }
+  },
+  "dataset": {
+    "progress": "データセット準備状況",
+    "preparing": "準備中",
+    "completed": "完了",
+    "pending": "保留中",
+    "totalFiles": "総ファイル数",
+    "processedFiles": "処理済みファイル数",
+    "totalSize": "合計サイズ"
+  },
+  "gpu": {
+    "title": "GPUリソース",
+    "noGpu": "GPUが検出されませんでした",
+    "utilization": "使用率",
+    "memory": "メモリ",
+    "temperature": "温度",
+    "power": "電力",
+    "processes": "実行中プロセス"
+  },
+  "experiment": {
+    "title": "実験ダッシュボード",
+    "runningExperiments": "実行中の実験",
+    "noExperiments": "実行中の実験はありません",
+    "processType": "プロセスタイプ",
+    "datasetType": "データセットタイプ",
+    "startTime": "開始時刻",
+    "elapsedTime": "経過時間",
+    "memory": "メモリ使用量"
+  },
+  "logs": {
+    "title": "ログ",
+    "noLogs": "ログがありません",
+    "showLogs": "ログを表示",
+    "hideLogs": "ログを非表示",
+    "autoScroll": "自動スクロール",
+    "clearLogs": "クリア",
+    "downloadLogs": "ダウンロード"
+  },
+  "zinc": {
+    "title": "ZINC データベース状況",
+    "checking": "確認中...",
+    "available": "利用可能",
+    "unavailable": "利用不可"
+  },
+  "genome": {
+    "title": "生物種リスト",
+    "totalSpecies": "総生物種数",
+    "searchPlaceholder": "生物種を検索..."
+  },
+  "language": {
+    "switch": "言語",
+    "en": "English",
+    "ja": "日本語"
+  }
+}

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from './i18n';
 import './GPUResources.css';
 
 const GPUResources = () => {
+    const { t } = useI18n();
     const [gpuInfo, setGpuInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -64,11 +66,11 @@ const GPUResources = () => {
         return (
             <div className="gpu-resources">
                 <div className="gpu-header">
-                    <h2>🖥️ GPUリソース情報</h2>
+                    <h2>🖥️ {t('gpu.title')}</h2>
                 </div>
                 <div className="gpu-loading">
                     <span>⏳</span>
-                    <span>GPU情報を読み込み中...</span>
+                    <span>{t('common.loading')}</span>
                 </div>
             </div>
         );
@@ -78,10 +80,10 @@ const GPUResources = () => {
         return (
             <div className="gpu-resources">
                 <div className="gpu-header">
-                    <h2>🖥️ GPUリソース情報</h2>
+                    <h2>🖥️ {t('gpu.title')}</h2>
                     <div className="gpu-controls">
                         <button onClick={handleRefresh} className="refresh-button">
-                            🔄 再試行
+                            🔄 {t('common.retry')}
                         </button>
                     </div>
                 </div>
@@ -95,7 +97,7 @@ const GPUResources = () => {
     return (
         <div className="gpu-resources">
             <div className="gpu-header">
-                <h2>🖥️ GPUリソース情報</h2>
+                <h2>🖥️ {t('gpu.title')}</h2>
                 <div className="gpu-controls">
                     <label className="auto-refresh-control">
                         <input
@@ -103,7 +105,7 @@ const GPUResources = () => {
                             checked={autoRefresh}
                             onChange={toggleAutoRefresh}
                         />
-                        自動更新
+                        {t('gpt2.autoRefresh')}
                     </label>
                     {autoRefresh && (
                         <select
@@ -111,10 +113,10 @@ const GPUResources = () => {
                             onChange={handleIntervalChange}
                             className="interval-select"
                         >
-                            <option value={2000}>2秒</option>
-                            <option value={5000}>5秒</option>
-                            <option value={10000}>10秒</option>
-                            <option value={30000}>30秒</option>
+                            <option value={2000}>2s</option>
+                            <option value={5000}>5s</option>
+                            <option value={10000}>10s</option>
+                            <option value={30000}>30s</option>
                         </select>
                     )}
                     <button
@@ -122,7 +124,7 @@ const GPUResources = () => {
                         className="refresh-button"
                         disabled={loading}
                     >
-                        {loading ? '⏳' : '🔄'} 更新
+                        {loading ? '⏳' : '🔄'} {t('common.refresh')}
                     </button>
                 </div>
             </div>
@@ -130,7 +132,7 @@ const GPUResources = () => {
             {gpuInfo && (
                 <div className="gpu-content">
                     <div className="gpu-timestamp">
-                        最終更新: {new Date(gpuInfo.timestamp).toLocaleString('ja-JP')}
+                        {t('gpt2.checkpoint.lastUpdate')}: {new Date(gpuInfo.timestamp).toLocaleString()}
                     </div>
                     <div className="nvidia-smi-output">
                         <pre>{gpuInfo.raw}</pre>
@@ -139,7 +141,7 @@ const GPUResources = () => {
             )}
 
             {loading && gpuInfo && (
-                <div className="gpu-updating">更新中...</div>
+                <div className="gpu-updating">{t('common.loading')}</div>
             )}
         </div>
     );

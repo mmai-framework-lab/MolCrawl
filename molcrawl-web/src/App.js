@@ -9,62 +9,64 @@ import GPT2TrainingStatus from './GPT2TrainingStatus';
 import BERTTrainingStatus from './BERTTrainingStatus';
 import LogsViewer from './LogsViewer';
 import GPUResources from './GPUResources';
+import LanguageSwitcher from './components/LanguageSwitcher';
+import { useI18n } from './i18n';
 
-// データセットタブの定義
+// データセットタブの定義（i18nキーを使用）
 const DATASET_TABS = [
   {
     id: 'system_monitor',
-    name: 'System Monitor',
+    nameKey: 'tabs.systemMonitor',
     icon: '📊',
-    description: 'システムモニター（実験管理・GPUリソース）',
+    descriptionKey: 'tabDescriptions.systemMonitor',
     path: null,
     isSpecial: true
   },
   {
     id: 'compounds',
-    name: 'Compounds (OrganiX13)',
+    nameKey: 'tabs.compounds',
     icon: '🧪',
-    description: '化合物データセット (OrganiX13)',
+    descriptionKey: 'tabDescriptions.compounds',
     path: 'compounds',
     progressKey: 'compounds'
   },
   {
     id: 'compounds_guacamol',
-    name: 'Compounds (GuacaMol)',
+    nameKey: 'tabs.compoundsGuacamol',
     icon: '🧪',
-    description: '化合物データセット (GuacaMol Benchmark)',
+    descriptionKey: 'tabDescriptions.compoundsGuacamol',
     path: 'compounds/benchmark/GuacaMol',
     progressKey: 'compounds_guacamol'
   },
   {
     id: 'genome_sequence',
-    name: 'Genome Sequence',
+    nameKey: 'tabs.genomeSequence',
     icon: '🧬',
-    description: 'ゲノム配列データセット',
+    descriptionKey: 'tabDescriptions.genomeSequence',
     path: 'genome_sequence',
     progressKey: 'genome_sequence'
   },
   {
     id: 'protein_sequence',
-    name: 'Protein Sequence',
+    nameKey: 'tabs.proteinSequence',
     icon: '🧬',
-    description: 'タンパク質配列データセット',
+    descriptionKey: 'tabDescriptions.proteinSequence',
     path: 'protein_sequence',
     progressKey: 'protein_sequence'
   },
   {
     id: 'rna',
-    name: 'RNA',
+    nameKey: 'tabs.rna',
     icon: '🧬',
-    description: 'RNAデータセット',
+    descriptionKey: 'tabDescriptions.rna',
     path: 'rna',
     progressKey: 'rna'
   },
   {
     id: 'molecule_nl',
-    name: 'Molecule NL',
+    nameKey: 'tabs.moleculeNl',
     icon: '💬',
-    description: '分子自然言語データセット',
+    descriptionKey: 'tabDescriptions.moleculeNl',
     path: 'molecule_nl',
     progressKey: 'molecule_nl'
   }
@@ -223,6 +225,7 @@ const DirectoryTree = ({ data, expandedDirs, onToggle, level = 0 }) => {
 };
 
 function App() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('compounds');
   const [directoryData, setDirectoryData] = useState({});
   const [loading, setLoading] = useState({});
@@ -424,14 +427,19 @@ function App() {
     return (
       <div className="App">
         <header className="App-header">
-          <h1>🧬 MolCrawl Dataset Browser</h1>
-          <p>Fundamental Models Dataset Explorer</p>
+          <div className="header-content">
+            <div className="header-title">
+              <h1>🧬 {t('header.title')}</h1>
+              <p>{t('header.subtitle')}</p>
+            </div>
+            <LanguageSwitcher />
+          </div>
         </header>
         <main className="App-main">
           <div className="directory-browser">
             <div className="loading">
               <span>⏳</span>
-              <span>ディレクトリ構造を読み込み中...</span>
+              <span>{t('directory.loadingStructure')}</span>
             </div>
           </div>
         </main>
@@ -443,15 +451,20 @@ function App() {
     return (
       <div className="App">
         <header className="App-header">
-          <h1>🧬 MolCrawl Dataset Browser</h1>
-          <p>Fundamental Models Dataset Explorer</p>
+          <div className="header-content">
+            <div className="header-title">
+              <h1>🧬 {t('header.title')}</h1>
+              <p>{t('header.subtitle')}</p>
+            </div>
+            <LanguageSwitcher />
+          </div>
         </header>
         <main className="App-main">
           <div className="directory-browser">
             <div className="error">
-              <span>❌ エラーが発生しました</span>
+              <span>❌ {t('directory.errorOccurred')}</span>
               <span>{currentTabError}</span>
-              <button onClick={handleRefresh}>再試行</button>
+              <button onClick={handleRefresh}>{t('common.retry')}</button>
             </div>
           </div>
         </main>
@@ -462,8 +475,13 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🧬 MolCrawl Dataset Browser</h1>
-        <p>Fundamental Models Dataset Explorer - 深層学習モデルデータセット</p>
+        <div className="header-content">
+          <div className="header-title">
+            <h1>🧬 {t('header.title')}</h1>
+            <p>{t('header.subtitle')}</p>
+          </div>
+          <LanguageSwitcher />
+        </div>
       </header>
       <main className="App-main">
         <div className="directory-browser">
@@ -474,10 +492,10 @@ function App() {
                 key={tab.id}
                 className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => handleTabChange(tab.id)}
-                title={tab.description}
+                title={t(tab.descriptionKey)}
               >
                 <span>{tab.icon}</span>
-                <span>{tab.name}</span>
+                <span>{t(tab.nameKey)}</span>
               </button>
             ))}
           </nav>
@@ -525,35 +543,35 @@ function App() {
                     <button
                       className={`mode-btn ${viewMode === 'lazy' ? 'active' : ''}`}
                       onClick={() => { setViewMode('lazy'); handleRefresh(); }}
-                      title="必要に応じて読み込み"
+                      title={t('viewMode.lazyDesc')}
                     >
-                      💤 遅延
+                      💤 {t('viewMode.lazy')}
                     </button>
                     <button
                       className={`mode-btn ${viewMode === 'recursive' ? 'active' : ''}`}
                       onClick={toggleRecursiveMode}
-                      title="展開時に子ディレクトリも読み込み"
+                      title={t('viewMode.recursiveDesc')}
                     >
-                      🔄 再帰
+                      🔄 {t('viewMode.recursive')}
                     </button>
                     <button
                       className={`mode-btn ${viewMode === 'full' ? 'active' : ''}`}
                       onClick={() => loadFullTree(activeTab)}
-                      title="全体を一度に読み込み"
+                      title={t('viewMode.fullDesc')}
                     >
-                      🌳 完全
+                      🌳 {t('viewMode.full')}
                     </button>
                     <select
                       value={maxDepth}
                       onChange={(e) => setMaxDepth(parseInt(e.target.value))}
                       className="depth-select"
-                      title="最大読み込み深度"
+                      title={t('viewMode.depth')}
                     >
-                      <option value={2}>深度 2</option>
-                      <option value={3}>深度 3</option>
-                      <option value={4}>深度 4</option>
-                      <option value={5}>深度 5</option>
-                      <option value={10}>深度 10</option>
+                      <option value={2}>{t('viewMode.depth')} 2</option>
+                      <option value={3}>{t('viewMode.depth')} 3</option>
+                      <option value={4}>{t('viewMode.depth')} 4</option>
+                      <option value={5}>{t('viewMode.depth')} 5</option>
+                      <option value={10}>{t('viewMode.depth')} 10</option>
                     </select>
                     <button className="refresh-btn" onClick={handleRefresh}>
                       🔄
@@ -562,9 +580,9 @@ function App() {
                 </div>
                 <div className="mode-info">
                   <span className={`mode-indicator mode-${viewMode}`}>
-                    {viewMode === 'lazy' && '💤 遅延読み込みモード: クリック時に個別読み込み'}
-                    {viewMode === 'recursive' && '🔄 再帰読み込みモード: 展開時に子ディレクトリも読み込み'}
-                    {viewMode === 'full' && '🌳 完全読み込みモード: 全体構造を一度に表示'}
+                    {viewMode === 'lazy' && `💤 ${t('viewMode.lazyDesc')}`}
+                    {viewMode === 'recursive' && `🔄 ${t('viewMode.recursiveDesc')}`}
+                    {viewMode === 'full' && `🌳 ${t('viewMode.fullDesc')}`}
                   </span>
                 </div>
 
@@ -587,9 +605,9 @@ function App() {
                 )}
                 {!currentTabData && !currentTabLoading && (
                   <div className="empty-state">
-                    <p>データを読み込んでください</p>
+                    <p>{t('directory.loadData')}</p>
                     <button onClick={() => loadInitialData(activeTab)}>
-                      📁 {DATASET_TABS.find(tab => tab.id === activeTab)?.name} を読み込み
+                      📁 {t('directory.loadButton', { name: t(DATASET_TABS.find(tab => tab.id === activeTab)?.nameKey || '') })}
                     </button>
                   </div>
                 )}

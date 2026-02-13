@@ -14,6 +14,7 @@ __pycache__
 !.eslintrc.json
 !.prettierrc.json
 !molcrawl-web/frontend/public/manifest.json
+!molcrawl-web/src/i18n/locales/*.json
 !src/compounds/dataset/prepare_gpt2_organix13.py
 
 wandb

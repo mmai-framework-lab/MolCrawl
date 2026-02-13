@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import './ExperimentDashboard.css';
 import TrainingProcessStatus from './TrainingProcessStatus';
+import { useI18n } from './i18n';
 
 // 環境変数からAPIエンドポイントを取得（REACT_APP_プレフィックスが必要）
 // 設定されていない場合はnull（Experiment Dashboardを無効化）
@@ -17,6 +18,7 @@ const isApiAvailable = () => {
 };
 
 function ExperimentDashboard() {
+  const { t } = useI18n();
   const [experiments, setExperiments] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [selectedExperiment, setSelectedExperiment] = useState(null);
@@ -149,8 +151,8 @@ function ExperimentDashboard() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) { return 'N/A'; }
-    return new Date(dateString).toLocaleString('ja-JP');
+    if (!dateString) { return t('common.notAvailable'); }
+    return new Date(dateString).toLocaleString();
   };
 
   const getStatusBadgeClass = (status) => {
