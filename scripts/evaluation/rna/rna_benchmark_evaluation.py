@@ -20,16 +20,13 @@ import torch
 from torch import Tensor
 from transformers import BertForMaskedLM
 
-# プロジェクトルート/ソースディレクトリをパスに追加（直接実行時のモジュール解決用）
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-SRC_ROOT = PROJECT_ROOT / "src"
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-if str(SRC_ROOT) not in sys.path:
-    sys.path.append(str(SRC_ROOT))
-
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 from utils.evaluation_output import setup_evaluation_logging
+
+# プロジェクトルートをパスに追加（直接実行時のモジュール解決用）
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
 
 
 @dataclass

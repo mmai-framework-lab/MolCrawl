@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-from config.paths import RNA_DATASET_DIR, get_gpt2_output_path
+from config.paths import CELLXGENE_DATASET_DIR, RNA_DATASET_DIR, get_gpt2_output_path
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 # Large-Sized GPT2 Model
@@ -53,10 +53,7 @@ weight_decay = 1e-1
 dataset = "rna"
 
 # RNA specific parameters
-# GPT-2用データセットはBERTと分けて保存する
-rna_gpt2_dataset_dir: str = os.path.join(RNA_DATASET_DIR, "training_ready_hf_dataset", "gpt2")
-rna_data_dir: str = rna_gpt2_dataset_dir
-rna_vocab_file: str = os.path.join(RNA_DATASET_DIR, "gene_vocab.json")
+rna_data_dir = CELLXGENE_DATASET_DIR
+rna_vocab_file = os.path.join(RNA_DATASET_DIR, "gene_vocab.json")
 
-# GPT-2用のデータセットディレクトリを指定
-dataset_params: dict = {"dataset_dir": rna_gpt2_dataset_dir}
+dataset_params = {"dataset_dir": CELLXGENE_DATASET_DIR}

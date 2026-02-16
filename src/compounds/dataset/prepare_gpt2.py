@@ -2,7 +2,6 @@ from argparse import ArgumentParser
 import os
 import sys
 from pathlib import Path
-from typing import Optional
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -17,12 +16,7 @@ from compounds.utils.tokenizer import CompoundsTokenizer
 from datasets import Dataset, DatasetDict
 
 
-def tokenize_batch_dataset(
-    compounds_dir: str,
-    vocab_path: str,
-    max_length: int,
-    output_dataset_dir: Optional[str],
-) -> str:
+def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
     """
     Tokenize GuacaMol benchmark data for GPT-2 training.
 
@@ -72,15 +66,12 @@ def tokenize_batch_dataset(
     dataset = DatasetDict(d)
 
     # Save to compounds directory structure
-    # GPT-2用はBERTと分けて保存する
-    default_dataset_dir: Path = benchmark_dir / "compounds" / "training_ready_hf_dataset" / "gpt2"
-    output_path: Path = Path(output_dataset_dir) if output_dataset_dir else default_dataset_dir
+    output_path = benchmark_dir / "compounds" / "training_ready_hf_dataset"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"Saving dataset to: {output_path}")
     print("Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     dataset.save_to_disk(str(output_path))
-    return str(output_path)
 
     # Print statistics
     print("\nDataset statistics:")
@@ -93,12 +84,6 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("config")
-    parser.add_argument(
-        "--output_dataset_dir",
-        type=str,
-        default=None,
-        help="GPT-2用の出力ディレクトリ（未指定なら .../training_ready_hf_dataset/gpt2）",
-    )
     args = parser.parse_args()
     cfg = CompoundConfig.from_file(args.config).data_preparation
     context_length = cfg.max_length
@@ -115,4 +100,4 @@ if __name__ == "__main__":
     compounds_dir = Path(learning_source_dir) / "compounds"
     print(f"Using compounds directory: {compounds_dir}")
 
-    tokenize_batch_dataset(str(compounds_dir), cfg.vocab_path, cfg.max_length, args.output_dataset_dir)
+    tokenize_batch_dataset(str(compounds_dir), cfg.vocab_path, cfg.max_length)

@@ -13,8 +13,7 @@ from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path, get_bert
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("genome_sequence", model_size)
 max_length = 1024
-# BERT用データセットはGPT-2と分けて保存する
-dataset_dir = os.path.join(REFSEQ_DATASET_DIR, "bert")
+dataset_dir = REFSEQ_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 max_steps = 600000

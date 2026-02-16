@@ -15,8 +15,7 @@ n_layer = 48
 n_head = 25
 n_embd = 1600
 
-# GPT-2用データセットはBERTと分けて保存する
-dataset_dir = os.path.join(UNIPROT_DATASET_DIR, "gpt2")
+dataset_dir = UNIPROT_DATASET_DIR
 
 tensorboard_dir = get_gpt2_output_path("protein_sequence", "xl")
 out_dir = get_gpt2_output_path("protein_sequence", "xl")

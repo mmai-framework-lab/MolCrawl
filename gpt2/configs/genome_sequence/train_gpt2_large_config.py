@@ -22,8 +22,7 @@ n_head = 20
 n_embd = 1280
 
 tokenizer_path = get_refseq_tokenizer_path()
-# GPT-2用データセットはBERTと分けて保存する
-dataset_dir = os.path.join(REFSEQ_DATASET_DIR, "gpt2")
+dataset_dir = REFSEQ_DATASET_DIR
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("genome_sequence", "large")

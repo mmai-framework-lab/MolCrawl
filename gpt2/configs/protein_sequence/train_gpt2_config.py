@@ -10,8 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
 from config.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 
-# GPT-2用データセットはBERTと分けて保存する
-dataset_dir = os.path.join(UNIPROT_DATASET_DIR, "gpt2")
+dataset_dir = UNIPROT_DATASET_DIR
 
 tensorboard_dir = get_gpt2_output_path("protein_sequence", "small")
 out_dir = get_gpt2_output_path("protein_sequence", "small")
@@ -54,5 +53,5 @@ dropout = 0.1  # Dropoutを有効化（デフォルトは0.0）
 dataset = "protein_sequence"
 
 dataset_params = {
-    "dataset_dir": dataset_dir  # GPT-2用データセットディレクトリ
+    "dataset_dir": dataset_dir  # Adjust the path as necessary for your generated dataset.
 }

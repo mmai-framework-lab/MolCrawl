@@ -16,8 +16,7 @@ n_layer = 36
 n_head = 20
 n_embd = 1280
 
-# GPT-2用データセットはBERTと分けて保存する
-dataset_dir = os.path.join(COMPOUNDS_DATASET_DIR, "gpt2")  # path to the dataset directory
+dataset_dir = COMPOUNDS_DATASET_DIR  # path to the dataset directory
 out_dir = get_gpt2_output_path("compounds", "large")
 
 tokenizer_path = "assets/molecules/vocab.txt"  # path to the tokenizer vocab file

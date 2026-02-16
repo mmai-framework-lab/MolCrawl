@@ -479,16 +479,6 @@ For RNA, run the following command:
 python src/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
 ```
 
-> [!NOTE]
-> RNAではBERTとGPT-2でデータセット出力先を分けることを推奨します。  
-> GPT-2用は `.../rna/training_ready_hf_dataset/gpt2`、BERT用は `.../rna/training_ready_hf_dataset/bert` です。  
-> GPT-2用に分ける場合は以下のように出力先を指定してください：
->
-> ```bash
-> python src/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml \
->   --output_dataset_dir "$LEARNING_SOURCE_DIR/rna/training_ready_hf_dataset/gpt2"
-> ```
-
 > [!IMPORTANT]
 > It us crucial that you adjust the config files in assets/configs so that for `assets/configs/genome_sequence.yaml`, `assets/configs/protein_sequence.yaml`, and `assets/configs/rna.yaml` the value `output_dir` is correctly pointing to the `output_dir` location where you saved the preprocessed data prepared in the [Modalities Dataset Preparation](#modalities-dataset-preparation) section. Make sure the same for `assets/configs/compounds.yaml`, and `assets/configs/molecules_nl.yaml`, where you should adjust the parameter `save_path` to match where your data is stored. *
 
@@ -564,10 +554,6 @@ python bert/main.py bert/configs/<dataset>.py
 ```
 
 this will train a model and save it in outputdir.
-
-> [!NOTE]
-> RNAのBERTでは `bert/configs/rna.py` の `dataset_dir` を  
-> `"$LEARNING_SOURCE_DIR/rna/training_ready_hf_dataset/bert"` に合わせてください。
 
 For more information on the config files, see the [README inside the bert folder](./bert/README.md).
 

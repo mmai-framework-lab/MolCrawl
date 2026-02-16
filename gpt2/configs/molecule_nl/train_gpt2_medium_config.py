@@ -16,8 +16,7 @@ n_layer = 24
 n_head = 16
 n_embd = 1024
 
-# GPT-2用データセットはBERTと分けて保存する
-dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "gpt2")
+dataset_dir = MOLECULE_NL_DATASET_DIR
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("molecule_nl", "medium")

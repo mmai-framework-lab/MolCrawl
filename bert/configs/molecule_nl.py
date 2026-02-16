@@ -47,8 +47,7 @@ max_steps = 600000
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nl", model_size)
 max_length = 1024
-# BERT用データセットはGPT-2と分けて保存する
-dataset_dir = os.path.join(MOLECULE_NL_DATASET_DIR, "bert")
+dataset_dir = MOLECULE_NL_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100

@@ -2,7 +2,7 @@ from functools import partial
 from argparse import ArgumentParser
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # プロジェクトルートをパスに追加（utils等を解決するため）
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -60,12 +60,7 @@ def create_chunks(examples: Dict[str, List[int]], context_length: int) -> Dict[s
     return {"input_ids": input_ids}
 
 
-def tokenize_batch_dataset(
-    path_output: Path,
-    context_length: int,
-    number_sample: int,
-    output_dataset_dir: Optional[str],
-) -> str:
+def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -> None:
     raw_dir: Path = Path(path_output) / "raw_files"
     raw_files: List[Path] = sorted(raw_dir.glob("*.raw")) + sorted(raw_dir.glob("*.txt"))
     if not raw_files:
@@ -110,13 +105,9 @@ def tokenize_batch_dataset(
         batch_size=-1,
     )
 
-    # GPT-2用はBERTと分けて保存する
-    default_dataset_dir: Path = path_output / "training_ready_hf_dataset" / "gpt2"
-    dataset_dir: Path = Path(output_dataset_dir) if output_dataset_dir else default_dataset_dir
-    path_dataset: str = str(dataset_dir)
+    path_dataset: str = str(path_output / "training_ready_hf_dataset")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     chunked_dataset.save_to_disk(path_dataset)
-    return path_dataset
 
 
 if __name__ == "__main__":
@@ -125,14 +116,8 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("config")
-    parser.add_argument(
-        "--output_dataset_dir",
-        type=str,
-        default=None,
-        help="GPT-2用の出力ディレクトリ（未指定なら output_dir/training_ready_hf_dataset/gpt2）",
-    )
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
 
     output_dir: Path = Path(cfg.output_dir)
-    tokenize_batch_dataset(output_dir, context_length, number_sample, args.output_dataset_dir)
+    tokenize_batch_dataset(output_dir, context_length, number_sample)

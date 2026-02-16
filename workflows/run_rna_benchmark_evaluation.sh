@@ -153,8 +153,6 @@ if [ "$SKIP_DATA_PREP" = false ]; then
     echo "=== データ準備フェーズ ==="
     cd "$PROJECT_ROOT"
 
-    export PYTHONPATH="$PROJECT_ROOT:$PROJECT_ROOT/src:$PYTHONPATH"
-
     python scripts/evaluation/rna/rna_benchmark_data_preparation.py \
         --benchmark_dir "$BENCHMARK_DIR" \
         --output_dir "$DATA_DIR" \
@@ -186,8 +184,6 @@ if [ "$SKIP_EVALUATION" = false ]; then
 
     echo "=== 評価フェーズ ==="
     cd "$PROJECT_ROOT"
-
-    export PYTHONPATH="$PROJECT_ROOT:$PROJECT_ROOT/src:$PYTHONPATH"
 
     python scripts/evaluation/rna/rna_benchmark_evaluation.py \
         --model_type "$MODEL_TYPE" \
