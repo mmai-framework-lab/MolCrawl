@@ -222,11 +222,27 @@ if use_wandb:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         wandb_run_name = f"dnabert2-{model_size}-{timestamp}"
 
+    # Determine dataset name from config
+    dataset_name = config.get('dataset_name', 'genome_sequence')
+    
+    # Add metadata tags for experiment management
+    tags = ['dnabert2', 'training', model_size, dataset_name]
+    
+    # Add experiment metadata to config
+    experiment_config = {
+        **config,
+        'experiment_type': 'training',
+        'model_type': 'dnabert2',
+        'dataset_type': dataset_name,
+        'model_size': model_size,
+    }
+
     wandb_run = wandb.init(
         project=wandb_project,
         entity=wandb_entity,
         name=wandb_run_name,
-        config=config,
+        config=experiment_config,
+        tags=tags,
         resume="allow",
     )
     print(f"📊 Wandb initialized: {wandb_run.url}")

@@ -98,6 +98,7 @@ const bertInferenceRouter = require('./api/bert-inference');
 const trainingProcessStatusRouter = require('./api/training-process-status');
 const { getLogsList, getAllLogsOverview, getLogContent, getTailLog } = require('./api/logs');
 const { getGpuInfo, getGpuXmlInfo } = require('./api/gpu-resources');
+const { getExperiments, getExperimentDetail, getStatistics } = require('./api/wandb-experiments');
 
 const app = express();
 // ポート番号の優先順位: コマンドライン引数 > API_PORT環境変数 > デフォルト(3001)
@@ -184,6 +185,11 @@ app.get('/api/logs/tail', validateDirectoryExists, getTailLog);
 // GPU リソースAPI
 app.get('/api/gpu/info', getGpuInfo);
 app.get('/api/gpu/xml', getGpuXmlInfo);
+
+// Weights & Biases 実験管理API
+app.get('/api/wandb-experiments', getExperiments);
+app.get('/api/wandb-experiments/:id', getExperimentDetail);
+app.get('/api/wandb-statistics', getStatistics);
 
 // ヘルスチェック
 app.get('/api/health', (req, res) => {

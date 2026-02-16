@@ -138,11 +138,27 @@ logger.info(f"   - Attention heads: {model_config.num_attention_heads}")
 
 # Initialize wandb if enabled
 if use_wandb:
+    # Determine dataset name from config
+    dataset_name = config.get('dataset_name', 'compounds')
+    
+    # Add metadata tags for experiment management
+    tags = ['chemberta2', 'training', model_size, dataset_name]
+    
+    # Add experiment metadata to config
+    experiment_config = {
+        **config,
+        'experiment_type': 'training',
+        'model_type': 'chemberta2',
+        'dataset_type': dataset_name,
+        'model_size': model_size,
+    }
+    
     wandb.init(
         project=wandb_project,
         entity=wandb_entity,
         name=f"chemberta2-{model_size}-{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-        config=config,
+        config=experiment_config,
+        tags=tags,
     )
     logger.info(f"📊 Wandb initialized: {wandb.run.get_url()}")
 

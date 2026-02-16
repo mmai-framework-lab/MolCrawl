@@ -153,12 +153,24 @@ if use_wandb and master_process:
     if wandb_run_name is None:
         wandb_run_name = f"{dataset}-{timestamp}"
 
+    # Add metadata tags for experiment management
+    tags = ['gpt2', 'training', dataset]
+    
+    # Add experiment metadata to config
+    experiment_config = {
+        **config,
+        'experiment_type': 'training',
+        'model_type': 'gpt2',
+        'dataset_type': dataset,
+    }
+
     # Initialize wandb
     wandb_run = wandb.init(
         project=wandb_project,
         entity=wandb_entity,
         name=wandb_run_name,
-        config=config,
+        config=experiment_config,
+        tags=tags,
         resume="allow",  # Allow resuming if run exists
     )
     print(f"Wandb initialized: {wandb_run.url}")

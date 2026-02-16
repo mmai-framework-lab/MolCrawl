@@ -121,7 +121,11 @@ use_wandb = os.environ.get("USE_WANDB", "False").lower() in ("true", "1", "yes")
 wandb_project = os.environ.get("WANDB_PROJECT", "bert-training")  # wandb project name
 wandb_run_name = os.environ.get("WANDB_RUN_NAME", None)  # wandb run name (None = auto-generate)
 wandb_entity = os.environ.get("WANDB_ENTITY", None)  # wandb entity/team name (None = default)
-wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in ("true", "1", "yes")  # log model checkpoints as wandb artifacts
+wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in (
+    "true",
+    "1",
+    "yes",
+)  # log model checkpoints as wandb artifacts
 
 model_path = ""
 max_length = 1024
@@ -191,12 +195,28 @@ if use_wandb:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         wandb_run_name = f"bert-{model_size}-{timestamp}"
 
+    # Determine dataset name from config
+    dataset_name = config.get("dataset_name", "unknown")
+
+    # Add metadata tags for experiment management
+    tags = ["bert", "training", model_size, dataset_name]
+
+    # Add experiment metadata to config
+    experiment_config = {
+        **config,
+        "experiment_type": "training",
+        "model_type": "bert",
+        "dataset_type": dataset_name,
+        "model_size": model_size,
+    }
+
     # Initialize wandb
     wandb_run = wandb.init(
         project=wandb_project,
         entity=wandb_entity,
         name=wandb_run_name,
-        config=config,
+        config=experiment_config,
+        tags=tags,
         resume="allow",  # Allow resuming if run exists
     )
     print(f"Wandb initialized: {wandb_run.url}")

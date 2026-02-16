@@ -4,18 +4,9 @@ import './ExperimentDashboard.css';
 import TrainingProcessStatus from './TrainingProcessStatus';
 import { useI18n } from './i18n';
 
-// 環境変数からAPIエンドポイントを取得（REACT_APP_プレフィックスが必要）
-// 設定されていない場合はnull（Experiment Dashboardを無効化）
-const API_BASE_URL = process.env.REACT_APP_EXPERIMENT_API_URL || null;
-
-// APIが利用可能かどうかを判定
-const isApiAvailable = () => {
-  if (!API_BASE_URL) {
-    console.warn('⚠️ Experiment Dashboard: API_BASE_URL is not configured. Set REACT_APP_EXPERIMENT_API_URL environment variable.');
-    return false;
-  }
-  return true;
-};
+// Weights & Biases APIを使用（Express server経由）
+// server.jsのAPI_PORTまたはPORTを使用してバックエンドAPIに接続
+const API_BASE_URL = `http://localhost:${process.env.REACT_APP_API_PORT || 3001}/api`;
 
 function ExperimentDashboard() {
   const { t } = useI18n();
@@ -29,21 +20,11 @@ function ExperimentDashboard() {
     dataset_type: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(
-    isApiAvailable()
-      ? null
-      : 'Experiment Dashboard is disabled. Set REACT_APP_EXPERIMENT_API_URL environment variable to enable.'
-  );
+  const [error, setError] = useState(null);
 
-  // 実験一覧を取得
+  // 実験一覧を取得（Weights & Biases経由）
   const _fetchExperiments = async () => {
-    if (!isApiAvailable()) {
-      console.error('❌ Cannot fetch experiments: API is not configured');
-      setError('API endpoint not configured. Set REACT_APP_EXPERIMENT_API_URL environment variable.');
-      return;
-    }
-
-    console.log('⚠️ ExperimentDashboard: Attempting to fetch experiments from', API_BASE_URL);
+    console.log('⚠️ ExperimentDashboard: Fetching experiments from W&B via', API_BASE_URL);
     try {
       setLoading(true);
       setError(null);
@@ -52,7 +33,7 @@ function ExperimentDashboard() {
         if (value) { params.append(key, value); }
       });
 
-      const url = `${API_BASE_URL}/experiments?${params}`;
+      const url = `${API_BASE_URL}/wandb-experiments?${params}`;
       console.log('Fetching:', url);
       const response = await fetch(url);
       if (!response.ok) {
@@ -60,34 +41,37 @@ function ExperimentDashboard() {
       }
 
       const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch experiments');
+      }
+
       setExperiments(data.experiments || []);
       console.log('✅ Experiments loaded:', data.experiments?.length);
       setError(null);
     } catch (err) {
       console.error('❌ Error fetching experiments:', err);
-      setError(`API Error: ${err.message}. Check if the API server is running at ${API_BASE_URL}`);
+      setError(`API Error: ${err.message}. Check WANDB_API_KEY and WANDB_ENTITY environment variables.`);
       setExperiments([]); // エラー時は空配列を設定
     } finally {
       setLoading(false);
     }
   };
 
-  // 統計情報を取得
+  // 統計情報を取得（Weights & Biases経由）
   const _fetchStatistics = async () => {
-    if (!isApiAvailable()) {
-      console.error('❌ Cannot fetch statistics: API is not configured');
-      return;
-    }
-
-    console.log('⚠️ ExperimentDashboard: Attempting to fetch statistics');
+    console.log('⚠️ ExperimentDashboard: Fetching statistics from W&B');
     try {
-      const response = await fetch(`${API_BASE_URL}/statistics`);
+      const response = await fetch(`${API_BASE_URL}/wandb-statistics`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: Failed to fetch statistics`);
       }
 
       const data = await response.json();
-      setStatistics(data);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch statistics');
+      }
+
+      setStatistics(data.statistics);
       console.log('✅ Statistics loaded');
     } catch (err) {
       console.error('❌ Failed to fetch statistics:', err);
@@ -95,23 +79,21 @@ function ExperimentDashboard() {
     }
   };
 
-  // 実験詳細を取得
-  const fetchExperimentDetail = async (experimentId) => {
-    if (!isApiAvailable()) {
-      console.error('❌ Cannot fetch experiment detail: API is not configured');
-      setError('API endpoint not configured');
-      return;
-    }
-
-    console.log('⚠️ ExperimentDashboard: Attempting to fetch experiment detail:', experimentId);
+  // 実験詳細を取得（Weights & Biases経由）
+  const _fetchExperimentDetail = async (experimentId) => {
+    console.log('⚠️ ExperimentDashboard: Fetching experiment detail:', experimentId);
     try {
-      const response = await fetch(`${API_BASE_URL}/experiments/${experimentId}`);
+      const response = await fetch(`${API_BASE_URL}/wandb-experiments/${experimentId}`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: Failed to fetch experiment detail`);
       }
 
       const data = await response.json();
-      setSelectedExperiment(data);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch experiment detail');
+      }
+
+      setSelectedExperiment(data.experiment);
       console.log('✅ Experiment detail loaded:', experimentId);
     } catch (err) {
       console.error('❌ Error fetching experiment detail:', err);
@@ -252,10 +234,16 @@ function ExperimentDashboard() {
       {/* エラー表示 */}
       {error && (
         <div className="error-message">
-          ⚠️ 実験データベース接続エラー: {error}
+          ⚠️ Weights & Biases 接続エラー: {error}
           <br />
           <small style={{ marginTop: '8px', display: 'block', color: '#666' }}>
-            実験管理システム (http://localhost:8000) が起動していない可能性があります。
+            以下を確認してください：
+            <br />
+            1. サーバー起動時に WANDB_API_KEY 環境変数が設定されているか
+            <br />
+            2. サーバー起動時に WANDB_ENTITY 環境変数が設定されているか
+            <br />
+            3. wandb にログインしているか (wandb login)
             <br />
             学習プロセス監視機能は独立して動作しています。
           </small>
@@ -273,7 +261,6 @@ function ExperimentDashboard() {
               <div
                 key={exp.experiment_id}
                 className="experiment-card"
-                onClick={() => fetchExperimentDetail(exp.experiment_id)}
               >
                 <div className="experiment-header">
                   <h4>{exp.experiment_name}</h4>
@@ -298,8 +285,21 @@ function ExperimentDashboard() {
                 {exp.metrics && Object.keys(exp.metrics).length > 0 && (
                   <div className="experiment-metrics">
                     {Object.entries(exp.metrics).slice(0, 3).map(([key, value]) => (
-                      <span key={key}>{key}: {value.toFixed(4)}</span>
+                      <span key={key}>{key}: {typeof value === 'number' ? value.toFixed(4) : value}</span>
                     ))}
+                  </div>
+                )}
+                {exp.url && (
+                  <div style={{ marginTop: '10px' }}>
+                    <a 
+                      href={exp.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      🔗 View in W&B
+                    </a>
                   </div>
                 )}
               </div>
@@ -318,6 +318,37 @@ function ExperimentDashboard() {
 
             <h2>{selectedExperiment.experiment_name}</h2>
 
+            {selectedExperiment.url && (
+              <div style={{ marginBottom: '20px' }}>
+                <a 
+                  href={selectedExperiment.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ 
+                    color: '#667eea', 
+                    textDecoration: 'none', 
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    display: 'inline-block',
+                    padding: '8px 16px',
+                    border: '2px solid #667eea',
+                    borderRadius: '6px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#667eea';
+                    e.target.style.color = '#fff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = '#667eea';
+                  }}
+                >
+                  🔗 View in Weights & Biases
+                </a>
+              </div>
+            )}
+
             <div className="detail-section">
               <h3>基本情報</h3>
               <table className="detail-table">
@@ -331,6 +362,25 @@ function ExperimentDashboard() {
                   <tr><th>開始日時</th><td>{formatDate(selectedExperiment.started_at)}</td></tr>
                   <tr><th>完了日時</th><td>{formatDate(selectedExperiment.completed_at)}</td></tr>
                   <tr><th>実行時間</th><td>{formatDuration(selectedExperiment.total_duration_seconds)}</td></tr>
+                  {selectedExperiment.tags && selectedExperiment.tags.length > 0 && (
+                    <tr>
+                      <th>タグ</th>
+                      <td>
+                        {selectedExperiment.tags.map((tag) => (
+                          <span key={`tag-${tag}`} style={{ 
+                            display: 'inline-block', 
+                            padding: '2px 8px', 
+                            margin: '2px', 
+                            backgroundColor: '#e9ecef', 
+                            borderRadius: '3px',
+                            fontSize: '12px'
+                          }}>
+                            {tag}
+                          </span>
+                        ))}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
