@@ -36,6 +36,8 @@ jobs:
   generate-api-docs:
     name: Generate API Documentation
     runs-on: ubuntu-latest
+    env:
+      LEARNING_SOURCE_DIR: learning_source_dummy
     
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +51,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pdoc3
+          pip install datasets
           pip install -e .
       
       - name: Generate API docs with pdoc
