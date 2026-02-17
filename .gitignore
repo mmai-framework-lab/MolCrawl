@@ -9,6 +9,7 @@ __pycache__
 *.pyc
 *.pyo
 *.smiles
+!.markdownlint.json
 !package.json
 !package-lock.json
 !.eslintrc.json
