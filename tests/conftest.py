@@ -187,3 +187,5 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "data: Tests requiring datasets")
     config.addinivalue_line("markers", "compound: Compounds tests")
     config.addinivalue_line("markers", "benchmark: Benchmark tests")
+    config.addinivalue_line("markers", "bert: BERT tests")
+    config.addinivalue_line("markers", "gpt2: GPT2 tests")
