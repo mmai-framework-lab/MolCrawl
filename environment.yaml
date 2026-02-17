@@ -40,3 +40,5 @@ dependencies:
     - guacamol==0.5.5
     - deepchem==2.8.0
     - wandb>=0.18.0,<0.19
+    - iniconfig==2.1.0
+    - pytest==8.4.2
