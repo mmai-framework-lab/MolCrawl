@@ -1,0 +1,273 @@
+name: Compounds Validation
+
+on:
+  push:
+    branches: [ main, develop, "feature/**", "phase/**" ]
+    paths:
+      - 'src/compounds/**'
+      - 'tests/unit/test_compounds.py'
+      - 'tests/integration/test_compounds_pipeline.py'
+      - '.github/workflows/compounds-validation.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/compounds/**'
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run'
+        required: true
+        type: choice
+        options:
+          - 'unit'
+          - 'integration'
+          - 'all'
+        default: 'all'
+
+jobs:
+  unit-tests:
+    name: Compounds Unit Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_level == 'unit' || github.event.inputs.test_level == 'all' || github.event.inputs.test_level == ''
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-xdist
+          pip install rdkit pandas requests
+          pip install transformers torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e .
+      
+      - name: Run Compounds unit tests
+        run: |
+          pytest tests/unit/test_compounds.py -v -m "unit and compound" --tb=short
+      
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "# Compounds Unit Test Report" > compounds-test-report.md
+          echo "Date: $(date)" >> compounds-test-report.md
+          echo "" >> compounds-test-report.md
+          pytest tests/unit/test_compounds.py -m "unit and compound" --tb=line >> compounds-test-report.md || true
+      
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compounds-unit-test-report
+          path: compounds-test-report.md
+
+  integration-tests:
+    name: Compounds Integration Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_level == 'integration' || github.event.inputs.test_level == 'all' || github.event.inputs.test_level == ''
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install rdkit pandas requests
+          pip install transformers torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e .
+      
+      - name: Run Compounds integration tests
+        run: |
+          pytest tests/unit/test_compounds.py -v -m "integration and compound" --tb=short
+      
+      - name: Generate integration report
+        if: always()
+        run: |
+          echo "# Compounds Integration Test Report" > compounds-integration-report.md
+          echo "Date: $(date)" >> compounds-integration-report.md
+          echo "" >> compounds-integration-report.md
+          pytest tests/unit/test_compounds.py -m "integration and compound" --tb=line >> compounds-integration-report.md || true
+      
+      - name: Upload integration report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compounds-integration-test-report
+          path: compounds-integration-report.md
+
+  smiles-validation:
+    name: SMILES Validation Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest rdkit pandas
+          pip install -e .
+      
+      - name: Test SMILES preprocessing
+        run: |
+          pytest tests/unit/test_compounds.py::TestSmilesValidation -v --tb=short
+      
+      - name: Check invalid SMILES rate
+        run: |
+          python -c "
+          from src.compounds.utils.preprocessing import prepare_scaffolds, get_invalid_smiles_stats
+          
+          # テストデータでSMILES処理
+          test_smiles = ['CCO', 'c1ccccc1', 'INVALID', 'CC(=O)O', '.', 'CC(C)C']
+          for smiles in test_smiles:
+              prepare_scaffolds(smiles)
+          
+          invalid_count, total_count, invalid_rate, examples = get_invalid_smiles_stats()
+          print(f'Invalid SMILES: {invalid_count}/{total_count} ({invalid_rate:.2f}%)')
+          
+          # 無効率が許容範囲内かチェック（50%以下）
+          if invalid_rate > 50:
+              print(f'WARNING: High invalid SMILES rate: {invalid_rate:.2f}%')
+              exit(1)
+          else:
+              print('✓ Invalid SMILES rate is acceptable')
+          "
+
+  tokenization-tests:
+    name: SMILES Tokenization Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest transformers
+          pip install -e .
+      
+      - name: Test SMILES tokenization
+        run: |
+          pytest tests/unit/test_compounds.py::TestSmilesTokenization -v --tb=short
+      
+      - name: Verify tokenizer components
+        run: |
+          python -c "
+          from src.compounds.utils.tokenizer import SMI_REGEX_PATTERN, SmilesTokenizer
+          
+          print('✓ SMI_REGEX_PATTERN loaded successfully')
+          print('✓ SmilesTokenizer class imported successfully')
+          print('Regex pattern:', SMI_REGEX_PATTERN[:50], '...')
+          "
+
+  phase1-verification:
+    name: Phase 1 - Compounds BERT/GPT2 Verification
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_level == 'all' || github.event.inputs.test_level == ''
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers rdkit
+          pip install -e .
+      
+      - name: Run Phase 1 verification tests
+        run: |
+          pytest tests/unit/test_compounds.py -m "phase1 and compound" -v --tb=short
+        continue-on-error: true
+      
+      - name: Generate Phase 1 report
+        if: always()
+        run: |
+          echo "# Compounds Phase 1 Verification Report" > phase1-compounds-report.md
+          echo "Date: $(date)" >> phase1-compounds-report.md
+          echo "" >> phase1-compounds-report.md
+          echo "## BERT Verification Status" >> phase1-compounds-report.md
+          echo "- [ ] Model initialization" >> phase1-compounds-report.md
+          echo "- [ ] Tokenization pipeline" >> phase1-compounds-report.md
+          echo "- [ ] Inference test" >> phase1-compounds-report.md
+          echo "" >> phase1-compounds-report.md
+          echo "## GPT2 Verification Status" >> phase1-compounds-report.md
+          echo "- [ ] Model initialization" >> phase1-compounds-report.md
+          echo "- [ ] SMILES generation" >> phase1-compounds-report.md
+          echo "- [ ] Generated SMILES validity" >> phase1-compounds-report.md
+      
+      - name: Upload Phase 1 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-compounds-verification-report
+          path: phase1-compounds-report.md
+
+  quality-summary:
+    name: Compounds Quality Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, smiles-validation, tokenization-tests]
+    if: always()
+    
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+      
+      - name: Generate summary
+        run: |
+          echo "# Compounds Validation Summary" > summary.md
+          echo "Date: $(date)" >> summary.md
+          echo "" >> summary.md
+          echo "## Test Results" >> summary.md
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> summary.md
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> summary.md
+          echo "- SMILES Validation: ${{ needs.smiles-validation.result }}" >> summary.md
+          echo "- Tokenization Tests: ${{ needs.tokenization-tests.result }}" >> summary.md
+          echo "" >> summary.md
+          
+          if [ "${{ needs.unit-tests.result }}" == "success" ] && \
+             [ "${{ needs.integration-tests.result }}" == "success" ] && \
+             [ "${{ needs.smiles-validation.result }}" == "success" ] && \
+             [ "${{ needs.tokenization-tests.result }}" == "success" ]; then
+            echo "✅ **All Compounds tests passed!**" >> summary.md
+          else
+            echo "❌ **Some Compounds tests failed. Please review the reports.**" >> summary.md
+          fi
+          
+          cat summary.md
+      
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: compounds-validation-summary
+          path: summary.md
