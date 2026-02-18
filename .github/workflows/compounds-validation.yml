@@ -44,7 +44,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov pytest-xdist
           pip install rdkit pandas requests
-          pip install transformers torch --index-url https://download.pytorch.org/whl/cpu
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers
           pip install -e .
       
       - name: Run Compounds unit tests
@@ -85,7 +86,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           pip install rdkit pandas requests
-          pip install transformers torch --index-url https://download.pytorch.org/whl/cpu
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers
           pip install -e .
       
       - name: Run Compounds integration tests
