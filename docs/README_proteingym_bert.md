@@ -163,6 +163,7 @@ conda activate conda
    ```
 
 3. **環境変数エラー**
+
    ```bash
    # LEARNING_SOURCE_DIRが自動設定されることを確認
    echo $LEARNING_SOURCE_DIR

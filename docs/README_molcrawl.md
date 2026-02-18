@@ -72,9 +72,9 @@ npm run prod
 
 ## アクセス
 
-- **Webインターフェース**: http://localhost:3000
-- **API サーバー**: http://localhost:3001
-- **ヘルスチェック**: http://localhost:3001/api/health
+- **Webインターフェース**: <http://localhost:3000>
+- **API サーバー**: <http://localhost:3001>
+- **ヘルスチェック**: <http://localhost:3001/api/health>
 
 ## API エンドポイント
 

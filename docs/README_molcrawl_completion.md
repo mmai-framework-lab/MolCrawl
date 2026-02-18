@@ -64,9 +64,9 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 
 ## 🔗 アクセスURL
 
-- **🌐 テストページ**: http://localhost:3001/test.html
-- **📊 ヘルスチェック**: http://localhost:3001/api/health
-- **📁 ディレクトリAPI**: http://localhost:3001/api/directory
+- **🌐 テストページ**: <http://localhost:3001/test.html>
+- **📊 ヘルスチェック**: <http://localhost:3001/api/health>
+- **📁 ディレクトリAPI**: <http://localhost:3001/api/directory>
 
 ## 🎨 機能デモ
 
@@ -176,7 +176,7 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 - RESTful API による柔軟な連携
 - セキュアなファイルアクセス制御
 
-🚀 **今すぐ利用可能**: http://localhost:3001/test.html でアクセス開始！
+🚀 **今すぐ利用可能**: <http://localhost:3001/test.html> でアクセス開始！
 
 ---
 

@@ -12,6 +12,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
 - `POST /api/gpt2-inference` - Run inference on a GPT-2 model
   - **Request Body:**
+
     ```json
     {
       "dataset": "compounds|genome_sequence|protein_sequence|rna|molecule_nl",
@@ -23,7 +24,9 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
       "numSamples": 1
     }
     ```
+
   - **Response:**
+
     ```json
     {
       "success": true,
@@ -33,6 +36,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
 - `GET /api/gpt2-inference/config/:dataset` - Get default inference configuration
   - **Response:**
+
     ```json
     {
       "success": true,
@@ -111,7 +115,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
 ## Usage
 
-### For Users:
+### For Users
 
 1. Navigate to the GPT-2 Training Status page
 2. Look for model cards with checkpoint data (shows training statistics)
@@ -128,7 +132,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 6. Click "Generate" to run inference
 7. View results and copy them to clipboard as needed
 
-### Dataset-Specific Configurations:
+### Dataset-Specific Configurations
 
 | Dataset          | Start Token | Max Length    | Temperature | Top-K | Use Case |
 | ---------------- | ----------- | ------------- | ----------- | ----- | -------- | ---- | ----------------------------- |
@@ -193,6 +197,7 @@ The backend spawns a Python process to run inference:
    ```
 
 4. Start the server:
+
    ```bash
    npm start
    ```

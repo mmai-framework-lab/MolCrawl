@@ -1,21 +1,21 @@
 # 実験管理システム - セットアップ完了報告
 
-## ✅ システム起動成功！
+## ✅ システム起動成功
 
 実験管理システムが正常に起動しました。
 
 ### 🚀 起動中のサービス
 
 1. **APIサーバー** (FastAPI + Uvicorn)
-   - URL: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
+   - URL: <http://localhost:8000>
+   - API Docs: <http://localhost:8000/docs>
    - Status: ✅ 起動中
    - Database: experiment_data/experiments.db
    - 記録済み実験: 8件
 
 2. **Webフロントエンド** (React + Express)
-   - URL: http://localhost:3000
-   - Backend API: http://localhost:3001
+   - URL: <http://localhost:3000>
+   - Backend API: <http://localhost:3001>
    - Status: ✅ 起動中
 
 ### 📊 記録済みの実験データ
@@ -158,10 +158,10 @@ python examples/experiment_tracking_example.py --example list
 - Express 4.21
 - Node.js
 
-### 🎉 成功！
+### 🎉 成功
 
 実験管理システムが正常に動作しています。
-ブラウザで http://localhost:3000 にアクセスして、
+ブラウザで <http://localhost:3000> にアクセスして、
 **Experiments**タブをクリックしてダッシュボードを確認してください！
 
 ---

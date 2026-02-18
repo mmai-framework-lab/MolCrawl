@@ -91,14 +91,14 @@
 
 ## 📁 Files Created/Modified
 
-### Created:
+### Created
 
 1. `molcrawl-web/api/gpt2-inference.js` (310 lines)
 2. `molcrawl-web/src/InferenceModal.js` (304 lines)
 3. `molcrawl-web/src/InferenceModal.css` (430 lines)
 4. `molcrawl-web/INFERENCE_FEATURE.md` (documentation)
 
-### Modified:
+### Modified
 
 1. `molcrawl-web/server.js` (added route registration)
 2. `molcrawl-web/src/GPT2TrainingStatus.js` (added modal integration)

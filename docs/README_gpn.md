@@ -8,7 +8,7 @@ For using these models, you need to create a different conda environment by doin
 
 # Data Preparation
 
-Download the MSA dataset from https://huggingface.co/datasets/songlab/multiz100way/resolve/main/89.zarr.zip and uncompress it. The path to the uncompressed folder 89.zarr should be provided in the argument `--msa_path` in the next section.
+Download the MSA dataset from <https://huggingface.co/datasets/songlab/multiz100way/resolve/main/89.zarr.zip> and uncompress it. The path to the uncompressed folder 89.zarr should be provided in the argument `--msa_path` in the next section.
 
 # Usage
 
@@ -27,8 +27,8 @@ Alternatively, you can run `python -m gpn.msa.train_bert configs/msa_bert_small.
 
 In order to train for larger sizes change the `--config_overrides` parameter from `n_aux_features=445` to:
 
-- for medium size: `--config_overrides n_aux_features=445,num_hidden_layers=24,embedding_size=1024,num_attention_heads=16 `
-- for large size: `--config_overrides n_aux_features=445,num_hidden_layers=36,embedding_size=1280,num_attention_heads=20 `
+- for medium size: `--config_overrides n_aux_features=445,num_hidden_layers=24,embedding_size=1024,num_attention_heads=16`
+- for large size: `--config_overrides n_aux_features=445,num_hidden_layers=36,embedding_size=1280,num_attention_heads=20`
 
 as:
 
@@ -54,8 +54,8 @@ Alternatively, you can run `python -m gpn.msa.train_gpt2 configs/msa_gpt2_small.
 
 In order to train for larger sizes change the `--config_overrides` parameter from `n_aux_features=445` to:
 
-- for medium size: `--config_overrides n_aux_features=445,num_hidden_layers=24,hidden_size=1024,num_attention_heads=16 `
-- for large size: `--config_overrides n_aux_features=445,num_hidden_layers=36,hidden_size=1280,num_attention_heads=20 `
+- for medium size: `--config_overrides n_aux_features=445,num_hidden_layers=24,hidden_size=1024,num_attention_heads=16`
+- for large size: `--config_overrides n_aux_features=445,num_hidden_layers=36,hidden_size=1280,num_attention_heads=20`
 
 as:
 

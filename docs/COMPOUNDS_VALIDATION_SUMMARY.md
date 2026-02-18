@@ -384,8 +384,8 @@ gh workflow run phase-validation.yml -f phase=phase1-gpt2-verification
 - **詳細ガイド**: [COMPOUNDS_VALIDATION_GUIDE.md](COMPOUNDS_VALIDATION_GUIDE.md)
 - **実践例**: [COMPOUNDS_VALIDATION_EXAMPLES.md](COMPOUNDS_VALIDATION_EXAMPLES.md)
 - **全体CI/CDガイド**: [../.github/CI_CD_GUIDE.md](../.github/CI_CD_GUIDE.md)
-- **pytest ドキュメント**: https://docs.pytest.org/
-- **RDKit ドキュメント**: https://www.rdkit.org/docs/
+- **pytest ドキュメント**: <https://docs.pytest.org/>
+- **RDKit ドキュメント**: <https://www.rdkit.org/docs/>
 
 ## 🎉 まとめ
 

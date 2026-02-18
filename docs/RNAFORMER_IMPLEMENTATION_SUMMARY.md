@@ -22,16 +22,16 @@
 
 ### Bootstrap Scripts
 
-4. **workflows/03f-rna-train-rnaformer-small.sh**
-5. **workflows/03f-rna-train-rnaformer-medium.sh**
-6. **workflows/03f-rna-train-rnaformer-large.sh**
+1. **workflows/03f-rna-train-rnaformer-small.sh**
+2. **workflows/03f-rna-train-rnaformer-medium.sh**
+3. **workflows/03f-rna-train-rnaformer-large.sh**
    - Executable training scripts for 3 model sizes
    - Environment variable configuration
    - Automatic logging
 
 ### Documentation
 
-7. **docs/RNAFORMER_TRAINING_GUIDE.md**
+1. **docs/RNAFORMER_TRAINING_GUIDE.md**
    - Comprehensive user guide
    - Quick start examples
    - Troubleshooting tips
@@ -208,8 +208,8 @@ python rnaformer/main.py --gradient_accumulation_steps 32
 ## 📚 References
 
 - **Geneformer Paper**: "Transfer learning enables predictions in network biology" (Nature, 2023)
-- **CellXGene**: https://cellxgene.cziscience.com/
-- **HuggingFace Transformers**: https://huggingface.co/docs/transformers/
+- **CellXGene**: <https://cellxgene.cziscience.com/>
+- **HuggingFace Transformers**: <https://huggingface.co/docs/transformers/>
 
 ## ✅ Next Steps
 

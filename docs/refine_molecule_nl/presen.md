@@ -181,7 +181,7 @@ HuggingFace Hub Download → ZIP展開 → トークン化 → 統計処理
 
 ## 🎨 可視化機能
 
-### 各評価パイプラインが生成する可視化:
+### 各評価パイプラインが生成する可視化
 
 1. **混同行列** (Confusion Matrix)
 2. **ROC曲線** (ROC-AUC)

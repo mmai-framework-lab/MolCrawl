@@ -658,6 +658,7 @@ source src/config/env.sh
 ```
 
 **出力先のデフォルト値:**
+
 | スクリプト | デフォルト出力先 |
 |-----------|----------------|
 | `run_bert_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation` |
@@ -905,7 +906,7 @@ print(df['ClinicalSignificance'].value_counts())
 # 期待結果: 病原性 1000件、良性 1000件
 ```
 
-11. **参照ゲノムファイルが見つからない（ClinVarバランスサンプリング）**
+1. **参照ゲノムファイルが見つからない（ClinVarバランスサンプリング）**
 
     ```bash
     # 参照ゲノムのダウンロード
@@ -918,7 +919,7 @@ print(df['ClinicalSignificance'].value_counts())
     # .gzファイルはそのまま使用可能（スクリプトが自動展開）
     ```
 
-12. **複数のGPT-2チェックポイントをまとめてテストしたい**
+2. **複数のGPT-2チェックポイントをまとめてテストしたい**
 
     ```bash
     # 全ドメインのチェックポイントを一括テスト

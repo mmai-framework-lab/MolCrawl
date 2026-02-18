@@ -69,9 +69,9 @@ npm run dev
 
 ### 3. アクセス
 
-- **Web UI**: http://localhost:3000
-- **実験ダッシュボード**: http://localhost:3000 (Experimentsタブ)
-- **API ドキュメント**: http://localhost:8000/docs
+- **Web UI**: <http://localhost:3000>
+- **実験ダッシュボード**: <http://localhost:3000> (Experimentsタブ)
+- **API ドキュメント**: <http://localhost:8000/docs>
 
 ## 使用方法
 

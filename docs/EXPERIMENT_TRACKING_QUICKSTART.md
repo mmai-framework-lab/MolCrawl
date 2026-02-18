@@ -37,9 +37,9 @@ npm run dev
 
 ### 3. アクセス
 
-- **Webインターフェース**: http://localhost:3000
-- **実験ダッシュボード**: http://localhost:3000 (Experimentsタブをクリック)
-- **API ドキュメント**: http://localhost:8000/docs
+- **Webインターフェース**: <http://localhost:3000>
+- **実験ダッシュボード**: <http://localhost:3000> (Experimentsタブをクリック)
+- **API ドキュメント**: <http://localhost:8000/docs>
 
 ## 🧪 サンプル実験を実行
 

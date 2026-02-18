@@ -79,9 +79,9 @@ molcrawl-web/src/
 
 ### アクセス
 
-- **Web UI**: http://localhost:3000
-- **実験ダッシュボード**: http://localhost:3000 (Experimentsタブ)
-- **API Docs**: http://localhost:8000/docs
+- **Web UI**: <http://localhost:3000>
+- **実験ダッシュボード**: <http://localhost:3000> (Experimentsタブ)
+- **API Docs**: <http://localhost:8000/docs>
 
 ### コードへの統合例
 

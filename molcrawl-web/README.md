@@ -119,8 +119,8 @@ node server.js --help
 
 ### 4. ブラウザでアクセス
 
-- **フロントエンド**: http://localhost:3000
-- **バックエンドAPI**: http://localhost:3001/api/health
+- **フロントエンド**: <http://localhost:3000>
+- **バックエンドAPI**: <http://localhost:3001/api/health>
 
 ## NPMスクリプト
 
@@ -369,7 +369,7 @@ PORT=8090 npm start
 
 #### 使用方法（進捗確認）
 
-1. Webブラウザで http://localhost:3000 にアクセス
+1. Webブラウザで <http://localhost:3000> にアクセス
 2. 「Preparation」タブをクリック
 3. 各データセットの進捗を確認
 4. 自動更新オプションで5秒ごとにリフレッシュ可能

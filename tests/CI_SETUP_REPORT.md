@@ -209,6 +209,7 @@ gh workflow run benchmark.yml
    - `gpt2/test_checkpoint.py` → `tests/phase1/test_gpt2_domains.py`に統合
 
 3. **最初のCI実行**
+
    ```bash
    git add .
    git commit -m "ci: add comprehensive CI/CD pipeline"

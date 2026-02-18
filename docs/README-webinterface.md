@@ -34,8 +34,8 @@ chmod +x start-new.sh
 
 ### 2. アクセス
 
-- **フロントエンド**: http://localhost:3000
-- **API**: http://localhost:3001
+- **フロントエンド**: <http://localhost:3000>
+- **API**: <http://localhost:3001>
 
 ## 📁 ディレクトリ構造
 
@@ -156,6 +156,7 @@ const MODELS = {
    ```
 
 3. **依存関係エラー**
+
    ```bash
    # キャッシュクリア後再インストール
    cd api && rm -rf node_modules package-lock.json && npm install

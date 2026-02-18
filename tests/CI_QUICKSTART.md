@@ -122,6 +122,7 @@ pytest tests/benchmarks/ --benchmark-only
    ```
 
 5. プッシュしてPR作成
+
    ```bash
    git push origin feature/your-feature
    ```
@@ -130,9 +131,11 @@ pytest tests/benchmarks/ --benchmark-only
 
 1. すべてのタスクが完了したことを確認
 2. フェーズ検証ワークフローを実行
+
    ```bash
    gh workflow run phase-validation.yml -f phase=phase1-bert-verification
    ```
+
 3. 結果を確認（GitHub Actionsタブ）
 4. PHASE_PROGRESS.mdを更新
 5. 次のフェーズに進む
@@ -167,6 +170,7 @@ pytest tests/benchmarks/ --benchmark-only
    ```
 
 3. 型チェックエラーを確認
+
    ```bash
    mypy src/
    ```
@@ -199,6 +203,7 @@ pytest tests/benchmarks/ --benchmark-only
 - VS Code拡張機能「GitHub Actions」を使うと、エディタからワークフローを管理できます
 
 - テストにマーカーを付けると、特定のテストだけを実行できます
+
   ```python
   @pytest.mark.phase1
   @pytest.mark.dna
