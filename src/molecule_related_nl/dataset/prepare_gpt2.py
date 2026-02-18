@@ -8,13 +8,17 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # データセットキャッシュ設定を読み込み（configs/cache.yamlから）
-from utils.cache_config import setup_cache_env
-setup_cache_env()
+try:
+    # 任意のキャッシュ設定。存在しない環境でも学習は継続できる。
+    from utils.cache_config import setup_cache_env
+except ModuleNotFoundError:
+    setup_cache_env = None
 
-from datasets import DatasetDict
-import numpy as np
-
-from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+if setup_cache_env is not None:
+    setup_cache_env()
+else:
+    # cache_configが無い環境でも動作は可能
+    print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 from molecule_related_nl.utils.config import MoleculeNLConfig
 from molecule_related_nl.utils.general import read_dataset
 
@@ -44,6 +48,10 @@ def create_chunks(examples, context_length):
 
 
 def tokenize_batch_dataset(parquet_path, context_length, number_sample):
+    from datasets import DatasetDict
+    import numpy as np
+
+    from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
     tokenize_dataset = DatasetDict(read_dataset(parquet_path))
     

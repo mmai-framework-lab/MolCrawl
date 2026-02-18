@@ -3,9 +3,12 @@ Molecule Natural Language用のBERT互換トークナイザーラッパー
 MoleculeNatLangTokenizerをBERT学習と互換性のある形式でラップ
 """
 
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
 
-import torch
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    import torch
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
@@ -63,6 +66,9 @@ class BertMoleculeNlTokenizer:
         """
         Encode text to token IDs
         """
+        if return_tensors == "pt":
+            import torch
+
         return self.tokenizer.tokenizer.encode(
             text,
             add_special_tokens=add_special_tokens,

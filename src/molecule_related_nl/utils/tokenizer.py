@@ -1,19 +1,44 @@
+from __future__ import annotations
+
 import logging
 import os
-import torch
 
-from rdchiral.chiral import copy_chirality
-from rdkit import Chem, RDLogger
-from rdkit.Chem.AllChem import AssignStereochemistry
-from transformers import AutoTokenizer
+try:
+    import torch
+except ModuleNotFoundError:
+    torch = None
+
+try:
+    from rdchiral.chiral import copy_chirality
+    from rdkit import Chem, RDLogger
+    from rdkit.Chem.AllChem import AssignStereochemistry
+except ModuleNotFoundError:
+    copy_chirality = None
+    Chem = None
+    RDLogger = None
+    AssignStereochemistry = None
+
+try:
+    from transformers import AutoTokenizer
+except ModuleNotFoundError:
+    AutoTokenizer = None
 
 from core.base import TrainableTokenizer
 
-RDLogger.DisableLog("rdApp.*")
+if RDLogger is not None:
+    RDLogger.DisableLog("rdApp.*")
 logger = logging.getLogger(__name__)
 
 
+def _require_rdkit():
+    if Chem is None or AssignStereochemistry is None or copy_chirality is None:
+        raise ModuleNotFoundError("rdkit and rdchiral are required for molecule tokenization")
+    return Chem, AssignStereochemistry, copy_chirality
+
+
 def canonicalize(smiles, isomeric=False, canonical=True, kekulize=False):
+    Chem, AssignStereochemistry, copy_chirality = _require_rdkit()
+
     # When canonicalizing a SMILES string, we typically want to
     # run Chem.RemoveHs(mol), but this will try to kekulize the mol
     # which is not required for canonical SMILES.  Instead, we make a
@@ -89,6 +114,7 @@ def canonicalize_molecule_smiles(
     kekulization=True,
     allow_empty_part=False,
 ):
+    Chem, _, _ = _require_rdkit()
     things = smiles.split(".")
     if skip_mol:
         new_things = things
@@ -183,6 +209,9 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
     def __init__(
         self,
     ):
+        if AutoTokenizer is None:
+            raise ModuleNotFoundError("transformers is required to use MoleculeNatLangTokenizer")
+
         TrainableTokenizer.__init__(self)
         try:
             # Try loading with local files first

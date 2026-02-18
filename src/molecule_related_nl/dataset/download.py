@@ -2,12 +2,13 @@ import os
 import logging
 
 from pathlib import Path
-from datasets import load_dataset
 
 logger = logging.getLogger(__name__)
 
 
 def download_hf_dataset(save_path):
+    from datasets import load_dataset
+
     """
     Download SMolInstruct dataset from Hugging Face Hub
 

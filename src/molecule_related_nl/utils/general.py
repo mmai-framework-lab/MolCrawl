@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 import json
 import logging
 import os
 from pathlib import Path
 from typing import Union
-
-from datasets import Dataset, DatasetDict, Features, Value
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +52,20 @@ def load_jsonl_dataset(dataset_path: Union[str, Path]):
         # Explicitly define features to ensure proper serialization
         if all_data:
             # Infer features from first sample, all fields as string
+            from datasets import Dataset, Features, Value
+
             features = Features({key: Value("string") for key in all_data[0].keys()})
             splits[split_name] = Dataset.from_list(all_data, features=features)
         else:
+            from datasets import Dataset
+
             splits[split_name] = Dataset.from_list(all_data)
 
     # Rename 'dev' to 'valid' for consistency
     if "dev" in splits:
         splits["valid"] = splits.pop("dev")
+
+    from datasets import DatasetDict
 
     return DatasetDict(splits)
 
@@ -97,9 +103,13 @@ def read_dataset(dataset_path: Union[str, Path]):
                 split_dataset = split_dataset.remove_columns(['split'])
                 splits[split_name] = split_dataset
                 logger.info(f"Created {split_name} split with {len(split_dataset)} samples")
+            from datasets import DatasetDict
+
             return DatasetDict(splits)
         else:
             # Return as DatasetDict with train split
+            from datasets import DatasetDict
+
             return DatasetDict({"train": dataset})
 
     # Check if this is a SMolInstruct-style directory with raw/ subdirectory
@@ -111,6 +121,8 @@ def read_dataset(dataset_path: Union[str, Path]):
     # Try to load as DatasetDict first (if it was saved with save_to_disk)
     try:
         logger.info(f"Attempting to load dataset as DatasetDict from {dataset_path_obj}")
+        from datasets import DatasetDict
+
         dataset_dict = DatasetDict.load_from_disk(str(dataset_path_obj))
         logger.info(f"Successfully loaded DatasetDict with splits: {list(dataset_dict.keys())}")
         return dataset_dict
@@ -128,6 +140,8 @@ def read_dataset(dataset_path: Union[str, Path]):
                     continue
                 try:
                     logger.info(f"Loading split: {folder}")
+                    from datasets import Dataset
+
                     splits[folder] = Dataset.load_from_disk(str(folder_path))
                     logger.info(f"Loaded {folder} with {len(splits[folder])} samples")
                 except Exception as split_error:
@@ -158,6 +172,8 @@ def save_dataset(dataset, dataset_path: Union[str, Path]):
         os.makedirs(dataset_path_obj.parent, exist_ok=True)
 
         # Convert to DatasetDict if it's a dict
+        from datasets import DatasetDict
+
         if not isinstance(dataset, DatasetDict):
             dataset = DatasetDict(dataset)
 
@@ -186,6 +202,8 @@ def save_dataset(dataset, dataset_path: Union[str, Path]):
     logger.info(f"Saving dataset to {dataset_path_obj}")
 
     # If it's a DatasetDict, we can save it directly
+    from datasets import DatasetDict
+
     if isinstance(dataset, DatasetDict):
         dataset.save_to_disk(str(dataset_path_obj))
         logger.info(f"Saved DatasetDict with {len(dataset)} splits")
