@@ -57,4 +57,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = RnaConfig.from_file(args.config).data_preparation
 
-    build_list(cfg.output_dir)
+    build_list(cfg.output_dir, cfg.census_version)

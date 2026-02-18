@@ -83,7 +83,8 @@ def iterate_over_chunk_raw_files(fasta_filepaths: List[Path], num_worker: int, m
                 executor.submit(get_sequence_from_fasta, path, max_lines_per_file, num_worker, sequence_list)
                 for path in fasta_filepaths
             ]
-            [job.add_done_callback(job_done_callback) for job in jobs]
+            for job in jobs:
+                job.add_done_callback(job_done_callback)
             while unfinished_jobs > 0 or len(sequence_list) > 0:
                 if len(sequence_list):
                     sequence_chunk = sequence_chunk + sequence_list.pop(0)
