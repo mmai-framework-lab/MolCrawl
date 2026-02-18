@@ -1,12 +1,21 @@
+from __future__ import annotations
+
 import logging
 from typing import List, Tuple
-from rdkit import Chem, RDLogger
-from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
+
+try:
+    from rdkit import Chem, RDLogger
+    from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
+except ModuleNotFoundError:
+    Chem = None
+    RDLogger = None
+    GetScaffoldForMol = None
 
 # RDKitの警告を抑制（無効なSMILES構造の警告が多数出るため）
 # ただし、エラーはログに記録する
-rdkit_logger = RDLogger.logger()
-rdkit_logger.setLevel(RDLogger.ERROR)
+if RDLogger is not None:
+    rdkit_logger = RDLogger.logger()
+    rdkit_logger.setLevel(RDLogger.ERROR)
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +65,9 @@ def prepare_scaffolds(smiles: str):
         if len(_invalid_smiles_examples) < 10:
             _invalid_smiles_examples.append(("empty or dot", smiles))
         return ""
+
+    if Chem is None or GetScaffoldForMol is None:
+        raise ModuleNotFoundError("rdkit is required to prepare scaffolds")
 
     try:
         molecule = Chem.MolFromSmiles(smiles)

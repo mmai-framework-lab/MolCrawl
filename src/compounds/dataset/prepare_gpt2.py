@@ -7,16 +7,26 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # データセットキャッシュ設定を読み込み（configs/cache.yamlから）
-from utils.cache_config import setup_cache_env
-setup_cache_env()
+try:
+    # 任意のキャッシュ設定。存在しない環境でも学習は継続できる。
+    from utils.cache_config import setup_cache_env
+except ModuleNotFoundError:
+    setup_cache_env = None
 
-import pandas as pd
+if setup_cache_env is not None:
+    setup_cache_env()
+else:
+    # cache_configが無い環境でも動作は可能
+    print("WARNING: utils.cache_config not found. Continuing without cache setup.")
+
 from compounds.utils.config import CompoundConfig
 from compounds.utils.tokenizer import CompoundsTokenizer
-from datasets import Dataset, DatasetDict
 
 
 def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
+    import pandas as pd
+    from datasets import Dataset, DatasetDict
+
     """
     Tokenize GuacaMol benchmark data for GPT-2 training.
 

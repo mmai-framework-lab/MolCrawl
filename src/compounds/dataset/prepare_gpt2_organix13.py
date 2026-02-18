@@ -6,13 +6,15 @@ from pathlib import Path
 # プロジェクトルートのsrcディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-import pandas as pd
 from compounds.utils.config import CompoundConfig
 from compounds.utils.tokenizer import CompoundsTokenizer
-from datasets import Dataset, DatasetDict
 
 
 def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
+    import pandas as pd
+    from datasets import Dataset, DatasetDict
+    from sklearn.model_selection import train_test_split
+
     """
     Tokenize OrganiX13 parquet data for GPT-2 training.
 
@@ -49,8 +51,6 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
     print(f"Total samples: {len(df)}")
 
     # Split into train/valid/test (80/10/10)
-    from sklearn.model_selection import train_test_split
-
     train_df, temp_df = train_test_split(df, test_size=0.2, random_state=42)
     valid_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42)
 

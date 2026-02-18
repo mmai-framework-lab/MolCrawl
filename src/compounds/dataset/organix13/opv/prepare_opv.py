@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import os
 import struct
 import logging
 from tqdm import tqdm
 import csv
 from collections import defaultdict
-import pandas as pd
+try:
+    import pandas as pd
+except ModuleNotFoundError:
+    pd = None
 
 logger = logging.getLogger(__name__)
 

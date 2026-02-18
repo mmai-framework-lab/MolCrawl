@@ -1,25 +1,31 @@
-import pandas as pd
+from __future__ import annotations
+
 import numpy as np
 import os
-from rdkit import Chem
-from rdkit.Chem import Descriptors
 import multiprocessing
-
-from rdkit.Chem import RDConfig
-import sys
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-sys.path.append(os.path.join(RDConfig.RDContribDir, "SA_Score"))
-# now you can import sascore!
-import sascorer  # noqa: E402
-
 np.random.seed(42)
 
 
+def _get_rdkit_helpers():
+    from rdkit import Chem
+    from rdkit.Chem import Descriptors, RDConfig
+
+    import sys
+
+    sys.path.append(os.path.join(RDConfig.RDContribDir, "SA_Score"))
+    import sascorer
+
+    return Chem, Descriptors, sascorer
+
+
 def safe_read_parquet(file_path, dataset_name):
+    import pandas as pd
+
     """
     Safely read a parquet file with error handling
 
@@ -58,6 +64,7 @@ def safe_read_parquet(file_path, dataset_name):
 
 
 def calcLogPIfMol(smi):
+    Chem, Descriptors, _ = _get_rdkit_helpers()
     m = Chem.MolFromSmiles(smi)
     if m is not None:
         return Descriptors.MolLogP(m)
@@ -66,21 +73,26 @@ def calcLogPIfMol(smi):
 
 
 def calcMol(smi):
+    Chem, _, _ = _get_rdkit_helpers()
     return Chem.MolFromSmiles(smi)
 
 
 def calcMolWeight(smi):
+    Chem, Descriptors, _ = _get_rdkit_helpers()
     mol = Chem.MolFromSmiles(smi)
     return Descriptors.ExactMolWt(mol)
 
 
 def calcSascore(smi):
+    Chem, _, sascorer = _get_rdkit_helpers()
     mol = Chem.MolFromSmiles(smi)
 
     return sascorer.calculateScore(mol)
 
 
 def calculateValues(smi: pd.Series):
+    import pandas as pd
+
     logging.info("Calculating properties")
     with multiprocessing.Pool(16) as pool:
         logging.info("Starting logps")
@@ -103,6 +115,8 @@ def calculateValues(smi: pd.Series):
 
 
 def calculateProperties(df):
+    import pandas as pd
+
     smi, logps, mol_weights, sascores = calculateValues(df["smiles"])
     out_df = pd.DataFrame({"smiles": smi, "logp": logps, "mol_weight": mol_weights, "sascore": sascores})
 
