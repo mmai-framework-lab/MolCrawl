@@ -17,6 +17,7 @@ learning_source_20250818下に存在する5種類のモデル（compounds, genom
 ## 🚀 クイックスタート
 
 ### 必要環境
+
 - Node.js (v14以上)
 - npm
 - 適切なファイルアクセス権限
@@ -33,12 +34,12 @@ chmod +x start-new.sh
 
 ### 2. アクセス
 
-- **フロントエンド**: http://localhost:3000
-- **API**: http://localhost:3001
+- **フロントエンド**: <http://localhost:3000>
+- **API**: <http://localhost:3001>
 
 ## 📁 ディレクトリ構造
 
-```
+```text
 molcrawl-web/
 ├── api/                          # バックエンドAPI
 │   ├── server.js                 # メインサーバー
@@ -65,24 +66,25 @@ molcrawl-web/
 
 ### HuggingFaceデータセット情報
 
-| エンドポイント | 説明 |
-|---------------|------|
-| `GET /api/datasets/all` | 全モデルのデータセット情報 |
-| `GET /api/datasets/:modelName` | 特定モデルの詳細情報 |
-| `GET /api/datasets/summary/stats` | 統計サマリー |
+| エンドポイント                    | 説明                       |
+| --------------------------------- | -------------------------- |
+| `GET /api/datasets/all`           | 全モデルのデータセット情報 |
+| `GET /api/datasets/:modelName`    | 特定モデルの詳細情報       |
+| `GET /api/datasets/summary/stats` | 統計サマリー               |
 
 ### ディレクトリ構造
 
-| エンドポイント | 説明 |
-|---------------|------|
-| `GET /api/directory` | ディレクトリ構造取得 |
-| `GET /api/directory/expand` | ディレクトリ展開 |
+| エンドポイント              | 説明                 |
+| --------------------------- | -------------------- |
+| `GET /api/directory`        | ディレクトリ構造取得 |
+| `GET /api/directory/expand` | ディレクトリ展開     |
 
 ## 🎨 画面構成
 
 ### 1. HFデータセットタブ 🤗
 
 #### 概要画面
+
 - **統計カード**: 総モデル数、データありモデル数、総ファイル数、総容量
 - **モデルグリッド**: 各モデルの詳細情報カード
   - compounds (🧪): 化合物分子構造
@@ -92,6 +94,7 @@ molcrawl-web/
   - rna (🧬): RNA核酸配列
 
 #### モデル詳細画面
+
 - **基本情報**: データセット数、ファイル数、容量、更新日時
 - **データセット一覧**: 各データセットの詳細情報
 - **サンプルファイル**: 各データセット内のファイル例
@@ -109,7 +112,7 @@ molcrawl-web/
 `api/dataset-info.js`の`LEARNING_SOURCE_BASE`を変更:
 
 ```javascript
-const LEARNING_SOURCE_BASE = '/path/to/your/learning_source';
+const LEARNING_SOURCE_BASE = "/path/to/your/learning_source";
 ```
 
 ### モデル設定の追加
@@ -118,12 +121,12 @@ const LEARNING_SOURCE_BASE = '/path/to/your/learning_source';
 
 ```javascript
 const MODELS = {
-    // 既存のモデル...
-    new_model: {
-        name: 'New Model',
-        description: 'New model description',
-        icon: '🔬'
-    }
+  // 既存のモデル...
+  new_model: {
+    name: "New Model",
+    description: "New model description",
+    icon: "🔬",
+  },
 };
 ```
 
@@ -132,25 +135,28 @@ const MODELS = {
 ### よくある問題
 
 1. **ポート使用エラー**
+
    ```bash
    # ポート確認
    lsof -i :3000
    lsof -i :3001
-   
+
    # プロセス終了
    kill -9 <PID>
    ```
 
 2. **権限エラー**
+
    ```bash
    # 実行権限付与
    chmod +x start-new.sh
-   
+
    # ディレクトリアクセス権確認
    ls -la /wren/matsubara/riken-dataset-fundational-model/learning_source_20250818/
    ```
 
 3. **依存関係エラー**
+
    ```bash
    # キャッシュクリア後再インストール
    cd api && rm -rf node_modules package-lock.json && npm install
@@ -203,4 +209,4 @@ MIT License
 ---
 
 **🧬 RIKEN Dataset Foundational Models Management Interface**
-*Developed for efficient dataset management and visualization*
+_Developed for efficient dataset management and visualization_

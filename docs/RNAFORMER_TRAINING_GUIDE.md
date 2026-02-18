@@ -7,6 +7,7 @@ RNAformerは、RNA transcriptome（遺伝子発現）データに特化したTra
 ## Features
 
 ### 🧬 RNA Transcriptome特化
+
 - 遺伝子発現データ用のカスタムトークナイゼーション
 - セルタイプ特異的な学習
 - 長いコンテキスト（1024トークン）のサポート
@@ -14,12 +15,13 @@ RNAformerは、RNA transcriptome（遺伝子発現）データに特化したTra
 ### 🔧 Technical Specifications
 
 | Model Size | Parameters | Hidden Size | Layers | Attention Heads | Intermediate Size |
-|------------|-----------|-------------|--------|-----------------|-------------------|
-| Small      | ~40M      | 512         | 8      | 8               | 2048              |
-| Medium     | ~90M      | 768         | 12     | 12              | 3072              |
-| Large      | ~180M     | 1024        | 16     | 16              | 4096              |
+| ---------- | ---------- | ----------- | ------ | --------------- | ----------------- |
+| Small      | ~40M       | 512         | 8      | 8               | 2048              |
+| Medium     | ~90M       | 768         | 12     | 12              | 3072              |
+| Large      | ~180M      | 1024        | 16     | 16              | 4096              |
 
 ### ⚙️ Training Configuration
+
 - **Learning Rate**: 1e-4 (RNA transcriptomeに最適化)
 - **Batch Size**: 8 per device
 - **Gradient Accumulation**: 16 steps (effective batch size = 128)
@@ -40,16 +42,19 @@ ls -la learning_source_20250904-rna-refined/rna/training_ready_hf_dataset/
 ### 2. トレーニングの実行
 
 #### Small Model
+
 ```bash
 CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-small.sh
 ```
 
 #### Medium Model
+
 ```bash
 CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-medium.sh
 ```
 
 #### Large Model
+
 ```bash
 CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-large.sh
 ```
@@ -83,7 +88,7 @@ RNAformerは、Geneformerアーキテクチャに基づいています：
 
 ## Directory Structure
 
-```
+```text
 rnaformer/
 ├── main.py                      # メイン学習スクリプト
 ├── configurator.py              # 設定ファイルローダー
@@ -105,6 +110,7 @@ learning_source_20250904-rna-refined/
 ## Training Process
 
 ### 1. データの読み込み
+
 ```python
 from datasets import load_from_disk
 
@@ -112,14 +118,18 @@ train_dataset = load_from_disk("learning_source_20250904-rna-refined/rna/trainin
 ```
 
 ### 2. トークナイゼーション
+
 遺伝子IDベースの語彙を使用：
+
 - `<pad>`: パディングトークン
 - `<unk>`: 未知の遺伝子
 - `<eos>`: シーケンス終了
 - `<mask>`: マスクされた遺伝子
 
 ### 3. モデルの学習
+
 Masked Language Modeling (MLM) タスクで学習：
+
 - 15%の遺伝子をランダムにマスク
 - マスクされた遺伝子を予測
 - Cross-entropy loss
@@ -127,26 +137,31 @@ Masked Language Modeling (MLM) タスクで学習：
 ## Monitoring
 
 ### Weights & Biases Metrics
+
 - `train/loss`: 学習損失
 - `eval/loss`: 検証損失
 - `train/learning_rate`: 学習率
 - `train/epoch`: エポック数
 
 ### Local Logs
+
 ログファイルは以下の場所に保存されます：
-```
+
+```text
 learning_source_20250904-rna-refined/rna/logs/rnaformer-train-{size}-{timestamp}.log
 ```
 
 ## Troubleshooting
 
 ### メモリ不足 (OOM)
+
 ```bash
 # バッチサイズを削減
 python rnaformer/main.py --config rnaformer/configs/rna.py --batch_size 4
 ```
 
 ### 学習が遅い
+
 ```bash
 # Gradient accumulationを調整
 python rnaformer/main.py \
@@ -155,6 +170,7 @@ python rnaformer/main.py \
 ```
 
 ### データセットが見つからない
+
 ```bash
 # LEARNING_SOURCE_DIRを設定
 export LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined
@@ -164,12 +180,12 @@ export LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined
 ## Performance Benchmarks
 
 | Model Size | GPU Memory | Training Speed | Time to 100K steps |
-|------------|------------|----------------|-------------------|
-| Small      | ~12 GB     | ~2,500 steps/h | ~40 hours         |
-| Medium     | ~18 GB     | ~1,800 steps/h | ~55 hours         |
-| Large      | ~30 GB     | ~1,200 steps/h | ~83 hours         |
+| ---------- | ---------- | -------------- | ------------------ |
+| Small      | ~12 GB     | ~2,500 steps/h | ~40 hours          |
+| Medium     | ~18 GB     | ~1,800 steps/h | ~55 hours          |
+| Large      | ~30 GB     | ~1,200 steps/h | ~83 hours          |
 
-*Benchmarks on NVIDIA A100 40GB GPU
+\*Benchmarks on NVIDIA A100 40GB GPU
 
 ## Advanced Usage
 
@@ -187,6 +203,7 @@ batch_size = 16       # バッチサイズの変更
 ### Resume Training
 
 チェックポイントから自動的に再開：
+
 ```bash
 # 同じコマンドを実行するだけで、最新のチェックポイントから再開
 ./workflows/03f-rna-train-rnaformer-small.sh
@@ -194,13 +211,13 @@ batch_size = 16       # バッチサイズの変更
 
 ## Comparison with Other Models
 
-| Feature | RNAformer | BERT | GPT-2 | Geneformer |
-|---------|-----------|------|-------|------------|
-| Domain | RNA transcriptome | General text | General text | Gene expression |
-| Tokenization | Gene IDs | WordPiece | BPE | Gene IDs |
-| Max Length | 1024 | 512 | 1024 | 2048 |
-| Learning Rate | 1e-4 | 6e-6 | 6e-4 | 1e-4 |
-| Year | 2026 | 2018 | 2019 | 2023 |
+| Feature       | RNAformer         | BERT         | GPT-2        | Geneformer      |
+| ------------- | ----------------- | ------------ | ------------ | --------------- |
+| Domain        | RNA transcriptome | General text | General text | Gene expression |
+| Tokenization  | Gene IDs          | WordPiece    | BPE          | Gene IDs        |
+| Max Length    | 1024              | 512          | 1024         | 2048            |
+| Learning Rate | 1e-4              | 6e-6         | 6e-4         | 1e-4            |
+| Year          | 2026              | 2018         | 2019         | 2023            |
 
 ## Citation
 

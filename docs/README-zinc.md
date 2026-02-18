@@ -46,8 +46,8 @@ python src/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py -
 
 ```python
 from src.compounds.dataset.organix13.zinc.download_and_convert_to_parquet import (
-    download_zinc_files, 
-    convert_zinc_to_parquet, 
+    download_zinc_files,
+    convert_zinc_to_parquet,
     check_download_status
 )
 
@@ -67,6 +67,7 @@ parquet_file = convert_zinc_to_parquet("/path/to/output")
 ### File Organization
 
 The ZINC20 dataset consists of approximately 300 files organized as:
+
 - File naming pattern: `XYZW.txt` (4-character combinations)
 - Directory structure: Files grouped by first two characters (e.g., `AA/AAAA.txt`)
 - Download URLs: `https://files.docking.org/2D/{dir}/{filename}`
@@ -96,7 +97,7 @@ The ZINC20 dataset consists of approximately 300 files organized as:
 
 ### Command Line Options
 
-```
+```text
 --download          Start downloading ZINC files
 --convert PATH      Convert downloaded files to parquet format
 --status           Show current download status
@@ -117,6 +118,7 @@ The new Python implementation provides several advantages over the previous shel
 ### Backward Compatibility
 
 The output file structure remains the same as the shell script version:
+
 - Files are saved to `{COMPOUNDS_DATASET_DIR}/zinc20/`
 - Directory structure matches the original layout
 - File formats and content are identical
@@ -124,11 +126,13 @@ The output file structure remains the same as the shell script version:
 ## Dependencies
 
 Required Python packages:
+
 - `requests`: For HTTP downloads
 - `dask[dataframe]`: For efficient parquet processing
 - `concurrent.futures`: For parallel processing (built-in)
 
 Install dependencies:
+
 ```bash
 pip install requests dask[dataframe]
 ```
@@ -152,6 +156,7 @@ pip install requests dask[dataframe]
 ### Logging
 
 Enable detailed logging:
+
 ```python
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -160,6 +165,7 @@ logging.basicConfig(level=logging.INFO)
 ### Recovery
 
 The system is designed to be resumable:
+
 - Re-run `--download` to continue interrupted downloads
 - Existing files are automatically skipped
 - Use `--status` to check completion before restarting

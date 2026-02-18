@@ -1,9 +1,11 @@
 # BERT学習検証レポート - learning_20251125データセット
 
 ## 検証日時
+
 2025年11月25日 15:52
 
 ## 検証目的
+
 learning_20251125のMolecule NLデータセットでBERTの学習が正常に動作するかを検証
 
 ---
@@ -11,6 +13,7 @@ learning_20251125のMolecule NLデータセットでBERTの学習が正常に動
 ## データセット情報
 
 ### ディレクトリ構造
+
 ```
 learning_20251125/molecule_nl/
 ├── arrow_splits/
@@ -21,6 +24,7 @@ learning_20251125/molecule_nl/
 ```
 
 ### データ統計
+
 - **総サンプル数**: 3,315,301
 - **総トークン数**: 約342M
 - **タスク種類**: 14種類
@@ -32,6 +36,7 @@ learning_20251125/molecule_nl/
 ## テスト設定
 
 ### モデル構成
+
 ```python
 model_size = "small"        # BERT small (109M parameters)
 max_length = 128            # コンテキスト長（テスト用に短く）
@@ -39,6 +44,7 @@ vocab_size = 32008          # Llama-2トークナイザー語彙サイズ
 ```
 
 **BERT Small 構成詳細:**
+
 - Hidden size: 768
 - Number of layers: 12
 - Number of attention heads: 12
@@ -46,6 +52,7 @@ vocab_size = 32008          # Llama-2トークナイザー語彙サイズ
 - **総パラメータ数**: 約109M
 
 ### 学習パラメータ
+
 ```python
 batch_size = 4
 gradient_accumulation_steps = 1
@@ -59,6 +66,7 @@ mlm_probability = 0.15      # Masked Language Modeling確率
 ```
 
 ### Masked Language Modeling (MLM) 設定
+
 - **マスキング確率**: 15%
 - **マスク戦略**:
   - 80%: [MASK]トークンに置き換え
@@ -72,22 +80,22 @@ mlm_probability = 0.15      # Masked Language Modeling確率
 ### 訓練損失とLearning Rate
 
 | Step | Train Loss | Learning Rate | Gradient Norm |
-|------|------------|---------------|---------------|
-| 10 | 9.2835 | 6.00e-05 | 10.24 |
-| 20 | 7.7051 | 4.50e-05 | - |
-| 30 | 7.2210 | 3.00e-05 | - |
-| 40 | 6.6476 | 1.50e-05 | - |
-| 50 | 6.5095 | 0.00e+00 | 6.55 |
+| ---- | ---------- | ------------- | ------------- |
+| 10   | 9.2835     | 6.00e-05      | 10.24         |
+| 20   | 7.7051     | 4.50e-05      | -             |
+| 30   | 7.2210     | 3.00e-05      | -             |
+| 40   | 6.6476     | 1.50e-05      | -             |
+| 50   | 6.5095     | 0.00e+00      | 6.55          |
 
 ### 評価損失
 
 | Step | Eval Loss | Eval Runtime | Samples/sec | Epoch |
-|------|-----------|--------------|-------------|-------|
-| 10 | 8.2294 | 74.23s | 134.71 | 0.0 |
-| 20 | 7.5155 | 74.60s | 134.06 | 0.0 |
-| 30 | 7.0527 | 64.47s | 155.11 | 0.0 |
-| 40 | 6.7736 | 68.34s | 146.33 | 0.0 |
-| 50 | 6.6860 | 71.28s | 140.29 | 0.0 |
+| ---- | --------- | ------------ | ----------- | ----- |
+| 10   | 8.2294    | 74.23s       | 134.71      | 0.0   |
+| 20   | 7.5155    | 74.60s       | 134.06      | 0.0   |
+| 30   | 7.0527    | 64.47s       | 155.11      | 0.0   |
+| 40   | 6.7736    | 68.34s       | 146.33      | 0.0   |
+| 50   | 6.6860    | 71.28s       | 140.29      | 0.0   |
 
 ### 学習進捗グラフ（テキスト版）
 
@@ -120,7 +128,6 @@ Eval Loss:
 1. **損失の減少**
    - Train Loss: 9.28 → 6.51 (29.8%減少)
    - Eval Loss: 8.23 → 6.69 (18.7%減少)
-   
 2. **収束の兆候**
    - 訓練損失が順調に減少
    - 評価損失も安定して減少
@@ -134,6 +141,7 @@ Eval Loss:
 ### 📊 パフォーマンス統計
 
 **総合パフォーマンス:**
+
 ```
 Total runtime: 364.43 秒 (約6分)
 Train samples/second: 1.098
@@ -142,6 +150,7 @@ Average eval time: ~70 seconds
 ```
 
 **ステップ別速度:**
+
 - Step 10: 4.91 it/s (初期ウォームアップ後)
 - Step 20: 0.90 it/s (評価含む)
 - Step 30-50: 0.43-0.94 it/s (評価含む)
@@ -168,6 +177,7 @@ Average eval time: ~70 seconds
 ## 生成されたファイル
 
 ### チェックポイント構造
+
 ```
 test_bert_molecule_nl_20251125/checkpoint-50/
 ├── config.json           (589B)     # モデル設定
@@ -181,6 +191,7 @@ test_bert_molecule_nl_20251125/checkpoint-50/
 ```
 
 ### チェックポイントサイズ
+
 - **総サイズ**: 約1.3GB
 - **モデル本体**: 422MB
 - **オプティマイザー**: 843MB (AdamWの2つのモーメンタムバッファを含む)
@@ -190,21 +201,27 @@ test_bert_molecule_nl_20251125/checkpoint-50/
 ## データ品質の確認
 
 ### 1. Arrow形式のローディング
+
 ✅ **正常動作**
+
 ```
 Loading from arrow format: learning_20251125/molecule_nl/arrow_splits/train.arrow
 📊 Limited test dataset to 10000 samples for faster evaluation
 ```
 
 ### 2. カスタムMLM Data Collator
+
 ✅ **正常動作**
+
 - 可変長シーケンス → バッチ内最大長に統一
 - パディング処理成功
 - MLMマスキング適用成功
 - input_ids, attention_mask, labels生成
 
 ### 3. 学習データフロー
+
 ✅ **正常動作**
+
 - データローディング: スムーズ
 - バッチ生成: 安定
 - GPU転送: 問題なし
@@ -217,22 +234,25 @@ Loading from arrow format: learning_20251125/molecule_nl/arrow_splits/train.arro
 ### 課題1: トークナイザーの認証エラー
 
 **問題:**
+
 ```python
 AttributeError: 'NoneType' object has no attribute 'mask_token'
 ```
 
 **原因:**
+
 - 標準のDataCollatorForLanguageModelingがトークナイザーを必要とする
 - Llama-2トークナイザーへのアクセスに認証が必要
 
 **解決策:**
 カスタムMLM data collatorを実装
+
 ```python
 @dataclass
 class CustomDataCollatorForMLM:
     mlm_probability: float = 0.15
     max_length: int = 128
-    
+
     def __call__(self, features):
         # パディング処理
         # MLMマスキング
@@ -243,16 +263,19 @@ class CustomDataCollatorForMLM:
 ### 課題2: 可変長シーケンスのバッチ処理
 
 **問題:**
+
 ```
 ValueError: expected sequence of length 99 at dim 1 (got 57)
 ```
 
 **原因:**
+
 - input_idsの長さがサンプルごとに異なる
 - tensorスタック時に形状が一致しない
 
 **解決策:**
 バッチ内最大長への動的パディング
+
 ```python
 batch_max_length = min(
     max(len(f["input_ids"]) for f in features),
@@ -266,12 +289,16 @@ batch_max_length = min(
 ## 既存コードとの互換性
 
 ### 変更不要なコンポーネント
+
 ✅ `bert/main.py` - **一切変更なし**
+
 - Arrow形式のローディングコードが既に存在
 - カスタムdata collatorのサポートあり
 
 ### 新規追加されたコンポーネント
+
 🆕 `bert/test_molecule_nl_20251125_config.py` - テスト設定ファイル
+
 - カスタムMLM data collator定義
 - テスト用パラメータ設定
 - vocab_sizeハードコード
@@ -282,22 +309,23 @@ batch_max_length = min(
 
 ### 学習方式の違い
 
-| 項目 | BERT | GPT-2 |
-|------|------|-------|
-| **学習タスク** | Masked Language Modeling | Next Token Prediction |
-| **入力形式** | input_ids のみ | input_ids + output_ids連結 |
-| **マスキング** | ランダムに15%マスク | なし |
-| **双方向性** | 双方向コンテキスト | 左から右の単方向 |
-| **損失計算** | マスク位置のみ | 全トークン位置 |
+| 項目           | BERT                     | GPT-2                      |
+| -------------- | ------------------------ | -------------------------- |
+| **学習タスク** | Masked Language Modeling | Next Token Prediction      |
+| **入力形式**   | input_ids のみ           | input_ids + output_ids連結 |
+| **マスキング** | ランダムに15%マスク      | なし                       |
+| **双方向性**   | 双方向コンテキスト       | 左から右の単方向           |
+| **損失計算**   | マスク位置のみ           | 全トークン位置             |
 
 ### 学習速度の比較
 
-| モデル | パラメータ数 | 速度 | バッチサイズ |
-|--------|-------------|------|--------------|
-| BERT Small | 109M | ~1 step/sec | 4 |
-| GPT-2 Test | 11M | ~60 step/sec | 4 |
+| モデル     | パラメータ数 | 速度         | バッチサイズ |
+| ---------- | ------------ | ------------ | ------------ |
+| BERT Small | 109M         | ~1 step/sec  | 4            |
+| GPT-2 Test | 11M          | ~60 step/sec | 4            |
 
 **注:** BERTの方が遅い理由
+
 1. モデルサイズが大きい (109M vs 11M)
 2. 双方向アテンション（計算量多い）
 3. 評価データが大きい (10,000 samples)
@@ -378,18 +406,21 @@ LEARNING_SOURCE_DIR="learning_20251125" python bert/main.py bert/molecule_nl_ber
 ## モデル選択のガイドライン
 
 ### BERTを選ぶべき場合
+
 - ✅ 分類タスク（sentiment, entity recognition）
 - ✅ 双方向コンテキストが重要
 - ✅ 穴埋めタスク（fill-mask）
 - ✅ 埋め込み生成
 
 ### GPT-2を選ぶべき場合
+
 - ✅ 生成タスク（text generation）
 - ✅ 次トークン予測
 - ✅ 対話システム
 - ✅ より高速な学習が必要
 
 ### 両方使うべき場合
+
 - ✅ 多様なダウンストリームタスク
 - ✅ モデルアンサンブル
 - ✅ 比較実験
@@ -399,17 +430,21 @@ LEARNING_SOURCE_DIR="learning_20251125" python bert/main.py bert/molecule_nl_ber
 ## 付録
 
 ### テスト設定ファイル
+
 `bert/test_molecule_nl_20251125_config.py`
 
 ### データセット
+
 - `learning_20251125/molecule_nl/arrow_splits/train.arrow` (3.3M samples)
 - `learning_20251125/molecule_nl/arrow_splits/valid.arrow` (17K samples)
 
 ### 学習スクリプト
+
 - `bert/main.py` (変更なし)
 - カスタムMLM data collator (設定ファイル内)
 
 ### ログファイル
+
 - `bert_test_20251125.log` (133KB)
 
 ---
@@ -419,11 +454,13 @@ LEARNING_SOURCE_DIR="learning_20251125" python bert/main.py bert/molecule_nl_ber
 ### ✨ 両モデルとも完全対応
 
 **BERT**: ✅ 学習成功
+
 - Train Loss: 9.28 → 6.51
 - Eval Loss: 8.23 → 6.69
 - チェックポイント: 1.3GB保存済み
 
 **GPT-2**: ✅ 学習成功（前回検証済み）
+
 - Train Loss: 10.01 → 4.66
 - Val Loss: 10.02 → 5.30
 - チェックポイント: 131MB保存済み
@@ -431,6 +468,7 @@ LEARNING_SOURCE_DIR="learning_20251125" python bert/main.py bert/molecule_nl_ber
 ### 🚀 本番学習準備完了
 
 learning_20251125データセットは以下に対応:
+
 - ✅ BERT (MLM)
 - ✅ GPT-2 (CLM)
 - ✅ 同一データソースで両モデル学習可能

@@ -12,6 +12,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
 - `POST /api/gpt2-inference` - Run inference on a GPT-2 model
   - **Request Body:**
+
     ```json
     {
       "dataset": "compounds|genome_sequence|protein_sequence|rna|molecule_nl",
@@ -23,7 +24,9 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
       "numSamples": 1
     }
     ```
+
   - **Response:**
+
     ```json
     {
       "success": true,
@@ -33,6 +36,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
 - `GET /api/gpt2-inference/config/:dataset` - Get default inference configuration
   - **Response:**
+
     ```json
     {
       "success": true,
@@ -48,6 +52,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
     ```
 
 **Features:**
+
 - Supports both HuggingFace and legacy checkpoint formats
 - Automatically locates the latest checkpoint for each model
 - Dataset-specific default configurations
@@ -56,6 +61,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 ### 2. Frontend Modal Component (`src/InferenceModal.js`)
 
 **Props:**
+
 - `isOpen` (boolean) - Controls modal visibility
 - `onClose` (function) - Callback when modal is closed
 - `dataset` (string) - Dataset identifier
@@ -63,6 +69,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 - `modelData` (object) - Model metadata and checkpoint information
 
 **Features:**
+
 - **Model Information Display:**
   - Training iteration count
   - Validation loss
@@ -76,7 +83,6 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
     - Temperature (0.1-2.0)
     - Top-K sampling (0-200)
     - Number of samples (1-10)
-  
 - **Results Display:**
   - Multiple generated samples
   - Copy-to-clipboard functionality
@@ -85,11 +91,13 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 ### 3. Updated Training Status Component (`src/GPT2TrainingStatus.js`)
 
 **New Features:**
+
 - Clickable model cards with hover effects
 - Modal state management
 - Automatic model data passing to inference modal
 
 **Visual Indicators:**
+
 - Clickable cards have a special hover effect with purple border
 - Cursor changes to pointer on ready models
 - Non-trained models remain non-clickable
@@ -97,6 +105,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 ### 4. Styling (`src/InferenceModal.css`)
 
 **Design Features:**
+
 - Modern gradient header with purple theme
 - Responsive layout (mobile-friendly)
 - Smooth animations and transitions
@@ -106,7 +115,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
 ## Usage
 
-### For Users:
+### For Users
 
 1. Navigate to the GPT-2 Training Status page
 2. Look for model cards with checkpoint data (shows training statistics)
@@ -123,15 +132,15 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 6. Click "Generate" to run inference
 7. View results and copy them to clipboard as needed
 
-### Dataset-Specific Configurations:
+### Dataset-Specific Configurations
 
-| Dataset | Start Token | Max Length | Temperature | Top-K | Use Case |
-|---------|-------------|------------|-------------|-------|----------|
-| Compounds | `<|startofsmiles|>` | 128 | 1.0 | None | SMILES generation |
-| Genome Sequence | `<|startoftext|>` | 256 | 0.8 | 200 | DNA sequences |
-| Protein Sequence | `<|startoftext|>` | 256 | 0.8 | 50 | Amino acid sequences |
-| RNA | `<|startoftext|>` | 256 | 0.8 | 100 | RNA sequences |
-| Molecule NL | `<|startoftext|>` | 128 | 0.7 | 50 | Natural language descriptions |
+| Dataset          | Start Token | Max Length    | Temperature | Top-K | Use Case |
+| ---------------- | ----------- | ------------- | ----------- | ----- | -------- | ---- | ----------------------------- |
+| Compounds        | `<          | startofsmiles | >`          | 128   | 1.0      | None | SMILES generation             |
+| Genome Sequence  | `<          | startoftext   | >`          | 256   | 0.8      | 200  | DNA sequences                 |
+| Protein Sequence | `<          | startoftext   | >`          | 256   | 0.8      | 50   | Amino acid sequences          |
+| RNA              | `<          | startoftext   | >`          | 256   | 0.8      | 100  | RNA sequences                 |
+| Molecule NL      | `<          | startoftext   | >`          | 128   | 0.7      | 50   | Natural language descriptions |
 
 ## Technical Details
 
@@ -152,6 +161,7 @@ The system automatically detects checkpoints in two formats:
 ### Python Integration
 
 The backend spawns a Python process to run inference:
+
 - Dynamically generates Python script with parameters
 - Loads the appropriate model and tokenizer
 - Handles both checkpoint formats seamlessly
@@ -168,22 +178,26 @@ The backend spawns a Python process to run inference:
 ## Installation & Setup
 
 1. Ensure the backend dependencies are installed:
+
    ```bash
    cd molcrawl-web
    npm install
    ```
 
 2. Ensure Python dependencies are available:
+
    ```bash
    pip install torch transformers
    ```
 
 3. Set the `LEARNING_SOURCE_DIR` environment variable:
+
    ```bash
    export LEARNING_SOURCE_DIR="learning_source_202508"
    ```
 
 4. Start the server:
+
    ```bash
    npm start
    ```
@@ -206,16 +220,19 @@ Potential improvements for future versions:
 ## Troubleshooting
 
 ### Modal doesn't open
+
 - Check browser console for errors
 - Ensure the model has a valid checkpoint
 - Verify the dataset configuration exists
 
 ### Inference fails
+
 - Check Python environment is properly configured
 - Verify checkpoint files exist and are readable
 - Check server logs for detailed error messages
 
 ### Slow generation
+
 - GPU availability impacts speed significantly
 - Larger models take longer to generate
 - Consider reducing `maxLength` or `numSamples`

@@ -7,6 +7,7 @@ ChemBERTa-2は、SMILES化合物データに特化したRoBERTaベースのTrans
 ## Features
 
 ### 🧪 SMILES Compounds特化
+
 - SMILES専用のトークナイゼーション
 - 化合物特性予測への高い転移学習性能
 - 分子構造の深い理解
@@ -14,12 +15,13 @@ ChemBERTa-2は、SMILES化合物データに特化したRoBERTaベースのTrans
 ### 🔧 Technical Specifications
 
 | Model Size | Parameters | Hidden Size | Layers | Attention Heads | Intermediate Size |
-|------------|-----------|-------------|--------|-----------------|-------------------|
-| Small      | ~10M      | 384         | 6      | 6               | 1536              |
-| Medium     | ~85M      | 768         | 12     | 12              | 3072              |
-| Large      | ~355M     | 1024        | 24     | 16              | 4096              |
+| ---------- | ---------- | ----------- | ------ | --------------- | ----------------- |
+| Small      | ~10M       | 384         | 6      | 6               | 1536              |
+| Medium     | ~85M       | 768         | 12     | 12              | 3072              |
+| Large      | ~355M      | 1024        | 24     | 16              | 4096              |
 
 ### ⚙️ Training Configuration
+
 - **Architecture**: RoBERTa (BERTの改良版)
 - **Learning Rate**: 6e-5 (SMILES化合物に最適化)
 - **Batch Size**: 128 per device
@@ -41,16 +43,19 @@ ls -la learning_source_20251210/compounds/organix13/compounds/training_ready_hf_
 ### 2. トレーニングの実行
 
 #### Small Model
+
 ```bash
 CUDA_VISIBLE_DEVICES=0 ./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
 #### Medium Model
+
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 ./workflows/03g-compounds-train-chemberta2-medium.sh
 ```
 
 #### Large Model
+
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03g-compounds-train-chemberta2-large.sh
 ```
@@ -91,7 +96,7 @@ ChemBERTa-2は、RoBERTaアーキテクチャに基づいています：
 
 ## Directory Structure
 
-```
+```text
 chemberta2/
 ├── main.py                      # メイン学習スクリプト
 ├── configurator.py              # 設定ファイルローダー
@@ -114,6 +119,7 @@ learning_source_20251210/
 ## Training Process
 
 ### 1. データの読み込み
+
 ```python
 from datasets import load_from_disk
 
@@ -121,7 +127,9 @@ train_dataset = load_from_disk("learning_source_20251210/compounds/organix13/com
 ```
 
 ### 2. トークナイゼーション
+
 SMILES専用の語彙を使用：
+
 - `[PAD]`: パディングトークン
 - `[CLS]`: 分類トークン（文の開始）
 - `[SEP]`: セパレータトークン（文の終了）
@@ -129,7 +137,9 @@ SMILES専用の語彙を使用：
 - SMILES文字: `C`, `N`, `O`, `=`, `(`, `)`, etc.
 
 ### 3. モデルの学習
+
 Masked Language Modeling (MLM) タスクで学習：
+
 - 15%のトークンをランダムにマスク
 - マスクされたトークンを予測
 - Cross-entropy loss
@@ -137,26 +147,31 @@ Masked Language Modeling (MLM) タスクで学習：
 ## Monitoring
 
 ### Weights & Biases Metrics
+
 - `train/loss`: 学習損失
 - `eval/loss`: 検証損失
 - `train/learning_rate`: 学習率
 - `train/epoch`: エポック数
 
 ### Local Logs
+
 ログファイルは以下の場所に保存されます：
-```
+
+```text
 learning_source_20251210/compounds/logs/chemberta2-train-{size}-{timestamp}.log
 ```
 
 ## Troubleshooting
 
 ### メモリ不足 (OOM)
+
 ```bash
 # バッチサイズを削減
 python chemberta2/main.py --config chemberta2/configs/compounds.py --batch_size 64
 ```
 
 ### 学習が遅い
+
 ```bash
 # Gradient accumulationを調整（バッチサイズを減らした場合）
 python chemberta2/main.py \
@@ -166,6 +181,7 @@ python chemberta2/main.py \
 ```
 
 ### データセットが見つからない
+
 ```bash
 # LEARNING_SOURCE_DIRを設定
 export LEARNING_SOURCE_DIR=learning_source_20251210
@@ -175,12 +191,12 @@ export LEARNING_SOURCE_DIR=learning_source_20251210
 ## Performance Benchmarks
 
 | Model Size | GPU Memory | Training Speed | Time to 300K steps |
-|------------|------------|----------------|-------------------|
-| Small      | ~6 GB      | ~5,000 steps/h | ~60 hours         |
-| Medium     | ~16 GB     | ~2,500 steps/h | ~120 hours        |
-| Large      | ~40 GB     | ~1,000 steps/h | ~300 hours        |
+| ---------- | ---------- | -------------- | ------------------ |
+| Small      | ~6 GB      | ~5,000 steps/h | ~60 hours          |
+| Medium     | ~16 GB     | ~2,500 steps/h | ~120 hours         |
+| Large      | ~40 GB     | ~1,000 steps/h | ~300 hours         |
 
-*Benchmarks on NVIDIA A100 40GB GPU
+\*Benchmarks on NVIDIA A100 40GB GPU
 
 ## Advanced Usage
 
@@ -198,6 +214,7 @@ batch_size = 256      # バッチサイズの変更
 ### Resume Training
 
 チェックポイントから自動的に再開：
+
 ```bash
 # 同じコマンドを実行するだけで、最新のチェックポイントから再開
 ./workflows/03g-compounds-train-chemberta2-small.sh
@@ -222,14 +239,14 @@ model = RobertaForSequenceClassification.from_pretrained(
 
 ## Comparison with Other Models
 
-| Feature | ChemBERTa-2 | BERT | RoBERTa | MolFormer |
-|---------|-------------|------|---------|-----------|
-| Domain | SMILES compounds | General text | General text | Molecules |
-| Architecture | RoBERTa | BERT | RoBERTa | Transformer |
-| Tokenization | SMILES chars | WordPiece | BPE | SMILES |
-| Max Length | 256 | 512 | 512 | 512 |
-| Learning Rate | 6e-5 | 1e-4 | 6e-4 | 5e-5 |
-| Year | 2021/2026 | 2018 | 2019 | 2022 |
+| Feature       | ChemBERTa-2      | BERT         | RoBERTa      | MolFormer   |
+| ------------- | ---------------- | ------------ | ------------ | ----------- |
+| Domain        | SMILES compounds | General text | General text | Molecules   |
+| Architecture  | RoBERTa          | BERT         | RoBERTa      | Transformer |
+| Tokenization  | SMILES chars     | WordPiece    | BPE          | SMILES      |
+| Max Length    | 256              | 512          | 512          | 512         |
+| Learning Rate | 6e-5             | 1e-4         | 6e-4         | 5e-5        |
+| Year          | 2021/2026        | 2018         | 2019         | 2022        |
 
 ## Use Cases
 
@@ -267,5 +284,3 @@ A: Learning rate: 1e-5～5e-5、Batch size: 32～64、Epochs: 3～10を推奨し
 A: Smallは開発・テスト用、Mediumは標準的なタスク用、Largeは高精度が必要なタスク用です。
 
 ## Support
-
-問題が発生した場合は、GitHubのIssueを作成するか、ドキュメントを参照してください。

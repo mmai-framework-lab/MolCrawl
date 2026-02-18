@@ -2,7 +2,7 @@
 
 The `LEARNING_SOURCE_DIR` environment variable points to the main data directory containing training data, model outputs, and logs for different biological sequence types.
 
-```
+```text
 LEARNING_SOURCE_DIR/
 ├── compounds/                    # Chemical compound data
 │   ├── benchmark/               # Benchmark datasets
@@ -80,11 +80,11 @@ LEARNING_SOURCE_DIR/
 
 ## Key Conventions
 
-| Directory Pattern | Purpose |
-|-------------------|---------|
-| `*-output/` | Model training outputs (checkpoints, metrics) |
+| Directory Pattern            | Purpose                                                     |
+| ---------------------------- | ----------------------------------------------------------- |
+| `*-output/`                  | Model training outputs (checkpoints, metrics)               |
 | `training_ready_hf_dataset/` | HuggingFace-compatible dataset with train/valid/test splits |
-| `logs/` | Processing and training logs |
-| `parquet_files/` | Tokenized data in Parquet format |
-| `raw_files/` | Pre-processed raw text data |
-| `*.marker` | Pipeline completion markers |
+| `logs/`                      | Processing and training logs                                |
+| `parquet_files/`             | Tokenized data in Parquet format                            |
+| `raw_files/`                 | Pre-processed raw text data                                 |
+| `*.marker`                   | Pipeline completion markers                                 |

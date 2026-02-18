@@ -17,11 +17,13 @@
 ## 技術スタック
 
 ### フロントエンド
+
 - **React.js** 19.1.1 - モダンなユーザーインターフェース
 - **CSS3** - カスタムスタイリング
 - **Fetch API** - バックエンドとの通信
 
 ### バックエンド
+
 - **Node.js + Express** - RESTful API サーバー
 - **CORS** - クロスオリジンリクエスト対応
 - **File System API** - ディレクトリスキャン
@@ -70,24 +72,27 @@ npm run prod
 
 ## アクセス
 
-- **Webインターフェース**: http://localhost:3000
-- **API サーバー**: http://localhost:3001
-- **ヘルスチェック**: http://localhost:3001/api/health
+- **Webインターフェース**: <http://localhost:3000>
+- **API サーバー**: <http://localhost:3001>
+- **ヘルスチェック**: <http://localhost:3001/api/health>
 
 ## API エンドポイント
 
 ### ディレクトリ構造取得
-```
+
+```text
 GET /api/directory?path={directory_path}
 ```
 
 ### 子ディレクトリ展開
-```
+
+```text
 GET /api/directory/expand?path={directory_path}
 ```
 
 ### ヘルスチェック
-```
+
+```text
 GET /api/health
 ```
 
@@ -96,6 +101,7 @@ GET /api/health
 `/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508/`
 
 ### 含まれるデータセット
+
 - **cellxgene/**: 単細胞RNAシーケンスデータ
 - **refseq/**: ゲノム配列データ（RefSeq）
 - **uniprot/**: タンパク質配列データ（UniProt）

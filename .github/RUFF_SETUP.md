@@ -36,7 +36,7 @@ ruff check . --fix
 
 - **対象Pythonバージョン**: 3.9+
 - **行長**: 128文字（blackと同じ）
-- **有効なルール**: 
+- **有効なルール**:
   - E: pycodestyle errors
   - F: pyflakes（未定義変数、未使用インポートなど）
   - W: pycodestyle warnings
@@ -45,6 +45,7 @@ ruff check . --fix
 ### 除外パターン
 
 以下は自動的に除外されます：
+
 - `miniconda/`
 - `learning_source_*`
 - `runs_train_*`

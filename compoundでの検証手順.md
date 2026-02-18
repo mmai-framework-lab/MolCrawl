@@ -26,15 +26,15 @@ pip install deepchem
 
 ### データ前処理
 
-* **Tokenizer の修正**
+- **Tokenizer の修正**
   `./src/compounds/utils/tokenizer.py` 内の `CompoundsTokenizer` において、
   `max_len` に応じた truncation と padding を行うように修正。
 
-* **max_length の修正**
+- **max_length の修正**
   GuacaMol の分子はトークン長が最大 102 のため、
   `./assets/configs/compounds.yaml` の `max_len` を **128** に変更。
 
-* **Tokenization**
+- **Tokenization**
   `prepare_gpt2.py` を書き換え，packing処理を行わないように修正．これを用いて GuacaMol データセットを tokenization し、
   Hugging Face Datasets フォーマットに変換。
   出力先: `./benchmark/GuacaMol/compounds/training_ready_hf_dataset`
@@ -49,14 +49,14 @@ pip install deepchem
 
 `./gpt2/configs/compounds/train_gpt2_config.py` 等を以下のように修正。
 
-* `dataset_dir` ⇒ 前処理済み GuacaMol のパス
-* `batch_size × gradient_accumulation = 256` となるよう調整
-* `max_iter` ⇒ 10 エポック相当になるよう調整
-* `eval_interval`, `eval_iters` ⇒ 1 エポックごとになるように設定
-* `eos_token` ⇒ `sep_token=13` に変更
-* `dataset_params` を追加
-* `init_from = "fine-tuning"` を指定
-* `checkpoint_path` ⇒ 事前学習モデルのパスを指定
+- `dataset_dir` ⇒ 前処理済み GuacaMol のパス
+- `batch_size × gradient_accumulation = 256` となるよう調整
+- `max_iter` ⇒ 10 エポック相当になるよう調整
+- `eval_interval`, `eval_iters` ⇒ 1 エポックごとになるように設定
+- `eos_token` ⇒ `sep_token=13` に変更
+- `dataset_params` を追加
+- `init_from = "fine-tuning"` を指定
+- `checkpoint_path` ⇒ 事前学習モデルのパスを指定
 
 ---
 
@@ -75,14 +75,14 @@ CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_xl
 
 ## 分子生成
 
-* **generate メソッド修正**
+- **generate メソッド修正**
   `./gpt2/model.py` の `GPT.generate` を修正し、`eos_token` 出力時に生成を停止するよう変更。
 
-* **初めのトークン出現頻度計算**
+- **初めのトークン出現頻度計算**
   `./benchmark/GuacaMol/guacamol_v1_train.smiles` 内で、分子の最初のトークンの出現頻度を算出。
   `./gpt2/sample_compound.py` にハードコーディングで埋め込み。
 
-* **分子生成**
+- **分子生成**
   `./benchmark/GuacaMol/small/` 等の下に `generated_compounds.txt` として 100,000 分子生成。
 
   ```bash

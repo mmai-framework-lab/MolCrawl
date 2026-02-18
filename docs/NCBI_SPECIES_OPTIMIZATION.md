@@ -25,7 +25,7 @@ NCBI genome情報リストを更新した結果、51,273種の大規模データ
 ### 2. フロントエンド仮想スクロール (`molcrawl-web/src/SpeciesBrowser.js`)
 
 - **react-window**: FixedSizeListによる仮想スクロール実装
-- **検索デバウンシング**: 300ms遅延で過剰なAPI呼び出しを防止  
+- **検索デバウンシング**: 300ms遅延で過剰なAPI呼び出しを防止
 - **ページネーション制御**: 100-2000件の可変ページサイズ
 - **レスポンシブデザイン**: モバイル対応レイアウト
 - **パフォーマンス指標表示**: 処理時間・キャッシュ状態の可視化
@@ -44,17 +44,17 @@ NCBI genome情報リストを更新した結果、51,273種の大規模データ
 
 - **データ規模**: 51,273種 (10カテゴリ)
   - Bacteria: 5,184種
-  - Invertebrates: 8,401種  
+  - Invertebrates: 8,401種
   - Plants: 6,412種
   - Vertebrates: 6,477種
   - その他6カテゴリ
 
-- **処理速度**: 
+- **処理速度**:
   - 初回読み込み: ~166ms
   - キャッシュ利用時: ~3-5ms
   - 仮想スクロール: 60fps維持
 
-- **メモリ効率**: 
+- **メモリ効率**:
   - DOM要素は可視範囲のみ描画
   - 大規模リストでもメモリ使用量一定
   - キャッシュによるネットワーク負荷軽減
@@ -74,7 +74,7 @@ GET /api/genome-species-category?category=plants&search=arabidopsis&limit=50
 
 ## ファイル構成
 
-```
+```text
 molcrawl-web/
 ├── api/
 │   └── genome-species.js           # 最適化されたAPI（キャッシュ・ページング）
@@ -89,11 +89,13 @@ molcrawl-web/
 ## 使用技術
 
 ### バックエンド
+
 - **Node.js + Express**: RESTful API
 - **ファイルシステムベース**: テキストファイル直読み込み
 - **Map-based キャッシング**: メモリ効率重視
 
 ### フロントエンド
+
 - **React 19.1.1**: モダンなHooks利用
 - **react-window 2.2.0**: 仮想スクロールライブラリ
 - **CSS Grid/Flexbox**: レスポンシブレイアウト
@@ -101,11 +103,13 @@ molcrawl-web/
 ## 性能指標
 
 ### 従来の課題
+
 - ❌ 51,273件の一括表示でブラウザフリーズ
 - ❌ DOM要素大量生成によるメモリ枯渇
 - ❌ API遅延による応答性悪化
 
 ### 改善後の性能
+
 - ✅ 仮想スクロールで無制限サイズ対応
 - ✅ 常時60fps の滑らかなスクロール
 - ✅ 5分キャッシュで高速検索
@@ -114,22 +118,25 @@ molcrawl-web/
 ## 運用保守のポイント
 
 ### 1. キャッシュ管理
+
 ```javascript
 // キャッシュクリア（必要時）
 speciesCache.clear();
 
 // キャッシュサイズ監視
-console.log('Cache size:', speciesCache.size);
+console.log("Cache size:", speciesCache.size);
 ```
 
 ### 2. パフォーマンス監視
+
 ```javascript
 // API応答時間監視
-headers['X-Processing-Time'] = processingTimeMs;
-headers['X-Cache-Status'] = cacheUsed ? 'HIT' : 'MISS';
+headers["X-Processing-Time"] = processingTimeMs;
+headers["X-Cache-Status"] = cacheUsed ? "HIT" : "MISS";
 ```
 
 ### 3. エラーハンドリング
+
 - ファイル読み込みエラーの適切な処理
 - 大容量データ処理時のメモリ不足対策
 - ネットワークエラー時の再試行機能

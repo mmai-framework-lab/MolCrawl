@@ -6,12 +6,14 @@
 
 ## 🎬 シナリオ1: SMILES validation を追加・変更した場合
 
-### 状況
+### 状況 (シナリオ1)
+
 `src/compounds/utils/preprocessing.py` のSMILES検証ロジックを改善したい。
 
-### 手順
+### 手順 (シナリオ1)
 
 #### 1. ローカルでテストを実行
+
 ```bash
 # compounds関連のテストを実行
 cd /wren/matsubara/riken-dataset-fundational-model
@@ -24,27 +26,30 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 ```
 
 #### 2. コードを変更
+
 ```python
 # src/compounds/utils/preprocessing.py
 def prepare_scaffolds(smiles: str):
     # 改善されたロジックを追加
     if not smiles or smiles.strip() == "":
         return ""
-    
+
     # 新しい検証ロジック
     if len(smiles) > 1000:  # 異常に長いSMILESを拒否
         logger.warning(f"SMILES too long: {len(smiles)} characters")
         return ""
-    
+
     # 既存のロジック...
 ```
 
 #### 3. ローカルで再テスト
+
 ```bash
 pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 ```
 
 #### 4. GitHubにプッシュ
+
 ```bash
 git add src/compounds/utils/preprocessing.py
 git commit -m "feat(compounds): add length validation for SMILES"
@@ -52,7 +57,8 @@ git push origin feature/improve-smiles-validation
 ```
 
 #### 5. GitHub Actionsの結果を確認
-```
+
+```text
 GitHub → Actions タブ → "Compounds Validation" ワークフロー
 
 ✅ unit-tests: SUCCESS
@@ -63,12 +69,14 @@ GitHub → Actions タブ → "Compounds Validation" ワークフロー
 
 ## 🎬 シナリオ2: 新しいtokenizerロジックを追加
 
-### 状況
+### 状況 (シナリオ2)
+
 特殊な化学構造（立体化学など）に対応するため、tokenizerを拡張したい。
 
-### 手順
+### 手順 (シナリオ2)
 
 #### 1. テストファーストで開発
+
 ```python
 # tests/unit/test_compounds.py に追加
 @pytest.mark.unit
@@ -76,24 +84,26 @@ GitHub → Actions タブ → "Compounds Validation" ワークフロー
 def test_stereochemistry_tokenization(self, sample_vocab_file):
     """立体化学表記が正しくトークン化されることを確認"""
     from src.compounds.utils.tokenizer import SmilesTokenizer
-    
+
     # C[C@H](O)C のような立体化学を含むSMILES
     smiles = "C[C@H](O)C"
-    
+
     tokenizer = SmilesTokenizer(sample_vocab_file)
     tokens = tokenizer.tokenize(smiles)
-    
+
     # @ が正しく認識される
     assert "@" in tokens or "[C@H]" in tokens
 ```
 
 #### 2. テストを実行（失敗するはず）
+
 ```bash
 pytest tests/unit/test_compounds.py::test_stereochemistry_tokenization -v
 # FAILED - 新機能が未実装なので失敗
 ```
 
 #### 3. 機能を実装
+
 ```python
 # src/compounds/utils/tokenizer.py
 SMI_REGEX_PATTERN = r"""(
@@ -109,17 +119,20 @@ SMI_REGEX_PATTERN = r"""(
 ```
 
 #### 4. テストを再実行（成功するはず）
+
 ```bash
 pytest tests/unit/test_compounds.py::test_stereochemistry_tokenization -v
 # PASSED ✅
 ```
 
 #### 5. 全体のテストを実行
+
 ```bash
 pytest tests/unit/test_compounds.py -v
 ```
 
 #### 6. GitHubで検証
+
 ```bash
 git add src/compounds/utils/tokenizer.py tests/unit/test_compounds.py
 git commit -m "feat(compounds): support stereochemistry in tokenizer"
@@ -132,18 +145,21 @@ git push
 
 ## 🎬 シナリオ3: Phase 1 BERT モデル検証
 
-### 状況
+### 状況 (シナリオ3)
+
 Compounds用BERTモデルをトレーニングした。Phase 1検証を実行したい。
 
-### 手順
+### 手順 (シナリオ3)
 
 #### 1. モデルパスを設定
+
 ```bash
 # ローカルテスト用
 export COMPOUNDS_BERT_MODEL_PATH=/path/to/trained/bert/model
 ```
 
 #### 2. 統合テストを実行
+
 ```bash
 pytest tests/integration/test_compounds_pipeline.py::TestCompoundsBERTIntegration -v
 
@@ -160,17 +176,20 @@ pytest tests/integration/test_compounds_pipeline.py::TestCompoundsBERTIntegratio
 ```
 
 #### 3. 手動でPhase 1検証ワークフローを実行
+
 ```bash
 gh workflow run compounds-validation.yml
 ```
 
 または、GitHub Web UIから:
-```
+
+```text
 Actions → Compounds Validation → Run workflow
 ```
 
 #### 4. 結果を確認
-```
+
+```text
 Artifacts:
 - phase1-compounds-verification-report.md をダウンロード
 
@@ -188,12 +207,14 @@ Status: PASSED ✅
 
 ## 🎬 シナリオ4: GPT2でSMILES生成品質を検証
 
-### 状況
+### 状況 (シナリオ4)
+
 GPT2モデルで生成されるSMILESの品質を確認したい。
 
-### 手順
+### 手順 (シナリオ4)
 
 #### 1. 統合テストを実行
+
 ```bash
 export COMPOUNDS_GPT2_MODEL_PATH=/path/to/trained/gpt2/model
 
@@ -201,7 +222,8 @@ pytest tests/integration/test_compounds_pipeline.py::TestCompoundsGPT2Integratio
 ```
 
 #### 2. 結果を確認
-```
+
+```text
 ✓ SMILES Validity Check:
   Total generated: 15
   Valid SMILES: 12
@@ -211,6 +233,7 @@ PASSED ✅
 ```
 
 #### 3. 品質が低い場合のデバッグ
+
 ```bash
 # より詳細なテストを実行
 pytest tests/integration/test_compounds_pipeline.py::TestCompoundsGPT2Integration -v --tb=long
@@ -222,6 +245,7 @@ pytest tests/integration/test_compounds_pipeline.py::TestCompoundsGPT2Integratio
 ```
 
 #### 4. モデルを再トレーニングまたはハイパーパラメータ調整
+
 ```bash
 # 温度パラメータを下げる（より保守的な生成）
 # temperature: 0.8 → 0.6
@@ -232,12 +256,14 @@ pytest tests/integration/test_compounds_pipeline.py::TestCompoundsGPT2Integratio
 
 ## 🎬 シナリオ5: Pull Request での自動検証
 
-### 状況
+### 状況 (シナリオ5)
+
 チームメンバーがcompounds関連のコードを変更したPRを作成。
 
-### 手順
+### 手順 (シナリオ5)
 
 #### 1. PR作成
+
 ```bash
 # フィーチャーブランチを作成
 git checkout -b feature/add-new-smiles-feature
@@ -249,7 +275,8 @@ git push origin feature/add-new-smiles-feature
 ```
 
 #### 2. 自動チェックが開始
-```
+
+```text
 GitHub PR画面:
 ✅ Compounds Validation - unit-tests
 ✅ Compounds Validation - integration-tests
@@ -259,7 +286,8 @@ GitHub PR画面:
 ```
 
 #### 3. レビュアーが結果を確認
-```
+
+```text
 PR Check Details:
 
 ✅ All checks passed
@@ -275,13 +303,14 @@ Artifacts:
 ```
 
 #### 4. マージ
-```
+
+```text
 全チェックが✅ → "Merge pull request" ボタンが有効化
 ```
 
 ## 📊 実際の検証フロー図
 
-```
+```text
 開発者がコード変更
     ↓
 ローカルでpytest実行
@@ -307,6 +336,7 @@ PRマージ可能
 ## 🛠️ よくある使い方
 
 ### 1. 毎日のルーチン開発
+
 ```bash
 # 朝: 最新を取得
 git pull origin develop
@@ -325,6 +355,7 @@ git push
 ```
 
 ### 2. 週次モデル検証
+
 ```bash
 # 毎週金曜日にモデルの統合テストを実行
 gh workflow run compounds-validation.yml
@@ -333,6 +364,7 @@ gh workflow run compounds-validation.yml
 ```
 
 ### 3. リリース前の完全検証
+
 ```bash
 # Phase 1完了時
 gh workflow run phase-validation.yml -f phase=phase1-bert-verification
@@ -345,6 +377,7 @@ gh workflow run compounds-validation.yml -f test_level=all
 ## 📈 メトリクスの見方
 
 ### 合格基準の例
+
 ```yaml
 Unit Tests: ✅ 100% pass required
 SMILES Validation: ✅ Invalid rate < 50%
@@ -354,7 +387,8 @@ Test Duration: ⚡ < 5 minutes (目標)
 ```
 
 ### 警告が出た場合
-```
+
+```text
 ⚠️ Invalid SMILES rate: 45%
 → まだ許容範囲内だが、原因を調査すべき
 

@@ -12,6 +12,7 @@
 ## 主な機能
 
 ### 1. チェックポイントテスト機能
+
 - ✅ カスタムGPT2チェックポイントの読み込み
 - ✅ Hugging Face形式への変換
 - ✅ パープレキシティ計算
@@ -21,6 +22,7 @@
 - ✅ 包括的なテストレポート生成
 
 ### 2. マルチドメイン対応
+
 - 🧪 **compounds** - SMILES化学構造データ
 - 🔬 **molecule_nl** - 分子関連自然言語
 - 🧬 **genome** - ゲノム配列データ
@@ -28,7 +30,9 @@
 - 🧬 **rna** - RNA配列データ
 
 ### 3. トークナイザー統合
+
 各ドメインの特化トークナイザーを自動検出して使用:
+
 - CompoundsTokenizer (SMILES)
 - MoleculeNatLangTokenizer (CodeLlama-7b)
 - SentencePiece (ゲノム)
@@ -40,6 +44,7 @@
 ### 基本的な使用方法
 
 #### 1. 単一チェックポイントのテスト
+
 ```bash
 # 基本テスト
 python gpt2/test_checkpoint.py --checkpoint_path=out-compounds/ckpt.pt
@@ -60,6 +65,7 @@ python gpt2/test_checkpoint.py \
 ```
 
 #### 2. ヘルパースクリプトを使った便利なテスト
+
 ```bash
 # 利用可能なチェックポイントをリストアップ
 python gpt2/test_helper.py --list_only
@@ -72,6 +78,7 @@ python gpt2/test_helper.py --search_dir=out-compounds --auto_run
 ```
 
 #### 3. 一括テスト（推奨）
+
 ```bash
 # 現在のディレクトリ内の全チェックポイントを一括テスト
 ./gpt2/batch_test_gpt2.sh
@@ -83,6 +90,7 @@ python gpt2/test_helper.py --search_dir=out-compounds --auto_run
 ### 高度な使用例
 
 #### ドメイン特化テスト
+
 ```bash
 # Compoundsドメインの完全テスト
 python gpt2/test_checkpoint.py \
@@ -103,6 +111,7 @@ python gpt2/test_checkpoint.py \
 ```
 
 #### Hugging Face形式への変換のみ
+
 ```bash
 python gpt2/test_checkpoint.py \
     --checkpoint_path=out-compounds/ckpt.pt \
@@ -113,6 +122,7 @@ python gpt2/test_checkpoint.py \
 ## 出力結果
 
 ### テストレポート
+
 各テスト実行後、以下の形式のJSONレポートが生成されます:
 
 ```json
@@ -144,7 +154,8 @@ python gpt2/test_checkpoint.py \
 ```
 
 ### 一括テスト結果
-```
+
+```text
 gpt2_test_results_20250801_103045/
 ├── compounds_out-compounds/
 │   ├── gpt2_test_report.json
@@ -158,63 +169,77 @@ gpt2_test_results_20250801_103045/
 ## パフォーマンス指標
 
 ### パープレキシティ (Perplexity)
+
 - **良好**: < 20
 - **普通**: 20-50
 - **要改善**: > 50
 
 ### Top-1精度 (Accuracy)
+
 - **優秀**: > 0.4
 - **良好**: 0.2-0.4
 - **要改善**: < 0.2
 
 ### モデルサイズ別期待値
 
-| モデルサイズ | パラメータ数 | 期待パープレキシティ | 期待精度 |
-|-------------|-------------|-------------------|---------|
-| GPT2-small  | 124M        | 15-25             | 0.25-0.35 |
-| GPT2-medium | 350M        | 12-20             | 0.30-0.40 |
-| GPT2-large  | 774M        | 10-18             | 0.35-0.45 |
-| GPT2-xl     | 1.5B        | 8-15              | 0.40-0.50 |
+| モデルサイズ | パラメータ数 | 期待パープレキシティ | 期待精度  |
+| ------------ | ------------ | -------------------- | --------- |
+| GPT2-small   | 124M         | 15-25                | 0.25-0.35 |
+| GPT2-medium  | 350M         | 12-20                | 0.30-0.40 |
+| GPT2-large   | 774M         | 10-18                | 0.35-0.45 |
+| GPT2-xl      | 1.5B         | 8-15                 | 0.40-0.50 |
 
 ## トラブルシューティング
 
 ### よくあるエラーと解決方法
 
 #### 1. チェックポイント読み込みエラー
-```
+
+```text
 Error: checkpoint loading failed
 ```
+
 **解決方法**: チェックポイントファイルのパスと形式を確認してください。
 
 #### 2. トークナイザーエラー
-```
+
+```text
 Error: tokenizer initialization failed
 ```
-**解決方法**: 
+
+**解決方法**:
+
 - ドメインパラメータが正しく指定されているか確認
 - 語彙ファイルのパスが正しいか確認
 - 必要な依存関係がインストールされているか確認
 
 #### 3. メモリ不足エラー
-```
+
+```text
 CUDA out of memory
 ```
+
 **解決方法**:
+
 - `--max_test_samples` を減らす
 - バッチサイズを調整する
 - CPUモードを使用: `--device=cpu`
 
 #### 4. データセット読み込みエラー
-```
+
+```text
 Dataset loading failed
 ```
+
 **解決方法**:
+
 - データセットディレクトリのパスを確認
 - データセットパラメータのJSON形式を確認
 
 ### パフォーマンス最適化
 
 #### GPU使用量の最適化
+
 ```bash
 # メモリ使用量を減らす
 python gpt2/test_checkpoint.py \

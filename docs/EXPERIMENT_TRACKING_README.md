@@ -16,7 +16,7 @@
 
 ## システム構成
 
-```
+```text
 実験管理システム
 ├── src/experiment_tracker/     # コアモジュール
 │   ├── models.py              # データモデル定義
@@ -69,9 +69,9 @@ npm run dev
 
 ### 3. アクセス
 
-- **Web UI**: http://localhost:3000
-- **実験ダッシュボード**: http://localhost:3000 (Experimentsタブ)
-- **API ドキュメント**: http://localhost:8000/docs
+- **Web UI**: <http://localhost:3000>
+- **実験ダッシュボード**: <http://localhost:3000> (Experimentsタブ)
+- **API ドキュメント**: <http://localhost:8000/docs>
 
 ## 使用方法
 
@@ -91,30 +91,30 @@ with experiment_context(
     config={"epochs": 10, "batch_size": 32},
     config_path="configs/gpt2_train.yaml"
 ) as exp:
-    
+
     # ログを記録
     exp.log("INFO", "Training started")
-    
+
     # ステップ1: データロード
     exp.start_step("data_loading", "Load dataset")
     train_data = load_dataset("proteingym_train.csv")
     exp.complete_step("data_loading", output_path="data/processed/train.pt")
-    
+
     # ステップ2: 訓練
     exp.start_step("training", "Train model")
     model = train_model(train_data)
     exp.complete_step("training", output_path="models/gpt2_proteingym.pt")
-    
+
     # ステップ3: 評価
     exp.start_step("evaluation", "Evaluate model")
     accuracy = evaluate_model(model)
     exp.complete_step("evaluation")
-    
+
     # 結果とメトリクスを記録
     exp.add_result("model_path", "models/gpt2_proteingym.pt")
     exp.add_metric("accuracy", accuracy)
     exp.add_metric("loss", 0.123)
-    
+
     exp.log("INFO", f"Training completed. Accuracy: {accuracy:.4f}")
 ```
 
@@ -136,7 +136,7 @@ def run_evaluation(config):
     # 評価処理
     model = load_model(config['model_path'])
     results = evaluate(model, config['test_data'])
-    
+
     # 返り値の数値はメトリクスとして自動記録
     return {
         "accuracy": results['accuracy'],
@@ -171,18 +171,18 @@ try:
     tracker.start_step(exp_id, "download", "Download raw data")
     download_data()
     tracker.complete_step(exp_id, "download", output_path="data/raw/rna.csv")
-    
+
     tracker.start_step(exp_id, "preprocess", "Preprocess and tokenize")
     preprocess_data()
     tracker.complete_step(exp_id, "preprocess", output_path="data/processed/rna.pt")
-    
+
     # 実験完了
     tracker.complete_experiment(
         exp_id,
         results={"output_dir": "data/processed/"},
         metrics={"num_samples": 100000, "vocab_size": 512}
     )
-    
+
 except Exception as e:
     tracker.fail_experiment(exp_id, str(e))
     raise
@@ -258,11 +258,11 @@ def main():
         exp.start_step("data", "Load data")
         load_data()
         exp.complete_step("data")
-        
+
         exp.start_step("train", "Train model")
         train_model()
         exp.complete_step("train")
-        
+
         exp.start_step("eval", "Evaluate")
         evaluate_model()
         exp.complete_step("eval")
@@ -300,6 +300,7 @@ curl "http://localhost:8000/api/experiments/{experiment_id}/logs?level=ERROR"
 ## データモデル
 
 ### ExperimentStatus
+
 - `pending`: 未実行
 - `running`: 実行中
 - `completed`: 完了
@@ -308,6 +309,7 @@ curl "http://localhost:8000/api/experiments/{experiment_id}/logs?level=ERROR"
 - `skipped`: スキップ
 
 ### ExperimentType
+
 - `data_preparation`: データ準備
 - `training`: 訓練
 - `evaluation`: 評価
@@ -315,11 +317,13 @@ curl "http://localhost:8000/api/experiments/{experiment_id}/logs?level=ERROR"
 - `inference`: 推論
 
 ### ModelType
+
 - `gpt2`: GPT-2モデル
 - `bert`: BERTモデル
 - `gpn`: GPNモデル
 
 ### DatasetType
+
 - `protein_sequence`: タンパク質配列
 - `genome_sequence`: ゲノム配列
 - `compounds`: 化合物

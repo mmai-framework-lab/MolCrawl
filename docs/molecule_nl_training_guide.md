@@ -26,14 +26,14 @@ Arrow形式で保存されたデータセットには以下のフィールドが
 
 ## BERT学習
 
-### 1. データの準備
+### 1. データの準備 (BERT)
 
 ```bash
 # データセットの準備（まだの場合）
 LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 ```
 
-### 2. 学習の実行
+### 2. 学習の実行 (BERT)
 
 ```bash
 # Smallモデルで学習
@@ -43,7 +43,7 @@ python bert/main.py bert/molecule_nl_bert_config.py
 LEARNING_SOURCE_DIR="learning_20251121" python bert/main.py bert/molecule_nl_bert_config.py
 ```
 
-### 3. 設定のカスタマイズ
+### 3. 設定のカスタマイズ (BERT)
 
 `bert/molecule_nl_bert_config.py`を編集：
 
@@ -58,9 +58,10 @@ learning_rate = 6e-5
 max_length = 512  # 最大シーケンス長
 ```
 
-### データフォーマット
+### データフォーマット (BERT)
 
 BERTは以下のフィールドを使用：
+
 - ✅ `input_ids`: トークン化された入力
 - ✅ `attention_mask`: パディング部分を示すマスク
 - ✅ `labels`: MLM（Masked Language Modeling）用のラベル
@@ -71,7 +72,7 @@ BERTは以下のフィールドを使用：
 
 ## GPT-2学習
 
-### 1. データの準備
+### 1. データの準備 (GPT-2)
 
 BERTと同じデータセットを使用します：
 
@@ -80,7 +81,7 @@ BERTと同じデータセットを使用します：
 LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 ```
 
-### 2. 学習の実行
+### 2. 学習の実行 (GPT-2)
 
 ```bash
 # デフォルト設定で学習
@@ -90,7 +91,7 @@ python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
 LEARNING_SOURCE_DIR="learning_20251121" python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
 ```
 
-### 3. 設定のカスタマイズ
+### 3. 設定のカスタマイズ (GPT-2)
 
 `gpt2/molecule_nl_gpt2_config.py`を編集：
 
@@ -107,9 +108,10 @@ max_iters = 100000
 learning_rate = 3e-4
 ```
 
-### データフォーマット
+### データフォーマット (GPT-2)
 
 GPT-2の`PreparedDataset`クラスは自動的に以下を処理：
+
 - ✅ `input_ids`と`output_ids`を結合して連続したシーケンスを作成
 - ✅ 可変長シーケンスを`block_size`に合わせてパディング/トランケーション
 
@@ -127,7 +129,7 @@ LEARNING_SOURCE_DIR="learning_20251121" python scripts/preparation/test_molecule
 
 期待される出力：
 
-```
+```text
 ======================================================================
 Summary
 ======================================================================
@@ -141,7 +143,7 @@ GPT-2 compatibility: ✅ PASS
 
 ## ディレクトリ構造
 
-```
+```text
 learning_20251121/
 └── molecule_nl/
     ├── arrow_splits/              # 学習用データ（BERT・GPT-2共通）
@@ -165,6 +167,7 @@ LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 ### メモリ不足エラー
 
 **BERT:**
+
 ```python
 # batch_sizeを減らす
 batch_size = 8  # デフォルトは16
@@ -172,6 +175,7 @@ gradient_accumulation_steps = 8  # 実効バッチサイズを維持
 ```
 
 **GPT-2:**
+
 ```python
 # batch_sizeまたはblock_sizeを減らす
 batch_size = 8
@@ -207,14 +211,14 @@ gradient_accumulation_steps = 16  # より大きな実効バッチサイズ
 
 ### タスク分布
 
-| タスク | サンプル数 |
-|--------|------------|
-| forward_synthesis | 977,920 |
-| retrosynthesis | 947,983 |
-| name_conversion-* | ~1.2M (4種類) |
-| molecule_captioning | 60,305 |
-| molecule_generation | 60,260 |
-| property_prediction-* | ~51K (7種類) |
+| タスク                 | サンプル数    |
+| ---------------------- | ------------- |
+| forward_synthesis      | 977,920       |
+| retrosynthesis         | 947,983       |
+| name_conversion-\*     | ~1.2M (4種類) |
+| molecule_captioning    | 60,305        |
+| molecule_generation    | 60,260        |
+| property_prediction-\* | ~51K (7種類)  |
 
 ---
 

@@ -3,23 +3,25 @@
 ## ✅ 完成したもの
 
 ### 1. GitHub Actions ワークフロー
+
 **ファイル**: `.github/workflows/compounds-validation.yml`
 
 Compounds専用の包括的な検証ワークフローを作成：
 
-| Job | 目的 | 実行時間（目安） |
-|-----|------|-----------------|
-| **unit-tests** | ユニットテスト実行 | ~2分 |
-| **integration-tests** | 統合テスト実行 | ~3分 |
-| **smiles-validation** | SMILES妥当性チェック | ~30秒 |
-| **tokenization-tests** | Tokenizer検証 | ~30秒 |
-| **phase1-verification** | Phase 1 モデル検証 | ~5分 |
-| **quality-summary** | 総合レポート生成 | ~10秒 |
+| Job                     | 目的                 | 実行時間（目安） |
+| ----------------------- | -------------------- | ---------------- |
+| **unit-tests**          | ユニットテスト実行   | ~2分             |
+| **integration-tests**   | 統合テスト実行       | ~3分             |
+| **smiles-validation**   | SMILES妥当性チェック | ~30秒            |
+| **tokenization-tests**  | Tokenizer検証        | ~30秒            |
+| **phase1-verification** | Phase 1 モデル検証   | ~5分             |
+| **quality-summary**     | 総合レポート生成     | ~10秒            |
 
 ### 2. テストスイート
 
 #### ユニットテスト（`tests/unit/test_compounds.py`）
-```
+
+```text
 TestSmilesTokenization     (3 tests)
 ├── test_smiles_tokenizer_import          ✅ PASSED
 ├── test_smiles_regex_pattern             ✅ PASSED
@@ -48,13 +50,15 @@ TestCompoundsPerformance   (2 tests)
 ```
 
 **実行結果**:
+
 ```bash
 $ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 ============ 5 passed in 0.26s ============
 ```
 
 #### 統合テスト（`tests/integration/test_compounds_pipeline.py`）
-```
+
+```text
 TestCompoundsEndToEnd
 ├── test_smiles_to_scaffold_pipeline
 └── test_batch_smiles_processing
@@ -75,6 +79,7 @@ TestCompoundsDatasetIntegration
 ```
 
 ### 3. テスト用フィクスチャ（`tests/conftest_compounds.py`）
+
 ```python
 @pytest.fixture
 - sample_vocab_file: テスト用vocab生成
@@ -88,11 +93,11 @@ Helper Functions:
 
 ### 4. ドキュメント
 
-| ファイル | 内容 | 対象読者 |
-|---------|------|---------|
-| **COMPOUNDS_VALIDATION_GUIDE.md** | 包括的な検証ガイド | 全員 |
-| **COMPOUNDS_VALIDATION_EXAMPLES.md** | 実践的な使用例 | 開発者 |
-| **COMPOUNDS_VALIDATION_SUMMARY.md** | セットアップサマリー（本文書） | 全員 |
+| ファイル                             | 内容                           | 対象読者 |
+| ------------------------------------ | ------------------------------ | -------- |
+| **COMPOUNDS_VALIDATION_GUIDE.md**    | 包括的な検証ガイド             | 全員     |
+| **COMPOUNDS_VALIDATION_EXAMPLES.md** | 実践的な使用例                 | 開発者   |
+| **COMPOUNDS_VALIDATION_SUMMARY.md**  | セットアップサマリー（本文書） | 全員     |
 
 ## 🚀 使い方
 
@@ -113,7 +118,8 @@ pytest tests/unit/test_compounds.py --cov=compounds --cov-report=html
 ```
 
 **実行例（成功）**:
-```
+
+```text
 $ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 
 tests/unit/test_compounds.py::TestSmilesValidation::test_valid_smiles PASSED
@@ -128,6 +134,7 @@ tests/unit/test_compounds.py::TestSmilesValidation::test_invalid_smiles_statisti
 ### GitHub Actionsで実行
 
 #### 自動実行（push時）
+
 ```bash
 # compounds関連のファイルを変更
 git add src/compounds/
@@ -138,6 +145,7 @@ git push
 ```
 
 #### 手動実行
+
 ```bash
 # 全テスト
 gh workflow run compounds-validation.yml -f test_level=all
@@ -152,17 +160,21 @@ gh workflow run compounds-validation.yml -f test_level=integration
 ## 📊 検証内容の詳細
 
 ### 1. SMILES Tokenization 検証
+
 **目的**: SMILES文字列が正しくトークン化されることを確認
 
 **検証項目**:
+
 - ✅ SmilesTokenizerクラスのインポート
 - ✅ SMI_REGEX_PATTERNの定義確認
 - ⏭️ 実際のトークン化（vocab file必要）
 
 ### 2. SMILES Validation 検証
+
 **目的**: 有効/無効なSMILESの適切な処理
 
 **検証項目**:
+
 - ✅ 有効なSMILES（環構造）の処理
 - ✅ 有効なSMILES（非環構造）の処理
 - ✅ 無効なSMILESの処理（空文字列を返す）
@@ -170,6 +182,7 @@ gh workflow run compounds-validation.yml -f test_level=integration
 - ✅ 無効SMILES統計の追跡
 
 **実行例**:
+
 ```python
 # ベンゼン（環構造）→ scaffoldあり
 scaffold = prepare_scaffolds("c1ccccc1")
@@ -186,11 +199,13 @@ assert scaffold == ""
 ```
 
 ### 3. Invalid SMILES Rate チェック
+
 **目的**: 無効SMILES率が許容範囲内かを確認
 
 **合格基準**: Invalid SMILES率 ≤ 50%
 
 **実行例（GitHub Actions）**:
+
 ```python
 # テストデータで処理
 test_smiles = ['CCO', 'c1ccccc1', 'INVALID', 'CC(=O)O', '.', 'CC(C)C']
@@ -206,9 +221,11 @@ print(f'Invalid SMILES: {invalid_count}/{total_count} ({invalid_rate:.2f}%)')
 ```
 
 ### 4. Data Pipeline 検証
+
 **目的**: データローディングと前処理パイプラインの動作確認
 
 **検証項目**:
+
 - ✅ データセットダウンロード関数
 - ✅ SMILES前処理パイプライン
 - ✅ バッチ処理
@@ -216,7 +233,8 @@ print(f'Invalid SMILES: {invalid_count}/{total_count} ({invalid_rate:.2f}%)')
 ## 🎯 実際の検証フロー
 
 ### 開発フロー
-```
+
+```text
 1. コード変更
    ↓
 2. ローカルでpytest実行
@@ -239,6 +257,7 @@ print(f'Invalid SMILES: {invalid_count}/{total_count} ({invalid_rate:.2f}%)')
 ### 実際のケーススタディ
 
 #### ケース1: SMILES検証ロジックの改善
+
 ```bash
 # 1. 変更
 vim src/compounds/utils/preprocessing.py
@@ -257,6 +276,7 @@ git push
 ```
 
 #### ケース2: 新機能追加（立体化学対応）
+
 ```bash
 # 1. テスト追加
 vim tests/unit/test_compounds.py
@@ -281,12 +301,12 @@ pytest tests/unit/test_compounds.py::test_stereochemistry_tokenization -v
 
 ### 合格基準
 
-| 項目 | 基準値 | 現在値 |
-|------|-------|--------|
-| ユニットテスト成功率 | 100% | ✅ 100% (5/5) |
-| 無効SMILES率 | ≤50% | ✅ 33% |
-| テスト実行時間 | <5分 | ✅ 0.26秒 |
-| コードカバレッジ（目標） | >80% | 🎯 測定予定 |
+| 項目                     | 基準値 | 現在値        |
+| ------------------------ | ------ | ------------- |
+| ユニットテスト成功率     | 100%   | ✅ 100% (5/5) |
+| 無効SMILES率             | ≤50%   | ✅ 33%        |
+| テスト実行時間           | <5分   | ✅ 0.26秒     |
+| コードカバレッジ（目標） | >80%   | 🎯 測定予定   |
 
 ### 実行済みテスト結果
 
@@ -309,12 +329,14 @@ test_invalid_smiles_statistics ............... PASSED [100%]
 ### Phase 1 完了に向けて
 
 #### すぐに実施可能
+
 1. ✅ ユニットテストの基本実装完了
 2. 🔲 vocab fileを準備してtokenizationテストを有効化
 3. 🔲 モデルパスを設定してBERT/GPT2統合テストを実行
 4. 🔲 Phase 1検証ワークフローを実行
 
 #### 今後の拡張
+
 ```bash
 # vocab file準備
 cp /path/to/trained/model/vocab.txt tests/data/
@@ -362,8 +384,8 @@ gh workflow run phase-validation.yml -f phase=phase1-gpt2-verification
 - **詳細ガイド**: [COMPOUNDS_VALIDATION_GUIDE.md](COMPOUNDS_VALIDATION_GUIDE.md)
 - **実践例**: [COMPOUNDS_VALIDATION_EXAMPLES.md](COMPOUNDS_VALIDATION_EXAMPLES.md)
 - **全体CI/CDガイド**: [../.github/CI_CD_GUIDE.md](../.github/CI_CD_GUIDE.md)
-- **pytest ドキュメント**: https://docs.pytest.org/
-- **RDKit ドキュメント**: https://www.rdkit.org/docs/
+- **pytest ドキュメント**: <https://docs.pytest.org/>
+- **RDKit ドキュメント**: <https://www.rdkit.org/docs/>
 
 ## 🎉 まとめ
 

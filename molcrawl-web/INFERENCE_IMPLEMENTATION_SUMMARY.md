@@ -3,6 +3,7 @@
 ## ✅ What Was Implemented
 
 ### 1. Backend API Endpoint
+
 - **File**: `molcrawl-web/api/gpt2-inference.js`
 - **Features**:
   - POST endpoint for running inference
@@ -13,6 +14,7 @@
   - Error handling and validation
 
 ### 2. Interactive Modal Component
+
 - **File**: `molcrawl-web/src/InferenceModal.js`
 - **Features**:
   - Model details display (iteration, loss, parameters)
@@ -24,6 +26,7 @@
   - Loading states and error handling
 
 ### 3. Modal Styling
+
 - **File**: `molcrawl-web/src/InferenceModal.css`
 - **Features**:
   - Modern purple gradient theme
@@ -34,6 +37,7 @@
   - Scrollable content areas
 
 ### 4. Training Status Integration
+
 - **File**: `molcrawl-web/src/GPT2TrainingStatus.js`
 - **Changes**:
   - Added modal state management
@@ -43,6 +47,7 @@
   - Visual feedback on hover
 
 ### 5. Enhanced Card Styling
+
 - **File**: `molcrawl-web/src/GPT2TrainingStatus.css`
 - **Changes**:
   - Added `.model-clickable` class
@@ -51,6 +56,7 @@
   - Active state animations
 
 ### 6. Server Configuration
+
 - **File**: `molcrawl-web/server.js`
 - **Changes**:
   - Registered new inference API route
@@ -85,13 +91,15 @@
 
 ## 📁 Files Created/Modified
 
-### Created:
+### Created
+
 1. `molcrawl-web/api/gpt2-inference.js` (310 lines)
 2. `molcrawl-web/src/InferenceModal.js` (304 lines)
 3. `molcrawl-web/src/InferenceModal.css` (430 lines)
 4. `molcrawl-web/INFERENCE_FEATURE.md` (documentation)
 
-### Modified:
+### Modified
+
 1. `molcrawl-web/server.js` (added route registration)
 2. `molcrawl-web/src/GPT2TrainingStatus.js` (added modal integration)
 3. `molcrawl-web/src/GPT2TrainingStatus.css` (added clickable styles)
@@ -99,6 +107,7 @@
 ## 🚀 How to Use
 
 1. **Start the server**:
+
    ```bash
    cd molcrawl-web
    export LEARNING_SOURCE_DIR="learning_source_202508"
@@ -147,6 +156,7 @@
 ## 🔜 Future Enhancements
 
 See `INFERENCE_FEATURE.md` for detailed list of potential improvements including:
+
 - Batch generation
 - Model comparison
 - Generation history

@@ -7,12 +7,14 @@ MolCrawlプロジェクトにおけるGPT-2モデルとBERTモデルの訓練・
 ## ✅ 実装した機能
 
 ### 1. コアシステム
+
 - **SQLiteベースの軽量データベース**: 追加インフラ不要
 - **Python SDK**: 実験の記録・管理API
 - **FastAPI バックエンド**: RESTful API提供
 - **React Webダッシュボード**: ブラウザから実験を閲覧
 
 ### 2. 主要な機能
+
 - ✅ 実験の自動記録（開始・終了時刻、実行時間、ステータス）
 - ✅ ステップ単位の進捗管理
 - ✅ メトリクス（精度、損失等）の記録
@@ -24,7 +26,8 @@ MolCrawlプロジェクトにおけるGPT-2モデルとBERTモデルの訓練・
 ## 📁 作成したファイル一覧
 
 ### コアモジュール
-```
+
+```text
 src/experiment_tracker/
 ├── __init__.py              # パッケージ初期化
 ├── models.py                # データモデル（Experiment, Step, Log）
@@ -35,7 +38,8 @@ src/experiment_tracker/
 ```
 
 ### Webインターフェース
-```
+
+```text
 molcrawl-web/src/
 ├── ExperimentDashboard.js   # 実験ダッシュボードコンポーネント
 ├── ExperimentDashboard.css  # スタイルシート
@@ -43,7 +47,8 @@ molcrawl-web/src/
 ```
 
 ### スクリプト・ドキュメント
-```
+
+```text
 .
 ├── start_api_server.py              # APIサーバー起動
 ├── start_experiment_system.sh       # 一括起動スクリプト
@@ -61,23 +66,27 @@ molcrawl-web/src/
 ## 🚀 使用方法
 
 ### セットアップ（初回のみ）
+
 ```bash
 ./setup_experiment_system.sh
 ```
 
 ### システム起動
+
 ```bash
 ./start_experiment_system.sh
 ```
 
 ### アクセス
-- **Web UI**: http://localhost:3000
-- **実験ダッシュボード**: http://localhost:3000 (Experimentsタブ)
-- **API Docs**: http://localhost:8000/docs
+
+- **Web UI**: <http://localhost:3000>
+- **実験ダッシュボード**: <http://localhost:3000> (Experimentsタブ)
+- **API Docs**: <http://localhost:8000/docs>
 
 ### コードへの統合例
 
 #### パターン1: コンテキストマネージャー（推奨）
+
 ```python
 from src.experiment_tracker.helpers import experiment_context
 from src.experiment_tracker import ExperimentType, ModelType, DatasetType
@@ -91,15 +100,16 @@ with experiment_context(
     exp.start_step("data", "Load data")
     load_data()
     exp.complete_step("data")
-    
+
     exp.start_step("train", "Train model")
     train_model()
     exp.complete_step("train")
-    
+
     exp.add_metric("accuracy", 0.95)
 ```
 
 #### パターン2: デコレータ
+
 ```python
 from src.experiment_tracker.helpers import track_experiment
 
@@ -117,6 +127,7 @@ def run_evaluation(config):
 ## 📊 データ構造
 
 ### Experiment
+
 - 実験ID、名前、タイプ
 - モデルタイプ、データセットタイプ
 - ステータス（pending/running/completed/failed）
@@ -125,24 +136,28 @@ def run_evaluation(config):
 - タグ、ノート、環境情報
 
 ### ExperimentStep
+
 - ステップID、名前
 - ステータス、開始・終了時刻
 - コマンド、出力パス
 - エラーメッセージ、メタデータ
 
 ### ExperimentLog
+
 - タイムスタンプ、レベル
 - メッセージ、ソース
 
 ## 🔧 技術スタック
 
 ### バックエンド
+
 - Python 3.x
 - FastAPI (Web フレームワーク)
 - Uvicorn (ASGI サーバー)
 - SQLite (データベース)
 
 ### フロントエンド
+
 - React 19.1.1
 - Express 4.21.2
 - 純粋なCSS（外部ライブラリ不要）
@@ -150,6 +165,7 @@ def run_evaluation(config):
 ## 📈 統計機能
 
 ダッシュボードでは以下の統計が表示されます：
+
 - 総実験数
 - ステータス別の実験数（完了/実行中/失敗）
 - 実験タイプ別の分布
@@ -197,11 +213,13 @@ def run_evaluation(config):
 ## 🧪 テスト
 
 システムの動作確認:
+
 ```bash
 python test_experiment_system.py
 ```
 
 サンプル実験の実行:
+
 ```bash
 python examples/experiment_tracking_example.py --example context
 python examples/experiment_tracking_example.py --example manual

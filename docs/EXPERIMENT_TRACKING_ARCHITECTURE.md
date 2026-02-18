@@ -2,7 +2,7 @@
 
 ## システムアーキテクチャ
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                       Webブラウザ (UI)                           │
 │                    http://localhost:3000                         │
@@ -64,6 +64,7 @@
 ### 1. フロントエンド層
 
 #### React Web Application (`molcrawl-web/src/`)
+
 - **ExperimentDashboard.js**: 実験管理ダッシュボードコンポーネント
   - 実験一覧の表示
   - フィルタリング機能（ステータス、モデル、データセット）
@@ -78,6 +79,7 @@
 ### 2. バックエンド層
 
 #### FastAPI Server (`src/experiment_tracker/api.py`)
+
 - **エンドポイント**:
   - `GET /api/experiments`: 実験一覧取得
   - `GET /api/experiments/{id}`: 実験詳細取得
@@ -180,7 +182,7 @@ CREATE TABLE experiment_logs (
 
 ### 1. 実験の記録フロー
 
-```
+```text
 ┌──────────────┐
 │ User Script  │
 └──────┬───────┘
@@ -204,7 +206,7 @@ CREATE TABLE experiment_logs (
 
 ### 2. Web UIでの表示フロー
 
-```
+```text
 ┌──────────────────┐
 │ Browser          │
 │ (React)          │
@@ -235,12 +237,14 @@ CREATE TABLE experiment_logs (
 ## スケーラビリティ
 
 ### 現在の実装（Phase 1）
+
 - ✅ シングルマシン
 - ✅ SQLite（軽量、追加インフラ不要）
 - ✅ 数千実験まで対応
 - ✅ ローカル開発に最適
 
 ### 将来の拡張（Phase 2）
+
 - PostgreSQL / MySQLへの移行
 - マルチユーザー対応
 - 分散実験管理
@@ -250,11 +254,13 @@ CREATE TABLE experiment_logs (
 ## セキュリティ考慮事項
 
 ### 現在
+
 - ローカル開発環境向け
 - 認証なし（ローカルホストのみ）
 - CORS制限（localhost:3000, localhost:3001のみ）
 
 ### 本番環境での推奨事項
+
 - 認証・認可の実装（JWT, OAuth等）
 - HTTPSの使用
 - データベースのバックアップ
@@ -264,17 +270,20 @@ CREATE TABLE experiment_logs (
 ## パフォーマンス最適化
 
 ### データベース
+
 - インデックスの活用
   - `experiments.status`
   - `experiments.experiment_type`
   - `experiments.created_at`
 
 ### API
+
 - ページネーション（limit, offset）
 - 遅延読み込み（ログは別エンドポイント）
 - キャッシング（将来実装）
 
 ### フロントエンド
+
 - 自動更新の制限（10秒間隔）
 - 仮想スクロール（大量データ対応）
 - 条件付きレンダリング
@@ -282,7 +291,8 @@ CREATE TABLE experiment_logs (
 ## 依存関係
 
 ### Python
-```
+
+```text
 fastapi>=0.104.0      # Web framework
 uvicorn>=0.24.0       # ASGI server
 python-multipart      # Form data handling
@@ -290,7 +300,8 @@ sqlite3               # Database (標準ライブラリ)
 ```
 
 ### JavaScript/Node.js
-```
+
+```text
 react>=19.1.1         # UI framework
 react-dom>=19.1.1     # React DOM bindings
 express>=4.21.2       # Backend server
@@ -299,7 +310,7 @@ cors>=2.8.5           # CORS middleware
 
 ## ディレクトリ構造
 
-```
+```text
 riken-dataset-fundational-model/
 ├── src/
 │   └── experiment_tracker/     # 実験管理システムコア
@@ -331,7 +342,9 @@ riken-dataset-fundational-model/
 ## 拡張ポイント
 
 ### 新しい実験タイプの追加
+
 `src/experiment_tracker/models.py` で Enum に追加:
+
 ```python
 class ExperimentType(str, Enum):
     # ... 既存
@@ -340,6 +353,7 @@ class ExperimentType(str, Enum):
 ```
 
 ### 新しいモデルタイプの追加
+
 ```python
 class ModelType(str, Enum):
     # ... 既存
@@ -348,13 +362,16 @@ class ModelType(str, Enum):
 ```
 
 ### カスタムメトリクスの追加
+
 メトリクスは辞書形式で自由に追加可能:
+
 ```python
 exp.add_metric("custom_score", 0.85)
 exp.add_metric("processing_time", 123.45)
 ```
 
 ### 通知機能の追加
+
 ```python
 # 実験完了時にSlack通知
 def on_experiment_complete(experiment_id):
@@ -367,7 +384,8 @@ def on_experiment_complete(experiment_id):
 ### 新しい構造化された評価出力管理
 
 **統一出力ディレクトリ構造**:
-```
+
+```text
 ${LEARNING_SOURCE_DIR}/
 ├── genome_sequence/
 │   └── report/
@@ -382,14 +400,16 @@ ${LEARNING_SOURCE_DIR}/
 ```
 
 **統一管理ユーティリティ** (`src/utils/evaluation_output.py`):
+
 - `get_evaluation_output_dir()`: 自動ディレクトリ生成
-- `get_model_type_from_path()`: モデルタイプ自動推定  
+- `get_model_type_from_path()`: モデルタイプ自動推定
 - `setup_evaluation_logging()`: 統一ログ設定
 - `LEARNING_SOURCE_DIR` 環境変数対応
 
 **更新されたスクリプト**:
+
 - `scripts/proteingym_evaluation.py`
-- `scripts/clinvar_evaluation.py` 
+- `scripts/clinvar_evaluation.py`
 - `scripts/cosmic_evaluation.py`
 - `scripts/omim_evaluation.py`
 - `bert/proteingym_evaluation.py`
@@ -397,10 +417,11 @@ ${LEARNING_SOURCE_DIR}/
 - `bert/protein_classification_evaluation.py`
 
 **利点**:
+
 1. **整理された出力**: ドメイン別（genome_sequence, protein_sequence）に分類
 2. **タイムスタンプ管理**: 実行ごとに独立したディレクトリ
 3. **自動ディレクトリ生成**: --output_dir オプション不要
-4. **統一ログ形式**: 全スクリプトで共通のログ設定  
+4. **統一ログ形式**: 全スクリプトで共通のログ設定
 5. **環境変数対応**: `LEARNING_SOURCE_DIR` でベースパス制御
 
 ## まとめ

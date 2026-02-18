@@ -12,11 +12,12 @@ export LEARNING_SOURCE_DIR="learning_source_20250818"
 **Important**: All Python scripts in this project require the `LEARNING_SOURCE_DIR` environment variable to be set. If not set, scripts will exit with an error message.
 
 To make this permanent, add the export command to your shell configuration file:
+
 ```bash
 # For bash users
 echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.bashrc
 
-# For zsh users  
+# For zsh users
 echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
 ```
 
@@ -25,16 +26,19 @@ echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
 **Before running any data preparation scripts**, you must configure the cache directories for Hugging Face libraries to avoid running out of disk space on the root partition.
 
 1. Copy the template configuration file:
+
    ```bash
    cp configs/cache.template.yaml configs/cache.yaml
    ```
 
 2. Edit `configs/cache.yaml` to set appropriate cache directories:
+
    ```bash
    vi configs/cache.yaml
    ```
 
 3. Update the paths to point to a directory with sufficient storage space:
+
    ```yaml
    # Example configuration (adjust paths for your environment)
    HF_DATASETS_CACHE: "/data2/your_username/.cache/huggingface/datasets"
@@ -42,27 +46,31 @@ echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
    ```
 
 **Important Notes:**
+
 - The default cache location (`~/.cache/huggingface`) may fill up the root partition during dataset generation
 - Choose a directory with at least **100GB of free space**
 - The `configs/cache.yaml` file is git-ignored and user-specific
 - Dataset preparation scripts will fail if this configuration is not set up properly
 
-# Installation
+## Installation
+
 1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
 2. Activate the environment by running `conda activate ENV_NAME`
 3. Since Anaconda is prohibited, be sure to run the following commands.
-```
+
+```bash
 conda config --remove channels defaults
 conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
-4. Install the package: `pip install --no-build-isolation -e .`
 
-# Usage
+1. Install the package: `pip install --no-build-isolation -e .`
+
+## Usage
 
 Use each script depending on the dataset you want to process for an LLM.
 
-# Repository architecture
+## Repository architecture
 
 Each task is separate in it's own subdir. There are some shared functionality that you can
 find in the src/utils folder.
@@ -91,11 +99,11 @@ find in the src/utils folder.
 └── README.md
 ```
 
-# Recommended Specifications
+## Recommended Specifications
 
 Training is intensive, and middle to large models might not fit a tradicional GPU. For this we recommend that you have available GPUs with at least 32GB of capacity for the large versions of the models. Even then, reducing batch sizes to the mininmum might be required. Furthermore, having multiple GPUs would expedite training.
 
-# Dataset preparation Scripts
+## Dataset preparation Scripts
 
 All task have a global script that can be found in the `scripts` folder. They can be run with their corresponding configuration present in `assets/configs`.
 The output will be multiple directory containing different step of the process.
@@ -112,20 +120,24 @@ Run each script following the syntax:
 
 `python scripts/preparation/preparation_script_*.py assets/configs/*.yaml`,
 
-where * is the intended dataset, and `assets/configs/*.yaml` is the configuration file for the specific dataset.
+where _ is the intended dataset, and `assets/configs/_.yaml` is the configuration file for the specific dataset.
 
 ### Logging
+
 The script includes logging functionality, which is set up at runtime. The logs are saved to a file named `logging.log` in the directory where the processed dataset is saved.
 
-##-3 Output
+### Output
+
 The output of the script will be a tokenized version of the dataset, saved in the specified path `save_path` in the `assets/configs/*.yaml`. The log file will contain details of the processing steps, as well as statistics for the dataset.
 
 ### Error Handling
+
 Any exceptions encountered during the execution are logged and re-raised, ensuring clear identification of issues during processing.
 
-
 ## Modalities Dataset Preparation
+
 <!-- ------------------------------------------------------------------------------------------------------------- -->
+
 ### Compounds
 
 #### Data Preprocessing
@@ -139,7 +151,7 @@ Before running the script, ensure you have the following:
 1. **Config File**: A YAML configuration file (available in `assets/`).
 2. **Vocabulary File**: A pre-trained vocabulary for SMILES tokenization (available in `assets/molecules`). This can be modified in the Config File.
 
-#### Configuration
+#### Configuration (Compounds)
 
 The configuration file is used for the data preprocessing
 
@@ -156,10 +168,9 @@ data_preparation:
 
   # Max length of the tokenized sequences
   max_length: 256
-
 ```
 
-#### Running the Script
+#### Running the Script (Compounds)
 
 You can run this script with the following command:
 
@@ -167,16 +178,15 @@ You can run this script with the following command:
 python scripts/preparation/preparation_script_compounds.py assets/configs/compounds.yaml
 ```
 
-#### Loading a Processed Dataset
+#### Loading a Processed Dataset (Compounds)
 
 In case you wish to load a dataset that was generated by this script for some other project or analysis, use:
+
 ```python
 from core.base import read_parquet
 
 tokenized_dataset = read_parquet("path/to/{LEARNING_SOURCE_DIR}/compounds/organix13_tokenized.parquet")
 ```
-
-
 
 <!-- ------------------------------------------------------------------------------------------------------------- -->
 
@@ -188,10 +198,9 @@ You can run this script with the following command:
 python scripts/preparation/preparation_script_genome_sequence.py assets/configs/genome_sequence.yaml
 ```
 
-#### Configuration
+#### Configuration (Genome Sequence)
 
 ```yaml
-
 data_preparation:
   # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
   # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
@@ -211,40 +220,37 @@ data_preparation:
   input_sentence_size: 700000
 ```
 
-
-#### Separate scripts
+#### Separate Scripts (Genome Sequence)
 
 The processing of Refseq is separate in 4 separate scripts. These scripts expect the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
 - `src/genome_sequence/dataset/refseq/download_refseq.py`
 
-    Uses `https://github.com/kblin/ncbi-genome-download` to download refseq data.
-    `path_species` provide the directory containing one file per group and containing
-    the name of the species to use. You can check the data base names here: https://www.ncbi.nlm.nih.gov/datasets/genome/
+  Uses `https://github.com/kblin/ncbi-genome-download` to download refseq data.
+  `path_species` provide the directory containing one file per group and containing
+  the name of the species to use. You can check the data base names here: <https://www.ncbi.nlm.nih.gov/datasets/genome/>
 
-    Note that a lot of species used by scFormer where absent from refseq, so we only use the remaining ones.
-    The full original species can be found in `assets/genome_species_list/species`
-    And we used a filter set containing species with at least one sequence in refseq `assets/genome_species_list/filtered_species_refseq`
-
+  Note that a lot of species used by scFormer where absent from refseq, so we only use the remaining ones.
+  The full original species can be found in `assets/genome_species_list/species`
+  And we used a filter set containing species with at least one sequence in refseq `assets/genome_species_list/filtered_species_refseq`
 
 - `src/genome_sequence/dataset/refseq/fasta_to_raw.py`
 
-    Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file` (total of 1.6TB)
+  Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file` (total of 1.6TB)
 
 - `src/genome_sequence/dataset/sentence_piece_tokenizer.py`
 
-    As per specification we tried to train a BPE trainer from the raw files we generated. We provided an implementation with
-    DNABERT_2, but in our experience the Hugging face implementation is too memory and time consuming.
-    So our implementation uses the sentence piece library to train on a subset of the dataset.
-    It's only one solution to use the pretrain Tokenizer trained by the DNABERT_2 authors.
-    We left commented code in `src/genome_sequence/dataset/tokenizer.py`. In that case
-    there is no need to train a new bpe tokenizer.
+  As per specification we tried to train a BPE trainer from the raw files we generated. We provided an implementation with
+  DNABERT_2, but in our experience the Hugging face implementation is too memory and time consuming.
+  So our implementation uses the sentence piece library to train on a subset of the dataset.
+  It's only one solution to use the pretrain Tokenizer trained by the DNABERT_2 authors.
+  We left commented code in `src/genome_sequence/dataset/tokenizer.py`. In that case
+  there is no need to train a new bpe tokenizer.
 
 - `src/genome_sequence/dataset/tokenizer.py`
 
-    Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer was used to confirm the usage. Here we used Hugging Face library to load the raw files, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
-
+  Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer was used to confirm the usage. Here we used Hugging Face library to load the raw files, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
 
 <!-- ------------------------------------------------------------------------------------------------------------- -->
 
@@ -254,23 +260,22 @@ The script `scripts/preparation/preparation_script_molecule_related_nat_lang.py`
 
 The resulting file is a dictionary for 3 dataset splits: "train", "valid", and "test". Each of them have the features: "sample_id", "input", "output", "raw_input", "raw_output", "split", "task", "input_core_tag_left", "input_core_tag_right", "output_core_tag_left", "output_core_tag_right", "target", "input_text", "real_input_text", "input_ids", "attention_mask", "labels", "output_ids". From these, the most relevant are:
 
-* input_text: contains the untokenized input
-* output: contains the ground truth output
-* input_ids: contains the tokenized input
-* output_ids: contains the tokenized outputs
+- input_text: contains the untokenized input
+- output: contains the ground truth output
+- input_ids: contains the tokenized input
+- output_ids: contains the tokenized outputs
 
-#### Configuration
+#### Configuration (Molecule NL)
 
 ```yaml
-  # Path to save the dataset once is downloaded (for example:)
-  dataset: "src/molecule_related_nl/assets/raw_data/osunlp/SMolInstruct"
+# Path to save the dataset once is downloaded (for example:)
+dataset: "src/molecule_related_nl/assets/raw_data/osunlp/SMolInstruct"
 
-  # Path to save the processed and tokenized dataset
-  save_path: "{LEARNING_SOURCE_DIR}/molecule_nl/molecule_related_natural_language_tokenized.parquet"
-
+# Path to save the processed and tokenized dataset
+save_path: "{LEARNING_SOURCE_DIR}/molecule_nl/molecule_related_natural_language_tokenized.parquet"
 ```
 
-#### Running the Script
+#### Running the Script (Molecule NL)
 
 Before running the script, ensure you have the following:
 
@@ -282,9 +287,10 @@ You can run this script with the following command:
 python scripts/preparation/preparation_script_molecule_related_nat_lang.py assets/configs/molecules_nl.yaml
 ```
 
-##### Loading a Processed Dataset
+##### Loading a Processed Dataset (Molecule NL)
 
 To load a dataset that was generated by this script, use:
+
 ```python
 from molecule_related_nl.utils.general import read_dataset
 from datasets import DatasetDict
@@ -302,25 +308,26 @@ You can run this script with the following command:
 python scripts/preparation/preparation_script_protein_sequence.py assets/configs/protein_sequence.yaml
 ```
 
-#### Configuration
+#### Configuration (Protein Sequence)
 
 ```yaml
-  # Which uniprot dataset to download must be one of the following:
-  # "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
-  dataset: "UniRef50"
+# Which uniprot dataset to download must be one of the following:
+# "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
+dataset: "UniRef50"
 
-  # If True use md5 to check if a file needs to be downloaded again, using md5
-  # is very time consuming for large file. Otherwise we only check if the path exists.
-  use_md5: False
+# If True use md5 to check if a file needs to be downloaded again, using md5
+# is very time consuming for large file. Otherwise we only check if the path exists.
+use_md5: False
 
-  # Special case for Uniparc download, num of worker to use.
-  num_worker: 4
+# Special case for Uniparc download, num of worker to use.
+num_worker: 4
 
-  # Number of sequence per files for raw files and parquet. It also reflex the number
-  # of sequence loaded in memory during the processing of those files.
-  max_lines_per_file: 10**6
+# Number of sequence per files for raw files and parquet. It also reflex the number
+# of sequence loaded in memory during the processing of those files.
+max_lines_per_file: 10**6
 ```
-#### Outputs
+
+#### Outputs (Protein Sequence)
 
 The output will be the a subdir of the output_dir containing a dataset name directory (ex: uniprot_50) containing the rest of the file:
 
@@ -330,25 +337,26 @@ The output will be the a subdir of the output_dir containing a dataset name dire
 - A `parquet_files` directory, containing two column parquet file tokenized sequence ("token") and the number of ("token_count")
 - A `token_counts.pkl` file which contains a list of int corresponding to token_count for computing statistics of the dataset.
 
-#### Separate scripts
+#### Separate Scripts (Protein Sequence)
 
 The processing of Uniprot is separate in 3 separate scripts. These scripts expect the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
 - `src/protein_sequence/dataset/uniprot/uniprot_download.py`
 
-    Will download all uniprot files and extract them to fasta files.
+  Will download all uniprot files and extract them to fasta files.
 
 - `src/protein_sequence/dataset/uniprot/fasta_to_raw.py`
 
-    Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file`
+  Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file`
 
 - `src/protein_sequence/dataset/tokenizer.py`
 
-    Convert the raw files in parquet files of tokens in the `parquet_files` directory. The ESM Tokenizer is used.
-    The `token_counts.pkl` is also generated.
+  Convert the raw files in parquet files of tokens in the `parquet_files` directory. The ESM Tokenizer is used.
+  The `token_counts.pkl` is also generated.
 
 <!-- ------------------------------------------------------------------------------------------------------------- -->
+
 ### RNA
 
 You can call this script with the following command:
@@ -360,7 +368,7 @@ python scripts/preparation/preparation_script_rna.py assets/configs/rna.yaml
 One limitation of the rna sequence task is the fact that the sequence data are continuous and therefore
 it creates a challenge for the tokenization and the model. The tokenization is made based on geneformer model. We used their code and statistics to compute our own tokenization. This is motivated by the similarity of both dataset.
 
-#### Configuration
+#### Configuration (RNA)
 
 ```yaml
 data_preparation:
@@ -377,7 +385,7 @@ data_preparation:
   min_counts_genes: 2
 ```
 
-#### Outputs
+#### Outputs (RNA)
 
 This script will download the cellxgene dataset.
 There will be multiple directory generate in the output_dir provided in the configuration
@@ -389,31 +397,30 @@ There will be multiple directory generate in the output_dir provided in the conf
 - `loom_dir`: loom files ready to be use for the tokenization
 - `parquet_files`: parquet files containing tokenized gene and expression values
 
-#### Separate scripts
+#### Separate Scripts (RNA)
 
 The is 4 separate scripts for cellxgene downloading.
 
 - `src/rna/dataset/cellxgene/script/build_list.py`
 
-    Generate `metadata_preparation` and `tissue_list.tsv` to prepare the download.
+  Generate `metadata_preparation` and `tissue_list.tsv` to prepare the download.
 
 - `src/rna/dataset/cellxgene/script/download.py`
 
-    Actual downloading of the data in `download_dir` directory.
+  Actual downloading of the data in `download_dir` directory.
 
 - `src/rna/dataset/cellxgene/script/conv.py`
 
-    Extract h5ad files form the archived in `download_dir` and save them to the `extract` directory
+  Extract h5ad files form the archived in `download_dir` and save them to the `extract` directory
 
 - `src/rna/dataset/cellxgene/script/h5ad_to_loom.py`
 
-    Transfer the h5ad file to loom and delete some unnecessary entries.
+  Transfer the h5ad file to loom and delete some unnecessary entries.
 
 - `scr/rna/dataset/cellxgene/tokenization.py`
-    Create the gene token vocabulary, based on geneformer code.
+  Create the gene token vocabulary, based on geneformer code.
 
-
-# Training of GPT2 model
+## Training of GPT2 model
 
 ## Usage Overview
 
@@ -422,7 +429,7 @@ The is 4 separate scripts for cellxgene downloading.
 This will load the dataset, sample a subset, and create batches of the same length.
 Note: the parameters `--training-set-subset-len` and `--test-set-subset-len` can be used to select the subset size. If < 1 taken as fracation of full data. If > 1 taken as number of samples.
 
-2. Train the model by running `python gpt2/train.py path/to/corresponding/dataset/train_gpt2_config.py`
+1. Train the model by running `python gpt2/train.py path/to/corresponding/dataset/train_gpt2_config.py`
 
 Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset. For example: `python gpt2/train.py gpt2/configs/molecule_nl/train_gpt2_large_config.py` will train the large GPT2 model on the molecule_nl dataset.
 
@@ -436,13 +443,14 @@ Running this will lunch a training job, and output results in the path `out/ckpt
 to run over 4 GPUs.
 
 To run with DDP on 4 gpus across 2 nodes, example:
-- Run on the first (master) node with example IP 123.456.123.456:
-`torchrun --nproc_per_node=8 --nnodes=2 --node_rank=0 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
-- Run on the worker node:
-`torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
-(If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
 
-3. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py gpt2/configs/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
+- Run on the first (master) node with example IP 123.456.123.456:
+  `torchrun --nproc_per_node=8 --nnodes=2 --node_rank=0 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
+- Run on the worker node:
+  `torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
+  (If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
+
+1. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py gpt2/configs/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
 
 ## Data Preparation
 
@@ -480,7 +488,7 @@ python src/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
 ```
 
 > [!IMPORTANT]
-> It us crucial that you adjust the config files in assets/configs so that for `assets/configs/genome_sequence.yaml`, `assets/configs/protein_sequence.yaml`, and `assets/configs/rna.yaml` the value `output_dir` is correctly pointing to the `output_dir` location where you saved the preprocessed data prepared in the [Modalities Dataset Preparation](#modalities-dataset-preparation) section. Make sure the same for `assets/configs/compounds.yaml`, and `assets/configs/molecules_nl.yaml`, where you should adjust the parameter `save_path` to match where your data is stored. *
+> It us crucial that you adjust the config files in assets/configs so that for `assets/configs/genome_sequence.yaml`, `assets/configs/protein_sequence.yaml`, and `assets/configs/rna.yaml` the value `output_dir` is correctly pointing to the `output_dir` location where you saved the preprocessed data prepared in the [Modalities Dataset Preparation](#modalities-dataset-preparation) section. Make sure the same for `assets/configs/compounds.yaml`, and `assets/configs/molecules_nl.yaml`, where you should adjust the parameter `save_path` to match where your data is stored. \*
 
 Now running these scripts will prepare the dataset in batch and make sure the context_size, here of 1024
 is filled without any padding.
@@ -488,9 +496,10 @@ is filled without any padding.
 ## Training
 
 > [!IMPORTANT]
-> Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT2 Readme](./gpt2/README.md). 
+> Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT2 Readme](./gpt2/README.md).
 
 Then the training can be launch for the prepared datasets. In the path `gpt2/configs/<dataset-name>`, you will find a folder with 3 files:
+
 1. `train_gpt2_config.py`: Config for training the small-sized version of the model,
 2. `train_gpt2_medium_config.py`: Config for training the middle-sized version of the model,
 3. `train_gpt2_large_config.py`: Config for training the large-sized version of the model.
@@ -541,7 +550,7 @@ python gpt2/sample.py gpt2/configs/<dataset>/train_gpt2_config.py
 
 For more information, check the README in the folder `gpt2`.
 
-# Training of the BERT model
+## Training of the BERT model
 
 For the BERT model training we are using a custom script based on the Hugging Face Transformers library. The datasets used are the same as the ones for GPT2, since we already tokenize them we just need to randomly mask part of the tokens. So make sure to follow the section "Data Preparation" in [Training of GPT2 model](#Training of GPT2 model) before proceeding.
 
@@ -557,82 +566,48 @@ this will train a model and save it in outputdir.
 
 For more information on the config files, see the [README inside the bert folder](./bert/README.md).
 
-# Genome sequence training with mixed species GPN-MSA
+## Genome sequence training with mixed species GPN-MSA
 
 There is a separate readme inside the `gpn` folder, detailling how to train and run inference for this task.
 
-# Dataset Statistics
+## Dataset Statistics
 
-- <b>RNA</b> (scRNAseq expression data)
+- **RNA** (scRNAseq expression data)
+  - Size of the dataset: 221G
+  - Samples: 35,822,843
+  - Tokens: 90,711,564,293
+  - Samples length size distribution of the full data: ![rna sample dist](assets/img/rna_tokenized_lengths_dist.png)
 
-    Size of the dataset: 221G
+- **Protein Sequence** (Uniref 50)
+  - Size of the dataset: 18G
+  - Samples: 66,000,000
+  - Tokens: 19,182,955,286
+  - Samples length size distribution of the full data: ![protein sequence sample dist](assets/img/protein_sequence_tokenized_lengths_dist.png)
 
-    Samples: 35,822,843-
+- **Compounds**
+  - Size of the dataset: 954M
+  - Samples: 13,288,710
+  - SMILES tokens: 526,014,485
+  - Scaffolds tokens: 350,007,581
+  - Samples length size distribution SMILES: ![smiles sample dist](assets/img/compounds_tokenized_SMILES_lengths_dist.png)
+  - Samples length size distribution Scaffolds: ![smiles sample dist](assets/img/compounds_tokenized_Scaffolds_lengths_dist.png)
 
-    Tokens: 90,711,564,293
+- **Molecule-related natural language**
+  - Size of the dataset: 8.9G
+  - Training samples: 3,288,855
+  - Training tokens: 460,447,039
+  - Validation samples: 20,498
+  - Validation tokens: 2,568,952
+  - Test samples: 33,061
+  - Test tokens: 4,514,586
+  - Total samples: 3,342,414
+  - Total tokens: 467,530,577
+  - Samples length size distribution Training Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_train_lengths_dist.png)
+  - Samples length size distribution Validation Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_validation_lengths_dist.png)
+  - Samples length size distribution Test Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_test_lengths_dist.png)
 
-    Samples length size distribution of the full data: ![rna sample dist](assets/img/rna_tokenized_lengths_dist.png)
-
-- <b>Protein Sequence</b> (Uniref 50)
-
-    Size of the dataset: 18G
-
-    Samples: 66,000,000
-
-    Tokens: 19,182,955,286
-
-    Samples length size distribution of the full data: ![protein sequence sample dist](assets/img/protein_sequence_tokenized_lengths_dist.png)
-
-- <b>Compounds</b>:
-
-    Size of the dataset: 954M
-
-    Samples: 13,288,710
-
-    SMILES Tokens: 526,014,485
-
-    Scaffolds Tokens: 350,007,581
-
-    Samples length size distribution SMILES: ![smiles sample dist](assets/img/compounds_tokenized_SMILES_lengths_dist.png)
-
-    Samples length size distribution Scaffolds: ![smiles sample dist](assets/img/compounds_tokenized_Scaffolds_lengths_dist.png)
-
-- <b>Molecule-related natural language</b>
-
-    Size of the dataset: 8.9G
-
-    Training Samples:
-
-        Samples: 3,288,855
-        Tokens: 460,447,039
-
-    Validation Samples:
-
-        Samples: 20,498
-        Tokens: 2,568,952
-
-    Test Samples:
-
-        Samples: 33,061
-        Tokens: 4,514,586
-
-    Total:
-
-        Samples: 3,342,414
-        Tokens: 467,530,577
-
-
-    Samples length size distribution Training Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_train_lengths_dist.png)
-
-    Samples length size distribution Validation Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_validation_lengths_dist.png)
-
-    Samples length size distribution Test Set: ![mol nl sample dist](assets/img/molecule_nl_tokenized_test_lengths_dist.png)
-
-
-- <b>Genome Sequence</b> (status: still on going)
-
-    Number of sequence: 248,678
-    Size of the vocabulary: 4096
-    Number of tokens: 3,025,575,847
-
-    Samples length size distribution of the full data: ![genome sequence sample dist](assets/img/genome_sequence_tokenized_lengths_dist.png)
+- **Genome Sequence** (status: still on going)
+  - Number of sequence: 248,678
+  - Size of the vocabulary: 4096
+  - Number of tokens: 3,025,575,847
+  - Samples length size distribution of the full data: ![genome sequence sample dist](assets/img/genome_sequence_tokenized_lengths_dist.png)

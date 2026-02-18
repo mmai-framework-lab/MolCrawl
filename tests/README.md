@@ -31,11 +31,13 @@ tests/
 ## Running Tests
 
 ### Run all tests
+
 ```bash
 pytest
 ```
 
 ### Run specific test categories
+
 ```bash
 # Unit tests only
 pytest -m unit
@@ -55,11 +57,13 @@ pytest -m compound
 ```
 
 ### Run tests with coverage
+
 ```bash
 pytest --cov=src --cov-report=html
 ```
 
 ### Run benchmarks
+
 ```bash
 pytest -m benchmark --benchmark-only
 ```
@@ -67,11 +71,13 @@ pytest -m benchmark --benchmark-only
 ## Writing Tests
 
 ### Naming Convention
+
 - Test files: `test_*.py`
 - Test functions: `test_*()`
 - Test classes: `Test*`
 
 ### Using Markers
+
 ```python
 import pytest
 
@@ -83,6 +89,7 @@ def test_dna_tokenization():
 ```
 
 ### Using Fixtures
+
 ```python
 def test_with_sample_data(sample_dna_sequence):
     # sample_dna_sequence is provided by conftest.py
@@ -92,6 +99,7 @@ def test_with_sample_data(sample_dna_sequence):
 ## Test Status
 
 ### Phase 1
+
 - [ ] BERT DNA verification
 - [ ] BERT Protein verification
 - [ ] BERT RNA verification
@@ -104,11 +112,13 @@ def test_with_sample_data(sample_dna_sequence):
 - [ ] GPT2 Compound-Lang verification
 
 ### Phase 2
+
 - [ ] Dataset preparation tests
 - [ ] Training script verification
 - [ ] Log management tests
 
 ### Phase 3
+
 - [ ] Alpha model evaluation
 - [ ] Performance benchmarks
 - [ ] Model card generation
@@ -116,6 +126,7 @@ def test_with_sample_data(sample_dna_sequence):
 ## CI Integration
 
 Tests are automatically run in CI on:
+
 - Push to main, develop, or feature branches
 - Pull requests
 - Manual workflow dispatch

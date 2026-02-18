@@ -25,14 +25,14 @@
 
 ### ESM-2 vs 既存BERT
 
-| 特徴 | 既存BERT | ESM-2 |
-|------|----------|-------|
-| ドメイン | 汎用 | タンパク質専用 |
+| 特徴                 | 既存BERT   | ESM-2          |
+| -------------------- | ---------- | -------------- |
+| ドメイン             | 汎用       | タンパク質専用 |
 | トークナイゼーション | 文字レベル | アミノ酸レベル |
-| 学習率 | 6e-6 | 4e-4 |
-| Dropout | 0.1 | 0.0 |
-| 最適化 | 標準 | タンパク質特化 |
-| 収束速度 | 普通 | 高速 |
+| 学習率               | 6e-6       | 4e-4           |
+| Dropout              | 0.1        | 0.0            |
+| 最適化               | 標準       | タンパク質特化 |
+| 収束速度             | 普通       | 高速           |
 
 ### モデルサイズ
 
@@ -70,12 +70,14 @@ ls -lt $LEARNING_SOURCE_DIR/protein_sequence/logs/esm2-train-*.log | head -1
 ## 📊 データセット
 
 ### 使用データセット
+
 - **ソース**: 既存の `protein_sequence/training_ready_hf_dataset/`
 - **内容**: UniProt UniRef50 タンパク質配列
 - **トークナイザー**: ESM character-level tokenizer (BERT互換)
 - **追加準備**: 不要 ✅
 
 ### データセットパス
+
 ```bash
 echo $LEARNING_SOURCE_DIR/protein_sequence/training_ready_hf_dataset/
 ```
@@ -201,11 +203,13 @@ if "sequence_tokens" in example and "input_ids" not in example:
 ## 📚 参考リソース
 
 ### 論文・リポジトリ
+
 - [Language models of protein sequences at the scale of evolution](https://www.science.org/doi/10.1126/science.ade2574)
 - [ESM GitHub](https://github.com/facebookresearch/esm)
 - [Meta AI Research](https://ai.facebook.com/blog/protein-folding-esmfold-metagenomics/)
 
 ### 内部ドキュメント
+
 - [詳細トレーニングガイド](ESM2_TRAINING_GUIDE.md)
 - [メインREADME](../README.md)
 
@@ -230,15 +234,15 @@ if "sequence_tokens" in example and "input_ids" not in example:
 
 ## 🆚 DNABERT-2 vs ESM-2
 
-| 特徴 | DNABERT-2 | ESM-2 |
-|------|-----------|-------|
-| **ドメイン** | DNA配列 | タンパク質配列 |
-| **トークナイゼーション** | BPE | アミノ酸レベル |
-| **配列長** | 512-1024 | 1024 |
-| **バッチサイズ** | 16 | 4 |
-| **学習率** | 3e-5 | 4e-4 |
-| **Dropout** | 0.1 | 0.0 |
-| **主な用途** | ClinVar, ゲノム解析 | ProteinGym, Structure prediction |
+| 特徴                     | DNABERT-2           | ESM-2                            |
+| ------------------------ | ------------------- | -------------------------------- |
+| **ドメイン**             | DNA配列             | タンパク質配列                   |
+| **トークナイゼーション** | BPE                 | アミノ酸レベル                   |
+| **配列長**               | 512-1024            | 1024                             |
+| **バッチサイズ**         | 16                  | 4                                |
+| **学習率**               | 3e-5                | 4e-4                             |
+| **Dropout**              | 0.1                 | 0.0                              |
+| **主な用途**             | ClinVar, ゲノム解析 | ProteinGym, Structure prediction |
 
 ## 📞 サポート
 

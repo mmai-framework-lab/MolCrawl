@@ -16,7 +16,7 @@
 
 未設定の場合、以下のようなエラーメッセージが表示されます：
 
-```
+```text
 ERROR: LEARNING_SOURCE_DIR environment variable is not set.
 Please set it before running this script:
   export LEARNING_SOURCE_DIR=/path/to/learning_source
@@ -26,7 +26,7 @@ Please set it before running this script:
 
 ### 2. 推奨ディレクトリ構造
 
-```
+```text
 $LEARNING_SOURCE_DIR/
 ├── compounds/
 │   ├── data/       # データセット保存先
@@ -58,16 +58,16 @@ $LEARNING_SOURCE_DIR/
 
 #### データ準備スクリプト
 
-| ファイル | 変更内容 | 新しいデフォルト出力先 |
-|---------|---------|---------------------|
+| ファイル                                                 | 変更内容                  | 新しいデフォルト出力先                                  |
+| -------------------------------------------------------- | ------------------------- | ------------------------------------------------------- |
 | `scripts/evaluation/bert/proteingym_data_preparation.py` | LEARNING_SOURCE_DIR必須化 | `$LEARNING_SOURCE_DIR/protein_sequence/data/proteingym` |
-| `scripts/evaluation/gpt2/omim_data_preparation.py` | LEARNING_SOURCE_DIR必須化 | `$LEARNING_SOURCE_DIR/genome_sequence/data/omim` |
-| `scripts/evaluation/gpt2/cosmic_data_preparation.py` | LEARNING_SOURCE_DIR必須化 | `$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic` |
+| `scripts/evaluation/gpt2/omim_data_preparation.py`       | LEARNING_SOURCE_DIR必須化 | `$LEARNING_SOURCE_DIR/genome_sequence/data/omim`        |
+| `scripts/evaluation/gpt2/cosmic_data_preparation.py`     | LEARNING_SOURCE_DIR必須化 | `$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic`      |
 
 #### ユーティリティ
 
-| ファイル | 変更内容 |
-|---------|---------|
+| ファイル                         | 変更内容                                                             |
+| -------------------------------- | -------------------------------------------------------------------- |
 | `src/utils/evaluation_output.py` | `get_learning_source_dir()`でLEARNING_SOURCE_DIR未設定時にエラー終了 |
 
 ### 4. 既存の評価スクリプト
@@ -117,7 +117,7 @@ LEARNING_SOURCE_DIR=learning_20251104 python scripts/evaluation/gpt2/cosmic_data
 
 ### 出力例
 
-```
+```text
 learning_20251104/
 ├── genome_sequence/
 │   ├── data/

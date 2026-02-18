@@ -5,11 +5,13 @@
 ## ツール構成
 
 ### ESLint
+
 - **目的**: コード品質チェック、バグ検出、ベストプラクティスの強制
 - **設定ファイル**: `.eslintrc.json`
 - **ベース設定**: `react-app` (Create React App標準)
 
 ### Prettier
+
 - **目的**: コードフォーマットの統一
 - **設定ファイル**: `.prettierrc.json`
 
@@ -51,6 +53,7 @@ npm run format
 主要なルール：
 
 ### エラー（修正必須）
+
 - `eqeqeq`: 常に`===`/`!==`を使用
 - `curly`: 常に波括弧を使用
 - `no-var`: `var`禁止、`let`/`const`を使用
@@ -58,11 +61,13 @@ npm run format
 - `no-duplicate-imports`: 重複インポート禁止
 
 ### 警告
+
 - `no-unused-vars`: 未使用変数（`_`で始まる変数は除外）
 - `no-console`: `console.log`禁止（`console.warn`/`console.error`は許可）
 - `react/no-array-index-key`: 配列インデックスをkeyに使用しない
 
 ### React特有
+
 - `react/jsx-no-target-blank`: `target="_blank"`には`rel="noopener noreferrer"`を追加
 - `react/no-danger`: `dangerouslySetInnerHTML`の使用に警告
 - `react/prop-types`: PropTypes検証は不要（TypeScript推奨）
@@ -99,6 +104,7 @@ npm run format
 ```
 
 必要な拡張機能：
+
 - ESLint (`dbaeumer.vscode-eslint`)
 - Prettier (`esbenp.prettier-vscode`)
 
@@ -124,9 +130,7 @@ console.log("このファイルではconsole.logを許可");
 
 ```javascript
 /* eslint-disable react/no-array-index-key */
-const items = arr.map((item, index) => (
-  <div key={index}>{item}</div>
-));
+const items = arr.map((item, index) => <div key={index}>{item}</div>);
 /* eslint-enable react/no-array-index-key */
 ```
 

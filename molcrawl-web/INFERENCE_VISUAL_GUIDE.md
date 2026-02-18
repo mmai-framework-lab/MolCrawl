@@ -314,6 +314,7 @@ Try: API Request
 ## Visual States
 
 ### 1. Model Card States
+
 ```
 ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
 │ CLICKABLE│  │ TRAINING │  │ NOT      │  │  ERROR   │
@@ -327,6 +328,7 @@ Try: API Request
 ```
 
 ### 2. Modal States
+
 ```
 ┌─────────────────────────┐
 │ Loading Configuration   │

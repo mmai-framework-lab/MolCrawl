@@ -1,15 +1,18 @@
 # CI/CD Configuration Documentation
 
 ## Overview
+
 This document describes the Continuous Integration and Continuous Deployment (CI/CD) pipeline for the RIKEN Dataset Foundation Model project.
 
 ## Workflow Files
 
 ### 1. `ci-tests.yml` - Continuous Integration Tests
+
 **Triggers**: Push to main/develop/feature branches, Pull Requests  
 **Purpose**: Ensures code quality and functionality
 
 **Jobs**:
+
 - **unit-tests**: Runs unit tests with pytest (Python 3.9, 3.10)
 - **integration-tests**: Tests component integration
 - **model-sanity-checks**: Validates BERT and GPT2 model initialization
@@ -18,10 +21,12 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 - **security-scan**: Security vulnerability scanning with Safety and Bandit
 
 ### 2. `phase-validation.yml` - Phase-Specific Validation
+
 **Triggers**: Manual workflow dispatch  
 **Purpose**: Validates completion of specific project phases
 
 **Workflows**:
+
 - **Phase 1 BERT Verification**: Tests BERT models across all domains
 - **Phase 1 GPT2 Verification**: Tests GPT2 models across all domains
 - **Phase 2 Dataset Preparation**: Validates dataset creation scripts
@@ -29,27 +34,33 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 - **Phase 3 Alpha Evaluation**: Comprehensive model evaluation
 
 ### 3. `documentation.yml` - Documentation Generation
+
 **Triggers**: Push to main/develop, Manual dispatch  
 **Purpose**: Builds and deploys documentation
 
 **Jobs**:
+
 - **build-docs**: Generates Sphinx documentation
 - **check-readme**: Validates markdown formatting and links
 - **generate-api-docs**: Creates API reference with pdoc
 
 ### 4. `benchmark.yml` - Performance Benchmarks
+
 **Triggers**: Weekly schedule (Sunday 00:00 UTC), Manual dispatch  
 **Purpose**: Tracks model and pipeline performance over time
 
 **Jobs**:
+
 - **benchmark-models**: Tests model inference performance
 - **data-pipeline-benchmark**: Measures data loading efficiency
 
 ### 5. `release.yml` - Release Process
-**Triggers**: Version tags (v*.*.*, alpha-*, beta-*), Manual dispatch  
+
+**Triggers**: Version tags (v*.*._, alpha-_, beta-\*), Manual dispatch  
 **Purpose**: Automates release preparation and distribution
 
 **Jobs**:
+
 - **validate-release**: Runs comprehensive tests
 - **build-package**: Creates distribution packages
 - **prepare-huggingface**: Generates model cards for HF Hub
@@ -59,7 +70,9 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 ## Phase-Specific CI Strategy
 
 ### Phase 1: CBI Conference - Functional Verification
+
 **CI Focus**: Model functionality validation
+
 - ✅ Ruff linting (already configured)
 - ✅ ESLint for web components
 - ✅ Unit tests for core functions
@@ -67,6 +80,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 - Manual phase validation workflow for each task
 
 **Usage**:
+
 ```bash
 # Trigger BERT verification for all domains
 gh workflow run phase-validation.yml -f phase=phase1-bert-verification
@@ -76,13 +90,16 @@ gh workflow run phase-validation.yml -f phase=phase1-gpt2-verification
 ```
 
 ### Phase 2: Pre-alpha - Dataset Preparation and Method Preparation
+
 **CI Focus**: Data pipeline and training script validation
+
 - ✅ Dataset loading tests
 - ✅ Training script syntax validation
 - ✅ Benchmark data configuration checks
 - ✅ Integration tests for data pipelines
 
 **Usage**:
+
 ```bash
 # Validate dataset preparation
 gh workflow run phase-validation.yml -f phase=phase2-dataset-prep
@@ -92,7 +109,9 @@ gh workflow run phase-validation.yml -f phase=phase2-script-verification
 ```
 
 ### Phase 3: Alpha - Hyperparameter Tuning
+
 **CI Focus**: Model performance and regression testing
+
 - ✅ Model evaluation benchmarks
 - ✅ Performance regression detection
 - ✅ Training log validation
@@ -100,6 +119,7 @@ gh workflow run phase-validation.yml -f phase=phase2-script-verification
 - ✅ Release preparation automation
 
 **Usage**:
+
 ```bash
 # Run alpha model evaluation
 gh workflow run phase-validation.yml -f phase=phase3-alpha-evaluation
@@ -109,7 +129,9 @@ gh workflow run benchmark.yml
 ```
 
 ### Phase 4: Paper Writing
+
 **CI Focus**: Documentation and reproducibility
+
 - ✅ Automated documentation building
 - ✅ Code freeze with strict testing
 - ✅ Reproducibility validation
@@ -149,6 +171,7 @@ tests/
 ## Required Setup
 
 ### 1. Install Development Dependencies
+
 ```bash
 pip install pytest pytest-cov pytest-xdist pytest-benchmark
 pip install mypy types-PyYAML
@@ -157,9 +180,11 @@ pip install sphinx sphinx-rtd-theme
 ```
 
 ### 2. Create pytest Configuration
+
 See `pytest.ini` for configuration.
 
 ### 3. GitHub Secrets (for later phases)
+
 - `CODECOV_TOKEN`: For code coverage reporting
 - `HF_TOKEN`: For Hugging Face model uploads
 - `SLACK_WEBHOOK`: For notifications (optional)
@@ -167,16 +192,19 @@ See `pytest.ini` for configuration.
 ## Running Tests Locally
 
 ### All tests
+
 ```bash
 pytest tests/ -v
 ```
 
 ### With coverage
+
 ```bash
 pytest tests/ --cov=src --cov-report=html
 ```
 
 ### Specific phase tests
+
 ```bash
 pytest tests/phase1/ -v
 pytest tests/phase2/ -v
@@ -184,6 +212,7 @@ pytest tests/phase3/ -v
 ```
 
 ### Benchmarks
+
 ```bash
 pytest tests/benchmarks/ --benchmark-only
 ```
@@ -217,16 +246,19 @@ pytest tests/benchmarks/ --benchmark-only
 ## Troubleshooting
 
 ### Tests failing in CI but passing locally
+
 - Check Python version differences
 - Verify all dependencies are specified
 - Look for environment-specific issues
 
 ### Slow CI runs
+
 - Use pytest-xdist for parallel execution
 - Cache dependencies in workflows
 - Split large test suites into separate jobs
 
 ### Flaky tests
+
 - Identify and fix non-deterministic behavior
 - Use `pytest-timeout` to catch hanging tests
 - Consider marking as `@pytest.mark.flaky` temporarily

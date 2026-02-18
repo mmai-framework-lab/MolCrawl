@@ -29,6 +29,7 @@ npm run check-env
 ### 3. サーバーを起動
 
 **推奨方法（簡単起動スクリプト）**:
+
 ```bash
 # デフォルトポート（3000, 3001）で起動
 LEARNING_SOURCE_DIR="learning_source_20251210" ./start-dev.sh
@@ -38,12 +39,14 @@ LEARNING_SOURCE_DIR="learning_source_20251210" ./start-dev.sh 8090 8091
 ```
 
 **または環境変数を直接指定**:
+
 ```bash
 # 環境変数を設定して起動
 LEARNING_SOURCE_DIR="learning_source_20251210" PORT=8090 API_PORT=8091 npm run dev
 ```
 
 **手動起動（別々のターミナルで）**:
+
 ```bash
 # ターミナル1: バックエンドAPI
 LEARNING_SOURCE_DIR="learning_source_20251210" API_PORT=8091 npm run server
@@ -52,16 +55,19 @@ LEARNING_SOURCE_DIR="learning_source_20251210" API_PORT=8091 npm run server
 PORT=8090 REACT_APP_API_PORT=8091 npm start
 ```
 
-**重要**: 
+**重要**:
+
 - バックエンドAPIサーバーには`API_PORT`を使用
 - フロントエンドには`PORT`と`REACT_APP_API_PORT`を使用
 - 両方のサーバーが異なるポートで起動していることを確認
 
 デフォルトポート：
+
 - バックエンドAPI: ポート3001
 - フロントエンド: ポート3000
 
 起動確認：
+
 ```bash
 # バックエンドの確認
 curl http://localhost:3001/api/health
@@ -99,7 +105,8 @@ LEARNING_SOURCE_DIR="learning_source_202508" node server.js --port 8091
 LEARNING_SOURCE_DIR="learning_source_202508" node server.js -p 8091
 ```
 
-**重要**: 
+**重要**:
+
 - `PORT`: React開発サーバー（フロントエンド）のポート番号
 - `API_PORT`: Express APIサーバー（バックエンド）のポート番号
 - 両方を同じポート番号に設定しないでください（競合します）
@@ -112,8 +119,8 @@ node server.js --help
 
 ### 4. ブラウザでアクセス
 
-- **フロントエンド**: http://localhost:3000
-- **バックエンドAPI**: http://localhost:3001/api/health
+- **フロントエンド**: <http://localhost:3000>
+- **バックエンドAPI**: <http://localhost:3001/api/health>
 
 ## NPMスクリプト
 
@@ -193,6 +200,7 @@ export LEARNING_SOURCE_DIR="learning_source_202508"
 ```
 
 使用可能なディレクトリ:
+
 - `learning_source_202508`
 - `learning_source_20251006_genome_all`
 - `learning_source_20251020-molecule-nl`
@@ -213,7 +221,8 @@ export API_PORT=8091
 export PORT=8090
 ```
 
-注: 
+注:
+
 - バックエンドサーバーは`API_PORT`を優先的に使用します
 - コマンドライン引数 `--port` で指定した値が最優先されます
 - フロントエンドとバックエンドで異なるポート番号を設定してください
@@ -264,17 +273,20 @@ Proxy error: Could not proxy request /api/... from localhost:XXXXX to http://loc
 **解決方法**:
 
 1. バックエンドが起動しているか確認
+
    ```bash
    lsof -i :3001
    ```
 
 2. 起動していない場合、別ターミナルで起動
+
    ```bash
    cd molcrawl-web
    LEARNING_SOURCE_DIR="learning_source_202508" npm run server
    ```
 
 3. または、`./start-both.sh`を使用
+
    ```bash
    export LEARNING_SOURCE_DIR="learning_source_202508"
    ./start-both.sh
@@ -340,6 +352,7 @@ PORT=8090 npm start
   - 例: `02-protein_sequence-prepare-gpt2.sh`
 
 **機能詳細**:
+
 - ✅ ワンクリックでスクリプトを実行開始
 - 📋 リアルタイムでログをモーダル表示（2秒間隔で自動更新）
 - ⏹️ 実行中のスクリプトを停止可能
@@ -347,6 +360,7 @@ PORT=8090 npm start
 - 🔄 スクリプト完了後に自動で進捗を再取得
 
 **使用方法**:
+
 1. 各データセットタブの「準備進捗」カードを確認
 2. 「▶ Phase 01」または「▶ Phase 02」ボタンをクリック
 3. ログモーダルが開き、リアルタイムでログを表示
@@ -355,7 +369,7 @@ PORT=8090 npm start
 
 #### 使用方法（進捗確認）
 
-1. Webブラウザで http://localhost:3000 にアクセス
+1. Webブラウザで <http://localhost:3000> にアクセス
 2. 「Preparation」タブをクリック
 3. 各データセットの進捗を確認
 4. 自動更新オプションで5秒ごとにリフレッシュ可能
@@ -384,27 +398,33 @@ molcrawl-web/
 ## API エンドポイント
 
 ### ヘルスチェック
+
 - `GET /api/health` - サーバーステータス
 
 ### ディレクトリ操作
+
 - `GET /api/directory` - ルートディレクトリ構造取得
 - `GET /api/directory/expand?path=<path>` - ディレクトリ展開
 - `GET /api/directory/tree?maxDepth=5` - 完全ツリー取得
 
 ### ゲノムデータ
+
 - `GET /api/genome/species` - ゲノム種リスト取得
 - `GET /api/genome/species/category?category=<category>` - カテゴリ別種リスト
 
 ### ZINC20データ
+
 - `GET /api/zinc/check` - ZINC20データチェック
 - `GET /api/zinc/count` - ZINC20データ件数取得
 
 ### データセット準備進捗
+
 - `GET /api/dataset-progress` - 全データセットの準備進捗取得
 - `GET /api/dataset-progress/:datasetKey` - 特定データセットの詳細進捗取得
   - `datasetKey`: `protein_sequence`, `genome_sequence`, `rna`, `molecule_nl`, `compounds`
 
 ### 準備スクリプト実行（新機能）
+
 - `GET /api/preparation-runner/scripts` - 利用可能なスクリプト一覧
 - `POST /api/preparation-runner/start` - 準備スクリプトを実行
   - Body: `{ dataset: 'protein_sequence', phase: 'phase01' }`

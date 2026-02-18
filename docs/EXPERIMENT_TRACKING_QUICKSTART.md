@@ -11,6 +11,7 @@ chmod +x setup_experiment_system.sh
 ```
 
 これにより以下が自動的に行われます：
+
 - Python依存パッケージのインストール (FastAPI, Uvicorn)
 - Node.js依存パッケージのインストール
 - データベースディレクトリの作成
@@ -36,9 +37,9 @@ npm run dev
 
 ### 3. アクセス
 
-- **Webインターフェース**: http://localhost:3000
-- **実験ダッシュボード**: http://localhost:3000 (Experimentsタブをクリック)
-- **API ドキュメント**: http://localhost:8000/docs
+- **Webインターフェース**: <http://localhost:3000>
+- **実験ダッシュボード**: <http://localhost:3000> (Experimentsタブをクリック)
+- **API ドキュメント**: <http://localhost:8000/docs>
 
 ## 🧪 サンプル実験を実行
 
@@ -68,11 +69,11 @@ with experiment_context(
     dataset_type=DatasetType.PROTEIN_SEQUENCE
 ) as exp:
     exp.log("INFO", "Starting training")
-    
+
     exp.start_step("train", "Training model")
     # あなたの訓練コード
     exp.complete_step("train")
-    
+
     exp.add_metric("accuracy", 0.95)
 ```
 
@@ -101,11 +102,11 @@ def main():
         exp.start_step("data", "Load data")
         load_data()
         exp.complete_step("data")
-        
+
         exp.start_step("train", "Train")
         train_model()
         exp.complete_step("train")
-        
+
         exp.start_step("eval", "Evaluate")
         result = evaluate()
         exp.complete_step("eval")
@@ -158,6 +159,7 @@ rm -f experiment_data/experiments.db
 ## 📞 サポート
 
 問題が発生した場合は、以下を確認してください:
+
 1. `test_experiment_system.py` でテストを実行
 2. `EXPERIMENT_TRACKING_README.md` の詳細ドキュメントを確認
 3. ログファイル（コンソール出力）を確認

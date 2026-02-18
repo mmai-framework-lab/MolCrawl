@@ -25,14 +25,14 @@
 
 ### DNABERT-2 vs 既存BERT
 
-| 特徴 | 既存BERT | DNABERT-2 |
-|------|----------|-----------|
-| トークナイゼーション | k-mer | BPE |
-| 最大長 | 1024 | 512 (効率的) |
-| 学習率 | 6e-6 | 3e-5 |
-| バッチサイズ | 8 | 16 |
-| 収束速度 | 遅い | 速い |
-| GPU効率 | 低い | 高い |
+| 特徴                 | 既存BERT | DNABERT-2    |
+| -------------------- | -------- | ------------ |
+| トークナイゼーション | k-mer    | BPE          |
+| 最大長               | 1024     | 512 (効率的) |
+| 学習率               | 6e-6     | 3e-5         |
+| バッチサイズ         | 8        | 16           |
+| 収束速度             | 遅い     | 速い         |
+| GPU効率              | 低い     | 高い         |
 
 ### モデルサイズ
 
@@ -70,12 +70,14 @@ ls -lt $LEARNING_SOURCE_DIR/genome_sequence/logs/dnabert2-train-*.log | head -1
 ## 📊 データセット
 
 ### 使用データセット
+
 - **ソース**: 既存の `genome_sequence/training_ready_hf_dataset/`
 - **内容**: RefSeq ゲノム配列
 - **トークナイザー**: SentencePiece (既存のまま使用可能)
 - **追加準備**: 不要 ✅
 
 ### データセットパス
+
 ```bash
 echo $LEARNING_SOURCE_DIR/genome_sequence/training_ready_hf_dataset/
 ```
@@ -197,10 +199,12 @@ ls -lt $LEARNING_SOURCE_DIR/genome_sequence/dnabert2-output/dnabert2-small/
 ## 📚 参考リソース
 
 ### 論文・リポジトリ
+
 - [DNABERT-2 論文](https://arxiv.org/abs/2306.15006)
 - [DNABERT-2 GitHub](https://github.com/MAGICS-LAB/DNABERT_2)
 
 ### 内部ドキュメント
+
 - [詳細トレーニングガイド](DNABERT2_TRAINING_GUIDE.md)
 - [メインREADME](../README.md)
 

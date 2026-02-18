@@ -5,6 +5,7 @@
 ## 🎯 検証の目的
 
 Compounds処理パイプラインの以下を確認します：
+
 1. **SMILES tokenization** - SMILES文字列の正しいトークン化
 2. **SMILES validation** - 有効/無効なSMILESの適切な処理
 3. **Scaffold generation** - Molecular scaffoldの正確な生成
@@ -35,6 +36,7 @@ pytest tests/unit/test_compounds.py --cov=src.compounds --cov-report=html
 ### 2. GitHub Actionsで実行
 
 #### 自動実行（push時）
+
 `src/compounds/` 配下のファイルを変更してpushすると自動実行されます：
 
 ```bash
@@ -47,6 +49,7 @@ git push
 ```
 
 #### 手動実行
+
 ```bash
 # 全テスト実行
 gh workflow run compounds-validation.yml -f test_level=all
@@ -63,6 +66,7 @@ gh workflow run compounds-validation.yml -f test_level=integration
 ### ユニットテスト（高速）
 
 **TestSmilesTokenization** - Tokenization の基本機能
+
 ```python
 # テスト内容：
 - SmilesTokenizer のインポート
@@ -71,6 +75,7 @@ gh workflow run compounds-validation.yml -f test_level=integration
 ```
 
 **TestSmilesValidation** - SMILES の妥当性検証
+
 ```python
 # テスト内容：
 - 有効なSMILES（CCO, c1ccccc1）の処理
@@ -80,12 +85,14 @@ gh workflow run compounds-validation.yml -f test_level=integration
 ```
 
 **実行例：**
+
 ```bash
 pytest tests/unit/test_compounds.py::TestSmilesValidation::test_valid_smiles -v
 ```
 
 **期待される結果：**
-```
+
+```text
 ✓ 有効なSMILESはscaffoldを返す（空文字列ではない）
 ✓ 無効なSMILESは空文字列を返す
 ✓ 統計が正しく追跡される
@@ -94,6 +101,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation::test_valid_smiles -v
 ### 統合テスト（時間がかかる）
 
 **TestCompoundsEndToEnd** - End-to-End パイプライン
+
 ```python
 # テスト内容：
 - SMILES → Scaffold の完全なパイプライン
@@ -101,6 +109,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation::test_valid_smiles -v
 ```
 
 **TestCompoundsBERTIntegration** - BERT モデル統合
+
 ```python
 # テスト内容：
 - モデルのロード
@@ -109,6 +118,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation::test_valid_smiles -v
 ```
 
 **TestCompoundsGPT2Integration** - GPT2 モデル統合
+
 ```python
 # テスト内容：
 - モデルのロード
@@ -117,6 +127,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation::test_valid_smiles -v
 ```
 
 **実行例（モデルパス指定）：**
+
 ```bash
 # 環境変数でモデルパスを指定
 export COMPOUNDS_BERT_MODEL_PATH=/path/to/bert/model
@@ -128,9 +139,11 @@ pytest tests/integration/test_compounds_pipeline.py -v
 ## 🔍 GitHub Actions ワークフロー
 
 ### Job 1: unit-tests
+
 **目的**: 高速なユニットテストでコード品質を確認
 
 **実行内容**:
+
 ```yaml
 - SMILES tokenization テスト
 - SMILES validation テスト
@@ -138,23 +151,28 @@ pytest tests/integration/test_compounds_pipeline.py -v
 ```
 
 **結果の見方**:
+
 - ✅ 緑色: 全テスト成功
 - ❌ 赤色: テスト失敗（ログを確認）
 - ⚠️ オレンジ: スキップされたテスト
 
 ### Job 2: integration-tests
+
 **目的**: モジュール間の統合動作を確認
 
 **実行内容**:
+
 ```yaml
 - データパイプライン統合テスト
 - SMILES前処理パイプライン
 ```
 
 ### Job 3: smiles-validation
+
 **目的**: SMILES処理の品質を確認
 
 **実行内容**:
+
 ```python
 # 無効SMILES率をチェック
 ✓ Invalid SMILES率が50%以下 → Pass
@@ -162,24 +180,29 @@ pytest tests/integration/test_compounds_pipeline.py -v
 ```
 
 **例**:
-```
+
+```text
 Invalid SMILES: 2/10 (20.00%)
 ✓ Invalid SMILES rate is acceptable
 ```
 
 ### Job 4: tokenization-tests
+
 **目的**: Tokenizer コンポーネントの動作確認
 
 **実行内容**:
+
 ```python
 - SMI_REGEX_PATTERN の確認
 - SmilesTokenizer クラスの確認
 ```
 
 ### Job 5: phase1-verification
+
 **目的**: Phase 1（機能検証）のBERT/GPT2チェック
 
 **実行内容**:
+
 ```yaml
 - BERT モデル初期化テスト
 - GPT2 モデル初期化テスト
@@ -191,8 +214,10 @@ Invalid SMILES: 2/10 (20.00%)
 テスト実行後、以下のレポートがartifactとして生成されます：
 
 ### 1. compounds-unit-test-report.md
+
 ```markdown
 # Compounds Unit Test Report
+
 Date: 2026-01-05
 
 ✓ test_valid_smiles PASSED
@@ -201,19 +226,22 @@ Date: 2026-01-05
 ```
 
 ### 2. compounds-integration-report.md
+
 ```markdown
 # Compounds Integration Test Report
 
 ✓ test_smiles_to_scaffold_pipeline PASSED
-  Processed: 100 SMILES
-  Valid scaffolds: 100
+Processed: 100 SMILES
+Valid scaffolds: 100
 ```
 
 ### 3. compounds-validation-summary.md
+
 ```markdown
 # Compounds Validation Summary
 
 ## Test Results
+
 - Unit Tests: success ✅
 - Integration Tests: success ✅
 - SMILES Validation: success ✅
@@ -229,6 +257,7 @@ Date: 2026-01-05
 **原因**: 依存関係（RDKit、transformers等）が不足
 
 **解決方法**:
+
 ```bash
 pip install rdkit transformers torch pandas
 ```
@@ -238,6 +267,7 @@ pip install rdkit transformers torch pandas
 **原因**: RDKitが特定のSMILESを解析できない
 
 **確認方法**:
+
 ```python
 from rdkit import Chem
 smiles = "YOUR_SMILES_HERE"
@@ -250,6 +280,7 @@ print(mol)  # None の場合は無効なSMILES
 **原因**: モデルパスが設定されていない
 
 **解決方法**:
+
 ```bash
 # 環境変数を設定
 export COMPOUNDS_BERT_MODEL_PATH=/path/to/bert/model
@@ -265,20 +296,20 @@ pytest tests/integration/test_compounds_pipeline.py \
 
 ### 合格基準
 
-| テスト項目 | 基準 |
-|----------|------|
-| ユニットテスト | 100% pass |
-| 有効SMILES処理 | scaffoldが生成される |
-| 無効SMILES処理 | 空文字列を返す |
-| Invalid SMILES率 | 50%以下 |
-| GPT2生成SMILES妥当性 | 50%以上 |
+| テスト項目           | 基準                 |
+| -------------------- | -------------------- |
+| ユニットテスト       | 100% pass            |
+| 有効SMILES処理       | scaffoldが生成される |
+| 無効SMILES処理       | 空文字列を返す       |
+| Invalid SMILES率     | 50%以下              |
+| GPT2生成SMILES妥当性 | 50%以上              |
 
 ### 警告基準
 
-| 項目 | 警告条件 |
-|------|---------|
-| Invalid SMILES率 | 30-50% |
-| テスト実行時間 | 5分以上 |
+| 項目             | 警告条件 |
+| ---------------- | -------- |
+| Invalid SMILES率 | 30-50%   |
+| テスト実行時間   | 5分以上  |
 
 ## 🔄 CI/CDフロー
 
@@ -303,12 +334,14 @@ graph LR
 ## 📝 次のステップ
 
 ### Phase 1 完了への道
+
 1. ✅ ユニットテストを全てパスさせる
 2. ✅ 統合テストを実装する
 3. 🔲 実際のモデルで検証を実行
 4. 🔲 Phase 1 レポートを完成させる
 
 ### テストの追加
+
 ```python
 # tests/unit/test_compounds.py に追加
 @pytest.mark.unit
@@ -320,6 +353,7 @@ def test_your_new_feature():
 ```
 
 ### 継続的改善
+
 - テストカバレッジを80%以上に
 - テスト実行時間を3分以内に
 - 全てのエッジケースをカバー
