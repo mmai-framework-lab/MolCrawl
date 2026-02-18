@@ -8,10 +8,6 @@ import concurrent.futures
 import traceback
 import re
 
-import ncbi_genome_download as ngd
-from rich.progress import track
-from rich.progress import Progress
-
 from genome_sequence.utils.config import GenomeSequenceConfig
 
 logger = logging.getLogger(__name__)
@@ -22,6 +18,8 @@ def to_snake_case(string):
 
 
 def get_species(path_species):
+    import ncbi_genome_download as ngd
+
     group_species_map = {}
     for group in ngd.SUPPORTED_TAXONOMIC_GROUPS:
         group_path = Path(path_species) / f"{group}.txt"
@@ -35,6 +33,9 @@ def get_species(path_species):
 
 def download_species_refseq(output_dir, path_species, num_worker):
     """To check a species name and refseq presence: https://www.ncbi.nlm.nih.gov/datasets/genome/"""
+    import ncbi_genome_download as ngd
+    from rich.progress import Progress
+
     download_dir = Path(output_dir) / "download_dir"
 
     group_species_map = get_species(path_species)
@@ -90,6 +91,8 @@ def extract_file(
 
 
 def extract_refseq(output_dir, num_worker):
+    from rich.progress import track
+
     download_dir = Path(output_dir) / "download_dir"
 
     archive_paths = [str(p) for p in download_dir.rglob("*genomic.fna.gz")]
