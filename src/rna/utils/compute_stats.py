@@ -4,10 +4,6 @@ from argparse import ArgumentParser
 from collections import Counter
 from pathlib import Path
 
-import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
-
-# from tqdm.dask import TqdmCallback
 from rna.utils.config import RnaConfig
 
 
@@ -52,6 +48,9 @@ def reverse_remap_genes_dict(genes_dict, vocab_dict):
 
 
 def compute_stats(output_dir):
+    import dask.dataframe as dd
+    from dask.diagnostics import ProgressBar
+
     # Load Parquet files with Dask
     parquet_dir = Path(output_dir) / "parquet_files"
     ddf = dd.read_parquet(parquet_dir)

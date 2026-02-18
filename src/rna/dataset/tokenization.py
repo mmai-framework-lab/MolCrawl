@@ -2,8 +2,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from tqdm import tqdm
-import pandas as pd
-from datasets import load_dataset
 
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
@@ -11,6 +9,9 @@ from rna.utils.config import RnaConfig
 
 
 def tokenize(output_dir):
+    import pandas as pd
+    from datasets import load_dataset
+
     tokenizer = TranscriptomeTokenizer()
 
     loom_outdir = Path(output_dir) / "loom_dir"

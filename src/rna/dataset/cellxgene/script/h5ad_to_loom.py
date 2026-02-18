@@ -1,14 +1,14 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-import scanpy as sc
 from tqdm import tqdm
-import loompy as lp
 
 from rna.utils.config import RnaConfig
 
 
 def h5ad_to_loom(output_dir):
+    import loompy as lp
+    import scanpy as sc
 
     h5ad_dir = Path(output_dir) / "download_dir"
     loom_outdir = Path(output_dir) / "loom_dir"

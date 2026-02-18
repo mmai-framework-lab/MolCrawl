@@ -4,7 +4,6 @@ from pathlib import Path
 from functools import partial
 from argparse import ArgumentParser
 
-import joblib
 from rich.progress import track
 
 from rna.utils.config import RnaConfig
@@ -23,6 +22,8 @@ def get_file_to_process(output_dir: Path):
 
 
 def run(filename, output_dir: Path):
+    import joblib
+
     name = Path(filename).stem
     obj = joblib.load(filename)
     obj.write_h5ad(output_dir / f"extract/{name}.h5ad", compression="gzip")

@@ -2,7 +2,7 @@
 Legacy code use for scgpt, in the end geneformer is used to compute the tokenization
 """
 
-from typing import Union
+from typing import Any, TYPE_CHECKING, Union
 import gc
 from pathlib import Path
 import traceback
@@ -15,14 +15,10 @@ from functools import partial
 from argparse import ArgumentParser
 
 
-import rich.progress
-import rich.progress_bar
-import scanpy as sc
-from scgpt import scbank
-import scgpt as scg
-import cellxgene_census
-import rich
-from datasets.utils.logging import disable_progress_bar, enable_progress_bar
+if TYPE_CHECKING:
+    import scanpy as sc
+    import scgpt as scg
+    from scgpt import scbank
 
 from rna.utils.config import RnaConfig
 
@@ -31,11 +27,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 
 def preprocess(
-    adata: sc.AnnData,
+    adata: Any,
     main_table_key: str = "counts",
     include_obs: Optional[Dict[str, List[str]]] = None,
     min_counts_genes: int = 2,
-) -> sc.AnnData:
+) -> Any:
     """
     Preprocess the data for scBank. This function will modify the AnnData object in place.
 
@@ -53,6 +49,8 @@ def preprocess(
             adata = adata[adata.obs[col].isin(values)]
 
     # filter genes
+    import scanpy as sc
+
     sc.pp.filter_genes(adata, min_counts=min_counts_genes)
     adata.layers[main_table_key] = adata.X.copy()
 
@@ -60,12 +58,15 @@ def preprocess(
 
 
 def process_h5ad_to_parquet(
-    h5ad_path: Union[str, Path], output_dir: Union[str, Path], vocab: scg.tokenizer.GeneVocab, min_counts_genes: int
+    h5ad_path: Union[str, Path], output_dir: Union[str, Path], vocab: Any, min_counts_genes: int
 ):
     h5ad_path, output_dir = Path(h5ad_path), Path(output_dir)
     parquet_path = output_dir / h5ad_path.with_suffix(".parquet").name
     if not parquet_path.exists():
         try:
+            import scanpy as sc
+            from scgpt import scbank
+
             adata = sc.read(h5ad_path, cache=True)
             adata = preprocess(adata, min_counts_genes=min_counts_genes)
             print(f"read {adata.shape} valid data from {h5ad_path.name}")
@@ -97,6 +98,9 @@ def process_h5ad_to_parquet(
 
 
 def get_census_gene_vocab(version: str):
+    import cellxgene_census
+    import scgpt as scg
+
     with cellxgene_census.open_soma(census_version=version) as census:
         meta_data = (
             census["census_data"]["homo_sapiens"]
@@ -113,6 +117,9 @@ def get_census_gene_vocab(version: str):
 
 
 def prepare_parquet(output_dir: str, version: str, num_worker: int, min_counts_genes: int):
+    import rich.progress
+    from datasets.utils.logging import disable_progress_bar, enable_progress_bar
+
     disable_progress_bar()
 
     vocab = get_census_gene_vocab(version)

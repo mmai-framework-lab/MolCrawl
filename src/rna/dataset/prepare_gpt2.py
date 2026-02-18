@@ -21,8 +21,6 @@ else:
     print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 
 # from transformers import AutoTokenizer
-from datasets import load_dataset, DatasetDict
-
 from rna.utils.config import RnaConfig
 
 
@@ -51,6 +49,8 @@ def create_chunks(examples, context_length):
 
 
 def tokenize_batch_dataset(output_dir, context_length, number_sample):
+    from datasets import DatasetDict, load_dataset
+
     data = (
         load_dataset(
             "parquet",

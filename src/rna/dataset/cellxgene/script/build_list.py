@@ -1,7 +1,6 @@
 from pathlib import Path
 from argparse import ArgumentParser
 
-import cellxgene_census
 from rich.progress import Progress
 
 from rna.utils.config import RnaConfig
@@ -33,6 +32,8 @@ def save_tissue_obs(target_tissue, census, dir_path: Path) -> None:
 
 
 def build_list(output_directory, version):
+    import cellxgene_census
+
     output_directory = Path(output_directory)
     data_directory = output_directory / "metadata_preparation_dir"
     data_directory.mkdir(exist_ok=True, parents=True)

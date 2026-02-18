@@ -1,4 +1,4 @@
-from typing import Tuple, List, Union
+from typing import Any, List, Sequence, Tuple, Union
 import os
 from pathlib import Path
 import logging
@@ -7,20 +7,16 @@ import time
 from functools import partial
 from argparse import ArgumentParser
 
-import cellxgene_census
-import numpy as np
-import pandas as pd
 from rich.progress import track
-import anndata
-import tiledbsoma as soma
-import scanpy as sc
 
 from rna.utils.config import RnaConfig
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
-def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -> soma.Collection:
+def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -> Any:
+    import cellxgene_census
+
     try:
         return cellxgene_census.open_soma(census_version=version)
     except KeyboardInterrupt as e:
@@ -36,10 +32,12 @@ def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -> soma.
 def retrieve_adata(
     version: str,
     id_list: List[int],
-    target_gene_ids: np.ndarray,
+    target_gene_ids: Sequence[int],
     try_count: int = 0,
     max_try: int = 5,
-) -> anndata.AnnData:
+) -> Any:
+    import cellxgene_census
+
     census = retrieve_census(version)
     try:
         adata = cellxgene_census.get_anndata(
@@ -63,6 +61,9 @@ def retrieve_adata(
 
 
 def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> None:
+    import pandas as pd
+    import scanpy as sc
+
     name, start_l, end_l, id_list = argv
     save_filename = output_dir / f"download_dir/{name}.{start_l:08d}-{end_l:08d}.h5ad"
     if save_filename.exists() and len(sc.read(save_filename)):
@@ -100,6 +101,8 @@ def divide_workload(path: Union[str, Path], size_workload: int) -> List[Tuple[st
     divided_workload = []
     for filename in Path(path).rglob("*.obs_id.tsv"):
         with open(filename, "r") as file:
+            import numpy as np
+
             id_list = np.array(file.readlines()).astype(int)
         name = Path(filename).stem.split(".")[0]
         start_lines = range(0, len(id_list), size_workload)

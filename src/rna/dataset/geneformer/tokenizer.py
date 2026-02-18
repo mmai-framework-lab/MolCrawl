@@ -15,17 +15,17 @@ Usage:
 """
 
 from __future__ import annotations
-from typing import Callable, Literal, Optional, cast
+from typing import Callable, Literal, Optional, TYPE_CHECKING, cast
 import pickle
 from pathlib import Path
 import logging
 import warnings
 
-import anndata as ad
-import loompy as lp
 import numpy as np
-import scipy.sparse as sp
-from datasets import Dataset
+
+if TYPE_CHECKING:
+    import anndata as ad
+    import loompy as lp
 
 warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")
 
@@ -170,6 +170,9 @@ class TranscriptomeTokenizer:
         return tokenized_cells, cell_metadata
 
     def tokenize_anndata(self, adata_file_path, target_sum=10_000, chunk_size=512):
+        import anndata as ad
+        import scipy.sparse as sp
+
         adata = ad.read(adata_file_path, backed="r")
 
         if self.custom_attr_name_dict is not None:
@@ -220,6 +223,8 @@ class TranscriptomeTokenizer:
         if self.custom_attr_name_dict is not None:
             file_cell_metadata = {attr_key: [] for attr_key in self.custom_attr_name_dict.keys()}
 
+        import loompy as lp
+
         with lp.connect(str(loom_file_path)) as data:
             # define coordinates of detected protein-coding or miRNA genes and vector of their normalization factors
             coding_miRNA_loc = np.where([self.genelist_dict.get(i, False) for i in data.ra["ensembl_id"]])[0]
@@ -266,6 +271,8 @@ class TranscriptomeTokenizer:
 
     def create_dataset(self, tokenized_cells, cell_metadata, use_generator=False):
         print("Creating dataset.")
+        from datasets import Dataset
+
         # create dict for dataset creation
         dataset_dict = {"input_ids": tokenized_cells}
         if self.custom_attr_name_dict is not None:

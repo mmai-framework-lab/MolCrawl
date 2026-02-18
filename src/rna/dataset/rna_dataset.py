@@ -6,15 +6,15 @@ import os
 import json
 from pathlib import Path
 
-import torch
-import pyarrow as pa
-from datasets import load_from_disk, Dataset
 
 
 class RNADataset:
     """RNA Transcriptome Dataset"""
 
     def __init__(self, data_dir, split="train", vocab_file=None, test_size=0.1):
+        import pyarrow as pa
+        from datasets import Dataset, load_from_disk
+
         self.data_dir = data_dir
         self.split = split
         self.test_size = test_size
@@ -125,6 +125,8 @@ class RNADataset:
         return len(self.data)
 
     def __getitem__(self, idx):
+        import torch
+
         item = self.data[idx]
 
         # RNA data has 'token' column with numpy arrays

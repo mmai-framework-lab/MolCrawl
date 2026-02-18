@@ -3,9 +3,12 @@ RNA用のBERT互換トークナイザーラッパー
 TranscriptomeTokenizerをBERT学習と互換性のある形式でラップ
 """
 
-from typing import Any, Dict, List, Optional, Union, cast
+from __future__ import annotations
 
-import torch
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union, cast
+
+if TYPE_CHECKING:
+    import torch
 
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
@@ -121,6 +124,8 @@ class BertRnaTokenizer:
                 token_ids.append(self.pad_token_id)
 
         if return_tensors == "pt":
+            import torch
+
             return torch.tensor(token_ids)
 
         return token_ids
@@ -163,6 +168,8 @@ class BertRnaTokenizer:
             result = {"input_ids": input_ids, "attention_mask": attention_masks}
 
             if return_tensors == "pt":
+                import torch
+
                 result["input_ids"] = torch.tensor(result["input_ids"])
                 result["attention_mask"] = torch.tensor(result["attention_mask"])
 
@@ -184,6 +191,8 @@ class BertRnaTokenizer:
             result = {"input_ids": single_input_ids, "attention_mask": single_attention_mask}
 
             if return_tensors == "pt":
+                import torch
+
                 result["input_ids"] = torch.tensor([result["input_ids"]])
                 result["attention_mask"] = torch.tensor([result["attention_mask"]])
 
@@ -197,6 +206,8 @@ class BertRnaTokenizer:
         """
         Decode token IDs back to text
         """
+        import torch
+
         if isinstance(token_ids, torch.Tensor):
             token_ids = token_ids.tolist()
 

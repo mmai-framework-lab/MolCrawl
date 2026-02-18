@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import logging
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
-import torch
+
+if TYPE_CHECKING:
+    import torch
 
 
 def _digitize(x: np.ndarray, bins: np.ndarray, side="both") -> np.ndarray:
@@ -42,6 +46,8 @@ def _digitize(x: np.ndarray, bins: np.ndarray, side="both") -> np.ndarray:
 
 def binning(row: Union[np.ndarray, torch.Tensor], n_bins: int) -> Union[np.ndarray, torch.Tensor]:
     """Binning the row into n_bins."""
+    import torch
+
     dtype = row.dtype
     return_np = False if isinstance(row, torch.Tensor) else True
     row = row.cpu().numpy() if isinstance(row, torch.Tensor) else row
