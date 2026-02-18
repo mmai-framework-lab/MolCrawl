@@ -20,9 +20,6 @@ else:
     # cache_configが無い環境でも動作は可能
     print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 
-from datasets import load_dataset, DatasetDict
-
-from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 from protein_sequence.utils.configs import ProteinSequenceConfig
 
 
@@ -61,6 +58,9 @@ def create_chunks(examples: Dict[str, List[int]], context_length: int) -> Dict[s
 
 
 def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -> None:
+    from datasets import DatasetDict, load_dataset
+    from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+
     raw_dir: Path = Path(path_output) / "raw_files"
     raw_files: List[Path] = sorted(raw_dir.glob("*.raw")) + sorted(raw_dir.glob("*.txt"))
     if not raw_files:

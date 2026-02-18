@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List, Union
 from argparse import ArgumentParser
 import logging
@@ -6,13 +8,12 @@ import concurrent.futures
 from functools import partial
 import pickle
 
-import rich.progress
-from tokenizers import Tokenizer
-from tokenizers.models import BPE
-from tokenizers.processors import TemplateProcessing
-from transformers import PreTrainedTokenizerFast
-import pandas as pd
-import rich
+try:
+    from transformers import PreTrainedTokenizerFast
+except ModuleNotFoundError:
+    class PreTrainedTokenizerFast:  # type: ignore
+        def __init__(self, *args, **kwargs):
+            raise ModuleNotFoundError("transformers is required to use EsmSequenceTokenizer")
 
 from protein_sequence.utils.configs import ProteinSequenceConfig
 
@@ -48,6 +49,10 @@ class EsmSequenceTokenizer(PreTrainedTokenizerFast):
         chain_break_token="|",
         **kwargs,
     ):
+        from tokenizers import Tokenizer
+        from tokenizers.models import BPE
+        from tokenizers.processors import TemplateProcessing
+
         all_tokens = SEQUENCE_VOCAB
         token_to_id = {tok: ind for ind, tok in enumerate(all_tokens)}
 
@@ -126,6 +131,8 @@ def tokenize_sequence(
 
 
 def process_raw(path_raw, path_parquet, tokenizer):
+    import pandas as pd
+
     tokenized_sequences = []
     with open(path_raw, "r") as raw_file:
         for line in raw_file:
@@ -143,6 +150,8 @@ def get_parquet_paths(raw_paths: List[Path], parquet_dir: Union[Path, str]):
 
 
 def generate_parquet_from_raw(raw_dir: Path, parquet_dir: Path, num_worker=5):
+    from rich import progress
+
     print(f"Tokenizing raw files in {raw_dir} to parquet files in {parquet_dir} with {num_worker} workers.")
     raw_paths = [path for path in Path(raw_dir).iterdir() if path.suffix == ".raw"]
     parquet_paths = get_parquet_paths(raw_paths, parquet_dir)
@@ -152,7 +161,7 @@ def generate_parquet_from_raw(raw_dir: Path, parquet_dir: Path, num_worker=5):
     token_counts = []
     with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
         func = partial(process_raw, tokenizer=tokenizer)
-        for result in rich.progress.track(
+        for result in progress.track(
             executor.map(func, raw_paths, parquet_paths), "Tokenizing to parquet", total=len(raw_paths)
         ):
             token_counts += result
