@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
 def _get_rdkit_helpers():
     from rdkit import Chem
-    from rdkit.Chem import Descriptors, RDConfig
+    from rdkit.Chem import Descriptors
 
-    import sys
 
     import sascorer
 

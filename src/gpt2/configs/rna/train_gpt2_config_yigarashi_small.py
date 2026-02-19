@@ -1,5 +1,4 @@
 import os
-import sys
 
 # Add src to path
 current_dir = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()

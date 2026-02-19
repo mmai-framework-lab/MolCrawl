@@ -1,5 +1,4 @@
 import os
-import sys
 
 
 from config.paths import CELLXGENE_DATASET_DIR, RNA_DATASET_DIR, get_gpt2_output_path

@@ -18,7 +18,6 @@ ESM-2の特徴:
 """
 
 import os
-import sys
 
 
 from typing import Any, Dict, List

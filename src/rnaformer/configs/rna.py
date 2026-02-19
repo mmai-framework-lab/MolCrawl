@@ -18,7 +18,6 @@ RNAformerの特徴:
 """
 
 import os
-import sys
 import json
 
 

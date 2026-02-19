@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import os
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 

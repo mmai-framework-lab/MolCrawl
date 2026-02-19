@@ -30,11 +30,8 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
-# プロジェクトルートを追加
-
-# scriptsディレクトリをパスに追加
+# scriptsディレクトリ
 scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if scripts_dir not in sys.path:
 
 # 実データプロセッサをインポート
 process_omim_real_data = None

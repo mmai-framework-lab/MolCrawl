@@ -4,7 +4,6 @@ import time
 import os.path as osp
 import os
 import shutil
-import sys
 
 import logging
 

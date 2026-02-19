@@ -22,11 +22,6 @@ import torch
 from datasets import load_from_disk
 from transformers import BertForMaskedLM, BertTokenizer, DataCollatorForLanguageModeling
 
-# プロジェクトのsrcディレクトリをパスに追加
-project_root = Path(__file__).parent.parent
-src_path = project_root / "src"
-if str(src_path) not in sys.path:
-
 
 def load_domain_tokenizer(domain, vocab_path=None):
     """ドメイン特化のトークナイザーをロードする"""

@@ -3,7 +3,6 @@ BERT版ProteinGym評価の設定ファイル
 """
 
 import os
-import sys
 from pathlib import Path
 
 # 共通環境チェックモジュールを追加

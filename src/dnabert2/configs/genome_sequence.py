@@ -17,7 +17,6 @@ DNABERT-2の特徴:
 """
 
 import os
-import sys
 
 
 import sentencepiece as spm

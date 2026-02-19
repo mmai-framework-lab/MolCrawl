@@ -748,7 +748,6 @@ def main():
                 }
 
             # 可視化生成クラスを使用
-            script_dir = os.path.dirname(os.path.abspath(__file__))
             from molecule_nl_visualization import MoleculeNLVisualizationGenerator
 
             visualizer = MoleculeNLVisualizationGenerator(results_file=csv_file, output_dir=args.result_dir)

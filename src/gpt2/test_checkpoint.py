@@ -26,10 +26,6 @@ from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
 from core.dataset import PreparedDataset
 
 # プロジェクトのsrcディレクトリをパスに追加
-project_root = Path(__file__).parent.parent
-src_path = project_root / "src"
-if str(src_path) not in sys.path:
-
 # GPT2モデルクラスをインポート
 
 

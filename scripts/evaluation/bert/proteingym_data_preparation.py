@@ -7,7 +7,6 @@ BERTモデル用にProteinGymデータセットを前処理し、
 """
 
 import os
-import sys
 import argparse
 import requests
 import pandas as pd

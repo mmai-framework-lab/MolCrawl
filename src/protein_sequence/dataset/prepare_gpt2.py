@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from functools import partial
 from argparse import ArgumentParser
-import sys
 from importlib import import_module
 from pathlib import Path
 from typing import Dict, List, TYPE_CHECKING

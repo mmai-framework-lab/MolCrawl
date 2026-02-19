@@ -11,7 +11,6 @@ import argparse
 import json
 import math
 import random
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -22,11 +21,6 @@ from transformers import BertForMaskedLM
 
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 from utils.evaluation_output import setup_evaluation_logging
-
-# プロジェクトルートをパスに追加（直接実行時のモジュール解決用）
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-
 
 @dataclass
 class EvaluationConfig:

@@ -10,7 +10,6 @@ import argparse
 import json
 import logging
 import os
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -54,9 +53,6 @@ class ProteinGymEvaluator(ModelEvaluator):
         """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
-            import os
-            import sys
-
             from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")

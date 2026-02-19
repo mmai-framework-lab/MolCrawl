@@ -8,7 +8,6 @@ BaseVisualizationGeneratorを継承してmolecule_nlに特化した
 
 import logging
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 

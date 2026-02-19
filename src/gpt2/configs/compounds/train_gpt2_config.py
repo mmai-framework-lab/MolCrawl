@@ -3,7 +3,6 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 import os
-import sys
 
 
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer

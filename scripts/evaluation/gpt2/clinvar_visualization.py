@@ -7,8 +7,6 @@ ClinVar評価の結果を可視化し、詳細な分析を行います。
 
 import argparse
 import logging
-import os
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -1,6 +1,4 @@
 import logging
-import os
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 

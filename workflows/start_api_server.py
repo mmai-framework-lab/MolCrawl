@@ -2,14 +2,11 @@
 APIサーバー起動スクリプト
 """
 
-import sys
 from pathlib import Path
 
 import uvicorn
 
-# プロジェクトルートをパスに追加
 project_root = Path(__file__).parent
-if str(project_root) not in sys.path:
 
 if __name__ == "__main__":
     import os

@@ -17,7 +17,6 @@ python scripts/preparation_script_protein_sequence.py assets/configs/protein_seq
 
 import logging
 import os
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 

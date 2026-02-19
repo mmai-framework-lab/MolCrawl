@@ -6,10 +6,14 @@ Loads configuration from a Python file and allows command-line overrides.
 """
 
 import argparse
+import os
+
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+_default_config = os.path.join(_this_dir, "configs", "compounds.py")
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="ChemBERTa-2 Training Configuration")
-parser.add_argument("--config", type=str, default="chemberta2/configs/compounds.py", help="Path to config file")
+parser.add_argument("--config", type=str, default=_default_config, help="Path to config file")
 parser.add_argument("--model_size", type=str, choices=["small", "medium", "large"], help="Model size")
 parser.add_argument("--use_wandb", type=str, choices=["True", "False"], help="Enable Weights & Biases logging")
 parser.add_argument("--wandb_project", type=str, help="Weights & Biases project name")
@@ -20,10 +24,11 @@ parser.add_argument("--gradient_accumulation_steps", type=int, help="Gradient ac
 
 args, unknown = parser.parse_known_args()
 
-# Load config file
-print(f"📝 Loading config from: {args.config}")
-with open(args.config, "r") as f:
-    exec(f.read())
+# Load config file (skip if file not found, e.g. when imported by documentation tools)
+if os.path.exists(args.config):
+    print(f"📝 Loading config from: {args.config}")
+    with open(args.config, "r") as f:
+        exec(f.read())
 
 # Override with command-line arguments
 if args.model_size is not None:

@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 import os
-import sys
 from pathlib import Path
 
 # プロジェクトルートのsrcディレクトリをパスに追加

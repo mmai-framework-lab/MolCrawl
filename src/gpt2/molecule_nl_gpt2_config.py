@@ -5,8 +5,6 @@ Usage:
     python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
 """
 
-import os
-import sys
 from transformers import AutoTokenizer
 from utils.environment_check import check_learning_source_dir
 

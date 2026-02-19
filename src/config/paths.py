@@ -4,7 +4,6 @@
 """
 
 import os
-import sys
 
 # 共通モジュールをインポート
 from utils.environment_check import check_learning_source_dir

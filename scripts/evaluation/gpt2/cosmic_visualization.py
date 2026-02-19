@@ -8,8 +8,6 @@ COSMIC評価の結果を様々なグラフとチャートで可視化し、
 
 import argparse
 import logging
-import os
-import sys
 from datetime import datetime
 
 import matplotlib.pyplot as plt

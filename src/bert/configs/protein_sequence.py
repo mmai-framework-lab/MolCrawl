@@ -2,8 +2,6 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ python bert/main.py bert/configs/protein_sequence.py
 
-import os
-import sys
 
 
 from typing import Any, Dict, List

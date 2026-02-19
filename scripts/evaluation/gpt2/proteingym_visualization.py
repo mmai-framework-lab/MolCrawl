@@ -8,7 +8,6 @@ ProteinGym評価結果の可視化スクリプト
 import argparse
 import logging
 import os
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -1,5 +1,3 @@
-import os
-import sys
 
 
 from config.paths import get_gpt2_output_path

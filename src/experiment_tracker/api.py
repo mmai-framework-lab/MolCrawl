@@ -3,7 +3,6 @@ FastAPI ベースの実験管理API
 molcrawl-webのバックエンドとして動作
 """
 
-import sys
 from pathlib import Path
 from typing import Optional
 

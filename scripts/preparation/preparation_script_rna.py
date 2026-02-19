@@ -14,8 +14,6 @@ You can call this script with the following command:
 import datetime
 import json
 import logging
-import os
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 

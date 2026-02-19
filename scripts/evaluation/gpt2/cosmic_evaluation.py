@@ -9,8 +9,6 @@ genome sequenceモデルの変異病原性予測性能を評価します。
 import argparse
 import json
 import logging
-import os
-import sys
 from pathlib import Path
 
 import numpy as np

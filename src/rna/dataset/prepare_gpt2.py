@@ -1,6 +1,4 @@
 from argparse import ArgumentParser
-import os
-import sys
 from pathlib import Path
 from functools import partial
 

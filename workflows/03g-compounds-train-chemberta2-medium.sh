@@ -14,7 +14,7 @@ export WANDB_PROJECT=${WANDB_PROJECT:-chemberta2-compounds}
 
 # Training parameters
 MODEL_SIZE="medium"
-CONFIG_FILE="chemberta2/configs/compounds.py"
+CONFIG_FILE="src/chemberta2/configs/compounds.py"
 
 # Create log directory
 LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/logs"

@@ -19,7 +19,6 @@ ChemBERTa-2の特徴:
 """
 
 import os
-import sys
 
 
 from compounds.utils.tokenizer import CompoundsTokenizer
