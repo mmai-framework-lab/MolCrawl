@@ -388,7 +388,7 @@ if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_datas
 elif "preprocess_function" in globals() and callable(globals()["preprocess_function"]):
     print("Applying preprocessing function to add attention_mask...")
     # Use parallel preprocessing when configured
-    preprocess_num_proc: int = int(globals().get("preprocess_num_proc", 1))
+    preprocess_num_proc = int(globals().get("preprocess_num_proc", 1))
     train_dataset = train_dataset.map(globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc)
     test_dataset = test_dataset.map(globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc)
     print("Preprocessing completed.")

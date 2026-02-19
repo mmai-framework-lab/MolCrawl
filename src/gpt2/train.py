@@ -34,7 +34,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from core.dataset import PreparedDataset
 from rna.dataset.rna_dataset import RNADataset
 
-dataset_params = {}
+dataset_params: dict[str, object] = {}
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O

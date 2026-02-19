@@ -347,7 +347,7 @@ else:
         test_dataset = dataset[test_split_name]
 
 # Limit test dataset size for faster evaluation
-if len(test_dataset) > 5000:
+if len(test_dataset) > 5000:  # type: ignore[used-before-def]
     test_dataset = test_dataset.select(range(5000))
     print("📊 Limited test dataset to 5000 samples for faster evaluation")
 

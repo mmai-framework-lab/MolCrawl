@@ -179,7 +179,7 @@ log_interval = 100
 model_size = "small"
 
 # Dataset parameters
-dataset_params = {}
+dataset_params: dict[str, object] = {}
 
 # Device settings
 device = "cuda" if os.path.exists("/usr/bin/nvidia-smi") else "cpu"

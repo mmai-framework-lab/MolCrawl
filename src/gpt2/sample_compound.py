@@ -30,8 +30,7 @@ start_instruction = None
 end_instruction = None
 eos_token = None
 
-dataset_params = {}
-dataset = ""
+dataset_params: dict[str, object] = {}
 # -----------------------------------------------------------------------------
 init_from = "resume"  # either 'resume' (from an out_dir) or a gpt2 variant (e.g. 'gpt2-xl')
 out_dir = "out"  # ignored if init_from is not 'resume'
@@ -132,7 +131,7 @@ p = counts / counts.sum()  # 正規化
 p /= p.sum()  # 念のためもう一度1に
 
 
-smiles_list = []
+smiles_list: list[str] = []
 while len(smiles_list) < num_samples:
     # --- 2) 先頭トークンの一括サンプリング
     # second_ids = rng.choice(ids, size=batch_size, p=p)  # 再現性が要るなら rng を使用
@@ -157,7 +156,7 @@ while len(smiles_list) < num_samples:
 
     for seq in out.tolist():
         gen_ids = cut_after_eos(seq, bos_id, eos_token)
-        s = tokenizer.decode(gen_ids, skip_special_tokens=True)
+        s = tokenizer.decode(gen_ids, skip_special_tokens=True)  # type: ignore[attr-defined]
         # トークナイザが空白区切りで出すなら次の行を使う
         s = s.replace(" ", "")
         smiles_list.append(s)

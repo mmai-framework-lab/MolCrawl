@@ -59,4 +59,4 @@ device = "cuda" if os.path.exists("/usr/bin/nvidia-smi") else "cpu"
 dtype = "bfloat16" if device == "cuda" else "float32"
 
 # Dataset parameters (empty since we're using hardcoded paths in train.py)
-dataset_params = {}
+dataset_params: dict[str, object] = {}
