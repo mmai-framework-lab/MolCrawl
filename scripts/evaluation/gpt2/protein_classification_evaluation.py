@@ -88,7 +88,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
                 config = None
 
             # Import GPT2 model architecture
-            from model import GPT, GPTConfig
+            from gpt2.model import GPT, GPTConfig
 
             # Create model with appropriate config
             if config:

@@ -184,7 +184,7 @@ def load_model(checkpoint: dict, device: str):
 
     try:
         # GPTモデルをインポート
-        from model import GPT, GPTConfig
+        from gpt2.model import GPT, GPTConfig
 
         model_args = checkpoint.get("model_args", {})
         if not model_args:

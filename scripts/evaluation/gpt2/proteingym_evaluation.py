@@ -20,7 +20,7 @@ import torch.nn.functional as F
 
 # プロジェクトルートを追加
 
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 
 from utils.evaluation_output import (
     get_evaluation_output_dir,

@@ -25,7 +25,7 @@ from datasets import load_from_disk
 
 from utils.environment_check import check_learning_source_dir
 
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 from utils.evaluation_output import (

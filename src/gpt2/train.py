@@ -27,7 +27,7 @@ from datetime import datetime
 
 import numpy as np
 import torch
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 from torch.distributed import destroy_process_group, init_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 

@@ -31,7 +31,7 @@ echo "📝 Log file: ${LOG_FILE}"
 echo ""
 
 # Run training
-python rnaformer/main.py \
+python src/rnaformer/main.py \
     --config "${CONFIG_FILE}" \
     --model_size "${MODEL_SIZE}" \
     2>&1 | tee "${LOG_FILE}"

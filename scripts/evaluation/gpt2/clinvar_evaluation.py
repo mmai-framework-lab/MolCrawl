@@ -26,7 +26,7 @@ from sklearn.metrics import (
 
 # プロジェクトルートを追加
 
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 
 from config.paths import get_genome_tokenizer_path
 from utils.evaluation_output import (

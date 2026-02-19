@@ -19,7 +19,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 from tqdm import tqdm
 from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
 

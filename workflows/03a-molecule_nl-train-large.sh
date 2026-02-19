@@ -13,5 +13,5 @@ check_learning_source_dir
 auto_select_gpu 20
 
 mkdir -p ${LEARNING_SOURCE_DIR}/molecule_nl/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c 'python gpt2/train.py ./gpt2/configs/molecule_nl/train_gpt2_large_config.py' > \
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c 'python src/gpt2/train.py ./gpt2/configs/molecule_nl/train_gpt2_large_config.py' > \
     ${LEARNING_SOURCE_DIR}/molecule_nl/logs/molecule_nl-train-large-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &

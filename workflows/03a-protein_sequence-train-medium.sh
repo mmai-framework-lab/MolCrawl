@@ -13,5 +13,5 @@ check_learning_source_dir
 auto_select_gpu 15
 
 mkdir -p ${LEARNING_SOURCE_DIR}/protein_sequence/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c 'python gpt2/train.py ./gpt2/configs/protein_sequence/train_gpt2_medium_config.py' > \
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c 'python src/gpt2/train.py ./gpt2/configs/protein_sequence/train_gpt2_medium_config.py' > \
     ${LEARNING_SOURCE_DIR}/protein_sequence/logs/protein_sequence-train-medium-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &

@@ -7,7 +7,7 @@ from contextlib import nullcontext
 
 import numpy as np
 import torch
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 
 
 def cut_after_eos(seq, bos_id, eos_id):

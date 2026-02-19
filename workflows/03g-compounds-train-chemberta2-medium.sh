@@ -31,7 +31,7 @@ echo "📝 Log file: ${LOG_FILE}"
 echo ""
 
 # Run training
-python chemberta2/main.py \
+python src/chemberta2/main.py \
     --config "${CONFIG_FILE}" \
     --model_size "${MODEL_SIZE}" \
     2>&1 | tee "${LOG_FILE}"
