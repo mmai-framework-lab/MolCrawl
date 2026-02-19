@@ -96,8 +96,16 @@ dtype = (
 compile = False  # use PyTorch 2.0 to compile the model to be faster
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
-# Handle configurator path
-configurator_path = "gpt2/configurator.py" if os.path.exists("gpt2/configurator.py") else "configurator.py"
+# Handle configurator path (support repo-root invocation and direct invocation)
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.exists(os.path.join(_this_dir, "configurator.py")):
+    configurator_path = os.path.join(_this_dir, "configurator.py")
+elif os.path.exists("src/gpt2/configurator.py"):
+    configurator_path = "src/gpt2/configurator.py"
+elif os.path.exists("gpt2/configurator.py"):
+    configurator_path = "gpt2/configurator.py"
+else:
+    configurator_path = "configurator.py"
 exec(open(configurator_path).read())  # overrides from command line or config file
 config = {k: globals()[k] for k in config_keys}  # will be useful for logging
 # -----------------------------------------------------------------------------
