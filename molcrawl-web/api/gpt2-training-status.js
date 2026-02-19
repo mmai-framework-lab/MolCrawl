@@ -10,6 +10,9 @@ if (!LEARNING_SOURCE_DIR) {
     throw new Error('LEARNING_SOURCE_DIR environment variable is required');
 }
 const MODEL_BASE_DIR = path.join(__dirname, '..', '..', LEARNING_SOURCE_DIR);
+const PROJECT_ROOT_DIR = path.join(__dirname, '..', '..');
+const MINICONDA_PYTHON = path.join(PROJECT_ROOT_DIR, 'miniconda', 'bin', 'python');
+const PYTHON_BIN = fs.existsSync(MINICONDA_PYTHON) ? MINICONDA_PYTHON : 'python';
 
 /**
  * GPT-2 training configurations for different datasets
@@ -275,7 +278,7 @@ except Exception as e:
     sys.exit(1)
 `;
 
-        const python = spawn('python', ['-c', pythonScript]);
+        const python = spawn(PYTHON_BIN, ['-c', pythonScript]);
         let stdout = '';
         let stderr = '';
 

@@ -11,7 +11,9 @@ if (!LEARNING_SOURCE_DIR) {
 }
 
 const MODEL_BASE_DIR = path.join(__dirname, '..', '..', LEARNING_SOURCE_DIR);
-const GPT2_DIR = path.join(__dirname, '..', '..', 'gpt2');
+const PROJECT_ROOT_DIR = path.join(__dirname, '..', '..');
+const MINICONDA_PYTHON = path.join(PROJECT_ROOT_DIR, 'miniconda', 'bin', 'python');
+const PYTHON_BIN = fs.existsSync(MINICONDA_PYTHON) ? MINICONDA_PYTHON : 'python';
 
 /**
  * Dataset-specific configurations
@@ -159,9 +161,7 @@ import warnings
 warnings.filterwarnings('ignore')
 os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
 
-# Add gpt2 directory to path
-sys.path.insert(0, '${GPT2_DIR}')
-from model import GPT, GPTConfig
+from gpt2.model import GPT, GPTConfig
 
 # Configuration
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -192,7 +192,6 @@ else:
     
     # Load dataset-specific tokenizer
     project_root = '${path.join(__dirname, '..', '..')}'
-    sys.path.insert(0, os.path.join(project_root, 'src'))
     tokenizer = None
     
     # Load domain-specific tokenizer
@@ -358,7 +357,7 @@ print(json.dumps({'success': True, 'results': results}))
 `;
 
     return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python', ['-c', inferenceScript]);
+        const pythonProcess = spawn(PYTHON_BIN, ['-c', inferenceScript]);
         let stdout = '';
         let stderr = '';
 

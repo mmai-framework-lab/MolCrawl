@@ -11,7 +11,10 @@ if (!LEARNING_SOURCE_DIR) {
 }
 
 const MODEL_BASE_DIR = path.join(__dirname, '..', '..', LEARNING_SOURCE_DIR);
-const BERT_DIR = path.join(__dirname, '..', '..', 'bert');
+const PROJECT_ROOT_DIR = path.join(__dirname, '..', '..');
+const BERT_DIR = path.join(PROJECT_ROOT_DIR, 'src', 'bert');
+const MINICONDA_PYTHON = path.join(PROJECT_ROOT_DIR, 'miniconda', 'bin', 'python');
+const PYTHON_BIN = fs.existsSync(MINICONDA_PYTHON) ? MINICONDA_PYTHON : 'python';
 
 /**
  * Dataset-specific configurations for BERT masked language modeling
@@ -358,7 +361,7 @@ except Exception as e:
 `;
 
     return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python', ['-c', inferenceScript]);
+        const pythonProcess = spawn(PYTHON_BIN, ['-c', inferenceScript]);
         let stdout = '';
         let stderr = '';
 

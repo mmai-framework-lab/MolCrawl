@@ -113,19 +113,19 @@ async function checkProcessStatus() {
             let configPath = null;
             let datasetType = null;
 
-            if (command.includes('bert/main.py') && command.includes('bert/configs/')) {
+            if (command.includes('src/bert/main.py') && command.includes('src/bert/configs/')) {
                 processType = 'BERT';
-                const configMatch = command.match(/bert\/configs\/([^/\s]+\.py)/);
+                const configMatch = command.match(/src\/bert\/configs\/([^/\s]+\.py)/);
                 if (configMatch) {
-                    configPath = path.join(PROJECT_ROOT, 'bert', 'configs', configMatch[1]);
+                    configPath = path.join(PROJECT_ROOT, 'src', 'bert', 'configs', configMatch[1]);
                     datasetType = configMatch[1].replace('.py', '');
                 }
-            } else if (command.includes('gpt2/train.py') && command.includes('gpt2/configs/')) {
+            } else if (command.includes('src/gpt2/train.py') && command.includes('src/gpt2/configs/')) {
                 processType = 'GPT-2';
-                // Match './gpt2/configs/...', '/gpt2/configs/...', and 'gpt2/configs/...'
-                const configMatch = command.match(/(?:\.?\/)?gpt2\/configs\/([^/]+\/train_gpt2[^/\s]*\.py)/);
+                // Match './src/gpt2/configs/...', '/src/gpt2/configs/...', and 'src/gpt2/configs/...'
+                const configMatch = command.match(/(?:\.?\/)?src\/gpt2\/configs\/([^/]+\/train_gpt2[^/\s]*\.py)/);
                 if (configMatch) {
-                    configPath = path.join(PROJECT_ROOT, 'gpt2', 'configs', configMatch[1]);
+                    configPath = path.join(PROJECT_ROOT, 'src', 'gpt2', 'configs', configMatch[1]);
                     const datasetMatch = configMatch[1].match(/([^/]+)\//);
                     if (datasetMatch) {
                         datasetType = datasetMatch[1];
