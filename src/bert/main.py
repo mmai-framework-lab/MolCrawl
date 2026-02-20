@@ -340,27 +340,79 @@ if __name__ == "__main__":
 
         dataset_path = Path(dataset_dir)
 
-        # Try to load from arrow format (with .arrow suffix)
-        train_arrow = dataset_path / "train.arrow"
-        test_arrow = dataset_path / "test.arrow"
-        valid_arrow = dataset_path / "valid.arrow"
+        # Try new multi-dataset loader first (for compounds)
+        train_dataset = None
+        test_dataset = None
 
-        if train_arrow.exists():
-            print(f"Loading from arrow format: {train_arrow}")
-            train_dataset = load_from_disk(str(train_arrow))
-            # Try test first, fall back to valid
-            if test_arrow.exists():
-                test_dataset = load_from_disk(str(test_arrow))
-            elif valid_arrow.exists():
-                test_dataset = load_from_disk(str(valid_arrow))
+        try:
+            # Check if this is a compounds dataset by looking at the parent directory structure
+            if "compounds" in str(dataset_path):
+                from compounds.dataset.multi_loader import MultiDatasetLoader
+
+                # Determine compounds directory
+                compounds_dir = dataset_path
+                if dataset_path.name in [
+                    "train",
+                    "test",
+                    "valid",
+                    "train.arrow",
+                    "test.arrow",
+                    "valid.arrow",
+                ]:
+                    compounds_dir = dataset_path.parent
+
+                loader = MultiDatasetLoader(compounds_dir)
+                available = loader.get_available_datasets()
+
+                if available:
+                    print(
+                        f"📊 Found {len(available)} available compound datasets: {[d.value for d in available]}"
+                    )
+
+                    # Load and combine all available datasets
+                    dataset_dict = loader.load_datasets(combine=True)
+
+                    train_dataset = dataset_dict.get("train")
+                    test_dataset = dataset_dict.get("valid") or dataset_dict.get("test")
+
+                    if train_dataset and test_dataset:
+                        print(
+                            f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}"
+                        )
+                    else:
+                        print(
+                            "⚠ Multi-loader succeeded but missing splits, falling back to legacy loader"
+                        )
+                        train_dataset = None
+                        test_dataset = None
+        except Exception as e:
+            print(
+                f"⚠ Multi-loader failed ({e}), falling back to legacy single-dataset loader"
+            )
+
+        # Legacy loader (if multi-loader failed or not applicable)
+        if train_dataset is None or test_dataset is None:
+            # Try to load from arrow format (with .arrow suffix)
+            train_arrow = dataset_path / "train.arrow"
+            test_arrow = dataset_path / "test.arrow"
+            valid_arrow = dataset_path / "valid.arrow"
+
+            if train_arrow.exists():
+                print(f"Loading from arrow format: {train_arrow}")
+                train_dataset = load_from_disk(str(train_arrow))
+                # Try test first, fall back to valid
+                if test_arrow.exists():
+                    test_dataset = load_from_disk(str(test_arrow))
+                elif valid_arrow.exists():
+                    test_dataset = load_from_disk(str(valid_arrow))
+                else:
+                    raise FileNotFoundError(
+                        f"No test or valid split found in {dataset_path}"
+                    )
             else:
-                raise FileNotFoundError(
-                    f"No test or valid split found in {dataset_path}"
-                )
-        else:
-            # Fall back to standard format
-            dataset = load_from_disk(dataset_dir)
-            train_dataset = dataset["train"]
+                # Fall back to standard format
+                dataset = load_from_disk(dataset_dir)
+                train_dataset = dataset["train"]
             test_split_name = "test" if "test" in dataset else "valid"
             test_dataset = dataset[test_split_name]
 

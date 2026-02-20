@@ -182,6 +182,7 @@ if __name__ == "__main__":
         SMILES Compounds Dataset Loader
 
         SMILES化合物データを読み込み、ChemBERTa-2学習用に前処理します。
+        複数のデータセットを動的に読み込み、結合することができます。
         """
 
         def __init__(self, dataset_dir, tokenizer, max_length=256):
@@ -193,16 +194,57 @@ if __name__ == "__main__":
             """Load train and test datasets"""
             logger.info("📂 Loading datasets...")
 
+            # 新しいマルチデータセットローダーを試す
+            try:
+                from pathlib import Path
+                from compounds.dataset.multi_loader import MultiDatasetLoader
+
+                compounds_dir = Path(self.dataset_dir).parent
+                loader = MultiDatasetLoader(compounds_dir)
+
+                # 利用可能なデータセットを取得
+                available = loader.get_available_datasets()
+
+                if available:
+                    logger.info(
+                        f"📊 Found {len(available)} available datasets: {[d.value for d in available]}"
+                    )
+
+                    # 全データセットを結合して読み込み
+                    dataset_dict = loader.load_datasets(combine=True)
+
+                    train_dataset = dataset_dict.get("train")
+                    test_dataset = dataset_dict.get("valid") or dataset_dict.get("test")
+
+                    if train_dataset and test_dataset:
+                        logger.info(
+                            f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}"
+                        )
+                        return train_dataset, test_dataset
+                    else:
+                        logger.warning(
+                            "⚠ Multi-loader succeeded but missing splits, falling back to legacy loader"
+                        )
+
+            except Exception as e:
+                logger.warning(
+                    f"⚠ Multi-loader failed ({e}), falling back to legacy single-dataset loader"
+                )
+
+            # レガシーローダー（後方互換性）
             train_path = os.path.join(self.dataset_dir, "train")
             test_path = os.path.join(self.dataset_dir, "test")
             valid_path = os.path.join(self.dataset_dir, "valid")
 
             # Load datasets
             if os.path.exists(train_path):
-                logger.info("📂 Using standard HuggingFace dataset loading")
+                logger.info("📂 Using legacy single-dataset loading")
                 train_dataset = load_from_disk(train_path)
             else:
-                raise FileNotFoundError(f"Training dataset not found at {train_path}")
+                raise FileNotFoundError(
+                    f"Training dataset not found at {train_path}\n"
+                    f"Please run the preparation pipeline first."
+                )
 
             # Prefer valid over test
             if os.path.exists(valid_path):
