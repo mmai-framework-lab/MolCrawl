@@ -25,16 +25,13 @@ from typing import Any, Dict, List
 import torch
 from transformers import DataCollatorForLanguageModeling
 
-from config.paths import UNIPROT_DATASET_DIR
+from src.config.paths import UNIPROT_DATASET_DIR
 from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 
 # Model configuration
 model_size = "small"  # Choose between small, medium, large
 model_path = os.path.join(
-    os.environ.get("LEARNING_SOURCE_DIR", "learning_source_20251210"),
-    "protein_sequence",
-    "esm2-output",
-    f"esm2-{model_size}"
+    os.environ.get("LEARNING_SOURCE_DIR", "learning_source_20251210"), "protein_sequence", "esm2-output", f"esm2-{model_size}"
 )
 
 # ESM-2 optimized settings
@@ -81,18 +78,14 @@ def preprocess_function(examples):
             for seq in input_ids:
                 # Get pad token ID
                 pad_token_id = (
-                    tokenizer.pad_token_id
-                    if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None
-                    else 0
+                    tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
                 )
                 attention_mask = [1 if token != pad_token_id else 0 for token in seq]
                 attention_masks.append(attention_mask)
             examples["attention_mask"] = attention_masks
         else:  # Single sequence
             pad_token_id = (
-                tokenizer.pad_token_id
-                if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None
-                else 0
+                tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
             )
             examples["attention_mask"] = [1 if token != pad_token_id else 0 for token in input_ids]
 
@@ -125,17 +118,13 @@ class ProteinSequenceDataCollator(DataCollatorForLanguageModeling):
 
 
 # Use custom data collator with MLM probability 0.15 (ESM-2 standard)
-data_collator = ProteinSequenceDataCollator(
-    tokenizer=tokenizer,
-    mlm=True,
-    mlm_probability=0.15
-)
+data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
 
 
 # Configuration summary
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("🧬 ESM-2 Configuration Summary")
-print("="*60)
+print("=" * 60)
 print(f"Model size:              {model_size}")
 print(f"Model output path:       {model_path}")
 print(f"Dataset directory:       {dataset_dir}")
@@ -149,4 +138,4 @@ print(f"Batch size:              {batch_size}")
 print(f"Gradient accum steps:    {gradient_accumulation_steps}")
 print(f"Effective batch size:    {batch_size * gradient_accumulation_steps}")
 print(f"Save steps:              {save_steps}")
-print("="*60 + "\n")
+print("=" * 60 + "\n")

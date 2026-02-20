@@ -8,7 +8,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ### 1. `ci-tests.yml` - Continuous Integration Tests
 
-**Triggers**: Push to main/develop/feature branches, Pull Requests  
+**Triggers**: Push to main/develop/feature branches, Pull Requests
 **Purpose**: Ensures code quality and functionality
 
 **Jobs**:
@@ -22,7 +22,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ### 2. `phase-validation.yml` - Phase-Specific Validation
 
-**Triggers**: Manual workflow dispatch  
+**Triggers**: Manual workflow dispatch
 **Purpose**: Validates completion of specific project phases
 
 **Workflows**:
@@ -35,7 +35,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ### 3. `documentation.yml` - Documentation Generation
 
-**Triggers**: Push to main/develop, Manual dispatch  
+**Triggers**: Push to main/develop, Manual dispatch
 **Purpose**: Builds and deploys documentation
 
 **Jobs**:
@@ -46,7 +46,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ### 4. `benchmark.yml` - Performance Benchmarks
 
-**Triggers**: Weekly schedule (Sunday 00:00 UTC), Manual dispatch  
+**Triggers**: Weekly schedule (Sunday 00:00 UTC), Manual dispatch
 **Purpose**: Tracks model and pipeline performance over time
 
 **Jobs**:
@@ -56,7 +56,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ### 5. `release.yml` - Release Process
 
-**Triggers**: Version tags (v*.*._, alpha-_, beta-\*), Manual dispatch  
+**Triggers**: Version tags (v*.*._, alpha-_, beta-\*), Manual dispatch
 **Purpose**: Automates release preparation and distribution
 
 **Jobs**:

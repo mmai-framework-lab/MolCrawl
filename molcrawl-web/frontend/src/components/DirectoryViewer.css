@@ -119,15 +119,15 @@
   .directory-viewer {
     padding: 15px;
   }
-  
+
   .directory-header h2 {
     font-size: 1.5rem;
   }
-  
+
   .node-header {
     padding: 10px 15px;
   }
-  
+
   .node-children {
     margin-left: 15px;
   }

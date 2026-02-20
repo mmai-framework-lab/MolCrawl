@@ -275,20 +275,20 @@ class MoleculeNLDataset:
 
 ### データ品質の向上
 
-✅ SMILES検証により化学的に妥当なデータのみを保持  
-✅ 無効サンプルのフラグ管理（`valid_sample`）  
+✅ SMILES検証により化学的に妥当なデータのみを保持
+✅ 無効サンプルのフラグ管理（`valid_sample`）
 ✅ 長文サンプルの識別（`input_too_long`）
 
 ### 構造の簡素化
 
-✅ 不要なカラムの削除（18列 → 10列）  
-✅ タスクタイプの明確化（`task_type`）  
+✅ 不要なカラムの削除（18列 → 10列）
+✅ タスクタイプの明確化（`task_type`）
 ✅ トークン長の最適化（平均-40%削減）
 
 ### 互換性の課題
 
-⚠️ カラム名の変更（`task` → `task_type`）  
-⚠️ 一部カラムの削除（`sample_id`, `raw_input`, etc.）  
+⚠️ カラム名の変更（`task` → `task_type`）
+⚠️ 一部カラムの削除（`sample_id`, `raw_input`, etc.）
 ⚠️ データフォーマットの変更（`input_text`の簡素化）
 
 ### 総合評価

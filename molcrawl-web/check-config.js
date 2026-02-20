@@ -12,12 +12,12 @@ if (!process.env.LEARNING_SOURCE_DIR) {
   console.error('❌ ERROR: LEARNING_SOURCE_DIR environment variable is required!');
   console.error('');
   console.error('=== Available Learning Source Directories ===');
-  
+
   const projectRoot = path.resolve(__dirname, '..');
   try {
     const learningDirs = fs.readdirSync(projectRoot)
       .filter(name => name.startsWith('learning_source'));
-    
+
     if (learningDirs.length > 0) {
       learningDirs.forEach(dir => {
         const dirPath = path.join(projectRoot, dir);
@@ -42,7 +42,7 @@ if (!process.env.LEARNING_SOURCE_DIR) {
     console.error('  (could not list directories)');
     console.error('  Error:', e.message);
   }
-  
+
   console.error('');
   process.exit(1);
 }
@@ -59,11 +59,11 @@ if (!fs.existsSync(learningSourcePath)) {
   console.error(`  Full path: ${learningSourcePath}`);
   console.error('');
   console.error('Available directories:');
-  
+
   try {
     const learningDirs = fs.readdirSync(projectRoot)
       .filter(name => name.startsWith('learning_source'));
-    
+
     if (learningDirs.length > 0) {
       learningDirs.forEach(dir => console.error(`  - ${dir}`));
     } else {
@@ -72,7 +72,7 @@ if (!fs.existsSync(learningSourcePath)) {
   } catch (e) {
     console.error('  (could not list directories)');
   }
-  
+
   console.error('');
   process.exit(1);
 }

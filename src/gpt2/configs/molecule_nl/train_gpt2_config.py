@@ -3,8 +3,7 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 
-
-from config.paths import MOLECULE_NL_DATASET_DIR, get_gpt2_output_path
+from src.config.paths import MOLECULE_NL_DATASET_DIR, get_gpt2_output_path
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 
 tensorboard = True  # log training metrics to tensorboard

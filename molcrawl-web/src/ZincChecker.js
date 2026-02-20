@@ -27,18 +27,18 @@ const ZincChecker = () => {
   const checkZincFiles = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/zinc/check');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.error || 'チェックに失敗しました');
       }
-      
+
       setCheckResult(result.data);
     } catch (err) {
       console.error('ZINC チェックエラー:', err);
@@ -51,18 +51,18 @@ const ZincChecker = () => {
   const countZincData = async () => {
     setCountingLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/zinc/count');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.error || 'データ件数取得に失敗しました');
       }
-      
+
       setDataCountResult(result.data);
     } catch (err) {
       console.error('ZINC データ件数取得エラー:', err);
@@ -84,14 +84,14 @@ const ZincChecker = () => {
         <h3>🧪 ZINC20 データ完整性チェック</h3>
         <p>download_zinc.shで定義されたファイルのダウンロード状況を確認します</p>
         <div className="button-group">
-          <button 
+          <button
             className="check-button"
             onClick={checkZincFiles}
             disabled={loading}
           >
             {loading ? '⏳ チェック中...' : '🔍 ZINC データをチェック'}
           </button>
-          <button 
+          <button
             className="count-button"
             onClick={countZincData}
             disabled={countingLoading}
@@ -153,9 +153,9 @@ const ZincChecker = () => {
                         <span className="dir-progress">
                           {stats.existing}/{stats.total}
                           <div className="progress-bar">
-                            <div 
-                              className="progress-fill" 
-                              style={{ 
+                            <div
+                              className="progress-fill"
+                              style={{
                                 width: `${(stats.existing / stats.total) * 100}%`,
                                 backgroundColor: getStatusColor((stats.existing / stats.total) * 100)
                               }}

@@ -11,9 +11,11 @@ import pickle
 try:
     from transformers import PreTrainedTokenizerFast
 except ModuleNotFoundError:
+
     class PreTrainedTokenizerFast:  # type: ignore
         def __init__(self, *args, **kwargs):
             raise ModuleNotFoundError("transformers is required to use EsmSequenceTokenizer")
+
 
 from protein_sequence.utils.configs import ProteinSequenceConfig
 

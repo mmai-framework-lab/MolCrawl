@@ -80,9 +80,7 @@ def prepare_scaffolds(smiles: str):
             # 1000件ごとに統計をログ出力
             if _invalid_smiles_count % 1000 == 0:
                 invalid_count, total_count, invalid_rate, examples = get_invalid_smiles_stats()
-                logger.warning(
-                    f"Invalid SMILES detected: {invalid_count}/{total_count} ({invalid_rate:.2f}%)"
-                )
+                logger.warning(f"Invalid SMILES detected: {invalid_count}/{total_count} ({invalid_rate:.2f}%)")
             return ""
 
         scaffold = GetScaffoldForMol(molecule)

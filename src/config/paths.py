@@ -6,7 +6,7 @@
 import os
 
 # 共通モジュールをインポート
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # データセット保存先ディレクトリの定数定義
 LEARNING_SOURCE_DIR = check_learning_source_dir()

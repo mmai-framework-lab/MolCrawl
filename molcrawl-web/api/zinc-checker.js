@@ -31,26 +31,26 @@ async function countLinesInFile(filePath) {
 // ZINCファイルリストを取得（動的にディレクトリから取得）
 async function getZincFileList(baseDir) {
   const zincFiles = [];
-  
+
   try {
     // ベースディレクトリ内のディレクトリを取得
     const directories = await fs.readdir(baseDir);
-    
+
     for (const dir of directories) {
       const dirPath = path.join(baseDir, dir);
       const stat = await fs.stat(dirPath);
-      
+
       if (stat.isDirectory()) {
         // 各ディレクトリ内の.txtファイルを取得
         const files = await fs.readdir(dirPath);
         const txtFiles = files.filter(file => file.endsWith('.txt'));
-        
+
         for (const file of txtFiles) {
           zincFiles.push(path.join(dir, file));
         }
       }
     }
-    
+
     return zincFiles.sort(); // ソートして返す
   } catch (error) {
     console.error('Error getting ZINC file list:', error);
@@ -77,10 +77,10 @@ async function getZincDataCount(baseDir) {
       const fullPath = path.join(baseDir, filePath);
       try {
         const stats = await fs.stat(fullPath);
-        
+
         if (stats.size > 0) {
           const lineCount = await countLinesInFile(fullPath);
-          
+
           dataStats.processedFiles++;
           dataStats.totalDataCount += lineCount;
           dataStats.fileDataCounts.push({
@@ -88,7 +88,7 @@ async function getZincDataCount(baseDir) {
             count: lineCount,
             size: stats.size
           });
-          
+
           console.log(`Processed ${filePath}: ${lineCount} entries`);
         } else {
           dataStats.processingErrors.push(`${filePath}: Empty file`);
@@ -134,7 +134,7 @@ async function checkZincFiles(baseDir) {
       try {
         const stats = await fs.stat(fullPath);
         results.existing++;
-        
+
         if (stats.size > 0) {
           results.withSize++;
           results.totalSize += stats.size;

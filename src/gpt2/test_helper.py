@@ -207,7 +207,7 @@ def create_test_configs():
     domain_info = get_domain_info()
 
     for domain, info in domain_info.items():
-        config_content = f'''# {domain.upper()}ドメイン用GPT2テスト設定
+        config_content = f"""# {domain.upper()}ドメイン用GPT2テスト設定
 
 # 基本設定
 domain = "{domain}"
@@ -215,19 +215,19 @@ max_test_samples = 1000
 convert_to_hf = True
 
 # データセット設定
-'''
+"""
 
         if info["dataset_dir"]:
-            config_content += f'''dataset_params = {{
+            config_content += f"""dataset_params = {{
     "dataset_dir": "{info["dataset_dir"]}"
 }}
-'''
+"""
 
         if info["vocab_path"]:
-            config_content += f'''
+            config_content += f"""
 # 語彙ファイル
 vocab_path = "{info["vocab_path"]}"
-'''
+"""
 
         config_content += f"""
 # 出力設定

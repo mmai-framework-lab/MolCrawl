@@ -104,7 +104,7 @@ echo "=== テスト完了 ==="
 RESULT_FILE="$(dirname "$CHECKPOINT_PATH")/test_report.json"
 if [ -f "$RESULT_FILE" ]; then
     echo "✓ テスト結果: $RESULT_FILE"
-    
+
     # 結果のサマリーを表示
     if command -v jq &> /dev/null; then
         echo ""

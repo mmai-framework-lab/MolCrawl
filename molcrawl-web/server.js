@@ -7,7 +7,7 @@ const fs = require('fs');
 function parseArgs() {
   const args = process.argv.slice(2);
   const parsed = {};
-  
+
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--port' || args[i] === '-p') {
       parsed.port = parseInt(args[i + 1], 10);
@@ -37,7 +37,7 @@ function parseArgs() {
       process.exit(0);
     }
   }
-  
+
   return parsed;
 }
 

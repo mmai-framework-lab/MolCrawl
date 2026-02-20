@@ -125,27 +125,27 @@ body {
   .header-content h1 {
     font-size: 2rem;
   }
-  
+
   .header-content p {
     font-size: 1rem;
   }
-  
+
   .nav-tabs {
     padding: 0 10px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  
+
   .nav-tab {
     padding: 15px 20px;
     flex-shrink: 0;
     white-space: nowrap;
   }
-  
+
   .tab-label {
     display: none;
   }
-  
+
   .tab-icon {
     font-size: 1.5rem;
   }
@@ -155,19 +155,19 @@ body {
   .app-header {
     padding: 20px 0;
   }
-  
+
   .header-content {
     padding: 0 15px;
   }
-  
+
   .header-content h1 {
     font-size: 1.8rem;
   }
-  
+
   .nav-tabs {
     padding: 0 5px;
   }
-  
+
   .nav-tab {
     padding: 12px 15px;
   }

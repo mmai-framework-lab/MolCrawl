@@ -3,8 +3,7 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 
-
-from config.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
+from src.config.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 
 dataset_dir = UNIPROT_DATASET_DIR

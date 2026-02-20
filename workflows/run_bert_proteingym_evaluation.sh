@@ -189,7 +189,7 @@ if [ "$SKIP_EVALUATION" = false ]; then
         echo "BERTモデルを先に訓練してください"
         exit 1
     fi
-    
+
     # モデルファイルの確認
     if [ ! -f "$MODEL_PATH/model.safetensors" ] && [ ! -f "$MODEL_PATH/pytorch_model.bin" ]; then
         echo "エラー: モデルファイルが見つかりません: $MODEL_PATH"
@@ -205,38 +205,38 @@ fi
 if [ "$SKIP_DATA_PREP" = false ]; then
     echo "=== データ準備フェーズ ==="
     echo "ProteinGymデータを準備中..."
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Pythonコマンド引数を準備
     DATA_PREP_ARGS=(
         "scripts/evaluation/bert/proteingym_data_preparation.py"
         "--output_dir" "$DATA_DIR"
         "--max_variants_per_assay" "$MAX_VARIANTS"
     )
-    
+
     # ダウンロードフラグ
     if [ "$DOWNLOAD" = true ]; then
         DATA_PREP_ARGS+=("--download")
         echo "📥 ProteinGymデータをダウンロード中..."
     fi
-    
+
     # サンプルのみフラグ
     if [ "$SAMPLE_ONLY" = true ]; then
         DATA_PREP_ARGS+=("--sample_only")
         echo "📝 サンプルデータのみ作成中..."
     fi
-    
+
     python "${DATA_PREP_ARGS[@]}"
-    
+
     if [ $? -ne 0 ]; then
         echo "エラー: データ準備に失敗しました"
         exit 1
     fi
-    
+
     echo "データ準備完了"
     echo ""
-    
+
     # サンプルのみの場合はここで終了
     if [ "$SAMPLE_ONLY" = true ]; then
         echo "=== サンプルデータ作成完了 ==="
@@ -256,14 +256,14 @@ if [ "$SKIP_EVALUATION" = false ]; then
     echo "BERT ProteinGym評価を実行中..."
     echo "モデル: $MODEL_PATH"
     echo "データ: $DATASET_PATH"
-    
+
     # データセットの存在確認
     if [ ! -f "$DATASET_PATH" ]; then
         echo "エラー: データセットが見つかりません: $DATASET_PATH"
         echo "先にデータ準備を実行してください（--skip_data_prepを外す）"
         exit 1
     fi
-    
+
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
         "scripts/evaluation/bert/proteingym_evaluation.py"
@@ -273,19 +273,19 @@ if [ "$SKIP_EVALUATION" = false ]; then
         "--device" "$DEVICE"
         "--batch_size" "$BATCH_SIZE"
     )
-    
+
     # トークナイザーパスを追加（Noneでない場合）
     if [ "$TOKENIZER_PATH" != "None" ] && [ ! -z "$TOKENIZER_PATH" ]; then
         EVAL_ARGS+=("--tokenizer_path" "$TOKENIZER_PATH")
     fi
-    
+
     python "${EVAL_ARGS[@]}"
-    
+
     if [ $? -ne 0 ]; then
         echo "エラー: モデル評価に失敗しました"
         exit 1
     fi
-    
+
     echo "モデル評価完了"
     echo ""
 fi
@@ -297,34 +297,34 @@ fi
 if [ "$SKIP_VISUALIZATION" = false ]; then
     echo "=== 可視化フェーズ ==="
     echo "評価結果の可視化を実行中..."
-    
+
     # 最新の評価結果ディレクトリを探す
     LATEST_RESULT_DIR=$(find "$OUTPUT_DIR" -maxdepth 1 -type d -name "*bert_proteingym*" | sort | tail -1)
-    
+
     if [ -z "$LATEST_RESULT_DIR" ]; then
         echo "エラー: 評価結果ディレクトリが見つかりません"
         echo "先に評価を実行してください（--skip_evaluationを外す）"
         exit 1
     fi
-    
+
     echo "評価結果ディレクトリ: $LATEST_RESULT_DIR"
-    
+
     # 結果ファイルの存在確認
     if [ ! -f "$LATEST_RESULT_DIR/bert_proteingym_results.json" ]; then
         echo "エラー: 評価結果ファイルが見つかりません"
         echo "期待されるファイル: $LATEST_RESULT_DIR/bert_proteingym_results.json"
         exit 1
     fi
-    
+
     python "$PROJECT_ROOT/scripts/evaluation/bert/proteingym_visualization.py" \
         --results_dir "$LATEST_RESULT_DIR" \
         --output_dir "$LATEST_RESULT_DIR/visualizations"
-    
+
     if [ $? -ne 0 ]; then
         echo "エラー: 可視化に失敗しました"
         exit 1
     fi
-    
+
     echo "可視化完了"
     echo ""
 fi

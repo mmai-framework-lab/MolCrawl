@@ -10,7 +10,7 @@ import numpy as np
 # プロジェクトルートのsrcディレクトリをパスに追加
 
 from compounds.utils.config import CompoundConfig
-from utils.image_manager import get_image_path
+from src.utils.image_manager import get_image_path
 from compounds.utils.general import (
     combine_datasets,
     download_datasets,
@@ -19,7 +19,7 @@ from compounds.utils.general import (
     download_zinc20,
 )
 from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
-from config.paths import COMPOUNDS_DIR
+from src.config.paths import COMPOUNDS_DIR
 from core.base import (
     multiprocess_tokenization,
     read_parquet,
@@ -92,7 +92,7 @@ def tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, proces
     organix13_dataset = read_parquet(file_path=os.path.join(organix13_dataset_path, "OrganiX13.parquet"))
 
     # プロセス数を環境変数から取得（デフォルト: 2）
-    num_processes = int(os.environ.get('TOKENIZATION_PROCESSES', '2'))
+    num_processes = int(os.environ.get("TOKENIZATION_PROCESSES", "2"))
     logger.info(f"Using {num_processes} processes for tokenization")
 
     # SMILESのトークナイズ
@@ -121,11 +121,10 @@ def tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, proces
 
     # 無効なSMILESの統計を出力
     from compounds.utils.preprocessing import get_invalid_smiles_stats
+
     invalid_count, total_count, invalid_rate, examples = get_invalid_smiles_stats()
     if total_count > 0:
-        logger.info(
-            f"SMILES validation summary: {invalid_count}/{total_count} invalid SMILES ({invalid_rate:.2f}%)"
-        )
+        logger.info(f"SMILES validation summary: {invalid_count}/{total_count} invalid SMILES ({invalid_rate:.2f}%)")
 
         # 無効なSMILESの例を表示
         if examples:
@@ -141,8 +140,7 @@ def tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, proces
             )
         elif invalid_rate > 5.0:
             logger.warning(
-                f"High rate of invalid SMILES detected ({invalid_rate:.2f}%). "
-                "This may indicate data quality issues."
+                f"High rate of invalid SMILES detected ({invalid_rate:.2f}%). " "This may indicate data quality issues."
             )
         elif invalid_rate > 1.0:
             logger.info(
@@ -150,10 +148,7 @@ def tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, proces
                 "This is within acceptable range for large chemical databases."
             )
         else:
-            logger.info(
-                f"Low rate of invalid SMILES ({invalid_rate:.2f}%). "
-                "Data quality is good."
-            )
+            logger.info(f"Low rate of invalid SMILES ({invalid_rate:.2f}%). " "Data quality is good.")
 
         # ZINC20特有の問題の説明
         logger.info(

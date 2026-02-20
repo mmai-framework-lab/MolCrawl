@@ -1,4 +1,3 @@
 data_preparation:
-
   # Num of workers to use in the data preparation
   num_workers: 1

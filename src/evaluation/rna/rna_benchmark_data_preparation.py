@@ -21,7 +21,7 @@ import pandas as pd
 import scipy.sparse as sp
 
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
-from utils.evaluation_output import setup_evaluation_logging
+from src.utils.evaluation_output import setup_evaluation_logging
 
 
 @dataclass
@@ -81,10 +81,7 @@ def _auto_detect_mapping_columns(
     resolved_ensembl = next((col for col in ensembl_candidates if col in df.columns), None)
 
     if resolved_symbol is None or resolved_ensembl is None:
-        raise ValueError(
-            "マッピングファイルの列名を自動検出できませんでした。"
-            f" 利用可能カラム: {list(df.columns)}"
-        )
+        raise ValueError("マッピングファイルの列名を自動検出できませんでした。" f" 利用可能カラム: {list(df.columns)}")
 
     return resolved_symbol, resolved_ensembl
 
@@ -124,8 +121,7 @@ def _validate_gene_ids(
 
     if match_ratio < 0.1:
         raise ValueError(
-            f"{dataset_name}: 遺伝子IDの一致率が低すぎます（{match_ratio:.2%}）。"
-            " Ensembl ID列が存在しない可能性があります。"
+            f"{dataset_name}: 遺伝子IDの一致率が低すぎます（{match_ratio:.2%}）。" " Ensembl ID列が存在しない可能性があります。"
         )
 
 

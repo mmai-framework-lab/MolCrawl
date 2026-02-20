@@ -32,12 +32,7 @@ GENE_VOCAB_PATH = os.path.join(RNA_DATASET_DIR, "gene_vocab.json")
 
 # Model configuration
 model_size = "small"  # Choose between small, medium, large
-model_path = os.path.join(
-    RNA_REFINED_DIR,
-    "rna",
-    "rnaformer-output",
-    f"rnaformer-{model_size}"
-)
+model_path = os.path.join(RNA_REFINED_DIR, "rna", "rnaformer-output", f"rnaformer-{model_size}")
 
 # RNAformer optimized settings
 max_length = 1024  # RNA transcriptome sequences
@@ -105,7 +100,9 @@ def preprocess_function(examples):
         attention_masks = []
         for input_ids in examples["input_ids"]:
             # Get pad token ID
-            pad_token_id = tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') and tokenizer.pad_token_id is not None else 0
+            pad_token_id = (
+                tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
+            )
 
             # Create attention mask: 1 for real tokens, 0 for padding
             attention_mask = [1 if token_id != pad_token_id else 0 for token_id in input_ids]
@@ -117,9 +114,9 @@ def preprocess_function(examples):
 
 
 # Configuration summary
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("🧬 RNAformer Configuration Summary")
-print("="*60)
+print("=" * 60)
 print(f"Model size:              {model_size}")
 print(f"Model output path:       {model_path}")
 print(f"Dataset directory:       {dataset_dir}")
@@ -134,4 +131,4 @@ print(f"Batch size:              {batch_size}")
 print(f"Gradient accum steps:    {gradient_accumulation_steps}")
 print(f"Effective batch size:    {batch_size * gradient_accumulation_steps}")
 print(f"Save steps:              {save_steps}")
-print("="*60 + "\n")
+print("=" * 60 + "\n")

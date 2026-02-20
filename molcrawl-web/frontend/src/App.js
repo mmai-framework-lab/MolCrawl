@@ -7,15 +7,15 @@ function App() {
   const [activeTab, setActiveTab] = useState('directory');
 
   const tabs = [
-    { 
-      id: 'directory', 
-      label: 'Directory Browser', 
+    {
+      id: 'directory',
+      label: 'Directory Browser',
       icon: '📁',
       component: <DirectoryViewer />
     },
-    { 
-      id: 'datasets', 
-      label: 'HF Datasets', 
+    {
+      id: 'datasets',
+      label: 'HF Datasets',
       icon: '🤗',
       component: <DatasetInfo />
     }

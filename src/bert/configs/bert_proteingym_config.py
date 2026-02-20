@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # 共通環境チェックモジュールを追加
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # プロジェクトルートの取得
 PROJECT_ROOT = Path(__file__).parent.parent

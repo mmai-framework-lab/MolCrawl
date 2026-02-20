@@ -3,9 +3,8 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 
-
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from config.paths import COMPOUNDS_DATASET_DIR, get_bert_output_path
+from src.config.paths import COMPOUNDS_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 

@@ -105,7 +105,7 @@ const PREPARATION_SCRIPTS = {
 function findLatestLogFile(learningSourceDir, logDir, logPattern, sinceTime = null) {
   const glob = require('glob');
   const logDirPath = path.join(PROJECT_ROOT, learningSourceDir, logDir);
-  
+
   if (!fs.existsSync(logDirPath)) {
     return null;
   }
@@ -232,19 +232,19 @@ router.post('/start', (req, res) => {
     // 既に実行中かチェック
     const processKey = `${dataset}_${phase}`;
     const learningSourceDir = process.env.LEARNING_SOURCE_DIR || 'learning_source_20260106';
-    
+
     // 実際にスクリプトが実行中かチェック
     const runningPids = checkScriptRunning(scriptName);
     if (runningPids) {
       console.log(`[Preparation Runner] Script already running with PIDs: ${runningPids.join(', ')}`);
-      
+
       // ログファイルを検出
       const existingLogFile = findLatestLogFile(
         learningSourceDir,
         scriptConfig.logDir,
         scriptConfig.logPattern
       );
-      
+
       // プロセス情報を更新または作成
       if (!runningProcesses.has(processKey)) {
         runningProcesses.set(processKey, {
@@ -263,7 +263,7 @@ router.post('/start', (req, res) => {
           status: 'running',
         });
       }
-      
+
       return res.json({
         success: true,
         alreadyRunning: true,
@@ -274,7 +274,7 @@ router.post('/start', (req, res) => {
         hasLog: !!existingLogFile,
       });
     }
-    
+
     // Mapにはあるが実プロセスがない場合は削除
     if (runningProcesses.has(processKey)) {
       console.log(`[Preparation Runner] Removing stale process entry: ${processKey}`);
@@ -353,7 +353,7 @@ router.post('/start', (req, res) => {
         processInfo.status = code === 0 ? 'completed' : 'failed';
         processInfo.exitCode = code;
         processInfo.endTime = new Date();
-        
+
         // 最後にログファイルを検出
         if (!processInfo.scriptLogFile) {
           detectAndUpdateLogFile(processKey, learningSourceDir, logDetectionInfo);
@@ -465,7 +465,7 @@ router.get('/log/:dataset/:phase', (req, res) => {
     const processKey = `${dataset}_${phase}`;
 
     const processInfo = runningProcesses.get(processKey);
-    
+
     if (!processInfo) {
       return res.status(404).json({
         success: false,
@@ -476,7 +476,7 @@ router.get('/log/:dataset/:phase', (req, res) => {
 
     // スクリプトが作成したログファイルを優先
     let logFilePath = processInfo.scriptLogFile;
-    
+
     // ログファイルがまだ検出されていない場合、再度検出を試みる
     if (!logFilePath && processInfo.logDetectionInfo) {
       logFilePath = findLatestLogFile(
@@ -485,7 +485,7 @@ router.get('/log/:dataset/:phase', (req, res) => {
         processInfo.logDetectionInfo.logPattern,
         processInfo.logDetectionInfo.startTime
       );
-      
+
       if (logFilePath) {
         processInfo.scriptLogFile = logFilePath;
         console.log(`[Preparation Runner] Late detection of log file for ${processKey}: ${logFilePath}`);
@@ -584,7 +584,7 @@ router.post('/stop', (req, res) => {
 router.get('/all-status', (req, res) => {
   try {
     const allStatus = {};
-    
+
     for (const [processKey, processInfo] of runningProcesses.entries()) {
       allStatus[processKey] = {
         ...processInfo,

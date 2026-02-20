@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Union, Optional
 
-from config.paths import GENOME_SEQUENCE_DIR
+from src.config.paths import GENOME_SEQUENCE_DIR
 from core.config import Config
+
 
 @dataclass
 class RefSeqPreparationConfig:
@@ -29,6 +30,7 @@ class RefSeqPreparationConfig:
     num_proc_parquet: Optional[int] = None
     parquet_batch_size: Optional[int] = None
     local_base_dir: Optional[str] = None
+
 
 @dataclass
 class GenomeSequenceConfig(Config):

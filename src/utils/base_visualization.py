@@ -30,7 +30,7 @@ try:
 except ModuleNotFoundError:
     sns = None
 
-from utils.image_manager import get_image_output_dir
+from src.utils.image_manager import get_image_output_dir
 
 
 class BaseVisualizationGenerator(ABC):

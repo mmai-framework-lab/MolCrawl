@@ -119,11 +119,11 @@ class ClinVarProcessor:
             logger.info(f"Available columns: {df_snv.columns.tolist()}")
 
             # ReferenceAlleleVCFとAlternateAlleleVCFフィールドを使用
-            if 'ReferenceAlleleVCF' in df_snv.columns and 'AlternateAlleleVCF' in df_snv.columns:
+            if "ReferenceAlleleVCF" in df_snv.columns and "AlternateAlleleVCF" in df_snv.columns:
                 logger.info("Using VCF allele fields (ReferenceAlleleVCF, AlternateAlleleVCF)")
                 # VCFフィールドを標準フィールドにコピー
-                df_snv['ReferenceAllele'] = df_snv['ReferenceAlleleVCF']
-                df_snv['AlternateAllele'] = df_snv['AlternateAlleleVCF']
+                df_snv["ReferenceAllele"] = df_snv["ReferenceAlleleVCF"]
+                df_snv["AlternateAllele"] = df_snv["AlternateAlleleVCF"]
 
             logger.info(f"First few ReferenceAllele values: {df_snv['ReferenceAllele'].head(10).tolist()}")
             logger.info(f"First few AlternateAllele values: {df_snv['AlternateAllele'].head(10).tolist()}")

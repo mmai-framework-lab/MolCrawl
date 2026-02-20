@@ -27,14 +27,14 @@ from sklearn.metrics import (
 
 from gpt2.model import GPT, GPTConfig
 
-from config.paths import get_genome_tokenizer_path
-from utils.evaluation_output import (
+from src.config.paths import get_genome_tokenizer_path
+from src.utils.evaluation_output import (
     get_evaluation_output_dir,
     get_model_name_from_path,
     get_model_type_from_path,
     setup_evaluation_logging,
 )
-from utils.model_evaluator import ModelEvaluator
+from src.utils.model_evaluator import ModelEvaluator
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)

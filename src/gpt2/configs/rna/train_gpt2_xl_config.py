@@ -1,7 +1,7 @@
 import os
 
 
-from config.paths import CELLXGENE_DATASET_DIR, RNA_DATASET_DIR, get_gpt2_output_path
+from src.config.paths import CELLXGENE_DATASET_DIR, RNA_DATASET_DIR, get_gpt2_output_path
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 # EX-Large-Sized GPT2 Model

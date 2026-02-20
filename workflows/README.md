@@ -2,7 +2,7 @@
 
 Workflow scripts for data preparation, model training, evaluation, and maintenance for the RIKEN Dataset Foundational Model project.
 
-**最終更新**: 2026年1月15日  
+**最終更新**: 2026年1月15日
 **スクリプト総数**: 61 (Shell: 60, Python: 1)
 
 ## Table of Contents

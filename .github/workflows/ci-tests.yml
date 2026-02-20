@@ -1,16 +1,14 @@
 name: CI Tests
-
 on:
   push:
-    branches: [ main, develop, "update/**", "feature/**", "phase/**" ]
+    branches: [main, develop, "update/**", "feature/**", "phase/**"]
     paths:
       - '**.py'
       - 'pyproject.toml'
       - 'environment.yaml'
       - '.github/workflows/ci-tests.yml'
   pull_request:
-    branches: [ main, develop ]
-
+    branches: [main, develop]
 jobs:
   unit-tests:
     name: Unit Tests (Python ${{ matrix.python-version }})
@@ -19,16 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10"]
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -39,11 +34,9 @@ jobs:
           pip install pyarrow
           pip install rdkit-pypi
           pip install -e .
-      
       - name: Run unit tests
         run: |
           pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term -n auto
-      
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -51,20 +44,16 @@ jobs:
           flags: unittests
           name: codecov-umbrella
         continue-on-error: true
-
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -74,24 +63,19 @@ jobs:
           pip install transformers==4.45.1 accelerate==0.34.2
           pip install pandas rdkit-pypi
           pip install -e .
-      
       - name: Run integration tests
         run: |
           pytest tests/integration -v --tb=short
-
   model-sanity-checks:
     name: Model Sanity Checks
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -99,7 +83,6 @@ jobs:
           pip install transformers==4.45.1 accelerate==0.34.2
           pip install datasets
           pip install -e .
-      
       - name: Test BERT initialization
         run: |
           python - <<'PY'
@@ -107,7 +90,6 @@ jobs:
 
           print("✓ BERT test module import ok", bert_test.__name__)
           PY
-      
       - name: Test GPT2 initialization
         run: |
           python - <<'PY'
@@ -123,46 +105,36 @@ jobs:
 
           print("✓ GPT2 test module import ok", gpt2_test.__name__)
           PY
-
   type-checking:
     name: Type Checking (MyPy)
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install mypy types-PyYAML types-requests types-six
-      
       - name: Run MyPy
         run: |
           mypy src/ --ignore-missing-imports --no-strict-optional
-
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install safety bandit
-      
       - name: Run Safety scan
         env:
           SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
@@ -172,11 +144,9 @@ jobs:
             exit 0
           fi
           pip freeze | safety scan --stdin --no-interaction || true
-      
       - name: Run Bandit security scan
         run: |
           bandit -r src/ -ll -f json -o bandit-report.json --exit-zero
-
       - name: Summarize Bandit results
         if: always()
         run: |
@@ -188,7 +158,6 @@ jobs:
           else
             echo "- No report file found" >> "$GITHUB_STEP_SUMMARY"
           fi
-      
       - name: Upload Bandit report
         uses: actions/upload-artifact@v4
         with:

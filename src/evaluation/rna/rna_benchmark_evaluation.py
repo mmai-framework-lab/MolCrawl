@@ -20,7 +20,8 @@ from torch import Tensor
 from transformers import BertForMaskedLM
 
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
-from utils.evaluation_output import setup_evaluation_logging
+from src.utils.evaluation_output import setup_evaluation_logging
+
 
 @dataclass
 class EvaluationConfig:
@@ -329,9 +330,7 @@ def main() -> None:
             metrics = _evaluate_gpt2(cfg, split, logger)
 
         results[split.name] = metrics
-        detailed_rows.append(
-            {"dataset": split.name, "avg_loss": metrics["avg_loss"], "perplexity": metrics["perplexity"]}
-        )
+        detailed_rows.append({"dataset": split.name, "avg_loss": metrics["avg_loss"], "perplexity": metrics["perplexity"]})
 
     results_file = cfg.output_dir / "rna_benchmark_results.json"
     with results_file.open("w", encoding="utf-8") as f:

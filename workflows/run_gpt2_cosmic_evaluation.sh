@@ -65,10 +65,10 @@ GPT-2 COSMIC評価パイプライン
 例:
     # デフォルト出力先での実行
     $0 --model-size medium --max-samples 2000
-    
+
     # カスタム出力ディレクトリを指定
     $0 --eval-only -o /custom/output/cosmic_results
-    
+
     # 可視化のみ実行
     $0 --visualize-only --output-dir ./my_results
 
@@ -152,17 +152,17 @@ cd "$PROJECT_ROOT"
 # 可視化のみの場合
 if [[ "$VISUALIZE_ONLY" == true ]]; then
     echo "=== 可視化実行 ==="
-    
+
     RESULTS_FILE="$OUTPUT_DIR/cosmic_evaluation_results.json"
     if [[ ! -f "$RESULTS_FILE" ]]; then
         echo "エラー: 評価結果ファイルが見つかりません: $RESULTS_FILE"
         exit 1
     fi
-    
+
     python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
         --result-dir "$OUTPUT_DIR" \
         --output_dir "$OUTPUT_DIR/visualizations"
-    
+
     echo "可視化完了: $OUTPUT_DIR/visualizations/"
     exit 0
 fi
@@ -170,30 +170,30 @@ fi
 # 1. データ準備（評価のみでない場合）
 if [[ "$EVAL_ONLY" != true ]]; then
     echo "=== データ準備フェーズ ==="
-    
+
     echo "COSMICサンプルデータを作成中..."
     python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_data_preparation.py" \
         --output_dir "$DATA_DIR" \
         --max_samples "$MAX_SAMPLES" \
         --create_sample_data
-    
+
     echo "データ準備完了"
 fi
 
 # 2. モデル評価
 if [[ "$VISUALIZE_ONLY" != true ]]; then
     echo "=== モデル評価フェーズ ==="
-    
+
     # モデルパスの構築
     MODEL_PATH="$MODELS_DIR/genome_sequence-$MODEL_SIZE/ckpt.pt"
-    
+
     if [[ ! -f "$MODEL_PATH" ]]; then
         echo "エラー: モデルファイルが見つかりません: $MODEL_PATH"
         echo "利用可能なモデル:"
         find "$MODELS_DIR" -name "ckpt.pt" 2>/dev/null || echo "  モデルが見つかりません"
         exit 1
     fi
-    
+
     # COSMICデータファイルの確認
     COSMIC_DATA="$DATA_DIR/cosmic_evaluation_dataset.csv"
     if [[ ! -f "$COSMIC_DATA" ]]; then
@@ -201,11 +201,11 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
         echo "まずデータ準備を実行してください"
         exit 1
     fi
-    
+
     echo "モデル評価を実行中..."
     echo "モデル: $MODEL_PATH"
     echo "データ: $COSMIC_DATA"
-    
+
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
         "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_evaluation.py"
@@ -214,7 +214,7 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
         --output_dir "$OUTPUT_DIR"
         --batch_size "$BATCH_SIZE"
     )
-    
+
     # トークナイザーパスが指定されている場合は追加
     if [[ -n "$TOKENIZER_PATH" ]]; then
         EVAL_ARGS+=(--tokenizer_path "$TOKENIZER_PATH")
@@ -222,9 +222,9 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
     else
         echo "トークナイザー: 自動検出"
     fi
-    
+
     python "${EVAL_ARGS[@]}"
-    
+
     echo "モデル評価完了"
 fi
 

@@ -140,11 +140,11 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 
 ## 📊 動作確認済み
 
-✅ **APIサーバー起動**: ポート3001で正常動作  
-✅ **ディレクトリ読み取り**: learning_source_202508の構造取得  
-✅ **ファイルサイズ表示**: バイト数の適切なフォーマット  
-✅ **エラーハンドリング**: 不正パス・権限エラーの適切な処理  
-✅ **静的ファイル配信**: HTMLテストページの正常表示  
+✅ **APIサーバー起動**: ポート3001で正常動作
+✅ **ディレクトリ読み取り**: learning_source_202508の構造取得
+✅ **ファイルサイズ表示**: バイト数の適切なフォーマット
+✅ **エラーハンドリング**: 不正パス・権限エラーの適切な処理
+✅ **静的ファイル配信**: HTMLテストページの正常表示
 ✅ **レスポンシブデザイン**: モバイル表示対応
 
 ## 🔮 拡張可能性
@@ -180,6 +180,6 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 
 ---
 
-📝 **作成者**: GitHub Copilot  
-📅 **作成日**: 2025年8月4日  
+📝 **作成者**: GitHub Copilot
+📅 **作成日**: 2025年8月4日
 🏷️ **バージョン**: v1.0.0

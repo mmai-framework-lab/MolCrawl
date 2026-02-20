@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
     import torch
@@ -54,7 +54,7 @@ class ModelEvaluator(ABC):
         # Initialize components
         self.tokenizer = None
         self.model = None
-        self.vocab_size = None
+        self.vocab_size: Optional[int] = None
 
         # Initialize tokenizer and model (and assign their return values)
         self.tokenizer = self._init_tokenizer()

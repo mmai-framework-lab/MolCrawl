@@ -161,16 +161,16 @@ const BERTTrainingStatus = ({ dataset }) => {
         }
 
         const { checkpoint } = modelData;
-        
+
         // Check if process is actually running
         const isActuallyTraining = runningProcess !== undefined;
         const displayStatus = isActuallyTraining ? 'training' : 'stopped';
         const cardClass = isActuallyTraining ? 'model-training' : 'model-stopped';
         const isClickable = modelData.exists && modelData.checkpoint;
-        
+
         return (
-            <div 
-                key={size} 
+            <div
+                key={size}
                 className={`model-card ${cardClass} ${isClickable ? 'model-clickable' : ''}`}
                 onClick={() => isClickable && handleModelClick(modelData, datasetKey)}
                 title={isClickable ? 'Click to test masked language modeling' : ''}
@@ -267,7 +267,7 @@ const BERTTrainingStatus = ({ dataset }) => {
                 <div className="checkpoint-path">
                     <small>{checkpoint.path}/{checkpoint.checkpoint_name}</small>
                 </div>
-                
+
                 {runningProcess && (
                     <div className="process-info">
                         <div className="stat-row">
@@ -367,7 +367,7 @@ const BERTTrainingStatus = ({ dataset }) => {
                     )
                 )}
             </div>
-            
+
             {/* BERT Inference Modal */}
             <BERTInferenceModal
                 isOpen={inferenceModal.isOpen}

@@ -36,7 +36,7 @@ from compounds.utils.general import (
     download_opv,
     download_llamol_datasets,
 )
-from config.paths import COMPOUNDS_DIR
+from src.config.paths import COMPOUNDS_DIR
 from core.base import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -96,9 +96,7 @@ def download_datasets_individually(cfg, compounds_dir, dataset_types, force=Fals
                     (Path(data_dir) / f"{dt.value}_download.marker").touch()
                 break  # LlaMolは一度だけダウンロード
             elif dataset_type == CompoundDatasetType.GUACAMOL:
-                logger.info(
-                    f"⚠ {dataset_type.value}: Please download manually from GuacaMol benchmark"
-                )
+                logger.info(f"⚠ {dataset_type.value}: Please download manually from GuacaMol benchmark")
                 continue
             else:
                 logger.warning(f"⚠ Unknown dataset type: {dataset_type.value}")
@@ -188,12 +186,7 @@ def main():
         logger.info("Target datasets: All available")
 
     # ステップ1: ダウンロード
-    if (
-        not args.skip_download
-        and not args.skip_process
-        and not args.skip_tokenize
-        and not args.skip_convert
-    ):
+    if not args.skip_download and not args.skip_process and not args.skip_tokenize and not args.skip_convert:
         run_download = True
     elif args.download_only:
         run_download = True
@@ -206,16 +199,10 @@ def main():
         logger.info("=" * 70)
 
         if dataset_types:
-            download_datasets_individually(
-                cfg, compounds_dir, dataset_types, args.force
-            )
+            download_datasets_individually(cfg, compounds_dir, dataset_types, args.force)
         else:
             # 全データセットをダウンロード
-            all_types = [
-                dt
-                for dt in get_all_dataset_types()
-                if dt != CompoundDatasetType.GUACAMOL
-            ]
+            all_types = [dt for dt in get_all_dataset_types() if dt != CompoundDatasetType.GUACAMOL]
             download_datasets_individually(cfg, compounds_dir, all_types, args.force)
 
     if args.download_only:
@@ -230,9 +217,7 @@ def main():
 
         processed = process_all_available_datasets(
             Path(compounds_dir),
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets]
-            if args.datasets
-            else None,
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
             force=args.force,
             num_processes=args.num_processes,
         )
@@ -249,9 +234,7 @@ def main():
             Path(compounds_dir),
             cfg.vocab_path,
             cfg.max_length,
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets]
-            if args.datasets
-            else None,
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
             force=args.force,
             num_processes=args.tokenization_processes,
         )
@@ -266,9 +249,7 @@ def main():
 
         converted = convert_all_tokenized_datasets(
             Path(compounds_dir),
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets]
-            if args.datasets
-            else None,
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
             train_ratio=0.9,
             valid_ratio=0.05,
             test_ratio=0.05,

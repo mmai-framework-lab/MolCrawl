@@ -354,19 +354,19 @@
   .App-main {
     padding: 10px;
   }
-  
+
   .tree-header {
     padding: 10px 15px;
   }
-  
+
   .tree-header h2 {
     font-size: 1.3em;
   }
-  
+
   .item-size {
     display: none;
   }
-  
+
   .item-count {
     font-size: 0.8em;
   }

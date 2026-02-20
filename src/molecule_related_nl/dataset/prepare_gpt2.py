@@ -101,6 +101,7 @@ if __name__ == "__main__":
 
     # 相対パスを絶対パスに変換
     from config.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
+
     save_path = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, cfg.save_path)
 
     tokenize_batch_dataset(save_path, context_length, number_sample)

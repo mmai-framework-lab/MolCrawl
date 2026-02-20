@@ -8,7 +8,7 @@ from datasets import load_dataset
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 
-from config.paths import GENOME_SEQUENCE_DIR
+from src.config.paths import GENOME_SEQUENCE_DIR
 from core.base import setup_logging
 from genome_sequence.dataset.refseq.download_refseq import download_refseq
 from genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome

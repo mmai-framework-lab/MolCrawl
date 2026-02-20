@@ -13,7 +13,7 @@ if __name__ == "__main__":
     project_root = os.path.join(current_dir, "..", "..", "..", "..", "..")
     project_root = os.path.abspath(project_root)
 
-from config.paths import COMPOUNDS_DIR
+from src.config.paths import COMPOUNDS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -35,22 +35,26 @@ def generate_zinc_file_list():
                     # Parse directory/filename format (e.g., "AA/AAAA.txt")
                     if "/" in line:
                         directory, filename = line.split("/", 1)
-                        files.append({
-                            "filename": filename,
-                            "directory": directory,
-                            "relative_path": line,  # Store original path for reference
-                            "url": f"https://files.docking.org/2D/{line}"
-                        })
+                        files.append(
+                            {
+                                "filename": filename,
+                                "directory": directory,
+                                "relative_path": line,  # Store original path for reference
+                                "url": f"https://files.docking.org/2D/{line}",
+                            }
+                        )
                     else:
                         # Fallback for files without directory structure
                         filename = line
                         dir_name = filename[:2]  # First two characters as directory
-                        files.append({
-                            "filename": filename,
-                            "directory": dir_name,
-                            "relative_path": f"{dir_name}/{filename}",
-                            "url": f"https://files.docking.org/2D/{dir_name}/{filename}"
-                        })
+                        files.append(
+                            {
+                                "filename": filename,
+                                "directory": dir_name,
+                                "relative_path": f"{dir_name}/{filename}",
+                                "url": f"https://files.docking.org/2D/{dir_name}/{filename}",
+                            }
+                        )
     else:
         logger.warning(f"File list {filelist_path} not found. Cannot generate download list.")
 
@@ -89,15 +93,17 @@ def download_single_file(file_info, base_directory, retries=5, timeout=60):
 
             # Use session for better connection handling
             session = requests.Session()
-            session.headers.update({
-                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            })
+            session.headers.update(
+                {
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                }
+            )
 
             response = session.get(url, timeout=timeout, stream=True)
             response.raise_for_status()
 
             # Write file in chunks
-            with open(target_path, 'wb') as f:
+            with open(target_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:  # Filter out keep-alive chunks
                         f.write(chunk)
@@ -115,12 +121,12 @@ def download_single_file(file_info, base_directory, retries=5, timeout=60):
             logger.warning(f"Attempt {attempt + 1} failed for {filename}: {e}")
             if attempt < retries - 1:
                 # Longer delay for server errors (503, 429, etc.)
-                if hasattr(e, 'response') and e.response is not None and e.response.status_code in [503, 429, 502, 504]:
-                    delay = min(30, 5 * (2 ** attempt))  # Cap at 30 seconds
+                if hasattr(e, "response") and e.response is not None and e.response.status_code in [503, 429, 502, 504]:
+                    delay = min(30, 5 * (2**attempt))  # Cap at 30 seconds
                     logger.info(f"Server error detected, waiting {delay} seconds before retry...")
                     time.sleep(delay)
                 else:
-                    time.sleep(2 ** attempt)  # Exponential backoff for other errors
+                    time.sleep(2**attempt)  # Exponential backoff for other errors
             else:
                 logger.error(f"Failed to download {filename} after {retries} attempts")
                 return False
@@ -166,10 +172,10 @@ def download_zinc_files(delay_between_downloads: float = 1.0):
         logger.info(f"Progress: {i+1}/{len(files_to_download)} - Downloading {file_info['filename']}")
         file_result = {
             "relative_path": f"{file_info['directory']}/{file_info['filename']}",
-            "filename": file_info['filename'],
+            "filename": file_info["filename"],
             "size_bytes": 0,
             "num_lines": 0,
-            "md5": ""
+            "md5": "",
         }
         try:
             success = download_single_file(file_info, directory)
@@ -236,11 +242,7 @@ def convert_zinc_to_parquet(save_path: str):
         return
 
     # Find all directories containing .txt files
-    all_dirs = [
-        osp.join(base_directory, f)
-        for f in os.listdir(base_directory)
-        if osp.isdir(osp.join(base_directory, f))
-    ]
+    all_dirs = [osp.join(base_directory, f) for f in os.listdir(base_directory) if osp.isdir(osp.join(base_directory, f))]
 
     logger.info(f"Found {len(all_dirs)} directories in {base_directory}")
 
@@ -252,7 +254,7 @@ def convert_zinc_to_parquet(save_path: str):
         logger.info(f"Processing directory: {dir_path}")
 
         # Get all .txt files in this directory
-        txt_files = [f for f in os.listdir(dir_path) if f.endswith('.txt')]
+        txt_files = [f for f in os.listdir(dir_path) if f.endswith(".txt")]
 
         if not txt_files:
             logger.warning(f"No .txt files found in {dir_path}")
@@ -294,10 +296,7 @@ def convert_zinc_to_parquet(save_path: str):
 
     # Copy the single parquet file to final destination
     final_parquet_path = osp.join(save_path, "zinc_processed.parquet")
-    shutil.copy(
-        osp.join(temp_parquet_dir, "part.0.parquet"),
-        final_parquet_path
-    )
+    shutil.copy(osp.join(temp_parquet_dir, "part.0.parquet"), final_parquet_path)
 
     # Clean up temporary directory
     if os.path.exists(temp_parquet_dir):
@@ -319,13 +318,7 @@ def check_download_status():
     base_directory = osp.join(COMPOUNDS_DIR, "data", "zinc20")
 
     if not os.path.exists(base_directory):
-        return {
-            "status": "not_started",
-            "total_expected": 300,
-            "downloaded": 0,
-            "missing": 300,
-            "empty_files": 0
-        }
+        return {"status": "not_started", "total_expected": 300, "downloaded": 0, "missing": 300, "empty_files": 0}
 
     files_to_check = generate_zinc_file_list()
     downloaded = 0
@@ -355,7 +348,7 @@ def check_download_status():
         "missing": missing,
         "empty_files": empty_files,
         "completion_rate": completion_rate,
-        "base_directory": base_directory
+        "base_directory": base_directory,
     }
 
 

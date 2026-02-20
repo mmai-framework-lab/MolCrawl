@@ -26,7 +26,7 @@ from datasets import load_dataset
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 
-from config.paths import PROTEIN_SEQUENCE_DIR
+from src.config.paths import PROTEIN_SEQUENCE_DIR
 from core.base import setup_logging
 from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer, tokenize_to_parquet
 from protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein

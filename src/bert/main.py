@@ -40,9 +40,7 @@ class RNADatasetForBERT:
         try:
             arrow_files = list(Path(data_dir).glob("*.arrow"))
             if arrow_files:
-                print(
-                    f"📁 Found {len(arrow_files)} arrow files: {[f.name for f in arrow_files]}"
-                )
+                print(f"📁 Found {len(arrow_files)} arrow files: {[f.name for f in arrow_files]}")
 
                 all_batches = []
                 for arrow_file in arrow_files:
@@ -60,9 +58,7 @@ class RNADatasetForBERT:
                 if all_batches:
                     # Combine all tables
                     combined_table = pa.concat_tables(all_batches)
-                    print(
-                        f"📊 Combined {len(all_batches)} tables: {len(combined_table)} total rows"
-                    )
+                    print(f"📊 Combined {len(all_batches)} tables: {len(combined_table)} total rows")
 
                     # Convert PyArrow table to pandas DataFrame, then to HuggingFace Dataset
                     df = combined_table.to_pandas()
@@ -70,9 +66,7 @@ class RNADatasetForBERT:
 
                     # Convert numpy arrays to lists for HuggingFace compatibility
                     if "token" in df.columns:
-                        df["token"] = df["token"].apply(
-                            lambda x: x.tolist() if hasattr(x, "tolist") else x
-                        )
+                        df["token"] = df["token"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
 
                     # Create dataset from pandas DataFrame (bypasses metadata issues)
                     self.dataset = Dataset.from_pandas(df)
@@ -88,24 +82,16 @@ class RNADatasetForBERT:
             raise FileNotFoundError(f"Could not load data from {data_dir}") from e
 
         # Split into train/valid if needed
-        if (
-            hasattr(self.dataset, "keys")
-            and isinstance(self.dataset, dict)
-            and "train" in self.dataset
-        ):
+        if hasattr(self.dataset, "keys") and isinstance(self.dataset, dict) and "train" in self.dataset:
             # Already has splits
             if split == "train":
                 self.data = self.dataset["train"]
             elif split in ["valid", "val", "test"]:
-                self.data = self.dataset.get(
-                    "valid", self.dataset.get("test", self.dataset["train"])
-                )
+                self.data = self.dataset.get("valid", self.dataset.get("test", self.dataset["train"]))
         else:
             # Create splits
             if test_size > 0:
-                split_dataset = self.dataset.train_test_split(
-                    test_size=test_size, seed=42
-                )
+                split_dataset = self.dataset.train_test_split(test_size=test_size, seed=42)
                 if split == "train":
                     self.data = split_dataset["train"]
                 elif split in ["valid", "val", "test"]:
@@ -141,15 +127,9 @@ if __name__ == "__main__":
         "1",
         "yes",
     )  # log training metrics to wandb
-    wandb_project = os.environ.get(
-        "WANDB_PROJECT", "bert-training"
-    )  # wandb project name
-    wandb_run_name = os.environ.get(
-        "WANDB_RUN_NAME", None
-    )  # wandb run name (None = auto-generate)
-    wandb_entity = os.environ.get(
-        "WANDB_ENTITY", None
-    )  # wandb entity/team name (None = default)
+    wandb_project = os.environ.get("WANDB_PROJECT", "bert-training")  # wandb project name
+    wandb_run_name = os.environ.get("WANDB_RUN_NAME", None)  # wandb run name (None = auto-generate)
+    wandb_entity = os.environ.get("WANDB_ENTITY", None)  # wandb entity/team name (None = default)
     wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in (
         "true",
         "1",
@@ -170,11 +150,7 @@ if __name__ == "__main__":
     log_interval = 100
     save_steps = 1000  # Default value, can be overridden in config
     # -----------------------------------------------------------------------------
-    config_keys = [
-        k
-        for k, v in globals().items()
-        if not k.startswith("_") and isinstance(v, (int, float, bool, str))
-    ]
+    config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
     # Handle configurator path (support repo-root invocation and direct invocation)
     _this_dir = os.path.dirname(os.path.abspath(__file__))
     if os.path.exists(os.path.join(_this_dir, "configurator.py")):
@@ -198,9 +174,7 @@ if __name__ == "__main__":
             ) from e
 
     if model_size == "small":
-        model_config = BertConfig(
-            vocab_size=meta_vocab_size, max_position_embeddings=max_length
-        )
+        model_config = BertConfig(vocab_size=meta_vocab_size, max_position_embeddings=max_length)
     elif model_size == "medium":
         # Note that this would be bert-large but the size is equivalent to gpt2-medium so we name it medium here as well
         model_config = BertConfig(
@@ -222,9 +196,7 @@ if __name__ == "__main__":
             intermediate_size=4608,  # Size of intermediate (feed-forward) layer
         )
     else:
-        raise ValueError(
-            "model_size: {model_size} is not supported choose between small, medium and large"
-        )
+        raise ValueError("model_size: {model_size} is not supported choose between small, medium and large")
 
     model = BertForMaskedLM(config=model_config)
 
@@ -282,13 +254,9 @@ if __name__ == "__main__":
 
         # Verify we have a valid tokenizer
         if actual_tokenizer is None:
-            raise ValueError(
-                "No tokenizer found in config. Please define 'tokenizer' in your config file."
-            )
+            raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
 
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.2
-        )
+        data_collator = DataCollatorForLanguageModeling(tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.2)
 
     training_args = TrainingArguments(
         output_dir=model_path,  # output directory to where save model checkpoint
@@ -305,9 +273,7 @@ if __name__ == "__main__":
         warmup_steps=warmup_steps,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
-        report_to="wandb"
-        if use_wandb
-        else "none",  # Enable wandb if configured, otherwise disable integrations
+        report_to="wandb" if use_wandb else "none",  # Enable wandb if configured, otherwise disable integrations
         # load_best_model_at_end=True,  # whether to load the best model (in terms of loss) at the end of training
         # save_total_limit=3,           # whether you don't have much space so you let only 3 model weights saved in the disk
     )
@@ -320,12 +286,8 @@ if __name__ == "__main__":
         vocab_file_path = globals().get("rna_vocab_file", None)
 
         # Load training and test datasets using custom loader
-        train_data_loader = RNADatasetForBERT(
-            dataset_dir, split="train", vocab_file=vocab_file_path, test_size=0.1
-        )
-        test_data_loader = RNADatasetForBERT(
-            dataset_dir, split="test", vocab_file=vocab_file_path, test_size=0.1
-        )
+        train_data_loader = RNADatasetForBERT(dataset_dir, split="train", vocab_file=vocab_file_path, test_size=0.1)
+        test_data_loader = RNADatasetForBERT(dataset_dir, split="test", vocab_file=vocab_file_path, test_size=0.1)
 
         train_dataset = train_data_loader.get_dataset()
         test_dataset = test_data_loader.get_dataset()
@@ -365,9 +327,7 @@ if __name__ == "__main__":
                 available = loader.get_available_datasets()
 
                 if available:
-                    print(
-                        f"📊 Found {len(available)} available compound datasets: {[d.value for d in available]}"
-                    )
+                    print(f"📊 Found {len(available)} available compound datasets: {[d.value for d in available]}")
 
                     # Load and combine all available datasets
                     dataset_dict = loader.load_datasets(combine=True)
@@ -376,19 +336,13 @@ if __name__ == "__main__":
                     test_dataset = dataset_dict.get("valid") or dataset_dict.get("test")
 
                     if train_dataset and test_dataset:
-                        print(
-                            f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}"
-                        )
+                        print(f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}")
                     else:
-                        print(
-                            "⚠ Multi-loader succeeded but missing splits, falling back to legacy loader"
-                        )
+                        print("⚠ Multi-loader succeeded but missing splits, falling back to legacy loader")
                         train_dataset = None
                         test_dataset = None
         except Exception as e:
-            print(
-                f"⚠ Multi-loader failed ({e}), falling back to legacy single-dataset loader"
-            )
+            print(f"⚠ Multi-loader failed ({e}), falling back to legacy single-dataset loader")
 
         # Legacy loader (if multi-loader failed or not applicable)
         if train_dataset is None or test_dataset is None:
@@ -406,9 +360,7 @@ if __name__ == "__main__":
                 elif valid_arrow.exists():
                     test_dataset = load_from_disk(str(valid_arrow))
                 else:
-                    raise FileNotFoundError(
-                        f"No test or valid split found in {dataset_path}"
-                    )
+                    raise FileNotFoundError(f"No test or valid split found in {dataset_path}")
             else:
                 # Fall back to standard format
                 dataset = load_from_disk(dataset_dir)
@@ -422,9 +374,7 @@ if __name__ == "__main__":
             print("📊 Limited test dataset to 10000 samples for faster evaluation")
 
     # Apply preprocessing for RNA data if using custom dataset
-    if "use_custom_rna_dataset" in globals() and globals().get(
-        "use_custom_rna_dataset", False
-    ):
+    if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_dataset", False):
         print("🧬 Applying RNA-specific preprocessing...")
 
         def preprocess_rna_for_bert(examples):
@@ -486,18 +436,12 @@ if __name__ == "__main__":
         print(f"Sample attention_mask length: {len(sample['attention_mask'])}")
 
     # Apply preprocessing function if it exists in config (for non-RNA datasets)
-    elif "preprocess_function" in globals() and callable(
-        globals()["preprocess_function"]
-    ):
+    elif "preprocess_function" in globals() and callable(globals()["preprocess_function"]):
         print("Applying preprocessing function to add attention_mask...")
         # Use parallel preprocessing when configured
         preprocess_num_proc = int(globals().get("preprocess_num_proc", 1))
-        train_dataset = train_dataset.map(
-            globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc
-        )
-        test_dataset = test_dataset.map(
-            globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc
-        )
+        train_dataset = train_dataset.map(globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc)
+        test_dataset = test_dataset.map(globals()["preprocess_function"], batched=True, num_proc=preprocess_num_proc)
         print("Preprocessing completed.")
         print("Train dataset columns after preprocessing:", train_dataset.column_names)
         print("Test dataset columns after preprocessing:", test_dataset.column_names)

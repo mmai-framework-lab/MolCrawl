@@ -3,6 +3,7 @@ from typing import Any, Dict, Union
 
 from core.config import Config
 
+
 @dataclass
 class MoleculeNLPreparationConfig(Config):
     # Path to save raw data

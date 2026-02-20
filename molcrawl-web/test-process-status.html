@@ -114,7 +114,7 @@
 </head>
 <body>
     <h1>🔄 学習プロセス稼働状況テスト</h1>
-    
+
     <div class="container">
         <button onclick="loadProcessStatus()">🔄 更新</button>
         <div id="content">
@@ -126,18 +126,18 @@
         async function loadProcessStatus() {
             const contentDiv = document.getElementById('content');
             contentDiv.innerHTML = '<div class="loading">データを読み込んでいます...</div>';
-            
+
             try {
                 const response = await fetch('/api/training-process-status');
                 const data = await response.json();
-                
+
                 if (!data.success) {
                     throw new Error(data.error || 'Unknown error');
                 }
-                
+
                 let html = `
                     <h2>現在のLEARNING_SOURCE_DIR: <code>${data.currentLearningSource}</code></h2>
-                    
+
                     <div class="summary">
                         <div class="summary-item">
                             <h3>合計プロセス</h3>
@@ -157,7 +157,7 @@
                         </div>
                     </div>
                 `;
-                
+
                 if (data.processes.length === 0) {
                     html += '<p>現在実行中の学習プロセスはありません</p>';
                 } else {
@@ -178,13 +178,13 @@
                             </thead>
                             <tbody>
                     `;
-                    
+
                     data.processes.forEach(proc => {
                         const rowClass = proc.usesCurrentLearningSource ? 'current-source' : 'different-source';
-                        const statusBadge = proc.usesCurrentLearningSource 
+                        const statusBadge = proc.usesCurrentLearningSource
                             ? '<span class="badge active">✓ 一致</span>'
                             : '<span class="badge inactive">✗ 不一致</span>';
-                        
+
                         html += `
                             <tr class="${rowClass}">
                                 <td><span class="badge ${proc.processType.toLowerCase()}">${proc.processType}</span></td>
@@ -199,13 +199,13 @@
                             </tr>
                         `;
                     });
-                    
+
                     html += `
                             </tbody>
                         </table>
                     `;
                 }
-                
+
                 contentDiv.innerHTML = html;
             } catch (error) {
                 contentDiv.innerHTML = `
@@ -215,10 +215,10 @@
                 `;
             }
         }
-        
+
         // 初回読み込み
         loadProcessStatus();
-        
+
         // 30秒ごとに自動更新
         setInterval(loadProcessStatus, 30000);
     </script>

@@ -132,8 +132,8 @@ def fasta_to_raw_genome(output_dir: Union[str, Path], num_worker: int, max_lines
     raw_dir.mkdir(parents=True, exist_ok=True)
     parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker, max_lines_per_file)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()

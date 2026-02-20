@@ -26,16 +26,16 @@ import torch
 import torch.nn.functional as F
 from datasets import load_from_disk
 from transformers import BertConfig, BertForMaskedLM
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # プロジェクトルートを追加
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-from utils.evaluation_output import (  # noqa: E402
+from src.utils.evaluation_output import (  # noqa: E402
     setup_evaluation_logging,
 )
-from utils.model_evaluator import ModelEvaluator  # noqa: E402
+from src.utils.model_evaluator import ModelEvaluator  # noqa: E402
 
 # Molecule NL tokenizer
 from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer  # noqa: E402

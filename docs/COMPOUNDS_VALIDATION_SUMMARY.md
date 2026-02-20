@@ -391,10 +391,10 @@ gh workflow run phase-validation.yml -f phase=phase1-gpt2-verification
 
 Compounds処理の検証システムが完成しました：
 
-✅ **包括的なテストスイート** - ユニット、統合、Phase 1検証  
-✅ **GitHub Actions統合** - 自動・手動実行の両方に対応  
-✅ **品質メトリクス** - Invalid SMILES率などの定量的指標  
-✅ **詳細なドキュメント** - 3つのガイド文書  
+✅ **包括的なテストスイート** - ユニット、統合、Phase 1検証
+✅ **GitHub Actions統合** - 自動・手動実行の両方に対応
+✅ **品質メトリクス** - Invalid SMILES率などの定量的指標
+✅ **詳細なドキュメント** - 3つのガイド文書
 ✅ **実証済み** - ローカルでテスト実行成功（5/5 passed）
 
 **次のアクション**: vocab fileを準備して、tokenizationテストを有効化しましょう！

@@ -236,7 +236,7 @@ const BERTInferenceModal = ({ isOpen, onClose, dataset, modelData }) => {
                     {results && results.mask_predictions && (
                         <div className="bert-inference-results">
                             <h4>📝 Predictions</h4>
-                            
+
                             {/* Show filled examples */}
                             {results.filled_examples && results.filled_examples.length > 0 && (
                                 <div className="filled-examples">

@@ -4,12 +4,12 @@
     "react-app/jest"
   ],
   "rules": {
-    "no-unused-vars": ["warn", { 
+    "no-unused-vars": ["warn", {
       "argsIgnorePattern": "^_",
       "varsIgnorePattern": "^_"
     }],
-    "no-console": ["warn", { 
-      "allow": ["warn", "error"] 
+    "no-console": ["warn", {
+      "allow": ["warn", "error"]
     }],
     "eqeqeq": ["error", "always"],
     "curly": ["error", "all"],

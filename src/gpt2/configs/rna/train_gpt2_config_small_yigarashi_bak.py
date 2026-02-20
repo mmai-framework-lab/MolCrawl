@@ -1,6 +1,4 @@
-
-
-from config.paths import get_gpt2_output_path
+from src.config.paths import get_gpt2_output_path
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 tokenizer = TranscriptomeTokenizer()

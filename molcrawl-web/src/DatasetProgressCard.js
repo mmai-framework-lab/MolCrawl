@@ -16,7 +16,7 @@ function DatasetProgressCard({ datasetKey }) {
   const [filePreview, setFilePreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  
+
   // 準備スクリプト実行関連
   const [showRunnerModal, setShowRunnerModal] = useState(false);
   const [runnerPhase, setRunnerPhase] = useState(null); // 'phase01' or 'phase02'
@@ -245,7 +245,7 @@ function DatasetProgressCard({ datasetKey }) {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'スクリプトの開始に失敗しました');
       }
@@ -256,7 +256,7 @@ function DatasetProgressCard({ datasetKey }) {
       } else {
         setRunnerLog(`✅ スクリプトを開始しました\nPID: ${data.pid}\n\n`);
       }
-      
+
       // ログのポーリング開始
       startLogPolling(phase);
     } catch (error) {
@@ -307,12 +307,12 @@ function DatasetProgressCard({ datasetKey }) {
 
       if (data.success) {
         setRunnerStatus(data);
-        
+
         // 完了または失敗したらポーリングを停止
         if (!data.running && logPollInterval) {
           clearInterval(logPollInterval);
           setLogPollInterval(null);
-          
+
           // 最後にログを1回取得
           fetchRunnerLog(phase);
         }
@@ -335,7 +335,7 @@ function DatasetProgressCard({ datasetKey }) {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setRunnerLog((prev) => prev + '\n\n🛑 スクリプトを停止しました\n');
         if (logPollInterval) {
@@ -360,7 +360,7 @@ function DatasetProgressCard({ datasetKey }) {
     setRunnerPhase(null);
     setRunnerStatus(null);
     setRunnerLog('');
-    
+
     // モーダルを閉じたら進捗を再取得
     fetchProgress();
   };
@@ -416,7 +416,7 @@ function DatasetProgressCard({ datasetKey }) {
         </div>
         <div className="header-right">
           <div className="header-actions">
-            <button 
+            <button
               className="action-btn phase01-btn"
               onClick={(e) => {
                 e.stopPropagation();
@@ -426,7 +426,7 @@ function DatasetProgressCard({ datasetKey }) {
             >
               ▶ Phase 01
             </button>
-            <button 
+            <button
               className="action-btn phase02-btn"
               onClick={(e) => {
                 e.stopPropagation();
@@ -745,8 +745,8 @@ function DatasetProgressCard({ datasetKey }) {
               </h3>
               <div className="modal-header-actions">
                 {runnerStatus?.running && (
-                  <button 
-                    className="modal-action-btn stop-btn" 
+                  <button
+                    className="modal-action-btn stop-btn"
                     onClick={stopPreparationScript}
                     title="スクリプトを停止"
                   >

@@ -1,5 +1,4 @@
 name: Release Process
-
 on:
   push:
     tags:
@@ -12,114 +11,89 @@ on:
         description: 'Release version (e.g., alpha-0.1.0)'
         required: true
         type: string
-
 jobs:
   validate-release:
     name: Validate Release
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .
           pip install pytest
-      
       - name: Run all tests
         run: |
           pytest tests/ -v --tb=short
         continue-on-error: false
-      
       - name: Validate model checkpoints
         run: |
           python -m src.validate_checkpoints --all
         continue-on-error: false
-
   build-package:
     name: Build Distribution Package
     needs: validate-release
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
           pip install build twine
-      
       - name: Build package
         run: python -m build
-      
       - name: Check package
         run: twine check dist/*
-      
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: distribution-packages
           path: dist/
-
   prepare-huggingface:
     name: Prepare Hugging Face Upload
     needs: validate-release
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      
       - name: Install dependencies
         run: |
           pip install huggingface_hub
-      
       - name: Generate model cards
         run: |
           python -m src.generate_model_cards --output model-cards/
-      
       - name: Validate model metadata
         run: |
           python -m src.validate_model_metadata
-      
       - name: Upload model cards
         uses: actions/upload-artifact@v4
         with:
           name: model-cards
           path: model-cards/
-
   create-release:
     name: Create GitHub Release
     needs: [build-package, prepare-huggingface]
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Download artifacts
         uses: actions/download-artifact@v4
-      
       - name: Generate release notes
         run: |
           python -m src.generate_release_notes > RELEASE_NOTES.md
         continue-on-error: true
-      
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -131,12 +105,10 @@ jobs:
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   notify-release:
     name: Notify Release
     needs: create-release
     runs-on: ubuntu-latest
-    
     steps:
       - name: Send notification
         run: |

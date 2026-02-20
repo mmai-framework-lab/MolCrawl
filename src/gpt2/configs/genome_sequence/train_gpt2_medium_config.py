@@ -5,7 +5,7 @@
 
 import sentencepiece as spm
 
-from config.paths import (
+from src.config.paths import (
     REFSEQ_DATASET_DIR,
     get_gpt2_output_path,
     get_refseq_tokenizer_path,

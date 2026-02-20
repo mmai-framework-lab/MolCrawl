@@ -67,8 +67,12 @@ def parse_args():
     parser.add_argument("--checkpoint-file", type=str, default="ckpt.pt", help="チェックポイントファイル名")
     parser.add_argument("--device", type=str, default="auto", help="使用するデバイス (cpu, cuda, auto)")
     parser.add_argument("--test-generate", action="store_true", help="テキスト生成テストを実行")
-    parser.add_argument("--domain", type=str, choices=["rna", "genome", "protein_sequence", "compounds", "molecule_nl"],
-                        help="モデルのドメイン（トークナイザー選択用）")
+    parser.add_argument(
+        "--domain",
+        type=str,
+        choices=["rna", "genome", "protein_sequence", "compounds", "molecule_nl"],
+        help="モデルのドメイン（トークナイザー選択用）",
+    )
     parser.add_argument("--max-tokens", type=int, default=50, help="生成する最大トークン数")
     parser.add_argument("--verbose", "-v", action="store_true", help="詳細な出力")
 
@@ -101,12 +105,7 @@ def list_repo_contents(repo_id: str, revision: str = "main") -> list:
         return []
 
 
-def download_checkpoint(
-    repo_id: str,
-    checkpoint_file: str,
-    cache_dir: str = None,
-    revision: str = "main"
-) -> str:
+def download_checkpoint(repo_id: str, checkpoint_file: str, cache_dir: str = None, revision: str = "main") -> str:
     """チェックポイントファイルをダウンロード"""
     print(f"\n[INFO] チェックポイントをダウンロード中: {checkpoint_file}")
 
@@ -124,11 +123,7 @@ def download_checkpoint(
         return None
 
 
-def download_all_files(
-    repo_id: str,
-    cache_dir: str = None,
-    revision: str = "main"
-) -> str:
+def download_all_files(repo_id: str, cache_dir: str = None, revision: str = "main") -> str:
     """リポジトリ全体をダウンロード"""
     print("\n[INFO] リポジトリ全体をダウンロード中...")
 
@@ -174,6 +169,7 @@ def load_checkpoint(checkpoint_path: str, device: str, verbose: bool = False):
     except Exception as e:
         print(f"[ERROR] チェックポイントの読み込みに失敗: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -202,7 +198,7 @@ def load_model(checkpoint: dict, device: str):
         unwanted_prefix = "_orig_mod."
         for k in list(state_dict.keys()):
             if k.startswith(unwanted_prefix):
-                state_dict[k[len(unwanted_prefix):]] = state_dict.pop(k)
+                state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
 
         model.load_state_dict(state_dict)
         model.to(device)
@@ -221,6 +217,7 @@ def load_model(checkpoint: dict, device: str):
     except Exception as e:
         print(f"[ERROR] モデルの構築に失敗: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -232,19 +229,24 @@ def load_tokenizer(domain: str):
     try:
         if domain == "rna":
             from rna.utils.bert_tokenizer import create_bert_rna_tokenizer
+
             tokenizer = create_bert_rna_tokenizer()
         elif domain == "genome":
             from genome_sequence.utils.tokenizer import create_genome_tokenizer
+
             tokenizer = create_genome_tokenizer()
         elif domain == "protein_sequence":
             from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
+
             tokenizer = create_bert_protein_tokenizer()
         elif domain == "compounds":
             from compounds.utils.tokenizer import CompoundsTokenizer
+
             vocab_file = str(PROJECT_ROOT / "assets" / "molecules" / "vocab.txt")
             tokenizer = CompoundsTokenizer(vocab_file, 256)
         elif domain == "molecule_nl":
             from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+
             tokenizer = MoleculeNatLangTokenizer()
         else:
             print(f"[WARNING] 未知のドメイン: {domain}")
@@ -280,6 +282,7 @@ def test_forward_pass(model, device: str, vocab_size: int = 1000, seq_len: int =
     except Exception as e:
         print(f"[ERROR] フォワードパスに失敗: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -337,6 +340,7 @@ def test_generate(model, tokenizer, device: str, max_tokens: int = 50):
     except Exception as e:
         print(f"[ERROR] テキスト生成に失敗: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

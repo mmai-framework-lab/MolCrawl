@@ -12,7 +12,7 @@ const GenomeSpeciesList = () => {
 
   const categoryNames = {
     bacteria: 'Bacteria',
-    fungi: 'Fungi', 
+    fungi: 'Fungi',
     invertebrate: 'Invertebrate',
     protozoa: 'Protozoa',
     vertebrate_mammalian: 'Vertebrate Mammalian',
@@ -27,18 +27,18 @@ const GenomeSpeciesList = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch('/api/genome/species');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch species data');
       }
-      
+
       setSpeciesData(result.data);
     } catch (err) {
       console.error('Error fetching species data:', err);
@@ -52,7 +52,7 @@ const GenomeSpeciesList = () => {
     if (!speciesData) {return [];}
 
     let allSpecies = [];
-    
+
     if (selectedCategory === 'all') {
       // All categories
       for (const [category, speciesList] of Object.entries(speciesData.species)) {
@@ -72,7 +72,7 @@ const GenomeSpeciesList = () => {
 
     // Apply search filter
     if (searchTerm) {
-      allSpecies = allSpecies.filter(species => 
+      allSpecies = allSpecies.filter(species =>
         species.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         species.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -91,12 +91,12 @@ const GenomeSpeciesList = () => {
 
     const summary = speciesData.statistics.summary;
     const byCategory = speciesData.statistics.byCategory;
-    
+
     return (
       <div className="hierarchical-statistics">
         <div className="stats-header">
           <h3>🧬 NCBI Genome Species Database Overview</h3>
-          <button 
+          <button
             className={`toggle-btn ${showHierarchy ? 'active' : ''}`}
             onClick={() => setShowHierarchy(!showHierarchy)}
           >
@@ -112,7 +112,7 @@ const GenomeSpeciesList = () => {
               <div className="card-label">Total Species Available</div>
             </div>
           </div>
-          
+
           <div className="summary-card selected">
             <div className="card-icon">✅</div>
             <div className="card-content">
@@ -120,7 +120,7 @@ const GenomeSpeciesList = () => {
               <div className="card-label">Selected for Download</div>
             </div>
           </div>
-          
+
           <div className="summary-card rate">
             <div className="card-icon">📈</div>
             <div className="card-content">
@@ -128,7 +128,7 @@ const GenomeSpeciesList = () => {
               <div className="card-label">Selection Rate</div>
             </div>
           </div>
-          
+
           <div className="summary-card categories">
             <div className="card-icon">📂</div>
             <div className="card-content">
@@ -150,8 +150,8 @@ const GenomeSpeciesList = () => {
                       <span className="category-rate">{stats.counts.filterRate}% selected</span>
                     </div>
                     <div className="category-bar">
-                      <div 
-                        className="bar-filled" 
+                      <div
+                        className="bar-filled"
                         style={{ width: `${stats.counts.filterRate}%` }}
                       ></div>
                     </div>
@@ -216,9 +216,9 @@ const GenomeSpeciesList = () => {
     <div className="species-controls">
       <div className="control-group">
         <label htmlFor="category-select">Category:</label>
-        <select 
+        <select
           id="category-select"
-          value={selectedCategory} 
+          value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
           <option value="all">All Categories</option>
@@ -258,7 +258,7 @@ const GenomeSpeciesList = () => {
 
   const renderSpeciesList = () => {
     const filteredSpecies = getFilteredSpecies();
-    
+
     if (filteredSpecies.length === 0) {
       return (
         <div className="empty-state">
@@ -270,8 +270,8 @@ const GenomeSpeciesList = () => {
     return (
       <div className="species-grid">
         {filteredSpecies.map((species) => (
-          <div 
-            key={`${species.category}-${species.name}`} 
+          <div
+            key={`${species.category}-${species.name}`}
             className={`species-item ${species.isFiltered ? 'filtered' : 'unfiltered'}`}
           >
             <div className="species-name">{species.name}</div>
@@ -323,7 +323,7 @@ const GenomeSpeciesList = () => {
 
       {renderHierarchicalStats()}
       {renderControls()}
-      
+
       <div className="species-content">
         <div className="results-info">
           <span>Showing {getFilteredSpecies().length} species</span>

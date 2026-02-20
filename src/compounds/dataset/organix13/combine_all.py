@@ -19,7 +19,6 @@ def _get_rdkit_helpers():
     from rdkit import Chem
     from rdkit.Chem import Descriptors
 
-
     import sascorer
 
     return Chem, Descriptors, sascorer

@@ -50,12 +50,8 @@ if __name__ == "__main__":
                     # if that goes wrong, just use the string
                     attempt = val
                 # ensure the types match ok (allow None to be overridden by any type)
-                if globals()[key] is not None and type(attempt) is not type(
-                    globals()[key]
-                ):
-                    raise AssertionError(
-                        f"Type mismatch for {key}: expected {type(globals()[key])}, got {type(attempt)}"
-                    )
+                if globals()[key] is not None and type(attempt) != type(globals()[key]):
+                    raise AssertionError(f"Type mismatch for {key}: expected {type(globals()[key])}, got {type(attempt)}")
                 # cross fingers
                 print(f"Overriding: {key} = {attempt}")
                 globals()[key] = attempt

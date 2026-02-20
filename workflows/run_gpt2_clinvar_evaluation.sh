@@ -79,10 +79,10 @@ ClinVar評価パイプライン
 例:
     # デフォルト出力先での実行
     $0 --download --model-size medium --max-samples 2000
-    
+
     # カスタム出力ディレクトリを指定
     $0 --download -o /custom/output/clinvar_results
-    
+
     # 環境変数で出力先を分離
     export EVALUATION_OUTPUT_DIR=/writable/output
     $0 --eval-only --model-size large
@@ -163,18 +163,18 @@ cd "$PROJECT_ROOT"
 # 可視化のみの場合
 if [[ "$VISUALIZE_ONLY" == true ]]; then
     echo "=== 可視化実行 ==="
-    
+
     RESULTS_FILE="$OUTPUT_DIR/evaluation_results.json"
     if [[ ! -f "$RESULTS_FILE" ]]; then
         echo "エラー: 評価結果ファイルが見つかりません: $RESULTS_FILE"
         exit 1
     fi
-    
+
     python "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_visualization.py" \
         --results_file "$RESULTS_FILE" \
         --output_dir "$OUTPUT_DIR/visualizations" \
         --html_report
-    
+
     echo "可視化完了: $OUTPUT_DIR/visualizations/"
     exit 0
 fi
@@ -182,15 +182,15 @@ fi
 # 1. データ準備（評価のみでない場合）
 if [[ "$EVAL_ONLY" != true ]]; then
     echo "=== データ準備フェーズ ==="
-    
+
     if [[ "$DOWNLOAD" == true ]]; then
         echo "ClinVarデータをダウンロードしてバランスサンプリング中..."
         echo "陽性（病原性）1000件、陰性（良性）1000件をランダム抽出"
-        
+
         # ステップ1: データセットから直接ランダム抽出（配列生成含む）
         # 参照ゲノムファイルのパスを設定
         REF_FASTA="$LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna"
-        
+
         if [[ ! -f "$REF_FASTA" ]]; then
             # .gzファイルを確認
             if [[ -f "$REF_FASTA.gz" ]]; then
@@ -204,7 +204,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
         else
             echo "参照ゲノム: $REF_FASTA"
         fi
-        
+
         # extract_random_clinvar_samples.pyを使用してバランスサンプリング
         if [[ -n "$REF_FASTA" ]]; then
             # 参照ゲノムがある場合: データセットから直接抽出して配列生成
@@ -222,7 +222,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
                 --output_dir "$DATA_DIR" \
                 --max_samples "$MAX_SAMPLES" \
                 --sequence_length "$SEQUENCE_LENGTH"
-            
+
             # 生成されたファイルからバランスサンプリング
             if [[ -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
                 echo "バランスサンプリングを適用中..."
@@ -231,7 +231,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
                     --output_csv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" \
                     --num_samples 2000 \
                     --seed 42
-                
+
                 # バランス版を使用
                 mv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" "$DATA_DIR/clinvar_evaluation_dataset.csv"
             fi
@@ -240,10 +240,10 @@ if [[ "$EVAL_ONLY" != true ]]; then
         # --downloadなしの場合は既存データを使用、存在しない場合は自動ダウンロード
         if [[ ! -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
             echo "ClinVarデータが存在しないため、自動的にダウンロードします..."
-            
+
             # 参照ゲノムファイルのパスを設定
             REF_FASTA="$LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna"
-            
+
             if [[ ! -f "$REF_FASTA" ]]; then
                 # .gzファイルを確認
                 if [[ -f "$REF_FASTA.gz" ]]; then
@@ -257,7 +257,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
             else
                 echo "参照ゲノム: $REF_FASTA"
             fi
-            
+
             # extract_random_clinvar_samples.pyを使用してバランスサンプリング
             if [[ -n "$REF_FASTA" ]]; then
                 # 参照ゲノムがある場合: データセットから直接抽出して配列生成
@@ -275,7 +275,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
                     --output_dir "$DATA_DIR" \
                     --max_samples "$MAX_SAMPLES" \
                     --sequence_length "$SEQUENCE_LENGTH"
-                
+
                 # 生成されたファイルからバランスサンプリング
                 if [[ -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
                     echo "バランスサンプリングを適用中..."
@@ -284,7 +284,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
                         --output_csv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" \
                         --num_samples 2000 \
                         --seed 42
-                    
+
                     # バランス版を使用
                     mv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" "$DATA_DIR/clinvar_evaluation_dataset.csv"
                 fi
@@ -293,9 +293,9 @@ if [[ "$EVAL_ONLY" != true ]]; then
             echo "既存のClinVarデータを使用: $DATA_DIR/clinvar_evaluation_dataset.csv"
         fi
     fi
-    
+
     echo "データ準備完了"
-    
+
     # データセットのバランス確認
     if [[ -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
         echo ""
@@ -317,17 +317,17 @@ fi
 # 2. モデル評価
 if [[ "$VISUALIZE_ONLY" != true ]]; then
     echo "=== モデル評価フェーズ ==="
-    
+
     # モデルパスの構築
     MODEL_PATH="$MODELS_DIR/genome_sequence-$MODEL_SIZE/ckpt.pt"
-    
+
     if [[ ! -f "$MODEL_PATH" ]]; then
         echo "エラー: モデルファイルが見つかりません: $MODEL_PATH"
         echo "利用可能なモデル:"
         find "$MODELS_DIR" -name "ckpt.pt" 2>/dev/null || echo "  モデルが見つかりません"
         exit 1
     fi
-    
+
     # ClinVarデータファイルの確認
     CLINVAR_DATA="$DATA_DIR/clinvar_evaluation_dataset.csv"
     if [[ ! -f "$CLINVAR_DATA" ]]; then
@@ -340,11 +340,11 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
             exit 1
         fi
     fi
-    
+
     echo "モデル評価を実行中..."
     echo "モデル: $MODEL_PATH"
     echo "データ: $CLINVAR_DATA"
-    
+
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
         "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_evaluation.py"
@@ -353,7 +353,7 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
         --output_dir "$OUTPUT_DIR"
         --batch_size "$BATCH_SIZE"
     )
-    
+
     # トークナイザーパスが指定されている場合は追加
     if [[ -n "$TOKENIZER_PATH" ]]; then
         EVAL_ARGS+=(--tokenizer_path "$TOKENIZER_PATH")
@@ -361,9 +361,9 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
     else
         echo "トークナイザー: 自動検出"
     fi
-    
+
     python "${EVAL_ARGS[@]}"
-    
+
     echo "モデル評価完了"
 fi
 

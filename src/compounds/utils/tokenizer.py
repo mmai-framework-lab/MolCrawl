@@ -7,9 +7,11 @@ from typing import List
 try:
     from transformers import BertTokenizer
 except ModuleNotFoundError:
+
     class BertTokenizer:  # type: ignore
         def __init__(self, *args, **kwargs):
             raise ModuleNotFoundError("transformers is required to use SmilesTokenizer")
+
 
 from compounds.utils.preprocessing import prepare_scaffolds
 from core.base import UnTrainableTokenizer

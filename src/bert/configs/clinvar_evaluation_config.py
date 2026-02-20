@@ -1,13 +1,12 @@
-
 import sentencepiece as spm
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from config.paths import REFSEQ_DATASET_DIR
+from src.config.paths import REFSEQ_DATASET_DIR
 
 # 共通環境チェックモジュールを追加
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # ClinVar評価用BERT設定
 model_path = "runs_train_bert_genome_sequence"

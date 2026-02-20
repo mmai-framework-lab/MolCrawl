@@ -5,7 +5,7 @@ import sys
 
 import torch
 
-from config.paths import MOLECULE_NL_DATASET_DIR
+from src.config.paths import MOLECULE_NL_DATASET_DIR
 
 # 基本設定
 domain = "molecule_nl"

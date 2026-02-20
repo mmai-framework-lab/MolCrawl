@@ -14,7 +14,7 @@ import os
 import sys
 import warnings
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore")
 
 # プロジェクトルートを追加
 
-from utils.base_visualization import BaseVisualizationGenerator  # noqa: E402
+from src.utils.base_visualization import BaseVisualizationGenerator  # noqa: E402
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -108,7 +108,7 @@ class BERTVisualizationGenerator(BaseVisualizationGenerator):
         self.results = self._load_results()
         self.detailed_results = self._load_detailed_results()
 
-    def _load_results(self) -> Dict:
+    def _load_results(self, results_source: Union[str, Dict[str, Any], None] = None) -> Dict[str, Any]:
         """Load main results from JSON file."""
         results_file = self.results_dir / "bert_proteingym_results.json"
         if not results_file.exists():

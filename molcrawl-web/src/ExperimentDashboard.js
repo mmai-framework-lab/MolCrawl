@@ -291,9 +291,9 @@ function ExperimentDashboard() {
                 )}
                 {exp.url && (
                   <div style={{ marginTop: '10px' }}>
-                    <a 
-                      href={exp.url} 
-                      target="_blank" 
+                    <a
+                      href={exp.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}
                       onClick={(e) => e.stopPropagation()}
@@ -320,13 +320,13 @@ function ExperimentDashboard() {
 
             {selectedExperiment.url && (
               <div style={{ marginBottom: '20px' }}>
-                <a 
-                  href={selectedExperiment.url} 
-                  target="_blank" 
+                <a
+                  href={selectedExperiment.url}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  style={{ 
-                    color: '#667eea', 
-                    textDecoration: 'none', 
+                  style={{
+                    color: '#667eea',
+                    textDecoration: 'none',
                     fontSize: '16px',
                     fontWeight: 'bold',
                     display: 'inline-block',
@@ -367,11 +367,11 @@ function ExperimentDashboard() {
                       <th>タグ</th>
                       <td>
                         {selectedExperiment.tags.map((tag) => (
-                          <span key={`tag-${tag}`} style={{ 
-                            display: 'inline-block', 
-                            padding: '2px 8px', 
-                            margin: '2px', 
-                            backgroundColor: '#e9ecef', 
+                          <span key={`tag-${tag}`} style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            margin: '2px',
+                            backgroundColor: '#e9ecef',
                             borderRadius: '3px',
                             fontSize: '12px'
                           }}>

@@ -9,11 +9,11 @@ const path = require('path');
 async function getAllSpecies() {
   const speciesPath = path.resolve(__dirname, '../../assets/genome_species_list/species');
   const categories = ['bacteria', 'fungi', 'invertebrate', 'protozoa', 'vertebrate_mammalian', 'vertebrate_other'];
-  
+
   console.log('Species path:', speciesPath);
-  
+
   const allSpecies = {};
-  
+
   for (const category of categories) {
     const filePath = path.join(speciesPath, `${category}.txt`);
     try {
@@ -31,14 +31,14 @@ async function getAllSpecies() {
             category: category
           };
         });
-      
+
       allSpecies[category] = species;
     } catch (error) {
       console.warn(`Failed to read species file: ${filePath}`, error.message);
       allSpecies[category] = [];
     }
   }
-  
+
   return allSpecies;
 }
 
@@ -46,11 +46,11 @@ async function getAllSpecies() {
 async function getFilteredSpecies() {
   const filteredPath = path.resolve(__dirname, '../../assets/genome_species_list/filtered_species_refseq');
   const categories = ['bacteria', 'fungi', 'protozoa', 'vertebrate_mammalian', 'vertebrate_other'];
-  
+
   console.log('Filtered path:', filteredPath);
-  
+
   const filteredSpecies = {};
-  
+
   for (const category of categories) {
     const filePath = path.join(filteredPath, `${category}.txt`);
     try {
@@ -63,14 +63,14 @@ async function getFilteredSpecies() {
           const parts = line.split('\t');
           return parts[0] || line;
         });
-      
+
       filteredSpecies[category] = new Set(species);
     } catch (error) {
       console.warn(`Failed to read filtered species file: ${filePath}`, error.message);
       filteredSpecies[category] = new Set();
     }
   }
-  
+
   return filteredSpecies;
 }
 
@@ -80,30 +80,30 @@ async function getGenomeSpeciesList(req, res) {
     console.log('Getting genome species list...');
     const allSpecies = await getAllSpecies();
     const filteredSpecies = await getFilteredSpecies();
-    
+
     // Combine data with filter status
     const result = {};
     const detailedStats = {};
     let totalSpecies = 0;
     let totalFiltered = 0;
-    
+
     for (const [category, speciesList] of Object.entries(allSpecies)) {
       const filtered = filteredSpecies[category] || new Set();
-      
+
       // Create species list with filter status
       const enrichedSpecies = speciesList.map(species => ({
         ...species,
         isFiltered: filtered.has(species.name),
         downloadStatus: filtered.has(species.name) ? 'selected' : 'available'
       }));
-      
+
       result[category] = enrichedSpecies;
-      
+
       // Calculate detailed statistics for this category
       const categoryTotal = enrichedSpecies.length;
       const categoryFiltered = enrichedSpecies.filter(s => s.isFiltered).length;
       const categoryUnfiltered = categoryTotal - categoryFiltered;
-      
+
       detailedStats[category] = {
         name: category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
         counts: {
@@ -117,11 +117,11 @@ async function getGenomeSpeciesList(req, res) {
           filteredFile: `filtered_species_refseq/${category}.txt`
         }
       };
-      
+
       totalSpecies += categoryTotal;
       totalFiltered += categoryFiltered;
     }
-    
+
     // Overall statistics with hierarchy
     const overallStats = {
       summary: {
@@ -146,9 +146,9 @@ async function getGenomeSpeciesList(req, res) {
         }
       }
     };
-    
+
     console.log('Species statistics:', overallStats.summary);
-    
+
     res.json({
       success: true,
       data: {
@@ -172,32 +172,32 @@ async function getGenomeSpeciesList(req, res) {
 // API endpoint: Get species by category
 async function getGenomeSpeciesByCategory(req, res) {
   const category = req.query.category;
-  
+
   if (!category) {
     return res.status(400).json({
       error: 'Category parameter is required',
       availableCategories: ['bacteria', 'fungi', 'invertebrate', 'protozoa', 'vertebrate_mammalian', 'vertebrate_other']
     });
   }
-  
+
   try {
     const allSpecies = await getAllSpecies();
     const filteredSpecies = await getFilteredSpecies();
-    
+
     if (!allSpecies[category]) {
       return res.status(404).json({
         error: `Category '${category}' not found`,
         availableCategories: Object.keys(allSpecies)
       });
     }
-    
+
     const filtered = filteredSpecies[category] || new Set();
     const speciesList = allSpecies[category].map(species => ({
       ...species,
       isFiltered: filtered.has(species.name),
       downloadStatus: filtered.has(species.name) ? 'selected' : 'available'
     }));
-    
+
     res.json({
       success: true,
       data: {
@@ -210,7 +210,7 @@ async function getGenomeSpeciesByCategory(req, res) {
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     console.error(`Genome species by category error (${category}):`, error);
     res.status(500).json({

@@ -434,27 +434,27 @@
   .genome-species-container {
     padding: 15px;
   }
-  
+
   .hierarchy-details {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .stats-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
   }
-  
+
   .species-controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .species-grid {
     grid-template-columns: 1fr;
   }
@@ -464,7 +464,7 @@
   .summary-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .species-header h2 {
     font-size: 1.8rem;
   }

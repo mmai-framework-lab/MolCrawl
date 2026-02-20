@@ -23,7 +23,7 @@ from datasets.utils.logging import enable_progress_bar
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 
-from config.paths import RNA_DATASET_DIR
+from src.config.paths import RNA_DATASET_DIR
 from core.base import setup_logging
 from rna.dataset.cellxgene.script.build_list import build_list
 from rna.dataset.cellxgene.script.download import download

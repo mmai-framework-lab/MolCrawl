@@ -136,12 +136,12 @@ function readTrainerState(checkpointPath) {
 
         // Read file as text first
         let jsonText = fs.readFileSync(statePath, 'utf8');
-        
+
         // Replace NaN, Infinity, -Infinity with null (they are not valid JSON)
         jsonText = jsonText.replace(/:\s*NaN\s*([,\}])/g, ': null$1');
         jsonText = jsonText.replace(/:\s*Infinity\s*([,\}])/g, ': null$1');
         jsonText = jsonText.replace(/:\s*-Infinity\s*([,\}])/g, ': null$1');
-        
+
         const stateData = JSON.parse(jsonText);
 
         // Get the latest log entry
@@ -244,7 +244,7 @@ async function getModelStatus(dataset, size) {
     if (checkpoints.length > 0) {
         // Use the latest checkpoint
         const latestCheckpoint = checkpoints[0];
-        
+
         const configData = readBERTConfigMetadata(latestCheckpoint.path);
         const trainerState = readTrainerState(latestCheckpoint.path);
 

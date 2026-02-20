@@ -29,7 +29,6 @@ def train_tokenizer(output_dir, vocab_size, max_lines_per_file, input_sentence_s
 
 
 if __name__ == "__main__":
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()

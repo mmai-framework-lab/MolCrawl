@@ -30,12 +30,12 @@ const DirectoryViewer = () => {
 
   const toggleNode = async (nodePath) => {
     const newExpanded = new Set(expandedNodes);
-    
+
     if (newExpanded.has(nodePath)) {
       newExpanded.delete(nodePath);
     } else {
       newExpanded.add(nodePath);
-      
+
       // If this node doesn't have children loaded, fetch them
       try {
         const response = await fetch(`/api/directory/expand?path=${encodeURIComponent(nodePath)}`);
@@ -49,17 +49,17 @@ const DirectoryViewer = () => {
         console.error('Error expanding directory:', err);
       }
     }
-    
+
     setExpandedNodes(newExpanded);
   };
 
   const renderDirectoryNode = (node, level = 0) => {
     const isExpanded = expandedNodes.has(node.path);
     const hasChildren = node.children && node.children.length > 0;
-    
+
     return (
       <div key={node.path} className="directory-node">
-        <div 
+        <div
           className="node-header"
           style={{ paddingLeft: `${level * 20}px` }}
           onClick={() => hasChildren && toggleNode(node.path)}
@@ -72,7 +72,7 @@ const DirectoryViewer = () => {
             <span className="node-size">{node.formattedSize || node.size}</span>
           )}
         </div>
-        
+
         {hasChildren && isExpanded && (
           <div className="node-children">
             {node.children.map(child => renderDirectoryNode(child, level + 1))}
@@ -114,7 +114,7 @@ const DirectoryViewer = () => {
         <h2>📁 Project Directory Structure</h2>
         <p>Explore the foundational model datasets and files</p>
       </div>
-      
+
       <div className="directory-content">
         {directoryData && renderDirectoryNode(directoryData)}
       </div>

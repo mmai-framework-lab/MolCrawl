@@ -13,11 +13,11 @@ DATASET_DIR="$UNIPROT_DATASET_DIR"
 
 if [ -d "$DATASET_DIR" ]; then
     echo "✓ データセットディレクトリが見つかりました: $DATASET_DIR"
-    
+
     # データセットの構造を確認
     echo "データセット内容:"
     ls -la "$DATASET_DIR"
-    
+
     # データセットの最初の数サンプルを確認するPythonスクリプトを実行
     python3 << 'EOF'
 import sys
@@ -32,23 +32,23 @@ if str(src_path) not in sys.path:
 try:
     from datasets import load_from_disk
     from config.paths import UNIPROT_DATASET_DIR
-    
+
     dataset = load_from_disk(UNIPROT_DATASET_DIR)
-    
+
     print(f"✓ データセット読み込み成功")
     print(f"データセットの分割: {list(dataset.keys())}")
-    
+
     if "train" in dataset:
         train_dataset = dataset["train"]
         print(f"訓練データ数: {len(train_dataset)}")
         print(f"データのカラム: {train_dataset.column_names}")
-        
+
         # 最初のサンプルを確認
         if len(train_dataset) > 0:
             sample = train_dataset[0]
             print(f"サンプルデータ: {sample}")
             print(f"サンプルデータのキー: {list(sample.keys())}")
-            
+
             # 'text'または'sequence'キーをチェック
             if 'text' in sample:
                 print(f"テキストサンプル (最初の100文字): {sample['text'][:100]}")
@@ -82,29 +82,29 @@ if str(src_path) not in sys.path:
 
 try:
     from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
-    
+
     print("✓ BERT互換プロテイントークナイザーのインポート成功")
-    
+
     # トークナイザーを作成
     tokenizer = create_bert_protein_tokenizer()
     print(f"✓ トークナイザー作成成功")
     print(f"語彙サイズ: {len(tokenizer.get_vocab())}")
     print(f"モデル入力名: {tokenizer.model_input_names}")
-    
+
     # サンプル配列でテスト
     test_sequence = "MKTVRQERLKSIVRILERSKEPVSGAQLAEELSVSRQVIVQDIAYLRSLGYNIVATPRGYVLAGG"
-    
+
     # トークナイズテスト
     result = tokenizer(test_sequence, return_tensors="pt", padding=True, truncation=True)
     print(f"✓ トークナイズ成功")
     print(f"出力キー: {list(result.keys())}")
     print(f"input_ids形状: {result['input_ids'].shape}")
-    
+
     if 'sequence_tokens' in result:
         print("✗ まだsequence_tokensキーが残っています")
     else:
         print("✓ input_idsキーが正しく使用されています")
-        
+
 except Exception as e:
     print(f"✗ トークナイザーテストエラー: {e}")
     import traceback

@@ -68,20 +68,14 @@ class ProteinDatasetLoader:
 
                 if all_batches:
                     combined_table = pa.concat_tables(all_batches)
-                    print(
-                        f"📊 Combined {len(all_batches)} tables: {len(combined_table)} total rows"
-                    )
+                    print(f"📊 Combined {len(all_batches)} tables: {len(combined_table)} total rows")
                     df = combined_table.to_pandas()
 
                     # Convert numpy arrays to lists for HuggingFace compatibility
                     if "token" in df.columns:
-                        df["token"] = df["token"].apply(
-                            lambda x: x.tolist() if hasattr(x, "tolist") else x
-                        )
+                        df["token"] = df["token"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
                     if "sequence_tokens" in df.columns:
-                        df["sequence_tokens"] = df["sequence_tokens"].apply(
-                            lambda x: x.tolist() if hasattr(x, "tolist") else x
-                        )
+                        df["sequence_tokens"] = df["sequence_tokens"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
 
                     self.dataset = Dataset.from_pandas(df)
                     print("✅ Created HuggingFace Dataset")
@@ -96,22 +90,14 @@ class ProteinDatasetLoader:
             raise FileNotFoundError(f"Could not load data from {data_dir}") from e
 
         # Split into train/valid if needed
-        if (
-            hasattr(self.dataset, "keys")
-            and isinstance(self.dataset, dict)
-            and "train" in self.dataset
-        ):
+        if hasattr(self.dataset, "keys") and isinstance(self.dataset, dict) and "train" in self.dataset:
             if split == "train":
                 self.data = self.dataset["train"]
             elif split in ["valid", "val", "test"]:
-                self.data = self.dataset.get(
-                    "valid", self.dataset.get("test", self.dataset["train"])
-                )
+                self.data = self.dataset.get("valid", self.dataset.get("test", self.dataset["train"]))
         else:
             if test_size > 0:
-                split_dataset = self.dataset.train_test_split(
-                    test_size=test_size, seed=42
-                )
+                split_dataset = self.dataset.train_test_split(test_size=test_size, seed=42)
                 if split == "train":
                     self.data = split_dataset["train"]
                 elif split in ["valid", "val", "test"]:
@@ -167,18 +153,10 @@ if __name__ == "__main__":
     save_steps = 5000
 
     # -----------------------------------------------------------------------------
-    config_keys = [
-        k
-        for k, v in globals().items()
-        if not k.startswith("_") and isinstance(v, (int, float, bool, str))
-    ]
+    config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 
     # Load config from file
-    configurator_path = (
-        "esm2/configurator.py"
-        if os.path.exists("esm2/configurator.py")
-        else "configurator.py"
-    )
+    configurator_path = "esm2/configurator.py" if os.path.exists("esm2/configurator.py") else "configurator.py"
     if os.path.exists(configurator_path):
         exec(open(configurator_path).read())
 
@@ -211,12 +189,8 @@ if __name__ == "__main__":
         # ESM-2 8M parameters equivalent
         model_config = EsmConfig(
             vocab_size=meta_vocab_size,
-            mask_token_id=tokenizer.mask_token_id
-            if hasattr(tokenizer, "mask_token_id")
-            else 32,
-            pad_token_id=tokenizer.pad_token_id
-            if hasattr(tokenizer, "pad_token_id")
-            else 1,
+            mask_token_id=tokenizer.mask_token_id if hasattr(tokenizer, "mask_token_id") else 32,
+            pad_token_id=tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") else 1,
             hidden_size=320,
             num_hidden_layers=6,
             num_attention_heads=20,
@@ -230,12 +204,8 @@ if __name__ == "__main__":
         # ESM-2 35M parameters equivalent
         model_config = EsmConfig(
             vocab_size=meta_vocab_size,
-            mask_token_id=tokenizer.mask_token_id
-            if hasattr(tokenizer, "mask_token_id")
-            else 32,
-            pad_token_id=tokenizer.pad_token_id
-            if hasattr(tokenizer, "pad_token_id")
-            else 1,
+            mask_token_id=tokenizer.mask_token_id if hasattr(tokenizer, "mask_token_id") else 32,
+            pad_token_id=tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") else 1,
             hidden_size=480,
             num_hidden_layers=12,
             num_attention_heads=20,
@@ -249,12 +219,8 @@ if __name__ == "__main__":
         # ESM-2 150M parameters equivalent
         model_config = EsmConfig(
             vocab_size=meta_vocab_size,
-            mask_token_id=tokenizer.mask_token_id
-            if hasattr(tokenizer, "mask_token_id")
-            else 32,
-            pad_token_id=tokenizer.pad_token_id
-            if hasattr(tokenizer, "pad_token_id")
-            else 1,
+            mask_token_id=tokenizer.mask_token_id if hasattr(tokenizer, "mask_token_id") else 32,
+            pad_token_id=tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") else 1,
             hidden_size=640,
             num_hidden_layers=30,
             num_attention_heads=20,
@@ -265,9 +231,7 @@ if __name__ == "__main__":
             layer_norm_eps=1e-5,
         )
     else:
-        raise ValueError(
-            f"model_size: {model_size} is not supported. Choose between small, medium, and large"
-        )
+        raise ValueError(f"model_size: {model_size} is not supported. Choose between small, medium, and large")
 
     print(f"🧬 ESM-2 Model Configuration ({model_size}):")
     print(f"   - Vocab size: {meta_vocab_size}")
@@ -275,9 +239,7 @@ if __name__ == "__main__":
     print(f"   - Hidden size: {model_config.hidden_size}")
     print(f"   - Layers: {model_config.num_hidden_layers}")
     print(f"   - Attention heads: {model_config.num_attention_heads}")
-    print(
-        f"   - Parameters: ~{model_config.hidden_size * model_config.num_hidden_layers * 12 // 1_000_000}M"
-    )
+    print(f"   - Parameters: ~{model_config.hidden_size * model_config.num_hidden_layers * 12 // 1_000_000}M")
 
     model = EsmForMaskedLM(config=model_config)
 
@@ -329,14 +291,10 @@ if __name__ == "__main__":
             actual_tokenizer = tokenizer_obj
 
         if actual_tokenizer is None:
-            raise ValueError(
-                "No tokenizer found in config. Please define 'tokenizer' in your config file."
-            )
+            raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
 
         # ESM-2: MLM probability 0.15 (BERT standard)
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.15
-        )
+        data_collator = DataCollatorForLanguageModeling(tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.15)
 
     # Training arguments
     training_args = TrainingArguments(
@@ -363,17 +321,10 @@ if __name__ == "__main__":
 
     # Load datasets
     print("📂 Loading datasets...")
-    if (
-        "use_custom_dataset_loader" in globals()
-        and globals()["use_custom_dataset_loader"]
-    ):
+    if "use_custom_dataset_loader" in globals() and globals()["use_custom_dataset_loader"]:
         print("🧬 Using custom protein dataset loader")
-        train_data_loader = ProteinDatasetLoader(
-            dataset_dir, split="train", test_size=0.1
-        )
-        test_data_loader = ProteinDatasetLoader(
-            dataset_dir, split="test", test_size=0.1
-        )
+        train_data_loader = ProteinDatasetLoader(dataset_dir, split="train", test_size=0.1)
+        test_data_loader = ProteinDatasetLoader(dataset_dir, split="test", test_size=0.1)
         train_dataset = train_data_loader.get_dataset()
         test_dataset = test_data_loader.get_dataset()
     else:
@@ -393,9 +344,7 @@ if __name__ == "__main__":
             elif valid_arrow.exists():
                 test_dataset = load_from_disk(str(valid_arrow))
             else:
-                raise FileNotFoundError(
-                    f"No test or valid split found in {dataset_path}"
-                )
+                raise FileNotFoundError(f"No test or valid split found in {dataset_path}")
         else:
             # Fall back to standard format
             dataset = load_from_disk(dataset_dir)
@@ -409,13 +358,9 @@ if __name__ == "__main__":
         print("📊 Limited test dataset to 5000 samples for faster evaluation")
 
     # Apply preprocessing function if defined in config
-    if "preprocess_function" in globals() and callable(
-        globals()["preprocess_function"]
-    ):
+    if "preprocess_function" in globals() and callable(globals()["preprocess_function"]):
         print("🔄 Applying preprocessing function...")
-        train_dataset = train_dataset.map(
-            globals()["preprocess_function"], batched=True
-        )
+        train_dataset = train_dataset.map(globals()["preprocess_function"], batched=True)
         test_dataset = test_dataset.map(globals()["preprocess_function"], batched=True)
         print("✅ Preprocessing completed")
         print(f"   Train dataset columns: {train_dataset.column_names}")

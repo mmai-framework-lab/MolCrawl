@@ -18,7 +18,7 @@ from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_c
 
 # プロジェクトルートを追加
 
-from utils.base_visualization import BaseVisualizationGenerator
+from src.utils.base_visualization import BaseVisualizationGenerator
 
 # 日本語フォント設定
 plt.rcParams["font.family"] = [

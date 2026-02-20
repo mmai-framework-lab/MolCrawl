@@ -212,13 +212,13 @@ echo ""
 if [[ "$DOWNLOAD_DATA" == true ]]; then
     echo "=== データ準備フェーズ ==="
     echo "推奨されるProteinGymデータセットをダウンロード中..."
-    
+
     cd "$PROJECT_ROOT"
-    
+
     python scripts/evaluation/gpt2/proteingym_data_preparation.py \
         --download recommended \
         --data_dir "$DATA_DIR"
-    
+
     # ダウンロードされたアッセイファイルを探す
     FIRST_ASSAY=$(find "$DATA_DIR" -name "*.csv" -path "*/DMS_ProteinGym_substitutions/*" | head -1)
     if [[ -n "$FIRST_ASSAY" ]]; then
@@ -242,21 +242,21 @@ fi
 if [[ "$CREATE_SAMPLE" == true ]]; then
     echo "=== データ準備フェーズ ==="
     echo "テスト用サンプルデータを準備中..."
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # まず、推奨データセットをダウンロード
     python scripts/evaluation/gpt2/proteingym_data_preparation.py \
         --data_dir "$DATA_DIR" \
         --download recommended
-    
+
     if [[ $? -ne 0 ]]; then
         echo "警告: データダウンロードに失敗しました。ローカルデータを探します..."
     fi
-    
+
     # ダウンロードされたアッセイファイルを探す
     FIRST_ASSAY=$(find "$DATA_DIR" -name "*.csv" -path "*/DMS_ProteinGym_substitutions/*" | head -1)
-    
+
     if [[ -n "$FIRST_ASSAY" ]]; then
         DATA_PATH="$FIRST_ASSAY"
         echo "✓ ダウンロードされたデータを使用: $DATA_PATH"
@@ -327,10 +327,10 @@ echo ""
 if [[ "$VISUALIZE" == true ]]; then
     echo "=== 可視化フェーズ ==="
     echo "GPT-2評価結果の可視化を実行中..."
-    
+
     # 最新の評価結果ディレクトリを探す
     LATEST_RESULT_DIR=$(find "$OUTPUT_DIR" -maxdepth 1 -type d -name "*gpt2_proteingym*" | sort | tail -1)
-    
+
     if [ -z "$LATEST_RESULT_DIR" ]; then
         echo "警告: 評価結果ディレクトリが見つかりません"
         RESULTS_FILE="$OUTPUT_DIR/evaluation_results.json"
@@ -339,12 +339,12 @@ if [[ "$VISUALIZE" == true ]]; then
         RESULTS_FILE="$LATEST_RESULT_DIR/evaluation_results.json"
         VIS_DIR="$LATEST_RESULT_DIR/visualizations"
     fi
-    
+
     if [[ -f "$RESULTS_FILE" ]]; then
         python "$PROJECT_ROOT/scripts/evaluation/gpt2/proteingym_visualization.py" \
             --results_file "$RESULTS_FILE" \
             --output_dir "$VIS_DIR"
-        
+
         if [[ $? -eq 0 ]]; then
             echo "可視化完了: $VIS_DIR"
         else

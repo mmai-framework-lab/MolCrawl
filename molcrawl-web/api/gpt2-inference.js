@@ -107,7 +107,7 @@ function getCheckpointPath(dataset, size) {
         const hasConfig = fs.existsSync(path.join(checkpointPath, 'config.json'));
         const hasPytorchModel = fs.existsSync(path.join(checkpointPath, 'pytorch_model.bin'));
         const hasCkpt = fs.existsSync(path.join(checkpointPath, 'ckpt.pt'));
-        
+
         if (hasConfig && hasPytorchModel) {
             // True HuggingFace format
             return {
@@ -189,11 +189,11 @@ else:
     model.load_state_dict(state_dict)
     model.eval()
     model.to(device)
-    
+
     # Load dataset-specific tokenizer
     project_root = '${path.join(__dirname, '..', '..')}'
     tokenizer = None
-    
+
     # Load domain-specific tokenizer
     dataset_type = '${dataset}'
     if dataset_type == 'compounds':
@@ -245,7 +245,7 @@ else:
         # Check if it's using MinimalTokenizer (fallback)
         tokenizer_class_name = tokenizer.tokenizer.__class__.__name__
         print(f"Internal tokenizer type: {tokenizer_class_name}", file=sys.stderr)
-    
+
     if tokenizer is None:
         raise Exception(f"No tokenizer available for dataset: {dataset_type}")
 
@@ -314,7 +314,7 @@ with torch.no_grad(), ctx:
             else:
                 eos_id = tokenizer.eos_token_id if hasattr(tokenizer, 'eos_token_id') else None
                 pad_id = tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') else eos_id
-            
+
             output = model.generate(
                 input_ids,
                 max_new_tokens=max_length - input_ids.shape[1],
@@ -323,7 +323,7 @@ with torch.no_grad(), ctx:
                 eos_token_id=eos_id,
                 pad_token_id=pad_id
             )
-        
+
         # Decode based on tokenizer type
         if dataset_type == 'genome_sequence':
             # SentencePiece decode
@@ -348,7 +348,7 @@ with torch.no_grad(), ctx:
             generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
         else:
             generated_text = str(output[0].tolist())
-        
+
         results.append(generated_text)
 
 # Output results as JSON
@@ -379,7 +379,7 @@ print(json.dumps({'success': True, 'results': results}))
                 // Find the last line that contains valid JSON
                 const lines = stdout.trim().split('\n');
                 let jsonResult = null;
-                
+
                 // Try to parse from the last line backwards
                 for (let i = lines.length - 1; i >= 0; i--) {
                     const line = lines[i].trim();
@@ -392,7 +392,7 @@ print(json.dumps({'success': True, 'results': results}))
                         }
                     }
                 }
-                
+
                 if (jsonResult) {
                     resolve(jsonResult);
                 } else {

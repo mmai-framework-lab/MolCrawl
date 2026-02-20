@@ -21,7 +21,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 # 共通モジュールを追加
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 
 def get_log_dir() -> Path:
@@ -30,6 +30,7 @@ def get_log_dir() -> Path:
     log_dir: Path = Path(learning_source_dir) / "protein_sequence" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     return log_dir
+
 
 # ログ設定
 log_dir: Path = get_log_dir()

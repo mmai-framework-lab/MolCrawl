@@ -30,7 +30,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve
 
-from utils.base_visualization import BaseVisualizationGenerator
+from src.utils.base_visualization import BaseVisualizationGenerator
 
 warnings.filterwarnings("ignore")
 

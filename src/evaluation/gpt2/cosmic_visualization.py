@@ -17,7 +17,7 @@ import seaborn as sns
 
 # プロジェクトルートを追加
 
-from utils.base_visualization import BaseVisualizationGenerator
+from src.utils.base_visualization import BaseVisualizationGenerator
 
 # 日本語フォント設定
 plt.rcParams["font.family"] = "DejaVu Sans"

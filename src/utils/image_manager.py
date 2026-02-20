@@ -8,7 +8,7 @@
 import os
 from typing import TypedDict
 
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 
 def get_image_output_dir(model_type: str) -> str:

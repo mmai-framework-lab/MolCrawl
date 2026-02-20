@@ -12,7 +12,7 @@
 - [ ] 基本的な予測テスト
 - [ ] ドキュメント作成
 
-**Status**: 未着手  
+**Status**: 未着手
 **CI Check**: `gh workflow run phase-validation.yml -f phase=phase1-bert-verification`
 
 ### Task 1-2: BERT (Protein Sequence) Verification
@@ -63,7 +63,7 @@
 - [ ] パフォーマンス評価
 - [ ] ドキュメント作成
 
-**Status**: 未着手  
+**Status**: 未着手
 **CI Check**: `gh workflow run phase-validation.yml -f phase=phase1-gpt2-verification`
 
 ### Task 2-2: GPT2 (Protein Sequence) Verification Check
@@ -127,7 +127,7 @@
 - [ ] データ検証スクリプト作成
 - [ ] CI統合
 
-**Status**: 未着手  
+**Status**: 未着手
 **CI Check**: `gh workflow run phase-validation.yml -f phase=phase2-dataset-prep`
 
 ### Task 2-1: Training Log Management Design
@@ -214,7 +214,7 @@
 - [ ] 設定ファイル作成
 - [ ] テスト作成
 
-**Status**: 未着手  
+**Status**: 未着手
 **CI Check**: `gh workflow run phase-validation.yml -f phase=phase2-script-verification`
 
 ### Task 4-2: Implementation of Scripts for Foundation Model (Protein Sequences)
@@ -302,7 +302,7 @@
 - [ ] 結果分析
 - [ ] ドキュメント作成
 
-**Status**: 未着手  
+**Status**: 未着手
 **CI Check**: `gh workflow run phase-validation.yml -f phase=phase3-alpha-evaluation`
 
 ### Task 1-2 to 1-5: Alpha Version Base Model Creation & Evaluation
@@ -334,7 +334,7 @@
 - [ ] テストと検証
 - [ ] 公開
 
-**Status**: 未着手  
+**Status**: 未着手
 **CI Check**: Release workflowで自動化
 
 ### Task 2-3: GitHub Repository Opening

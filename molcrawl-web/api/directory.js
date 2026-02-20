@@ -36,18 +36,18 @@ function getLearningSourcePath() {
   try {
     const scriptPath = path.join(__dirname, '..', 'get_learning_source_dir.py');
     const projectRoot = path.resolve(__dirname, '../..');
-    
-    const result = execSync(`cd "${projectRoot}" && python3 "${scriptPath}"`, { 
+
+    const result = execSync(`cd "${projectRoot}" && python3 "${scriptPath}"`, {
       encoding: 'utf8',
       env: process.env
     });
-    
+
     const config = JSON.parse(result.trim());
-    
+
     if (config.error) {
       throw new Error(config.error);
     }
-    
+
     return config.absolute_path;
   } catch (error) {
     console.error('');
@@ -73,11 +73,11 @@ console.log('model_dir exists?', require('fs').existsSync(model_dir));
 // ディレクトリ存在チェック用ミドルウェア
 function validateDirectoryExists(req, res, next) {
   const fsSync = require('fs');
-  
+
   if (!fsSync.existsSync(model_dir)) {
     const projectRoot = path.resolve(__dirname, '../..');
     let availableDirs = [];
-    
+
     try {
       availableDirs = fsSync.readdirSync(projectRoot)
         .filter(name => name.startsWith('learning_'));
@@ -92,14 +92,14 @@ function validateDirectoryExists(req, res, next) {
         specified_dir: process.env.LEARNING_SOURCE_DIR,
         expected_path: model_dir,
         available_directories: availableDirs,
-        suggestion: availableDirs.length > 0 
+        suggestion: availableDirs.length > 0
           ? `Try setting LEARNING_SOURCE_DIR to one of: ${availableDirs.join(', ')}`
           : 'No learning_* directories found in project root'
       },
       timestamp: new Date().toISOString()
     });
   }
-  
+
   next();
 }
 
@@ -126,12 +126,12 @@ async function getDirectoryInfo(dirPath) {
       }
       throw error;
     }
-    
+
     const stats = await fs.stat(dirPath);
     if (!stats.isDirectory()) {
       throw new Error('指定されたパスはディレクトリではありません');
     }
-    
+
     let files;
     try {
       files = await fs.readdir(dirPath);
@@ -147,15 +147,15 @@ async function getDirectoryInfo(dirPath) {
         warning: 'ディレクトリの読み取りに失敗'
       };
     }
-    
+
     const children = [];
     let totalSize = 0;
-    
+
     for (const file of files) {
       const filePath = path.join(dirPath, file);
       try {
         const fileStats = await fs.stat(filePath);
-        
+
         if (fileStats.isDirectory()) {
           // ディレクトリの場合、子要素の数を取得
           try {
@@ -203,7 +203,7 @@ async function getDirectoryInfo(dirPath) {
         });
       }
     }
-    
+
     // ソート：ディレクトリを先に、その後名前順
     children.sort((a, b) => {
       if (a.type !== b.type) {
@@ -214,7 +214,7 @@ async function getDirectoryInfo(dirPath) {
       }
       return a.name.localeCompare(b.name);
     });
-    
+
     return {
       name: path.basename(dirPath),
       type: 'directory',
@@ -244,7 +244,7 @@ function formatFileSize(bytes) {
  */
 async function getDirectoryStructure(req, res) {
   const targetPath = req.query.path || model_dir;
-  
+
   try {
     // 相対パスの場合はmodel_dirと結合
     let resolvedPath;
@@ -253,13 +253,13 @@ async function getDirectoryStructure(req, res) {
     } else {
       resolvedPath = path.join(model_dir, targetPath);
     }
-    
+
     // パスの正規化
     const normalizedPath = path.normalize(resolvedPath);
     const basePath = path.resolve(__dirname, '../..');
-    
+
     if (!normalizedPath.startsWith(basePath)) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'アクセス権限がありません',
         message: '指定されたパスにはアクセスできません',
         requestedPath: targetPath,
@@ -267,7 +267,7 @@ async function getDirectoryStructure(req, res) {
         basePath: basePath
       });
     }
-    
+
     // ディレクトリが存在するかチェック
     try {
       await fs.access(normalizedPath, fs.constants.F_OK);
@@ -288,9 +288,9 @@ async function getDirectoryStructure(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     const directoryInfo = await getDirectoryInfo(normalizedPath);
-    
+
     res.json({
       success: true,
       data: directoryInfo,
@@ -298,7 +298,7 @@ async function getDirectoryStructure(req, res) {
     });
   } catch (error) {
     console.error('ディレクトリ取得エラー:', error);
-    
+
     // エラーの種類に応じて適切なレスポンスを返す
     if (error.code === 'ENOENT') {
       return res.json({
@@ -315,7 +315,7 @@ async function getDirectoryStructure(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     res.status(500).json({
       success: false,
       error: error.message,
@@ -331,14 +331,14 @@ async function expandDirectory(req, res) {
   const targetPath = req.query.path;
   const recursive = req.query.recursive === 'true';
   const maxDepth = parseInt(req.query.maxDepth) || 3;
-  
+
   if (!targetPath) {
     return res.status(400).json({
       error: 'パスが指定されていません',
       message: 'pathパラメータが必要です'
     });
   }
-  
+
   try {
     // 相対パスの場合はmodel_dirと結合
     let resolvedPath;
@@ -347,20 +347,20 @@ async function expandDirectory(req, res) {
     } else {
       resolvedPath = path.join(model_dir, targetPath);
     }
-    
+
     // パスの正規化
     const normalizedPath = path.normalize(resolvedPath);
     const basePath = path.resolve(__dirname, '../..');
-    
+
     if (!normalizedPath.startsWith(basePath)) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'アクセス権限がありません',
         message: '指定されたパスにはアクセスできません',
         requestedPath: targetPath,
         resolvedPath: normalizedPath
       });
     }
-    
+
     // ディレクトリが存在するかチェック
     let stats;
     try {
@@ -380,28 +380,28 @@ async function expandDirectory(req, res) {
       }
       throw error;
     }
-    
+
     if (!stats.isDirectory()) {
       return res.status(400).json({
         error: 'ディレクトリではありません',
         message: '指定されたパスはディレクトリではありません'
       });
     }
-    
+
     // 再帰的にディレクトリを読み込む関数
     const loadDirectoryRecursive = async (dirPath, currentDepth = 0) => {
       if (currentDepth >= maxDepth) {
         return [];
       }
-      
+
       const files = await fs.readdir(dirPath);
       const children = [];
-      
+
       for (const file of files) {
         const filePath = path.join(dirPath, file);
         try {
           const fileStats = await fs.stat(filePath);
-          
+
           if (fileStats.isDirectory()) {
             const subFiles = await fs.readdir(filePath);
             const dirItem = {
@@ -412,12 +412,12 @@ async function expandDirectory(req, res) {
               path: filePath,
               children: []
             };
-            
+
             // 再帰的モードの場合、子ディレクトリも読み込む
             if (recursive && currentDepth < maxDepth - 1) {
               dirItem.children = await loadDirectoryRecursive(filePath, currentDepth + 1);
             }
-            
+
             children.push(dirItem);
           } else {
             children.push({
@@ -431,12 +431,12 @@ async function expandDirectory(req, res) {
           console.warn(`ファイル情報の取得に失敗: ${filePath}`, error.message);
         }
       }
-      
+
       return children;
     };
-    
+
     const children = await loadDirectoryRecursive(normalizedPath);
-    
+
     // ソート
     const sortChildren = (children) => {
       children.sort((a, b) => {
@@ -445,7 +445,7 @@ async function expandDirectory(req, res) {
         }
         return a.name.localeCompare(b.name);
       });
-      
+
       // 子ディレクトリも再帰的にソート
       children.forEach(child => {
         if (child.children && child.children.length > 0) {
@@ -453,9 +453,9 @@ async function expandDirectory(req, res) {
         }
       });
     };
-    
+
     sortChildren(children);
-    
+
     res.json({
       success: true,
       data: children,
@@ -466,7 +466,7 @@ async function expandDirectory(req, res) {
     });
   } catch (error) {
     console.error('ディレクトリ展開エラー:', error);
-    
+
     // エラーの種類に応じて適切なレスポンスを返す
     if (error.code === 'ENOENT') {
       return res.json({
@@ -479,7 +479,7 @@ async function expandDirectory(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     res.status(500).json({
       success: false,
       error: error.message,
@@ -495,7 +495,7 @@ async function getFullDirectoryTree(req, res) {
   const targetPath = req.query.path || model_dir;
   const maxDepth = parseInt(req.query.maxDepth) || 5;
   const includeFiles = req.query.includeFiles !== 'false';
-  
+
   try {
     // 相対パスの場合はmodel_dirと結合
     let resolvedPath;
@@ -504,20 +504,20 @@ async function getFullDirectoryTree(req, res) {
     } else {
       resolvedPath = path.join(model_dir, targetPath);
     }
-    
+
     // パスの正規化
     const normalizedPath = path.normalize(resolvedPath);
     const basePath = path.resolve(__dirname, '../..');
-    
+
     if (!normalizedPath.startsWith(basePath)) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'アクセス権限がありません',
         message: '指定されたパスにはアクセスできません',
         requestedPath: targetPath,
         resolvedPath: normalizedPath
       });
     }
-    
+
     // ディレクトリが存在するかチェック
     try {
       await fs.access(normalizedPath, fs.constants.F_OK);
@@ -542,13 +542,13 @@ async function getFullDirectoryTree(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // 完全なツリー構造を再帰的に構築
     const buildFullTree = async (dirPath, currentDepth = 0) => {
       if (currentDepth >= maxDepth) {
         return null;
       }
-      
+
       try {
         const stats = await fs.stat(dirPath);
         if (!stats.isDirectory()) {
@@ -562,15 +562,15 @@ async function getFullDirectoryTree(req, res) {
           }
           return null;
         }
-        
+
         const files = await fs.readdir(dirPath);
         const children = [];
         let totalSize = 0;
-        
+
         for (const file of files) {
           const filePath = path.join(dirPath, file);
           const child = await buildFullTree(filePath, currentDepth + 1);
-          
+
           if (child) {
             children.push(child);
             if (child.type === 'file') {
@@ -580,7 +580,7 @@ async function getFullDirectoryTree(req, res) {
             }
           }
         }
-        
+
         // ソート
         children.sort((a, b) => {
           if (a.type !== b.type) {
@@ -588,7 +588,7 @@ async function getFullDirectoryTree(req, res) {
           }
           return a.name.localeCompare(b.name);
         });
-        
+
         return {
           name: path.basename(dirPath),
           type: 'directory',
@@ -604,9 +604,9 @@ async function getFullDirectoryTree(req, res) {
         return null;
       }
     };
-    
+
     const tree = await buildFullTree(normalizedPath);
-    
+
     if (!tree) {
       return res.json({
         success: true,
@@ -626,7 +626,7 @@ async function getFullDirectoryTree(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     res.json({
       success: true,
       data: tree,
@@ -636,7 +636,7 @@ async function getFullDirectoryTree(req, res) {
     });
   } catch (error) {
     console.error('完全ツリー取得エラー:', error);
-    
+
     // エラーの種類に応じて適切なレスポンスを返す
     if (error.code === 'ENOENT') {
       return res.json({
@@ -657,7 +657,7 @@ async function getFullDirectoryTree(req, res) {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     res.status(500).json({
       success: false,
       error: error.message,
@@ -671,9 +671,9 @@ async function checkZincData(req, res) {
   try {
     // compounds/dataset/organix13/zinc/zinc_complete/ のパスを構築
     const zincBasePath = path.join(model_dir, 'compounds', 'dataset', 'organix13', 'zinc', 'zinc_complete');
-    
+
     console.log('Checking ZINC data at:', zincBasePath);
-    
+
     // ディレクトリが存在するかチェック
     try {
       await fs.access(zincBasePath);
@@ -690,7 +690,7 @@ async function checkZincData(req, res) {
 
     // ZINCファイルをチェック
     const checkResults = await checkZincFiles(zincBasePath);
-    
+
     res.json({
       success: true,
       data: {
@@ -715,9 +715,9 @@ async function getZincDataCounts(req, res) {
   try {
     // compounds/zinc20/ のパスを構築
     const zincBasePath = path.join(model_dir, 'compounds', 'zinc20');
-    
+
     console.log('Counting ZINC data entries at:', zincBasePath);
-    
+
     // ディレクトリが存在するかチェック
     try {
       await fs.access(zincBasePath);
@@ -734,7 +734,7 @@ async function getZincDataCounts(req, res) {
 
     // ZINCデータ件数をカウント
     const dataStats = await getZincDataCount(zincBasePath);
-    
+
     res.json({
       success: true,
       data: {

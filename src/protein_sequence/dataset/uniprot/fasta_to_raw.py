@@ -76,7 +76,6 @@ def fasta_to_raw_protein(dataset: str, output_dir: Union[str, Path], max_lines_p
 
 
 if __name__ == "__main__":
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()

@@ -13,7 +13,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from config.paths import CELLXGENE_DATASET_DIR, get_bert_output_path
+from src.config.paths import CELLXGENE_DATASET_DIR, get_bert_output_path
 
 # Build the tokenizer using the WordLevel model
 from rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer

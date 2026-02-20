@@ -7,7 +7,7 @@
 # GPT-2モデルの遺伝性疾患予測性能を評価します。
 # データ準備から評価、可視化までの全プロセスを自動で実行します。
 #
-# 注意: 
+# 注意:
 #   - このスクリプトはworkflows/ディレクトリから実行されることを想定しています
 #   - 実際のOMIMデータアクセスには有効な認証が必要です
 #   - 設定ファイルに正しい認証付きURLが含まれている必要があります
@@ -255,27 +255,27 @@ echo ""
 
 if [ "$SKIP_DATA_PREP" = false ]; then
     echo "=== データ準備フェーズ ==="
-    
+
     # 既存のOMIMディレクトリが指定されている場合
     if [[ -n "$EXISTING_OMIM_DIR" ]]; then
         echo "既存のOMIMデータディレクトリを使用します: $EXISTING_OMIM_DIR"
-        
+
         # 既存ディレクトリの検証
         if [[ ! -d "$EXISTING_OMIM_DIR" ]]; then
             echo "エラー: 指定されたOMIMディレクトリが存在しません: $EXISTING_OMIM_DIR"
             exit 1
         fi
-        
+
         # 必要なOMIMファイルの確認
         REQUIRED_FILES=("mim2gene.txt" "mimTitles.txt" "genemap2.txt" "morbidmap.txt")
         MISSING_FILES=()
-        
+
         for file in "${REQUIRED_FILES[@]}"; do
             if [[ ! -f "$EXISTING_OMIM_DIR/$file" ]]; then
                 MISSING_FILES+=("$file")
             fi
         done
-        
+
         if [ ${#MISSING_FILES[@]} -gt 0 ]; then
             echo "警告: 以下のファイルが見つかりません:"
             for file in "${MISSING_FILES[@]}"; do
@@ -285,10 +285,10 @@ if [ "$SKIP_DATA_PREP" = false ]; then
         else
             echo "✓ 全ての必要なOMIMファイルが見つかりました"
         fi
-        
+
         # 既存ファイルをデータディレクトリにコピーまたはシンボリックリンク
         mkdir -p "$DATA_DIR"
-        
+
         echo "既存のOMIMファイルをリンク中..."
         for file in "${REQUIRED_FILES[@]}"; do
             if [[ -f "$EXISTING_OMIM_DIR/$file" ]]; then
@@ -298,14 +298,14 @@ if [ "$SKIP_DATA_PREP" = false ]; then
                 echo "  ✓ $file"
             fi
         done
-        
+
         echo "既存データの準備完了"
     else
         echo "OMIM実データをダウンロード・準備中..."
     fi
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Pythonコマンド引数を準備
     DATA_PREP_ARGS=(
         "scripts/evaluation/gpt2/omim_data_preparation.py"
@@ -313,24 +313,24 @@ if [ "$SKIP_DATA_PREP" = false ]; then
         "--output_dir" "$DATA_DIR"
         "--config" "$CONFIG_FILE"
     )
-    
+
     # 既存ディレクトリが指定されている場合は追加
     if [[ -n "$EXISTING_OMIM_DIR" ]]; then
         DATA_PREP_ARGS+=("--existing_omim_dir" "$EXISTING_OMIM_DIR")
     fi
-    
+
     if [[ "$FORCE_DOWNLOAD" == "true" ]]; then
         DATA_PREP_ARGS+=("--force_download")
         echo "📥 データを強制再ダウンロード中..."
     fi
-    
+
     python "${DATA_PREP_ARGS[@]}"
-    
+
     if [[ $? -ne 0 ]]; then
         echo "エラー: 実データ準備に失敗しました"
         exit 1
     fi
-    
+
     echo "データ準備完了"
     echo ""
 fi
@@ -351,9 +351,9 @@ if [ "$SKIP_EVALUATION" = false ]; then
     echo "GPT-2 OMIM実データ評価を実行中..."
     echo "モデル: $MODEL_PATH"
     echo "データ: $DATA_PATH"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
         "scripts/evaluation/gpt2/omim_evaluation.py"
@@ -362,7 +362,7 @@ if [ "$SKIP_EVALUATION" = false ]; then
         --output_dir "$OUTPUT_DIR"
         --batch_size "$BATCH_SIZE"
     )
-    
+
     # トークナイザーパスが指定されている場合は追加
     if [[ -n "$TOKENIZER_PATH" ]]; then
         EVAL_ARGS+=(--tokenizer_path "$TOKENIZER_PATH")
@@ -370,14 +370,14 @@ if [ "$SKIP_EVALUATION" = false ]; then
     else
         log_info "トークナイザー: 自動検出"
     fi
-    
+
     python "${EVAL_ARGS[@]}"
-    
+
     if [[ $? -ne 0 ]]; then
         echo "エラー: モデル評価に失敗しました"
         exit 1
     fi
-    
+
     echo "モデル評価完了"
     echo ""
 fi
@@ -389,15 +389,15 @@ fi
 if [ "$SKIP_VISUALIZATION" = false ]; then
     echo "=== 可視化フェーズ ==="
     echo "評価結果の可視化を実行中..."
-    
+
     python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
         --results_dir "$OUTPUT_DIR"
-    
+
     if [[ $? -ne 0 ]]; then
         echo "エラー: 可視化に失敗しました"
         exit 1
     fi
-    
+
     echo "可視化完了"
     echo ""
 fi
@@ -414,7 +414,7 @@ RESULTS_FILE="$OUTPUT_DIR/omim_evaluation_results.json"
 if [[ -f "$RESULTS_FILE" ]]; then
     echo "📋 評価メトリクス:"
     echo "======================"
-    
+
     # JSON結果から主要メトリクスを抽出して表示
     python -c "
 import json
@@ -423,7 +423,7 @@ import sys
 try:
     with open('$RESULTS_FILE', 'r') as f:
         results = json.load(f)
-    
+
     metrics = results.get('overall_metrics', results)
     print(f'  • Accuracy:    {metrics.get(\"accuracy\", 0):.4f}')
     print(f'  • Precision:   {metrics.get(\"precision\", 0):.4f}')

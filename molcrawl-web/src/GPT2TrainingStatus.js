@@ -204,8 +204,8 @@ const GPT2TrainingStatus = ({ dataset }) => {
         const isClickable = modelData.exists && modelData.checkpoint;
 
         return (
-            <div 
-                key={size} 
+            <div
+                key={size}
                 className={`model-card ${cardClass} ${isClickable ? 'model-clickable' : ''}`}
                 onClick={() => isClickable && handleModelClick(modelData, size)}
                 title={isClickable ? 'Click to run inference' : ''}
@@ -215,12 +215,12 @@ const GPT2TrainingStatus = ({ dataset }) => {
                     {getStatusBadge(displayStatus)}
                     {modelData.checkpoint_format && (
                         <span className={`format-badge ${modelData.hf_compatibility?.isFromPretrainedReady ? 'hf-ready' : 'hf-incomplete'}`}
-                              title={modelData.hf_compatibility?.isFromPretrainedReady 
-                                  ? 'Ready for transformers.from_pretrained()' 
-                                  : modelData.hf_compatibility?.missingFiles?.length > 0 
+                              title={modelData.hf_compatibility?.isFromPretrainedReady
+                                  ? 'Ready for transformers.from_pretrained()'
+                                  : modelData.hf_compatibility?.missingFiles?.length > 0
                                       ? `Missing: ${modelData.hf_compatibility.missingFiles.join(', ')}`
                                       : modelData.checkpoint_format === 'huggingface' ? 'HuggingFace format (incomplete)' : 'Legacy format'}>
-                            {modelData.checkpoint_format === 'huggingface' 
+                            {modelData.checkpoint_format === 'huggingface'
                                 ? (modelData.hf_compatibility?.isFromPretrainedReady ? '🤗 HF ✓' : '🤗 HF ⚠')
                                 : '📦 Legacy'}
                         </span>
@@ -228,8 +228,8 @@ const GPT2TrainingStatus = ({ dataset }) => {
                 </div>
 
                 {/* HuggingFace互換性警告 */}
-                {modelData.checkpoint_format === 'huggingface' && 
-                 modelData.hf_compatibility && 
+                {modelData.checkpoint_format === 'huggingface' &&
+                 modelData.hf_compatibility &&
                  !modelData.hf_compatibility.isFromPretrainedReady && (
                     <div className="hf-warning">
                         <div className="hf-warning-title">⚠ HuggingFace形式不完全</div>

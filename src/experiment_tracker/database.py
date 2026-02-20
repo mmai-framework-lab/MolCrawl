@@ -52,7 +52,8 @@ class ExperimentDatabase:
             cursor = conn.cursor()
 
             # 実験テーブル
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS experiments (
                     experiment_id TEXT PRIMARY KEY,
                     experiment_name TEXT NOT NULL,
@@ -73,10 +74,12 @@ class ExperimentDatabase:
                     notes TEXT,
                     environment TEXT
                 )
-            """)
+            """
+            )
 
             # ステップテーブル
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS experiment_steps (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     experiment_id TEXT NOT NULL,
@@ -92,10 +95,12 @@ class ExperimentDatabase:
                     metadata TEXT,
                     FOREIGN KEY (experiment_id) REFERENCES experiments(experiment_id)
                 )
-            """)
+            """
+            )
 
             # ログテーブル
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS experiment_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     experiment_id TEXT NOT NULL,
@@ -105,21 +110,28 @@ class ExperimentDatabase:
                     source TEXT,
                     FOREIGN KEY (experiment_id) REFERENCES experiments(experiment_id)
                 )
-            """)
+            """
+            )
 
             # インデックス作成
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_experiments_status
                 ON experiments(status)
-            """)
-            cursor.execute("""
+            """
+            )
+            cursor.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_experiments_type
                 ON experiments(experiment_type)
-            """)
-            cursor.execute("""
+            """
+            )
+            cursor.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_experiments_created
                 ON experiments(created_at)
-            """)
+            """
+            )
 
     def save_experiment(self, experiment: Experiment) -> None:
         """実験を保存"""
@@ -350,35 +362,43 @@ class ExperimentDatabase:
             stats["total_experiments"] = cursor.fetchone()["count"]
 
             # ステータス別
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT status, COUNT(*) as count
                 FROM experiments
                 GROUP BY status
-            """)
+            """
+            )
             stats["by_status"] = {row["status"]: row["count"] for row in cursor.fetchall()}
 
             # タイプ別
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT experiment_type, COUNT(*) as count
                 FROM experiments
                 GROUP BY experiment_type
-            """)
+            """
+            )
             stats["by_type"] = {row["experiment_type"]: row["count"] for row in cursor.fetchall()}
 
             # モデル別
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT model_type, COUNT(*) as count
                 FROM experiments
                 GROUP BY model_type
-            """)
+            """
+            )
             stats["by_model"] = {row["model_type"]: row["count"] for row in cursor.fetchall()}
 
             # データセット別
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT dataset_type, COUNT(*) as count
                 FROM experiments
                 GROUP BY dataset_type
-            """)
+            """
+            )
             stats["by_dataset"] = {row["dataset_type"]: row["count"] for row in cursor.fetchall()}
 
             return stats

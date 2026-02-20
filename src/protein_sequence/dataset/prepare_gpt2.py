@@ -26,6 +26,7 @@ ProteinSequenceConfig = import_module("protein_sequence.utils.configs").ProteinS
 if TYPE_CHECKING:
     from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
+
 def tokenize_function(examples: Dict[str, List[str]], tokenizer: EsmSequenceTokenizer) -> Dict[str, List[List[int]]]:
     return {
         "input_ids": tokenizer(

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # SMolInstruct Dataset Download Script
-# 
+#
 # このスクリプトはHugging Face CLIを使用してSMolInstructデータセットを
 # ローカルにダウンロードします。
 #
@@ -133,31 +133,31 @@ try:
         resume_download=True,
         force_download=True
     )
-    
+
     logger.info("Dataset download completed successfully!")
     logger.info(f"Dataset saved to: {full_output_dir}")
-    
+
     # ダウンロードされたファイルを確認
     files = list(full_output_dir.rglob("*"))
     logger.info(f"Downloaded {len(files)} files/directories")
-    
+
     # data.zipファイルを展開
     data_zip = full_output_dir / "data.zip"
     if data_zip.exists():
         logger.info(f"Found data.zip, extracting...")
         import zipfile
-        
+
         with zipfile.ZipFile(data_zip, 'r') as zip_ref:
             zip_ref.extractall(full_output_dir)
-        
+
         logger.info(f"Successfully extracted data.zip")
-        
+
         # 展開後のファイルを確認
         extracted_files = list(full_output_dir.rglob("*.parquet"))
         logger.info(f"Found {len(extracted_files)} parquet files after extraction")
     else:
         logger.warning("No data.zip file found, skipping extraction")
-    
+
 except Exception as e:
     logger.error(f"Failed to download dataset: {e}")
     logger.error("\nTroubleshooting:")

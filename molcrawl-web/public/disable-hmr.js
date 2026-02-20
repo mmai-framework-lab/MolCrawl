@@ -7,7 +7,7 @@
 
   // Store original reload function
   const originalReload = window.location.reload.bind(window.location);
-  
+
   // Use Object.defineProperty to override the reload method
   try {
     Object.defineProperty(window.location, 'reload', {
@@ -38,27 +38,27 @@
   } catch (e) {
     // If defineProperty fails, try intercepting at a different level
     console.warn('⚠️ Could not override location.reload, trying alternative method...');
-    
+
     // Intercept unhandledrejection events from HMR
     window.addEventListener('unhandledrejection', function(event) {
-      if (event.reason && event.reason.message && 
+      if (event.reason && event.reason.message &&
           (event.reason.message.includes('hot-update.json') ||
            event.reason.message.includes('HMR'))) {
         console.log('🚫 Suppressed HMR error to prevent reload');
         event.preventDefault();
       }
     });
-    
+
     // Intercept error events
     window.addEventListener('error', function(event) {
-      if (event.message && 
+      if (event.message &&
           (event.message.includes('hot-update.json') ||
            event.message.includes('HMR'))) {
         console.log('🚫 Suppressed HMR error to prevent reload');
         event.preventDefault();
       }
     }, true);
-    
+
     console.log('✅ Auto-reload prevention installed via event listeners');
   }
 })();

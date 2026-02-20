@@ -3,13 +3,12 @@
 # $ python bert/main.py bert/configs/protein_sequence.py
 
 
-
 from typing import Any, Dict, List
 
 import torch
 from transformers import DataCollatorForLanguageModeling
 
-from config.paths import UNIPROT_DATASET_DIR, get_bert_output_path
+from src.config.paths import UNIPROT_DATASET_DIR, get_bert_output_path
 from protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 
 # Tokenizer instantiation - BERT compatible ESM tokenizer

@@ -255,7 +255,7 @@ if "sequence_tokens" in example and "input_ids" not in example:
 
 ---
 
-**作成者**: GitHub Copilot  
-**作成日**: 2026-01-22  
-**バージョン**: 1.0.0  
+**作成者**: GitHub Copilot
+**作成日**: 2026-01-22
+**バージョン**: 1.0.0
 **ステータス**: ✅ Ready for Production

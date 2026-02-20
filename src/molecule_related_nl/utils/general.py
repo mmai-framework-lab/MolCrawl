@@ -90,17 +90,18 @@ def read_dataset(dataset_path: Union[str, Path]):
     if dataset_path_obj.is_file() and dataset_path_obj.suffix == ".parquet":
         logger.info(f"Loading parquet file: {dataset_path_obj}")
         from datasets import Dataset
+
         dataset = Dataset.from_parquet(str(dataset_path_obj))
 
         # If the dataset has a 'split' column, split it accordingly
-        if 'split' in dataset.column_names:
+        if "split" in dataset.column_names:
             logger.info("Found 'split' column, splitting dataset by split values")
-            split_values = dataset.unique('split')
+            split_values = dataset.unique("split")
             splits = {}
             for split_name in split_values:
                 split_dataset = dataset.filter(lambda x, split_name=split_name: x["split"] == split_name)
                 # Remove the split column as it's no longer needed
-                split_dataset = split_dataset.remove_columns(['split'])
+                split_dataset = split_dataset.remove_columns(["split"])
                 splits[split_name] = split_dataset
                 logger.info(f"Created {split_name} split with {len(split_dataset)} samples")
             from datasets import DatasetDict

@@ -6,7 +6,7 @@ Usage:
 """
 
 from transformers import AutoTokenizer
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # Add parent directory to path
 

@@ -109,11 +109,13 @@ def multiprocess_tokenization(func, table, column_name, new_column_name=None, pr
 
     try:
         with Pool(processes=actual_processes) as pool:
-            tokenized_tables = list(pool.imap(
-                partial(func, column_name=column_name, new_column_name=new_column_name),
-                tqdm(split_tables, total=len(split_tables)),
-                chunksize=chunksize,
-            ))
+            tokenized_tables = list(
+                pool.imap(
+                    partial(func, column_name=column_name, new_column_name=new_column_name),
+                    tqdm(split_tables, total=len(split_tables)),
+                    chunksize=chunksize,
+                )
+            )
     except Exception as e:
         logger.error(f"Error during multiprocess tokenization: {e}")
         raise

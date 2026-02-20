@@ -20,7 +20,7 @@ import pandas as pd
 import requests
 
 
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # ログ設定
 learning_source_dir = check_learning_source_dir()

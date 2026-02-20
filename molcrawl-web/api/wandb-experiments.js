@@ -1,6 +1,6 @@
 /**
  * Weights & Biases API integration for experiment management
- * 
+ *
  * This module provides endpoints to fetch experiment data from W&B
  * replacing the SQLite-based experiment tracking system.
  */
@@ -73,9 +73,9 @@ function mapRunToExperiment(run) {
   const summary = run.summaryMetrics || {};
 
   // Extract metadata from tags and config
-  const experimentType = tags.find(t => ['data_preparation', 'training', 'evaluation', 'visualization'].includes(t)) || 
+  const experimentType = tags.find(t => ['data_preparation', 'training', 'evaluation', 'visualization'].includes(t)) ||
                          config.experiment_type || 'training';
-  const modelType = tags.find(t => ['gpt2', 'bert', 'gpn', 'esm2', 'dnabert2', 'chemberta2', 'rnaformer'].includes(t)) || 
+  const modelType = tags.find(t => ['gpt2', 'bert', 'gpn', 'esm2', 'dnabert2', 'chemberta2', 'rnaformer'].includes(t)) ||
                    config.model_type || 'unknown';
   const datasetType = tags.find(t => ['protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_related_natural_language', 'proteingym', 'clinvar', 'omim'].includes(t)) ||
                      config.dataset_type || config.dataset || 'unknown';
@@ -133,7 +133,7 @@ async function getExperiments(req, res) {
 
   try {
     const { status, model_type, dataset_type, experiment_type, project } = req.query;
-    
+
     // Determine which projects to query
     const projects = project ? [project] : [
       'gpt2-training',
@@ -152,7 +152,7 @@ async function getExperiments(req, res) {
       try {
         const path = `/api/v1/runs/${entity}/${proj}?limit=1000`;
         const data = await wandbApiRequest(path, apiKey);
-        
+
         if (data.runs) {
           allRuns = allRuns.concat(data.runs);
         }

@@ -1,11 +1,9 @@
 name: Performance Benchmarks
-
 on:
   workflow_dispatch:
   schedule:
     # Run weekly on Sunday at 00:00 UTC
     - cron: '0 0 * * 0'
-
 jobs:
   benchmark-models:
     name: Model Performance Benchmarks
@@ -14,16 +12,13 @@ jobs:
       matrix:
         model: ['bert', 'gpt2']
         domain: ['dna', 'protein', 'compound']
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -31,14 +26,12 @@ jobs:
           pip install transformers==4.45.1 accelerate==0.34.2
           pip install pytest-benchmark
           pip install -e .
-      
       - name: Run benchmarks for ${{ matrix.model }}-${{ matrix.domain }}
         run: |
           python -m pytest tests/benchmarks/test_${{ matrix.model }}_${{ matrix.domain }}.py \
             --benchmark-only \
             --benchmark-json=benchmark-${{ matrix.model }}-${{ matrix.domain }}.json
         continue-on-error: true
-      
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -48,33 +41,27 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
         continue-on-error: true
-
   data-pipeline-benchmark:
     name: Data Pipeline Benchmarks
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pytest-benchmark
           pip install -e .
-      
       - name: Benchmark data loading
         run: |
           python -m pytest tests/benchmarks/test_data_pipeline.py \
             --benchmark-only \
             --benchmark-json=benchmark-data-pipeline.json
         continue-on-error: true
-      
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         with:

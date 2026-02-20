@@ -5,7 +5,7 @@ import sys
 
 import torch
 
-from config.paths import COMPOUNDS_DATASET_DIR
+from src.config.paths import COMPOUNDS_DATASET_DIR
 
 # 基本設定
 domain = "compounds"

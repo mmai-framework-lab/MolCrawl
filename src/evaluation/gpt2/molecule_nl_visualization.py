@@ -17,7 +17,7 @@ import pandas as pd
 
 # プロジェクトルートを追加
 
-from utils.base_visualization import BaseVisualizationGenerator
+from src.utils.base_visualization import BaseVisualizationGenerator
 
 logger = logging.getLogger(__name__)
 

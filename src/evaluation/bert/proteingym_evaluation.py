@@ -25,13 +25,13 @@ from transformers import BertConfig, BertForMaskedLM
 
 # プロジェクトルートを追加
 
-from utils.evaluation_output import (
+from src.utils.evaluation_output import (
     get_evaluation_output_dir,
     get_model_name_from_path,
     get_model_type_from_path,
     setup_evaluation_logging,
 )
-from utils.model_evaluator import ModelEvaluator
+from src.utils.model_evaluator import ModelEvaluator
 
 # ログ設定は後でsetup_evaluation_loggingで行う
 logger = logging.getLogger(__name__)
@@ -542,10 +542,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         ):
             # 進捗がログに残るよう、一定間隔で出力
             if batch_index == 1 or batch_index % 10 == 0 or batch_index == total_batches:
-                logger.info(
-                    f"Batch progress: {batch_index}/{total_batches} "
-                    f"({batch_index / total_batches * 100:.1f}%)"
-                )
+                logger.info(f"Batch progress: {batch_index}/{total_batches} " f"({batch_index / total_batches * 100:.1f}%)")
 
             batch = proteingym_data.iloc[i : i + batch_size]
 
@@ -588,8 +585,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
                         percent: int = int(processed / total_variants * 100)
                         if percent != last_percent:
                             logger.info(
-                                f"Step: evaluation Progress: {percent}% "
-                                f"({processed}/{total_variants} variants processed)"
+                                f"Step: evaluation Progress: {percent}% " f"({processed}/{total_variants} variants processed)"
                             )
                             last_percent = percent
 

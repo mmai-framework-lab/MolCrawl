@@ -38,17 +38,17 @@ echo "=== 実際のテスト例 ==="
 # 実際にcompoundsの小さなチェックポイントが存在する場合のテスト
 if [ -f "out-compounds-small-6e-6wu200-6000-its/ckpt.pt" ]; then
     echo "✓ Compoundsチェックポイントが見つかりました。テストを実行します..."
-    
+
     python src/gpt2/test_checkpoint.py \
         --checkpoint_path=out-compounds-small-6e-6wu200-6000-its/ckpt.pt \
         --domain=compounds \
         --vocab_path=assets/molecules/vocab.txt \
         --max_test_samples=10 \
         --output_dir=demo_test_results
-    
+
     echo ""
     echo "✓ テスト完了！結果は demo_test_results/ で確認できます。"
-    
+
     if [ -f "demo_test_results/gpt2_test_report.json" ]; then
         echo ""
         echo "=== テスト結果サマリー ==="
@@ -59,19 +59,19 @@ try:
         data = json.load(f)
     results = data.get('results', {})
     stats = results.get('performance_stats', {})
-    
+
     print(f'チェックポイント: {data.get(\"checkpoint_path\", \"N/A\")}')
     print(f'テスト実行時刻: {data.get(\"test_timestamp\", \"N/A\")}')
     print(f'総パラメータ数: {stats.get(\"total_params\", \"N/A\"):,}')
     print(f'語彙サイズ: {stats.get(\"vocab_size\", \"N/A\")}')
     print(f'Top-1精度: {results.get(\"accuracy\", \"N/A\"):.4f}' if isinstance(results.get('accuracy'), (int, float)) else 'Top-1精度: N/A')
     print(f'ステータス: {results.get(\"status\", \"N/A\")}')
-    
+
     samples = results.get('generated_samples', [])
     if samples:
         print(f'生成サンプル数: {len(samples)}')
         print(f'最初のサンプル: {samples[0][:100]}...' if len(samples[0]) > 100 else f'最初のサンプル: {samples[0]}')
-    
+
 except Exception as e:
     print(f'結果読み込みエラー: {e}')
 "

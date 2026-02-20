@@ -57,12 +57,12 @@ prepare_data() {
     echo "=== データ準備フェーズ ==="
     echo "ClinVarデータをダウンロードしてバランスサンプリング中..."
     echo "陽性（病原性）1000件、陰性（良性）1000件をランダム抽出"
-    
+
     mkdir -p "$DATA_DIR"
-    
+
     # 参照ゲノムファイルのパスを設定
     REF_FASTA="$LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna"
-    
+
     if [[ ! -f "$REF_FASTA" ]]; then
         # .gzファイルを確認
         if [[ -f "$REF_FASTA.gz" ]]; then
@@ -76,7 +76,7 @@ prepare_data() {
     else
         echo "参照ゲノム: $REF_FASTA"
     fi
-    
+
     # extract_random_clinvar_samples.pyを使用してバランスサンプリング
     if [[ -n "$REF_FASTA" ]]; then
         # 参照ゲノムがある場合: データセットから直接抽出して配列生成
@@ -94,9 +94,9 @@ prepare_data() {
         echo "    https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz"
         exit 1
     fi
-    
+
     echo "データ準備完了"
-    
+
     # データセットのバランス確認
     if [[ -f "$DATASET_PATH" ]]; then
         echo ""
@@ -120,21 +120,21 @@ elif 'classification' in df.columns:
 # 前提条件チェック
 check_requirements() {
     echo "Checking requirements..."
-    
+
     # モデルファイルの存在確認
     if [ ! -d "$MODEL_PATH" ]; then
         echo "Error: BERT model not found at $MODEL_PATH"
         echo "Please train the BERT model first or specify correct path"
         exit 1
     fi
-    
+
     # トークナイザーファイルの存在確認
     if [ ! -f "$TOKENIZER_PATH" ]; then
         echo "Error: Tokenizer not found at $TOKENIZER_PATH"
         echo "Please prepare the SentencePiece tokenizer first"
         exit 1
     fi
-    
+
     # データセットファイルの存在確認（データ準備しない場合のみ）
     if [[ "$PREPARE_DATA" != true ]] && [[ ! -f "$DATASET_PATH" ]]; then
         echo "Error: ClinVar dataset not found at $DATASET_PATH"
@@ -142,26 +142,26 @@ check_requirements() {
         echo "  $0 --prepare-data"
         exit 1
     fi
-    
+
     # データセットの行数確認（ファイルが存在する場合）
     if [[ -f "$DATASET_PATH" ]]; then
         TOTAL_VARIANTS=$(wc -l < "$DATASET_PATH")
         echo "📊 Dataset contains $((TOTAL_VARIANTS - 1)) variants"
     fi
-    
+
     # Pythonパッケージの確認
     source miniconda/bin/activate conda 2>/dev/null || {
         echo "Error: Conda environment not available"
         echo "Please setup conda environment first"
         exit 1
     }
-    
+
     python -c "import torch, transformers, sklearn, sentencepiece, pandas, numpy, pyfaidx, datasets" 2>/dev/null || {
         echo "Error: Required Python packages not installed in conda environment"
         echo "Please install: torch, transformers, scikit-learn, sentencepiece, pandas, numpy, pyfaidx, datasets"
         exit 1
     }
-    
+
     echo "All requirements satisfied."
     echo
 }
@@ -171,11 +171,11 @@ run_evaluation() {
     echo "Running BERT ClinVar evaluation..."
     echo "This may take several minutes depending on dataset size and model complexity."
     echo
-    
+
     # 出力ディレクトリの作成
     mkdir -p "$OUTPUT_DIR"
     mkdir -p "$PROJECT_ROOT/logs"
-    
+
     # GPU使用可能性の確認
     if python -c "import torch; print('CUDA available:', torch.cuda.is_available())" | grep "True"; then
         DEVICE="cuda"
@@ -185,7 +185,7 @@ run_evaluation() {
         echo "Using CPU for evaluation (this will be slower)"
     fi
     echo
-    
+
     # BERT ClinVar評価の実行
     source miniconda/bin/activate conda
     python scripts/evaluation/bert/clinvar_evaluation.py \
@@ -197,7 +197,7 @@ run_evaluation() {
         --max_length 512 \
         $SAMPLE_OPTION \
         2>&1 | tee "$PROJECT_ROOT/logs/bert_clinvar_evaluation_$(date +%Y%m%d_%H%M%S).log"
-    
+
     echo
     echo "BERT ClinVar evaluation completed!"
 }
@@ -205,7 +205,7 @@ run_evaluation() {
 # 結果の要約表示
 show_results() {
     echo "=== Evaluation Results Summary ==="
-    
+
     if [ -f "$OUTPUT_DIR/bert_clinvar_evaluation_results.json" ]; then
         echo "Performance metrics:"
         source miniconda/bin/activate conda
@@ -223,13 +223,13 @@ with open('$OUTPUT_DIR/bert_clinvar_evaluation_results.json', 'r') as f:
     else
         echo "Results file not found. Check for errors in the evaluation."
     fi
-    
+
     echo
     echo "Output files generated:"
     if [ -d "$OUTPUT_DIR" ]; then
         ls -la "$OUTPUT_DIR/"
     fi
-    
+
     echo
     echo "Detailed results and visualizations saved to: $OUTPUT_DIR"
 }
@@ -238,7 +238,7 @@ with open('$OUTPUT_DIR/bert_clinvar_evaluation_results.json', 'r') as f:
 analyze_bert_results() {
     echo "🔍 BERT-Specific Analysis"
     echo "========================="
-    
+
     if [ -f "$OUTPUT_DIR/bert_clinvar_evaluation_results.json" ]; then
         echo "🧠 BERT Model Insights:"
         source miniconda/bin/activate conda
@@ -381,9 +381,9 @@ fi
 main() {
     echo "🚀 Starting Independent BERT ClinVar Evaluation Pipeline..."
     echo
-    
+
     check_requirements
-    
+
     # データ準備が必要な場合
     if [[ "$PREPARE_DATA" == true ]]; then
         if [[ "$FORCE_DOWNLOAD" == true ]] || [[ ! -f "$DATASET_PATH" ]]; then
@@ -394,11 +394,11 @@ main() {
             echo ""
         fi
     fi
-    
+
     run_evaluation
     show_results
     analyze_bert_results
-    
+
     echo "🎉 Independent BERT ClinVar Evaluation Completed Successfully!"
     echo "=============================================================="
     echo "📁 Results: $OUTPUT_DIR"

@@ -221,6 +221,6 @@ python rnaformer/main.py --gradient_accumulation_steps 32
 
 ---
 
-**Implementation Date**: 2026-01-22  
-**Based On**: DNABERT-2 and ESM-2 implementation patterns  
+**Implementation Date**: 2026-01-22
+**Based On**: DNABERT-2 and ESM-2 implementation patterns
 **Dataset**: CellXGene single-cell RNA-seq (54M cells)

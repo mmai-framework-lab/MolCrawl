@@ -237,7 +237,7 @@ ls -lt $LEARNING_SOURCE_DIR/genome_sequence/dnabert2-output/dnabert2-small/
 
 ---
 
-**作成者**: GitHub Copilot  
-**作成日**: 2026-01-22  
-**バージョン**: 1.0.0  
+**作成者**: GitHub Copilot
+**作成日**: 2026-01-22
+**バージョン**: 1.0.0
 **ステータス**: ✅ Ready for Production

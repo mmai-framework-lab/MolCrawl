@@ -79,7 +79,7 @@ const DATASET_CONFIGS = {
 function getCheckpointPath(dataset) {
     console.log(`[BERT] Looking for checkpoint for dataset: ${dataset}`);
     console.log(`[BERT] MODEL_BASE_DIR: ${MODEL_BASE_DIR}`);
-    
+
     // Try different possible directory structures
     const possibleDirs = [
         path.join(MODEL_BASE_DIR, dataset, 'bert-output', `${dataset}-small`),
@@ -89,7 +89,7 @@ function getCheckpointPath(dataset) {
     for (const outputDir of possibleDirs) {
         console.log(`[BERT] Checking directory: ${outputDir}`);
         console.log(`[BERT] Directory exists: ${fs.existsSync(outputDir)}`);
-        
+
         if (!fs.existsSync(outputDir)) {
             continue;
         }
@@ -108,7 +108,7 @@ function getCheckpointPath(dataset) {
         if (checkpointDirs.length > 0) {
             const checkpointPath = checkpointDirs[0].path;
             console.log(`[BERT] Found checkpoint path: ${checkpointPath}`);
-            
+
             // Verify it's a valid checkpoint
             const hasConfig = fs.existsSync(path.join(checkpointPath, 'config.json'));
             const hasPytorchModel = fs.existsSync(path.join(checkpointPath, 'pytorch_model.bin'));
@@ -137,16 +137,16 @@ function getCheckpointPath(dataset) {
  */
 function getTokenizerPath(dataset, checkpointPath) {
     const projectRoot = path.join(__dirname, '..', '..');
-    
+
     // First, check if checkpoint has its own tokenizer
     const hasTokenizerInCheckpoint = fs.existsSync(path.join(checkpointPath, 'tokenizer_config.json')) ||
                                       fs.existsSync(path.join(checkpointPath, 'vocab.txt'));
-    
+
     if (hasTokenizerInCheckpoint) {
         console.log(`[BERT] Using tokenizer from checkpoint: ${checkpointPath}`);
         return checkpointPath;
     }
-    
+
     // Dataset-specific tokenizer paths
     const tokenizerPaths = {
         'compounds': path.join(projectRoot, 'assets', 'molecules', 'vocab.txt'),
@@ -155,20 +155,20 @@ function getTokenizerPath(dataset, checkpointPath) {
         'rna': checkpointPath,  // Use tokenizer from checkpoint
         'molecule_nl': checkpointPath,  // Use tokenizer from checkpoint (if available)
     };
-    
+
     const tokenizerPath = tokenizerPaths[dataset];
     if (tokenizerPath && fs.existsSync(tokenizerPath)) {
         console.log(`[BERT] Using dataset-specific tokenizer: ${tokenizerPath}`);
         return tokenizerPath;
     }
-    
+
     // Fallback to custom_tokenizer
     const customTokenizerPath = path.join(projectRoot, 'custom_tokenizer');
     if (fs.existsSync(customTokenizerPath)) {
         console.log(`[BERT] Using fallback custom_tokenizer: ${customTokenizerPath}`);
         return customTokenizerPath;
     }
-    
+
     // Last resort: use checkpoint path
     console.log(`[BERT] No external tokenizer found, using checkpoint path: ${checkpointPath}`);
     return checkpointPath;
@@ -210,12 +210,12 @@ dataset = '${dataset}'
 
 try:
     from transformers import BertForMaskedLM, BertTokenizer
-    
+
     # Load model
     model = BertForMaskedLM.from_pretrained(checkpoint_path)
     model.eval()
     model.to(device)
-    
+
     # Load tokenizer based on dataset type
     if dataset == 'compounds':
         # Compounds uses vocab.txt directly
@@ -230,46 +230,46 @@ try:
         from tokenizers import Tokenizer
         from tokenizers.models import BPE
         from transformers import PreTrainedTokenizerFast
-        
+
         # Find SentencePiece model file
         dataset_dir = os.path.dirname(os.path.dirname(os.path.dirname(checkpoint_path)))
         sp_model_path = os.path.join(dataset_dir, 'spm_tokenizer.model')
-        
+
         if os.path.exists(sp_model_path):
             # Reconstruct tokenizer using the same method as training
             sp = spm.SentencePieceProcessor(model_file=sp_model_path)
             vocab_size = sp.get_piece_size()
             vocab = [sp.id_to_piece(i) for i in range(vocab_size)]
-            
+
             # Create BPE tokenizer with UNK token in vocabulary
             from tokenizers.models import WordLevel
-            
+
             # Build vocabulary dict with special tokens
             vocab_dict = {}
             special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"]
-            
+
             # Add special tokens first
             for i, token in enumerate(special_tokens):
                 vocab_dict[token] = i
-            
+
             # Add SentencePiece vocabulary
             offset = len(special_tokens)
             for i, token in enumerate(vocab):
                 if token not in vocab_dict:
                     vocab_dict[token] = i + offset
-            
+
             # Create WordLevel tokenizer with the vocabulary
             tmp_tokenizer = Tokenizer(WordLevel(vocab=vocab_dict, unk_token="[UNK]"))
-            
+
             tmp_tokenizer = PreTrainedTokenizerFast(tokenizer_object=tmp_tokenizer)
             tmp_tokenizer.unk_token = "[UNK]"
             tmp_tokenizer.sep_token = "[SEP]"
             tmp_tokenizer.pad_token = "[PAD]"
             tmp_tokenizer.cls_token = "[CLS]"
             tmp_tokenizer.mask_token = "[MASK]"
-            
+
             tokenizer = tmp_tokenizer
-            
+
             # Debug: verify special tokens
             print(f"[DEBUG] Tokenizer special tokens:")
             print(f"  mask_token: {tokenizer.mask_token} (ID: {tokenizer.mask_token_id})")
@@ -289,32 +289,32 @@ try:
                     tokenizer = BertTokenizer(vocab_file=vocab_file)
                 else:
                     raise Exception(f"Could not load tokenizer for {dataset}. SentencePiece model not found at {sp_model_path}")
-    
+
     # Input text with [MASK] tokens
     text = '''${text.replace(/'/g, "\\'")}'''
     print(f"[DEBUG] Input text: {text}")
     print(f"[DEBUG] Tokenizer mask_token: {tokenizer.mask_token}")
     print(f"[DEBUG] Tokenizer mask_token_id: {tokenizer.mask_token_id}")
-    
+
     # Tokenize
     inputs = tokenizer(text, return_tensors='pt').to(device)
-    
+
     # Find mask token positions
     mask_token_id = tokenizer.mask_token_id
     mask_positions = (inputs['input_ids'] == mask_token_id).nonzero(as_tuple=True)[1]
-    
+
     if len(mask_positions) == 0:
         print(json.dumps({
-            'success': False, 
+            'success': False,
             'error': 'No [MASK] token found in input text'
         }))
         sys.exit(0)
-    
+
     # Run inference
     with torch.no_grad():
         outputs = model(**inputs)
         predictions = outputs.logits
-    
+
     # Get predictions for each mask position
     results = []
     for mask_pos in mask_positions:
@@ -323,7 +323,7 @@ try:
         top_k_indices = torch.topk(mask_predictions, top_k).indices.tolist()
         top_k_tokens = [tokenizer.decode([idx]) for idx in top_k_indices]
         top_k_scores = torch.softmax(mask_predictions, dim=0)[top_k_indices].tolist()
-        
+
         results.append({
             'position': mask_pos.item(),
             'predictions': [
@@ -331,7 +331,7 @@ try:
                 for token, score in zip(top_k_tokens, top_k_scores)
             ]
         })
-    
+
     # Create filled examples with top prediction
     filled_texts = []
     for i, mask_result in enumerate(results):
@@ -341,7 +341,7 @@ try:
         filled_input_ids[0, mask_result['position']] = top_token_id
         filled_text = tokenizer.decode(filled_input_ids[0], skip_special_tokens=True)
         filled_texts.append(filled_text)
-    
+
     # Output results
     print(json.dumps({
         'success': True,

@@ -19,7 +19,7 @@ import requests
 from tqdm import tqdm
 
 # 共通モジュールを追加
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # ログ設定
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

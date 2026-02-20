@@ -21,7 +21,7 @@ select_best_gpu() {
         echo "ERROR: nvidia-smi command not found. Cannot detect GPU."
         return 1
     fi
-    
+
     # Get GPU with most free memory (in MB)
     # Format: GPU_ID FREE_MEMORY_MB
     local best_gpu=$(nvidia-smi --query-gpu=index,memory.free --format=csv,noheader,nounits | \
@@ -29,12 +29,12 @@ select_best_gpu() {
         sort -k2 -rn | \
         head -1 | \
         awk '{print $1}')
-    
+
     if [ -z "$best_gpu" ]; then
         echo "ERROR: Could not determine best GPU."
         return 1
     fi
-    
+
     echo "$best_gpu"
 }
 
@@ -44,32 +44,32 @@ select_best_gpu() {
 check_gpu_memory() {
     local gpu_id=$1
     local min_memory_gb=$2
-    
+
     if [ -z "$gpu_id" ] || [ -z "$min_memory_gb" ]; then
         echo "ERROR: GPU ID and minimum memory (GB) are required."
         return 1
     fi
-    
+
     if ! command -v nvidia-smi &> /dev/null; then
         echo "WARNING: nvidia-smi command not found. Skipping memory check."
         return 0
     fi
-    
+
     # Get free memory in MB for specified GPU
     local free_memory_mb=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i "$gpu_id")
     local free_memory_gb=$(echo "scale=2; $free_memory_mb / 1024" | bc)
-    
+
     echo "GPU $gpu_id: ${free_memory_gb}GB free memory available"
-    
+
     # Compare with minimum required
     local has_enough=$(echo "$free_memory_gb >= $min_memory_gb" | bc)
-    
+
     if [ "$has_enough" -eq 0 ]; then
         echo "WARNING: GPU $gpu_id has only ${free_memory_gb}GB free, but ${min_memory_gb}GB required."
         echo "Training may fail with CUDA Out of Memory error."
         return 1
     fi
-    
+
     return 0
 }
 
@@ -78,7 +78,7 @@ check_gpu_memory() {
 # Sets CUDA_VISIBLE_DEVICES to the best available GPU
 auto_select_gpu() {
     local min_memory_gb=${1:-10}  # Default: 10GB minimum
-    
+
     if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
         echo "CUDA_VISIBLE_DEVICES is already set to: $CUDA_VISIBLE_DEVICES"
         # Still check if the selected GPU has enough memory
@@ -87,23 +87,22 @@ auto_select_gpu() {
         }
         return 0
     fi
-    
+
     echo "Auto-selecting GPU with most free memory..."
     local best_gpu=$(select_best_gpu)
-    
+
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to select GPU automatically."
         return 1
     fi
-    
+
     export CUDA_VISIBLE_DEVICES=$best_gpu
     echo "Selected GPU $best_gpu"
-    
+
     # Check if it has enough memory
     check_gpu_memory "$best_gpu" "$min_memory_gb" || {
         echo "WARNING: Proceeding anyway. Monitor for OOM errors."
     }
-    
+
     return 0
 }
-

@@ -1,16 +1,12 @@
-
 data_preparation:
   # Which uniprot dataset to download must be one of the following:
   # "UniprotKB_reviewed", "UniprotKB_unreviewed", "UniRef100", "UniRef90", "UniRef50", "UniParc"
   dataset: "UniRef50"
-
   # If True use md5 to check if a file needs to be downloaded again, using md5
   # is very time consuming for large file. Otherwise we only check if the path exists.
   use_md5: False
-
   # Special case for Uniparc download, num of worker to use.
   num_worker: 4
-
   # Number of sequence per files for raw files and parquet. It also reflex the number
   # of sequence loaded in memory during the processing of those files.
   max_lines_per_file: 100000

@@ -70,13 +70,13 @@ GPT-2 Protein Classification評価パイプライン
 例:
     # サンプルデータで評価（デフォルトモデル使用）
     $0 -s
-    
+
     # カスタムデータセットで評価（デフォルトモデル使用）
     $0 -d my_protein_variants.csv
-    
+
     # カスタムモデルとデータセットで評価
     $0 -m gpt2-output/protein_sequence-medium/ckpt.pt -d my_protein_variants.csv
-    
+
     # 評価のみ実行（データ準備をスキップ）
     $0 -d data.csv --skip_data_prep
 
@@ -211,23 +211,23 @@ if [ "$SKIP_DATA_PREP" = false ]; then
     if [[ "$CREATE_SAMPLE" == "true" ]] || [[ -z "$DATA_PATH" ]]; then
         echo "=== データ準備フェーズ ==="
         echo "サンプルデータを準備中..."
-        
+
         cd "$PROJECT_ROOT"
-        
+
         python scripts/evaluation/gpt2/protein_classification_data_preparation.py \
             --output_dir "$DATA_DIR" \
             --create_sample
-        
+
         if [[ $? -ne 0 ]]; then
             echo "エラー: データ準備に失敗しました"
             exit 1
         fi
-        
+
         # サンプルデータパスを設定
         if [[ -z "$DATA_PATH" ]]; then
             DATA_PATH="$DATA_DIR/protein_classification_sample.csv"
         fi
-        
+
         echo "データ準備完了"
         echo ""
     fi
@@ -242,15 +242,15 @@ if [ "$SKIP_EVALUATION" = false ]; then
     echo "GPT-2 Protein Classification評価を実行中..."
     echo "モデル: $MODEL_PATH"
     echo "データ: ${DATA_PATH:-サンプルデータを使用}"
-    
+
     # データファイルの存在確認
     if [[ -n "$DATA_PATH" ]] && [[ ! -f "$DATA_PATH" ]]; then
         echo "エラー: 評価用データセットが見つかりません: $DATA_PATH"
         exit 1
     fi
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
         "scripts/evaluation/gpt2/protein_classification_evaluation.py"
@@ -258,11 +258,11 @@ if [ "$SKIP_EVALUATION" = false ]; then
         "--output_dir" "$OUTPUT_DIR"
         "--threshold" "$THRESHOLD"
     )
-    
+
     if [[ -n "$DATA_PATH" ]]; then
         EVAL_ARGS+=("--data_path" "$DATA_PATH")
     fi
-    
+
     # トークナイザーパスが指定されている場合は追加
     if [[ -n "$TOKENIZER_PATH" ]]; then
         EVAL_ARGS+=(--tokenizer_path "$TOKENIZER_PATH")
@@ -270,14 +270,14 @@ if [ "$SKIP_EVALUATION" = false ]; then
     else
         echo "トークナイザー: 自動検出"
     fi
-    
+
     python "${EVAL_ARGS[@]}"
-    
+
     if [[ $? -ne 0 ]]; then
         echo "エラー: モデル評価に失敗しました"
         exit 1
     fi
-    
+
     echo "モデル評価完了"
     echo ""
 fi
@@ -289,15 +289,15 @@ fi
 if [ "$SKIP_VISUALIZATION" = false ]; then
     echo "=== 可視化フェーズ ==="
     echo "評価結果の可視化を実行中..."
-    
+
     # 結果ファイルの存在確認
     RESULTS_FILE="$OUTPUT_DIR/protein_classification_results.json"
-    
+
     if [[ -f "$RESULTS_FILE" ]]; then
         python "$PROJECT_ROOT/scripts/evaluation/gpt2/protein_classification_visualization.py" \
             --results_file "$RESULTS_FILE" \
             --output_dir "$OUTPUT_DIR/visualizations"
-        
+
         if [[ $? -eq 0 ]]; then
             echo "可視化完了"
         else

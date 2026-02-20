@@ -78,12 +78,12 @@ function findCheckpointDirectories(outputDir) {
         if (!fs.existsSync(outputDir)) {
             return [];
         }
-        
+
         const entries = fs.readdirSync(outputDir, { withFileTypes: true });
         const checkpoints = entries
             .filter(entry => {
                 // Support both "checkpoint-" and "_checkpoint-" prefixes
-                return entry.isDirectory() && 
+                return entry.isDirectory() &&
                        (entry.name.startsWith('checkpoint-') || entry.name.startsWith('_checkpoint-'));
             })
             .map(entry => {
@@ -91,11 +91,11 @@ function findCheckpointDirectories(outputDir) {
                 const parts = entry.name.split('-');
                 const step = parseInt(parts[parts.length - 1]);
                 const checkpointPath = path.join(outputDir, entry.name);
-                
+
                 // Check if training_args.json exists (valid checkpoint)
                 const trainingArgsPath = path.join(checkpointPath, 'training_args.json');
                 const hasTrainingArgs = fs.existsSync(trainingArgsPath);
-                
+
                 return {
                     name: entry.name,
                     step: step,
@@ -105,7 +105,7 @@ function findCheckpointDirectories(outputDir) {
             })
             .filter(cp => !isNaN(cp.step) && cp.hasTrainingArgs) // Only include valid checkpoints with training_args.json
             .sort((a, b) => b.step - a.step); // Sort by step descending
-        
+
         return checkpoints;
     } catch (error) {
         console.error('Error finding checkpoint directories:', error);
@@ -123,9 +123,9 @@ function readHFCheckpointMetadata(checkpointPath) {
         if (!fs.existsSync(trainingArgsPath)) {
             return null;
         }
-        
+
         const argsData = JSON.parse(fs.readFileSync(trainingArgsPath, 'utf8'));
-        
+
         // Extract model args from training_args.json
         const modelArgs = argsData.model_args || {};
         return {
@@ -159,29 +159,29 @@ function checkHFCompatibility(checkpointPath) {
         isFromPretrainedReady: false,
         missingFiles: [],
     };
-    
+
     // Check for required files
     const configPath = path.join(checkpointPath, 'config.json');
     const pytorchModelPath = path.join(checkpointPath, 'pytorch_model.bin');
     const trainingStatePath = path.join(checkpointPath, 'training_state.bin');
     const trainingArgsPath = path.join(checkpointPath, 'training_args.json');
-    
+
     compatibility.hasConfigJson = fs.existsSync(configPath);
     compatibility.hasPytorchModel = fs.existsSync(pytorchModelPath);
     compatibility.hasTrainingState = fs.existsSync(trainingStatePath);
     compatibility.hasTrainingArgs = fs.existsSync(trainingArgsPath);
-    
+
     // Determine if from_pretrained() would work
     // Requires: config.json + pytorch_model.bin (with proper HF format)
     compatibility.isFromPretrainedReady = compatibility.hasConfigJson && compatibility.hasPytorchModel;
-    
+
     if (!compatibility.hasConfigJson) {
         compatibility.missingFiles.push('config.json');
     }
     if (!compatibility.hasPytorchModel) {
         compatibility.missingFiles.push('pytorch_model.bin');
     }
-    
+
     return compatibility;
 }
 
@@ -199,7 +199,7 @@ function readTrainerState(checkpointPath) {
                 global_step: stateData.global_step || 0,
             };
         }
-        
+
         // Fallback: try training_args.json
         const trainingArgsPath = path.join(checkpointPath, 'training_args.json');
         if (fs.existsSync(trainingArgsPath)) {
@@ -209,7 +209,7 @@ function readTrainerState(checkpointPath) {
                 global_step: argsData.iteration || 0,
             };
         }
-        
+
         return null;
     } catch (error) {
         return null;
@@ -225,17 +225,17 @@ function readLoggingCSV(outputDir) {
         if (!fs.existsSync(loggingPath)) {
             return null;
         }
-        
+
         const content = fs.readFileSync(loggingPath, 'utf8');
         const lines = content.trim().split('\n');
         if (lines.length < 2) {
             return null;
         }
-        
+
         // Get last line (most recent)
         const lastLine = lines[lines.length - 1];
         const parts = lastLine.split(',').map(p => p.trim());
-        
+
         if (parts.length >= 3) {
             return {
                 iter: parseInt(parts[0]) || 0,
@@ -243,7 +243,7 @@ function readLoggingCSV(outputDir) {
                 val_loss: parseFloat(parts[2]) || 0.0,
             };
         }
-        
+
         return null;
     } catch (error) {
         return null;
@@ -343,17 +343,17 @@ async function getModelStatus(dataset, size) {
     }
 
     const outputDir = path.join(MODEL_BASE_DIR, config.outputDirs[size]);
-    
+
     // First, try to find HuggingFace format checkpoints
     const checkpoints = findCheckpointDirectories(outputDir);
-    
+
     if (checkpoints.length > 0) {
         // Use the latest checkpoint
         const latestCheckpoint = checkpoints[0];
         const checkpointData = readHFCheckpointMetadata(latestCheckpoint.path);
         const loggingData = readLoggingCSV(outputDir);
         const hfCompatibility = checkHFCompatibility(latestCheckpoint.path);
-        
+
         if (!checkpointData) {
             return {
                 dataset,
@@ -363,7 +363,7 @@ async function getModelStatus(dataset, size) {
                 error: 'Could not read checkpoint training_args.json',
             };
         }
-        
+
         // Extract model args (removing training-specific fields)
         const modelArgs = {
             n_layer: checkpointData.n_layer,
@@ -372,17 +372,17 @@ async function getModelStatus(dataset, size) {
             vocab_size: checkpointData.vocab_size,
             block_size: checkpointData.block_size,
         };
-        
+
         const modTime = getFileModTime(latestCheckpoint.path);
         const modelSize = calculateModelSize(modelArgs);
-        
+
         // Use data from training_args.json (most reliable) or fallback to logging.csv
         const iteration = checkpointData.iteration || latestCheckpoint.step;
         const best_val_loss = checkpointData.best_val_loss || loggingData?.val_loss || 0.0;
         const train_loss = loggingData?.train_loss || 0.0;
         const learning_rate = checkpointData.learning_rate || 0;
         const batch_size = checkpointData.batch_size || 0;
-        
+
         return {
             dataset,
             size,
@@ -405,7 +405,7 @@ async function getModelStatus(dataset, size) {
             },
         };
     }
-    
+
     // Fallback: Try legacy ckpt.pt format
     const legacyCheckpointPath = path.join(outputDir, 'ckpt.pt');
     if (fs.existsSync(legacyCheckpointPath)) {
@@ -442,7 +442,7 @@ async function getModelStatus(dataset, size) {
             };
         }
     }
-    
+
     // No checkpoints found
     return {
         dataset,

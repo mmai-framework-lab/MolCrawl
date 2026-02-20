@@ -47,26 +47,26 @@ echo "=== テスト実行開始 ==="
 for domain in "${DOMAINS[@]}"; do
     echo ""
     echo "[$domain] ドメインのチェックポイントを検索中..."
-    
+
     # ドメイン特化のチェックポイントを検索
     CHECKPOINTS=$(find "$SEARCH_DIR" -type f -name "*.pt" -path "*${domain}*" 2>/dev/null || true)
-    
+
     if [ -z "$CHECKPOINTS" ]; then
         echo "  チェックポイントが見つかりませんでした。"
         continue
     fi
-    
+
     echo "$CHECKPOINTS" | while read -r checkpoint; do
         if [ -f "$checkpoint" ]; then
             TOTAL_COUNT=$((TOTAL_COUNT + 1))
-            
+
             echo ""
             echo "  テスト中: $checkpoint"
-            
+
             # テスト用の出力ディレクトリ
             CHECKPOINT_NAME=$(basename "$(dirname "$checkpoint")")
             TEST_OUTPUT_DIR="${OUTPUT_BASE_DIR}_${TIMESTAMP}/${domain}_${CHECKPOINT_NAME}"
-            
+
             # テスト実行
             if python src/gpt2/test_checkpoint.py \
                 --checkpoint_path="$checkpoint" \
@@ -74,10 +74,10 @@ for domain in "${DOMAINS[@]}"; do
                 --output_dir="$TEST_OUTPUT_DIR" \
                 --max_test_samples=500 \
                 --convert_to_hf; then
-                
+
                 echo "  ✓ テスト成功: $checkpoint"
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-                
+
                 # 結果の要約を抽出
                 if [ -f "${TEST_OUTPUT_DIR}/gpt2_test_report.json" ]; then
                     echo "  結果:"
@@ -130,11 +130,11 @@ for report_path in reports:
     try:
         with open(report_path, 'r') as f:
             data = json.load(f)
-        
+
         domain = Path(report_path).parent.name.split('_')[0]
         checkpoint = data.get('checkpoint_path', 'Unknown')
         results = data.get('results', {})
-        
+
         test_result = {
             'domain': domain,
             'checkpoint_path': checkpoint,
@@ -144,7 +144,7 @@ for report_path in reports:
             'status': results.get('status', 'unknown')
         }
         summary['test_results'].append(test_result)
-        
+
     except Exception as e:
         print(f'レポート読み込みエラー: {report_path}: {e}')
 

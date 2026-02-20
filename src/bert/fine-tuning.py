@@ -22,7 +22,7 @@ from transformers import (
 from compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 
 # 共通環境チェックモジュールを追加
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 # -----------------------------
 # 既存の前処理ヘルパ
@@ -143,9 +143,8 @@ def preprocess_data(data, tasks):
     test_df = test_df.dropna().reset_index(drop=True)
     return train_df, valid_df, test_df
 
+
 if __name__ == "__main__":
-
-
     # -----------------------------
     # データセット選択（例: tox21 は multi-task）
     # -----------------------------
@@ -218,7 +217,9 @@ if __name__ == "__main__":
                 # 設定
                 # -----------------------------
                 learning_source_dir = check_learning_source_dir()
-                output_dir = f"{learning_source_dir}/compounds/benchmark/MoleculeNet/small/pretrained_{pretrained}/{benchmark_name}"
+                output_dir = (
+                    f"{learning_source_dir}/compounds/benchmark/MoleculeNet/small/pretrained_{pretrained}/{benchmark_name}"
+                )
                 learning_rate = 3e-5
                 weight_decay = 0.0
                 warmup_steps = 0
@@ -239,9 +240,7 @@ if __name__ == "__main__":
                 tokenizer = Tokenizer("assets/molecules/vocab.txt", 512)
 
                 # 最大長の自動見積り（安全に 512 にクリップ）
-                all_df["token_length"] = all_df["text"].apply(
-                    lambda x, tokenizer=tokenizer: len(tokenizer.encode(x))
-                )
+                all_df["token_length"] = all_df["text"].apply(lambda x, tokenizer=tokenizer: len(tokenizer.encode(x)))
                 max_length = int(min(all_df["token_length"].max(), 512))
 
                 # 語彙サイズ（8の倍数へ丸め）
@@ -445,7 +444,9 @@ if __name__ == "__main__":
                         eval_dataset=tokenized["validation"],
                         tokenizer=None,
                         compute_metrics=(
-                            partial(compute_metrics, std=transformers.y_stds[0]) if task_type == "regression" else compute_metrics
+                            partial(compute_metrics, std=transformers.y_stds[0])
+                            if task_type == "regression"
+                            else compute_metrics
                         ),
                         callbacks=[EarlyStoppingCallback(early_stopping_patience=10)],
                     )

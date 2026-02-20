@@ -1,11 +1,9 @@
-
-
 import sentencepiece as spm
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path, get_bert_output_path
+from src.config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path, get_bert_output_path
 
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("genome_sequence", model_size)
@@ -57,7 +55,9 @@ def preprocess_function(examples):
         attention_masks = []
         for input_ids in examples["input_ids"]:
             # Assuming pad_token_id is tokenizer.pad_token_id or 0
-            pad_token_id = tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') and tokenizer.pad_token_id is not None else 0
+            pad_token_id = (
+                tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
+            )
             attention_mask = [1 if token_id != pad_token_id else 0 for token_id in input_ids]
             attention_masks.append(attention_mask)
 

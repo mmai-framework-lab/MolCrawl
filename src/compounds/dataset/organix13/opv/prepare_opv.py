@@ -6,6 +6,7 @@ import logging
 from tqdm import tqdm
 import csv
 from collections import defaultdict
+
 try:
     import pandas as pd
 except ModuleNotFoundError:
@@ -91,9 +92,7 @@ def extract(zip_file, member=None):
                 fin.seek(-4, 2)
                 file_size = struct.unpack("<I", fin.read())[0]
             with gzip.open(zip_file, "rb") as fin:
-                if not os.path.exists(save_file) or file_size != os.path.getsize(
-                    save_file
-                ):
+                if not os.path.exists(save_file) or file_size != os.path.getsize(save_file):
                     logger.info("Extracting %s to %s" % (zip_file, save_file))
                     with open(save_file, "wb") as fout:
                         shutil.copyfileobj(fin, fout)
@@ -102,9 +101,7 @@ def extract(zip_file, member=None):
         if member is not None:
             members = [member]
             save_files = [os.path.join(save_path, os.path.basename(member))]
-            logger.info(
-                "Extracting %s from %s to %s" % (member, zip_file, save_files[0])
-            )
+            logger.info("Extracting %s from %s to %s" % (member, zip_file, save_files[0]))
         else:
             members = tar.getnames()
             save_files = [os.path.join(save_path, _member) for _member in members]
@@ -114,9 +111,7 @@ def extract(zip_file, member=None):
                 os.makedirs(save_file, exist_ok=True)
                 continue
             os.makedirs(os.path.dirname(save_file), exist_ok=True)
-            if not os.path.exists(save_file) or tar.getmember(
-                _member
-            ).size != os.path.getsize(save_file):
+            if not os.path.exists(save_file) or tar.getmember(_member).size != os.path.getsize(save_file):
                 with tar.extractfile(_member) as fin, open(save_file, "wb") as fout:
                     shutil.copyfileobj(fin, fout)
     elif extension == ".zip":
@@ -124,9 +119,7 @@ def extract(zip_file, member=None):
         if member is not None:
             members = [member]
             save_files = [os.path.join(save_path, os.path.basename(member))]
-            logger.info(
-                "Extracting %s from %s to %s" % (member, zip_file, save_files[0])
-            )
+            logger.info("Extracting %s from %s to %s" % (member, zip_file, save_files[0]))
         else:
             members = zipped.namelist()
             save_files = [os.path.join(save_path, _member) for _member in members]
@@ -136,9 +129,7 @@ def extract(zip_file, member=None):
                 os.makedirs(save_file, exist_ok=True)
                 continue
             os.makedirs(os.path.dirname(save_file), exist_ok=True)
-            if not os.path.exists(save_file) or zipped.getinfo(
-                _member
-            ).file_size != os.path.getsize(save_file):
+            if not os.path.exists(save_file) or zipped.getinfo(_member).file_size != os.path.getsize(save_file):
                 with zipped.open(_member, "r") as fin, open(save_file, "wb") as fout:
                     shutil.copyfileobj(fin, fout)
     else:
@@ -200,15 +191,9 @@ class OPV:
         **kwargs
     """
 
-    train_url = (
-        "https://data.nrel.gov/system/files/236/1712697052-mol_train.csv.gz"
-    )
-    valid_url = (
-        "https://data.nrel.gov/system/files/236/1712697052-mol_valid.csv.gz"
-    )
-    test_url = (
-        "https://data.nrel.gov/system/files/236/1712697052-mol_test.csv.gz"
-    )
+    train_url = "https://data.nrel.gov/system/files/236/1712697052-mol_train.csv.gz"
+    valid_url = "https://data.nrel.gov/system/files/236/1712697052-mol_valid.csv.gz"
+    test_url = "https://data.nrel.gov/system/files/236/1712697052-mol_test.csv.gz"
     train_md5 = "16e439b7411ea0a8d3a56ba4802b61b1"
     valid_md5 = "3aa2ac62015932ca84661feb5d29adda"
     test_md5 = "bad072224f0755478f0729476ca99a33"
@@ -230,9 +215,7 @@ class OPV:
         with open(csv_file, "r") as fin:
             reader = csv.reader(fin)
             if verbose:
-                reader = iter(
-                    tqdm(reader, "Loading %s" % csv_file, get_line_count(csv_file))
-                )
+                reader = iter(tqdm(reader, "Loading %s" % csv_file, get_line_count(csv_file)))
             fields = next(reader)
             smiles = []
             targets = defaultdict(list)
@@ -259,28 +242,16 @@ class OPV:
             os.makedirs(path)
         self.path = path
 
-        train_zip_file = download(
-            self.train_url, path, save_file="mol_train.csv.gz", md5=self.train_md5
-        )
-        valid_zip_file = download(
-            self.valid_url, path, save_file="mol_valid.csv.gz", md5=self.valid_md5
-        )
-        test_zip_file = download(
-            self.test_url, path, save_file="mol_test.csv.gz", md5=self.test_md5
-        )
+        train_zip_file = download(self.train_url, path, save_file="mol_train.csv.gz", md5=self.train_md5)
+        valid_zip_file = download(self.valid_url, path, save_file="mol_valid.csv.gz", md5=self.valid_md5)
+        test_zip_file = download(self.test_url, path, save_file="mol_test.csv.gz", md5=self.test_md5)
         train_file = extract(train_zip_file)
         valid_file = extract(valid_zip_file)
         test_file = extract(test_zip_file)
 
-        train_smiles, train_targets = self.read_csv(
-            train_file, smiles_field="smile", target_fields=self.target_fields
-        )
-        valid_smiles, valid_targets = self.read_csv(
-            valid_file, smiles_field="smile", target_fields=self.target_fields
-        )
-        test_smiles, test_targets = self.read_csv(
-            test_file, smiles_field="smile", target_fields=self.target_fields
-        )
+        train_smiles, train_targets = self.read_csv(train_file, smiles_field="smile", target_fields=self.target_fields)
+        valid_smiles, valid_targets = self.read_csv(valid_file, smiles_field="smile", target_fields=self.target_fields)
+        test_smiles, test_targets = self.read_csv(test_file, smiles_field="smile", target_fields=self.target_fields)
         self.num_train = len(train_smiles)
         self.num_valid = len(valid_smiles)
         self.num_test = len(test_smiles)

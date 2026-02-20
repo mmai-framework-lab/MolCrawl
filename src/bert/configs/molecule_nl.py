@@ -29,11 +29,11 @@ tokenizer = Tokenizer()
 # We'll use 32016 as default (CodeLlama)
 try:
     # Try to get vocab size from tokenizer
-    if hasattr(tokenizer, 'vocab_size'):
+    if hasattr(tokenizer, "vocab_size"):
         meta_vocab_size = tokenizer.vocab_size
-    elif hasattr(tokenizer, 'tokenizer') and hasattr(tokenizer.tokenizer, 'vocab_size'):
+    elif hasattr(tokenizer, "tokenizer") and hasattr(tokenizer.tokenizer, "vocab_size"):
         meta_vocab_size = tokenizer.tokenizer.vocab_size
-    elif hasattr(tokenizer, 'tokenizer'):
+    elif hasattr(tokenizer, "tokenizer"):
         vocab = tokenizer.tokenizer.get_vocab()
         meta_vocab_size = len(vocab) if vocab else 32016
     else:

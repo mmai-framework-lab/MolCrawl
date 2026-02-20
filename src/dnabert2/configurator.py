@@ -11,27 +11,15 @@ import sys
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="DNABERT-2 Training Configuration")
 parser.add_argument("config", type=str, help="Path to the config file")
-parser.add_argument(
-    "--use_wandb", type=str, default=None, help="Enable wandb logging (True/False)"
-)
-parser.add_argument(
-    "--wandb_project", type=str, default=None, help="Wandb project name"
-)
+parser.add_argument("--use_wandb", type=str, default=None, help="Enable wandb logging (True/False)")
+parser.add_argument("--wandb_project", type=str, default=None, help="Wandb project name")
 parser.add_argument("--wandb_run_name", type=str, default=None, help="Wandb run name")
-parser.add_argument(
-    "--wandb_entity", type=str, default=None, help="Wandb entity/team name"
-)
-parser.add_argument(
-    "--model_size", type=str, default=None, help="Model size (small/medium/large)"
-)
-parser.add_argument(
-    "--max_steps", type=int, default=None, help="Maximum training steps"
-)
+parser.add_argument("--wandb_entity", type=str, default=None, help="Wandb entity/team name")
+parser.add_argument("--model_size", type=str, default=None, help="Model size (small/medium/large)")
+parser.add_argument("--max_steps", type=int, default=None, help="Maximum training steps")
 parser.add_argument("--learning_rate", type=float, default=None, help="Learning rate")
 parser.add_argument("--batch_size", type=int, default=None, help="Training batch size")
-parser.add_argument(
-    "--save_steps", type=int, default=None, help="Save checkpoint every N steps"
-)
+parser.add_argument("--save_steps", type=int, default=None, help="Save checkpoint every N steps")
 
 if __name__ == "__main__":
     args = parser.parse_args()

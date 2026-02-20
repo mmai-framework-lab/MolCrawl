@@ -9,12 +9,9 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from utils.environment_check import check_learning_source_dir
+from src.utils.environment_check import check_learning_source_dir
 
 logger = logging.getLogger(__name__)
-
-
-
 
 
 def get_evaluation_output_dir(model_type, evaluation_type, model_name=None, timestamp=None):

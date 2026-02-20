@@ -138,9 +138,7 @@ class TranscriptomeTokenizer:
         tokenized_cells: list[list[int]] = []
         if self.custom_attr_name_dict is not None:
             cell_attr = [attr_key for attr_key in self.custom_attr_name_dict.keys()]
-            cell_metadata: dict[str, list[str]] = {
-                attr_key: [] for attr_key in self.custom_attr_name_dict.values()
-            }
+            cell_metadata: dict[str, list[str]] = {attr_key: [] for attr_key in self.custom_attr_name_dict.values()}
 
         # loops through directories to tokenize .loom files
         file_found = 0

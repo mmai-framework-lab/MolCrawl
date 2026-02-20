@@ -245,7 +245,7 @@ trainer.train()
 
 ---
 
-**Implementation Date**: 2026-01-22  
-**Based On**: DNABERT-2, ESM-2, and RNAformer implementation patterns  
-**Dataset**: Organix13 SMILES compounds (~10M molecules)  
+**Implementation Date**: 2026-01-22
+**Based On**: DNABERT-2, ESM-2, and RNAformer implementation patterns
+**Dataset**: Organix13 SMILES compounds (~10M molecules)
 **Architecture**: RoBERTa (improved BERT for chemical data)

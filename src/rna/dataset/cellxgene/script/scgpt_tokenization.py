@@ -52,9 +52,7 @@ def preprocess(
     return adata
 
 
-def process_h5ad_to_parquet(
-    h5ad_path: Union[str, Path], output_dir: Union[str, Path], vocab: Any, min_counts_genes: int
-):
+def process_h5ad_to_parquet(h5ad_path: Union[str, Path], output_dir: Union[str, Path], vocab: Any, min_counts_genes: int):
     h5ad_path, output_dir = Path(h5ad_path), Path(output_dir)
     parquet_path = output_dir / h5ad_path.with_suffix(".parquet").name
     if not parquet_path.exists():

@@ -46,7 +46,11 @@ use_wandb = os.environ.get("USE_WANDB", "False").lower() in ("true", "1", "yes")
 wandb_project = os.environ.get("WANDB_PROJECT", "gpt2-training")  # wandb project name
 wandb_run_name = os.environ.get("WANDB_RUN_NAME", None)  # wandb run name (None = auto-generate)
 wandb_entity = os.environ.get("WANDB_ENTITY", None)  # wandb entity/team name (None = default)
-wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in ("true", "1", "yes")  # log model checkpoints as wandb artifacts
+wandb_log_model = os.environ.get("WANDB_LOG_MODEL", "True").lower() in (
+    "true",
+    "1",
+    "yes",
+)  # log model checkpoints as wandb artifacts
 
 out_dir = "out-gpt2"
 eval_interval = 2000
@@ -162,14 +166,14 @@ if use_wandb and master_process:
         wandb_run_name = f"{dataset}-{timestamp}"
 
     # Add metadata tags for experiment management
-    tags = ['gpt2', 'training', dataset]
+    tags = ["gpt2", "training", dataset]
 
     # Add experiment metadata to config
     experiment_config = {
         **config,
-        'experiment_type': 'training',
-        'model_type': 'gpt2',
-        'dataset_type': dataset,
+        "experiment_type": "training",
+        "model_type": "gpt2",
+        "dataset_type": dataset,
     }
 
     # Initialize wandb

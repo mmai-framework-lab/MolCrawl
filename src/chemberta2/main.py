@@ -29,9 +29,7 @@ except ImportError:
     pass  # Not available in documentation-only environments (e.g. pdoc)
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
@@ -62,18 +60,10 @@ if __name__ == "__main__":
     fp16 = True  # Mixed precision training
 
     # -----------------------------------------------------------------------------
-    config_keys = [
-        k
-        for k, v in globals().items()
-        if not k.startswith("_") and isinstance(v, (int, float, bool, str))
-    ]
+    config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 
     # Load config from file
-    configurator_path = (
-        "chemberta2/configurator.py"
-        if os.path.exists("chemberta2/configurator.py")
-        else "configurator.py"
-    )
+    configurator_path = "chemberta2/configurator.py" if os.path.exists("chemberta2/configurator.py") else "configurator.py"
     if os.path.exists(configurator_path):
         exec(open(configurator_path).read())
 
@@ -137,9 +127,7 @@ if __name__ == "__main__":
             type_vocab_size=1,
         )
     else:
-        raise ValueError(
-            f"Unknown model_size: {model_size}. Choose from: small, medium, large"
-        )
+        raise ValueError(f"Unknown model_size: {model_size}. Choose from: small, medium, large")
 
     logger.info("✅ Configuration loaded")
     logger.info(f"🧪 ChemBERTa-2 Model Configuration ({model_size}):")
@@ -206,9 +194,7 @@ if __name__ == "__main__":
                 available = loader.get_available_datasets()
 
                 if available:
-                    logger.info(
-                        f"📊 Found {len(available)} available datasets: {[d.value for d in available]}"
-                    )
+                    logger.info(f"📊 Found {len(available)} available datasets: {[d.value for d in available]}")
 
                     # 全データセットを結合して読み込み
                     dataset_dict = loader.load_datasets(combine=True)
@@ -217,19 +203,13 @@ if __name__ == "__main__":
                     test_dataset = dataset_dict.get("valid") or dataset_dict.get("test")
 
                     if train_dataset and test_dataset:
-                        logger.info(
-                            f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}"
-                        )
+                        logger.info(f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}")
                         return train_dataset, test_dataset
                     else:
-                        logger.warning(
-                            "⚠ Multi-loader succeeded but missing splits, falling back to legacy loader"
-                        )
+                        logger.warning("⚠ Multi-loader succeeded but missing splits, falling back to legacy loader")
 
             except Exception as e:
-                logger.warning(
-                    f"⚠ Multi-loader failed ({e}), falling back to legacy single-dataset loader"
-                )
+                logger.warning(f"⚠ Multi-loader failed ({e}), falling back to legacy single-dataset loader")
 
             # レガシーローダー（後方互換性）
             train_path = os.path.join(self.dataset_dir, "train")
@@ -242,8 +222,7 @@ if __name__ == "__main__":
                 train_dataset = load_from_disk(train_path)
             else:
                 raise FileNotFoundError(
-                    f"Training dataset not found at {train_path}\n"
-                    f"Please run the preparation pipeline first."
+                    f"Training dataset not found at {train_path}\n" f"Please run the preparation pipeline first."
                 )
 
             # Prefer valid over test
@@ -255,23 +234,17 @@ if __name__ == "__main__":
                 logger.info("📊 Using test dataset for evaluation")
             else:
                 # Use a small subset for testing if test set doesn't exist
-                logger.info(
-                    "📊 Test/valid dataset not found, using subset of training data"
-                )
+                logger.info("📊 Test/valid dataset not found, using subset of training data")
                 test_size = min(5000, len(train_dataset) // 10)
                 test_dataset = train_dataset.select(range(test_size))
-                logger.info(
-                    f"📊 Limited test dataset to {test_size} samples for faster evaluation"
-                )
+                logger.info(f"📊 Limited test dataset to {test_size} samples for faster evaluation")
 
             return train_dataset, test_dataset
 
     # Initialize model
     logger.info("🔧 Initializing ChemBERTa-2 model...")
     model = RobertaForMaskedLM(model_config)
-    logger.info(
-        f"✅ Model initialized with {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M parameters"
-    )
+    logger.info(f"✅ Model initialized with {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M parameters")
 
     # Data collator for masked language modeling
     data_collator = DataCollatorForLanguageModeling(
@@ -355,9 +328,7 @@ if __name__ == "__main__":
             latest_checkpoint = max(checkpoints, key=lambda x: int(x.split("-")[1]))
             resume_checkpoint = os.path.join(model_path, latest_checkpoint)
             logger.info(f"🔄 Found checkpoint: {resume_checkpoint}")
-            logger.info(
-                f"   Resuming training from step {latest_checkpoint.split('-')[1]}"
-            )
+            logger.info(f"   Resuming training from step {latest_checkpoint.split('-')[1]}")
         else:
             logger.info(f"ℹ️  No checkpoints found in {model_path}")
             logger.info("   Starting training from scratch...")

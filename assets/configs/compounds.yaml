@@ -1,7 +1,5 @@
 data_preparation:
-
   # Path to the vocabulary
   vocab_path: "assets/molecules/vocab.txt"
-
   # Max length of the tokenized sequences
   max_length: 256

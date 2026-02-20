@@ -13,7 +13,7 @@ def tokenize_function(examples, tokenizer):
     return {"input_ids": encoded_sequence, "num_tokens": len(encoded_sequence)}
 
 
-#def raw_to_parquet(output_dir):
+# def raw_to_parquet(output_dir):
 #    data = load_dataset(
 #        "text",
 #        data_dir=str(Path(output_dir) / "raw_files"),
@@ -32,33 +32,35 @@ def tokenize_function(examples, tokenizer):
 
 #    tokenized_datasets.to_parquet(str(Path(output_dir) / "parquet_files"))
 
-def raw_to_parquet(output_dir,num_proc=None,batch_size=None):
+
+def raw_to_parquet(output_dir, num_proc=None, batch_size=None):
     from datasets import load_dataset
     import sentencepiece as spm
 
-    data=load_dataset(
+    data = load_dataset(
         "text",
-        data_dir=str(Path(output_dir)/"raw_files"),
-        cache_dir=str(Path(output_dir)/"hf_cache"),
+        data_dir=str(Path(output_dir) / "raw_files"),
+        cache_dir=str(Path(output_dir) / "hf_cache"),
         split="train",
     )
 
-    tokenizer=spm.SentencePieceProcessor(model_file=str(Path(output_dir)/"spm_tokenizer.model"))
+    tokenizer = spm.SentencePieceProcessor(model_file=str(Path(output_dir) / "spm_tokenizer.model"))
 
-    def batched_tokenize(batch,tokenizer):
-        texts=batch["text"]
-        outputs=[tokenize_function({"text":t},tokenizer=tokenizer) for t in texts]
-        keys=outputs[0].keys()
-        result={k:[o[k] for o in outputs] for k in keys}
+    def batched_tokenize(batch, tokenizer):
+        texts = batch["text"]
+        outputs = [tokenize_function({"text": t}, tokenizer=tokenizer) for t in texts]
+        keys = outputs[0].keys()
+        result = {k: [o[k] for o in outputs] for k in keys}
         return result
-    tokenized_datasets=data.map(
-        partial(batched_tokenize,tokenizer=tokenizer),
+
+    tokenized_datasets = data.map(
+        partial(batched_tokenize, tokenizer=tokenizer),
         batched=True,
         batch_size=batch_size or 512,
         num_proc=num_proc,
         remove_columns=["text"],
     )
-    tokenized_datasets.to_parquet(str(Path(output_dir)/"parquet_files"))
+    tokenized_datasets.to_parquet(str(Path(output_dir) / "parquet_files"))
 
 
 if __name__ == "__main__":

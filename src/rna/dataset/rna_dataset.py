@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 
 
-
 class RNADataset:
     """RNA Transcriptome Dataset"""
 

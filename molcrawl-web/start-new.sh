@@ -38,15 +38,15 @@ echo -e "${BLUE}📁 Script directory: $SCRIPT_DIR${NC}"
 install_dependencies() {
     local dir=$1
     local name=$2
-    
+
     echo -e "${YELLOW}📦 Installing $name dependencies...${NC}"
     cd "$dir"
-    
+
     if [ ! -f "package.json" ]; then
         echo -e "${RED}❌ package.json not found in $dir${NC}"
         return 1
     fi
-    
+
     if [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
         echo -e "${BLUE}🔄 Running npm install...${NC}"
         npm install
@@ -162,7 +162,7 @@ echo ""
 cleanup() {
     echo ""
     echo -e "${YELLOW}🛑 Shutting down services...${NC}"
-    
+
     if [ -f "$LOG_DIR/services.pid" ]; then
         PIDS=$(cat "$LOG_DIR/services.pid")
         IFS=',' read -ra PID_ARRAY <<< "$PIDS"
@@ -174,20 +174,20 @@ cleanup() {
         done
         rm -f "$LOG_DIR/services.pid"
     fi
-    
+
     # Clean up individual PID files
     if [ -f "$LOG_DIR/api.pid" ]; then
         API_PID=$(cat "$LOG_DIR/api.pid")
         kill $API_PID 2>/dev/null || true
         rm -f "$LOG_DIR/api.pid"
     fi
-    
+
     if [ -f "$LOG_DIR/frontend.pid" ]; then
         FRONTEND_PID=$(cat "$LOG_DIR/frontend.pid")
         kill $FRONTEND_PID 2>/dev/null || true
         rm -f "$LOG_DIR/frontend.pid"
     fi
-    
+
     echo -e "${GREEN}✅ All services stopped${NC}"
     exit 0
 }
@@ -201,13 +201,13 @@ echo -e "${BLUE}⏳ Services are running. Press Ctrl+C to stop...${NC}"
 # Monitor the services
 while true; do
     sleep 5
-    
+
     # Check if API server is still running
     if ! ps -p $API_PID > /dev/null; then
         echo -e "${RED}❌ API server stopped unexpectedly${NC}"
         break
     fi
-    
+
     # Check if Frontend server is still running
     if ! ps -p $FRONTEND_PID > /dev/null; then
         echo -e "${RED}❌ Frontend server stopped unexpectedly${NC}"
