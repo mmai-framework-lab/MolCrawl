@@ -1,7 +1,7 @@
 {
   // Git settings
   "git.ignoreLimitWarning": true,
-  
+
   // Chat settings
   "chat.tools.terminal.autoApprove": {
     "/^cd /data2/matsubara/MolCrawl/riken-dataset-fundational-model && \\./miniconda/bin/python -c \"import sys; paths = \\[p for p in sys\\.path if 'riken' in p and 'miniconda' not in p\\]; print\\(paths\\)\" 2>&1$/": {
@@ -9,7 +9,7 @@
       "matchCommandLine": true
     }
   },
-  
+
   // Python settings
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
@@ -19,7 +19,7 @@
       "source.organizeImports": "explicit"
     }
   },
-  
+
   // JavaScript/JSX settings
   "[javascript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
@@ -35,7 +35,7 @@
       "source.fixAll.eslint": "explicit"
     }
   },
-  
+
   // JSON/YAML settings
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features",
@@ -50,19 +50,19 @@
     "editor.insertSpaces": true,
     "editor.tabSize": 2
   },
-  
+
   // Markdown settings
   "[markdown]": {
     "editor.formatOnSave": true,
     "editor.wordWrap": "on"
   },
-  
+
   // Ruff settings
   "ruff.enable": true,
   "ruff.organizeImports": true,
   "ruff.fixAll": true,
   "ruff.lint.run": "onSave",
-  
+
   // ESLint settings
   "eslint.enable": true,
   "eslint.run": "onSave",
@@ -70,11 +70,11 @@
   "eslint.workingDirectories": [
     "molcrawl-web"
   ],
-  
+
   // Python-specific settings
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
-  
+
   // General editor settings
   "editor.formatOnSave": true,
   "editor.formatOnPaste": false,
@@ -83,13 +83,13 @@
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
-  
+
   // File associations
   "files.associations": {
     "*.yml": "yaml",
     "*.yaml": "yaml"
   },
-  
+
   // Exclude patterns from file watcher
   "files.watcherExclude": {
     "**/.git/objects/**": true,
