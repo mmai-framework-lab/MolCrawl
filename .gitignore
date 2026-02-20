@@ -1,19 +1,37 @@
-.vscode
+# Environment and IDE settings (personal)
 .env*
 pyrightconfig.json
 
+# VSCode: Allow team-shared settings, ignore personal settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Python artifacts
 __pycache__
-*.log
-*.arrow
-*.json
 *.pyc
 *.pyo
+
+# Log files
+*.log
+
+# Data files
+*.arrow
 *.smiles
+
+# JSON files (with exceptions for config files)
+*.json
 !.markdownlint.json
 !package.json
 !package-lock.json
 !.eslintrc.json
 !.prettierrc.json
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
 !molcrawl-web/frontend/public/manifest.json
 !molcrawl-web/src/i18n/locales/*.json
 !src/compounds/dataset/prepare_gpt2_organix13.py

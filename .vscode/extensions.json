@@ -1,0 +1,19 @@
+{
+  "recommendations": [
+    // Python development
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    // JavaScript/React development
+    "dbaeumer.vscode-eslint",
+    // YAML/JSON/TOML
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    // Git
+    "mhutchie.git-graph",
+    "eamodio.gitlens",
+    // General productivity
+    "streetsidesoftware.code-spell-checker",
+    "EditorConfig.EditorConfig"
+  ]
+}
