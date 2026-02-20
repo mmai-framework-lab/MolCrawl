@@ -1,0 +1,31 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [DEPRECATED] Cache Configuration Template
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# ⚠️ このファイルは非推奨です / THIS FILE IS DEPRECATED ⚠️
+#
+# Hugging Face のキャッシュディレクトリは、LEARNING_SOURCE_DIR 環境変数を基に
+# 自動的に設定されるようになりました。
+#
+# キャッシュディレクトリの保存先:
+#   - HF_DATASETS_CACHE: {LEARNING_SOURCE_DIR}/.cache/huggingface/datasets
+#   - HF_HOME: {LEARNING_SOURCE_DIR}/.cache/huggingface
+#
+# 手動での設定は不要です。LEARNING_SOURCE_DIR が十分な容量のあるディレクトリを
+# 指すように設定してください。
+#
+# ---
+#
+# ⚠️ THIS FILE IS DEPRECATED ⚠️
+#
+# Hugging Face cache directories are now automatically configured based on
+# the LEARNING_SOURCE_DIR environment variable.
+#
+# Cache directory locations:
+#   - HF_DATASETS_CACHE: {LEARNING_SOURCE_DIR}/.cache/huggingface/datasets
+#   - HF_HOME: {LEARNING_SOURCE_DIR}/.cache/huggingface
+#
+# No manual configuration is required. Ensure LEARNING_SOURCE_DIR points to
+# a directory with sufficient storage space.
+#
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
