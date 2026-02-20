@@ -21,36 +21,7 @@ echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.bashrc
 echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
 ```
 
-## Cache Configuration (Required)
-
-**Before running any data preparation scripts**, you must configure the cache directories for Hugging Face libraries to avoid running out of disk space on the root partition.
-
-1. Copy the template configuration file:
-
-   ```bash
-   cp assets/configs/cache.template.yaml assets/configs/cache.yaml
-   ```
-
-2. Edit `assets/configs/cache.yaml` to set appropriate cache directories:
-
-   ```bash
-   vi assets/configs/cache.yaml
-   ```
-
-3. Update the paths to point to a directory with sufficient storage space:
-
-   ```yaml
-   # Example configuration (adjust paths for your environment)
-   HF_DATASETS_CACHE: "/data2/your_username/.cache/huggingface/datasets"
-   HF_HOME: "/data2/your_username/.cache/huggingface"
-   ```
-
-**Important Notes:**
-
-- The default cache location (`~/.cache/huggingface`) may fill up the root partition during dataset generation
-- Choose a directory with at least **100GB of free space**
-- The `assets/configs/cache.yaml` file is git-ignored and user-specific
-- Dataset preparation scripts will fail if this configuration is not set up properly
+**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage space (at least 100GB recommended).
 
 ## Installation
 
