@@ -1,0 +1,92 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Format: Ruff (Python)",
+      "type": "shell",
+      "command": "ruff",
+      "args": [
+        "format",
+        "."
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Lint: Ruff (Python)",
+      "type": "shell",
+      "command": "ruff",
+      "args": [
+        "check",
+        ".",
+        "--fix"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Lint: ESLint (JavaScript)",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "lint",
+        "--",
+        "--fix"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/molcrawl-web"
+      },
+      "problemMatcher": [
+        "$eslint-compact"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Format All",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Format: Ruff (Python)"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Lint All",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Lint: Ruff (Python)",
+        "Lint: ESLint (JavaScript)"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    }
+  ]
+}
