@@ -1,0 +1,46 @@
+# OMIM Real Data Configuration
+# 実際のOMIMデータファイルの設定
+# Note: OMIMのダウンロードには各自適切な必要な認証情報を用いる必要がある。公式サイトで申請して得られた
+# URLに置換して、ファイル名をomim_real_data.yamlに保存して使用すること。
+# 個人情報が残るので、このテンプレートファイルに直接書き込んでリポジトリにコミットするのは厳禁
+
+omim_data_sources:
+  # OMIM公式ダウンロードファイル
+  mim2gene:
+    url: "https://omim.org/static/omim/data/mim2gene.txt"
+    local_path: "data/omim/mim2gene.txt"
+    description: "MIM to Gene mapping"
+    
+  mim_titles:
+    url: "https://data.omim.org/downloads/XXXXXXXXXXXXXXX/mimTitles.txt"
+    local_path: "data/omim/mimTitles.txt"
+    description: "MIM entry titles and inheritance patterns"
+    
+  genemap2:
+    url: "https://data.omim.org/downloads/XXXXXXXXXXXXXXX/genemap2.txt"
+    local_path: "data/omim/genemap2.txt"
+    description: "Comprehensive gene map with phenotypes"
+    
+  morbidmap:
+    url: "https://data.omim.org/downloads/XXXXXXXXXXXXXXX/morbidmap.txt"
+    local_path: "data/omim/morbidmap.txt"
+    description: "Morbid map of human genetic disorders"
+
+# データディレクトリ設定
+data_directories:
+  base_dir: "data/omim"
+  cache_dir: "data/omim/cache"
+  processed_dir: "data/omim/processed"
+
+# 処理設定
+processing_options:
+  max_sequences: 5000  # 処理する最大配列数
+  sequence_length: 100  # 生成する配列の長さ
+  include_uncertain: false  # 不確実な意義の変異を含むか
+  filter_by_inheritance: true  # 遺伝パターンでフィルタリング
+  
+# 評価設定
+evaluation_settings:
+  test_size: 0.2  # テストデータの割合
+  random_state: 42
+  stratify_by: "pathogenicity"  # 層化分割の基準
