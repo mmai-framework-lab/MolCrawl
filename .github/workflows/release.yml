@@ -40,7 +40,7 @@ jobs:
       
       - name: Validate model checkpoints
         run: |
-          python scripts/validate_checkpoints.py --all
+          python -m src.validate_checkpoints --all
         continue-on-error: false
 
   build-package:
@@ -92,11 +92,11 @@ jobs:
       
       - name: Generate model cards
         run: |
-          python scripts/generate_model_cards.py --output model-cards/
+          python -m src.generate_model_cards --output model-cards/
       
       - name: Validate model metadata
         run: |
-          python scripts/validate_model_metadata.py
+          python -m src.validate_model_metadata
       
       - name: Upload model cards
         uses: actions/upload-artifact@v4
@@ -117,7 +117,7 @@ jobs:
       
       - name: Generate release notes
         run: |
-          python scripts/generate_release_notes.py > RELEASE_NOTES.md
+          python -m src.generate_release_notes > RELEASE_NOTES.md
         continue-on-error: true
       
       - name: Create Release

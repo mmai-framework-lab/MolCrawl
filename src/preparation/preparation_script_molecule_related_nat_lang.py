@@ -128,7 +128,8 @@ if __name__ == "__main__":
     logger.info(f"Using logging directory: {logging_dir}")
     logger.info(f"Using parquet file path: {parquet_file}")
 
-    os.path.exists(logging_dir) or os.makedirs(logging_dir)
+    if not os.path.exists(logging_dir):
+        os.makedirs(logging_dir)
     setup_logging(logging_dir)
 
     # Check if dataset directory exists

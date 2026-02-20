@@ -141,15 +141,15 @@ class BERTProteinGymDataProcessor:
         """
         logger.info(f"Loading ProteinGym data from {data_dir}")
 
-        data_dir: Path = Path(data_dir)
+        data_dir_path: Path = Path(data_dir)
         datasets: Dict[str, pd.DataFrame] = {}
 
         # ProteinGym構造を確認
         dms_dir = None
         possible_dirs = [
-            data_dir / "DMS_ProteinGym_substitutions" / "DMS_ProteinGym_substitutions",
-            data_dir / "DMS_ProteinGym_substitutions",
-            data_dir,
+            data_dir_path / "DMS_ProteinGym_substitutions" / "DMS_ProteinGym_substitutions",
+            data_dir_path / "DMS_ProteinGym_substitutions",
+            data_dir_path,
         ]
 
         for possible_dir in possible_dirs:

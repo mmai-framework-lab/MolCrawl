@@ -34,11 +34,11 @@ import pandas as pd
 scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # 実データプロセッサをインポート
-process_omim_real_data = None
 import_error_message = None
 try:
     from omim_real_data_processor import process_omim_real_data
 except ImportError as e:
+    process_omim_real_data = None
     import_error_message = str(e)
     # デバッグ情報を標準エラー出力に表示
     import traceback

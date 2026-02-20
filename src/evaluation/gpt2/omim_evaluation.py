@@ -87,8 +87,10 @@ class OMIMEvaluator(ModelEvaluator):
         )
 
         # 評価結果保存用
-        self.results = {}
-        self.predictions = []
+        self.results: Dict[str, Any] = {}
+        self.predictions: List[int] = []
+        self.true_labels: List[int] = []
+        self.prediction_scores: List[float] = []
 
     def _init_tokenizer(self):
         """トークナイザーの初期化（抽象メソッドの実装）"""
@@ -115,8 +117,6 @@ class OMIMEvaluator(ModelEvaluator):
             トークンIDのリスト
         """
         return self.tokenizer.encode(sequence)
-        self.true_labels = []
-        self.prediction_scores = []
 
     def load_model_and_tokenizer(self):
         """モデルとトークナイザーをロード"""

@@ -13,7 +13,7 @@ import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -319,7 +319,7 @@ def main() -> None:
         raise ValueError("評価対象のデータが見つかりませんでした。")
 
     results: Dict[str, Dict[str, float]] = {}
-    detailed_rows: List[Dict[str, float]] = []
+    detailed_rows: List[Dict[str, Any]] = []
 
     for split in splits:
         logger.info(f"Evaluating dataset: {split.name} (cells={len(split.tokens)})")
