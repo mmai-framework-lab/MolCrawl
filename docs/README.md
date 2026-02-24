@@ -21,13 +21,17 @@ echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.bashrc
 echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
 ```
 
-**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage space (at least 100GB recommended).
+**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source_20260224`, the default cache directory will be `learning_source_20260224/.cache/huggingface/`. To change the default value, edit `src/config/env.sh` with a text editor:
+
+```bash
+nano src/config/env.sh
+```
+
+Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage space (at least 100GB recommended).
 
 ## Installation
 
-1. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
-2. Activate the environment by running `conda activate ENV_NAME`
-3. Since Anaconda is prohibited, be sure to run the following commands.
+1. Since Anaconda is prohibited, run the following commands first to configure conda channels:
 
 ```bash
 conda config --remove channels defaults
@@ -35,7 +39,9 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-1. Install the package: `pip install --no-build-isolation -e .`
+2. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
+3. Activate the environment by running `conda activate ENV_NAME`
+4. Install the package: `pip install --no-build-isolation -e .`
 
 ## Usage
 
@@ -252,7 +258,13 @@ Before running the script, ensure you have the following:
 
 1. **Config File**: A YAML configuration file (available in `assets/`).
 
-You can run this script with the following command:
+First, download the SMolInstruct dataset:
+
+```bash
+bash src/preparation/download_smolinstruct.sh
+```
+
+Then run the preparation script:
 
 ```bash
 python -m src.preparation.preparation_script_molecule_related_nat_lang assets/configs/molecules_nl.yaml
@@ -452,6 +464,12 @@ For Compounds, run the following command:
 python src/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
 ```
 
+To create the `training_ready_hf_dataset` for the OrganiX13 compounds dataset, also run:
+
+```bash
+python src/compounds/dataset/prepare_gpt2_organix13.py assets/configs/compounds.yaml
+```
+
 For RNA, run the following command:
 
 ```bash
@@ -533,7 +551,15 @@ To run a training you can use the following command:
 python bert/main.py bert/configs/<dataset>.py
 ```
 
-this will train a model and save it in outputdir.
+If multiple GPUs are available, you can speed up training using `torchrun`. For example, to train on GPUs 0 and 2:
+
+```bash
+CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 bert/main.py bert/configs/compounds.py
+```
+
+Replace `CUDA_VISIBLE_DEVICES` with the indices of the GPUs you wish to use and set `--nproc_per_node` to the number of GPUs accordingly.
+
+This will train a model and save it in outputdir.
 
 For more information on the config files, see the [README inside the bert folder](./bert/README.md).
 
