@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
-import os
+import logging
 import multiprocessing
+import os
 from typing import TYPE_CHECKING
 
-import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,7 @@ if TYPE_CHECKING:
 def _get_rdkit_helpers():
     from rdkit import Chem
     from rdkit.Chem import Descriptors
-
-    import sascorer
+    from rdkit.Contrib.SA_Score import sascorer
 
     return Chem, Descriptors, sascorer
 
