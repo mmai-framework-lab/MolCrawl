@@ -29,7 +29,10 @@ from pathlib import Path
 from compounds.dataset.dataset_config import CompoundDatasetType, get_all_dataset_types
 from compounds.dataset.hf_converter import convert_all_tokenized_datasets
 from compounds.dataset.processor import process_all_available_datasets
-from compounds.dataset.tokenizer import tokenize_all_processed_datasets
+from compounds.dataset.tokenizer import (
+    compute_tokenization_statistics,
+    tokenize_all_processed_datasets,
+)
 from compounds.utils.config import CompoundConfig
 from compounds.utils.general import (
     download_llamol_datasets,
@@ -150,6 +153,11 @@ def main():
         help="HuggingFace形式への変換をスキップ",
     )
     parser.add_argument(
+        "--skip-stats",
+        action="store_true",
+        help="統計計算・可視化をスキップ",
+    )
+    parser.add_argument(
         "--num-processes",
         type=int,
         default=16,
@@ -257,6 +265,20 @@ def main():
         )
 
         logger.info(f"\n✓ {len(converted)} datasets converted")
+
+    # ステップ5: 統計計算・可視化
+    if not args.skip_stats:
+        logger.info("\n" + "=" * 70)
+        logger.info("STEP 5: 統計計算・可視化")
+        logger.info("=" * 70)
+
+        stats = compute_tokenization_statistics(
+            Path(compounds_dir),
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
+            force=args.force,
+        )
+
+        logger.info(f"\n✓ {len(stats)} datasets statistics computed")
 
     logger.info("\n" + "=" * 70)
     logger.info("✅ 全ての処理が完了しました")
