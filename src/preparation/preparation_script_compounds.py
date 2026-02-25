@@ -1,287 +1,292 @@
+#!/usr/bin/env python3
+"""
+化合物データセット準備スクリプト
+
+個別データセット処理により、部分的なダウンロードに対応します。
+
+使用例:
+    # 全データセットを処理
+    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml
+
+    # 特定のデータセットのみダウンロード
+    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml \
+        --download-only --datasets zinc20 opv
+
+    # 処理とトークナイズのみ（ダウンロード済みの場合）
+    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml \
+        --skip-download
+
+    # 強制再処理
+    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml --force
+"""
+
 import logging
 import logging.config
 import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-# プロジェクトルートのsrcディレクトリをパスに追加
-
+from compounds.dataset.dataset_config import CompoundDatasetType, get_all_dataset_types
+from compounds.dataset.hf_converter import convert_all_tokenized_datasets
+from compounds.dataset.processor import process_all_available_datasets
+from compounds.dataset.tokenizer import (
+    compute_tokenization_statistics,
+    tokenize_all_processed_datasets,
+)
 from compounds.utils.config import CompoundConfig
-from utils.image_manager import get_image_path
 from compounds.utils.general import (
-    combine_datasets,
-    download_datasets,
     download_llamol_datasets,
     download_opv,
     download_zinc20,
 )
-from compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
 from config.paths import COMPOUNDS_DIR
-from core.base import (
-    multiprocess_tokenization,
-    read_parquet,
-    save_parquet,
-    setup_logging,
-)
+from core.base import setup_logging
 
 logger = logging.getLogger(__name__)
 
 
-def download_compound_datasets(cfg, organix13_dataset_path, download_marker, force=False, dataset_type="all"):
+def download_datasets_individually(cfg, compounds_dir, dataset_types, force=False):
     """
-    化合物データセットのダウンロード処理
+    個別にデータセットをダウンロード
 
     Args:
         cfg: 設定オブジェクト
-        organix13_dataset_path: データセット保存パス
-        download_marker: ダウンロード完了マーカーファイル
+        compounds_dir: compoundsディレクトリ
+        dataset_types: ダウンロードするデータセット種別のリスト
         force: 強制再ダウンロードフラグ
-        dataset_type: ダウンロードするデータセット種別
-                      ("all", "zinc20", "opv", "additional", "combine")
     """
-    if not force and download_marker.exists():
-        logger.info("Dataset download already completed. Skipping download step.")
-        return
+    data_dir = os.path.join(compounds_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
 
-    logger.info(f"Downloading datasets (type: {dataset_type})...")
-    os.path.exists(cfg.raw_data_path) or os.makedirs(cfg.raw_data_path)
+    for dataset_type in dataset_types:
+        marker_file = Path(data_dir) / f"{dataset_type.value}_download.marker"
 
-    if dataset_type == "all":
-        download_datasets(cfg.raw_data_path, organix13_dataset_path)
-    elif dataset_type == "zinc20":
-        logger.info("Downloading ZINC20 dataset...")
-        download_zinc20(cfg.raw_data_path)
-    elif dataset_type == "opv":
-        logger.info("Downloading OPV dataset...")
-        download_opv(cfg.raw_data_path)
-    elif dataset_type == "llamol":
-        logger.info("Downloading LlaMol datasets from Fraunhofer-SCAI/llamol repository...")
-        download_llamol_datasets(cfg.raw_data_path)
-    elif dataset_type == "combine":
-        logger.info("Combining all datasets into OrganiX13...")
-        combine_datasets(cfg.raw_data_path, organix13_dataset_path)
-    else:
-        raise ValueError(f"Invalid dataset_type: {dataset_type}. Must be one of: all, zinc20, opv, llamol, combine")
+        if not force and marker_file.exists():
+            logger.info(f"✓ {dataset_type.value}: Already downloaded, skipping")
+            continue
 
-    download_marker.touch()
-    logger.info("Download completed.")
+        logger.info(f"📥 Downloading {dataset_type.value}...")
 
+        try:
+            if dataset_type == CompoundDatasetType.ZINC20:
+                download_zinc20(compounds_dir)
+            elif dataset_type == CompoundDatasetType.OPV:
+                download_opv(compounds_dir)
+            elif dataset_type in [
+                CompoundDatasetType.PC9_GAP,
+                CompoundDatasetType.ZINC_QM9,
+                CompoundDatasetType.REDDB,
+                CompoundDatasetType.CHEMBL,
+                CompoundDatasetType.PUBCHEMQC_2017,
+                CompoundDatasetType.PUBCHEMQC_2020,
+            ]:
+                # LlaMolデータセットはまとめてダウンロード
+                llamol_marker = Path(data_dir) / "llamol_download.marker"
+                if not force and llamol_marker.exists():
+                    logger.info("✓ LlaMol datasets: Already downloaded, skipping")
+                    continue
+                download_llamol_datasets(compounds_dir)
+                llamol_marker.touch()
+                # 個別のマーカーも作成
+                for dt in [
+                    CompoundDatasetType.PC9_GAP,
+                    CompoundDatasetType.ZINC_QM9,
+                    CompoundDatasetType.REDDB,
+                    CompoundDatasetType.CHEMBL,
+                    CompoundDatasetType.PUBCHEMQC_2017,
+                    CompoundDatasetType.PUBCHEMQC_2020,
+                ]:
+                    (Path(data_dir) / f"{dt.value}_download.marker").touch()
+                break  # LlaMolは一度だけダウンロード
+            elif dataset_type == CompoundDatasetType.GUACAMOL:
+                logger.info(f"⚠ {dataset_type.value}: Please download manually from GuacaMol benchmark")
+                continue
+            else:
+                logger.warning(f"⚠ Unknown dataset type: {dataset_type.value}")
+                continue
 
-def tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, processed_parquet, force=False):
-    """
-    化合物データのトークナイズ処理
+            marker_file.touch()
+            logger.info(f"✓ {dataset_type.value}: Download completed")
 
-    Args:
-        cfg: 設定オブジェクト
-        organix13_dataset_path: データセット保存パス
-        tokenized_marker: トークナイズ完了マーカーファイル
-        processed_parquet: 処理済みParquetファイルパス
-        force: 強制再処理フラグ
-
-    Returns:
-        tokenized_dataset: トークナイズ済みデータセット
-    """
-    if not force and tokenized_marker.exists() and processed_parquet.exists():
-        logger.info("Tokenization already completed. Skipping tokenization step.")
-        return read_parquet(file_path=str(processed_parquet))
-
-    # 元データの読み込み
-    organix13_dataset = read_parquet(file_path=os.path.join(organix13_dataset_path, "OrganiX13.parquet"))
-
-    # プロセス数を環境変数から取得（デフォルト: 2）
-    num_processes = int(os.environ.get("TOKENIZATION_PROCESSES", "2"))
-    logger.info(f"Using {num_processes} processes for tokenization")
-
-    # SMILESのトークナイズ
-    mol_tokenizer = CompoundsTokenizer(cfg.vocab_path, cfg.max_length)
-    logger.info("Tokenizing SMILES...")
-    processed_organix13 = multiprocess_tokenization(
-        mol_tokenizer.bulk_tokenizer_parquet,
-        organix13_dataset,
-        column_name="smiles",
-        new_column_name="tokens",
-        processes=num_processes,
-    )
-
-    # Scaffoldsのトークナイズ
-    scaffolds_tokenizer = ScaffoldsTokenizer(cfg.vocab_path, cfg.max_length)
-    logger.info("Tokenizing Scaffolds...")
-    processed_organix13 = multiprocess_tokenization(
-        scaffolds_tokenizer.bulk_tokenizer_parquet,
-        processed_organix13,
-        column_name="smiles",
-        new_column_name="scaffold_tokens",
-        processes=num_processes,
-    )
-
-    logger.info("Tokenizing done.")
-
-    # 無効なSMILESの統計を出力
-    from compounds.utils.preprocessing import get_invalid_smiles_stats
-
-    invalid_count, total_count, invalid_rate, examples = get_invalid_smiles_stats()
-    if total_count > 0:
-        logger.info(f"SMILES validation summary: {invalid_count}/{total_count} invalid SMILES ({invalid_rate:.2f}%)")
-
-        # 無効なSMILESの例を表示
-        if examples:
-            logger.info("Examples of invalid SMILES:")
-            for i, (reason, smiles) in enumerate(examples, 1):
-                logger.info(f"  {i}. [{reason}] {smiles}")
-
-        # 無効率に基づく評価
-        if invalid_rate > 10.0:
-            logger.error(
-                f"Very high rate of invalid SMILES detected ({invalid_rate:.2f}%). "
-                "This indicates serious data quality issues that should be investigated."
-            )
-        elif invalid_rate > 5.0:
-            logger.warning(
-                f"High rate of invalid SMILES detected ({invalid_rate:.2f}%). This may indicate data quality issues."
-            )
-        elif invalid_rate > 1.0:
-            logger.info(
-                f"Moderate rate of invalid SMILES ({invalid_rate:.2f}%). "
-                "This is within acceptable range for large chemical databases."
-            )
-        else:
-            logger.info(f"Low rate of invalid SMILES ({invalid_rate:.2f}%). Data quality is good.")
-
-        # ZINC20特有の問題の説明
-        logger.info(
-            "Note: ZINC20 may contain some invalid SMILES due to:\n"
-            "  - Quaternary ammonium ions (N+) and other charged species\n"
-            "  - Format conversion errors from other chemical representations\n"
-            "  - Complex stereochemistry or unusual bonding patterns\n"
-            "  - These are typically <5% of the dataset and are expected in large databases"
-        )
-
-    save_parquet(table=processed_organix13, file_path=processed_parquet)
-    tokenized_marker.touch()
-
-    return processed_organix13
-
-
-def compute_tokenization_statistics(dataset, stats_marker, force=False):
-    """
-    トークナイズ統計の計算と可視化
-
-    Args:
-        dataset: トークナイズ済みデータセット
-        stats_marker: 統計処理完了マーカーファイル
-        force: 強制再計算フラグ
-    """
-    if not force and stats_marker.exists():
-        logger.info("Statistics already computed. Skipping statistics step.")
-        return
-
-    logger.info("Computing Statistics...")
-
-    def run_statistics(table_row, column_name):
-        """個別カラムの統計処理"""
-        series_length = []
-        for i in table_row:
-            if i.is_valid:
-                series_length.append(len(i))
-
-        plt.hist(series_length, bins=np.arange(0, 200, 1))
-        plt.xlabel("Length of tokenized {}".format(column_name))
-        plt.title("Distribution of tokenized {} lengths".format(column_name))
-
-        image_path = get_image_path("compounds", "compounds_tokenized_{}_lengths_dist.png".format(column_name))
-        plt.savefig(image_path)
-        plt.close()
-        logger.info(f"Saved distribution of tokenized {column_name} lengths to {image_path}")
-
-        return {
-            "Number of Samples for {}".format(column_name): len(series_length),
-            "Number of Tokens for {}".format(column_name): sum(series_length),
-        }
-
-    # 統計計算
-    statistics = {
-        **run_statistics(dataset["tokens"], "SMILES"),
-        **run_statistics(dataset["scaffold_tokens"], "Scaffolds"),
-    }
-
-    # 結果出力
-    for key, value in statistics.items():
-        logger.info("{}: {}".format(key, value))
-
-    stats_marker.touch()
+        except Exception as e:
+            logger.error(f"✗ {dataset_type.value}: Download failed - {e}")
 
 
 def main():
-    """
-    化合物データ準備のメイン実行関数
-    """
-    parser = ArgumentParser()
-    parser.add_argument("config", help="Configuration file path")
+    """メイン実行関数"""
+    parser = ArgumentParser(description="化合物データセット準備スクリプト")
+    parser.add_argument("config", help="設定ファイルのパス")
+    parser.add_argument(
+        "--datasets",
+        nargs="+",
+        choices=[dt.value for dt in get_all_dataset_types()],
+        help="処理するデータセット（指定しない場合は利用可能な全て）",
+    )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Force re-download and reprocessing even if files exist",
+        help="強制再処理（既存ファイルを上書き）",
     )
-    parser.add_argument("--download-only", action="store_true", help="Only perform download step")
-    parser.add_argument("--tokenize-only", action="store_true", help="Only perform tokenization step")
-    parser.add_argument("--stats-only", action="store_true", help="Only perform statistics step")
     parser.add_argument(
-        "--dataset-type",
-        choices=["all", "zinc20", "opv", "llamol", "combine"],
-        default="all",
-        help="Dataset type to download: all (default), zinc20, opv, llamol, or combine",
+        "--download-only",
+        action="store_true",
+        help="ダウンロードのみ実行",
     )
+    parser.add_argument(
+        "--skip-download",
+        action="store_true",
+        help="ダウンロードをスキップ",
+    )
+    parser.add_argument(
+        "--skip-process",
+        action="store_true",
+        help="処理（物性計算）をスキップ",
+    )
+    parser.add_argument(
+        "--skip-tokenize",
+        action="store_true",
+        help="トークナイズをスキップ",
+    )
+    parser.add_argument(
+        "--skip-convert",
+        action="store_true",
+        help="HuggingFace形式への変換をスキップ",
+    )
+    parser.add_argument(
+        "--skip-stats",
+        action="store_true",
+        help="統計計算・可視化をスキップ",
+    )
+    parser.add_argument(
+        "--num-processes",
+        type=int,
+        default=16,
+        help="並列処理のプロセス数（物性計算用、デフォルト: 16）",
+    )
+    parser.add_argument(
+        "--tokenization-processes",
+        type=int,
+        default=2,
+        help="トークナイズの並列処理数（デフォルト: 2）",
+    )
+
     args = parser.parse_args()
 
-    # 設定とパスの初期化
+    # 設定の読み込み
     cfg = CompoundConfig.from_file(args.config).data_preparation
-    organix13_dataset_path = COMPOUNDS_DIR + "/organix13"
-    os.path.exists(organix13_dataset_path) or os.makedirs(organix13_dataset_path)
+    compounds_dir = COMPOUNDS_DIR
+    os.makedirs(compounds_dir, exist_ok=True)
 
-    setup_logging(COMPOUNDS_DIR + "/compounds_logs")
+    # ロギングのセットアップ
+    setup_logging(compounds_dir + "/compounds_logs")
 
-    # マーカーファイル・出力ファイル
-    download_marker = Path(organix13_dataset_path) / "download_complete.marker"
-    tokenized_marker = Path(organix13_dataset_path) / "tokenized_complete.marker"
-    stats_marker = Path(organix13_dataset_path) / "stats_complete.marker"
-    processed_parquet = Path(organix13_dataset_path) / "OrganiX13_tokenized.parquet"
+    logger.info("=" * 70)
+    logger.info("化合物データセット準備スクリプト（改訂版）")
+    logger.info("=" * 70)
+    logger.info(f"Compounds directory: {compounds_dir}")
 
-    # 実行ステップの制御
-    run_download = not args.tokenize_only and not args.stats_only
-    run_tokenize = not args.download_only and not args.stats_only
-    run_stats = not args.download_only and not args.tokenize_only
+    # 処理するデータセットを決定
+    if args.datasets:
+        dataset_types = [CompoundDatasetType(dt) for dt in args.datasets]
+        logger.info(f"Target datasets: {[dt.value for dt in dataset_types]}")
+    else:
+        dataset_types = None
+        logger.info("Target datasets: All available")
 
-    # 1. データダウンロード
+    # ステップ1: ダウンロード
+    if not args.skip_download and not args.skip_process and not args.skip_tokenize and not args.skip_convert:
+        run_download = True
+    elif args.download_only:
+        run_download = True
+    else:
+        run_download = not args.skip_download
+
     if run_download:
-        download_compound_datasets(
-            cfg,
-            organix13_dataset_path,
-            download_marker,
-            args.force,
-            dataset_type=args.dataset_type,
+        logger.info("\n" + "=" * 70)
+        logger.info("STEP 1: データセットダウンロード")
+        logger.info("=" * 70)
+
+        if dataset_types:
+            download_datasets_individually(cfg, compounds_dir, dataset_types, args.force)
+        else:
+            # 全データセットをダウンロード
+            all_types = [dt for dt in get_all_dataset_types() if dt != CompoundDatasetType.GUACAMOL]
+            download_datasets_individually(cfg, compounds_dir, all_types, args.force)
+
+    if args.download_only:
+        logger.info("\n✅ ダウンロードのみ完了")
+        return
+
+    # ステップ2: 処理（物性計算）
+    if not args.skip_process:
+        logger.info("\n" + "=" * 70)
+        logger.info("STEP 2: データセット処理（物性計算）")
+        logger.info("=" * 70)
+
+        processed = process_all_available_datasets(
+            Path(compounds_dir),
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
+            force=args.force,
+            num_processes=args.num_processes,
         )
 
-    # 2. トークナイズ処理
-    organix13_dataset = None
-    if run_tokenize:
-        organix13_dataset = tokenize_compound_data(cfg, organix13_dataset_path, tokenized_marker, processed_parquet, args.force)
+        logger.info(f"\n✓ {len(processed)} datasets processed")
 
-    # 3. 統計処理
-    if run_stats:
-        if organix13_dataset is None:
-            # 統計のみ実行する場合はデータを読み込み
-            if processed_parquet.exists():
-                organix13_dataset = read_parquet(file_path=str(processed_parquet))
-            else:
-                logger.error("Tokenized data not found. Please run tokenization first.")
-                return
+    # ステップ3: トークナイズ
+    if not args.skip_tokenize:
+        logger.info("\n" + "=" * 70)
+        logger.info("STEP 3: トークナイズ")
+        logger.info("=" * 70)
 
-        compute_tokenization_statistics(organix13_dataset, stats_marker, args.force)
+        tokenized = tokenize_all_processed_datasets(
+            Path(compounds_dir),
+            cfg.vocab_path,
+            cfg.max_length,
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
+            force=args.force,
+            num_processes=args.tokenization_processes,
+        )
 
-    logger.info("Processing completed. Processed dataset saved to {}.".format(COMPOUNDS_DIR))
+        logger.info(f"\n✓ {len(tokenized)} datasets tokenized")
+
+    # ステップ4: HuggingFace形式に変換
+    if not args.skip_convert:
+        logger.info("\n" + "=" * 70)
+        logger.info("STEP 4: HuggingFace Dataset形式に変換")
+        logger.info("=" * 70)
+
+        converted = convert_all_tokenized_datasets(
+            Path(compounds_dir),
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
+            train_ratio=0.9,
+            valid_ratio=0.05,
+            test_ratio=0.05,
+            force=args.force,
+        )
+
+        logger.info(f"\n✓ {len(converted)} datasets converted")
+
+    # ステップ5: 統計計算・可視化
+    if not args.skip_stats:
+        logger.info("\n" + "=" * 70)
+        logger.info("STEP 5: 統計計算・可視化")
+        logger.info("=" * 70)
+
+        stats = compute_tokenization_statistics(
+            Path(compounds_dir),
+            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
+            force=args.force,
+        )
+
+        logger.info(f"\n✓ {len(stats)} datasets statistics computed")
+
+    logger.info("\n" + "=" * 70)
+    logger.info("✅ 全ての処理が完了しました")
+    logger.info("=" * 70)
+    logger.info(f"Output directory: {compounds_dir}")
+    logger.info(f"  - Processed data: {compounds_dir}/processed/")
+    logger.info(f"  - Tokenized data: {compounds_dir}/tokenized/")
+    logger.info(f"  - HuggingFace datasets: {compounds_dir}/hf_datasets/")
 
 
 if __name__ == "__main__":
