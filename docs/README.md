@@ -21,11 +21,7 @@ echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.bashrc
 echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.zshrc
 ```
 
-**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. To change the default value, edit `src/config/env.sh` with a text editor:
-
-```bash
-nano src/config/env.sh
-```
+**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. The cache location is determined by the `LEARNING_SOURCE_DIR` environment variable, so changing `LEARNING_SOURCE_DIR` will also change where the cache is stored. The detailed configuration can be found in `src/config/env.sh`.
 
 Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage space (at least 100GB recommended).
 
@@ -39,8 +35,20 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-- Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
-- Activate the environment by running `conda activate ENV_NAME`
+> **Note**: If the `defaults` channel still remains in your `.condarc` file (typically located at `~/.condarc` or `miniconda3/.condarc`), you may need to manually edit the file and remove the `defaults` entry. You can verify your channel configuration by running `conda config --show channels`.
+
+- Create a conda environment using the environment.yaml file:
+
+```bash
+conda env create --name riken-fm --file=environment.yaml
+```
+
+- Activate the environment:
+
+```bash
+conda activate riken-fm
+```
+
 - Install the package: `pip install --no-build-isolation -e .`
 
 ## Usage
