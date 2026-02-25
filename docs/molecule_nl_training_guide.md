@@ -124,7 +124,7 @@ GPT-2の`PreparedDataset`クラスは自動的に以下を処理：
 学習を開始する前に、データの互換性を確認できます：
 
 ```bash
-LEARNING_SOURCE_DIR="learning_source" python scripts/preparation/test_molecule_nl_compatibility.py
+LEARNING_SOURCE_DIR="learning_source" python src/preparation/test_molecule_nl_compatibility.py
 ```
 
 期待される出力：
@@ -245,7 +245,7 @@ gradient_accumulation_steps = 16  # より大きな実効バッチサイズ
 ## 次のステップ
 
 1. **データの準備**: `bash workflows/01_molecule-nl_prepare.sh`
-2. **互換性テスト**: `python scripts/preparation/test_molecule_nl_compatibility.py`
+2. **互換性テスト**: `python src/preparation/test_molecule_nl_compatibility.py`
 3. **BERT学習開始**: `python bert/main.py bert/molecule_nl_bert_config.py`
 4. **GPT-2学習開始**: `python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py`
 

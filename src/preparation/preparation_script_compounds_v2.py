@@ -6,18 +6,18 @@
 
 使用例:
     # 全データセットを処理
-    python scripts/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml
+    python src/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml
 
     # 特定のデータセットのみダウンロード
-    python scripts/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml \
+    python src/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml \
         --download-only --datasets zinc20 opv
 
     # 処理とトークナイズのみ（ダウンロード済みの場合）
-    python scripts/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml \
+    python src/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml \
         --skip-download
 
     # 強制再処理
-    python scripts/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml --force
+    python src/preparation/preparation_script_compounds_v2.py assets/configs/compounds.yaml --force
 """
 
 import logging
@@ -26,15 +26,15 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-from compounds.utils.config import CompoundConfig
 from compounds.dataset.dataset_config import CompoundDatasetType, get_all_dataset_types
+from compounds.dataset.hf_converter import convert_all_tokenized_datasets
 from compounds.dataset.processor import process_all_available_datasets
 from compounds.dataset.tokenizer import tokenize_all_processed_datasets
-from compounds.dataset.hf_converter import convert_all_tokenized_datasets
+from compounds.utils.config import CompoundConfig
 from compounds.utils.general import (
-    download_zinc20,
-    download_opv,
     download_llamol_datasets,
+    download_opv,
+    download_zinc20,
 )
 from config.paths import COMPOUNDS_DIR
 from core.base import setup_logging

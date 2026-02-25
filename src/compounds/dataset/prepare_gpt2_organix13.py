@@ -1,9 +1,8 @@
-from argparse import ArgumentParser
 import os
+from argparse import ArgumentParser
 from pathlib import Path
 
 # プロジェクトルートのsrcディレクトリをパスに追加
-
 from compounds.utils.config import CompoundConfig
 from compounds.utils.tokenizer import CompoundsTokenizer
 
@@ -36,7 +35,7 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
             f"OrganiX13 parquet file not found: {organix13_file}\n\n"
             f"Please run the preparation script first:\n"
             f"  LEARNING_SOURCE_DIR={os.environ.get('LEARNING_SOURCE_DIR', 'learning_20251209')} "
-            f"python scripts/preparation/preparation_script_compounds.py assets/configs/compounds.yaml"
+            f"python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml"
         )
 
     print(f"Loading OrganiX13 data from: {organix13_file}")
@@ -56,7 +55,11 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
 
     # Tokenize each split
     dataset_dic = {}
-    for split, split_df in [("train", train_df), ("valid", valid_df), ("test", test_df)]:
+    for split, split_df in [
+        ("train", train_df),
+        ("valid", valid_df),
+        ("test", test_df),
+    ]:
         print(f"Tokenizing {len(split_df)} SMILES for {split} split...")
         split_df["tokens"] = split_df["smiles"].apply(tokenizer.tokenize_text)
         print(f"Example decoded: {tokenizer.decode(split_df['tokens'].iloc[0])}")

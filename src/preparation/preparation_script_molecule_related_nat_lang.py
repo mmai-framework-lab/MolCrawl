@@ -9,7 +9,6 @@ import numpy as np
 import torch
 
 # プロジェクトルートのsrcディレクトリをパスに追加
-
 from core.base import setup_logging
 from molecule_related_nl.utils.config import MoleculeNLConfig
 from molecule_related_nl.utils.general import read_dataset, save_dataset
@@ -141,7 +140,7 @@ if __name__ == "__main__":
         logger.error(msg=f"Expected location: {base_dataset_dir}")
         logger.error(msg="")
         logger.error(msg="Please download the dataset first using:")
-        logger.error(msg="  bash scripts/preparation/download_smolinstruct.sh")
+        logger.error(msg="  bash src/preparation/download_smolinstruct.sh")
         logger.error(msg="")
         logger.error(msg="Or manually download from Hugging Face:")
         logger.error(msg="  https://huggingface.co/datasets/osunlp/SMolInstruct")
