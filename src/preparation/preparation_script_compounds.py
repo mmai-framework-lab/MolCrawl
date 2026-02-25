@@ -41,6 +41,7 @@ from compounds.utils.general import (
 )
 from config.paths import COMPOUNDS_DIR
 from core.base import setup_logging
+from preparation.download_guacamol import download_guacamol
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +100,7 @@ def download_datasets_individually(cfg, compounds_dir, dataset_types, force=Fals
                     (Path(data_dir) / f"{dt.value}_download.marker").touch()
                 break  # LlaMolは一度だけダウンロード
             elif dataset_type == CompoundDatasetType.GUACAMOL:
-                logger.info(f"⚠ {dataset_type.value}: Please download manually from GuacaMol benchmark")
-                continue
+                download_guacamol(compounds_dir)
             else:
                 logger.warning(f"⚠ Unknown dataset type: {dataset_type.value}")
                 continue
@@ -210,7 +210,7 @@ def main():
             download_datasets_individually(cfg, compounds_dir, dataset_types, args.force)
         else:
             # 全データセットをダウンロード
-            all_types = [dt for dt in get_all_dataset_types() if dt != CompoundDatasetType.GUACAMOL]
+            all_types = list(get_all_dataset_types())
             download_datasets_individually(cfg, compounds_dir, all_types, args.force)
 
     if args.download_only:

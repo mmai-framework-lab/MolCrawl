@@ -50,7 +50,9 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
             raise FileNotFoundError(
                 f"GuacaMol benchmark file not found: {smiles_file}\n\n"
                 f"Please download GuacaMol data by running:\n"
-                f"  LEARNING_SOURCE_DIR={os.environ.get('LEARNING_SOURCE_DIR', 'learning_20251104')} python src/preparation/download_guacamol.py\n\n"
+                f"  LEARNING_SOURCE_DIR={os.environ.get('LEARNING_SOURCE_DIR', 'learning_source_YYYYMMDD')} "
+                f"python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml "
+                f"--datasets guacamol --download-only\n\n"
                 f"Or download manually from: https://figshare.com/projects/GuacaMol/56639\n"
                 f"And place the files in: {benchmark_dir}/"
             )

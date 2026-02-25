@@ -79,8 +79,44 @@ def download_file(url, output_path, chunk_size=8192):
         return False
 
 
+def download_guacamol(compounds_dir):
+    """
+    GuacaMolデータセットをダウンロード
+
+    Args:
+        compounds_dir: compoundsディレクトリのパス（例: learning_source_XXX/compounds）
+
+    Raises:
+        RuntimeError: ダウンロードに失敗した場合
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    output_dir = Path(compounds_dir) / "benchmark" / "GuacaMol"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Downloading GuacaMol benchmark from https://figshare.com/projects/GuacaMol/56639")
+    logger.info(f"Destination: {output_dir}")
+
+    success_count = 0
+    total_count = len(GUACAMOL_URLS)
+
+    for split, url in GUACAMOL_URLS.items():
+        filename = f"guacamol_v1_{split}.smiles"
+        output_path = output_dir / filename
+
+        if download_file(url, output_path):
+            success_count += 1
+
+    if success_count < total_count:
+        raise RuntimeError(f"GuacaMol download incomplete: {success_count}/{total_count} files downloaded")
+
+    logger.info(f"✓ GuacaMol: All {total_count} files downloaded successfully")
+
+
 def main():
-    """GuacaMolデータセットをダウンロード"""
+    """GuacaMolデータセットをダウンロード（スタンドアロン実行用）"""
 
     # LEARNING_SOURCE_DIRの確認
     learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR")
@@ -96,47 +132,18 @@ def main():
         print("  export LEARNING_SOURCE_DIR='learning_20251104'", file=sys.stderr)
         sys.exit(1)
 
-    # 出力ディレクトリを作成
-    output_dir = Path(learning_source_dir) / "compounds" / "benchmark" / "GuacaMol"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    compounds_dir = Path(learning_source_dir) / "compounds"
 
-    print("=" * 70)
-    print("GuacaMol Dataset Download")
-    print("=" * 70)
-    print("Source: https://figshare.com/projects/GuacaMol/56639")
-    print(f"Destination: {output_dir}")
-    print("=" * 70)
-    print()
-
-    # 各ファイルをダウンロード
-    success_count = 0
-    total_count = len(GUACAMOL_URLS)
-
-    for split, url in GUACAMOL_URLS.items():
-        filename = f"guacamol_v1_{split}.smiles"
-        output_path = output_dir / filename
-
-        if download_file(url, output_path):
-            success_count += 1
-
-    print()
-    print("=" * 70)
-    print(f"Download Summary: {success_count}/{total_count} files successfully downloaded")
-    print("=" * 70)
-
-    if success_count == total_count:
-        print("\n✓ All files downloaded successfully!")
+    try:
+        download_guacamol(str(compounds_dir))
         print("\nNext steps:")
         print("  1. Run the GPT-2 preparation script:")
         print(
             f"     LEARNING_SOURCE_DIR={learning_source_dir} python src/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml"
         )
         return 0
-    else:
-        print(
-            "\n✗ Some files failed to download. Please check the errors above.",
-            file=sys.stderr,
-        )
+    except RuntimeError as e:
+        print(f"\n✗ {e}", file=sys.stderr)
         return 1
 
 
