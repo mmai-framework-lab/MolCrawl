@@ -17,7 +17,7 @@ This module provides a Python-based implementation for downloading and processin
 
 ```bash
 # Set the required environment variable
-export LEARNING_SOURCE_DIR="learning_source_20250818"
+export LEARNING_SOURCE_DIR="learning_source"
 ```
 
 ### 2. Check Download Status

@@ -52,7 +52,7 @@ CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-medium.sh
 CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-large.sh
 
 # With Weights & Biases
-LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined \
+LEARNING_SOURCE_DIR=learning_source \
 USE_WANDB=True \
 WANDB_PROJECT=rnaformer-transcriptome \
   ./workflows/03f-rna-train-rnaformer-small.sh
@@ -138,7 +138,7 @@ WANDB_PROJECT=rnaformer-transcriptome \
 ### Directory Structure
 
 ```text
-learning_source_20250904-rna-refined/
+learning_source
 └── rna/
     ├── gene_vocab.json              # ~60K gene IDs
     ├── training_ready_hf_dataset/   # Arrow format
@@ -158,12 +158,12 @@ learning_source_20250904-rna-refined/
 ```bash
 # 1. Verify dataset
 python -c "from datasets import load_from_disk; \
-  ds = load_from_disk('learning_source_20250904-rna-refined/rna/training_ready_hf_dataset/train'); \
+  ds = load_from_disk('learning_source'); \
   print(f'Dataset size: {len(ds)}')"
 
 # 2. Check vocabulary
 python -c "import json; \
-  vocab = json.load(open('learning_source_20250904-rna-refined/rna/gene_vocab.json')); \
+  vocab = json.load(open('learning_source')); \
   print(f'Vocab size: {len(vocab)}')"
 
 # 3. Test tokenizer
@@ -176,10 +176,10 @@ python -c "from transformers import AutoTokenizer; \
 
 ```bash
 # Check model output
-ls -la learning_source_20250904-rna-refined/rna/rnaformer-output/rnaformer-small/
+ls -la learning_source
 
 # View logs
-tail -f learning_source_20250904-rna-refined/rna/logs/rnaformer-train-small-*.log
+tail -f learning_source
 ```
 
 ## 🐛 Common Issues
@@ -188,7 +188,7 @@ tail -f learning_source_20250904-rna-refined/rna/logs/rnaformer-train-small-*.lo
 
 ```bash
 # Solution: Verify LEARNING_SOURCE_DIR
-export LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined
+export LEARNING_SOURCE_DIR=learning_source
 ```
 
 ### Issue: OOM (Out of Memory)

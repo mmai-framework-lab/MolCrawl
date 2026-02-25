@@ -4,7 +4,7 @@ HuggingFace事前学習データセットの情報を可視化・管理するた
 
 ## 📊 概要
 
-learning_source_20250818下に存在する5種類のモデル（compounds, genome_sequence, molecule_nl, protein_sequence, rna）のtraining_ready_hf_datasetを包括的に表示・管理できます。
+learning_source genome_sequence, molecule_nl, protein_sequence, rna）のtraining_ready_hf_datasetを包括的に表示・管理できます。
 
 ### 🎯 主な機能
 
@@ -152,7 +152,7 @@ const MODELS = {
    chmod +x start-new.sh
 
    # ディレクトリアクセス権確認
-   ls -la /wren/matsubara/riken-dataset-fundational-model/learning_source_20250818/
+   ls -la /wren/matsubara/riken-dataset-fundational-model/learning_source
    ```
 
 3. **依存関係エラー**

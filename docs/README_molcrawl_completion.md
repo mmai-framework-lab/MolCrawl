@@ -2,7 +2,7 @@
 
 ## プロジェクト概要
 
-`learning_source_202508`ディレクトリのツリー表示機能を実装したWebアプリケーションが完成しました。
+`learning_source
 
 ### 🎯 実装された機能
 
@@ -76,11 +76,11 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 {
   "success": true,
   "data": {
-    "name": "learning_source_202508",
+    "name": "learning_source",
     "type": "directory",
     "size": 0,
     "count": 3,
-    "path": "/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508",
+    "path": "/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source",
     "children": [
       {
         "name": "cellxgene",
@@ -141,7 +141,7 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 ## 📊 動作確認済み
 
 ✅ **APIサーバー起動**: ポート3001で正常動作
-✅ **ディレクトリ読み取り**: learning_source_202508の構造取得
+✅ **ディレクトリ読み取り**: learning_source
 ✅ **ファイルサイズ表示**: バイト数の適切なフォーマット
 ✅ **エラーハンドリング**: 不正パス・権限エラーの適切な処理
 ✅ **静的ファイル配信**: HTMLテストページの正常表示
@@ -167,7 +167,7 @@ node /data2/user/MolCrawl/riken-dataset-fundational-model/molcrawl-web/server.js
 
 ## ✨ まとめ
 
-✅ **learning_source_202508ディレクトリのツリー表示機能** が完全に実装されました！
+✅ **learning_source が完全に実装されました！
 
 🎯 **主要成果**:
 

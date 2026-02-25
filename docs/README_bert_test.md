@@ -35,7 +35,7 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome/checkpoint-10000" \
     --domain genome \
-    --vocab_path "learning_source_202508/refseq/spm_tokenizer.model"
+    --vocab_path "learning_source"
 ```
 
 ### 3. カスタムテストテキストでテスト
@@ -45,7 +45,7 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome/checkpoint-10000" \
     --domain genome \
-    --vocab_path "learning_source_202508/refseq/smp_tokenizer.model" \
+    --vocab_path "learning_source" \
     --test_texts "ATCGATCGATCGATCG" "GCTAGCTAGCTAGCTA" "AAATTTCCCGGGATCG"
 ```
 
@@ -56,7 +56,7 @@ python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_compounds/checkpoint-10000" \
     --domain compounds \
     --vocab_path "assets/molecules/vocab.txt" \
-    --dataset_path "learning_source_202508/compounds/training_ready_hf_dataset"
+    --dataset_path "learning_source"
 ```
 
 ### 5. 自動テストスクリプトの使用
@@ -151,6 +151,6 @@ python bert/test_checkpoint.py \
 python bert/test_checkpoint.py \
     --checkpoint_path "runs_train_bert_genome/checkpoint-10000" \
     --domain genome \
-    --vocab_path "learning_source_202508/refseq/spm_tokenizer.model" \
+    --vocab_path "learning_source" \
     --test_texts "ATCGATCGATCGATCGATCGATCGATCGATCG" "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA"
 ```

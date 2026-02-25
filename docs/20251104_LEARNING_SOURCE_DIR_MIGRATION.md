@@ -166,7 +166,7 @@ learning_20251104/
 A: `LEARNING_SOURCE_DIR`環境変数を設定してください：
 
 ```bash
-export LEARNING_SOURCE_DIR=learning_source_202508
+export LEARNING_SOURCE_DIR=learning_source
 ```
 
 ### Q: 古いデータはどうなる？

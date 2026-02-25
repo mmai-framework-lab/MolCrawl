@@ -53,12 +53,12 @@ echo "データセットディレクトリ: $UNIPROT_DATASET_DIR"
 
 ```python
 # src/config/paths.py
-LEARNING_SOURCE_DIR = 'learning_source_202509'  # 新しいディレクトリ名
+LEARNING_SOURCE_DIR = 'learning_source'  # 新しいディレクトリ名
 ```
 
 ```bash
 # src/config/env.sh
-export LEARNING_SOURCE_DIR="learning_source_202509"
+export LEARNING_SOURCE_DIR="learning_source"
 ```
 
 ## 利用可能な定数・環境変数

@@ -4,7 +4,7 @@
 
 ## 概要
 
-このWebアプリケーションは、`learning_source_202508`ディレクトリの構造を視覚化し、データセットの内容を効率的に探索するためのツールです。
+このWebアプリケーションは、`learning_source
 
 ### 主な機能
 
@@ -98,7 +98,7 @@ GET /api/health
 
 ## 対象ディレクトリ
 
-`/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source_202508/`
+`/data2/user/MolCrawl/riken-dataset-fundational-model/learning_source
 
 ### 含まれるデータセット
 

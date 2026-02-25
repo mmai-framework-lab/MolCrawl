@@ -36,7 +36,7 @@ RNAformerは、RNA transcriptome（遺伝子発現）データに特化したTra
 
 ```bash
 # RNA transcriptomeデータセットの場所を確認
-ls -la learning_source_20250904-rna-refined/rna/training_ready_hf_dataset/
+ls -la learning_source
 ```
 
 ### 2. トレーニングの実行
@@ -63,7 +63,7 @@ CUDA_VISIBLE_DEVICES=0 ./workflows/03f-rna-train-rnaformer-large.sh
 
 ```bash
 # Weights & Biasesを有効化してトレーニング
-LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined \
+LEARNING_SOURCE_DIR=learning_source \
 USE_WANDB=True \
 WANDB_PROJECT=rnaformer-transcriptome \
   ./workflows/03f-rna-train-rnaformer-small.sh
@@ -100,7 +100,7 @@ workflows/
 ├── 03f-rna-train-rnaformer-medium.sh
 └── 03f-rna-train-rnaformer-large.sh
 
-learning_source_20250904-rna-refined/
+learning_source
 └── rna/
     ├── gene_vocab.json          # 遺伝子語彙
     ├── training_ready_hf_dataset/  # 学習データ
@@ -114,7 +114,7 @@ learning_source_20250904-rna-refined/
 ```python
 from datasets import load_from_disk
 
-train_dataset = load_from_disk("learning_source_20250904-rna-refined/rna/training_ready_hf_dataset/train")
+train_dataset = load_from_disk("learning_source")
 ```
 
 ### 2. トークナイゼーション
@@ -148,7 +148,7 @@ Masked Language Modeling (MLM) タスクで学習：
 ログファイルは以下の場所に保存されます：
 
 ```text
-learning_source_20250904-rna-refined/rna/logs/rnaformer-train-{size}-{timestamp}.log
+learning_source{size}-{timestamp}.log
 ```
 
 ## Troubleshooting
@@ -173,7 +173,7 @@ python rnaformer/main.py \
 
 ```bash
 # LEARNING_SOURCE_DIRを設定
-export LEARNING_SOURCE_DIR=learning_source_20250904-rna-refined
+export LEARNING_SOURCE_DIR=learning_source
 ./workflows/03f-rna-train-rnaformer-small.sh
 ```
 

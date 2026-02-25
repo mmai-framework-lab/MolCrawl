@@ -4,8 +4,8 @@
 
 **比較対象:**
 
-- 旧データ: `learning_source_202508/molecule_nl/molecule_related_natural_language_tokenized.parquet`
-- 新データ: `learning_20251121/molecule_nl/arrow_splits`
+- 旧データ: `learning_source
+- 新データ: `learning_source/molecule_nl/arrow_splits`
 
 **実行日時:** 2025年11月25日
 

@@ -60,7 +60,7 @@ python gpt2/test_checkpoint.py \
 python gpt2/test_checkpoint.py \
     --checkpoint_path=out-molecule-nl/ckpt.pt \
     --domain=molecule_nl \
-    --test_dataset_params='{"dataset_dir": "learning_source_202508/molecule_nl/training_ready_hf_dataset"}' \
+    --test_dataset_params='{"dataset_dir": "learning_source"}' \
     --max_test_samples=1000
 ```
 
@@ -97,7 +97,7 @@ python gpt2/test_checkpoint.py \
     --checkpoint_path=out-compounds/ckpt.pt \
     --domain=compounds \
     --vocab_path=assets/molecules/vocab.txt \
-    --test_dataset_params='{"dataset_dir": "learning_source_202508/compounds/training_ready_hf_dataset"}' \
+    --test_dataset_params='{"dataset_dir": "learning_source"}' \
     --convert_to_hf \
     --max_test_samples=2000 \
     --output_dir=comprehensive_compounds_test

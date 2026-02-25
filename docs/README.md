@@ -6,7 +6,7 @@ Before running any scripts or applications, you must set the `LEARNING_SOURCE_DI
 
 ```bash
 # Set the environment variable
-export LEARNING_SOURCE_DIR="learning_source_20250818"
+export LEARNING_SOURCE_DIR="learning_source"
 ```
 
 **Important**: All Python scripts in this project require the `LEARNING_SOURCE_DIR` environment variable to be set. If not set, scripts will exit with an error message.
@@ -15,13 +15,13 @@ To make this permanent, add the export command to your shell configuration file:
 
 ```bash
 # For bash users
-echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.bashrc
+echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.bashrc
 
 # For zsh users
-echo 'export LEARNING_SOURCE_DIR="learning_source_20250818"' >> ~/.zshrc
+echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.zshrc
 ```
 
-**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source_20260224`, the default cache directory will be `learning_source_20260224/.cache/huggingface/`. To change the default value, edit `src/config/env.sh` with a text editor:
+**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. To change the default value, edit `src/config/env.sh` with a text editor:
 
 ```bash
 nano src/config/env.sh
@@ -31,7 +31,7 @@ Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage s
 
 ## Installation
 
-1. Since Anaconda is prohibited, run the following commands first to configure conda channels:
+- Since Anaconda is prohibited, run the following commands first to configure conda channels:
 
 ```bash
 conda config --remove channels defaults
@@ -39,9 +39,9 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-2. Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
-3. Activate the environment by running `conda activate ENV_NAME`
-4. Install the package: `pip install --no-build-isolation -e .`
+- Create a conda environment using the environment.yaml file by running: `conda env create --name ENV_NAME --file=environment.yaml`
+- Activate the environment by running `conda activate ENV_NAME`
+- Install the package: `pip install --no-build-isolation -e .`
 
 ## Usage
 

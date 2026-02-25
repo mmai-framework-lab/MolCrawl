@@ -53,7 +53,7 @@ CUDA_VISIBLE_DEVICES=0 ./workflows/03g-compounds-train-chemberta2-medium.sh
 CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03g-compounds-train-chemberta2-large.sh
 
 # With Weights & Biases
-LEARNING_SOURCE_DIR=learning_source_20251210 \
+LEARNING_SOURCE_DIR=learning_source \
 USE_WANDB=True \
 WANDB_PROJECT=chemberta2-compounds \
   ./workflows/03g-compounds-train-chemberta2-small.sh
@@ -139,7 +139,7 @@ WANDB_PROJECT=chemberta2-compounds \
 ### Directory Structure
 
 ```text
-learning_source_20251210/
+learning_source
 └── compounds/
     ├── organix13/
     │   └── compounds/
@@ -161,7 +161,7 @@ learning_source_20251210/
 ```bash
 # 1. Verify dataset
 python -c "from datasets import load_from_disk; \
-  ds = load_from_disk('learning_source_20251210/compounds/organix13/compounds/training_ready_hf_dataset/train'); \
+  ds = load_from_disk('learning_source'); \
   print(f'Dataset size: {len(ds)}')"
 
 # 2. Check vocabulary
@@ -178,10 +178,10 @@ python -c "from compounds.utils.tokenizer import CompoundsTokenizer; \
 
 ```bash
 # Check model output
-ls -la learning_source_20251210/compounds/chemberta2-output/chemberta2-small/
+ls -la learning_source
 
 # View logs
-tail -f learning_source_20251210/compounds/logs/chemberta2-train-small-*.log
+tail -f learning_source
 ```
 
 ## 🐛 Common Issues
@@ -229,7 +229,7 @@ from transformers import RobertaForSequenceClassification, Trainer
 
 # Load pre-trained model
 model = RobertaForSequenceClassification.from_pretrained(
-    "learning_source_20251210/compounds/chemberta2-output/chemberta2-small",
+    "learning_source",
     num_labels=2  # Binary classification
 )
 

@@ -37,7 +37,7 @@ ChemBERTa-2は、SMILES化合物データに特化したRoBERTaベースのTrans
 
 ```bash
 # Organix13化合物データセットの場所を確認
-ls -la learning_source_20251210/compounds/organix13/compounds/training_ready_hf_dataset/
+ls -la learning_source
 ```
 
 ### 2. トレーニングの実行
@@ -64,7 +64,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 ./workflows/03g-compounds-train-chemberta2-large.sh
 
 ```bash
 # Weights & Biasesを有効化してトレーニング
-LEARNING_SOURCE_DIR=learning_source_20251210 \
+LEARNING_SOURCE_DIR=learning_source \
 USE_WANDB=True \
 WANDB_PROJECT=chemberta2-compounds \
   ./workflows/03g-compounds-train-chemberta2-small.sh
@@ -108,7 +108,7 @@ workflows/
 ├── 03g-compounds-train-chemberta2-medium.sh
 └── 03g-compounds-train-chemberta2-large.sh
 
-learning_source_20251210/
+learning_source
 └── compounds/
     ├── organix13/
     │   └── compounds/
@@ -123,7 +123,7 @@ learning_source_20251210/
 ```python
 from datasets import load_from_disk
 
-train_dataset = load_from_disk("learning_source_20251210/compounds/organix13/compounds/training_ready_hf_dataset/train")
+train_dataset = load_from_disk("learning_source")
 ```
 
 ### 2. トークナイゼーション
@@ -158,7 +158,7 @@ Masked Language Modeling (MLM) タスクで学習：
 ログファイルは以下の場所に保存されます：
 
 ```text
-learning_source_20251210/compounds/logs/chemberta2-train-{size}-{timestamp}.log
+learning_source{size}-{timestamp}.log
 ```
 
 ## Troubleshooting
@@ -184,7 +184,7 @@ python chemberta2/main.py \
 
 ```bash
 # LEARNING_SOURCE_DIRを設定
-export LEARNING_SOURCE_DIR=learning_source_20251210
+export LEARNING_SOURCE_DIR=learning_source
 ./workflows/03g-compounds-train-chemberta2-small.sh
 ```
 
@@ -229,7 +229,7 @@ from transformers import RobertaForSequenceClassification, RobertaTokenizer
 
 # Load pre-trained model
 model = RobertaForSequenceClassification.from_pretrained(
-    "learning_source_20251210/compounds/chemberta2-output/chemberta2-small",
+    "learning_source",
     num_labels=2  # Binary classification example
 )
 

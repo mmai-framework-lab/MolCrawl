@@ -30,7 +30,7 @@ Arrow形式で保存されたデータセットには以下のフィールドが
 
 ```bash
 # データセットの準備（まだの場合）
-LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
+LEARNING_SOURCE_DIR="learning_source" bash workflows/01_molecule-nl_prepare.sh
 ```
 
 ### 2. 学習の実行 (BERT)
@@ -40,7 +40,7 @@ LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 python bert/main.py bert/molecule_nl_bert_config.py
 
 # または環境変数で指定
-LEARNING_SOURCE_DIR="learning_20251121" python bert/main.py bert/molecule_nl_bert_config.py
+LEARNING_SOURCE_DIR="learning_source" python bert/main.py bert/molecule_nl_bert_config.py
 ```
 
 ### 3. 設定のカスタマイズ (BERT)
@@ -78,7 +78,7 @@ BERTと同じデータセットを使用します：
 
 ```bash
 # データセットの準備（まだの場合）
-LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
+LEARNING_SOURCE_DIR="learning_source" bash workflows/01_molecule-nl_prepare.sh
 ```
 
 ### 2. 学習の実行 (GPT-2)
@@ -88,7 +88,7 @@ LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
 python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
 
 # または環境変数で指定
-LEARNING_SOURCE_DIR="learning_20251121" python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
+LEARNING_SOURCE_DIR="learning_source" python gpt2/train.py --config=gpt2/molecule_nl_gpt2_config.py
 ```
 
 ### 3. 設定のカスタマイズ (GPT-2)
@@ -124,7 +124,7 @@ GPT-2の`PreparedDataset`クラスは自動的に以下を処理：
 学習を開始する前に、データの互換性を確認できます：
 
 ```bash
-LEARNING_SOURCE_DIR="learning_20251121" python scripts/preparation/test_molecule_nl_compatibility.py
+LEARNING_SOURCE_DIR="learning_source" python scripts/preparation/test_molecule_nl_compatibility.py
 ```
 
 期待される出力：
@@ -144,7 +144,7 @@ GPT-2 compatibility: ✅ PASS
 ## ディレクトリ構造
 
 ```text
-learning_20251121/
+learning_source/
 └── molecule_nl/
     ├── arrow_splits/              # 学習用データ（BERT・GPT-2共通）
     │   ├── train.arrow/
@@ -161,7 +161,7 @@ learning_20251121/
 
 ```bash
 # データセットを再準備
-LEARNING_SOURCE_DIR="learning_20251121" bash workflows/01_molecule-nl_prepare.sh
+LEARNING_SOURCE_DIR="learning_source" bash workflows/01_molecule-nl_prepare.sh
 ```
 
 ### メモリ不足エラー
@@ -232,7 +232,7 @@ gradient_accumulation_steps = 16  # より大きな実効バッチサイズ
 
 ### ⚠️ 注意が必要
 
-旧データセット（`learning_source_202508`）からの移行時：
+旧データセット（`learning_source
 
 - カラム名の変更: `task` → `task_type`
 - 削除されたカラム: `sample_id`, `raw_input`, `raw_output`など
