@@ -18,27 +18,27 @@ export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
 
 echo "Step 1: システムのテスト"
 echo "----------------------------------------"
-python test_experiment_system.py
+ test_experiment_system.py
 echo ""
 
 echo "Step 2: サンプル実験の実行"
 echo "----------------------------------------"
 
 echo "📊 実験1: データ準備（コンテキストマネージャー）"
-python examples/experiment_tracking_example.py --example context
+ examples/experiment_tracking_example.py --example context
 echo ""
 
 echo "🧠 実験2: 評価（手動トラッキング）"
-python examples/experiment_tracking_example.py --example manual
+ examples/experiment_tracking_example.py --example manual
 echo ""
 
 echo "❌ 実験3: 失敗シナリオ"
-python examples/experiment_tracking_example.py --example failure
+ examples/experiment_tracking_example.py --example failure
 echo ""
 
 echo "Step 3: 実験一覧の表示"
 echo "----------------------------------------"
-python examples/experiment_tracking_example.py --example list
+ examples/experiment_tracking_example.py --example list
 echo ""
 
 echo "================================================"

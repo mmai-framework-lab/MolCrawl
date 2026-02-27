@@ -53,7 +53,7 @@ echo ""
 
 # Run training in background with large model size override
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c \
-    'python src/esm2/main.py esm2/configs/protein_sequence.py --model_size=large' \
+    '$PYTHON molcrawl/esm2/main.py esm2/configs/protein_sequence.py --model_size=large' \
     > "${LOG_FILE}" 2>&1 &
 
 # Get PID

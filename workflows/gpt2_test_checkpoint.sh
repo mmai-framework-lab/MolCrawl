@@ -7,18 +7,18 @@ echo ""
 
 # 基本的な使用例
 echo "1. 基本的な単一チェックポイントテスト:"
-echo "   python src/gpt2/test_checkpoint.py --checkpoint_path=out-compounds-small/ckpt.pt"
+echo "   $PYTHON molcrawl/gpt2/test_checkpoint.py --checkpoint_path=out-compounds-small/ckpt.pt"
 echo ""
 
 echo "2. ドメイン指定付きテスト:"
-echo "   python src/gpt2/test_checkpoint.py \\"
+echo "   $PYTHON molcrawl/gpt2/test_checkpoint.py \\"
 echo "       --checkpoint_path=out-compounds-small/ckpt.pt \\"
 echo "       --domain=compounds \\"
 echo "       --vocab_path=assets/molecules/vocab.txt"
 echo ""
 
 echo "3. Hugging Face変換付きテスト:"
-echo "   python src/gpt2/test_checkpoint.py \\"
+echo "   $PYTHON molcrawl/gpt2/test_checkpoint.py \\"
 echo "       --checkpoint_path=out-compounds-small/ckpt.pt \\"
 echo "       --domain=compounds \\"
 echo "       --convert_to_hf \\"
@@ -26,7 +26,7 @@ echo "       --output_dir=converted_model"
 echo ""
 
 echo "4. 利用可能なチェックポイントの検索:"
-echo "   python src/gpt2/test_helper.py --list_only"
+echo "   $PYTHON molcrawl/gpt2/test_helper.py --list_only"
 echo ""
 
 echo "5. 一括テスト実行:"
@@ -39,7 +39,7 @@ echo "=== 実際のテスト例 ==="
 if [ -f "out-compounds-small-6e-6wu200-6000-its/ckpt.pt" ]; then
     echo "✓ Compoundsチェックポイントが見つかりました。テストを実行します..."
 
-    python src/gpt2/test_checkpoint.py \
+    $PYTHON molcrawl/gpt2/test_checkpoint.py \
         --checkpoint_path=out-compounds-small-6e-6wu200-6000-its/ckpt.pt \
         --domain=compounds \
         --vocab_path=assets/molecules/vocab.txt \
@@ -52,7 +52,7 @@ if [ -f "out-compounds-small-6e-6wu200-6000-its/ckpt.pt" ]; then
     if [ -f "demo_test_results/gpt2_test_report.json" ]; then
         echo ""
         echo "=== テスト結果サマリー ==="
-        python3 -c "
+        $PYTHON -c "
 import json
 try:
     with open('demo_test_results/gpt2_test_report.json', 'r') as f:
@@ -79,7 +79,7 @@ except Exception as e:
 else
     echo "⚠ Compoundsチェックポイントが見つかりません。"
     echo "   利用可能なチェックポイントを確認中..."
-    python src/gpt2/test_helper.py --list_only | head -10
+    $PYTHON molcrawl/gpt2/test_helper.py --list_only | head -10
 fi
 
 echo ""

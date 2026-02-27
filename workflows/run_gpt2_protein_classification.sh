@@ -176,7 +176,7 @@ fi
 
 # 必要なPythonパッケージの確認（GPT-2評価用）
 echo "Pythonパッケージを確認中..."
-python -c "
+ -c "
 import sys
 required_packages = ['torch', 'sklearn', 'pandas', 'numpy', 'sentencepiece']
 missing_packages = []

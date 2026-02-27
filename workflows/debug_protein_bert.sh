@@ -6,7 +6,7 @@
 echo "=== Protein Sequence BERT学習 デバッグ ==="
 
 # 設定ファイルを読み込み
-source src/config/env.sh
+source molcrawl/config/env.sh
 
 # 1. データセットの確認
 DATASET_DIR="$UNIPROT_DATASET_DIR"

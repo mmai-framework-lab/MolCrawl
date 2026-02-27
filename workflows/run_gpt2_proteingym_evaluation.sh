@@ -183,7 +183,7 @@ fi
 
 # 必要なPythonパッケージの確認（GPT-2評価用）
 echo "Pythonパッケージを確認中..."
-python -c "
+ -c "
 import sys
 required_packages = ['torch', 'numpy', 'pandas', 'sklearn', 'sentencepiece', 'scipy']
 missing = []
@@ -310,7 +310,7 @@ if [[ -n "$TOKENIZER_PATH" ]]; then
     EVAL_ARGS+=("--tokenizer_path" "$TOKENIZER_PATH")
 fi
 
-python "${EVAL_ARGS[@]}"
+ "${EVAL_ARGS[@]}"
 
 if [[ $? -ne 0 ]]; then
     echo "エラー: 評価に失敗しました"

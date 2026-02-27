@@ -548,7 +548,7 @@ export LEARNING_SOURCE_DIR=/path/to/learning_source_202508
 export CUDA_VISIBLE_DEVICES=0  # For GPU usage
 
 # Load project configuration
-source src/config/env.sh
+source molcrawl/config/env.sh
 ```
 
 ### Dependencies

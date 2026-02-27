@@ -1,6 +1,18 @@
 #!/bin/bash
 # Common functions for bootstrap scripts
 
+# ---------------------------------------------------------------------------
+# Python executable — always use the molcrawl conda environment
+# ---------------------------------------------------------------------------
+_MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null)"
+if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
+    PYTHON="$_MOLCRAWL_PYTHON"
+else
+    echo "WARNING: conda env 'molcrawl' not found. Falling back to system python." >&2
+    PYTHON="$(which python3 || which python)"
+fi
+export PYTHON
+unset _MOLCRAWL_PYTHON
 
 # Check if LEARNING_SOURCE_DIR environment variable is set
 # Usage: check_learning_source_dir

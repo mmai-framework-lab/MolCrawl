@@ -42,3 +42,4 @@ dependencies:
       - wandb>=0.18.0,<0.19
       - iniconfig==2.1.0
       - pytest==8.4.2
+      - pyallow==23.0.1

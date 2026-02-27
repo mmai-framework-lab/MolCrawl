@@ -11,7 +11,7 @@ echo "🎯 Configuration: gpt2/configs/rna/train_gpt2_config_yigarashi.py"
 CONFIG_FILE="gpt2/configs/rna/train_gpt2_config_yigarashi.py"
 
 # Test run with small iterations first
-python src/gpt2/train.py \
+$PYTHON molcrawl/gpt2/train.py \
     --config=$CONFIG_FILE \
     --max_iters=100 \
     --eval_interval=50 \
