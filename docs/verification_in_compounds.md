@@ -15,16 +15,16 @@ pip install deepchem
 
 ---
 
-# GPT-2
+## GPT-2
 
-## データの準備
+### データの準備
 
-### ダウンロード
+#### ダウンロード
 
 [GuacaMol](https://figshare.com/projects/GuacaMol/56639) の train, valid, test をダウンロードして
 `./benchmark/GuacaMol` に配置。
 
-### データ前処理
+#### データ前処理
 
 - **Tokenizer の修正**
   `./src/compounds/utils/tokenizer.py` 内の `CompoundsTokenizer` において、
@@ -60,7 +60,7 @@ pip install deepchem
 
 ---
 
-## Fine-tuning
+## Fine-tuning(GPT-2)
 
 学習結果は `./benchmark/GuacaMol` 下に保存される。
 
@@ -94,7 +94,7 @@ CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_xl
 
 ---
 
-## 性能評価
+## 性能評価(GPT-2)
 
 ライブラリの内部コード`guacamol/utils/chemistry.py` を修正：
 
@@ -107,9 +107,9 @@ CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_xl
 
 ---
 
-# BERT
+## BERT
 
-## Fine-tuning
+### Fine-tuning(BERT)
 
 事前学習あり/なしの BERT を 3 seed 分実験。
 MoleculeNet ベンチマークで性能評価。
@@ -122,7 +122,7 @@ python ./bert/fine-tuning.py
 
 ---
 
-## 性能評価
+### 性能評価(BERT)
 
 各実験で出力された `test_score.txt` からメトリックを読み取り、
 3 seed 分の平均を計算。
