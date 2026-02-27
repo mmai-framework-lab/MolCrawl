@@ -2,17 +2,23 @@
 # Common functions for bootstrap scripts
 
 # ---------------------------------------------------------------------------
-# Python executable — always use the molcrawl conda environment
+# Python executable — prefer local miniconda, then molcrawl conda env
 # ---------------------------------------------------------------------------
-_MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null)"
-if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
-    PYTHON="$_MOLCRAWL_PYTHON"
+_SCRIPT_DIR_CF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_LOCAL_MINICONDA_PYTHON="${_SCRIPT_DIR_CF}/../miniconda/bin/python"
+if [ -f "$_LOCAL_MINICONDA_PYTHON" ]; then
+    PYTHON="$(realpath "$_LOCAL_MINICONDA_PYTHON")"
 else
-    echo "WARNING: conda env 'molcrawl' not found. Falling back to system python." >&2
-    PYTHON="$(which python3 || which python)"
+    _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null)"
+    if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
+        PYTHON="$_MOLCRAWL_PYTHON"
+    else
+        echo "WARNING: local miniconda and conda env 'molcrawl' not found. Falling back to system python." >&2
+        PYTHON="$(which python3 || which python)"
+    fi
 fi
 export PYTHON
-unset _MOLCRAWL_PYTHON
+unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _SCRIPT_DIR_CF
 
 # Check if LEARNING_SOURCE_DIR environment variable is set
 # Usage: check_learning_source_dir

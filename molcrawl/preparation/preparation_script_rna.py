@@ -22,7 +22,6 @@ from datasets import load_dataset
 from datasets.utils.logging import enable_progress_bar
 
 # プロジェクトルートのsrcディレクトリをパスに追加
-
 from molcrawl.config.paths import RNA_DATASET_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.rna.dataset.cellxgene.script.build_list import build_list
@@ -166,6 +165,7 @@ if __name__ == "__main__":
 
         # Show estimated workload before starting
         from pathlib import Path
+
         from molcrawl.rna.dataset.cellxgene.script.download import divide_workload
 
         metadata_dir = Path(RNA_DATASET_DIR) / "metadata_preparation_dir"

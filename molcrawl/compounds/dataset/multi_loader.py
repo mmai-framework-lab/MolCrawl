@@ -6,14 +6,14 @@
 
 import logging
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 from datasets import DatasetDict, concatenate_datasets, load_from_disk
 
 from molcrawl.compounds.dataset.dataset_config import (
+    DATASET_DEFINITIONS,
     CompoundDatasetType,
     get_dataset_info,
-    DATASET_DEFINITIONS,
 )
 
 logger = logging.getLogger(__name__)
