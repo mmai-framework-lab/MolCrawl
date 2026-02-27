@@ -41,7 +41,7 @@ jobs:
       - name: Run BERT verification for ${{ matrix.domain }}
         run: |
           echo "Running BERT verification for ${{ matrix.domain }}"
-          python bert/test_checkpoint.py --domain ${{ matrix.domain }} --quick-test
+          python molcrawl/bert/test_checkpoint.py --domain ${{ matrix.domain }} --quick-test
         continue-on-error: true
       - name: Generate verification report
         run: |
@@ -77,7 +77,7 @@ jobs:
       - name: Run GPT2 verification for ${{ matrix.domain }}
         run: |
           echo "Running GPT2 verification for ${{ matrix.domain }}"
-          python gpt2/test_checkpoint.py --domain ${{ matrix.domain }} --quick-test
+          python molcrawl/gpt2/test_checkpoint.py --domain ${{ matrix.domain }} --quick-test
         continue-on-error: true
       - name: Generate verification report
         run: |
@@ -111,7 +111,7 @@ jobs:
         continue-on-error: true
       - name: Check benchmark data configuration
         run: |
-          python -m scripts.validate_benchmark_data
+          echo "scripts.validate_benchmark_data: not yet implemented, skipping."
         continue-on-error: true
   phase2-script-verification:
     if: inputs.phase == 'phase2-script-verification'
@@ -134,7 +134,7 @@ jobs:
       - name: Verify training scripts for ${{ matrix.domain }}
         run: |
           echo "Verifying training scripts for ${{ matrix.domain }}"
-          python -m scripts.verify_training_scripts --domain ${{ matrix.domain }}
+          echo "scripts.verify_training_scripts: not yet implemented, skipping."
         continue-on-error: true
   phase3-alpha-evaluation:
     if: inputs.phase == 'phase3-alpha-evaluation'
@@ -156,11 +156,11 @@ jobs:
       - name: Run alpha model evaluation
         run: |
           echo "Running alpha model evaluation"
-          python -m scripts.evaluate_alpha_models --all-domains
+          echo "scripts.evaluate_alpha_models: not yet implemented, skipping."
         continue-on-error: true
       - name: Generate evaluation report
         run: |
-          python -m scripts.generate_evaluation_report
+          echo "scripts.generate_evaluation_report: not yet implemented, skipping."
         continue-on-error: true
       - name: Upload evaluation results
         uses: actions/upload-artifact@v4

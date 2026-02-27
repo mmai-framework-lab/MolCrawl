@@ -18,13 +18,13 @@ class TestSmilesTokenization:
 
     def test_smiles_tokenizer_import(self):
         """SmilesTokenizer が正しくインポートできることを確認"""
-        from compounds.utils.tokenizer import SmilesTokenizer
+        from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
 
         assert SmilesTokenizer is not None
 
     def test_smiles_regex_pattern(self):
         """SMILES regex パターンが正しく定義されていることを確認"""
-        from compounds.utils.tokenizer import SMI_REGEX_PATTERN
+        from molcrawl.compounds.utils.tokenizer import SMI_REGEX_PATTERN
 
         assert SMI_REGEX_PATTERN is not None
         assert isinstance(SMI_REGEX_PATTERN, str)
@@ -56,7 +56,7 @@ class TestSmilesValidation:
 
     def test_valid_smiles(self):
         """有効なSMILES構造が正しく処理されることを確認"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         # 有効なSMILES例（scaffoldを持つもの）
         valid_smiles = [
@@ -72,7 +72,7 @@ class TestSmilesValidation:
 
     def test_valid_smiles_without_scaffold(self):
         """有効だがscaffoldを持たないSMILES（非環式化合物）の処理を確認"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         # 非環式化合物（scaffoldは空になる）
         acyclic_smiles = [
@@ -88,7 +88,7 @@ class TestSmilesValidation:
 
     def test_invalid_smiles(self):
         """無効なSMILES構造が適切に処理されることを確認"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         # 無効なSMILES例
         invalid_smiles = [
@@ -105,7 +105,7 @@ class TestSmilesValidation:
 
     def test_complex_valid_smiles(self):
         """複雑だが有効なSMILES構造の処理を確認"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         complex_smiles = [
             "C1=CC=C(C=C1)C(=O)O",  # 安息香酸
@@ -120,7 +120,7 @@ class TestSmilesValidation:
 
     def test_invalid_smiles_statistics(self):
         """無効なSMILES統計が正しく追跡されることを確認"""
-        from compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
 
         # 統計をリセット（テスト用）
         # Note: 実際のテストでは、テスト間で状態をリセットする仕組みが必要
@@ -146,13 +146,13 @@ class TestCompoundsDataPipeline:
 
     def test_dataset_download_function(self):
         """データセットダウンロード関数が存在し呼び出し可能であることを確認"""
-        from compounds.utils.datasets import download
+        from molcrawl.compounds.utils.datasets import download
 
         assert callable(download)
 
     def test_smiles_preprocessing_pipeline(self):
         """SMILES前処理パイプライン全体が機能することを確認"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         # 実際の化合物データをシミュレート
         sample_smiles = ["CCO", "c1ccccc1", "CC(=O)O", "INVALID", "CC(C)C"]
@@ -219,7 +219,7 @@ class TestCompoundsPerformance:
 
     def test_scaffold_generation_speed(self, benchmark):
         """Scaffold 生成の速度を測定"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         # 大量のSMILESでベンチマーク
         sample_smiles = ["CCO", "c1ccccc1", "CC(=O)O"] * 100

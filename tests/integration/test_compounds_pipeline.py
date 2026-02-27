@@ -14,7 +14,7 @@ class TestCompoundsEndToEnd:
 
     def test_smiles_to_scaffold_pipeline(self):
         """SMILES → Scaffold の完全なパイプラインをテスト"""
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         # 実際の化合物例
         test_cases = [
@@ -54,7 +54,7 @@ class TestCompoundsEndToEnd:
 
     def test_batch_smiles_processing(self):
         """大量のSMILESをバッチ処理できることを確認"""
-        from compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
 
         # 大量のSMILESデータをシミュレート
         test_smiles = [
@@ -113,7 +113,7 @@ class TestCompoundsBERTIntegration:
 
     def test_bert_tokenizer_loading(self, bert_model_path):
         """BERT tokenizer が正しくロードできることを確認"""
-        from compounds.utils.tokenizer import SmilesTokenizer
+        from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
 
         vocab_path = os.path.join(bert_model_path, "vocab.txt")
         if not os.path.exists(vocab_path):
@@ -132,7 +132,7 @@ class TestCompoundsBERTIntegration:
         import torch
         from transformers import BertForMaskedLM
 
-        from compounds.utils.tokenizer import SmilesTokenizer
+        from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
 
         vocab_path = os.path.join(bert_model_path, "vocab.txt")
         if not os.path.exists(vocab_path):
@@ -303,7 +303,7 @@ class TestCompoundsDatasetIntegration:
         """データセット前処理パイプラインをテスト"""
         import pandas as pd
 
-        from compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
 
         df = pd.read_csv(mock_compounds_dataset)
 
