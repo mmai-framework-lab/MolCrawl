@@ -19,13 +19,13 @@ mkdir -p "${OUTPUT_BASE_DIR}_${TIMESTAMP}"
 
 # Pythonの環境確認
 echo "Python環境チェック中..."
-python -c "import torch; print(f'PyTorch: {torch.__version__}')"
-python -c "import transformers; print(f'Transformers: {transformers.__version__}')"
+ -c "import torch; print(f'PyTorch: {torch.__version__}')"
+ -c "import transformers; print(f'Transformers: {transformers.__version__}')"
 echo ""
 
 # チェックポイント検索
 echo "チェックポイントを検索中..."
-python src/gpt2/test_helper.py --search_dir="$SEARCH_DIR" --list_only
+$PYTHON molcrawl/gpt2/test_helper.py --search_dir="$SEARCH_DIR" --list_only
 
 echo ""
 echo "テストを開始しますか? (y/N): "
@@ -68,7 +68,7 @@ for domain in "${DOMAINS[@]}"; do
             TEST_OUTPUT_DIR="${OUTPUT_BASE_DIR}_${TIMESTAMP}/${domain}_${CHECKPOINT_NAME}"
 
             # テスト実行
-            if python src/gpt2/test_checkpoint.py \
+            if $PYTHON molcrawl/gpt2/test_checkpoint.py \
                 --checkpoint_path="$checkpoint" \
                 --domain="$domain" \
                 --output_dir="$TEST_OUTPUT_DIR" \
@@ -81,7 +81,7 @@ for domain in "${DOMAINS[@]}"; do
                 # 結果の要約を抽出
                 if [ -f "${TEST_OUTPUT_DIR}/gpt2_test_report.json" ]; then
                     echo "  結果:"
-                    python -c "
+                    $PYTHON -c "
 import json
 try:
     with open('${TEST_OUTPUT_DIR}/gpt2_test_report.json', 'r') as f:
@@ -111,7 +111,7 @@ echo ""
 echo "統合レポートを生成中..."
 
 SUMMARY_FILE="${OUTPUT_BASE_DIR}_${TIMESTAMP}/test_summary.json"
-python -c "
+ -c "
 import json
 import os
 import glob

@@ -137,7 +137,7 @@ fi
 
 # 必要なPythonパッケージチェック
 echo "Pythonパッケージをチェック中..."
-python -c "
+ -c "
 import sys
 required_packages = ['pandas', 'numpy', 'torch', 'sentencepiece', 'sklearn', 'matplotlib', 'seaborn']
 missing_packages = []
@@ -168,7 +168,7 @@ echo "OMIMサンプルデータを作成中..."
 
 cd "$PROJECT_ROOT"
 
-python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_data_preparation.py" \
+ "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_data_preparation.py" \
     --output_dir "$DATA_DIR" \
     --mode sample \
     --num_samples "$MAX_SAMPLES"
@@ -209,7 +209,7 @@ else
     echo "トークナイザー: 自動検出"
 fi
 
-python "${EVAL_ARGS[@]}"
+ "${EVAL_ARGS[@]}"
 
 if [ $? -ne 0 ]; then
     echo "エラー: モデル評価に失敗しました"
@@ -222,7 +222,7 @@ echo "モデル評価完了"
 echo "=== 可視化フェーズ ==="
 echo "評価結果の可視化を実行中..."
 
-python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
+ "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
     --results_dir "$OUTPUT_DIR"
 
 if [ $? -ne 0 ]; then

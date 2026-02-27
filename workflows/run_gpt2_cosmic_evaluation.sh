@@ -237,7 +237,7 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
     exit 1
 fi
 
-python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
+ "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
     --results_file "$RESULTS_FILE" \
     --output_dir "$OUTPUT_DIR/visualizations"
 

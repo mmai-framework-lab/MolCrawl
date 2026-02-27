@@ -14,7 +14,7 @@ export WANDB_PROJECT=${WANDB_PROJECT:-chemberta2-compounds}
 
 # Training parameters
 MODEL_SIZE="large"
-CONFIG_FILE="src/chemberta2/configs/compounds.py"
+CONFIG_FILE="molcrawl/chemberta2/configs/compounds.py"
 
 # Create log directory
 LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/logs"
@@ -31,7 +31,7 @@ echo "📝 Log file: ${LOG_FILE}"
 echo ""
 
 # Run training
-python src/chemberta2/main.py \
+$PYTHON molcrawl/chemberta2/main.py \
     --config "${CONFIG_FILE}" \
     --model_size "${MODEL_SIZE}" \
     2>&1 | tee "${LOG_FILE}"

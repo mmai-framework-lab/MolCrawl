@@ -177,7 +177,7 @@ run_evaluation() {
     mkdir -p "$PROJECT_ROOT/logs"
 
     # GPU使用可能性の確認
-    if python -c "import torch; print('CUDA available:', torch.cuda.is_available())" | grep "True"; then
+    if $PYTHON -c "import torch; print('CUDA available:', torch.cuda.is_available())" | grep "True"; then
         DEVICE="cuda"
         echo "Using GPU for evaluation"
     else

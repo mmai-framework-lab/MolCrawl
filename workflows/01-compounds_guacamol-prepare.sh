@@ -19,9 +19,9 @@ fi
 echo "Using LEARNING_SOURCE_DIR: $LEARNING_SOURCE_DIR"
 
 # Run the download script
-python src/preparation/download_guacamol.py
+$PYTHON molcrawl/preparation/download_guacamol.py
 
 echo ""
 echo "GuacaMol download complete!"
 echo "You can now run the GPT-2 preparation script:"
-echo "  LEARNING_SOURCE_DIR=$LEARNING_SOURCE_DIR python src/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml"
+echo "  LEARNING_SOURCE_DIR=$LEARNING_SOURCE_DIR $PYTHON molcrawl/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml"

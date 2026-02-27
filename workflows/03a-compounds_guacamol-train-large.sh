@@ -13,5 +13,5 @@ check_learning_source_dir
 auto_select_gpu 20
 
 mkdir -p ${LEARNING_SOURCE_DIR}/compounds/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c 'python src/gpt2/train.py gpt2/configs/compounds/train_gpt2_large_config.py' > \
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c '$PYTHON molcrawl/gpt2/train.py gpt2/configs/compounds/train_gpt2_large_config.py' > \
     ${LEARNING_SOURCE_DIR}/compounds/logs/compounds-train-large-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &

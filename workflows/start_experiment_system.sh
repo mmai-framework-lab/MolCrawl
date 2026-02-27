@@ -12,7 +12,7 @@ echo "================================================"
 # 1. APIサーバーを起動
 echo ""
 echo "Starting API Server..."
-python start_api_server.py &
+ start_api_server.py &
 API_PID=$!
 echo "API Server PID: $API_PID"
 
