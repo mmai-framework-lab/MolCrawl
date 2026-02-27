@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 # データセットキャッシュ設定を読み込み（assets/configs/cache.yamlから）
 try:
-    from utils.cache_config import setup_cache_env
+    from molcrawl.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 
@@ -24,7 +24,7 @@ else:
 ProteinSequenceConfig = import_module("protein_sequence.utils.configs").ProteinSequenceConfig
 
 if TYPE_CHECKING:
-    from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+    from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
 
 def tokenize_function(examples: Dict[str, List[str]], tokenizer: EsmSequenceTokenizer) -> Dict[str, List[List[int]]]:
@@ -63,7 +63,7 @@ def create_chunks(examples: Dict[str, List[int]], context_length: int) -> Dict[s
 
 def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -> None:
     from datasets import DatasetDict, load_dataset
-    from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+    from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
     raw_dir: Path = Path(path_output) / "raw_files"
     raw_files: List[Path] = sorted(raw_dir.glob("*.raw")) + sorted(raw_dir.glob("*.txt"))

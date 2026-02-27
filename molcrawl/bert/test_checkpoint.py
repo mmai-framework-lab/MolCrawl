@@ -27,7 +27,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
     """ドメイン特化のトークナイザーをロードする"""
     try:
         if domain == "compounds":
-            from compounds.utils.tokenizer import CompoundsTokenizer
+            from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer
 
             vocab_file = vocab_path or "assets/molecules/vocab.txt"
             if not os.path.exists(vocab_file):
@@ -37,7 +37,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "molecule_nl":
             # 分子関連自然言語用のBERT互換トークナイザー
-            from molecule_related_nl.utils.bert_tokenizer import (
+            from molcrawl.molecule_related_nl.utils.bert_tokenizer import (
                 create_bert_molecule_nl_tokenizer,
             )
 
@@ -45,14 +45,14 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "genome":
             # ゲノム配列用のSentencePieceトークナイザー
-            from genome_sequence.utils.tokenizer import create_genome_tokenizer
+            from molcrawl.genome_sequence.utils.tokenizer import create_genome_tokenizer
 
             model_path = vocab_path  # SentencePieceモデルファイルのパス
             return create_genome_tokenizer(model_path)
 
         elif domain == "protein_sequence":
             # タンパク質配列用のBERT互換ESMトークナイザー
-            from protein_sequence.utils.bert_tokenizer import (
+            from molcrawl.protein_sequence.utils.bert_tokenizer import (
                 create_bert_protein_tokenizer,
             )
 
@@ -60,7 +60,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "rna":
             # RNA配列用のBERT互換トークナイザー
-            from rna.utils.bert_tokenizer import create_bert_rna_tokenizer
+            from molcrawl.rna.utils.bert_tokenizer import create_bert_rna_tokenizer
 
             return create_bert_rna_tokenizer()
 

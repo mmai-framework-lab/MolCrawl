@@ -5,7 +5,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__)) if "__file__" in global
 src_path = os.path.join(current_dir, "..", "..", "..", "src")
 
 try:
-    from config.paths import get_gpt2_output_path
+    from molcrawl.config.paths import get_gpt2_output_path
 
     tensorboard_dir = get_gpt2_output_path("rna", "yigarashi-2025-10-08-large")
     out_dir = get_gpt2_output_path("rna", "yigarashi-2025-10-08-large")

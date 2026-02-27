@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def create_distribution_plot(data):
     """Create and save distribution plot for tokenized sequence lengths"""
     try:
-        from utils.image_manager import get_image_path
+        from molcrawl.utils.image_manager import get_image_path
 
         plt.hist(data["train"]["num_tokens"], bins=np.arange(0, 200, 1))
         plt.xlabel("Length of tokenized dataset")
@@ -261,7 +261,7 @@ def process5_generate_statistics(base_dir, vocab_size, force=False):
         logger.info(f"Size of the vocabulary: {vocab_size}")
         logger.info(f"Number of tokens: {sum(data['train']['num_tokens'])}")
 
-        from utils.image_manager import get_image_path
+        from molcrawl.utils.image_manager import get_image_path
 
         plot_file = Path(get_image_path("genome_sequence", "genome_sequence_tokenized_lengths_dist.png"))
         if force or not plot_file.exists():

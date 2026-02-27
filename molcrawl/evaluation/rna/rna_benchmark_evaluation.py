@@ -200,7 +200,7 @@ def _evaluate_bert(
 
 def _load_gpt2_from_checkpoint(model_path: Path):
     """GPT-2（自前）チェックポイントを読み込む"""
-    from gpt2.model import GPT, GPTConfig
+    from molcrawl.gpt2.model import GPT, GPTConfig
 
     training_args_path = model_path / "training_args.json"
     if not training_args_path.exists():

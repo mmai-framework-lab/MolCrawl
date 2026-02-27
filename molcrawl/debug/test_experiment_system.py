@@ -14,7 +14,7 @@ def test_imports():
     """モジュールのインポートテスト"""
     print("Testing imports...")
     try:
-        from experiment_tracker import (  # noqa: F401
+        from molcrawl.experiment_tracker import (  # noqa: F401
             DatasetType,
             ExperimentStatus,
             ExperimentTracker,
@@ -36,7 +36,7 @@ def test_database():
         import os
         import tempfile
 
-        from experiment_tracker.database import ExperimentDatabase
+        from molcrawl.experiment_tracker.database import ExperimentDatabase
 
         # 一時ファイルを使用
         temp_dir = tempfile.mkdtemp()
@@ -70,7 +70,7 @@ def test_tracker():
         # テスト用の一時データベース
         import tempfile
 
-        from experiment_tracker import (
+        from molcrawl.experiment_tracker import (
             DatasetType,
             ExperimentTracker,
             ExperimentType,
@@ -134,12 +134,12 @@ def test_helpers():
     try:
         import tempfile
 
-        from experiment_tracker import (
+        from molcrawl.experiment_tracker import (
             DatasetType,
             ExperimentType,
             ModelType,
         )
-        from experiment_tracker.helpers import experiment_context
+        from molcrawl.experiment_tracker.helpers import experiment_context
 
         temp_dir = tempfile.mkdtemp()
 

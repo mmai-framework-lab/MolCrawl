@@ -60,7 +60,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         """protein_sequence用のトークナイザーを初期化（抽象メソッドの実装）"""
         try:
             # protein_sequence用のEsmSequenceTokenizerを使用
-            from protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+            from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")
             tokenizer = EsmSequenceTokenizer()

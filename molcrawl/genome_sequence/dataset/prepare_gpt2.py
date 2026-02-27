@@ -7,7 +7,7 @@ from functools import partial
 # データセットキャッシュ設定を読み込み（assets/configs/cache.yamlから）
 try:
     # 任意のキャッシュ設定。存在しない環境でも学習は継続できる。
-    from utils.cache_config import setup_cache_env
+    from molcrawl.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 

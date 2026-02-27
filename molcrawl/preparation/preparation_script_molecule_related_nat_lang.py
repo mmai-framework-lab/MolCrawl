@@ -24,7 +24,7 @@ def run_statistics(series, column_name):
     plt.title("Distribution of tokenized {} lengths".format(column_name))
 
     # 統一画像ディレクトリに保存
-    from utils.image_manager import get_image_path
+    from molcrawl.utils.image_manager import get_image_path
 
     image_path = get_image_path("molecule_nl", "molecule_nl_tokenized_{}_lengths_dist.png".format(column_name))
     plt.savefig(image_path)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Use LEARNING_SOURCE_DIR environment variable for dataset storage
-    from utils.environment_check import check_learning_source_dir
+    from molcrawl.utils.environment_check import check_learning_source_dir
 
     learning_source_dir = check_learning_source_dir()
 

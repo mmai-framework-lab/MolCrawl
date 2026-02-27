@@ -12,7 +12,7 @@ src_path = os.path.join(current_dir, "..", "..", "src")
 check_learning_source_dir = import_module("utils.environment_check").check_learning_source_dir
 
 try:
-    from config.paths import get_gpt2_output_path
+    from molcrawl.config.paths import get_gpt2_output_path
 
     model_path = get_gpt2_output_path("rna", "bert-yigarashi-2025-10-08")
     output_dir = get_gpt2_output_path("rna", "bert-yigarashi-2025-10-08")

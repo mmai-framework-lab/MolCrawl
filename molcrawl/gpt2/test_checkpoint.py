@@ -160,7 +160,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
     """ドメイン特化のトークナイザーをロードする"""
     try:
         if domain == "compounds":
-            from compounds.utils.tokenizer import CompoundsTokenizer
+            from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer
 
             vocab_file = vocab_path or "assets/molecules/vocab.txt"
             if not os.path.exists(vocab_file):
@@ -169,25 +169,25 @@ def load_domain_tokenizer(domain, vocab_path=None):
             return CompoundsTokenizer(vocab_file, 256)
 
         elif domain == "molecule_nl":
-            from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+            from molcrawl.molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
             return MoleculeNatLangTokenizer()
 
         elif domain == "genome":
-            from genome_sequence.utils.tokenizer import create_genome_tokenizer
+            from molcrawl.genome_sequence.utils.tokenizer import create_genome_tokenizer
 
             model_path = vocab_path
             return create_genome_tokenizer(model_path)
 
         elif domain == "protein_sequence":
-            from protein_sequence.utils.bert_tokenizer import (
+            from molcrawl.protein_sequence.utils.bert_tokenizer import (
                 create_bert_protein_tokenizer,
             )
 
             return create_bert_protein_tokenizer()
 
         elif domain == "rna":
-            from rna.utils.bert_tokenizer import create_bert_rna_tokenizer
+            from molcrawl.rna.utils.bert_tokenizer import create_bert_rna_tokenizer
 
             return create_bert_rna_tokenizer()
 

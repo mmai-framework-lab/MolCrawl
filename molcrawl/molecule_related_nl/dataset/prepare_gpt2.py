@@ -8,7 +8,7 @@ from pathlib import Path
 # データセットキャッシュ設定を読み込み（assets/configs/cache.yamlから）
 try:
     # 任意のキャッシュ設定。存在しない環境でも学習は継続できる。
-    from utils.cache_config import setup_cache_env
+    from molcrawl.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 
@@ -49,7 +49,7 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
     from datasets import DatasetDict
     import numpy as np
 
-    from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+    from molcrawl.molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
 
     tokenize_dataset = DatasetDict(read_dataset(parquet_path))
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     cfg = MoleculeNLConfig.from_file(args.config).data_preparation
 
     # 相対パスを絶対パスに変換
-    from config.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
+    from molcrawl.config.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
 
     save_path = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, cfg.save_path)
 

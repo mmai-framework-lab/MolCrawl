@@ -26,7 +26,7 @@ def setup_cache_env() -> None:
         SystemExit: If LEARNING_SOURCE_DIR is not set.
 
     Example:
-        >>> from utils.cache_config import setup_cache_env
+        >>> from molcrawl.utils.cache_config import setup_cache_env
         >>> setup_cache_env()
     """
     learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR")

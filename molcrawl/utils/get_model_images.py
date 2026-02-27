@@ -14,7 +14,7 @@ src_dir = os.path.dirname(script_dir)
 
 if __name__ == "__main__":
     try:
-        from utils.image_manager import list_images_in_model_dir
+        from molcrawl.utils.image_manager import list_images_in_model_dir
 
         if len(sys.argv) < 2:
             print(json.dumps({"error": "Model type required"}), file=sys.stderr)

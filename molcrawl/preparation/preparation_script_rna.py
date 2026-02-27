@@ -38,7 +38,7 @@ enable_progress_bar()
 
 def create_distribution_plot(data):
     """トークン長の分布をヒストグラムとして保存"""
-    from utils.image_manager import get_image_path
+    from molcrawl.utils.image_manager import get_image_path
 
     plt.hist(data["num_tokens"], bins=200)
     plt.xlabel("Length of tokenized dataset")
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
         # Show estimated workload before starting
         from pathlib import Path
-        from rna.dataset.cellxgene.script.download import divide_workload
+        from molcrawl.rna.dataset.cellxgene.script.download import divide_workload
 
         metadata_dir = Path(RNA_DATASET_DIR) / "metadata_preparation_dir"
         workload = divide_workload(metadata_dir, cfg.size_workload)
@@ -245,7 +245,7 @@ if __name__ == "__main__":
         logger.info(f"Number of tokens: {sum(data['token_count'])}")
 
         # 分布プロット（必要に応じて再生成）
-        from utils.image_manager import get_image_path
+        from molcrawl.utils.image_manager import get_image_path
 
         plot_file = Path(get_image_path("rna", "rna_tokenized_lengths_dist.png"))
         if args.force or not plot_file.exists():

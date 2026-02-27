@@ -50,15 +50,15 @@ warnings.filterwarnings("ignore")
 # プロジェクトルートを追加
 
 try:
-    from gpt2.model import GPT, GPTConfig
-    from config.paths import get_genome_tokenizer_path
-    from utils.evaluation_output import (
+    from molcrawl.gpt2.model import GPT, GPTConfig
+    from molcrawl.config.paths import get_genome_tokenizer_path
+    from molcrawl.utils.evaluation_output import (
         get_evaluation_output_dir,
         get_model_name_from_path,
         get_model_type_from_path,
         setup_evaluation_logging,
     )
-    from utils.model_evaluator import ModelEvaluator
+    from molcrawl.utils.model_evaluator import ModelEvaluator
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure you're running from the project root directory")
