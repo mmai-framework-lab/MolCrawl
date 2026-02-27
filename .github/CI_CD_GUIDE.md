@@ -200,7 +200,7 @@ pytest tests/ -v
 ### With coverage
 
 ```bash
-pytest tests/ --cov=src --cov-report=html
+pytest tests/ --cov=molcrawl --cov-report=html
 ```
 
 ### Specific phase tests
