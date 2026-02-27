@@ -36,7 +36,7 @@ jobs:
           pip install -e .
       - name: Run unit tests
         run: |
-          pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term -n auto
+          pytest tests/unit -v --cov=molcrawl --cov-report=xml --cov-report=term -n auto
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -86,22 +86,14 @@ jobs:
       - name: Test BERT initialization
         run: |
           python - <<'PY'
-          import bert.test_checkpoint as bert_test
+          import molcrawl.bert.test_checkpoint as bert_test
 
           print("✓ BERT test module import ok", bert_test.__name__)
           PY
       - name: Test GPT2 initialization
         run: |
           python - <<'PY'
-          import sys
-          import os
-          from pathlib import Path
-
-          project_root = Path(os.environ.get("GITHUB_WORKSPACE", Path.cwd()))
-          sys.path.insert(0, str(project_root / "gpt2"))
-          sys.path.insert(0, str(project_root / "src"))
-
-          import gpt2.test_checkpoint as gpt2_test
+          import molcrawl.gpt2.test_checkpoint as gpt2_test
 
           print("✓ GPT2 test module import ok", gpt2_test.__name__)
           PY
@@ -121,7 +113,7 @@ jobs:
           pip install mypy types-PyYAML types-requests types-six
       - name: Run MyPy
         run: |
-          mypy src/ --ignore-missing-imports --no-strict-optional
+          mypy molcrawl/ --ignore-missing-imports --no-strict-optional
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -146,7 +138,7 @@ jobs:
           pip freeze | safety scan --stdin --no-interaction || true
       - name: Run Bandit security scan
         run: |
-          bandit -r src/ -ll -f json -o bandit-report.json --exit-zero
+          bandit -r molcrawl/ -ll -f json -o bandit-report.json --exit-zero
       - name: Summarize Bandit results
         if: always()
         run: |

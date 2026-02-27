@@ -40,7 +40,7 @@ jobs:
           pip install -e .
       - name: Generate API docs with pdoc
         run: |
-          pdoc --html --output-dir api-docs src/ --skip-errors
+          pdoc --html --output-dir api-docs molcrawl/ --skip-errors
       - name: Upload API documentation
         uses: actions/upload-artifact@v4
         with:
