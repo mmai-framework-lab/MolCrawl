@@ -28,7 +28,6 @@ from sklearn.metrics import (
 )
 
 # Add src and gpt2 to path for imports
-
 from molcrawl.protein_sequence.utils.bert_tokenizer import EsmSequenceTokenizer
 from molcrawl.utils.evaluation_output import (
     get_evaluation_output_dir,
