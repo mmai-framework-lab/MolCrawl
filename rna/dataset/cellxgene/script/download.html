@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.rna.dataset.cellxgene.script.download API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.rna.dataset.cellxgene.script.download</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.rna.dataset.cellxgene.script.download.divide_workload"><code class="name flex">
+<span>def <span class="ident">divide_workload</span></span>(<span>path: str | pathlib.Path, size_workload: int) ‑> List[Tuple[str, int, int, List[int]]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def divide_workload(path: Union[str, Path], size_workload: int) -&gt; List[Tuple[str, int, int, List[int]]]:
+    &#34;&#34;&#34;
+    ワークロードを指定されたサイズに分割する関数
+
+    指定されたディレクトリ内の*.obs_id.tsvファイルを読み込み、
+    各ファイルのIDリストを指定されたワークロードサイズに分割する。
+
+    Args:
+        path (Union[str, Path]): メタデータ準備ディレクトリのパス
+        size_workload (int): 各ワークロードのサイズ（サンプル数）
+
+    Returns:
+        List[Tuple[str, int, int, List[int]]]: 分割されたワークロードのリスト
+            - str: ファイル名（拡張子なし）
+            - int: 開始行番号
+            - int: 終了行番号
+            - List[int]: 該当範囲のIDリスト
+    &#34;&#34;&#34;
+    divided_workload = []
+    for filename in Path(path).rglob(&#34;*.obs_id.tsv&#34;):
+        with open(filename, &#34;r&#34;) as file:
+            import numpy as np
+
+            id_list = np.array(file.readlines()).astype(int)
+        name = Path(filename).stem.split(&#34;.&#34;)[0]
+        start_lines = range(0, len(id_list), size_workload)
+        end_lines = list(range(size_workload, len(id_list), size_workload)) + [len(id_list)]
+
+        divided_workload += [(name, start, end, id_list[start:end].tolist()) for start, end in zip(start_lines, end_lines)]
+
+    return divided_workload</code></pre>
+</details>
+<div class="desc"><p>ワークロードを指定されたサイズに分割する関数</p>
+<p>指定されたディレクトリ内の*.obs_id.tsvファイルを読み込み、
+各ファイルのIDリストを指定されたワークロードサイズに分割する。</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>Union[str, Path]</code></dt>
+<dd>メタデータ準備ディレクトリのパス</dd>
+<dt><strong><code>size_workload</code></strong> :&ensp;<code>int</code></dt>
+<dd>各ワークロードのサイズ（サンプル数）</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>List[Tuple[str, int, int, List[int]]]</code></dt>
+<dd>分割されたワークロードのリスト
+- str: ファイル名（拡張子なし）
+- int: 開始行番号
+- int: 終了行番号
+- List[int]: 該当範囲のIDリスト</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.rna.dataset.cellxgene.script.download.download"><code class="name flex">
+<span>def <span class="ident">download</span></span>(<span>output_dir, version, num_worker, size_workload)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download(output_dir, version, num_worker, size_workload):
+    path_data_directory = Path(output_dir) / &#34;metadata_preparation_dir&#34;
+    path_download_directory = Path(output_dir) / &#34;download_dir&#34;
+
+    os.makedirs(path_download_directory, exist_ok=True)
+    arg_list = divide_workload(path_data_directory, size_workload)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_worker) as executor:
+        func = partial(run, Path(output_dir), version)
+        list(
+            track(
+                executor.map(func, arg_list),
+                description=&#34;Downloading...&#34;,
+                total=len(arg_list),
+            )
+        )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.rna.dataset.cellxgene.script.download.retrieve_adata"><code class="name flex">
+<span>def <span class="ident">retrieve_adata</span></span>(<span>version: str,<br>id_list: List[int],<br>target_gene_ids: Sequence[int],<br>try_count: int = 0,<br>max_try: int = 5) ‑> Any</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def retrieve_adata(
+    version: str,
+    id_list: List[int],
+    target_gene_ids: Sequence[int],
+    try_count: int = 0,
+    max_try: int = 5,
+) -&gt; Any:
+    import cellxgene_census
+
+    census = retrieve_census(version)
+    try:
+        adata = cellxgene_census.get_anndata(
+            census,
+            organism=&#34;Homo sapiens&#34;,
+            obs_coords=id_list,
+            var_coords=target_gene_ids,
+        )
+    except KeyboardInterrupt as e:
+        raise e
+    except Exception as e:
+        if try_count &gt; max_try:
+            census.close()
+            raise e
+        logging.warning(f&#34;[Error] while retrieving adata, retrying (try: {try_count + 1})&#34;)
+        time.sleep(10)
+        adata = retrieve_adata(version, id_list, target_gene_ids, try_count + 1)
+
+    census.close()
+    return adata</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.rna.dataset.cellxgene.script.download.retrieve_census"><code class="name flex">
+<span>def <span class="ident">retrieve_census</span></span>(<span>version: str, try_count: int = 0, max_try: int = 5) ‑> Any</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -&gt; Any:
+    import cellxgene_census
+
+    try:
+        return cellxgene_census.open_soma(census_version=version)
+    except KeyboardInterrupt as e:
+        raise e
+    except Exception as e:
+        if try_count &gt; max_try:
+            raise e
+        logging.warning(f&#34;[Error] while retrieving census, retrying (try: {try_count + 1})&#34;)
+        time.sleep(10)
+        return retrieve_census(version, try_count + 1)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.rna.dataset.cellxgene.script.download.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>output_dir: pathlib.Path, version, argv: Tuple[str, int, int, List[int]]) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -&gt; None:
+    import pandas as pd
+    import scanpy as sc
+
+    name, start_l, end_l, id_list = argv
+    save_filename = output_dir / f&#34;download_dir/{name}.{start_l:08d}-{end_l:08d}.h5ad&#34;
+    if save_filename.exists() and len(sc.read(save_filename)):
+        logging.info(f&#34;{save_filename} exists, skipping download&#34;)
+        return
+
+    tsv_file = output_dir / &#34;metadata_preparation_dir&#34; / f&#34;{name}.var.tsv&#34;
+    target_var = pd.read_csv(tsv_file, sep=&#34;\t&#34;, index_col=0)
+    target_gene_ids = target_var[&#34;soma_joinid&#34;].to_numpy()
+    target_adata = retrieve_adata(version, id_list, target_gene_ids)
+
+    target_adata.write_h5ad(save_filename, compression=&#34;gzip&#34;)
+    # joblib.dump(target_adata, save_filename, compress=3)
+    # time.sleep(1)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script" href="index.html">molcrawl.rna.dataset.cellxgene.script</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download.divide_workload" href="#molcrawl.rna.dataset.cellxgene.script.download.divide_workload">divide_workload</a></code></li>
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download.download" href="#molcrawl.rna.dataset.cellxgene.script.download.download">download</a></code></li>
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download.retrieve_adata" href="#molcrawl.rna.dataset.cellxgene.script.download.retrieve_adata">retrieve_adata</a></code></li>
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download.retrieve_census" href="#molcrawl.rna.dataset.cellxgene.script.download.retrieve_census">retrieve_census</a></code></li>
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download.run" href="#molcrawl.rna.dataset.cellxgene.script.download.run">run</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

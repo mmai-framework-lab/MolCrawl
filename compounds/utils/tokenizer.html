@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.compounds.utils.tokenizer API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.compounds.utils.tokenizer</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.load_vocab"><code class="name flex">
+<span>def <span class="ident">load_vocab</span></span>(<span>vocab_file)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_vocab(vocab_file):
+    &#34;&#34;&#34;Loads a vocabulary file into a dictionary.&#34;&#34;&#34;
+    vocab = collections.OrderedDict()
+    with open(vocab_file, &#34;r&#34;, encoding=&#34;utf-8&#34;) as reader:
+        tokens = reader.readlines()
+    for index, token in enumerate(tokens):
+        token = token.rstrip(&#34;\n&#34;)
+        vocab[token] = index
+    return vocab</code></pre>
+</details>
+<div class="desc"><p>Loads a vocabulary file into a dictionary.</p></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.tokenize_smiles"><code class="name flex">
+<span>def <span class="ident">tokenize_smiles</span></span>(<span>smi: List[str],<br>tokenizer: <a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer">SmilesTokenizer</a> = None,<br>max_smiles_len=256,<br>log_output=True)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_smiles(
+    smi: List[str],
+    tokenizer: SmilesTokenizer = None,
+    max_smiles_len=256,
+    log_output=True,
+):
+    tokens = tokenizer.encode(smi)
+    if len(tokens) &gt; max_smiles_len:
+        if log_output:
+            print(f&#34;Removing to long {smi} with smiles len of {len(tokens)} &#34;)
+        return None
+
+    return tokens</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.BasicSmilesTokenizer"><code class="flex name class">
+<span>class <span class="ident">BasicSmilesTokenizer</span></span>
+<span>(</span><span>regex_pattern: str = &#x27;(\\[[^\\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\\(|\\)|\\.|=|#|-|\\+|\\\\|\\/|:|~|@|\\?|&gt;&gt;?|\\*|\\$|\\%[0-9]{2}|[0-9])&#x27;)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicSmilesTokenizer(object):
+    &#34;&#34;&#34;
+
+    Run basic SMILES tokenization using a regex pattern developed by Schwaller et. al. This tokenizer is to be used
+    when a tokenizer that does not require the transformers library by HuggingFace is required.
+
+    Examples
+    --------
+    &gt;&gt;&gt; from deepchem.feat.smiles_tokenizer import BasicSmilesTokenizer
+    &gt;&gt;&gt; tokenizer = BasicSmilesTokenizer()
+    &gt;&gt;&gt; print(tokenizer.tokenize(&#34;CC(=O)OC1=CC=CC=C1C(=O)O&#34;))
+    [&#39;C&#39;, &#39;C&#39;, &#39;(&#39;, &#39;=&#39;, &#39;O&#39;, &#39;)&#39;, &#39;O&#39;, &#39;C&#39;, &#39;1&#39;, &#39;=&#39;, &#39;C&#39;, &#39;C&#39;, &#39;=&#39;, &#39;C&#39;, &#39;C&#39;, &#39;=&#39;, &#39;C&#39;, &#39;1&#39;, &#39;C&#39;, &#39;(&#39;, &#39;=&#39;, &#39;O&#39;, &#39;)&#39;, &#39;O&#39;]
+
+
+    References
+    ----------
+    .. [1]  Philippe Schwaller, Teodoro Laino, Théophile Gaudin, Peter Bolgar, Christopher A. Hunter, Costas Bekas, and Alpha A. Lee
+            ACS Central Science 2019 5 (9): Molecular Transformer: A Model for Uncertainty-Calibrated Chemical Reaction Prediction
+            1572-1583 DOI: 10.1021/acscentsci.9b00576
+
+    &#34;&#34;&#34;
+
+    def __init__(self, regex_pattern: str = SMI_REGEX_PATTERN):
+        &#34;&#34;&#34;Constructs a BasicSMILESTokenizer.
+        Parameters
+        ----------
+
+        regex: string
+            SMILES token regex
+
+        &#34;&#34;&#34;
+        self.regex_pattern = regex_pattern
+        self.regex = re.compile(self.regex_pattern)
+
+    def tokenize(self, text):
+        &#34;&#34;&#34;Basic Tokenization of a SMILES.&#34;&#34;&#34;
+        tokens = [token for token in self.regex.findall(text)]
+        return tokens</code></pre>
+</details>
+<div class="desc"><p>Run basic SMILES tokenization using a regex pattern developed by Schwaller et. al. This tokenizer is to be used
+when a tokenizer that does not require the transformers library by HuggingFace is required.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from deepchem.feat.smiles_tokenizer import BasicSmilesTokenizer
+&gt;&gt;&gt; tokenizer = BasicSmilesTokenizer()
+&gt;&gt;&gt; print(tokenizer.tokenize(&quot;CC(=O)OC1=CC=CC=C1C(=O)O&quot;))
+['C', 'C', '(', '=', 'O', ')', 'O', 'C', '1', '=', 'C', 'C', '=', 'C', 'C', '=', 'C', '1', 'C', '(', '=', 'O', ')', 'O']
+</code></pre>
+<h2 id="references">References</h2>
+<p>.. [1]
+Philippe Schwaller, Teodoro Laino, Théophile Gaudin, Peter Bolgar, Christopher A. Hunter, Costas Bekas, and Alpha A. Lee
+ACS Central Science 2019 5 (9): Molecular Transformer: A Model for Uncertainty-Calibrated Chemical Reaction Prediction
+1572-1583 DOI: 10.1021/acscentsci.9b00576</p>
+<p>Constructs a BasicSMILESTokenizer.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>regex</code></strong> :&ensp;<code>string</code></dt>
+<dd>SMILES token regex</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.BasicSmilesTokenizer.tokenize"><code class="name flex">
+<span>def <span class="ident">tokenize</span></span>(<span>self, text)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize(self, text):
+    &#34;&#34;&#34;Basic Tokenization of a SMILES.&#34;&#34;&#34;
+    tokens = [token for token in self.regex.findall(text)]
+    return tokens</code></pre>
+</details>
+<div class="desc"><p>Basic Tokenization of a SMILES.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.BertTokenizer"><code class="flex name class">
+<span>class <span class="ident">BertTokenizer</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BertTokenizer:  # type: ignore
+    def __init__(self, *args, **kwargs):
+        raise ModuleNotFoundError(&#34;transformers is required to use SmilesTokenizer&#34;)</code></pre>
+</details>
+<div class="desc"></div>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer">SmilesTokenizer</a></li>
+</ul>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer"><code class="flex name class">
+<span>class <span class="ident">CompoundsTokenizer</span></span>
+<span>(</span><span>vocab_file: str, max_len: int = 256)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CompoundsTokenizer(UnTrainableTokenizer, SmilesTokenizer):
+    def __init__(self, vocab_file: str, max_len: int = 256):
+        self.max_len = max_len
+        UnTrainableTokenizer.__init__(self)
+        SmilesTokenizer.__init__(self, vocab_file)
+
+    def tokenize_text(self, text: str, verbose: bool = False):
+        tokens = self.encode(text, padding=&#34;max_length&#34;, truncation=True, max_length=self.max_len)
+        if len(tokens) &gt; self.max_len:
+            if verbose:
+                logger.info(f&#34;Removing to long {text} with len of {len(tokens)} &#34;)
+            return None
+
+        return tokens</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="molcrawl.core.base.UnTrainableTokenizer" href="../../core/base.html#molcrawl.core.base.UnTrainableTokenizer">UnTrainableTokenizer</a></li>
+<li>abc.ABC</li>
+<li><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer">SmilesTokenizer</a></li>
+<li><a title="molcrawl.compounds.utils.tokenizer.BertTokenizer" href="#molcrawl.compounds.utils.tokenizer.BertTokenizer">BertTokenizer</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer" href="#molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer">ScaffoldsTokenizer</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.tokenize_text"><code class="name flex">
+<span>def <span class="ident">tokenize_text</span></span>(<span>self, text: str, verbose: bool = False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_text(self, text: str, verbose: bool = False):
+    tokens = self.encode(text, padding=&#34;max_length&#34;, truncation=True, max_length=self.max_len)
+    if len(tokens) &gt; self.max_len:
+        if verbose:
+            logger.info(f&#34;Removing to long {text} with len of {len(tokens)} &#34;)
+        return None
+
+    return tokens</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer">SmilesTokenizer</a></b></code>:
+<ul class="hlist">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_padding_tokens" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_padding_tokens">add_padding_tokens</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_sequence_pair" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_sequence_pair">add_special_tokens_ids_sequence_pair</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_single_sequence" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_single_sequence">add_special_tokens_ids_single_sequence</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_single_sequence" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_single_sequence">add_special_tokens_single_sequence</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.convert_tokens_to_string" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.convert_tokens_to_string">convert_tokens_to_string</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.save_vocabulary" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.save_vocabulary">save_vocabulary</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer"><code class="flex name class">
+<span>class <span class="ident">ScaffoldsTokenizer</span></span>
+<span>(</span><span>vocab_file: str, max_len: int = 256)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ScaffoldsTokenizer(CompoundsTokenizer):
+    def tokenize_text(self, text: str, verbose: bool = False):
+        return super().tokenize_text(prepare_scaffolds(text), verbose=verbose)</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer" href="#molcrawl.compounds.utils.tokenizer.CompoundsTokenizer">CompoundsTokenizer</a></li>
+<li><a title="molcrawl.core.base.UnTrainableTokenizer" href="../../core/base.html#molcrawl.core.base.UnTrainableTokenizer">UnTrainableTokenizer</a></li>
+<li>abc.ABC</li>
+<li><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer">SmilesTokenizer</a></li>
+<li><a title="molcrawl.compounds.utils.tokenizer.BertTokenizer" href="#molcrawl.compounds.utils.tokenizer.BertTokenizer">BertTokenizer</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer.tokenize_text"><code class="name flex">
+<span>def <span class="ident">tokenize_text</span></span>(<span>self, text: str, verbose: bool = False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_text(self, text: str, verbose: bool = False):
+    return super().tokenize_text(prepare_scaffolds(text), verbose=verbose)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer" href="#molcrawl.compounds.utils.tokenizer.CompoundsTokenizer">CompoundsTokenizer</a></b></code>:
+<ul class="hlist">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.add_padding_tokens" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_padding_tokens">add_padding_tokens</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.add_special_tokens_ids_sequence_pair" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_sequence_pair">add_special_tokens_ids_sequence_pair</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.add_special_tokens_ids_single_sequence" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_single_sequence">add_special_tokens_ids_single_sequence</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.add_special_tokens_single_sequence" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_single_sequence">add_special_tokens_single_sequence</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.convert_tokens_to_string" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.convert_tokens_to_string">convert_tokens_to_string</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.save_vocabulary" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.save_vocabulary">save_vocabulary</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer"><code class="flex name class">
+<span>class <span class="ident">SmilesTokenizer</span></span>
+<span>(</span><span>vocab_file, **kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SmilesTokenizer(BertTokenizer):
+    &#34;&#34;&#34;
+    Creates the SmilesTokenizer class. The tokenizer heavily inherits from the BertTokenizer
+    implementation found in Huggingface&#39;s transformers library. It runs a WordPiece tokenization
+    algorithm over SMILES strings using the tokenisation SMILES regex developed by Schwaller et. al.
+
+    Please see https://github.com/huggingface/transformers
+    and https://github.com/rxn4chemistry/rxnfp for more details.
+
+    References
+    ----------
+    .. [1]  Schwaller, Philippe; Probst, Daniel; Vaucher, Alain C.; Nair, Vishnu H; Kreutter, David;
+            Laino, Teodoro; et al. (2019): Mapping the Space of Chemical Reactions using Attention-Based Neural
+            Networks. ChemRxiv. Preprint. https://doi.org/10.26434/chemrxiv.9897365.v3
+
+    Notes
+    ----
+    This class requires huggingface&#39;s transformers and tokenizers libraries to be installed.
+    &#34;&#34;&#34;
+
+    def __init__(self, vocab_file, **kwargs):
+        &#34;&#34;&#34;Constructs a SmilesTokenizer.
+
+        Parameters
+        ----------
+        vocab_file: str
+            Path to a SMILES character per line vocabulary file.
+            Default vocab file is found in deepchem/feat/tests/data/vocab.txt
+        &#34;&#34;&#34;
+
+        super().__init__(vocab_file, **kwargs)
+
+        self.sos = &#34;[CLS]&#34;
+        self.eos = &#34;[CLS]&#34;
+
+        if not os.path.isfile(vocab_file):
+            raise ValueError(&#34;Can&#39;t find a vocab file at path &#39;{}&#39;.&#34;.format(vocab_file))
+        self.vocab = load_vocab(vocab_file)
+        self.highest_unused_index = max([i for i, v in enumerate(self.vocab.keys()) if v.startswith(&#34;[unused&#34;)])
+        self.ids_to_tokens = collections.OrderedDict([(ids, tok) for tok, ids in self.vocab.items()])
+        self.basic_tokenizer = BasicSmilesTokenizer()
+
+    @property
+    def eos_token_id(self):
+        return self.added_tokens_encoder[self.eos]
+
+    @property
+    def vocab_size(self):
+        return len(self.vocab)
+
+    @property
+    def vocab_list(self):
+        return list(self.vocab.keys())
+
+    def _tokenize(self, text: str):
+        &#34;&#34;&#34;
+        Tokenize a string into a list of tokens.
+
+        Parameters
+        ----------
+        text: str
+            Input string sequence to be tokenized.
+        &#34;&#34;&#34;
+
+        split_tokens = [token for token in self.basic_tokenizer.tokenize(text)]
+        return split_tokens
+
+    def _convert_token_to_id(self, token):
+        &#34;&#34;&#34;
+        Converts a token (str/unicode) in an id using the vocab.
+
+        Parameters
+        ----------
+        token: str
+            String token from a larger sequence to be converted to a numerical id.
+        &#34;&#34;&#34;
+
+        return self.vocab.get(token, self.vocab.get(self.unk_token))
+
+    def _convert_id_to_token(self, index):
+        &#34;&#34;&#34;
+        Converts an index (integer) in a token (string/unicode) using the vocab.
+
+        Parameters
+        ----------
+        index: int
+            Integer index to be converted back to a string-based token as part of a larger sequence.
+        &#34;&#34;&#34;
+
+        return self.ids_to_tokens.get(index, self.unk_token)
+
+    def convert_tokens_to_string(self, tokens: List[str]):
+        &#34;&#34;&#34;Converts a sequence of tokens (string) in a single string.
+
+        Parameters
+        ----------
+        tokens: List[str]
+            List of tokens for a given string sequence.
+
+        Returns
+        -------
+        out_string: str
+            Single string from combined tokens.
+        &#34;&#34;&#34;
+
+        out_string: str = &#34; &#34;.join(tokens).replace(&#34; ##&#34;, &#34;&#34;).strip()
+        return out_string
+
+    def add_special_tokens_ids_single_sequence(self, token_ids: List[int]):
+        &#34;&#34;&#34;
+        Adds special tokens to the a sequence for sequence classification tasks.
+        A BERT sequence has the following format: [CLS] X [SEP]
+
+        Parameters
+        ----------
+
+        token_ids: list[int]
+            list of tokenized input ids. Can be obtained using the encode or encode_plus methods.
+        &#34;&#34;&#34;
+
+        return [self.cls_token_id] + token_ids + [self.sep_token_id]
+
+    def add_special_tokens_single_sequence(self, tokens: List[str]):
+        &#34;&#34;&#34;
+        Adds special tokens to the a sequence for sequence classification tasks.
+        A BERT sequence has the following format: [CLS] X [SEP]
+
+        Parameters
+        ----------
+        tokens: List[str]
+            List of tokens for a given string sequence.
+
+        &#34;&#34;&#34;
+        return [self.cls_token] + tokens + [self.sep_token]
+
+    def add_special_tokens_ids_sequence_pair(self, token_ids_0: List[int], token_ids_1: List[int]) -&gt; List[int]:
+        &#34;&#34;&#34;
+        Adds special tokens to a sequence pair for sequence classification tasks.
+        A BERT sequence pair has the following format: [CLS] A [SEP] B [SEP]
+
+        Parameters
+        ----------
+        token_ids_0: List[int]
+            List of ids for the first string sequence in the sequence pair (A).
+
+        token_ids_1: List[int]
+            List of tokens for the second string sequence in the sequence pair (B).
+        &#34;&#34;&#34;
+
+        sep = [self.sep_token_id]
+        cls = [self.cls_token_id]
+
+        return cls + token_ids_0 + sep + token_ids_1 + sep
+
+    def add_padding_tokens(self, token_ids: List[int], length: int, right: bool = True) -&gt; List[int]:
+        &#34;&#34;&#34;
+        Adds padding tokens to return a sequence of length max_length.
+        By default padding tokens are added to the right of the sequence.
+
+        Parameters
+        ----------
+        token_ids: list[int]
+            list of tokenized input ids. Can be obtained using the encode or encode_plus methods.
+
+        length: int
+
+        right: bool (True by default)
+
+        Returns
+        ----------
+        token_ids :
+            list of tokenized input ids. Can be obtained using the encode or encode_plus methods.
+
+        padding: int
+            Integer to be added as padding token
+
+        &#34;&#34;&#34;
+        padding = [self.pad_token_id] * (length - len(token_ids))
+
+        if right:
+            return token_ids + padding
+        else:
+            return padding + token_ids
+
+    def save_vocabulary(self, vocab_path: str):  # -&gt; tuple[str]: doctest issue raised with this return type annotation
+        &#34;&#34;&#34;
+        Save the tokenizer vocabulary to a file.
+
+        Parameters
+        ----------
+        vocab_path: obj: str
+            The directory in which to save the SMILES character per line vocabulary file.
+            Default vocab file is found in deepchem/feat/tests/data/vocab.txt
+
+        Returns
+        ----------
+        vocab_file: :obj:`Tuple(str)`:
+            Paths to the files saved.
+            tuple with string to a SMILES character per line vocabulary file.
+            Default vocab file is found in deepchem/feat/tests/data/vocab.txt
+
+        &#34;&#34;&#34;
+        index = 0
+        if os.path.isdir(vocab_path):
+            vocab_file = os.path.join(vocab_path, &#34;vocab.txt&#34;)
+        else:
+            vocab_file = vocab_path
+        with open(vocab_file, &#34;w&#34;, encoding=&#34;utf-8&#34;) as writer:
+            for token, token_index in sorted(self.vocab.items(), key=lambda kv: kv[1]):
+                if index != token_index:
+                    index = token_index
+                writer.write(token + &#34;\n&#34;)
+                index += 1
+        return (vocab_file,)</code></pre>
+</details>
+<div class="desc"><p>Creates the SmilesTokenizer class. The tokenizer heavily inherits from the BertTokenizer
+implementation found in Huggingface's transformers library. It runs a WordPiece tokenization
+algorithm over SMILES strings using the tokenisation SMILES regex developed by Schwaller et. al.</p>
+<p>Please see <a href="https://github.com/huggingface/transformers">https://github.com/huggingface/transformers</a>
+and <a href="https://github.com/rxn4chemistry/rxnfp">https://github.com/rxn4chemistry/rxnfp</a> for more details.</p>
+<h2 id="references">References</h2>
+<p>.. [1]
+Schwaller, Philippe; Probst, Daniel; Vaucher, Alain C.; Nair, Vishnu H; Kreutter, David;
+Laino, Teodoro; et al. (2019): Mapping the Space of Chemical Reactions using Attention-Based Neural
+Networks. ChemRxiv. Preprint. <a href="https://doi.org/10.26434/chemrxiv.9897365.v3">https://doi.org/10.26434/chemrxiv.9897365.v3</a></p>
+<h2 id="notes">Notes</h2>
+<p>This class requires huggingface's transformers and tokenizers libraries to be installed.</p>
+<p>Constructs a SmilesTokenizer.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>vocab_file</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to a SMILES character per line vocabulary file.
+Default vocab file is found in deepchem/feat/tests/data/vocab.txt</dd>
+</dl></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="molcrawl.compounds.utils.tokenizer.BertTokenizer" href="#molcrawl.compounds.utils.tokenizer.BertTokenizer">BertTokenizer</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer" href="#molcrawl.compounds.utils.tokenizer.CompoundsTokenizer">CompoundsTokenizer</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.eos_token_id"><code class="name">prop <span class="ident">eos_token_id</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def eos_token_id(self):
+    return self.added_tokens_encoder[self.eos]</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.vocab_list"><code class="name">prop <span class="ident">vocab_list</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def vocab_list(self):
+    return list(self.vocab.keys())</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.vocab_size"><code class="name">prop <span class="ident">vocab_size</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def vocab_size(self):
+    return len(self.vocab)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_padding_tokens"><code class="name flex">
+<span>def <span class="ident">add_padding_tokens</span></span>(<span>self, token_ids: List[int], length: int, right: bool = True) ‑> List[int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_padding_tokens(self, token_ids: List[int], length: int, right: bool = True) -&gt; List[int]:
+    &#34;&#34;&#34;
+    Adds padding tokens to return a sequence of length max_length.
+    By default padding tokens are added to the right of the sequence.
+
+    Parameters
+    ----------
+    token_ids: list[int]
+        list of tokenized input ids. Can be obtained using the encode or encode_plus methods.
+
+    length: int
+
+    right: bool (True by default)
+
+    Returns
+    ----------
+    token_ids :
+        list of tokenized input ids. Can be obtained using the encode or encode_plus methods.
+
+    padding: int
+        Integer to be added as padding token
+
+    &#34;&#34;&#34;
+    padding = [self.pad_token_id] * (length - len(token_ids))
+
+    if right:
+        return token_ids + padding
+    else:
+        return padding + token_ids</code></pre>
+</details>
+<div class="desc"><p>Adds padding tokens to return a sequence of length max_length.
+By default padding tokens are added to the right of the sequence.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>token_ids</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>list of tokenized input ids. Can be obtained using the encode or encode_plus methods.</dd>
+<dt><strong><code>length</code></strong> :&ensp;<code>int</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>right</code></strong> :&ensp;<code>bool (True by default)</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>token_ids :</code></dt>
+<dd>list of tokenized input ids. Can be obtained using the encode or encode_plus methods.</dd>
+<dt><strong><code>padding</code></strong> :&ensp;<code>int</code></dt>
+<dd>Integer to be added as padding token</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_sequence_pair"><code class="name flex">
+<span>def <span class="ident">add_special_tokens_ids_sequence_pair</span></span>(<span>self, token_ids_0: List[int], token_ids_1: List[int]) ‑> List[int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_special_tokens_ids_sequence_pair(self, token_ids_0: List[int], token_ids_1: List[int]) -&gt; List[int]:
+    &#34;&#34;&#34;
+    Adds special tokens to a sequence pair for sequence classification tasks.
+    A BERT sequence pair has the following format: [CLS] A [SEP] B [SEP]
+
+    Parameters
+    ----------
+    token_ids_0: List[int]
+        List of ids for the first string sequence in the sequence pair (A).
+
+    token_ids_1: List[int]
+        List of tokens for the second string sequence in the sequence pair (B).
+    &#34;&#34;&#34;
+
+    sep = [self.sep_token_id]
+    cls = [self.cls_token_id]
+
+    return cls + token_ids_0 + sep + token_ids_1 + sep</code></pre>
+</details>
+<div class="desc"><p>Adds special tokens to a sequence pair for sequence classification tasks.
+A BERT sequence pair has the following format: [CLS] A [SEP] B [SEP]</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>token_ids_0</code></strong> :&ensp;<code>List[int]</code></dt>
+<dd>List of ids for the first string sequence in the sequence pair (A).</dd>
+<dt><strong><code>token_ids_1</code></strong> :&ensp;<code>List[int]</code></dt>
+<dd>List of tokens for the second string sequence in the sequence pair (B).</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_single_sequence"><code class="name flex">
+<span>def <span class="ident">add_special_tokens_ids_single_sequence</span></span>(<span>self, token_ids: List[int])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_special_tokens_ids_single_sequence(self, token_ids: List[int]):
+    &#34;&#34;&#34;
+    Adds special tokens to the a sequence for sequence classification tasks.
+    A BERT sequence has the following format: [CLS] X [SEP]
+
+    Parameters
+    ----------
+
+    token_ids: list[int]
+        list of tokenized input ids. Can be obtained using the encode or encode_plus methods.
+    &#34;&#34;&#34;
+
+    return [self.cls_token_id] + token_ids + [self.sep_token_id]</code></pre>
+</details>
+<div class="desc"><p>Adds special tokens to the a sequence for sequence classification tasks.
+A BERT sequence has the following format: [CLS] X [SEP]</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>token_ids</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>list of tokenized input ids. Can be obtained using the encode or encode_plus methods.</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_single_sequence"><code class="name flex">
+<span>def <span class="ident">add_special_tokens_single_sequence</span></span>(<span>self, tokens: List[str])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_special_tokens_single_sequence(self, tokens: List[str]):
+    &#34;&#34;&#34;
+    Adds special tokens to the a sequence for sequence classification tasks.
+    A BERT sequence has the following format: [CLS] X [SEP]
+
+    Parameters
+    ----------
+    tokens: List[str]
+        List of tokens for a given string sequence.
+
+    &#34;&#34;&#34;
+    return [self.cls_token] + tokens + [self.sep_token]</code></pre>
+</details>
+<div class="desc"><p>Adds special tokens to the a sequence for sequence classification tasks.
+A BERT sequence has the following format: [CLS] X [SEP]</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>tokens</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>List of tokens for a given string sequence.</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.convert_tokens_to_string"><code class="name flex">
+<span>def <span class="ident">convert_tokens_to_string</span></span>(<span>self, tokens: List[str])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_tokens_to_string(self, tokens: List[str]):
+    &#34;&#34;&#34;Converts a sequence of tokens (string) in a single string.
+
+    Parameters
+    ----------
+    tokens: List[str]
+        List of tokens for a given string sequence.
+
+    Returns
+    -------
+    out_string: str
+        Single string from combined tokens.
+    &#34;&#34;&#34;
+
+    out_string: str = &#34; &#34;.join(tokens).replace(&#34; ##&#34;, &#34;&#34;).strip()
+    return out_string</code></pre>
+</details>
+<div class="desc"><p>Converts a sequence of tokens (string) in a single string.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>tokens</code></strong> :&ensp;<code>List[str]</code></dt>
+<dd>List of tokens for a given string sequence.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>out_string</code></strong> :&ensp;<code>str</code></dt>
+<dd>Single string from combined tokens.</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.save_vocabulary"><code class="name flex">
+<span>def <span class="ident">save_vocabulary</span></span>(<span>self, vocab_path: str)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_vocabulary(self, vocab_path: str):  # -&gt; tuple[str]: doctest issue raised with this return type annotation
+    &#34;&#34;&#34;
+    Save the tokenizer vocabulary to a file.
+
+    Parameters
+    ----------
+    vocab_path: obj: str
+        The directory in which to save the SMILES character per line vocabulary file.
+        Default vocab file is found in deepchem/feat/tests/data/vocab.txt
+
+    Returns
+    ----------
+    vocab_file: :obj:`Tuple(str)`:
+        Paths to the files saved.
+        tuple with string to a SMILES character per line vocabulary file.
+        Default vocab file is found in deepchem/feat/tests/data/vocab.txt
+
+    &#34;&#34;&#34;
+    index = 0
+    if os.path.isdir(vocab_path):
+        vocab_file = os.path.join(vocab_path, &#34;vocab.txt&#34;)
+    else:
+        vocab_file = vocab_path
+    with open(vocab_file, &#34;w&#34;, encoding=&#34;utf-8&#34;) as writer:
+        for token, token_index in sorted(self.vocab.items(), key=lambda kv: kv[1]):
+            if index != token_index:
+                index = token_index
+            writer.write(token + &#34;\n&#34;)
+            index += 1
+    return (vocab_file,)</code></pre>
+</details>
+<div class="desc"><p>Save the tokenizer vocabulary to a file.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>vocab_path</code></strong> :&ensp;<code>obj: str</code></dt>
+<dd>The directory in which to save the SMILES character per line vocabulary file.
+Default vocab file is found in deepchem/feat/tests/data/vocab.txt</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>vocab_file</code></strong> :&ensp;<code>:obj:</code>Tuple(str)<code>:</code></dt>
+<dd>Paths to the files saved.
+tuple with string to a SMILES character per line vocabulary file.
+Default vocab file is found in deepchem/feat/tests/data/vocab.txt</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.compounds.utils" href="index.html">molcrawl.compounds.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.load_vocab" href="#molcrawl.compounds.utils.tokenizer.load_vocab">load_vocab</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.tokenize_smiles" href="#molcrawl.compounds.utils.tokenizer.tokenize_smiles">tokenize_smiles</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.compounds.utils.tokenizer.BasicSmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.BasicSmilesTokenizer">BasicSmilesTokenizer</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.BasicSmilesTokenizer.tokenize" href="#molcrawl.compounds.utils.tokenizer.BasicSmilesTokenizer.tokenize">tokenize</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.compounds.utils.tokenizer.BertTokenizer" href="#molcrawl.compounds.utils.tokenizer.BertTokenizer">BertTokenizer</a></code></h4>
+</li>
+<li>
+<h4><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer" href="#molcrawl.compounds.utils.tokenizer.CompoundsTokenizer">CompoundsTokenizer</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.tokenize_text" href="#molcrawl.compounds.utils.tokenizer.CompoundsTokenizer.tokenize_text">tokenize_text</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer" href="#molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer">ScaffoldsTokenizer</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer.tokenize_text" href="#molcrawl.compounds.utils.tokenizer.ScaffoldsTokenizer.tokenize_text">tokenize_text</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer">SmilesTokenizer</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_padding_tokens" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_padding_tokens">add_padding_tokens</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_sequence_pair" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_sequence_pair">add_special_tokens_ids_sequence_pair</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_single_sequence" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_ids_single_sequence">add_special_tokens_ids_single_sequence</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_single_sequence" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.add_special_tokens_single_sequence">add_special_tokens_single_sequence</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.convert_tokens_to_string" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.convert_tokens_to_string">convert_tokens_to_string</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.eos_token_id" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.eos_token_id">eos_token_id</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.save_vocabulary" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.save_vocabulary">save_vocabulary</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.vocab_list" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.vocab_list">vocab_list</a></code></li>
+<li><code><a title="molcrawl.compounds.utils.tokenizer.SmilesTokenizer.vocab_size" href="#molcrawl.compounds.utils.tokenizer.SmilesTokenizer.vocab_size">vocab_size</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

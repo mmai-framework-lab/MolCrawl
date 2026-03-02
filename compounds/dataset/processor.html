@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.compounds.dataset.processor API documentation</title>
+<meta name="description" content="個別データセット処理プロセッサー …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.compounds.dataset.processor</code></h1>
+</header>
+<section id="section-intro">
+<p>個別データセット処理プロセッサー</p>
+<p>各データセットを独立して処理するためのクラスを提供します。</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.compounds.dataset.processor.calcLogPIfMol"><code class="name flex">
+<span>def <span class="ident">calcLogPIfMol</span></span>(<span>smi)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calcLogPIfMol(smi):
+    &#34;&#34;&#34;LogP値を計算&#34;&#34;&#34;
+    Chem, Descriptors, _ = _get_rdkit_helpers()
+    m = Chem.MolFromSmiles(smi)
+    if m is not None:
+        return Descriptors.MolLogP(m)
+    else:
+        return None</code></pre>
+</details>
+<div class="desc"><p>LogP値を計算</p></div>
+</dd>
+<dt id="molcrawl.compounds.dataset.processor.calcMolWeight"><code class="name flex">
+<span>def <span class="ident">calcMolWeight</span></span>(<span>smi)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calcMolWeight(smi):
+    &#34;&#34;&#34;分子量を計算&#34;&#34;&#34;
+    Chem, Descriptors, _ = _get_rdkit_helpers()
+    mol = Chem.MolFromSmiles(smi)
+    if mol is not None:
+        return Descriptors.ExactMolWt(mol)
+    else:
+        return None</code></pre>
+</details>
+<div class="desc"><p>分子量を計算</p></div>
+</dd>
+<dt id="molcrawl.compounds.dataset.processor.calcSascore"><code class="name flex">
+<span>def <span class="ident">calcSascore</span></span>(<span>smi)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calcSascore(smi):
+    &#34;&#34;&#34;SA scoreを計算&#34;&#34;&#34;
+    Chem, _, sascorer = _get_rdkit_helpers()
+    mol = Chem.MolFromSmiles(smi)
+    if mol is not None:
+        return sascorer.calculateScore(mol)
+    else:
+        return None</code></pre>
+</details>
+<div class="desc"><p>SA scoreを計算</p></div>
+</dd>
+<dt id="molcrawl.compounds.dataset.processor.process_all_available_datasets"><code class="name flex">
+<span>def <span class="ident">process_all_available_datasets</span></span>(<span>compounds_dir: pathlib.Path,<br>dataset_types: list | None = None,<br>force: bool = False,<br>num_processes: int = 16) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_all_available_datasets(
+    compounds_dir: Path,
+    dataset_types: Optional[list] = None,
+    force: bool = False,
+    num_processes: int = 16,
+) -&gt; dict:
+    &#34;&#34;&#34;
+    利用可能な全データセットを処理
+
+    Args:
+        compounds_dir: compoundsディレクトリのパス
+        dataset_types: 処理するデータセット種別のリスト（Noneの場合は利用可能な全て）
+        force: 強制再処理フラグ
+        num_processes: 並列処理のプロセス数
+
+    Returns:
+        {dataset_type: processed_df} の辞書
+    &#34;&#34;&#34;
+    from molcrawl.compounds.dataset.dataset_config import (
+        get_available_datasets,
+        get_dataset_info,
+    )
+
+    # 処理対象のデータセットを決定
+    if dataset_types is None:
+        # 利用可能な全データセットを取得
+        available = get_available_datasets(compounds_dir)
+        if not available:
+            logger.warning(&#34;No datasets available for processing&#34;)
+            return {}
+        dataset_types = available
+    else:
+        # 指定されたデータセットが文字列の場合はEnumに変換
+        if isinstance(dataset_types[0], str):
+            dataset_types = [CompoundDatasetType(dt) for dt in dataset_types]
+
+    logger.info(f&#34;Processing {len(dataset_types)} datasets: {[dt.value for dt in dataset_types]}&#34;)
+
+    results = {}
+    for dataset_type in dataset_types:
+        info = get_dataset_info(dataset_type)
+        processor = DatasetProcessor(info, compounds_dir, num_processes)
+
+        df = processor.process(force=force)
+        if df is not None:
+            results[dataset_type] = df
+
+    logger.info(f&#34;Successfully processed {len(results)}/{len(dataset_types)} datasets&#34;)
+    return results</code></pre>
+</details>
+<div class="desc"><p>利用可能な全データセットを処理</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>compounds_dir</code></strong></dt>
+<dd>compoundsディレクトリのパス</dd>
+<dt><strong><code>dataset_types</code></strong></dt>
+<dd>処理するデータセット種別のリスト（Noneの場合は利用可能な全て）</dd>
+<dt><strong><code>force</code></strong></dt>
+<dd>強制再処理フラグ</dd>
+<dt><strong><code>num_processes</code></strong></dt>
+<dd>並列処理のプロセス数</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>{dataset_type: processed_df} の辞書</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.compounds.dataset.processor.DatasetProcessor"><code class="flex name class">
+<span>class <span class="ident">DatasetProcessor</span></span>
+<span>(</span><span>dataset_info: <a title="molcrawl.compounds.dataset.dataset_config.DatasetInfo" href="dataset_config.html#molcrawl.compounds.dataset.dataset_config.DatasetInfo">DatasetInfo</a>,<br>compounds_dir: pathlib.Path,<br>num_processes: int = 16)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DatasetProcessor:
+    &#34;&#34;&#34;
+    個別データセット処理クラス
+
+    各データセットを独立して処理します：
+    1. 生データの読み込み
+    2. 物性計算（必要な場合）
+    3. 処理済みデータの保存
+    &#34;&#34;&#34;
+
+    def __init__(self, dataset_info: DatasetInfo, compounds_dir: Path, num_processes: int = 16):
+        &#34;&#34;&#34;
+        Args:
+            dataset_info: データセット情報
+            compounds_dir: compoundsディレクトリのパス
+            num_processes: 並列処理のプロセス数
+        &#34;&#34;&#34;
+        self.dataset_info = dataset_info
+        self.compounds_dir = Path(compounds_dir)
+        self.num_processes = num_processes
+
+    def process(self, force: bool = False) -&gt; Optional[pd.DataFrame]:
+        &#34;&#34;&#34;
+        データセットを処理
+
+        Args:
+            force: 強制再処理フラグ
+
+        Returns:
+            処理済みDataFrame（エラー時はNone）
+        &#34;&#34;&#34;
+        processed_path = self.dataset_info.get_processed_path(self.compounds_dir)
+
+        # 既に処理済みの場合はスキップ
+        if not force and processed_path.exists():
+            logger.info(f&#34;✓ {self.dataset_info.name}: Already processed, skipping&#34;)
+            return pd.read_parquet(processed_path)
+
+        # 生データを読み込み
+        df = self._load_raw_data()
+        if df is None:
+            return None
+
+        # サンプリング
+        if self.dataset_info.sample_size is not None and len(df) &gt; self.dataset_info.sample_size:
+            logger.info(f&#34;  Sampling {self.dataset_info.sample_size} from {len(df)} samples&#34;)
+            df = df.sample(n=self.dataset_info.sample_size, random_state=42)
+
+        # 物性計算
+        if self.dataset_info.requires_properties:
+            df = self._calculate_properties(df)
+            if df is None:
+                return None
+
+        # 保存
+        processed_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(processed_path, index=False)
+        logger.info(f&#34;✓ {self.dataset_info.name}: Saved {len(df)} samples to {processed_path}&#34;)
+
+        return df
+
+    def _load_raw_data(self) -&gt; Optional[pd.DataFrame]:
+        &#34;&#34;&#34;生データを読み込み&#34;&#34;&#34;
+        raw_path = self.dataset_info.get_raw_path(self.compounds_dir)
+
+        if not raw_path.exists():
+            logger.warning(
+                f&#34;⚠ {self.dataset_info.name}: Raw data not found at {raw_path}\n  Please download this dataset first.&#34;
+            )
+            return None
+
+        try:
+            logger.info(f&#34;📂 {self.dataset_info.name}: Loading from {raw_path}&#34;)
+            df = pd.read_parquet(raw_path)
+
+            # SMILES列が存在することを確認
+            if &#34;smiles&#34; not in df.columns:
+                logger.error(f&#34;✗ {self.dataset_info.name}: &#39;smiles&#39; column not found&#34;)
+                return None
+
+            logger.info(f&#34;✓ {self.dataset_info.name}: Loaded {len(df)} samples&#34;)
+            return df
+
+        except Exception as e:
+            logger.error(f&#34;✗ {self.dataset_info.name}: Failed to load - {e}&#34;)
+            return None
+
+    def _calculate_properties(self, df: pd.DataFrame) -&gt; Optional[pd.DataFrame]:
+        &#34;&#34;&#34;物性を計算&#34;&#34;&#34;
+        logger.info(f&#34;🧪 {self.dataset_info.name}: Calculating properties...&#34;)
+
+        try:
+            smi_series = df[&#34;smiles&#34;]
+
+            with multiprocessing.Pool(self.num_processes) as pool:
+                # LogP計算
+                logger.info(&#34;  Computing LogP...&#34;)
+                logps_list = pool.map(calcLogPIfMol, smi_series)
+
+                # 有効な分子のみをフィルタ
+                valid_mols = ~pd.isna(logps_list)
+                valid_smiles = smi_series[valid_mols].reset_index(drop=True)
+                valid_logps = pd.Series(logps_list)[valid_mols].reset_index(drop=True)
+
+                # 分子量計算
+                logger.info(&#34;  Computing molecular weight...&#34;)
+                mol_weights = pool.map(calcMolWeight, valid_smiles)
+
+                # SA score計算
+                logger.info(&#34;  Computing SA score...&#34;)
+                sascores = pool.map(calcSascore, valid_smiles)
+
+            # 結果をDataFrameに変換
+            result_df = pd.DataFrame(
+                {
+                    &#34;smiles&#34;: valid_smiles,
+                    &#34;logp&#34;: valid_logps,
+                    &#34;mol_weight&#34;: [w / 100.0 if w is not None else None for w in mol_weights],  # 正規化
+                    &#34;sascore&#34;: sascores,
+                }
+            )
+
+            # NaNを含む行を削除
+            initial_count = len(result_df)
+            result_df = result_df.dropna()
+            removed_count = initial_count - len(result_df)
+
+            if removed_count &gt; 0:
+                logger.info(f&#34;  Removed {removed_count} invalid molecules ({removed_count / initial_count * 100:.2f}%)&#34;)
+
+            logger.info(f&#34;✓ {self.dataset_info.name}: Properties calculated for {len(result_df)} molecules&#34;)
+            return result_df
+
+        except Exception as e:
+            logger.error(f&#34;✗ {self.dataset_info.name}: Property calculation failed - {e}&#34;)
+            return None</code></pre>
+</details>
+<div class="desc"><p>個別データセット処理クラス</p>
+<p>各データセットを独立して処理します：
+1. 生データの読み込み
+2. 物性計算（必要な場合）
+3. 処理済みデータの保存</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset_info</code></strong></dt>
+<dd>データセット情報</dd>
+<dt><strong><code>compounds_dir</code></strong></dt>
+<dd>compoundsディレクトリのパス</dd>
+<dt><strong><code>num_processes</code></strong></dt>
+<dd>並列処理のプロセス数</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.compounds.dataset.processor.DatasetProcessor.process"><code class="name flex">
+<span>def <span class="ident">process</span></span>(<span>self, force: bool = False) ‑> pandas.core.frame.DataFrame | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process(self, force: bool = False) -&gt; Optional[pd.DataFrame]:
+    &#34;&#34;&#34;
+    データセットを処理
+
+    Args:
+        force: 強制再処理フラグ
+
+    Returns:
+        処理済みDataFrame（エラー時はNone）
+    &#34;&#34;&#34;
+    processed_path = self.dataset_info.get_processed_path(self.compounds_dir)
+
+    # 既に処理済みの場合はスキップ
+    if not force and processed_path.exists():
+        logger.info(f&#34;✓ {self.dataset_info.name}: Already processed, skipping&#34;)
+        return pd.read_parquet(processed_path)
+
+    # 生データを読み込み
+    df = self._load_raw_data()
+    if df is None:
+        return None
+
+    # サンプリング
+    if self.dataset_info.sample_size is not None and len(df) &gt; self.dataset_info.sample_size:
+        logger.info(f&#34;  Sampling {self.dataset_info.sample_size} from {len(df)} samples&#34;)
+        df = df.sample(n=self.dataset_info.sample_size, random_state=42)
+
+    # 物性計算
+    if self.dataset_info.requires_properties:
+        df = self._calculate_properties(df)
+        if df is None:
+            return None
+
+    # 保存
+    processed_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(processed_path, index=False)
+    logger.info(f&#34;✓ {self.dataset_info.name}: Saved {len(df)} samples to {processed_path}&#34;)
+
+    return df</code></pre>
+</details>
+<div class="desc"><p>データセットを処理</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>force</code></strong></dt>
+<dd>強制再処理フラグ</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>処理済みDataFrame（エラー時はNone）</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.compounds.dataset" href="index.html">molcrawl.compounds.dataset</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.compounds.dataset.processor.calcLogPIfMol" href="#molcrawl.compounds.dataset.processor.calcLogPIfMol">calcLogPIfMol</a></code></li>
+<li><code><a title="molcrawl.compounds.dataset.processor.calcMolWeight" href="#molcrawl.compounds.dataset.processor.calcMolWeight">calcMolWeight</a></code></li>
+<li><code><a title="molcrawl.compounds.dataset.processor.calcSascore" href="#molcrawl.compounds.dataset.processor.calcSascore">calcSascore</a></code></li>
+<li><code><a title="molcrawl.compounds.dataset.processor.process_all_available_datasets" href="#molcrawl.compounds.dataset.processor.process_all_available_datasets">process_all_available_datasets</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.compounds.dataset.processor.DatasetProcessor" href="#molcrawl.compounds.dataset.processor.DatasetProcessor">DatasetProcessor</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.compounds.dataset.processor.DatasetProcessor.process" href="#molcrawl.compounds.dataset.processor.DatasetProcessor.process">process</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

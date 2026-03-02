@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.update_taxonomy_complete API documentation</title>
+<meta name="description" content="NCBI Taxonomy Complete Updater
+全生物群の最新分類リストを取得・更新 …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.update_taxonomy_complete</code></h1>
+</header>
+<section id="section-intro">
+<p>NCBI Taxonomy Complete Updater
+全生物群の最新分類リストを取得・更新</p>
+<p>対応分類群:
+- Bacteria (細菌)
+- Archaea (古細菌)
+- Fungi (真菌)
+- Viridiplantae (植物)
+- Metazoa (動物)
+- Vertebrata (脊椎動物)
+- Mammalia (哺乳類)
+- Other Vertebrates (他の脊椎動物)
+- Invertebrates (無脊椎動物)
+- Protists (原生生物) - 旧 protozoa
+- Viruses (ウイルス)</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.update_taxonomy_complete.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description=&#34;Update NCBI taxonomy lists&#34;)
+    parser.add_argument(
+        &#34;--groups&#34;,
+        nargs=&#34;*&#34;,
+        choices=list(NCBITaxonomyCompleteUpdater().taxonomy_groups.keys()),
+        help=&#34;Specific groups to update (default: all)&#34;,
+    )
+    parser.add_argument(
+        &#34;--check-only&#34;,
+        action=&#34;store_true&#34;,
+        help=&#34;Only check current statistics without updating&#34;,
+    )
+    parser.add_argument(
+        &#34;--test-connection&#34;,
+        action=&#34;store_true&#34;,
+        help=&#34;Test NCBI connection with simple query&#34;,
+    )
+
+    args = parser.parse_args()
+
+    updater = NCBITaxonomyCompleteUpdater()
+
+    if args.test_connection:
+        success = updater.test_simple_query()
+        if not success:
+            print(&#34;❌ Connection test failed&#34;)
+        else:
+            print(&#34;✅ Connection test successful&#34;)
+    elif args.check_only:
+        updater.check_ncbi_taxonomy_updates()
+    else:
+        updater.update_all_taxonomy(groups=args.groups)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater"><code class="flex name class">
+<span>class <span class="ident">NCBITaxonomyCompleteUpdater</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class NCBITaxonomyCompleteUpdater:
+    def __init__(self):
+        self.base_url = &#34;https://eutils.ncbi.nlm.nih.gov/entrez/eutils&#34;
+        self.output_dir = Path(&#34;assets/genome_species_list/species&#34;)
+        self.backup_dir = Path(&#34;assets/genome_species_list/backups&#34;)
+        self.email = &#34;research@riken.jp&#34;  # RIKEN用メールアドレス
+
+        # 現代的なNCBI分類マッピング
+        self.taxonomy_groups = {
+            # 主要ドメイン
+            &#34;bacteria&#34;: {
+                &#34;taxon_id&#34;: &#34;2&#34;,
+                &#34;search_term&#34;: &#34;bacteria[organism]&#34;,
+                &#34;filename&#34;: &#34;bacteria.txt&#34;,
+                &#34;description&#34;: &#34;Bacteria (細菌)&#34;,
+            },
+            &#34;archaea&#34;: {
+                &#34;taxon_id&#34;: &#34;2157&#34;,
+                &#34;search_term&#34;: &#34;archaea[organism]&#34;,
+                &#34;filename&#34;: &#34;archaea.txt&#34;,
+                &#34;description&#34;: &#34;Archaea (古細菌)&#34;,
+            },
+            # 真核生物の主要群
+            &#34;fungi&#34;: {
+                &#34;taxon_id&#34;: &#34;4751&#34;,
+                &#34;search_term&#34;: &#34;fungi[organism]&#34;,
+                &#34;filename&#34;: &#34;fungi.txt&#34;,
+                &#34;description&#34;: &#34;Fungi (真菌)&#34;,
+            },
+            &#34;viridiplantae&#34;: {
+                &#34;taxon_id&#34;: &#34;33090&#34;,
+                &#34;search_term&#34;: &#34;viridiplantae[organism]&#34;,
+                &#34;filename&#34;: &#34;plants.txt&#34;,
+                &#34;description&#34;: &#34;Viridiplantae (植物)&#34;,
+            },
+            # 動物群
+            &#34;vertebrata&#34;: {
+                &#34;taxon_id&#34;: &#34;7742&#34;,
+                &#34;search_term&#34;: &#34;vertebrata[organism]&#34;,
+                &#34;filename&#34;: &#34;vertebrates.txt&#34;,
+                &#34;description&#34;: &#34;Vertebrata (脊椎動物)&#34;,
+            },
+            &#34;mammalia&#34;: {
+                &#34;taxon_id&#34;: &#34;40674&#34;,
+                &#34;search_term&#34;: &#34;mammalia[organism]&#34;,
+                &#34;filename&#34;: &#34;vertebrate_mammalian.txt&#34;,
+                &#34;description&#34;: &#34;Mammalia (哺乳類)&#34;,
+            },
+            &#34;vertebrate_other&#34;: {
+                &#34;taxon_id&#34;: &#34;7742&#34;,
+                &#34;search_term&#34;: &#34;vertebrata[organism] NOT mammalia[organism]&#34;,
+                &#34;filename&#34;: &#34;vertebrate_other.txt&#34;,
+                &#34;description&#34;: &#34;Other Vertebrates (哺乳類以外の脊椎動物)&#34;,
+            },
+            &#34;invertebrata&#34;: {
+                &#34;taxon_id&#34;: &#34;6656&#34;,  # Arthropoda + others
+                &#34;search_term&#34;: &#34;metazoa[organism] NOT vertebrata[organism]&#34;,
+                &#34;filename&#34;: &#34;invertebrate.txt&#34;,
+                &#34;description&#34;: &#34;Invertebrates (無脊椎動物)&#34;,
+            },
+            # 原生生物 (旧protozoa)
+            &#34;protists&#34;: {
+                &#34;taxon_id&#34;: &#34;2759&#34;,  # Eukaryota
+                &#34;search_term&#34;: &#34;eukaryota[organism] NOT metazoa[organism] NOT fungi[organism] NOT viridiplantae[organism]&#34;,
+                &#34;filename&#34;: &#34;protists.txt&#34;,
+                &#34;description&#34;: &#34;Protists (原生生物)&#34;,
+            },
+            # ウイルス
+            &#34;viruses&#34;: {
+                &#34;taxon_id&#34;: &#34;10239&#34;,
+                &#34;search_term&#34;: &#34;viruses[organism]&#34;,
+                &#34;filename&#34;: &#34;viruses.txt&#34;,
+                &#34;description&#34;: &#34;Viruses (ウイルス)&#34;,
+            },
+        }
+
+        # 後方互換性のためのマッピング
+        self.legacy_mapping = {
+            &#34;protozoa.txt&#34;: &#34;protists.txt&#34;,
+        }
+
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
+
+    def check_ncbi_taxonomy_updates(self):
+        &#34;&#34;&#34;NCBI分類体系の最新情報をチェック&#34;&#34;&#34;
+        print(&#34;🔍 Checking NCBI Taxonomy structure...&#34;)
+
+        # メジャー分類群の統計を取得
+        stats = {}
+
+        for group_name, group_info in self.taxonomy_groups.items():
+            print(f&#34;  Processing {group_name}...&#34;)
+            try:
+                search_url = f&#34;{self.base_url}/esearch.fcgi&#34;
+                params = {
+                    &#34;db&#34;: &#34;taxonomy&#34;,
+                    &#34;term&#34;: f&#34;{group_info[&#39;search_term&#39;]} AND genus[rank]&#34;,
+                    &#34;retmode&#34;: &#34;json&#34;,  # JSONモードに変更
+                    &#34;email&#34;: self.email,
+                }
+
+                print(f&#34;    URL: {search_url}&#34;)
+                print(f&#34;    Query: {params[&#39;term&#39;]}&#34;)
+
+                response = requests.get(search_url, params=params)
+                response.raise_for_status()
+
+                print(f&#34;    Response status: {response.status_code}&#34;)
+
+                # JSONレスポンスを解析
+                try:
+                    data = response.json()
+                    print(f&#34;    Response data: {data}&#34;)
+
+                    if &#34;esearchresult&#34; in data and &#34;count&#34; in data[&#34;esearchresult&#34;]:
+                        count = int(data[&#34;esearchresult&#34;][&#34;count&#34;])
+                        stats[group_name] = count
+                        print(f&#34;    Found {count} genera&#34;)
+                    else:
+                        print(&#34;    No count found in response&#34;)
+                        stats[group_name] = 0
+
+                except json.JSONDecodeError as je:
+                    print(f&#34;    JSON decode error: {je}&#34;)
+                    print(f&#34;    Raw response: {response.text[:200]}...&#34;)
+                    stats[group_name] = 0
+
+                time.sleep(0.5)  # API制限対応
+
+            except Exception as e:
+                print(f&#34;  ⚠️ Error checking {group_name}: {e}&#34;)
+                stats[group_name] = 0
+
+        print(&#34;\n📊 Current NCBI Taxonomy Statistics (Genus level):&#34;)
+        for group_name, count in stats.items():
+            description = self.taxonomy_groups[group_name][&#34;description&#34;]
+            print(f&#34;  {description:30}: {count:6,} genera&#34;)
+
+        return stats
+
+    def search_taxonomy_by_group(self, group_name, retmax=5000):
+        &#34;&#34;&#34;指定された分類群の属レベル分類を取得&#34;&#34;&#34;
+        group_info = self.taxonomy_groups[group_name]
+        print(f&#34;🔍 Searching {group_info[&#39;description&#39;]}...&#34;)
+
+        search_url = f&#34;{self.base_url}/esearch.fcgi&#34;
+        params = {
+            &#34;db&#34;: &#34;taxonomy&#34;,
+            &#34;term&#34;: f&#34;{group_info[&#39;search_term&#39;]} AND genus[rank]&#34;,
+            &#34;retmax&#34;: retmax,
+            &#34;retmode&#34;: &#34;json&#34;,
+            &#34;email&#34;: self.email,
+        }
+
+        try:
+            response = requests.get(search_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            if &#34;esearchresult&#34; in data and &#34;idlist&#34; in data[&#34;esearchresult&#34;]:
+                tax_ids = data[&#34;esearchresult&#34;][&#34;idlist&#34;]
+                count = data[&#34;esearchresult&#34;].get(&#34;count&#34;, len(tax_ids))
+                print(f&#34;  ✅ Found {len(tax_ids)}/{count} genera&#34;)
+                return tax_ids
+            else:
+                print(f&#34;  ❌ No taxa found for {group_name}&#34;)
+                return []
+
+        except Exception as e:
+            print(f&#34;  ❌ Error searching {group_name}: {e}&#34;)
+            return []
+
+    def fetch_taxonomy_names_batch(self, tax_ids, batch_size=200):
+        &#34;&#34;&#34;分類IDから分類名をバッチ取得&#34;&#34;&#34;
+        if not tax_ids:
+            return []
+
+        print(f&#34;  📋 Fetching names for {len(tax_ids)} taxa...&#34;)
+
+        genera = set()
+
+        for i in range(0, len(tax_ids), batch_size):
+            batch_ids = tax_ids[i : i + batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(tax_ids) - 1) // batch_size + 1
+
+            print(f&#34;    Batch {batch_num}/{total_batches}&#34;)
+
+            fetch_url = f&#34;{self.base_url}/efetch.fcgi&#34;
+            params = {
+                &#34;db&#34;: &#34;taxonomy&#34;,
+                &#34;id&#34;: &#34;,&#34;.join(batch_ids),
+                &#34;retmode&#34;: &#34;xml&#34;,
+                &#34;email&#34;: self.email,
+            }
+
+            try:
+                response = requests.get(fetch_url, params=params)
+                response.raise_for_status()
+
+                names = self.parse_taxonomy_xml(response.text)
+                genera.update(names)
+
+                time.sleep(0.3)  # NCBI API制限対応
+
+            except Exception as e:
+                print(f&#34;    ⚠️ Error in batch {batch_num}: {e}&#34;)
+                continue
+
+        print(f&#34;  ✅ Extracted {len(genera)} unique genera&#34;)
+        return sorted(list(genera))
+
+    def parse_taxonomy_xml(self, xml_content):
+        &#34;&#34;&#34;Taxonomy XMLから属名を抽出&#34;&#34;&#34;
+        genera = set()
+
+        try:
+            root = ET.fromstring(xml_content)
+
+            for taxon in root.findall(&#34;.//Taxon&#34;):
+                # ScientificNameを取得
+                sci_name = taxon.find(&#34;.//ScientificName&#34;)
+                if sci_name is not None and sci_name.text:
+                    name = sci_name.text.strip()
+
+                    # 属レベルの名前を検証
+                    if self.is_valid_genus_name(name):
+                        genera.add(name)
+
+        except ET.ParseError as e:
+            print(f&#34;    ⚠️ XML parsing error: {e}&#34;)
+
+        return genera
+
+    def is_valid_genus_name(self, name):
+        &#34;&#34;&#34;属名として有効かどうかを判定&#34;&#34;&#34;
+        if not name or len(name) &lt; 2:
+            return False
+
+        # スペースが含まれていたら種名レベルなのでスキップ
+        if &#34; &#34; in name:
+            return False
+
+        # 明らかに属名でない文字列を除外
+        invalid_patterns = [
+            &#34;sp.&#34;,
+            &#34;strain&#34;,
+            &#34;isolate&#34;,
+            &#34;clone&#34;,
+            &#34;uncultured&#34;,
+            &#34;unidentified&#34;,
+            &#34;environmental&#34;,
+            &#34;metagenome&#34;,
+        ]
+
+        name_lower = name.lower()
+        for pattern in invalid_patterns:
+            if pattern in name_lower:
+                return False
+
+        # 数字のみ、または記号のみは除外
+        if name.replace(&#34;-&#34;, &#34;&#34;).replace(&#34;_&#34;, &#34;&#34;).isdigit():
+            return False
+
+        return True
+
+    def backup_existing_files(self):
+        &#34;&#34;&#34;既存ファイルのバックアップ&#34;&#34;&#34;
+        timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+        backed_up_files = []
+
+        for _group_name, group_info in self.taxonomy_groups.items():
+            filename = group_info[&#34;filename&#34;]
+            file_path = self.output_dir / filename
+
+            if file_path.exists():
+                backup_path = self.backup_dir / f&#34;{filename}.backup_{timestamp}&#34;
+                backup_path.write_text(file_path.read_text())
+                backed_up_files.append(str(backup_path))
+
+        # レガシーファイルもバックアップ
+        for legacy_file in self.legacy_mapping.keys():
+            legacy_path = self.output_dir / legacy_file
+            if legacy_path.exists():
+                backup_path = self.backup_dir / f&#34;{legacy_file}.backup_{timestamp}&#34;
+                backup_path.write_text(legacy_path.read_text())
+                backed_up_files.append(str(backup_path))
+
+        if backed_up_files:
+            print(f&#34;💾 Backed up {len(backed_up_files)} files to {self.backup_dir}&#34;)
+
+        return backed_up_files
+
+    def compare_with_existing(self, new_genera, filename):
+        &#34;&#34;&#34;既存リストとの比較&#34;&#34;&#34;
+        file_path = self.output_dir / filename
+
+        current_genera = set()
+        if file_path.exists():
+            with open(file_path, &#34;r&#34;, encoding=&#34;utf-8&#34;) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith(&#34;//&#34;):
+                        current_genera.add(line)
+
+        new_set = set(new_genera)
+        added = new_set - current_genera
+        removed = current_genera - new_set
+        kept = new_set &amp; current_genera
+
+        return {
+            &#34;current_count&#34;: len(current_genera),
+            &#34;new_count&#34;: len(new_set),
+            &#34;added&#34;: sorted(list(added)),
+            &#34;removed&#34;: sorted(list(removed)),
+            &#34;kept&#34;: len(kept),
+        }
+
+    def save_taxonomy_file(self, genera_list, group_name):
+        &#34;&#34;&#34;分類リストをファイルに保存&#34;&#34;&#34;
+        group_info = self.taxonomy_groups[group_name]
+        filename = group_info[&#34;filename&#34;]
+        file_path = self.output_dir / filename
+
+        # 既存リストとの比較
+        comparison = self.compare_with_existing(genera_list, filename)
+
+        # ファイル保存
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(file_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
+            f.write(f&#34;// filepath: {file_path}\n&#34;)
+            f.write(f&#34;// Updated: {datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)}\n&#34;)
+            f.write(f&#34;// Group: {group_info[&#39;description&#39;]}\n&#34;)
+            f.write(f&#34;// NCBI Taxon ID: {group_info[&#39;taxon_id&#39;]}\n&#34;)
+            f.write(f&#34;// Total genera: {len(genera_list)}\n&#34;)
+            f.write(f&#34;// Changes: +{len(comparison[&#39;added&#39;])} -{len(comparison[&#39;removed&#39;])}\n&#34;)
+            f.write(&#34;\n&#34;)
+
+            for genus in genera_list:
+                f.write(f&#34;{genus}\n&#34;)
+
+        return comparison
+
+    def generate_summary_report(self, all_results):
+        &#34;&#34;&#34;全体の更新結果レポートを生成&#34;&#34;&#34;
+        report_path = self.output_dir.parent / &#34;taxonomy_update_report.md&#34;
+
+        with open(report_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
+            f.write(&#34;# NCBI Taxonomy Update Report\n\n&#34;)
+            f.write(f&#34;**Generated:** {datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)}\n\n&#34;)
+
+            f.write(&#34;## Summary\n\n&#34;)
+            f.write(&#34;| Group | Description | Genera | Added | Removed |\n&#34;)
+            f.write(&#34;|-------|-------------|--------|-------|----------|\n&#34;)
+
+            total_genera = 0
+            total_added = 0
+            total_removed = 0
+
+            for group_name, (genera_list, comparison) in all_results.items():
+                desc = self.taxonomy_groups[group_name][&#34;description&#34;]
+                count = len(genera_list)
+                added = len(comparison[&#34;added&#34;])
+                removed = len(comparison[&#34;removed&#34;])
+
+                f.write(f&#34;| {group_name} | {desc} | {count:,} | +{added} | -{removed} |\n&#34;)
+
+                total_genera += count
+                total_added += added
+                total_removed += removed
+
+            f.write(f&#34;| **Total** | | **{total_genera:,}** | **+{total_added}** | **-{total_removed}** |\n\n&#34;)
+
+            # 詳細変更
+            f.write(&#34;## Detailed Changes\n\n&#34;)
+            for group_name, (_genera_list, comparison) in all_results.items():
+                if comparison[&#34;added&#34;] or comparison[&#34;removed&#34;]:
+                    desc = self.taxonomy_groups[group_name][&#34;description&#34;]
+                    f.write(f&#34;### {desc}\n\n&#34;)
+
+                    if comparison[&#34;added&#34;]:
+                        f.write(f&#34;**Added ({len(comparison[&#39;added&#39;])}):**\n&#34;)
+                        for genus in comparison[&#34;added&#34;][:20]:  # 最初の20個
+                            f.write(f&#34;- {genus}\n&#34;)
+                        if len(comparison[&#34;added&#34;]) &gt; 20:
+                            f.write(f&#34;- ... and {len(comparison[&#39;added&#39;]) - 20} more\n&#34;)
+                        f.write(&#34;\n&#34;)
+
+                    if comparison[&#34;removed&#34;]:
+                        f.write(f&#34;**Removed ({len(comparison[&#39;removed&#39;])}):**\n&#34;)
+                        for genus in comparison[&#34;removed&#34;][:20]:
+                            f.write(f&#34;- {genus}\n&#34;)
+                        if len(comparison[&#34;removed&#34;]) &gt; 20:
+                            f.write(f&#34;- ... and {len(comparison[&#39;removed&#39;]) - 20} more\n&#34;)
+                        f.write(&#34;\n&#34;)
+
+        print(f&#34;📊 Summary report saved: {report_path}&#34;)
+
+    def migrate_legacy_files(self):
+        &#34;&#34;&#34;レガシーファイルの移行&#34;&#34;&#34;
+        print(&#34;🔄 Checking legacy file migration...&#34;)
+
+        for legacy_file, new_file in self.legacy_mapping.items():
+            legacy_path = self.output_dir / legacy_file
+            new_path = self.output_dir / new_file
+
+            if legacy_path.exists() and not new_path.exists():
+                print(f&#34;  📁 Migrating {legacy_file} → {new_file}&#34;)
+                # レガシーファイルをバックアップしてから削除
+                timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+                backup_path = self.backup_dir / f&#34;{legacy_file}.migrated_{timestamp}&#34;
+                backup_path.write_text(legacy_path.read_text())
+                legacy_path.unlink()
+
+    def update_all_taxonomy(self, groups=None):
+        &#34;&#34;&#34;全分類群の更新&#34;&#34;&#34;
+        print(&#34;🧬 NCBI Complete Taxonomy Updater&#34;)
+        print(&#34;=&#34; * 50)
+
+        # 現在の分類統計をチェック
+        self.check_ncbi_taxonomy_updates()
+
+        # バックアップ作成
+        backed_up = self.backup_existing_files()
+
+        # レガシーファイル移行
+        self.migrate_legacy_files()
+
+        # 更新する分類群を決定
+        if groups is None:
+            groups = list(self.taxonomy_groups.keys())
+
+        all_results = {}
+
+        print(f&#34;\n🔄 Updating {len(groups)} taxonomy groups...&#34;)
+
+        for i, group_name in enumerate(groups, 1):
+            print(f&#34;\n[{i}/{len(groups)}] Processing {group_name}...&#34;)
+
+            # 分類ID取得
+            tax_ids = self.search_taxonomy_by_group(group_name)
+
+            if not tax_ids:
+                print(f&#34;  ⚠️ Skipping {group_name} - no data found&#34;)
+                continue
+
+            # 分類名取得
+            genera_list = self.fetch_taxonomy_names_batch(tax_ids)
+
+            if not genera_list:
+                print(f&#34;  ⚠️ Skipping {group_name} - no genera extracted&#34;)
+                continue
+
+            # ファイル保存と比較
+            comparison = self.save_taxonomy_file(genera_list, group_name)
+            all_results[group_name] = (genera_list, comparison)
+
+            # 進捗表示
+            print(f&#34;  ✅ {group_name}: {len(genera_list)} genera (+{len(comparison[&#39;added&#39;])} -{len(comparison[&#39;removed&#39;])})&#34;)
+
+        # 全体レポート生成
+        if all_results:
+            self.generate_summary_report(all_results)
+
+        print(&#34;\n🎉 Update completed!&#34;)
+        print(f&#34;📁 Files saved to: {self.output_dir}&#34;)
+        if backed_up:
+            print(f&#34;💾 Backups saved to: {self.backup_dir}&#34;)
+
+        return all_results
+
+    def test_simple_query(self):
+        &#34;&#34;&#34;シンプルなクエリでNCBI接続をテスト&#34;&#34;&#34;
+        print(&#34;🔬 Testing simple NCBI connection...&#34;)
+
+        test_url = f&#34;{self.base_url}/esearch.fcgi&#34;
+        params = {
+            &#34;db&#34;: &#34;taxonomy&#34;,
+            &#34;term&#34;: &#34;bacteria[organism]&#34;,
+            &#34;retmax&#34;: 5,
+            &#34;retmode&#34;: &#34;json&#34;,
+            &#34;email&#34;: self.email,
+        }
+
+        try:
+            print(f&#34;  URL: {test_url}&#34;)
+            print(f&#34;  Params: {params}&#34;)
+
+            response = requests.get(test_url, params=params, timeout=30)
+            print(f&#34;  Status: {response.status_code}&#34;)
+            print(f&#34;  Headers: {dict(response.headers)}&#34;)
+
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    print(f&#34;  Response: {json.dumps(data, indent=2)}&#34;)
+                    return True
+                except (ValueError, KeyError):
+                    print(f&#34;  Raw text: {response.text}&#34;)
+                    return False
+            else:
+                print(f&#34;  Error: {response.text}&#34;)
+                return False
+
+        except Exception as e:
+            print(f&#34;  Exception: {e}&#34;)
+            return False</code></pre>
+</details>
+<div class="desc"></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.backup_existing_files"><code class="name flex">
+<span>def <span class="ident">backup_existing_files</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backup_existing_files(self):
+    &#34;&#34;&#34;既存ファイルのバックアップ&#34;&#34;&#34;
+    timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+    backed_up_files = []
+
+    for _group_name, group_info in self.taxonomy_groups.items():
+        filename = group_info[&#34;filename&#34;]
+        file_path = self.output_dir / filename
+
+        if file_path.exists():
+            backup_path = self.backup_dir / f&#34;{filename}.backup_{timestamp}&#34;
+            backup_path.write_text(file_path.read_text())
+            backed_up_files.append(str(backup_path))
+
+    # レガシーファイルもバックアップ
+    for legacy_file in self.legacy_mapping.keys():
+        legacy_path = self.output_dir / legacy_file
+        if legacy_path.exists():
+            backup_path = self.backup_dir / f&#34;{legacy_file}.backup_{timestamp}&#34;
+            backup_path.write_text(legacy_path.read_text())
+            backed_up_files.append(str(backup_path))
+
+    if backed_up_files:
+        print(f&#34;💾 Backed up {len(backed_up_files)} files to {self.backup_dir}&#34;)
+
+    return backed_up_files</code></pre>
+</details>
+<div class="desc"><p>既存ファイルのバックアップ</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.check_ncbi_taxonomy_updates"><code class="name flex">
+<span>def <span class="ident">check_ncbi_taxonomy_updates</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_ncbi_taxonomy_updates(self):
+    &#34;&#34;&#34;NCBI分類体系の最新情報をチェック&#34;&#34;&#34;
+    print(&#34;🔍 Checking NCBI Taxonomy structure...&#34;)
+
+    # メジャー分類群の統計を取得
+    stats = {}
+
+    for group_name, group_info in self.taxonomy_groups.items():
+        print(f&#34;  Processing {group_name}...&#34;)
+        try:
+            search_url = f&#34;{self.base_url}/esearch.fcgi&#34;
+            params = {
+                &#34;db&#34;: &#34;taxonomy&#34;,
+                &#34;term&#34;: f&#34;{group_info[&#39;search_term&#39;]} AND genus[rank]&#34;,
+                &#34;retmode&#34;: &#34;json&#34;,  # JSONモードに変更
+                &#34;email&#34;: self.email,
+            }
+
+            print(f&#34;    URL: {search_url}&#34;)
+            print(f&#34;    Query: {params[&#39;term&#39;]}&#34;)
+
+            response = requests.get(search_url, params=params)
+            response.raise_for_status()
+
+            print(f&#34;    Response status: {response.status_code}&#34;)
+
+            # JSONレスポンスを解析
+            try:
+                data = response.json()
+                print(f&#34;    Response data: {data}&#34;)
+
+                if &#34;esearchresult&#34; in data and &#34;count&#34; in data[&#34;esearchresult&#34;]:
+                    count = int(data[&#34;esearchresult&#34;][&#34;count&#34;])
+                    stats[group_name] = count
+                    print(f&#34;    Found {count} genera&#34;)
+                else:
+                    print(&#34;    No count found in response&#34;)
+                    stats[group_name] = 0
+
+            except json.JSONDecodeError as je:
+                print(f&#34;    JSON decode error: {je}&#34;)
+                print(f&#34;    Raw response: {response.text[:200]}...&#34;)
+                stats[group_name] = 0
+
+            time.sleep(0.5)  # API制限対応
+
+        except Exception as e:
+            print(f&#34;  ⚠️ Error checking {group_name}: {e}&#34;)
+            stats[group_name] = 0
+
+    print(&#34;\n📊 Current NCBI Taxonomy Statistics (Genus level):&#34;)
+    for group_name, count in stats.items():
+        description = self.taxonomy_groups[group_name][&#34;description&#34;]
+        print(f&#34;  {description:30}: {count:6,} genera&#34;)
+
+    return stats</code></pre>
+</details>
+<div class="desc"><p>NCBI分類体系の最新情報をチェック</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.compare_with_existing"><code class="name flex">
+<span>def <span class="ident">compare_with_existing</span></span>(<span>self, new_genera, filename)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compare_with_existing(self, new_genera, filename):
+    &#34;&#34;&#34;既存リストとの比較&#34;&#34;&#34;
+    file_path = self.output_dir / filename
+
+    current_genera = set()
+    if file_path.exists():
+        with open(file_path, &#34;r&#34;, encoding=&#34;utf-8&#34;) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith(&#34;//&#34;):
+                    current_genera.add(line)
+
+    new_set = set(new_genera)
+    added = new_set - current_genera
+    removed = current_genera - new_set
+    kept = new_set &amp; current_genera
+
+    return {
+        &#34;current_count&#34;: len(current_genera),
+        &#34;new_count&#34;: len(new_set),
+        &#34;added&#34;: sorted(list(added)),
+        &#34;removed&#34;: sorted(list(removed)),
+        &#34;kept&#34;: len(kept),
+    }</code></pre>
+</details>
+<div class="desc"><p>既存リストとの比較</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.fetch_taxonomy_names_batch"><code class="name flex">
+<span>def <span class="ident">fetch_taxonomy_names_batch</span></span>(<span>self, tax_ids, batch_size=200)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fetch_taxonomy_names_batch(self, tax_ids, batch_size=200):
+    &#34;&#34;&#34;分類IDから分類名をバッチ取得&#34;&#34;&#34;
+    if not tax_ids:
+        return []
+
+    print(f&#34;  📋 Fetching names for {len(tax_ids)} taxa...&#34;)
+
+    genera = set()
+
+    for i in range(0, len(tax_ids), batch_size):
+        batch_ids = tax_ids[i : i + batch_size]
+        batch_num = i // batch_size + 1
+        total_batches = (len(tax_ids) - 1) // batch_size + 1
+
+        print(f&#34;    Batch {batch_num}/{total_batches}&#34;)
+
+        fetch_url = f&#34;{self.base_url}/efetch.fcgi&#34;
+        params = {
+            &#34;db&#34;: &#34;taxonomy&#34;,
+            &#34;id&#34;: &#34;,&#34;.join(batch_ids),
+            &#34;retmode&#34;: &#34;xml&#34;,
+            &#34;email&#34;: self.email,
+        }
+
+        try:
+            response = requests.get(fetch_url, params=params)
+            response.raise_for_status()
+
+            names = self.parse_taxonomy_xml(response.text)
+            genera.update(names)
+
+            time.sleep(0.3)  # NCBI API制限対応
+
+        except Exception as e:
+            print(f&#34;    ⚠️ Error in batch {batch_num}: {e}&#34;)
+            continue
+
+    print(f&#34;  ✅ Extracted {len(genera)} unique genera&#34;)
+    return sorted(list(genera))</code></pre>
+</details>
+<div class="desc"><p>分類IDから分類名をバッチ取得</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.generate_summary_report"><code class="name flex">
+<span>def <span class="ident">generate_summary_report</span></span>(<span>self, all_results)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_summary_report(self, all_results):
+    &#34;&#34;&#34;全体の更新結果レポートを生成&#34;&#34;&#34;
+    report_path = self.output_dir.parent / &#34;taxonomy_update_report.md&#34;
+
+    with open(report_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
+        f.write(&#34;# NCBI Taxonomy Update Report\n\n&#34;)
+        f.write(f&#34;**Generated:** {datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)}\n\n&#34;)
+
+        f.write(&#34;## Summary\n\n&#34;)
+        f.write(&#34;| Group | Description | Genera | Added | Removed |\n&#34;)
+        f.write(&#34;|-------|-------------|--------|-------|----------|\n&#34;)
+
+        total_genera = 0
+        total_added = 0
+        total_removed = 0
+
+        for group_name, (genera_list, comparison) in all_results.items():
+            desc = self.taxonomy_groups[group_name][&#34;description&#34;]
+            count = len(genera_list)
+            added = len(comparison[&#34;added&#34;])
+            removed = len(comparison[&#34;removed&#34;])
+
+            f.write(f&#34;| {group_name} | {desc} | {count:,} | +{added} | -{removed} |\n&#34;)
+
+            total_genera += count
+            total_added += added
+            total_removed += removed
+
+        f.write(f&#34;| **Total** | | **{total_genera:,}** | **+{total_added}** | **-{total_removed}** |\n\n&#34;)
+
+        # 詳細変更
+        f.write(&#34;## Detailed Changes\n\n&#34;)
+        for group_name, (_genera_list, comparison) in all_results.items():
+            if comparison[&#34;added&#34;] or comparison[&#34;removed&#34;]:
+                desc = self.taxonomy_groups[group_name][&#34;description&#34;]
+                f.write(f&#34;### {desc}\n\n&#34;)
+
+                if comparison[&#34;added&#34;]:
+                    f.write(f&#34;**Added ({len(comparison[&#39;added&#39;])}):**\n&#34;)
+                    for genus in comparison[&#34;added&#34;][:20]:  # 最初の20個
+                        f.write(f&#34;- {genus}\n&#34;)
+                    if len(comparison[&#34;added&#34;]) &gt; 20:
+                        f.write(f&#34;- ... and {len(comparison[&#39;added&#39;]) - 20} more\n&#34;)
+                    f.write(&#34;\n&#34;)
+
+                if comparison[&#34;removed&#34;]:
+                    f.write(f&#34;**Removed ({len(comparison[&#39;removed&#39;])}):**\n&#34;)
+                    for genus in comparison[&#34;removed&#34;][:20]:
+                        f.write(f&#34;- {genus}\n&#34;)
+                    if len(comparison[&#34;removed&#34;]) &gt; 20:
+                        f.write(f&#34;- ... and {len(comparison[&#39;removed&#39;]) - 20} more\n&#34;)
+                    f.write(&#34;\n&#34;)
+
+    print(f&#34;📊 Summary report saved: {report_path}&#34;)</code></pre>
+</details>
+<div class="desc"><p>全体の更新結果レポートを生成</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.is_valid_genus_name"><code class="name flex">
+<span>def <span class="ident">is_valid_genus_name</span></span>(<span>self, name)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_valid_genus_name(self, name):
+    &#34;&#34;&#34;属名として有効かどうかを判定&#34;&#34;&#34;
+    if not name or len(name) &lt; 2:
+        return False
+
+    # スペースが含まれていたら種名レベルなのでスキップ
+    if &#34; &#34; in name:
+        return False
+
+    # 明らかに属名でない文字列を除外
+    invalid_patterns = [
+        &#34;sp.&#34;,
+        &#34;strain&#34;,
+        &#34;isolate&#34;,
+        &#34;clone&#34;,
+        &#34;uncultured&#34;,
+        &#34;unidentified&#34;,
+        &#34;environmental&#34;,
+        &#34;metagenome&#34;,
+    ]
+
+    name_lower = name.lower()
+    for pattern in invalid_patterns:
+        if pattern in name_lower:
+            return False
+
+    # 数字のみ、または記号のみは除外
+    if name.replace(&#34;-&#34;, &#34;&#34;).replace(&#34;_&#34;, &#34;&#34;).isdigit():
+        return False
+
+    return True</code></pre>
+</details>
+<div class="desc"><p>属名として有効かどうかを判定</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.migrate_legacy_files"><code class="name flex">
+<span>def <span class="ident">migrate_legacy_files</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def migrate_legacy_files(self):
+    &#34;&#34;&#34;レガシーファイルの移行&#34;&#34;&#34;
+    print(&#34;🔄 Checking legacy file migration...&#34;)
+
+    for legacy_file, new_file in self.legacy_mapping.items():
+        legacy_path = self.output_dir / legacy_file
+        new_path = self.output_dir / new_file
+
+        if legacy_path.exists() and not new_path.exists():
+            print(f&#34;  📁 Migrating {legacy_file} → {new_file}&#34;)
+            # レガシーファイルをバックアップしてから削除
+            timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+            backup_path = self.backup_dir / f&#34;{legacy_file}.migrated_{timestamp}&#34;
+            backup_path.write_text(legacy_path.read_text())
+            legacy_path.unlink()</code></pre>
+</details>
+<div class="desc"><p>レガシーファイルの移行</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.parse_taxonomy_xml"><code class="name flex">
+<span>def <span class="ident">parse_taxonomy_xml</span></span>(<span>self, xml_content)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_taxonomy_xml(self, xml_content):
+    &#34;&#34;&#34;Taxonomy XMLから属名を抽出&#34;&#34;&#34;
+    genera = set()
+
+    try:
+        root = ET.fromstring(xml_content)
+
+        for taxon in root.findall(&#34;.//Taxon&#34;):
+            # ScientificNameを取得
+            sci_name = taxon.find(&#34;.//ScientificName&#34;)
+            if sci_name is not None and sci_name.text:
+                name = sci_name.text.strip()
+
+                # 属レベルの名前を検証
+                if self.is_valid_genus_name(name):
+                    genera.add(name)
+
+    except ET.ParseError as e:
+        print(f&#34;    ⚠️ XML parsing error: {e}&#34;)
+
+    return genera</code></pre>
+</details>
+<div class="desc"><p>Taxonomy XMLから属名を抽出</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.save_taxonomy_file"><code class="name flex">
+<span>def <span class="ident">save_taxonomy_file</span></span>(<span>self, genera_list, group_name)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_taxonomy_file(self, genera_list, group_name):
+    &#34;&#34;&#34;分類リストをファイルに保存&#34;&#34;&#34;
+    group_info = self.taxonomy_groups[group_name]
+    filename = group_info[&#34;filename&#34;]
+    file_path = self.output_dir / filename
+
+    # 既存リストとの比較
+    comparison = self.compare_with_existing(genera_list, filename)
+
+    # ファイル保存
+    self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(file_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
+        f.write(f&#34;// filepath: {file_path}\n&#34;)
+        f.write(f&#34;// Updated: {datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)}\n&#34;)
+        f.write(f&#34;// Group: {group_info[&#39;description&#39;]}\n&#34;)
+        f.write(f&#34;// NCBI Taxon ID: {group_info[&#39;taxon_id&#39;]}\n&#34;)
+        f.write(f&#34;// Total genera: {len(genera_list)}\n&#34;)
+        f.write(f&#34;// Changes: +{len(comparison[&#39;added&#39;])} -{len(comparison[&#39;removed&#39;])}\n&#34;)
+        f.write(&#34;\n&#34;)
+
+        for genus in genera_list:
+            f.write(f&#34;{genus}\n&#34;)
+
+    return comparison</code></pre>
+</details>
+<div class="desc"><p>分類リストをファイルに保存</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.search_taxonomy_by_group"><code class="name flex">
+<span>def <span class="ident">search_taxonomy_by_group</span></span>(<span>self, group_name, retmax=5000)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def search_taxonomy_by_group(self, group_name, retmax=5000):
+    &#34;&#34;&#34;指定された分類群の属レベル分類を取得&#34;&#34;&#34;
+    group_info = self.taxonomy_groups[group_name]
+    print(f&#34;🔍 Searching {group_info[&#39;description&#39;]}...&#34;)
+
+    search_url = f&#34;{self.base_url}/esearch.fcgi&#34;
+    params = {
+        &#34;db&#34;: &#34;taxonomy&#34;,
+        &#34;term&#34;: f&#34;{group_info[&#39;search_term&#39;]} AND genus[rank]&#34;,
+        &#34;retmax&#34;: retmax,
+        &#34;retmode&#34;: &#34;json&#34;,
+        &#34;email&#34;: self.email,
+    }
+
+    try:
+        response = requests.get(search_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if &#34;esearchresult&#34; in data and &#34;idlist&#34; in data[&#34;esearchresult&#34;]:
+            tax_ids = data[&#34;esearchresult&#34;][&#34;idlist&#34;]
+            count = data[&#34;esearchresult&#34;].get(&#34;count&#34;, len(tax_ids))
+            print(f&#34;  ✅ Found {len(tax_ids)}/{count} genera&#34;)
+            return tax_ids
+        else:
+            print(f&#34;  ❌ No taxa found for {group_name}&#34;)
+            return []
+
+    except Exception as e:
+        print(f&#34;  ❌ Error searching {group_name}: {e}&#34;)
+        return []</code></pre>
+</details>
+<div class="desc"><p>指定された分類群の属レベル分類を取得</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.test_simple_query"><code class="name flex">
+<span>def <span class="ident">test_simple_query</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_simple_query(self):
+    &#34;&#34;&#34;シンプルなクエリでNCBI接続をテスト&#34;&#34;&#34;
+    print(&#34;🔬 Testing simple NCBI connection...&#34;)
+
+    test_url = f&#34;{self.base_url}/esearch.fcgi&#34;
+    params = {
+        &#34;db&#34;: &#34;taxonomy&#34;,
+        &#34;term&#34;: &#34;bacteria[organism]&#34;,
+        &#34;retmax&#34;: 5,
+        &#34;retmode&#34;: &#34;json&#34;,
+        &#34;email&#34;: self.email,
+    }
+
+    try:
+        print(f&#34;  URL: {test_url}&#34;)
+        print(f&#34;  Params: {params}&#34;)
+
+        response = requests.get(test_url, params=params, timeout=30)
+        print(f&#34;  Status: {response.status_code}&#34;)
+        print(f&#34;  Headers: {dict(response.headers)}&#34;)
+
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                print(f&#34;  Response: {json.dumps(data, indent=2)}&#34;)
+                return True
+            except (ValueError, KeyError):
+                print(f&#34;  Raw text: {response.text}&#34;)
+                return False
+        else:
+            print(f&#34;  Error: {response.text}&#34;)
+            return False
+
+    except Exception as e:
+        print(f&#34;  Exception: {e}&#34;)
+        return False</code></pre>
+</details>
+<div class="desc"><p>シンプルなクエリでNCBI接続をテスト</p></div>
+</dd>
+<dt id="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.update_all_taxonomy"><code class="name flex">
+<span>def <span class="ident">update_all_taxonomy</span></span>(<span>self, groups=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_all_taxonomy(self, groups=None):
+    &#34;&#34;&#34;全分類群の更新&#34;&#34;&#34;
+    print(&#34;🧬 NCBI Complete Taxonomy Updater&#34;)
+    print(&#34;=&#34; * 50)
+
+    # 現在の分類統計をチェック
+    self.check_ncbi_taxonomy_updates()
+
+    # バックアップ作成
+    backed_up = self.backup_existing_files()
+
+    # レガシーファイル移行
+    self.migrate_legacy_files()
+
+    # 更新する分類群を決定
+    if groups is None:
+        groups = list(self.taxonomy_groups.keys())
+
+    all_results = {}
+
+    print(f&#34;\n🔄 Updating {len(groups)} taxonomy groups...&#34;)
+
+    for i, group_name in enumerate(groups, 1):
+        print(f&#34;\n[{i}/{len(groups)}] Processing {group_name}...&#34;)
+
+        # 分類ID取得
+        tax_ids = self.search_taxonomy_by_group(group_name)
+
+        if not tax_ids:
+            print(f&#34;  ⚠️ Skipping {group_name} - no data found&#34;)
+            continue
+
+        # 分類名取得
+        genera_list = self.fetch_taxonomy_names_batch(tax_ids)
+
+        if not genera_list:
+            print(f&#34;  ⚠️ Skipping {group_name} - no genera extracted&#34;)
+            continue
+
+        # ファイル保存と比較
+        comparison = self.save_taxonomy_file(genera_list, group_name)
+        all_results[group_name] = (genera_list, comparison)
+
+        # 進捗表示
+        print(f&#34;  ✅ {group_name}: {len(genera_list)} genera (+{len(comparison[&#39;added&#39;])} -{len(comparison[&#39;removed&#39;])})&#34;)
+
+    # 全体レポート生成
+    if all_results:
+        self.generate_summary_report(all_results)
+
+    print(&#34;\n🎉 Update completed!&#34;)
+    print(f&#34;📁 Files saved to: {self.output_dir}&#34;)
+    if backed_up:
+        print(f&#34;💾 Backups saved to: {self.backup_dir}&#34;)
+
+    return all_results</code></pre>
+</details>
+<div class="desc"><p>全分類群の更新</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl" href="index.html">molcrawl</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.update_taxonomy_complete.main" href="#molcrawl.update_taxonomy_complete.main">main</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater">NCBITaxonomyCompleteUpdater</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.backup_existing_files" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.backup_existing_files">backup_existing_files</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.check_ncbi_taxonomy_updates" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.check_ncbi_taxonomy_updates">check_ncbi_taxonomy_updates</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.compare_with_existing" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.compare_with_existing">compare_with_existing</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.fetch_taxonomy_names_batch" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.fetch_taxonomy_names_batch">fetch_taxonomy_names_batch</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.generate_summary_report" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.generate_summary_report">generate_summary_report</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.is_valid_genus_name" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.is_valid_genus_name">is_valid_genus_name</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.migrate_legacy_files" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.migrate_legacy_files">migrate_legacy_files</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.parse_taxonomy_xml" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.parse_taxonomy_xml">parse_taxonomy_xml</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.save_taxonomy_file" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.save_taxonomy_file">save_taxonomy_file</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.search_taxonomy_by_group" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.search_taxonomy_by_group">search_taxonomy_by_group</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.test_simple_query" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.test_simple_query">test_simple_query</a></code></li>
+<li><code><a title="molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.update_all_taxonomy" href="#molcrawl.update_taxonomy_complete.NCBITaxonomyCompleteUpdater.update_all_taxonomy">update_all_taxonomy</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

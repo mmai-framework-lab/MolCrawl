@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.omim_real_data_processor API documentation</title>
+<meta name="description" content="OMIM Real Data Processor
+…">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.omim_real_data_processor</code></h1>
+</header>
+<section id="section-intro">
+<h1 id="omim-real-data-processor">OMIM Real Data Processor</h1>
+<p>実際のOMIMデータファイルを処理してゲノム配列評価用データセットを作成するモジュール</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.omim_real_data_processor.process_omim_real_data"><code class="name flex">
+<span>def <span class="ident">process_omim_real_data</span></span>(<span>config_path: str,<br>output_dir: str,<br>existing_omim_dir: str | None = None,<br>force_download: bool = False) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_omim_real_data(
+    config_path: str,
+    output_dir: str,
+    existing_omim_dir: Optional[str] = None,
+    force_download: bool = False,
+) -&gt; str:
+    &#34;&#34;&#34;
+    OMIM実データを処理してデータセットを作成
+
+    Args:
+        config_path: 設定ファイルパス
+        output_dir: 出力ディレクトリ
+        existing_omim_dir: 既存のOMIMデータディレクトリ（指定時はダウンロードをスキップ）
+        force_download: 強制ダウンロードフラグ
+
+    Returns:
+        出力ファイルパス
+    &#34;&#34;&#34;
+    # ログ設定
+    log_dir = os.path.join(output_dir, &#34;logs&#34;)
+    os.makedirs(log_dir, exist_ok=True)
+
+    log_file = os.path.join(log_dir, f&#34;omim_real_data_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}.log&#34;)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format=&#34;%(asctime)s - %(levelname)s - %(message)s&#34;,
+        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+    )
+
+    logger = logging.getLogger(__name__)
+    logger.info(&#34;Starting OMIM real data processing&#34;)
+
+    if existing_omim_dir:
+        logger.info(f&#34;Using existing OMIM directory: {existing_omim_dir}&#34;)
+
+    try:
+        # プロセッサ初期化
+        processor = OMIMRealDataProcessor(config_path, logger)
+
+        # ファイルダウンロードまたは既存ファイル使用
+        if existing_omim_dir and os.path.isdir(existing_omim_dir):
+            logger.info(&#34;Using existing OMIM files, skipping download&#34;)
+            # 既存ファイルのパスを設定
+            downloaded_files = {
+                &#34;mim2gene&#34;: os.path.join(existing_omim_dir, &#34;mim2gene.txt&#34;),
+                &#34;mim_titles&#34;: os.path.join(existing_omim_dir, &#34;mimTitles.txt&#34;),
+                &#34;genemap2&#34;: os.path.join(existing_omim_dir, &#34;genemap2.txt&#34;),
+                &#34;morbidmap&#34;: os.path.join(existing_omim_dir, &#34;morbidmap.txt&#34;),
+            }
+
+            # ファイルの存在確認
+            for _key, path in downloaded_files.items():
+                if not os.path.exists(path):
+                    logger.warning(f&#34;File not found: {path}&#34;)
+        else:
+            # ファイルダウンロード
+            downloaded_files = processor.download_omim_files(force_download)
+
+        # データセット作成
+        dataset = processor.create_evaluation_dataset(downloaded_files)
+
+        # 結果保存
+        # output_dirが既にdata配下を指している想定
+        os.makedirs(output_dir, exist_ok=True)
+
+        output_file = os.path.join(output_dir, &#34;omim_real_evaluation_dataset.csv&#34;)
+        dataset.to_csv(output_file, index=False)
+
+        logger.info(&#34;OMIM real data processing completed&#34;)
+        logger.info(f&#34;Output file: {output_file}&#34;)
+
+        return output_file
+
+    except Exception as e:
+        logger.error(f&#34;OMIM real data processing failed: {e}&#34;)
+        raise</code></pre>
+</details>
+<div class="desc"><p>OMIM実データを処理してデータセットを作成</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>config_path</code></strong></dt>
+<dd>設定ファイルパス</dd>
+<dt><strong><code>output_dir</code></strong></dt>
+<dd>出力ディレクトリ</dd>
+<dt><strong><code>existing_omim_dir</code></strong></dt>
+<dd>既存のOMIMデータディレクトリ（指定時はダウンロードをスキップ）</dd>
+<dt><strong><code>force_download</code></strong></dt>
+<dd>強制ダウンロードフラグ</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>出力ファイルパス</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor"><code class="flex name class">
+<span>class <span class="ident">OMIMRealDataProcessor</span></span>
+<span>(</span><span>config_path: str, logger: logging.Logger | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class OMIMRealDataProcessor:
+    &#34;&#34;&#34;OMIM実データ処理クラス&#34;&#34;&#34;
+
+    def __init__(self, config_path: str, logger: Optional[logging.Logger] = None):
+        self.logger = logger or logging.getLogger(__name__)
+
+        # 設定ファイル読み込み
+        with open(config_path, &#34;r&#34;) as f:
+            self.config = yaml.safe_load(f)
+
+        self.data_dir = self.config[&#34;data_directories&#34;][&#34;base_dir&#34;]
+        self.cache_dir = self.config[&#34;data_directories&#34;][&#34;cache_dir&#34;]
+        self.processed_dir = self.config[&#34;data_directories&#34;][&#34;processed_dir&#34;]
+
+        # ディレクトリ作成
+        for dir_path in [self.data_dir, self.cache_dir, self.processed_dir]:
+            os.makedirs(dir_path, exist_ok=True)
+
+        self.logger.info(&#34;OMIM Real Data Processor initialized&#34;)
+        self.logger.info(f&#34;Data directory: {self.data_dir}&#34;)
+
+    def download_omim_files(self, force_download: bool = False) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;OMIMファイルをダウンロード&#34;&#34;&#34;
+        downloaded_files = {}
+
+        for file_key, file_info in self.config[&#34;omim_data_sources&#34;].items():
+            local_path = os.path.join(self.data_dir, os.path.basename(file_info[&#34;local_path&#34;]))
+
+            if os.path.exists(local_path) and not force_download:
+                self.logger.info(f&#34;File already exists: {local_path}&#34;)
+                downloaded_files[file_key] = local_path
+                continue
+
+            self.logger.info(f&#34;Downloading {file_info[&#39;description&#39;]}&#34;)
+            self.logger.info(f&#34;URL: {file_info[&#39;url&#39;]}&#34;)
+
+            try:
+                response = requests.get(file_info[&#34;url&#34;], timeout=30)
+                response.raise_for_status()
+
+                with open(local_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
+                    f.write(response.text)
+
+                self.logger.info(f&#34;Downloaded: {local_path}&#34;)
+                downloaded_files[file_key] = local_path
+
+            except Exception as e:
+                self.logger.error(f&#34;Failed to download {file_key}: {e}&#34;)
+                raise
+
+        return downloaded_files
+
+    def parse_mim2gene(self, file_path: str) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;mim2gene.txtファイルを解析&#34;&#34;&#34;
+        self.logger.info(&#34;Parsing mim2gene.txt&#34;)
+
+        data = []
+        with open(file_path, &#34;r&#34;) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith(&#34;#&#34;) or not line:
+                    continue
+
+                parts = line.split(&#34;\t&#34;)
+                if len(parts) &gt;= 5:
+                    data.append(
+                        {
+                            &#34;mim_number&#34;: parts[0],
+                            &#34;mim_entry_type&#34;: parts[1],
+                            &#34;entrez_gene_id&#34;: parts[2] if parts[2] != &#34;&#34; else None,
+                            &#34;approved_gene_symbol&#34;: parts[3] if parts[3] != &#34;&#34; else None,
+                            &#34;ensembl_gene_id&#34;: parts[4] if parts[4] != &#34;&#34; else None,
+                        }
+                    )
+
+        df = pd.DataFrame(data)
+        self.logger.info(f&#34;Parsed {len(df)} mim2gene entries&#34;)
+        return df
+
+    def parse_mim_titles(self, file_path: str) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;mimTitles.txtファイルを解析&#34;&#34;&#34;
+        self.logger.info(&#34;Parsing mimTitles.txt&#34;)
+
+        data = []
+        with open(file_path, &#34;r&#34;) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith(&#34;#&#34;) or not line:
+                    continue
+
+                # Format: Prefix MIM_Number Title
+                parts = line.split(&#34;\t&#34;)
+                if len(parts) &gt;= 3:
+                    prefix = parts[0]
+                    mim_number = parts[1]
+                    title = parts[2]
+
+                    # 遺伝パターンを推定
+                    inheritance_pattern = self._extract_inheritance_pattern(title)
+
+                    data.append(
+                        {
+                            &#34;prefix&#34;: prefix,
+                            &#34;mim_number&#34;: mim_number,
+                            &#34;title&#34;: title,
+                            &#34;inheritance_pattern&#34;: inheritance_pattern,
+                            &#34;is_phenotype&#34;: prefix in [&#34;#&#34;, &#34;%&#34;, &#34;^&#34;, &#34;*&#34;],
+                        }
+                    )
+
+        df = pd.DataFrame(data)
+        self.logger.info(f&#34;Parsed {len(df)} mim titles entries&#34;)
+        return df
+
+    def parse_genemap2(self, file_path: str) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;genemap2.txtファイルを解析&#34;&#34;&#34;
+        self.logger.info(&#34;Parsing genemap2.txt&#34;)
+
+        column_names = [
+            &#34;chromosome&#34;,
+            &#34;genomic_position_start&#34;,
+            &#34;genomic_position_end&#34;,
+            &#34;cyto_location&#34;,
+            &#34;computed_cyto_location&#34;,
+            &#34;mim_number&#34;,
+            &#34;gene_symbols&#34;,
+            &#34;gene_name&#34;,
+            &#34;approved_symbol&#34;,
+            &#34;entrez_gene_id&#34;,
+            &#34;ensembl_gene_id&#34;,
+            &#34;comments&#34;,
+            &#34;phenotypes&#34;,
+            &#34;mouse_gene_symbol_id&#34;,
+        ]
+
+        data = []
+        with open(file_path, &#34;r&#34;) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith(&#34;#&#34;) or not line:
+                    continue
+
+                parts = line.split(&#34;\t&#34;)
+                if len(parts) &gt;= len(column_names):
+                    row_data = {}
+                    for i, col in enumerate(column_names):
+                        row_data[col] = parts[i] if i &lt; len(parts) and parts[i] != &#34;&#34; else None
+                    data.append(row_data)
+
+        df = pd.DataFrame(data)
+        self.logger.info(f&#34;Parsed {len(df)} genemap2 entries&#34;)
+        return df
+
+    def parse_morbidmap(self, file_path: str) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;morbidmap.txtファイルを解析&#34;&#34;&#34;
+        self.logger.info(&#34;Parsing morbidmap.txt&#34;)
+
+        data = []
+        with open(file_path, &#34;r&#34;) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith(&#34;#&#34;) or not line:
+                    continue
+
+                parts = line.split(&#34;\t&#34;)
+                if len(parts) &gt;= 4:
+                    disorder = parts[0]
+                    gene_symbols = parts[1]
+                    mim_number = parts[2]
+                    cyto_location = parts[3]
+
+                    # 病原性を推定
+                    pathogenicity = self._estimate_pathogenicity(disorder)
+
+                    data.append(
+                        {
+                            &#34;disorder&#34;: disorder,
+                            &#34;gene_symbols&#34;: gene_symbols,
+                            &#34;mim_number&#34;: mim_number,
+                            &#34;cyto_location&#34;: cyto_location,
+                            &#34;pathogenicity&#34;: pathogenicity,
+                            &#34;is_disease_causing&#34;: 1 if pathogenicity in [&#34;pathogenic&#34;, &#34;likely_pathogenic&#34;] else 0,
+                        }
+                    )
+
+        df = pd.DataFrame(data)
+        self.logger.info(f&#34;Parsed {len(df)} morbidmap entries&#34;)
+        return df
+
+    def _extract_inheritance_pattern(self, title: str) -&gt; str:
+        &#34;&#34;&#34;タイトルから遺伝パターンを抽出&#34;&#34;&#34;
+        title_lower = title.lower()
+
+        if &#34;autosomal dominant&#34; in title_lower or &#34;ad&#34; in title_lower:
+            return &#34;autosomal_dominant&#34;
+        elif &#34;autosomal recessive&#34; in title_lower or &#34;ar&#34; in title_lower:
+            return &#34;autosomal_recessive&#34;
+        elif &#34;x-linked&#34; in title_lower or &#34;xlr&#34; in title_lower or &#34;xld&#34; in title_lower:
+            return &#34;x_linked&#34;
+        elif &#34;mitochondrial&#34; in title_lower or &#34;maternal&#34; in title_lower:
+            return &#34;mitochondrial&#34;
+        elif &#34;complex&#34; in title_lower or &#34;multifactorial&#34; in title_lower:
+            return &#34;complex&#34;
+        else:
+            return &#34;unknown&#34;
+
+    def _estimate_pathogenicity(self, disorder: str) -&gt; str:
+        &#34;&#34;&#34;疾患名から病原性を推定&#34;&#34;&#34;
+        disorder_lower = disorder.lower()
+
+        # 重篤な疾患キーワード
+        severe_keywords = [
+            &#34;cancer&#34;,
+            &#34;carcinoma&#34;,
+            &#34;tumor&#34;,
+            &#34;syndrome&#34;,
+            &#34;disease&#34;,
+            &#34;deficiency&#34;,
+            &#34;dystrophy&#34;,
+            &#34;atrophy&#34;,
+            &#34;degeneration&#34;,
+        ]
+
+        # 軽度な疾患キーワード
+        mild_keywords = [&#34;susceptibility&#34;, &#34;predisposition&#34;, &#34;variant&#34;, &#34;polymorphism&#34;]
+
+        if any(keyword in disorder_lower for keyword in severe_keywords):
+            return &#34;pathogenic&#34;
+        elif any(keyword in disorder_lower for keyword in mild_keywords):
+            return &#34;likely_pathogenic&#34;
+        else:
+            return &#34;uncertain_significance&#34;
+
+    def generate_sequences_for_genes(self, gene_symbols: List[str], sequence_length: int = 100) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;遺伝子シンボルに基づいてダミー配列を生成&#34;&#34;&#34;
+        sequences = {}
+
+        for gene in gene_symbols:
+            # 遺伝子名をシードとして使用し、再現可能な配列を生成
+            seed = hash(gene) % (2**32)
+            np.random.seed(seed)
+
+            nucleotides = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+            sequence = &#34;&#34;.join(np.random.choice(nucleotides, sequence_length))
+            sequences[gene] = sequence
+
+        return sequences
+
+    def create_evaluation_dataset(self, downloaded_files: Dict[str, str]) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;評価用データセットを作成&#34;&#34;&#34;
+        self.logger.info(&#34;Creating evaluation dataset from OMIM real data&#34;)
+
+        # 各ファイルを解析
+        mim2gene_df = self.parse_mim2gene(downloaded_files[&#34;mim2gene&#34;])
+        mim_titles_df = self.parse_mim_titles(downloaded_files[&#34;mim_titles&#34;])
+        genemap2_df = self.parse_genemap2(downloaded_files[&#34;genemap2&#34;])
+        morbidmap_df = self.parse_morbidmap(downloaded_files[&#34;morbidmap&#34;])
+
+        # データを統合
+        self.logger.info(&#34;Merging OMIM datasets&#34;)
+
+        # morbidmapをベースにして他のデータを結合
+        merged_df = morbidmap_df.copy()
+
+        # mim2geneと結合
+        merged_df = merged_df.merge(
+            mim2gene_df[[&#34;mim_number&#34;, &#34;approved_gene_symbol&#34;, &#34;entrez_gene_id&#34;]],
+            on=&#34;mim_number&#34;,
+            how=&#34;left&#34;,
+            suffixes=(&#34;&#34;, &#34;_mim2gene&#34;),
+        )
+
+        # mimTitlesと結合
+        merged_df = merged_df.merge(
+            mim_titles_df[[&#34;mim_number&#34;, &#34;inheritance_pattern&#34;, &#34;is_phenotype&#34;]],
+            on=&#34;mim_number&#34;,
+            how=&#34;left&#34;,
+        )
+
+        # genemap2と結合
+        merged_df = merged_df.merge(
+            genemap2_df[[&#34;mim_number&#34;, &#34;chromosome&#34;, &#34;gene_name&#34;, &#34;phenotypes&#34;]],
+            on=&#34;mim_number&#34;,
+            how=&#34;left&#34;,
+            suffixes=(&#34;&#34;, &#34;_genemap2&#34;),
+        )
+
+        # データクリーニング
+        merged_df = merged_df.dropna(subset=[&#34;gene_symbols&#34;])
+        merged_df = merged_df[merged_df[&#34;gene_symbols&#34;] != &#34;&#34;]
+
+        # 設定に基づくフィルタリング
+        max_sequences = self.config[&#34;processing_options&#34;][&#34;max_sequences&#34;]
+        if len(merged_df) &gt; max_sequences:
+            merged_df = merged_df.sample(n=max_sequences, random_state=42)
+
+        # 配列生成
+        self.logger.info(&#34;Generating sequences for genes&#34;)
+        unique_genes = []
+        for gene_symbols in merged_df[&#34;gene_symbols&#34;].unique():
+            if pd.notna(gene_symbols):
+                genes = [g.strip() for g in gene_symbols.split(&#34;,&#34;)]
+                unique_genes.extend(genes)
+
+        unique_genes = list(set(unique_genes))
+        sequence_length = self.config[&#34;processing_options&#34;][&#34;sequence_length&#34;]
+        sequences = self.generate_sequences_for_genes(unique_genes, sequence_length)
+
+        # 配列をデータフレームに追加
+        def get_sequence_for_row(row):
+            gene_symbols = row[&#34;gene_symbols&#34;]
+            if pd.notna(gene_symbols):
+                first_gene = gene_symbols.split(&#34;,&#34;)[0].strip()
+                return sequences.get(first_gene, &#34;&#34;)
+            return &#34;&#34;
+
+        merged_df[&#34;sequence&#34;] = merged_df.apply(get_sequence_for_row, axis=1)
+
+        # 空の配列を除外
+        merged_df = merged_df[merged_df[&#34;sequence&#34;] != &#34;&#34;]
+
+        self.logger.info(f&#34;Created evaluation dataset with {len(merged_df)} entries&#34;)
+        self.logger.info(f&#34;Disease-causing variants: {merged_df[&#39;is_disease_causing&#39;].sum()}&#34;)
+        self.logger.info(f&#34;Benign variants: {(merged_df[&#39;is_disease_causing&#39;] == 0).sum()}&#34;)
+
+        return merged_df</code></pre>
+</details>
+<div class="desc"><p>OMIM実データ処理クラス</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset"><code class="name flex">
+<span>def <span class="ident">create_evaluation_dataset</span></span>(<span>self, downloaded_files: Dict[str, str]) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_evaluation_dataset(self, downloaded_files: Dict[str, str]) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;評価用データセットを作成&#34;&#34;&#34;
+    self.logger.info(&#34;Creating evaluation dataset from OMIM real data&#34;)
+
+    # 各ファイルを解析
+    mim2gene_df = self.parse_mim2gene(downloaded_files[&#34;mim2gene&#34;])
+    mim_titles_df = self.parse_mim_titles(downloaded_files[&#34;mim_titles&#34;])
+    genemap2_df = self.parse_genemap2(downloaded_files[&#34;genemap2&#34;])
+    morbidmap_df = self.parse_morbidmap(downloaded_files[&#34;morbidmap&#34;])
+
+    # データを統合
+    self.logger.info(&#34;Merging OMIM datasets&#34;)
+
+    # morbidmapをベースにして他のデータを結合
+    merged_df = morbidmap_df.copy()
+
+    # mim2geneと結合
+    merged_df = merged_df.merge(
+        mim2gene_df[[&#34;mim_number&#34;, &#34;approved_gene_symbol&#34;, &#34;entrez_gene_id&#34;]],
+        on=&#34;mim_number&#34;,
+        how=&#34;left&#34;,
+        suffixes=(&#34;&#34;, &#34;_mim2gene&#34;),
+    )
+
+    # mimTitlesと結合
+    merged_df = merged_df.merge(
+        mim_titles_df[[&#34;mim_number&#34;, &#34;inheritance_pattern&#34;, &#34;is_phenotype&#34;]],
+        on=&#34;mim_number&#34;,
+        how=&#34;left&#34;,
+    )
+
+    # genemap2と結合
+    merged_df = merged_df.merge(
+        genemap2_df[[&#34;mim_number&#34;, &#34;chromosome&#34;, &#34;gene_name&#34;, &#34;phenotypes&#34;]],
+        on=&#34;mim_number&#34;,
+        how=&#34;left&#34;,
+        suffixes=(&#34;&#34;, &#34;_genemap2&#34;),
+    )
+
+    # データクリーニング
+    merged_df = merged_df.dropna(subset=[&#34;gene_symbols&#34;])
+    merged_df = merged_df[merged_df[&#34;gene_symbols&#34;] != &#34;&#34;]
+
+    # 設定に基づくフィルタリング
+    max_sequences = self.config[&#34;processing_options&#34;][&#34;max_sequences&#34;]
+    if len(merged_df) &gt; max_sequences:
+        merged_df = merged_df.sample(n=max_sequences, random_state=42)
+
+    # 配列生成
+    self.logger.info(&#34;Generating sequences for genes&#34;)
+    unique_genes = []
+    for gene_symbols in merged_df[&#34;gene_symbols&#34;].unique():
+        if pd.notna(gene_symbols):
+            genes = [g.strip() for g in gene_symbols.split(&#34;,&#34;)]
+            unique_genes.extend(genes)
+
+    unique_genes = list(set(unique_genes))
+    sequence_length = self.config[&#34;processing_options&#34;][&#34;sequence_length&#34;]
+    sequences = self.generate_sequences_for_genes(unique_genes, sequence_length)
+
+    # 配列をデータフレームに追加
+    def get_sequence_for_row(row):
+        gene_symbols = row[&#34;gene_symbols&#34;]
+        if pd.notna(gene_symbols):
+            first_gene = gene_symbols.split(&#34;,&#34;)[0].strip()
+            return sequences.get(first_gene, &#34;&#34;)
+        return &#34;&#34;
+
+    merged_df[&#34;sequence&#34;] = merged_df.apply(get_sequence_for_row, axis=1)
+
+    # 空の配列を除外
+    merged_df = merged_df[merged_df[&#34;sequence&#34;] != &#34;&#34;]
+
+    self.logger.info(f&#34;Created evaluation dataset with {len(merged_df)} entries&#34;)
+    self.logger.info(f&#34;Disease-causing variants: {merged_df[&#39;is_disease_causing&#39;].sum()}&#34;)
+    self.logger.info(f&#34;Benign variants: {(merged_df[&#39;is_disease_causing&#39;] == 0).sum()}&#34;)
+
+    return merged_df</code></pre>
+</details>
+<div class="desc"><p>評価用データセットを作成</p></div>
+</dd>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files"><code class="name flex">
+<span>def <span class="ident">download_omim_files</span></span>(<span>self, force_download: bool = False) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_omim_files(self, force_download: bool = False) -&gt; Dict[str, str]:
+    &#34;&#34;&#34;OMIMファイルをダウンロード&#34;&#34;&#34;
+    downloaded_files = {}
+
+    for file_key, file_info in self.config[&#34;omim_data_sources&#34;].items():
+        local_path = os.path.join(self.data_dir, os.path.basename(file_info[&#34;local_path&#34;]))
+
+        if os.path.exists(local_path) and not force_download:
+            self.logger.info(f&#34;File already exists: {local_path}&#34;)
+            downloaded_files[file_key] = local_path
+            continue
+
+        self.logger.info(f&#34;Downloading {file_info[&#39;description&#39;]}&#34;)
+        self.logger.info(f&#34;URL: {file_info[&#39;url&#39;]}&#34;)
+
+        try:
+            response = requests.get(file_info[&#34;url&#34;], timeout=30)
+            response.raise_for_status()
+
+            with open(local_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
+                f.write(response.text)
+
+            self.logger.info(f&#34;Downloaded: {local_path}&#34;)
+            downloaded_files[file_key] = local_path
+
+        except Exception as e:
+            self.logger.error(f&#34;Failed to download {file_key}: {e}&#34;)
+            raise
+
+    return downloaded_files</code></pre>
+</details>
+<div class="desc"><p>OMIMファイルをダウンロード</p></div>
+</dd>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes"><code class="name flex">
+<span>def <span class="ident">generate_sequences_for_genes</span></span>(<span>self, gene_symbols: List[str], sequence_length: int = 100) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_sequences_for_genes(self, gene_symbols: List[str], sequence_length: int = 100) -&gt; Dict[str, str]:
+    &#34;&#34;&#34;遺伝子シンボルに基づいてダミー配列を生成&#34;&#34;&#34;
+    sequences = {}
+
+    for gene in gene_symbols:
+        # 遺伝子名をシードとして使用し、再現可能な配列を生成
+        seed = hash(gene) % (2**32)
+        np.random.seed(seed)
+
+        nucleotides = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+        sequence = &#34;&#34;.join(np.random.choice(nucleotides, sequence_length))
+        sequences[gene] = sequence
+
+    return sequences</code></pre>
+</details>
+<div class="desc"><p>遺伝子シンボルに基づいてダミー配列を生成</p></div>
+</dd>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2"><code class="name flex">
+<span>def <span class="ident">parse_genemap2</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_genemap2(self, file_path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;genemap2.txtファイルを解析&#34;&#34;&#34;
+    self.logger.info(&#34;Parsing genemap2.txt&#34;)
+
+    column_names = [
+        &#34;chromosome&#34;,
+        &#34;genomic_position_start&#34;,
+        &#34;genomic_position_end&#34;,
+        &#34;cyto_location&#34;,
+        &#34;computed_cyto_location&#34;,
+        &#34;mim_number&#34;,
+        &#34;gene_symbols&#34;,
+        &#34;gene_name&#34;,
+        &#34;approved_symbol&#34;,
+        &#34;entrez_gene_id&#34;,
+        &#34;ensembl_gene_id&#34;,
+        &#34;comments&#34;,
+        &#34;phenotypes&#34;,
+        &#34;mouse_gene_symbol_id&#34;,
+    ]
+
+    data = []
+    with open(file_path, &#34;r&#34;) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(&#34;#&#34;) or not line:
+                continue
+
+            parts = line.split(&#34;\t&#34;)
+            if len(parts) &gt;= len(column_names):
+                row_data = {}
+                for i, col in enumerate(column_names):
+                    row_data[col] = parts[i] if i &lt; len(parts) and parts[i] != &#34;&#34; else None
+                data.append(row_data)
+
+    df = pd.DataFrame(data)
+    self.logger.info(f&#34;Parsed {len(df)} genemap2 entries&#34;)
+    return df</code></pre>
+</details>
+<div class="desc"><p>genemap2.txtファイルを解析</p></div>
+</dd>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene"><code class="name flex">
+<span>def <span class="ident">parse_mim2gene</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_mim2gene(self, file_path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;mim2gene.txtファイルを解析&#34;&#34;&#34;
+    self.logger.info(&#34;Parsing mim2gene.txt&#34;)
+
+    data = []
+    with open(file_path, &#34;r&#34;) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(&#34;#&#34;) or not line:
+                continue
+
+            parts = line.split(&#34;\t&#34;)
+            if len(parts) &gt;= 5:
+                data.append(
+                    {
+                        &#34;mim_number&#34;: parts[0],
+                        &#34;mim_entry_type&#34;: parts[1],
+                        &#34;entrez_gene_id&#34;: parts[2] if parts[2] != &#34;&#34; else None,
+                        &#34;approved_gene_symbol&#34;: parts[3] if parts[3] != &#34;&#34; else None,
+                        &#34;ensembl_gene_id&#34;: parts[4] if parts[4] != &#34;&#34; else None,
+                    }
+                )
+
+    df = pd.DataFrame(data)
+    self.logger.info(f&#34;Parsed {len(df)} mim2gene entries&#34;)
+    return df</code></pre>
+</details>
+<div class="desc"><p>mim2gene.txtファイルを解析</p></div>
+</dd>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles"><code class="name flex">
+<span>def <span class="ident">parse_mim_titles</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_mim_titles(self, file_path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;mimTitles.txtファイルを解析&#34;&#34;&#34;
+    self.logger.info(&#34;Parsing mimTitles.txt&#34;)
+
+    data = []
+    with open(file_path, &#34;r&#34;) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(&#34;#&#34;) or not line:
+                continue
+
+            # Format: Prefix MIM_Number Title
+            parts = line.split(&#34;\t&#34;)
+            if len(parts) &gt;= 3:
+                prefix = parts[0]
+                mim_number = parts[1]
+                title = parts[2]
+
+                # 遺伝パターンを推定
+                inheritance_pattern = self._extract_inheritance_pattern(title)
+
+                data.append(
+                    {
+                        &#34;prefix&#34;: prefix,
+                        &#34;mim_number&#34;: mim_number,
+                        &#34;title&#34;: title,
+                        &#34;inheritance_pattern&#34;: inheritance_pattern,
+                        &#34;is_phenotype&#34;: prefix in [&#34;#&#34;, &#34;%&#34;, &#34;^&#34;, &#34;*&#34;],
+                    }
+                )
+
+    df = pd.DataFrame(data)
+    self.logger.info(f&#34;Parsed {len(df)} mim titles entries&#34;)
+    return df</code></pre>
+</details>
+<div class="desc"><p>mimTitles.txtファイルを解析</p></div>
+</dd>
+<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap"><code class="name flex">
+<span>def <span class="ident">parse_morbidmap</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_morbidmap(self, file_path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;morbidmap.txtファイルを解析&#34;&#34;&#34;
+    self.logger.info(&#34;Parsing morbidmap.txt&#34;)
+
+    data = []
+    with open(file_path, &#34;r&#34;) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(&#34;#&#34;) or not line:
+                continue
+
+            parts = line.split(&#34;\t&#34;)
+            if len(parts) &gt;= 4:
+                disorder = parts[0]
+                gene_symbols = parts[1]
+                mim_number = parts[2]
+                cyto_location = parts[3]
+
+                # 病原性を推定
+                pathogenicity = self._estimate_pathogenicity(disorder)
+
+                data.append(
+                    {
+                        &#34;disorder&#34;: disorder,
+                        &#34;gene_symbols&#34;: gene_symbols,
+                        &#34;mim_number&#34;: mim_number,
+                        &#34;cyto_location&#34;: cyto_location,
+                        &#34;pathogenicity&#34;: pathogenicity,
+                        &#34;is_disease_causing&#34;: 1 if pathogenicity in [&#34;pathogenic&#34;, &#34;likely_pathogenic&#34;] else 0,
+                    }
+                )
+
+    df = pd.DataFrame(data)
+    self.logger.info(f&#34;Parsed {len(df)} morbidmap entries&#34;)
+    return df</code></pre>
+</details>
+<div class="desc"><p>morbidmap.txtファイルを解析</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul>
+<li><a href="#omim-real-data-processor">OMIM Real Data Processor</a></li>
+</ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl" href="index.html">molcrawl</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.omim_real_data_processor.process_omim_real_data" href="#molcrawl.omim_real_data_processor.process_omim_real_data">process_omim_real_data</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor">OMIMRealDataProcessor</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset">create_evaluation_dataset</a></code></li>
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files">download_omim_files</a></code></li>
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes">generate_sequences_for_genes</a></code></li>
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2">parse_genemap2</a></code></li>
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene">parse_mim2gene</a></code></li>
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles">parse_mim_titles</a></code></li>
+<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap">parse_morbidmap</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

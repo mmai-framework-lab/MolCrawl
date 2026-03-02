@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.protein_sequence.dataset.tokenizer API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.protein_sequence.dataset.tokenizer</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.generate_parquet_from_raw"><code class="name flex">
+<span>def <span class="ident">generate_parquet_from_raw</span></span>(<span>raw_dir: Path, parquet_dir: Path, num_worker=5)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_parquet_from_raw(raw_dir: Path, parquet_dir: Path, num_worker=5):
+    from rich import progress
+
+    print(f&#34;Tokenizing raw files in {raw_dir} to parquet files in {parquet_dir} with {num_worker} workers.&#34;)
+    raw_paths = [path for path in Path(raw_dir).iterdir() if path.suffix == &#34;.raw&#34;]
+    parquet_paths = get_parquet_paths(raw_paths, parquet_dir)
+
+    tokenizer = EsmSequenceTokenizer()
+
+    token_counts = []
+    with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
+        func = partial(process_raw, tokenizer=tokenizer)
+        for result in progress.track(
+            executor.map(func, raw_paths, parquet_paths), &#34;Tokenizing to parquet&#34;, total=len(raw_paths)
+        ):
+            token_counts += result
+
+    with open(raw_dir.parent / &#34;token_counts.pkl&#34;, &#34;wb&#34;) as file:
+        pickle.dump(token_counts, file)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.get_parquet_paths"><code class="name flex">
+<span>def <span class="ident">get_parquet_paths</span></span>(<span>raw_paths: List[Path], parquet_dir: Union[Path, str])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_parquet_paths(raw_paths: List[Path], parquet_dir: Union[Path, str]):
+    parquet_dir = Path(parquet_dir)
+    parquet_dir.mkdir(parents=True, exist_ok=True)
+    return [parquet_dir / path.with_suffix(&#34;.parquet&#34;).name for path in raw_paths]</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.process_raw"><code class="name flex">
+<span>def <span class="ident">process_raw</span></span>(<span>path_raw, path_parquet, tokenizer)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_raw(path_raw, path_parquet, tokenizer):
+    import pandas as pd
+
+    tokenized_sequences = []
+    with open(path_raw, &#34;r&#34;) as raw_file:
+        for line in raw_file:
+            tokens = tokenize_sequence(line.strip(), tokenizer)
+            tokenized_sequences.append((tokens, len(tokens)))
+    df = pd.DataFrame(tokenized_sequences, columns=[&#34;token&#34;, &#34;token_count&#34;])
+    df.to_parquet(path_parquet, index=False)
+    return df[&#34;token_count&#34;].to_list()</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.tokenize_sequence"><code class="name flex">
+<span>def <span class="ident">tokenize_sequence</span></span>(<span>sequence: str,<br>sequence_tokenizer: <a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer">EsmSequenceTokenizer</a>,<br>add_special_tokens: bool = True) ‑> List[int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_sequence(
+    sequence: str,
+    sequence_tokenizer: EsmSequenceTokenizer,
+    add_special_tokens: bool = True,
+) -&gt; List[int]:
+    sequence = sequence.replace(MASK_STR_SHORT, sequence_tokenizer.mask_token)
+    return sequence_tokenizer.encode(sequence, add_special_tokens=add_special_tokens)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.tokenize_to_parquet"><code class="name flex">
+<span>def <span class="ident">tokenize_to_parquet</span></span>(<span>output_dir: Union[str, Path], num_worker)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_to_parquet(output_dir: Union[str, Path], num_worker):
+    raw_dir = Path(output_dir) / &#34;raw_files&#34;
+    parquet_dir = Path(output_dir) / &#34;parquet_files&#34;
+    generate_parquet_from_raw(raw_dir, parquet_dir, num_worker)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer"><code class="flex name class">
+<span>class <span class="ident">EsmSequenceTokenizer</span></span>
+<span>(</span><span>unk_token=&#x27;&lt;unk&gt;&#x27;,<br>cls_token=&#x27;&lt;cls&gt;&#x27;,<br>pad_token=&#x27;&lt;pad&gt;&#x27;,<br>mask_token=&#x27;&lt;mask&gt;&#x27;,<br>eos_token=&#x27;&lt;eos&gt;&#x27;,<br>chain_break_token='|',<br>**kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EsmSequenceTokenizer(PreTrainedTokenizerFast):
+    &#34;&#34;&#34;
+    Constructs an ESM tokenizer.
+    &#34;&#34;&#34;
+
+    model_input_names = [&#34;sequence_tokens&#34;, &#34;attention_mask&#34;]
+
+    def __init__(
+        self,
+        unk_token=&#34;&lt;unk&gt;&#34;,
+        cls_token=&#34;&lt;cls&gt;&#34;,
+        pad_token=&#34;&lt;pad&gt;&#34;,
+        mask_token=&#34;&lt;mask&gt;&#34;,
+        eos_token=&#34;&lt;eos&gt;&#34;,
+        chain_break_token=&#34;|&#34;,
+        **kwargs,
+    ):
+        from tokenizers import Tokenizer
+        from tokenizers.models import BPE
+        from tokenizers.processors import TemplateProcessing
+
+        all_tokens = SEQUENCE_VOCAB
+        token_to_id = {tok: ind for ind, tok in enumerate(all_tokens)}
+
+        # a character-level tokenizer is the same as BPE with no token merges
+        bpe = BPE(token_to_id, merges=[], unk_token=unk_token)
+        tokenizer = Tokenizer(bpe)
+        special_tokens = [
+            cls_token,
+            pad_token,
+            mask_token,
+            eos_token,
+            chain_break_token,
+        ]
+        self.cb_token = chain_break_token
+        additional_special_tokens = [chain_break_token]
+
+        tokenizer.add_special_tokens(
+            special_tokens,
+        )
+
+        # This is where we configure the automatic addition of special tokens when we call
+        # tokenizer(text, add_special_tokens=True). Note that you can also configure how two
+        # sequences are merged if you want.
+        tokenizer.post_processor = TemplateProcessing(  # type: ignore
+            single=&#34;&lt;cls&gt; $A &lt;eos&gt;&#34;,
+            special_tokens=[
+                (&#34;&lt;cls&gt;&#34;, tokenizer.token_to_id(&#34;&lt;cls&gt;&#34;)),
+                (&#34;&lt;eos&gt;&#34;, tokenizer.token_to_id(&#34;&lt;eos&gt;&#34;)),
+            ],
+        )
+        super().__init__(
+            tokenizer_object=tokenizer,
+            unk_token=unk_token,
+            cls_token=cls_token,
+            pad_token=pad_token,
+            mask_token=mask_token,
+            eos_token=eos_token,
+            additional_special_tokens=additional_special_tokens,
+            clean_up_tokenization_spaces=False,
+            **kwargs,
+        )
+
+    # These are a footgun, we never use the `bos` token anywhere so we&#39;re just overriding it here.
+    @property
+    def bos_token(self):
+        return self.cls_token
+
+    @property
+    def bos_token_id(self):
+        return self.cls_token_id
+
+    @property
+    def chain_break_token(self):
+        return self.cb_token
+
+    @property
+    def chain_break_token_id(self):
+        return self.convert_tokens_to_ids(self.chain_break_token)
+
+    @property
+    def all_token_ids(self):
+        return list(range(self.vocab_size))
+
+    @property
+    def special_token_ids(self):
+        return self.all_special_ids</code></pre>
+</details>
+<div class="desc"><p>Constructs an ESM tokenizer.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="molcrawl.protein_sequence.dataset.tokenizer.PreTrainedTokenizerFast" href="#molcrawl.protein_sequence.dataset.tokenizer.PreTrainedTokenizerFast">PreTrainedTokenizerFast</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="molcrawl.protein_sequence.utils.bert_tokenizer.BertProteinSequenceTokenizer" href="../utils/bert_tokenizer.html#molcrawl.protein_sequence.utils.bert_tokenizer.BertProteinSequenceTokenizer">BertProteinSequenceTokenizer</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.model_input_names"><code class="name">var <span class="ident">model_input_names</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.all_token_ids"><code class="name">prop <span class="ident">all_token_ids</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def all_token_ids(self):
+    return list(range(self.vocab_size))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.bos_token"><code class="name">prop <span class="ident">bos_token</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def bos_token(self):
+    return self.cls_token</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.bos_token_id"><code class="name">prop <span class="ident">bos_token_id</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def bos_token_id(self):
+    return self.cls_token_id</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.chain_break_token"><code class="name">prop <span class="ident">chain_break_token</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def chain_break_token(self):
+    return self.cb_token</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.chain_break_token_id"><code class="name">prop <span class="ident">chain_break_token_id</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def chain_break_token_id(self):
+    return self.convert_tokens_to_ids(self.chain_break_token)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.special_token_ids"><code class="name">prop <span class="ident">special_token_ids</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def special_token_ids(self):
+    return self.all_special_ids</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.tokenizer.PreTrainedTokenizerFast"><code class="flex name class">
+<span>class <span class="ident">PreTrainedTokenizerFast</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PreTrainedTokenizerFast:  # type: ignore
+    def __init__(self, *args, **kwargs):
+        raise ModuleNotFoundError(&#34;transformers is required to use EsmSequenceTokenizer&#34;)</code></pre>
+</details>
+<div class="desc"></div>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer">EsmSequenceTokenizer</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.protein_sequence.dataset" href="index.html">molcrawl.protein_sequence.dataset</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.generate_parquet_from_raw" href="#molcrawl.protein_sequence.dataset.tokenizer.generate_parquet_from_raw">generate_parquet_from_raw</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.get_parquet_paths" href="#molcrawl.protein_sequence.dataset.tokenizer.get_parquet_paths">get_parquet_paths</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.process_raw" href="#molcrawl.protein_sequence.dataset.tokenizer.process_raw">process_raw</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.tokenize_sequence" href="#molcrawl.protein_sequence.dataset.tokenizer.tokenize_sequence">tokenize_sequence</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.tokenize_to_parquet" href="#molcrawl.protein_sequence.dataset.tokenizer.tokenize_to_parquet">tokenize_to_parquet</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer">EsmSequenceTokenizer</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.all_token_ids" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.all_token_ids">all_token_ids</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.bos_token" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.bos_token">bos_token</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.bos_token_id" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.bos_token_id">bos_token_id</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.chain_break_token" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.chain_break_token">chain_break_token</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.chain_break_token_id" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.chain_break_token_id">chain_break_token_id</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.model_input_names" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.model_input_names">model_input_names</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.special_token_ids" href="#molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer.special_token_ids">special_token_ids</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.protein_sequence.dataset.tokenizer.PreTrainedTokenizerFast" href="#molcrawl.protein_sequence.dataset.tokenizer.PreTrainedTokenizerFast">PreTrainedTokenizerFast</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.preparation.compare_arrow_structures API documentation</title>
+<meta name="description" content="Compare arrow dataset structures between old and new implementations">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.preparation.compare_arrow_structures</code></h1>
+</header>
+<section id="section-intro">
+<p>Compare arrow dataset structures between old and new implementations</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.preparation.compare_arrow_structures.compare_structures"><code class="name flex">
+<span>def <span class="ident">compare_structures</span></span>(<span>old_info, new_info, split_name)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compare_structures(old_info, new_info, split_name):
+    &#34;&#34;&#34;Compare two dataset structures and report differences&#34;&#34;&#34;
+    logger.info(f&#34;\n{&#39;=&#39; * 70}&#34;)
+    logger.info(f&#34;Comparing {split_name} split&#34;)
+    logger.info(f&#34;{&#39;=&#39; * 70}&#34;)
+
+    if old_info is None or new_info is None:
+        logger.error(&#34;Cannot compare - one or both datasets missing&#34;)
+        return False
+
+    all_match = True
+
+    # Compare number of samples
+    logger.info(&#34;\n[Sample Count]&#34;)
+    logger.info(f&#34;  Old: {old_info[&#39;num_samples&#39;]:,}&#34;)
+    logger.info(f&#34;  New: {new_info[&#39;num_samples&#39;]:,}&#34;)
+    if old_info[&#34;num_samples&#34;] != new_info[&#34;num_samples&#34;]:
+        logger.warning(f&#34;  ⚠️  Sample count differs by {abs(old_info[&#39;num_samples&#39;] - new_info[&#39;num_samples&#39;]):,}&#34;)
+        all_match = False
+    else:
+        logger.info(&#34;  ✅ Sample count matches&#34;)
+
+    # Compare columns
+    logger.info(&#34;\n[Columns]&#34;)
+    logger.info(f&#34;  Old columns ({old_info[&#39;num_columns&#39;]}): {&#39;, &#39;.join(old_info[&#39;column_names&#39;])}&#34;)
+    logger.info(f&#34;  New columns ({new_info[&#39;num_columns&#39;]}): {&#39;, &#39;.join(new_info[&#39;column_names&#39;])}&#34;)
+
+    old_cols = set(old_info[&#34;column_names&#34;])
+    new_cols = set(new_info[&#34;column_names&#34;])
+
+    missing_in_new = old_cols - new_cols
+    added_in_new = new_cols - old_cols
+    common_cols = old_cols &amp; new_cols
+
+    if missing_in_new:
+        logger.warning(f&#34;  ⚠️  Columns missing in new: {&#39;, &#39;.join(sorted(missing_in_new))}&#34;)
+        all_match = False
+    if added_in_new:
+        logger.warning(f&#34;  ⚠️  Columns added in new: {&#39;, &#39;.join(sorted(added_in_new))}&#34;)
+        all_match = False
+    if not missing_in_new and not added_in_new:
+        logger.info(&#34;  ✅ All columns match&#34;)
+
+    # Compare feature types for common columns
+    if common_cols:
+        logger.info(&#34;\n[Feature Types for Common Columns]&#34;)
+        type_mismatches = []
+        for col in sorted(common_cols):
+            old_type = old_info[&#34;features&#34;][col]
+            new_type = new_info[&#34;features&#34;][col]
+            if old_type != new_type:
+                logger.warning(f&#34;  ⚠️  {col}:&#34;)
+                logger.warning(f&#34;      Old: {old_type}&#34;)
+                logger.warning(f&#34;      New: {new_type}&#34;)
+                type_mismatches.append(col)
+                all_match = False
+
+        if not type_mismatches:
+            logger.info(f&#34;  ✅ All feature types match for {len(common_cols)} columns&#34;)
+
+    # Compare sample data structure
+    logger.info(&#34;\n[Sample Data Structure]&#34;)
+    for col in sorted(common_cols):
+        old_sample = old_info[&#34;sample_data&#34;].get(col, {})
+        new_sample = new_info[&#34;sample_data&#34;].get(col, {})
+
+        logger.info(f&#34;\n  Column: {col}&#34;)
+        logger.info(f&#34;    Old: {old_sample.get(&#39;type&#39;, &#39;unknown&#39;)}&#34;)
+        logger.info(f&#34;    New: {new_sample.get(&#39;type&#39;, &#39;unknown&#39;)}&#34;)
+
+        if old_sample.get(&#34;type&#34;) == &#34;list&#34; and new_sample.get(&#34;type&#34;) == &#34;list&#34;:
+            logger.info(f&#34;    Old length: {old_sample.get(&#39;length&#39;, 0)}&#34;)
+            logger.info(f&#34;    New length: {new_sample.get(&#39;length&#39;, 0)}&#34;)
+            if old_sample.get(&#34;first_5&#34;) and new_sample.get(&#34;first_5&#34;):
+                logger.info(f&#34;    Old first 5: {old_sample[&#39;first_5&#39;]}&#34;)
+                logger.info(f&#34;    New first 5: {new_sample[&#39;first_5&#39;]}&#34;)
+        elif old_sample.get(&#34;type&#34;) == &#34;string&#34; and new_sample.get(&#34;type&#34;) == &#34;string&#34;:
+            logger.info(f&#34;    Old preview: {old_sample.get(&#39;preview&#39;, &#39;&#39;)[:80]}&#34;)
+            logger.info(f&#34;    New preview: {new_sample.get(&#39;preview&#39;, &#39;&#39;)[:80]}&#34;)
+
+    return all_match</code></pre>
+</details>
+<div class="desc"><p>Compare two dataset structures and report differences</p></div>
+</dd>
+<dt id="molcrawl.preparation.compare_arrow_structures.load_dataset_info"><code class="name flex">
+<span>def <span class="ident">load_dataset_info</span></span>(<span>dataset_path: pathlib.Path, split_name: str)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_dataset_info(dataset_path: Path, split_name: str):
+    &#34;&#34;&#34;Load dataset and extract structure information&#34;&#34;&#34;
+    split_path = dataset_path / split_name
+
+    if not split_path.exists():
+        # Try with .arrow suffix
+        arrow_path = dataset_path / f&#34;{split_name}.arrow&#34;
+        if arrow_path.exists():
+            split_path = arrow_path
+        else:
+            # Try alternative names
+            alternatives = {&#34;valid&#34;: &#34;validation&#34;, &#34;validation&#34;: &#34;valid&#34;}
+            if split_name in alternatives:
+                alt_split_path = dataset_path / alternatives[split_name]
+                alt_arrow_path = dataset_path / f&#34;{alternatives[split_name]}.arrow&#34;
+                if alt_split_path.exists():
+                    split_path = alt_split_path
+                    logger.info(f&#34;  Using alternative split name: {alternatives[split_name]}&#34;)
+                elif alt_arrow_path.exists():
+                    split_path = alt_arrow_path
+                    logger.info(f&#34;  Using alternative split name: {alternatives[split_name]}.arrow&#34;)
+                else:
+                    logger.warning(f&#34;  Split not found: {split_name} or {alternatives[split_name]}&#34;)
+                    return None
+            else:
+                logger.warning(f&#34;  Split not found: {split_name}&#34;)
+                return None
+
+    try:
+        dataset = load_from_disk(str(split_path))
+
+        info: dict[str, Any] = {
+            &#34;num_samples&#34;: len(dataset),
+            &#34;num_columns&#34;: len(dataset.column_names),
+            &#34;column_names&#34;: sorted(dataset.column_names),
+            &#34;features&#34;: {},
+            &#34;sample_data&#34;: {},
+        }
+
+        # Get feature types
+        for col_name in dataset.column_names:
+            info[&#34;features&#34;][col_name] = str(dataset.features[col_name])
+
+        # Get first sample for each column
+        if len(dataset) &gt; 0:
+            first_sample = dataset[0]
+            for col_name in dataset.column_names:
+                value = first_sample[col_name]
+                if isinstance(value, (list, tuple)):
+                    info[&#34;sample_data&#34;][col_name] = {
+                        &#34;type&#34;: &#34;list&#34;,
+                        &#34;length&#34;: len(value),
+                        &#34;first_5&#34;: value[:5] if len(value) &gt; 0 else [],
+                    }
+                elif isinstance(value, str):
+                    info[&#34;sample_data&#34;][col_name] = {
+                        &#34;type&#34;: &#34;string&#34;,
+                        &#34;length&#34;: len(value),
+                        &#34;preview&#34;: value[:100] + &#34;...&#34; if len(value) &gt; 100 else value,
+                    }
+                else:
+                    info[&#34;sample_data&#34;][col_name] = {&#34;type&#34;: type(value).__name__, &#34;value&#34;: value}
+
+        return info
+
+    except Exception as e:
+        logger.error(f&#34;  Failed to load {split_path}: {e}&#34;)
+        return None</code></pre>
+</details>
+<div class="desc"><p>Load dataset and extract structure information</p></div>
+</dd>
+<dt id="molcrawl.preparation.compare_arrow_structures.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    parser = argparse.ArgumentParser(description=&#34;Compare arrow dataset structures between old and new implementations&#34;)
+    parser.add_argument(
+        &#34;old_dataset&#34;,
+        type=str,
+        help=&#34;Path to old dataset directory (e.g., learning_source/molecule_nl/molecule_related_natural_language_tokenized.parquet)&#34;,
+    )
+    parser.add_argument(
+        &#34;new_dataset&#34;, type=str, help=&#34;Path to new dataset directory (e.g., learning_source/molecule_nl/arrow_splits)&#34;
+    )
+    parser.add_argument(
+        &#34;--splits&#34;,
+        type=str,
+        nargs=&#34;+&#34;,
+        default=[&#34;train&#34;, &#34;test&#34;, &#34;valid&#34;],
+        help=&#34;Splits to compare (default: train test valid)&#34;,
+    )
+
+    args = parser.parse_args()
+
+    old_path = Path(args.old_dataset)
+    new_path = Path(args.new_dataset)
+
+    if not old_path.exists():
+        logger.error(f&#34;Old dataset path does not exist: {old_path}&#34;)
+        sys.exit(1)
+
+    if not new_path.exists():
+        logger.error(f&#34;New dataset path does not exist: {new_path}&#34;)
+        sys.exit(1)
+
+    logger.info(f&#34;{&#39;=&#39; * 70}&#34;)
+    logger.info(&#34;Dataset Structure Comparison&#34;)
+    logger.info(f&#34;{&#39;=&#39; * 70}&#34;)
+    logger.info(f&#34;Old dataset: {old_path}&#34;)
+    logger.info(f&#34;New dataset: {new_path}&#34;)
+
+    all_splits_match = True
+
+    for split_name in args.splits:
+        logger.info(f&#34;\n\nLoading {split_name} split from old dataset...&#34;)
+        old_info = load_dataset_info(old_path, split_name)
+
+        logger.info(f&#34;Loading {split_name} split from new dataset...&#34;)
+        new_info = load_dataset_info(new_path, split_name)
+
+        if old_info and new_info:
+            matches = compare_structures(old_info, new_info, split_name)
+            if not matches:
+                all_splits_match = False
+
+    # Final summary
+    logger.info(f&#34;\n\n{&#39;=&#39; * 70}&#34;)
+    logger.info(&#34;COMPARISON SUMMARY&#34;)
+    logger.info(f&#34;{&#39;=&#39; * 70}&#34;)
+    if all_splits_match:
+        logger.info(&#34;✅ All dataset structures match!&#34;)
+    else:
+        logger.warning(&#34;⚠️  Some differences found between old and new datasets&#34;)
+        logger.info(&#34;\nRecommendations:&#34;)
+        logger.info(&#34;1. Review the differences above&#34;)
+        logger.info(&#34;2. Ensure backward compatibility if needed&#34;)
+        logger.info(&#34;3. Update dependent code if structure changed&#34;)
+
+    return 0 if all_splits_match else 1</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.preparation" href="index.html">molcrawl.preparation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.preparation.compare_arrow_structures.compare_structures" href="#molcrawl.preparation.compare_arrow_structures.compare_structures">compare_structures</a></code></li>
+<li><code><a title="molcrawl.preparation.compare_arrow_structures.load_dataset_info" href="#molcrawl.preparation.compare_arrow_structures.load_dataset_info">load_dataset_info</a></code></li>
+<li><code><a title="molcrawl.preparation.compare_arrow_structures.main" href="#molcrawl.preparation.compare_arrow_structures.main">main</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
