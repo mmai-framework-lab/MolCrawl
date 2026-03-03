@@ -252,9 +252,9 @@ if __name__ == "__main__":
                 desc="Validating and tokenizing {}".format(split),
                 remove_columns=dataset[split].column_names,
             )
-        except RuntimeError as e:
+        except Exception as e:
             logger.warning(
-                f"Multiprocessing map failed (num_proc={num_proc}): {e}\n"
+                f"Multiprocessing map failed (num_proc={num_proc}): {type(e).__name__}: {e}\n"
                 "Retrying with num_proc=1 (single process)..."
             )
             processed_split = dataset[split].map(

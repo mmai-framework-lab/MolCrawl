@@ -191,8 +191,9 @@ def save_dataset(dataset, dataset_path: Union[str, Path], batch_size: int = 5000
                 for start in range(0, num_rows, batch_size):
                     end = min(start + batch_size, num_rows)
                     batch = split_dataset.select(range(start, end))
-                    # Add split column as a plain Python list to avoid schema issues
-                    batch_pa = batch.to_arrow()
+                    # .data is the underlying pyarrow.Table (works across datasets versions)
+                    batch_pa = batch.data.to_pydict()
+                    batch_pa = pa.table(batch_pa)
                     split_col = pa.array([split_name] * len(batch), type=pa.string())
                     batch_pa = batch_pa.append_column("split", split_col)
                     if writer is None:
