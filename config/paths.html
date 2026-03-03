@@ -72,7 +72,7 @@ el.replaceWith(d);
     BERTモデルの出力パスを取得する関数
 
     Args:
-        domain (str): ドメイン名 (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nl&#39;)
+        domain (str): ドメイン名 (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
         model_size (str): モデルサイズ (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;)
 
     Returns:
@@ -84,7 +84,7 @@ el.replaceWith(d);
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
-<dd>ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nl')</dd>
+<dd>ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
 <dd>モデルサイズ ('small', 'medium', 'large')</dd>
 </dl>
@@ -121,14 +121,14 @@ el.replaceWith(d);
     データセットのパスを取得する関数
 
     Args:
-        dataset_type (str): データセットタイプ (&#39;uniprot&#39;, &#39;refseq&#39;, &#39;cellxgene&#39;, &#39;molecule_nl&#39;)
+        dataset_type (str): データセットタイプ (&#39;uniprot&#39;, &#39;refseq&#39;, &#39;cellxgene&#39;, &#39;molecule_nat_lang&#39;)
         relative_path (str): データセット内の相対パス
 
     Returns:
         str: 完全なパス
     &#34;&#34;&#34;
-    if dataset_type == &#34;molecule_nl&#34;:
-        base_path = os.path.join(PROJECT_ROOT, MOLECULE_NL_DATASET_DIR)
+    if dataset_type == &#34;molecule_nat_lang&#34;:
+        base_path = os.path.join(PROJECT_ROOT, MOLECULE_NAT_LANG_DATASET_DIR)
     else:
         base_path = os.path.join(PROJECT_ROOT, GENOME_SEQUENCE_DIR, dataset_type)
 
@@ -140,7 +140,7 @@ el.replaceWith(d);
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>dataset_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>データセットタイプ ('uniprot', 'refseq', 'cellxgene', 'molecule_nl')</dd>
+<dd>データセットタイプ ('uniprot', 'refseq', 'cellxgene', 'molecule_nat_lang')</dd>
 <dt><strong><code>relative_path</code></strong> :&ensp;<code>str</code></dt>
 <dd>データセット内の相対パス</dd>
 </dl>
@@ -202,7 +202,7 @@ el.replaceWith(d);
     GPT-2モデルの出力パスを取得する関数
 
     Args:
-        domain (str): ドメイン名 (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nl&#39;)
+        domain (str): ドメイン名 (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
         model_size (str): モデルサイズ (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;xl&#39;, &#39;ex-large&#39;)
 
     Returns:
@@ -220,7 +220,7 @@ el.replaceWith(d);
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
-<dd>ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nl')</dd>
+<dd>ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
 <dd>モデルサイズ ('small', 'medium', 'large', 'xl', 'ex-large')</dd>
 </dl>

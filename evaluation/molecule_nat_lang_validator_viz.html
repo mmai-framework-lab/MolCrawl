@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.molecule_related_nl.utils.config API documentation</title>
+<title>molcrawl.evaluation.molecule_nat_lang_validator_viz API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
@@ -33,7 +33,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.molecule_related_nl.utils.config</code></h1>
+<h1 class="title">Module <code>molcrawl.evaluation.molecule_nat_lang_validator_viz</code></h1>
 </header>
 <section id="section-intro">
 </section>
@@ -44,96 +44,6 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-classes">Classes</h2>
-<dl>
-<dt id="molcrawl.molecule_related_nl.utils.config.MoleculeNLConfig"><code class="flex name class">
-<span>class <span class="ident">MoleculeNLConfig</span></span>
-<span>(</span><span>data_preparation: <a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig">MoleculeNLPreparationConfig</a> = &lt;factory&gt;)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@dataclass
-class MoleculeNLConfig(Config):
-    data_preparation: MoleculeNLPreparationConfig = field(default_factory=MoleculeNLPreparationConfig)
-
-    def __post_init__(self):
-        if not isinstance(self.data_preparation, MoleculeNLPreparationConfig):  # type: ignore[misc]
-            self.data_preparation = MoleculeNLPreparationConfig(**self.data_preparation)  # type: ignore[arg-type]</code></pre>
-</details>
-<div class="desc"><p>MoleculeNLConfig(data_preparation: molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig = <factory>)</p></div>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="molcrawl.core.config.Config" href="../../core/config.html#molcrawl.core.config.Config">Config</a></li>
-</ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="molcrawl.molecule_related_nl.utils.config.MoleculeNLConfig.data_preparation"><code class="name">var <span class="ident">data_preparation</span> : <a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig">MoleculeNLPreparationConfig</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="molcrawl.core.config.Config" href="../../core/config.html#molcrawl.core.config.Config">Config</a></b></code>:
-<ul class="hlist">
-<li><code><a title="molcrawl.core.config.Config.from_file" href="../../core/config.html#molcrawl.core.config.Config.from_file">from_file</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig"><code class="flex name class">
-<span>class <span class="ident">MoleculeNLPreparationConfig</span></span>
-<span>(</span><span>dataset: str = 'molecule_nl/osunlp/SMolInstruct',<br>save_path: str = 'molecule_nl/molecule_related_natural_language_tokenized.parquet',<br>num_workers: int = 12)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@dataclass
-class MoleculeNLPreparationConfig(Config):
-    # Path to save raw data
-    dataset: str = &#34;molecule_nl/osunlp/SMolInstruct&#34;
-
-    # Path to save the processed and tokenized dataset
-    save_path: str = &#34;molecule_nl/molecule_related_natural_language_tokenized.parquet&#34;
-
-    # Num of workers to use in the data preparation
-    num_workers: int = 12</code></pre>
-</details>
-<div class="desc"><p>MoleculeNLPreparationConfig(dataset: str = 'molecule_nl/osunlp/SMolInstruct', save_path: str = 'molecule_nl/molecule_related_natural_language_tokenized.parquet', num_workers: int = 12)</p></div>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="molcrawl.core.config.Config" href="../../core/config.html#molcrawl.core.config.Config">Config</a></li>
-</ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.dataset"><code class="name">var <span class="ident">dataset</span> : str</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.num_workers"><code class="name">var <span class="ident">num_workers</span> : int</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.save_path"><code class="name">var <span class="ident">save_path</span> : str</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="molcrawl.core.config.Config" href="../../core/config.html#molcrawl.core.config.Config">Config</a></b></code>:
-<ul class="hlist">
-<li><code><a title="molcrawl.core.config.Config.from_file" href="../../core/config.html#molcrawl.core.config.Config.from_file">from_file</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -143,25 +53,7 @@ class MoleculeNLPreparationConfig(Config):
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.molecule_related_nl.utils" href="index.html">molcrawl.molecule_related_nl.utils</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-classes">Classes</a></h3>
-<ul>
-<li>
-<h4><code><a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLConfig" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLConfig">MoleculeNLConfig</a></code></h4>
-<ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLConfig.data_preparation" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLConfig.data_preparation">data_preparation</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig">MoleculeNLPreparationConfig</a></code></h4>
-<ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.dataset" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.dataset">dataset</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.num_workers" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.num_workers">num_workers</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.save_path" href="#molcrawl.molecule_related_nl.utils.config.MoleculeNLPreparationConfig.save_path">save_path</a></code></li>
-</ul>
-</li>
+<li><code><a title="molcrawl.evaluation" href="index.html">molcrawl.evaluation</a></code></li>
 </ul>
 </li>
 </ul>

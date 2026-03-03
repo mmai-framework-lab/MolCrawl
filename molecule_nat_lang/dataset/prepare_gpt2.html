@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.molecule_related_nl API documentation</title>
-<meta name="description" content="Molecule-related natural language package.">
+<title>molcrawl.molecule_nat_lang.dataset.prepare_gpt2 API documentation</title>
+<meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,27 +33,114 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.molecule_related_nl</code></h1>
+<h1 class="title">Module <code>molcrawl.molecule_nat_lang.dataset.prepare_gpt2</code></h1>
 </header>
 <section id="section-intro">
-<p>Molecule-related natural language package.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.molecule_related_nl.dataset" href="dataset/index.html">molcrawl.molecule_related_nl.dataset</a></code></dt>
+<dt id="molcrawl.molecule_nat_lang.dataset.prepare_gpt2.concatenate_texts"><code class="name flex">
+<span>def <span class="ident">concatenate_texts</span></span>(<span>examples, eos_token_id)</span>
+</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def concatenate_texts(examples, eos_token_id):
+    concatenated_ids = []
+    for input_ids, output_ids in zip(examples[&#34;input_ids&#34;], examples[&#34;output_ids&#34;]):
+        concatenated_ids.extend(input_ids + output_ids)
+    return {&#34;input_ids&#34;: concatenated_ids}</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.molecule_related_nl.utils" href="utils/index.html">molcrawl.molecule_related_nl.utils</a></code></dt>
+<dt id="molcrawl.molecule_nat_lang.dataset.prepare_gpt2.create_chunks"><code class="name flex">
+<span>def <span class="ident">create_chunks</span></span>(<span>examples, context_length)</span>
+</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_chunks(examples, context_length):
+    concatenated_ids = examples[&#34;input_ids&#34;]
+
+    # Calculate the total number of chunks
+    total_length = len(concatenated_ids)
+    num_chunks = total_length // context_length
+
+    # Truncate the concatenated_ids to a multiple of context_length
+    total_length = num_chunks * context_length
+    concatenated_ids = concatenated_ids[:total_length]
+
+    # Split into chunks
+    input_ids = [concatenated_ids[i : i + context_length] for i in range(0, total_length, context_length)]
+
+    return {&#34;input_ids&#34;: input_ids}</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.molecule_nat_lang.dataset.prepare_gpt2.tokenize_batch_dataset"><code class="name flex">
+<span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>parquet_path, context_length, number_sample)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_batch_dataset(parquet_path, context_length, number_sample):
+    from datasets import DatasetDict
+    import numpy as np
+
+    from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
+
+    tokenize_dataset = DatasetDict(read_dataset(parquet_path))
+
+    # Handle validation/valid split naming
+    if &#34;validation&#34; in tokenize_dataset and &#34;valid&#34; not in tokenize_dataset:
+        tokenize_dataset[&#34;valid&#34;] = tokenize_dataset[&#34;validation&#34;]
+        del tokenize_dataset[&#34;validation&#34;]
+    elif &#34;valid&#34; not in tokenize_dataset and &#34;validation&#34; not in tokenize_dataset:
+        raise KeyError(&#34;Neither &#39;valid&#39; nor &#39;validation&#39; split found in dataset&#34;)
+
+    tokenize_dataset[&#34;train&#34;] = tokenize_dataset[&#34;train&#34;].select(
+        np.random.choice(len(tokenize_dataset[&#34;train&#34;]), int(number_sample * 0.8), replace=False)
+    )
+    tokenize_dataset[&#34;valid&#34;] = tokenize_dataset[&#34;valid&#34;].select(
+        np.random.choice(len(tokenize_dataset[&#34;valid&#34;]), int(number_sample * 0.1), replace=False)
+    )
+    tokenize_dataset[&#34;test&#34;] = tokenize_dataset[&#34;test&#34;].select(
+        np.random.choice(len(tokenize_dataset[&#34;test&#34;]), int(number_sample * 0.1), replace=False)
+    )
+
+    tokenizer = MoleculeNatLangTokenizer()
+
+    concatenated_dataset = tokenize_dataset.map(
+        partial(concatenate_texts, eos_token_id=tokenizer.tokenizer.eos_token_id),
+        batched=True,
+        batch_size=-1,
+        remove_columns=tokenize_dataset[&#34;train&#34;].column_names,
+    )
+
+    chunked_dataset = concatenated_dataset.map(
+        partial(create_chunks, context_length=context_length),
+        batched=True,
+        batch_size=-1,
+    )
+
+    path_dataset = str(Path(parquet_path).parent / &#34;training_ready_hf_dataset&#34;)
+    print(f&#34;Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py-&gt;dataset_dir parameter.&#34;)
+    chunked_dataset.save_to_disk(path_dataset)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -65,13 +152,14 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl" href="../index.html">molcrawl</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.dataset" href="index.html">molcrawl.molecule_nat_lang.dataset</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.molecule_related_nl.dataset" href="dataset/index.html">molcrawl.molecule_related_nl.dataset</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils" href="utils/index.html">molcrawl.molecule_related_nl.utils</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.molecule_nat_lang.dataset.prepare_gpt2.concatenate_texts" href="#molcrawl.molecule_nat_lang.dataset.prepare_gpt2.concatenate_texts">concatenate_texts</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.dataset.prepare_gpt2.create_chunks" href="#molcrawl.molecule_nat_lang.dataset.prepare_gpt2.create_chunks">create_chunks</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.dataset.prepare_gpt2.tokenize_batch_dataset" href="#molcrawl.molecule_nat_lang.dataset.prepare_gpt2.tokenize_batch_dataset">tokenize_batch_dataset</a></code></li>
 </ul>
 </li>
 </ul>

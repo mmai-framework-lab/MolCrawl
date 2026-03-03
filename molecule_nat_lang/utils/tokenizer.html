@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.molecule_related_nl.utils.tokenizer API documentation</title>
+<title>molcrawl.molecule_nat_lang.utils.tokenizer API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
@@ -33,7 +33,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.molecule_related_nl.utils.tokenizer</code></h1>
+<h1 class="title">Module <code>molcrawl.molecule_nat_lang.utils.tokenizer</code></h1>
 </header>
 <section id="section-intro">
 </section>
@@ -44,7 +44,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.canonicalize"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.canonicalize"><code class="name flex">
 <span>def <span class="ident">canonicalize</span></span>(<span>smiles, isomeric=False, canonical=True, kekulize=False)</span>
 </code></dt>
 <dd>
@@ -122,7 +122,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.canonicalize_molecule_smiles"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.canonicalize_molecule_smiles"><code class="name flex">
 <span>def <span class="ident">canonicalize_molecule_smiles</span></span>(<span>smiles,<br>return_none_for_error=True,<br>skip_mol=False,<br>sort_things=True,<br>isomeric=True,<br>kekulization=True,<br>allow_empty_part=False)</span>
 </code></dt>
 <dd>
@@ -187,7 +187,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.generate_chat"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.generate_chat"><code class="name flex">
 <span>def <span class="ident">generate_chat</span></span>(<span>input_text, output_text=None, prefix_chat=None)</span>
 </code></dt>
 <dd>
@@ -207,7 +207,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.get_chat_content"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.get_chat_content"><code class="name flex">
 <span>def <span class="ident">get_chat_content</span></span>(<span>conversation, tokenize=False)</span>
 </code></dt>
 <dd>
@@ -241,7 +241,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter"><code class="flex name class">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter"><code class="flex name class">
 <span>class <span class="ident">GeneralPrompter</span></span>
 <span>(</span><span>apply_chat_template_func, response_split='[/INST]')</span>
 </code></dt>
@@ -265,7 +265,7 @@ el.replaceWith(d);
 <div class="desc"></div>
 <h3>Methods</h3>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter.generate_prompt"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter.generate_prompt"><code class="name flex">
 <span>def <span class="ident">generate_prompt</span></span>(<span>self, chat, tokenize=False, *args, **kargs) ‑> str</span>
 </code></dt>
 <dd>
@@ -279,7 +279,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter.get_response"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter.get_response"><code class="name flex">
 <span>def <span class="ident">get_response</span></span>(<span>self, output: str) ‑> str</span>
 </code></dt>
 <dd>
@@ -294,7 +294,7 @@ el.replaceWith(d);
 </dd>
 </dl>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer"><code class="flex name class">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer"><code class="flex name class">
 <span>class <span class="ident">MoleculeNatLangTokenizer</span></span>
 </code></dt>
 <dd>
@@ -714,7 +714,7 @@ inheritance.</p></div>
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text"><code class="name flex">
 <span>def <span class="ident">canonicalize_smiles_in_text</span></span>(<span>text,<br>tags=(&#x27;&lt;SMILES&gt;&#x27;, &#x27;&lt;/SMILES&gt;&#x27;),<br>keep_text_unchanged_if_no_tags=True,<br>keep_text_unchanged_if_error=False)</span>
 </code></dt>
 <dd>
@@ -785,7 +785,7 @@ def canonicalize_smiles_in_text(
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict"><code class="name flex">
 <span>def <span class="ident">tokenize_dict</span></span>(<span>self,<br>text: dict[str, str],<br>canonicalize_smiles: bool = True,<br>max_input_tokens: bool = None)</span>
 </code></dt>
 <dd>
@@ -822,7 +822,7 @@ def canonicalize_smiles_in_text(
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text"><code class="name flex">
 <span>def <span class="ident">tokenize_text</span></span>(<span>self, text: str, canonicalize_smiles: bool = True, max_input_tokens: bool = None)</span>
 </code></dt>
 <dd>
@@ -853,7 +853,7 @@ def canonicalize_smiles_in_text(
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.train"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.train"><code class="name flex">
 <span>def <span class="ident">train</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -878,33 +878,33 @@ def canonicalize_smiles_in_text(
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.molecule_related_nl.utils" href="index.html">molcrawl.molecule_related_nl.utils</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils" href="index.html">molcrawl.molecule_nat_lang.utils</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.canonicalize" href="#molcrawl.molecule_related_nl.utils.tokenizer.canonicalize">canonicalize</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.canonicalize_molecule_smiles" href="#molcrawl.molecule_related_nl.utils.tokenizer.canonicalize_molecule_smiles">canonicalize_molecule_smiles</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.generate_chat" href="#molcrawl.molecule_related_nl.utils.tokenizer.generate_chat">generate_chat</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.get_chat_content" href="#molcrawl.molecule_related_nl.utils.tokenizer.get_chat_content">get_chat_content</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.canonicalize" href="#molcrawl.molecule_nat_lang.utils.tokenizer.canonicalize">canonicalize</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.canonicalize_molecule_smiles" href="#molcrawl.molecule_nat_lang.utils.tokenizer.canonicalize_molecule_smiles">canonicalize_molecule_smiles</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.generate_chat" href="#molcrawl.molecule_nat_lang.utils.tokenizer.generate_chat">generate_chat</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.get_chat_content" href="#molcrawl.molecule_nat_lang.utils.tokenizer.get_chat_content">get_chat_content</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter" href="#molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter">GeneralPrompter</a></code></h4>
+<h4><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter" href="#molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter">GeneralPrompter</a></code></h4>
 <ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter.generate_prompt" href="#molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter.generate_prompt">generate_prompt</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter.get_response" href="#molcrawl.molecule_related_nl.utils.tokenizer.GeneralPrompter.get_response">get_response</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter.generate_prompt" href="#molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter.generate_prompt">generate_prompt</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter.get_response" href="#molcrawl.molecule_nat_lang.utils.tokenizer.GeneralPrompter.get_response">get_response</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer" href="#molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer">MoleculeNatLangTokenizer</a></code></h4>
+<h4><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer" href="#molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer">MoleculeNatLangTokenizer</a></code></h4>
 <ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text" href="#molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text">canonicalize_smiles_in_text</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict" href="#molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict">tokenize_dict</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text" href="#molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text">tokenize_text</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.train" href="#molcrawl.molecule_related_nl.utils.tokenizer.MoleculeNatLangTokenizer.train">train</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text" href="#molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text">canonicalize_smiles_in_text</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict" href="#molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict">tokenize_dict</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text" href="#molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text">tokenize_text</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.train" href="#molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.train">train</a></code></li>
 </ul>
 </li>
 </ul>

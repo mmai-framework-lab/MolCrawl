@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.molecule_related_nl.utils.bert_tokenizer API documentation</title>
+<title>molcrawl.molecule_nat_lang.utils.bert_tokenizer API documentation</title>
 <meta name="description" content="Molecule Natural Language用のBERT互換トークナイザーラッパー
 MoleculeNatLangTokenizerをBERT学習と互換性のある形式でラップ">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -34,7 +34,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.molecule_related_nl.utils.bert_tokenizer</code></h1>
+<h1 class="title">Module <code>molcrawl.molecule_nat_lang.utils.bert_tokenizer</code></h1>
 </header>
 <section id="section-intro">
 <p>Molecule Natural Language用のBERT互換トークナイザーラッパー
@@ -47,15 +47,15 @@ MoleculeNatLangTokenizerをBERT学習と互換性のある形式でラップ</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.create_bert_molecule_nl_tokenizer"><code class="name flex">
-<span>def <span class="ident">create_bert_molecule_nl_tokenizer</span></span>(<span>**kwargs) ‑> <a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer">BertMoleculeNlTokenizer</a></span>
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.create_bert_molecule_nat_lang_tokenizer"><code class="name flex">
+<span>def <span class="ident">create_bert_molecule_nat_lang_tokenizer</span></span>(<span>**kwargs) ‑> <a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer">BertMoleculeNlTokenizer</a></span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_bert_molecule_nl_tokenizer(**kwargs) -&gt; BertMoleculeNlTokenizer:
+<pre><code class="python">def create_bert_molecule_nat_lang_tokenizer(**kwargs) -&gt; BertMoleculeNlTokenizer:
     &#34;&#34;&#34;
     Create a BERT-compatible molecule natural language tokenizer
 
@@ -73,7 +73,7 @@ MoleculeNatLangTokenizerをBERT学習と互換性のある形式でラップ</p>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer"><code class="flex name class">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer"><code class="flex name class">
 <span>class <span class="ident">BertMoleculeNlTokenizer</span></span>
 <span>(</span><span>**kwargs)</span>
 </code></dt>
@@ -194,14 +194,14 @@ MoleculeNatLangTokenizerをBERT学習と互換性のある形式でラップ</p>
 with BERT training and testing pipelines</p></div>
 <h3>Class variables</h3>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.model_input_names"><code class="name">var <span class="ident">model_input_names</span></code></dt>
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.model_input_names"><code class="name">var <span class="ident">model_input_names</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.convert_tokens_to_string"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.convert_tokens_to_string"><code class="name flex">
 <span>def <span class="ident">convert_tokens_to_string</span></span>(<span>self, tokens: List[str]) ‑> str</span>
 </code></dt>
 <dd>
@@ -217,7 +217,7 @@ with BERT training and testing pipelines</p></div>
 </details>
 <div class="desc"><p>Convert tokens to string</p></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.decode"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.decode"><code class="name flex">
 <span>def <span class="ident">decode</span></span>(<span>self,<br>token_ids: Union[List[int], torch.Tensor],<br>skip_special_tokens: bool = True) ‑> str</span>
 </code></dt>
 <dd>
@@ -237,7 +237,7 @@ with BERT training and testing pipelines</p></div>
 </details>
 <div class="desc"><p>Decode token IDs back to text</p></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.encode"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.encode"><code class="name flex">
 <span>def <span class="ident">encode</span></span>(<span>self,<br>text: Union[str, List[str]],<br>add_special_tokens: bool = True,<br>max_length: Optional[int] = None,<br>padding: bool = False,<br>truncation: bool = False,<br>return_tensors: Optional[str] = None) ‑> Union[List[int], torch.Tensor]</span>
 </code></dt>
 <dd>
@@ -268,7 +268,7 @@ with BERT training and testing pipelines</p></div>
 </details>
 <div class="desc"><p>Encode text to token IDs</p></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.get_vocab"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.get_vocab"><code class="name flex">
 <span>def <span class="ident">get_vocab</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -282,7 +282,7 @@ with BERT training and testing pipelines</p></div>
 </details>
 <div class="desc"><p>Get vocabulary dictionary</p></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.pad"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.pad"><code class="name flex">
 <span>def <span class="ident">pad</span></span>(<span>self, encoded_inputs, **kwargs)</span>
 </code></dt>
 <dd>
@@ -298,7 +298,7 @@ with BERT training and testing pipelines</p></div>
 </details>
 <div class="desc"><p>Pad encoded inputs</p></div>
 </dd>
-<dt id="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.tokenize"><code class="name flex">
+<dt id="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.tokenize"><code class="name flex">
 <span>def <span class="ident">tokenize</span></span>(<span>self, text: str) ‑> List[str]</span>
 </code></dt>
 <dd>
@@ -326,26 +326,26 @@ with BERT training and testing pipelines</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.molecule_related_nl.utils" href="index.html">molcrawl.molecule_related_nl.utils</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils" href="index.html">molcrawl.molecule_nat_lang.utils</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.create_bert_molecule_nl_tokenizer" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.create_bert_molecule_nl_tokenizer">create_bert_molecule_nl_tokenizer</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.create_bert_molecule_nat_lang_tokenizer" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.create_bert_molecule_nat_lang_tokenizer">create_bert_molecule_nat_lang_tokenizer</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer">BertMoleculeNlTokenizer</a></code></h4>
+<h4><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer">BertMoleculeNlTokenizer</a></code></h4>
 <ul class="">
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.convert_tokens_to_string" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.convert_tokens_to_string">convert_tokens_to_string</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.decode" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.decode">decode</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.encode" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.encode">encode</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.get_vocab" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.get_vocab">get_vocab</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.model_input_names" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.model_input_names">model_input_names</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.pad" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.pad">pad</a></code></li>
-<li><code><a title="molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.tokenize" href="#molcrawl.molecule_related_nl.utils.bert_tokenizer.BertMoleculeNlTokenizer.tokenize">tokenize</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.convert_tokens_to_string" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.convert_tokens_to_string">convert_tokens_to_string</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.decode" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.decode">decode</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.encode" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.encode">encode</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.get_vocab" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.get_vocab">get_vocab</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.model_input_names" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.model_input_names">model_input_names</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.pad" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.pad">pad</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.tokenize" href="#molcrawl.molecule_nat_lang.utils.bert_tokenizer.BertMoleculeNlTokenizer.tokenize">tokenize</a></code></li>
 </ul>
 </li>
 </ul>

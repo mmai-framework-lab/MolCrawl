@@ -59,7 +59,7 @@ el.replaceWith(d);
     指定されたモデルタイプの画像出力ディレクトリを取得
 
     Args:
-        model_type (str): モデルタイプ (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;compounds&#39;, &#39;rna&#39;, &#39;molecule_nl&#39;)
+        model_type (str): モデルタイプ (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;compounds&#39;, &#39;rna&#39;, &#39;molecule_nat_lang&#39;)
 
     Returns:
         str: 画像出力ディレクトリのパス
@@ -73,7 +73,7 @@ el.replaceWith(d);
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルタイプ ('protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nl')</dd>
+<dd>モデルタイプ ('protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nat_lang')</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -191,7 +191,7 @@ el.replaceWith(d);
         &#34;genome_sequence&#34;: [&#34;genome_sequence_&#34;],
         &#34;compounds&#34;: [&#34;compounds_&#34;],
         &#34;rna&#34;: [&#34;rna_&#34;],
-        &#34;molecule_nl&#34;: [&#34;molecule_nl_&#34;],
+        &#34;molecule_nat_lang&#34;: [&#34;molecule_nat_lang_&#34;],
     }
 
     for filename in os.listdir(legacy_dir):
