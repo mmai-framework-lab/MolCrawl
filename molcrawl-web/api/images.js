@@ -11,7 +11,7 @@ router.get('/:modelType', async (req, res) => {
     const { modelType } = req.params;
 
     // サポートされたモデルタイプの検証
-    const supportedModels = ['protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nl'];
+    const supportedModels = ['protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nat_lang'];
     if (!supportedModels.includes(modelType)) {
         return res.status(400).json({
             error: 'Invalid model type',

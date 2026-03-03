@@ -15,7 +15,7 @@ This feature adds interactive inference capabilities to the GPT-2 Training Statu
 
     ```json
     {
-      "dataset": "compounds|genome_sequence|protein_sequence|rna|molecule_nl",
+      "dataset": "compounds|genome_sequence|protein_sequence|rna|molecule_nat_lang",
       "size": "small|medium|large|xl",
       "prompt": "Input text prompt",
       "maxLength": 128,

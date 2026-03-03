@@ -49,7 +49,7 @@ function extractLearningSourceFromConfig(configFilePath) {
             'PROTEIN_DATASET_DIR',
             'RNA_DATASET_DIR',
             'CELLXGENE_DATASET_DIR',
-            'MOLECULE_NL_DATASET_DIR'
+            'MOLECULE_NAT_LANG_DATASET_DIR'
         ];
 
         for (const pattern of datasetDirPatterns) {

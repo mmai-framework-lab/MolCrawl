@@ -107,7 +107,7 @@ const getAllLogsOverview = async (req, res) => {
             'genome_sequence',
             'protein_sequence',
             'rna',
-            'molecule_nl'
+            'molecule_nat_lang'
         ];
 
         const overview = await Promise.all(

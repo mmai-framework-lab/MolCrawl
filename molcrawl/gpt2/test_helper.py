@@ -43,14 +43,14 @@ def get_domain_info():
     import os
     import sys
 
-    from molcrawl.config.paths import COMPOUNDS_DATASET_DIR, MOLECULE_NL_DATASET_DIR
+    from molcrawl.config.paths import COMPOUNDS_DATASET_DIR, MOLECULE_NAT_LANG_DATASET_DIR
 
     return {
         "compounds": {
             "vocab_path": "assets/molecules/vocab.txt",
             "dataset_dir": COMPOUNDS_DATASET_DIR,
         },
-        "molecule_nl": {"vocab_path": None, "dataset_dir": MOLECULE_NL_DATASET_DIR},
+        "molecule_nat_lang": {"vocab_path": None, "dataset_dir": MOLECULE_NAT_LANG_DATASET_DIR},
         "genome": {
             "vocab_path": None,  # SentencePieceモデルパスが必要
             "dataset_dir": "outputs/genome_sequence/training_ready_hf_dataset",
@@ -73,7 +73,7 @@ def detect_domain_from_path(checkpoint_path):
     if "compound" in path_lower:
         return "compounds"
     elif "molecule" in path_lower and "nl" in path_lower:
-        return "molecule_nl"
+        return "molecule_nat_lang"
     elif "genome" in path_lower:
         return "genome"
     elif "protein" in path_lower:
@@ -133,7 +133,7 @@ def main():
     parser.add_argument("--checkpoint_path", help="特定のチェックポイントパス")
     parser.add_argument(
         "--domain",
-        choices=["compounds", "molecule_nl", "genome", "protein_sequence", "rna"],
+        choices=["compounds", "molecule_nat_lang", "genome", "protein_sequence", "rna"],
         help="強制的に指定するドメイン",
     )
     parser.add_argument("--output_dir", help="出力ディレクトリ")

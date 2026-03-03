@@ -168,8 +168,8 @@ def load_domain_tokenizer(domain, vocab_path=None):
                 return None
             return CompoundsTokenizer(vocab_file, 256)
 
-        elif domain == "molecule_nl":
-            from molcrawl.molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+        elif domain == "molecule_nat_lang":
+            from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 
             return MoleculeNatLangTokenizer()
 
@@ -494,7 +494,7 @@ def main():
     )
     parser.add_argument(
         "--domain",
-        choices=["compounds", "molecule_nl", "genome", "protein_sequence", "rna"],
+        choices=["compounds", "molecule_nat_lang", "genome", "protein_sequence", "rna"],
         help="使用するドメイン",
     )
     parser.add_argument("--vocab_path", help="語彙ファイルのパス")

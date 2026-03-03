@@ -40,7 +40,7 @@ LEARNING_SOURCE_DIR/
 │
 ├── logs/                        # Root-level training logs
 │
-├── molecule_nl/                 # Molecule-related Natural Language data
+├── molecule_nat_lang/                 # Molecule-related Natural Language data
 │   ├── arrow_splits/           # Arrow format split data
 │   ├── bert-output/            # BERT model outputs
 │   ├── gpt2-output/            # GPT-2 model outputs

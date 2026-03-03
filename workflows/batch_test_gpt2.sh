@@ -37,7 +37,7 @@ if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
 fi
 
 # 各ドメインのテストを実行
-DOMAINS=("compounds" "molecule_nl" "genome" "protein_sequence" "rna")
+DOMAINS=("compounds" "molecule_nat_lang" "genome" "protein_sequence" "rna")
 SUCCESS_COUNT=0
 TOTAL_COUNT=0
 

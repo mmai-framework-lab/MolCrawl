@@ -61,7 +61,7 @@ cd /path/to/riken-dataset-fundational-model
 | `01_compounds_prepare.sh`          | Compounds dataset tokenization | compounds        | Tokenized SMILES/Scaffolds data |
 | `01_compounds-guacamol-prepare.sh` | GuacaMol compounds preparation | compounds        | GuacaMol benchmark data         |
 | `01_genome-sequence_prepare.sh`    | Genome sequence data prep      | genome_sequence  | Tokenized genome sequences      |
-| `01_molecule-nl_prepare.sh`        | Molecule natural language prep | molecule_nl      | Molecule descriptions           |
+| `01_molecule-nl_prepare.sh`        | Molecule natural language prep | molecule_nat_lang      | Molecule descriptions           |
 | `01_protein-sequence_prepare.sh`   | Protein sequence data prep     | protein_sequence | Tokenized protein sequences     |
 | `01_rna_prepare.sh`                | RNA sequence data preparation  | rna              | Tokenized RNA sequences         |
 
@@ -71,7 +71,7 @@ cd /path/to/riken-dataset-fundational-model
 | ------------------------------------- | ---------------------- | ---------------- | ----------------------- |
 | `02-compounds-prepare-gpt2.sh`        | GPT-2 compounds data   | compounds        | Convert to GPT-2 format |
 | `02-genome_sequence-prepare-gpt2.sh`  | GPT-2 genome data      | genome_sequence  | Convert to GPT-2 format |
-| `02-molecule_nl-prepare-gpt2.sh`      | GPT-2 molecule NL data | molecule_nl      | Convert to GPT-2 format |
+| `02-molecule_nat_lang-prepare-gpt2.sh`      | GPT-2 molecule NL data | molecule_nat_lang      | Convert to GPT-2 format |
 | `02-protein_sequence-prepare-gpt2.sh` | GPT-2 protein data     | protein_sequence | Convert to GPT-2 format |
 | `02-rna-prepare-gpt2.sh`              | GPT-2 RNA data         | rna              | Convert to GPT-2 format |
 
@@ -80,7 +80,7 @@ cd /path/to/riken-dataset-fundational-model
 | Script                            | Purpose                    | Function                                                |
 | --------------------------------- | -------------------------- | ------------------------------------------------------- |
 | `common_functions.sh`             | 共通関数ライブラリ         | GPU選択、メモリチェック、環境変数検証などのヘルパー関数 |
-| `convert_molecule_nl_to_arrow.sh` | Convert molecule data      | Convert to Arrow format                                 |
+| `convert_molecule_nat_lang_to_arrow.sh` | Convert molecule data      | Convert to Arrow format                                 |
 | `create_sample_vocab.sh`          | Generate sample vocabulary | Development setup                                       |
 
 ## 🏋️ Model Training Scripts
@@ -99,10 +99,10 @@ cd /path/to/riken-dataset-fundational-model
 | `03a-genome_sequence-train-medium.sh`    | Genome sequence    | Medium     | Standard      |
 | `03a-genome_sequence-train-large.sh`     | Genome sequence    | Large      | Standard      |
 | `03a-genome_sequence-train-xl.sh`        | Genome sequence    | XL         | Standard      |
-| `03a-molecule_nl-train-small.sh`         | Molecule NL        | Small      | Standard      |
-| `03a-molecule_nl-train-medium.sh`        | Molecule NL        | Medium     | Standard      |
-| `03a-molecule_nl-train-large.sh`         | Molecule NL        | Large      | Standard      |
-| `03a-molecule_nl-train-xl.sh`            | Molecule NL        | XL         | Standard      |
+| `03a-molecule_nat_lang-train-small.sh`         | Molecule NL        | Small      | Standard      |
+| `03a-molecule_nat_lang-train-medium.sh`        | Molecule NL        | Medium     | Standard      |
+| `03a-molecule_nat_lang-train-large.sh`         | Molecule NL        | Large      | Standard      |
+| `03a-molecule_nat_lang-train-xl.sh`            | Molecule NL        | XL         | Standard      |
 | `03a-protein_sequence-train-small.sh`    | Protein sequence   | Small      | Standard      |
 | `03a-protein_sequence-train-medium.sh`   | Protein sequence   | Medium     | Standard      |
 | `03a-protein_sequence-train-large.sh`    | Protein sequence   | Large      | Standard      |
@@ -125,7 +125,7 @@ cd /path/to/riken-dataset-fundational-model
 | ------------------------------------------ | ------------------------- | ---------- |
 | `03c-compounds-train-bert-small.sh`        | Compounds BERT training   | Small      |
 | `03c-genome_sequence-train-bert-small.sh`  | Genome BERT training      | Small      |
-| `03c-molecule_nl-train-bert-small.sh`      | Molecule NL BERT training | Small      |
+| `03c-molecule_nat_lang-train-bert-small.sh`      | Molecule NL BERT training | Small      |
 | `03c-protein_sequence-train-bert-small.sh` | Protein BERT training     | Small      |
 | `03c-rna-train-bert-small.sh`              | RNA BERT training         | Small      |
 
@@ -189,7 +189,7 @@ cd /path/to/riken-dataset-fundational-model
 
 | Script                    | Purpose                      | Function                                                                                                            |
 | ------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `batch_test_gpt2.sh`      | GPT-2モデル一括テスト        | 複数ドメイン（compounds, molecule_nl, genome, protein_sequence, rna）のチェックポイントを自動検索して一括テスト実行 |
+| `batch_test_gpt2.sh`      | GPT-2モデル一括テスト        | 複数ドメイン（compounds, molecule_nat_lang, genome, protein_sequence, rna）のチェックポイントを自動検索して一括テスト実行 |
 | `gpt2_test_checkpoint.sh` | GPT-2 checkpoint validation  | Model checkpoint testing                                                                                            |
 | `debug_protein_bert.sh`   | BERT protein model debugging | Troubleshooting training issues                                                                                     |
 
@@ -292,7 +292,7 @@ $LEARNING_SOURCE_DIR/                   # 学習データディレクトリ
 ├── rna/                                # RNA配列データ
 │   ├── image/                          # 可視化画像
 │   └── data/                           # トークン化済みデータ
-└── molecule_nl/                        # 分子自然言語データ
+└── molecule_nat_lang/                        # 分子自然言語データ
     ├── image/                          # 可視化画像
     └── data/                           # トークン化済みデータ
 
@@ -936,7 +936,7 @@ print(df['ClinicalSignificance'].value_counts())
     # - genome_sequence: ゲノム配列の整合性
     # - protein_sequence: タンパク質配列の品質
     # - rna: RNA配列の構造妥当性
-    # - molecule_nl: 分子記述テキストの品質
+    # - molecule_nat_lang: 分子記述テキストの品質
     ```
 
 ### ログの確認

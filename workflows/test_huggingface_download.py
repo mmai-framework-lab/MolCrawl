@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument(
         "--domain",
         type=str,
-        choices=["rna", "genome", "protein_sequence", "compounds", "molecule_nl"],
+        choices=["rna", "genome", "protein_sequence", "compounds", "molecule_nat_lang"],
         help="モデルのドメイン（トークナイザー選択用）",
     )
     parser.add_argument("--max-tokens", type=int, default=50, help="生成する最大トークン数")
@@ -244,8 +244,8 @@ def load_tokenizer(domain: str):
 
             vocab_file = str(PROJECT_ROOT / "assets" / "molecules" / "vocab.txt")
             tokenizer = CompoundsTokenizer(vocab_file, 256)
-        elif domain == "molecule_nl":
-            from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+        elif domain == "molecule_nat_lang":
+            from molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 
             tokenizer = MoleculeNatLangTokenizer()
         else:

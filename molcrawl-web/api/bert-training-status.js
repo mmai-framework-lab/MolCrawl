@@ -50,13 +50,13 @@ const BERT_CONFIGS = {
             large: 'rna/bert-output/rna-large',
         },
     },
-    molecule_nl: {
+    molecule_nat_lang: {
         name: 'Molecule NL',
         sizes: ['small', 'medium', 'large'],
         outputDirs: {
-            small: 'molecule_nl/bert-output/molecule_nl-small',
-            medium: 'molecule_nl/bert-output/molecule_nl-medium',
-            large: 'molecule_nl/bert-output/molecule_nl-large',
+            small: 'molecule_nat_lang/bert-output/molecule_nat_lang-small',
+            medium: 'molecule_nat_lang/bert-output/molecule_nat_lang-medium',
+            large: 'molecule_nat_lang/bert-output/molecule_nat_lang-large',
         },
     },
 };

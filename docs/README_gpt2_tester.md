@@ -24,7 +24,7 @@
 ### 2. マルチドメイン対応
 
 - 🧪 **compounds** - SMILES化学構造データ
-- 🔬 **molecule_nl** - 分子関連自然言語
+- 🔬 **molecule_nat_lang** - 分子関連自然言語
 - 🧬 **genome** - ゲノム配列データ
 - 🧪 **protein_sequence** - タンパク質配列
 - 🧬 **rna** - RNA配列データ
@@ -59,7 +59,7 @@ python gpt2/test_checkpoint.py \
 # カスタムデータセットでのテスト
 python gpt2/test_checkpoint.py \
     --checkpoint_path=out-molecule-nl/ckpt.pt \
-    --domain=molecule_nl \
+    --domain=molecule_nat_lang \
     --test_dataset_params='{"dataset_dir": "learning_source"}' \
     --max_test_samples=1000
 ```
@@ -160,7 +160,7 @@ gpt2_test_results_20250801_103045/
 ├── compounds_out-compounds/
 │   ├── gpt2_test_report.json
 │   └── hf_model/
-├── molecule_nl_out-molecule-nl/
+├── molecule_nat_lang_out-molecule-nl/
 │   ├── gpt2_test_report.json
 │   └── hf_model/
 └── test_summary.json
@@ -258,7 +258,7 @@ python gpt2/test_checkpoint.py \
 テスト設定は `gpt2/test_configs/` ディレクトリの設定ファイルで管理できます:
 
 - `compounds_test_config.py`
-- `molecule_nl_test_config.py`
+- `molecule_nat_lang_test_config.py`
 - `genome_test_config.py`
 - `protein_sequence_test_config.py`
 - `rna_test_config.py`

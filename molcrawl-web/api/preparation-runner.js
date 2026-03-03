@@ -72,16 +72,16 @@ const PREPARATION_SCRIPTS = {
       logDir: 'compounds/logs',
     },
   },
-  molecule_nl: {
+  molecule_nat_lang: {
     phase01: {
-      script: '01-molecule_nl-prepare.sh',
-      logPattern: 'molecule_nl-preparation-*.log',
-      logDir: 'molecule_nl/logs',
+      script: '01-molecule_nat_lang-prepare.sh',
+      logPattern: 'molecule_nat_lang-preparation-*.log',
+      logDir: 'molecule_nat_lang/logs',
     },
     phase02: {
-      script: '02-molecule_nl-prepare-gpt2.sh',
-      logPattern: 'molecule_nl-prepare-gpt2-*.log',
-      logDir: 'molecule_nl/logs',
+      script: '02-molecule_nat_lang-prepare-gpt2.sh',
+      logPattern: 'molecule_nat_lang-prepare-gpt2-*.log',
+      logDir: 'molecule_nat_lang/logs',
     },
   },
   rna: {

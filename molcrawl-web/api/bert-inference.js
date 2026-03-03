@@ -61,7 +61,7 @@ const DATASET_CONFIGS = {
         ],
         description: 'RNA sequences',
     },
-    molecule_nl: {
+    molecule_nat_lang: {
         name: 'Molecule Natural Language',
         mask_token: '[MASK]',
         example_prompts: [
@@ -153,7 +153,7 @@ function getTokenizerPath(dataset, checkpointPath) {
         'genome_sequence': checkpointPath,  // Use tokenizer from checkpoint
         'protein_sequence': checkpointPath,  // Use tokenizer from checkpoint
         'rna': checkpointPath,  // Use tokenizer from checkpoint
-        'molecule_nl': checkpointPath,  // Use tokenizer from checkpoint (if available)
+        'molecule_nat_lang': checkpointPath,  // Use tokenizer from checkpoint (if available)
     };
 
     const tokenizerPath = tokenizerPaths[dataset];

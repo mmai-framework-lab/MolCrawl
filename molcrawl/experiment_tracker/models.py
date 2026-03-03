@@ -44,7 +44,7 @@ class DatasetType(str, Enum):
 
     COMPOUNDS = "compounds"
     GENOME_SEQUENCE = "genome_sequence"
-    MOLECULE_NL = "molecule_related_natural_language"
+    MOLECULE_NAT_LANG = "molecule_related_natural_language"
     PROTEIN_SEQUENCE = "protein_sequence"
     RNA = "rna"
     PROTEINGYM = "proteingym"

@@ -189,9 +189,9 @@ const DATASETS = {
       parquetFiles: 'parquet_files',
     },
   },
-  molecule_nl: {
+  molecule_nat_lang: {
     name: 'Molecule Natural Language (SMolInstruct)',
-    baseDir: 'molecule_nl',
+    baseDir: 'molecule_nat_lang',
     steps: [
       {
         id: 'download',
@@ -248,10 +248,10 @@ const DATASETS = {
       },
     ],
     outputs: {
-      plot: '../assets/img/molecule_nl_tokenized_train_lengths_dist.png',
+      plot: '../assets/img/molecule_nat_lang_tokenized_train_lengths_dist.png',
       statistics: null,
-      validPlot: '../assets/img/molecule_nl_tokenized_valid_lengths_dist.png',
-      testPlot: '../assets/img/molecule_nl_tokenized_test_lengths_dist.png',
+      validPlot: '../assets/img/molecule_nat_lang_tokenized_valid_lengths_dist.png',
+      testPlot: '../assets/img/molecule_nat_lang_tokenized_test_lengths_dist.png',
     },
   },
   compounds: {

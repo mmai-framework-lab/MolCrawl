@@ -16,7 +16,7 @@ def get_image_output_dir(model_type: str) -> str:
     指定されたモデルタイプの画像出力ディレクトリを取得
 
     Args:
-        model_type (str): モデルタイプ ('protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nl')
+        model_type (str): モデルタイプ ('protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nat_lang')
 
     Returns:
         str: 画像出力ディレクトリのパス
@@ -96,7 +96,7 @@ def migrate_legacy_images():
         "genome_sequence": ["genome_sequence_"],
         "compounds": ["compounds_"],
         "rna": ["rna_"],
-        "molecule_nl": ["molecule_nl_"],
+        "molecule_nat_lang": ["molecule_nat_lang_"],
     }
 
     for filename in os.listdir(legacy_dir):
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     print("Testing image manager...")
 
     # 各モデルタイプのディレクトリ作成テスト
-    model_types = ["protein_sequence", "genome_sequence", "compounds", "rna", "molecule_nl"]
+    model_types = ["protein_sequence", "genome_sequence", "compounds", "rna", "molecule_nat_lang"]
 
     for model_type in model_types:
         image_dir = get_image_output_dir(model_type)

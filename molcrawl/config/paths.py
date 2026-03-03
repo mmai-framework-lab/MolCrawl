@@ -36,14 +36,14 @@ def get_dataset_path(dataset_type, relative_path=""):
     データセットのパスを取得する関数
 
     Args:
-        dataset_type (str): データセットタイプ ('uniprot', 'refseq', 'cellxgene', 'molecule_nl')
+        dataset_type (str): データセットタイプ ('uniprot', 'refseq', 'cellxgene', 'molecule_nat_lang')
         relative_path (str): データセット内の相対パス
 
     Returns:
         str: 完全なパス
     """
-    if dataset_type == "molecule_nl":
-        base_path = os.path.join(PROJECT_ROOT, MOLECULE_NL_DATASET_DIR)
+    if dataset_type == "molecule_nat_lang":
+        base_path = os.path.join(PROJECT_ROOT, MOLECULE_NAT_LANG_DATASET_DIR)
     else:
         base_path = os.path.join(PROJECT_ROOT, GENOME_SEQUENCE_DIR, dataset_type)
 
@@ -56,12 +56,12 @@ def get_dataset_path(dataset_type, relative_path=""):
 PROTEIN_SEQUENCE_DIR = LEARNING_SOURCE_DIR + "/protein_sequence"
 GENOME_SEQUENCE_DIR = LEARNING_SOURCE_DIR + "/genome_sequence"
 RNA_DATASET_DIR = LEARNING_SOURCE_DIR + "/rna"
-MOLECULE_NL_DIR = LEARNING_SOURCE_DIR + "/molecule_nl"
+MOLECULE_NAT_LANG_DIR = LEARNING_SOURCE_DIR + "/molecule_nat_lang"
 COMPOUNDS_DIR = LEARNING_SOURCE_DIR + "/compounds"
 UNIPROT_DATASET_DIR = PROTEIN_SEQUENCE_DIR + "/training_ready_hf_dataset"
 REFSEQ_DATASET_DIR = GENOME_SEQUENCE_DIR + "/training_ready_hf_dataset"
 CELLXGENE_DATASET_DIR = RNA_DATASET_DIR + "/training_ready_hf_dataset"
-MOLECULE_NL_DATASET_DIR = MOLECULE_NL_DIR + "/training_ready_hf_dataset"
+MOLECULE_NAT_LANG_DATASET_DIR = MOLECULE_NAT_LANG_DIR + "/training_ready_hf_dataset"
 COMPOUNDS_DATASET_DIR = COMPOUNDS_DIR + "/organix13/compounds/training_ready_hf_dataset"
 
 # 絶対パス版（WebアプリケーションやAPIで使用）
@@ -77,7 +77,7 @@ def get_gpt2_output_path(domain, model_size):
     GPT-2モデルの出力パスを取得する関数
 
     Args:
-        domain (str): ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nl')
+        domain (str): ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')
         model_size (str): モデルサイズ ('small', 'medium', 'large', 'xl', 'ex-large')
 
     Returns:
@@ -108,7 +108,7 @@ def get_bert_output_path(domain, model_size):
     BERTモデルの出力パスを取得する関数
 
     Args:
-        domain (str): ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nl')
+        domain (str): ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')
         model_size (str): モデルサイズ ('small', 'medium', 'large')
 
     Returns:

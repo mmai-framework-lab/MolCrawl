@@ -10,9 +10,9 @@ import torch
 
 # プロジェクトルートのsrcディレクトリをパスに追加
 from molcrawl.core.base import setup_logging
-from molcrawl.molecule_related_nl.utils.config import MoleculeNLConfig
-from molcrawl.molecule_related_nl.utils.general import read_dataset, save_dataset
-from molcrawl.molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
+from molcrawl.molecule_nat_lang.utils.config import MoleculeNLConfig
+from molcrawl.molecule_nat_lang.utils.general import read_dataset, save_dataset
+from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def run_statistics(series, column_name):
     # 統一画像ディレクトリに保存
     from molcrawl.utils.image_manager import get_image_path
 
-    image_path = get_image_path("molecule_nl", "molecule_nl_tokenized_{}_lengths_dist.png".format(column_name))
+    image_path = get_image_path("molecule_nat_lang", "molecule_nat_lang_tokenized_{}_lengths_dist.png".format(column_name))
     plt.savefig(image_path)
     plt.close()
     logger.info(msg="Saved distribution of tokenized {} lengths to {}".format(column_name, image_path))
@@ -119,9 +119,9 @@ if __name__ == "__main__":
     cfg = MoleculeNLConfig.from_file(args.config).data_preparation
 
     # Set paths using LEARNING_SOURCE_DIR
-    base_dataset_dir = Path(learning_source_dir) / "molecule_nl" / "osunlp" / "SMolInstruct"
-    logging_dir = Path(learning_source_dir) / "molecule_nl" / "logs"
-    parquet_file = Path(learning_source_dir) / "molecule_nl" / "molecule_related_natural_language_tokenized.parquet"
+    base_dataset_dir = Path(learning_source_dir) / "molecule_nat_lang" / "osunlp" / "SMolInstruct"
+    logging_dir = Path(learning_source_dir) / "molecule_nat_lang" / "logs"
+    parquet_file = Path(learning_source_dir) / "molecule_nat_lang" / "molecule_related_natural_language_tokenized.parquet"
 
     logger.info(f"Using dataset directory: {base_dataset_dir}")
     logger.info(f"Using logging directory: {logging_dir}")
@@ -308,7 +308,7 @@ if __name__ == "__main__":
     save_dataset(processed_dataset, parquet_file)
 
     # Also save in arrow format for BERT training (keeps individual samples)
-    arrow_output_dir = Path(learning_source_dir) / "molecule_nl" / "arrow_splits"
+    arrow_output_dir = Path(learning_source_dir) / "molecule_nat_lang" / "arrow_splits"
     logger.info(msg=f"Saving BERT-compatible arrow format to {arrow_output_dir}")
     os.makedirs(arrow_output_dir, exist_ok=True)
 
@@ -325,7 +325,7 @@ if __name__ == "__main__":
 
     # Save GPT-2 compatible format (concatenated token stream)
     logger.info(msg="Creating GPT-2-compatible token stream format...")
-    gpt2_output_dir = Path(learning_source_dir) / "molecule_nl" / "gpt2_format"
+    gpt2_output_dir = Path(learning_source_dir) / "molecule_nat_lang" / "gpt2_format"
     os.makedirs(gpt2_output_dir, exist_ok=True)
 
     for split_name, split_dataset in processed_dataset.items():

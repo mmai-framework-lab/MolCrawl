@@ -17,7 +17,7 @@
 set -e  # エラーで停止
 
 # デフォルトの出力ディレクトリ
-DEFAULT_OUTPUT_DIR="molecule_nl/osunlp/SMolInstruct"
+DEFAULT_OUTPUT_DIR="molecule_nat_lang/osunlp/SMolInstruct"
 OUTPUT_DIR="${1:-$DEFAULT_OUTPUT_DIR}"
 
 # 色付きログ
@@ -118,7 +118,7 @@ logger = logging.getLogger(__name__)
 
 # 環境変数から出力ディレクトリを取得
 learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR")
-output_dir = os.environ.get("OUTPUT_DIR", "molecule_nl/osunlp/SMolInstruct")
+output_dir = os.environ.get("OUTPUT_DIR", "molecule_nat_lang/osunlp/SMolInstruct")
 full_output_dir = Path(learning_source_dir) / output_dir
 
 logger.info(f"Downloading to: {full_output_dir}")
@@ -175,7 +175,7 @@ if [ $? -eq 0 ]; then
     log_info "Next steps:"
     log_info "1. Run the preparation script:"
     log_info "   python scripts/preparation/preparation_script_molecule_related_nat_lang.py \\"
-    log_info "     assets/configs/molecule_nl.yaml"
+    log_info "     assets/configs/molecule_nat_lang.yaml"
 else
     log_error "Dataset download failed!"
     exit 1

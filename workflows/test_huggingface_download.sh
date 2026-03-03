@@ -54,7 +54,7 @@ show_usage() {
   --checkpoint-file   チェックポイントファイル名（デフォルト: ckpt.pt）
   --device            使用するデバイス (cpu, cuda, auto)
   --test-generate     テキスト生成テストを実行
-  --domain            モデルのドメイン (rna, genome, protein_sequence, compounds, molecule_nl)
+  --domain            モデルのドメイン (rna, genome, protein_sequence, compounds, molecule_nat_lang)
   --max-tokens        生成する最大トークン数（デフォルト: 50）
   -v, --verbose       詳細な出力
   -h, --help          このヘルプを表示

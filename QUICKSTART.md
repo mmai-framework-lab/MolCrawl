@@ -439,10 +439,10 @@ Output is a HuggingFace DatasetDict with train/valid/test splits.
 
 Key config parameters:
 
-- `dataset` (default: `src/molecule_related_nl/assets/raw_data/osunlp/SMolInstruct`)\
+- `dataset` (default: `src/molecule_nat_lang/assets/raw_data/osunlp/SMolInstruct`)\
   Directory where the raw SMolInstruct dataset is downloaded.
 
-- `save_path` (default: `{LEARNING_SOURCE_DIR}/molecule_nl/molecule_related_natural_language_tokenized.parquet`)\
+- `save_path` (default: `{LEARNING_SOURCE_DIR}/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet`)\
   Output directory for the processed and tokenized DatasetDict.
 
 - `max_length` (default: depends on tokenizer config)\

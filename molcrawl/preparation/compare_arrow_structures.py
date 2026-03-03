@@ -173,10 +173,10 @@ def main():
     parser.add_argument(
         "old_dataset",
         type=str,
-        help="Path to old dataset directory (e.g., learning_source/molecule_nl/molecule_related_natural_language_tokenized.parquet)",
+        help="Path to old dataset directory (e.g., learning_source/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet)",
     )
     parser.add_argument(
-        "new_dataset", type=str, help="Path to new dataset directory (e.g., learning_source/molecule_nl/arrow_splits)"
+        "new_dataset", type=str, help="Path to new dataset directory (e.g., learning_source/molecule_nat_lang/arrow_splits)"
     )
     parser.add_argument(
         "--splits",

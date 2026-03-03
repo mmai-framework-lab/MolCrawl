@@ -1,0 +1,4 @@
+data_preparation:
+  dataset: "molecule_nat_lang/osunlp/SMolInstruct"
+  save_path: "molecule_nat_lang/molecule_related_natural_language_tokenized.parquet"
+  num_workers: 12

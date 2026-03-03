@@ -12,7 +12,7 @@ Note: the parameters `--training-set-subset-len` and `--test-set-subset-len` can
 
 1. Train the model by running `python gpt2/train.py path/to/corresponding/dataset/train_gpt2_config.py`
 
-Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset. For example: `python gpt2/train.py riken-dataset-fundational-model/gpt2/configs/molecule_nl/train_gpt2_large_config.py` will train the large GPT2 model on the molecule_nl dataset.
+Inside each `data/<dataset>` folder, there is a file named `train_gpt2_config.py`, which contains parameters to train GPT2 in that dataset. For example: `python gpt2/train.py riken-dataset-fundational-model/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py` will train the large GPT2 model on the molecule_nat_lang dataset.
 
 Running this will lunch a training job, and output results in the path `out/ckpt.pt
 
@@ -30,7 +30,7 @@ To run with DDP on 4 gpus across 2 nodes, example:
   `torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123.456 --master_port=1234 config_file.py`
   (If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
 
-1. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py riken-dataset-fundational-model/gpt2/configs/molecule_nl/train_gpt2_large_config.py` for the exmaple in step 2.
+1. Generate a sample from the trained checkpoint running `python gpt2/sample.py {config.py}`. This should be the same config file that you used for trainig, for example `python gpt2/sample.py riken-dataset-fundational-model/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py` for the exmaple in step 2.
 
 ## 🛠️ Configuration Parameters
 

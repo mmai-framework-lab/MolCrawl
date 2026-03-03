@@ -48,7 +48,7 @@ $LEARNING_SOURCE_DIR/
 │   ├── data/
 │   ├── logs/
 │   └── report/
-└── molecule_nl/
+└── molecule_nat_lang/
     ├── data/
     ├── logs/
     └── report/
@@ -76,8 +76,8 @@ $LEARNING_SOURCE_DIR/
 
 - `scripts/evaluation/bert/clinvar_evaluation.py`
 - `scripts/evaluation/gpt2/clinvar_evaluation.py`
-- `scripts/evaluation/bert/molecule_nl_evaluation.py`
-- `scripts/evaluation/gpt2/molecule_nl_evaluation.py`
+- `scripts/evaluation/bert/molecule_nat_lang_evaluation.py`
+- `scripts/evaluation/gpt2/molecule_nat_lang_evaluation.py`
 - `scripts/evaluation/bert/proteingym_evaluation.py`
 - `scripts/evaluation/gpt2/proteingym_evaluation.py`
 
@@ -103,7 +103,7 @@ LEARNING_SOURCE_DIR=learning_20251104 python scripts/evaluation/bert/proteingym_
 
 ```bash
 # 1. テスト用ディレクトリ構造を作成
-mkdir -p learning_20251104/{protein_sequence,genome_sequence,compounds,rna,molecule_nl}/{data,logs,report}
+mkdir -p learning_20251104/{protein_sequence,genome_sequence,compounds,rna,molecule_nat_lang}/{data,logs,report}
 
 # 2. ProteinGym サンプルデータ生成
 LEARNING_SOURCE_DIR=learning_20251104 python scripts/evaluation/bert/proteingym_data_preparation.py --sample_only
@@ -178,7 +178,7 @@ A: 既存のデータ（`./bert_proteingym_data`, `./cosmic_data`等）は影響
 A: 以下のコマンドで専用のテスト環境を作成できます：
 
 ```bash
-mkdir -p learning_test/{protein_sequence,genome_sequence,compounds,rna,molecule_nl}/{data,logs,report}
+mkdir -p learning_test/{protein_sequence,genome_sequence,compounds,rna,molecule_nat_lang}/{data,logs,report}
 export LEARNING_SOURCE_DIR=learning_test
 ```
 

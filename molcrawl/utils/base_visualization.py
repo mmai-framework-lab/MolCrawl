@@ -111,7 +111,7 @@ class BaseVisualizationGenerator(ABC):
             "genome_sequence": ["genome", "clinvar", "cosmic", "omim"],
             "compounds": ["compound", "smiles", "scaffold"],
             "rna": ["rna"],
-            "molecule_nl": ["molecule_nl", "molecule-nl", "moleculenl"],
+            "molecule_nat_lang": ["molecule_nat_lang", "molecule-nl", "moleculenl"],
         }
 
         for model_type, keywords in model_keywords.items():

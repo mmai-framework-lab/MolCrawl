@@ -421,7 +421,7 @@ molcrawl-web/
 
 - `GET /api/dataset-progress` - 全データセットの準備進捗取得
 - `GET /api/dataset-progress/:datasetKey` - 特定データセットの詳細進捗取得
-  - `datasetKey`: `protein_sequence`, `genome_sequence`, `rna`, `molecule_nl`, `compounds`
+  - `datasetKey`: `protein_sequence`, `genome_sequence`, `rna`, `molecule_nat_lang`, `compounds`
 
 ### 準備スクリプト実行（新機能）
 

@@ -63,12 +63,12 @@ const DATASET_TABS = [
     progressKey: 'rna'
   },
   {
-    id: 'molecule_nl',
+    id: 'molecule_nat_lang',
     nameKey: 'tabs.moleculeNl',
     icon: '💬',
     descriptionKey: 'tabDescriptions.moleculeNl',
-    path: 'molecule_nl',
-    progressKey: 'molecule_nl'
+    path: 'molecule_nat_lang',
+    progressKey: 'molecule_nat_lang'
   }
 ];
 

@@ -35,13 +35,13 @@ def load_domain_tokenizer(domain, vocab_path=None):
                 return None
             return CompoundsTokenizer(vocab_file, 256)
 
-        elif domain == "molecule_nl":
+        elif domain == "molecule_nat_lang":
             # 分子関連自然言語用のBERT互換トークナイザー
-            from molcrawl.molecule_related_nl.utils.bert_tokenizer import (
-                create_bert_molecule_nl_tokenizer,
+            from molcrawl.molecule_nat_lang.utils.bert_tokenizer import (
+                create_bert_molecule_nat_lang_tokenizer,
             )
 
-            return create_bert_molecule_nl_tokenizer()
+            return create_bert_molecule_nat_lang_tokenizer()
 
         elif domain == "genome":
             # ゲノム配列用のSentencePieceトークナイザー
@@ -484,8 +484,8 @@ def main():
     parser.add_argument("--dataset_path", help="評価用データセットのパス（オプション）")
     parser.add_argument(
         "--domain",
-        choices=["compounds", "molecule_nl", "genome", "protein_sequence", "rna"],
-        help="使用するドメイン（compounds, molecule_nl, genome, protein_sequence, rna）",
+        choices=["compounds", "molecule_nat_lang", "genome", "protein_sequence", "rna"],
+        help="使用するドメイン（compounds, molecule_nat_lang, genome, protein_sequence, rna）",
     )
     parser.add_argument(
         "--vocab_path",
@@ -534,7 +534,7 @@ def main():
                 "tissue_liver",
                 "gene_expression_high",
             ]
-        elif args.domain == "molecule_nl":
+        elif args.domain == "molecule_nat_lang":
             args.test_texts = [
                 "この分子は抗がん作用を示す。",
                 "薬剤の効果を測定します。",

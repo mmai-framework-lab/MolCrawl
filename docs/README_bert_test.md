@@ -28,8 +28,8 @@ python bert/test_checkpoint.py \
 
 # 分子関連自然言語ドメインのモデルをテスト
 python bert/test_checkpoint.py \
-    --checkpoint_path "runs_train_bert_molecule_nl/checkpoint-10000" \
-    --domain molecule_nl
+    --checkpoint_path "runs_train_bert_molecule_nat_lang/checkpoint-10000" \
+    --domain molecule_nat_lang
 
 # ゲノム配列ドメインのモデルをテスト
 python bert/test_checkpoint.py \
@@ -96,7 +96,7 @@ python bert/test_checkpoint.py \
 ## 対応ドメイン
 
 - `compounds` - 化合物（SMILES記法）
-- `molecule_nl` - 分子関連自然言語
+- `molecule_nat_lang` - 分子関連自然言語
 - `genome` - ゲノム配列（SentencePieceトークナイザー）
 - `protein_sequence` - タンパク質配列（ESMトークナイザー）
 - `rna` - RNA配列（開発中）
@@ -128,7 +128,7 @@ python bert/test_checkpoint.py \
 ## 出力ファイル
 
 - `test_report.json` - 詳細なテスト結果（チェックポイントディレクトリに保存）
-- `assets/img/molecule_nl_tokenized_*_lengths_dist.png` - トークン長分布グラフ
+- `assets/img/molecule_nat_lang_tokenized_*_lengths_dist.png` - トークン長分布グラフ
 
 ## 例
 

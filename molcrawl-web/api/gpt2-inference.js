@@ -65,7 +65,7 @@ const DATASET_CONFIGS = {
             '<|startoftext|>GCAU',
         ],
     },
-    molecule_nl: {
+    molecule_nat_lang: {
         name: 'Molecule Natural Language',
         start_token: '<|startoftext|>',
         max_length: 128,
@@ -237,7 +237,7 @@ else:
                 return ''.join(chars)
         tokenizer = SimpleCharTokenizer()
         print("Loaded RNA character tokenizer", file=sys.stderr)
-    elif dataset_type == 'molecule_nl':
+    elif dataset_type == 'molecule_nat_lang':
         # Use MoleculeNatLangTokenizer (may fall back to MinimalTokenizer)
         from molecule_related_nl.utils.tokenizer import MoleculeNatLangTokenizer
         tokenizer = MoleculeNatLangTokenizer()
@@ -261,7 +261,7 @@ elif dataset_type == 'compounds':
     # CompoundsTokenizer has tokenize_text method
     input_ids_list = tokenizer.tokenize_text(prompt)
     input_ids = torch.tensor([input_ids_list], dtype=torch.long).to(device)
-elif dataset_type == 'molecule_nl':
+elif dataset_type == 'molecule_nat_lang':
     # MoleculeNatLangTokenizer uses internal _tokenize method
     tokenized = tokenizer._tokenize(prompt, add_eos_token=True)
     input_ids = torch.tensor([tokenized['input_ids']], dtype=torch.long).to(device)
@@ -331,7 +331,7 @@ with torch.no_grad(), ctx:
         elif dataset_type == 'compounds':
             # CompoundsTokenizer has decode method
             generated_text = tokenizer.decode(output[0].tolist())
-        elif dataset_type == 'molecule_nl':
+        elif dataset_type == 'molecule_nat_lang':
             # MoleculeNatLangTokenizer uses internal tokenizer
             # Check if MinimalTokenizer (which returns 'token_XXX' format)
             decoded = tokenizer.tokenizer.decode(output[0].tolist())

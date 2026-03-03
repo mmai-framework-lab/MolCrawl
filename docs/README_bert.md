@@ -28,7 +28,7 @@ This configuration sets up training for a BERT-style model on a dataset of molec
   Path to the preprocessed Hugging Face-compatible dataset:
   THIS IS THE PATH TO YOUR PROCESSED DATASET. See [Training of GPT2 model Section in](../README.md).
 
-- **`model_path = "runs_train_bert_molecule_nl"`**
+- **`model_path = "runs_train_bert_molecule_nat_lang"`**
   Directory where model outputs (checkpoints, logs) will be saved.
 
 ---

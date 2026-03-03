@@ -113,7 +113,7 @@ def detect_data_type(model_path: Path) -> Optional[str]:
         return "DNA/Genome"
     elif "compound" in path_str or "molecule" in path_str or "smiles" in path_str:
         return "Molecule/Compound"
-    elif "molecule_nl" in path_str:
+    elif "molecule_nat_lang" in path_str:
         return "Molecule-NL"
 
     return None

@@ -58,14 +58,14 @@ const GPT2_CONFIGS = {
             xl: 'rna/gpt2-output/rna-ex-large',
         },
     },
-    molecule_nl: {
+    molecule_nat_lang: {
         name: 'Molecule NL',
         sizes: ['small', 'medium', 'large', 'xl'],
         outputDirs: {
-            small: 'molecule_nl/gpt2-output/molecule_nl-small',
-            medium: 'molecule_nl/gpt2-output/molecule_nl-medium',
-            large: 'molecule_nl/gpt2-output/molecule_nl-large',
-            xl: 'molecule_nl/gpt2-output/molecule_nl-ex-large',
+            small: 'molecule_nat_lang/gpt2-output/molecule_nat_lang-small',
+            medium: 'molecule_nat_lang/gpt2-output/molecule_nat_lang-medium',
+            large: 'molecule_nat_lang/gpt2-output/molecule_nat_lang-large',
+            xl: 'molecule_nat_lang/gpt2-output/molecule_nat_lang-ex-large',
         },
     },
 };

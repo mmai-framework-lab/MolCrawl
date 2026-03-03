@@ -4,7 +4,7 @@ HuggingFace事前学習データセットの情報を可視化・管理するた
 
 ## 📊 概要
 
-learning_source genome_sequence, molecule_nl, protein_sequence, rna）のtraining_ready_hf_datasetを包括的に表示・管理できます。
+learning_source genome_sequence, molecule_nat_lang, protein_sequence, rna）のtraining_ready_hf_datasetを包括的に表示・管理できます。
 
 ### 🎯 主な機能
 
@@ -89,7 +89,7 @@ molcrawl-web/
 - **モデルグリッド**: 各モデルの詳細情報カード
   - compounds (🧪): 化合物分子構造
   - genome_sequence (🧬): ゲノムDNA配列
-  - molecule_nl (📝): 分子の自然言語記述
+  - molecule_nat_lang (📝): 分子の自然言語記述
   - protein_sequence (🧬): タンパク質アミノ酸配列
   - rna (🧬): RNA核酸配列
 

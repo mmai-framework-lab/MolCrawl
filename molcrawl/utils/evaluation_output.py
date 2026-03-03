@@ -82,7 +82,7 @@ def get_model_type_from_path(model_path):
     elif "rna" in model_path_str:
         return "rna"
     elif "molecule" in model_path_str:
-        return "molecule_nl"
+        return "molecule_nat_lang"
     else:
         return "general"
 
