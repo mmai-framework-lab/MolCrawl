@@ -47,7 +47,7 @@ pip install deepchem
 
 ## Config の修正
 
-`./gpt2/configs/compounds/train_gpt2_config.py` 等を以下のように修正。
+`./gpt2/configs/compounds/train_gpt2_small_config.py` 等を以下のように修正。
 
 - `dataset_dir` ⇒ 前処理済み GuacaMol のパス
 - `batch_size × gradient_accumulation = 256` となるよう調整
@@ -65,7 +65,7 @@ pip install deepchem
 学習結果は `./benchmark/GuacaMol` 下に保存される。
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_config.py
+CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_small_config.py
 CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_medium_config.py
 CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_large_config.py
 CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_xl_config.py
@@ -86,7 +86,7 @@ CUDA_VISIBLE_DEVICES=0 python gpt2/train.py gpt2/configs/compounds/train_gpt2_xl
   `./benchmark/GuacaMol/small/` 等の下に `generated_compounds.txt` として 100,000 分子生成。
 
   ```bash
-  CUDA_VISIBLE_DEVICES=0 python ./gpt2/sample_compound.py ./gpt2/configs/compounds/train_gpt2_config.py
+  CUDA_VISIBLE_DEVICES=0 python ./gpt2/sample_compound.py ./gpt2/configs/compounds/train_gpt2_small_config.py
   CUDA_VISIBLE_DEVICES=0 python ./gpt2/sample_compound.py ./gpt2/configs/compounds/train_gpt2_medium_config.py
   CUDA_VISIBLE_DEVICES=0 python ./gpt2/sample_compound.py ./gpt2/configs/compounds/train_gpt2_large_config.py
   CUDA_VISIBLE_DEVICES=0 python ./gpt2/sample_compound.py ./gpt2/configs/compounds/train_gpt2_xl_config.py

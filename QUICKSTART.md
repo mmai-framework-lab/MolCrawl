@@ -96,7 +96,7 @@ python src/<task>/dataset/prepare_gpt2.py assets/configs/<task>.yaml
 Small:
 
 ```bash
-python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_config.py
+python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_small_config.py
 ```
 
 Medium:
@@ -147,7 +147,7 @@ Examples:
 # GPT2
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-gpt2/train.py gpt2/configs/<dataset>/train_gpt2_config.py
+gpt2/train.py gpt2/configs/<dataset>/train_gpt2_small_config.py
 
 # BERT
 CUDA_VISIBLE_DEVICES=0,2 \
