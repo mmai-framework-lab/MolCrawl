@@ -44,6 +44,132 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.molecule_nat_lang.utils.general.compute_resource_aware_params"><code class="name flex">
+<span>def <span class="ident">compute_resource_aware_params</span></span>(<span>num_rows: int = 3300000,<br>bytes_per_row_estimate: int = 2048,<br>safety_factor: float = 0.5,<br>max_workers: int = 8,<br>target_batch_bytes: int = 268435456) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_resource_aware_params(
+    num_rows: int = 3_300_000,
+    bytes_per_row_estimate: int = 2_048,
+    safety_factor: float = 0.5,
+    max_workers: int = 8,
+    target_batch_bytes: int = 256 * 1024 * 1024,  # 256 MB
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Inspect available system memory and CPU count, then compute safe values for:
+    - ``num_workers``  — parallelism for ``Dataset.map()``
+    - ``batch_size``   — rows per batch for streaming parquet writes
+
+    Parameters
+    ----------
+    num_rows:
+        Estimated total number of rows across all splits.
+    bytes_per_row_estimate:
+        Estimated bytes per row in memory (input_ids + masks, etc.).
+    safety_factor:
+        Fraction of available memory that this process may consume.
+    max_workers:
+        Hard upper bound on the returned ``num_workers``.
+    target_batch_bytes:
+        Target memory footprint per parquet write batch.
+
+    Returns
+    -------
+    dict with keys ``num_workers``, ``batch_size``, ``available_gb``, ``total_gb``.
+    &#34;&#34;&#34;
+    available_bytes, total_bytes = get_available_memory_bytes()
+    available_gb = available_bytes / 1024**3
+    total_gb = total_bytes / 1024**3
+    cpu_count = os.cpu_count() or 1
+
+    budget_bytes = available_bytes * safety_factor
+    dataset_bytes = max(num_rows * bytes_per_row_estimate, 1)
+
+    # Each worker needs ~1 partition of the dataset; pick largest safe count
+    workers_by_mem = max(1, int(budget_bytes / dataset_bytes))
+    num_workers = min(workers_by_mem, cpu_count, max_workers)
+
+    # Parquet batch: aim for target_batch_bytes per batch, clamp to [1 000, 200 000]
+    batch_size = max(1_000, min(int(target_batch_bytes / bytes_per_row_estimate), 200_000))
+
+    logger.info(
+        &#34;[ResourceAware] memory: available=%.1f GB / total=%.1f GB | &#34;
+        &#34;CPUs=%d | estimated dataset=%.1f GB | &#34;
+        &#34;→ num_workers=%d  batch_size=%d&#34;,
+        available_gb,
+        total_gb,
+        cpu_count,
+        dataset_bytes / 1024**3,
+        num_workers,
+        batch_size,
+    )
+    return {
+        &#34;num_workers&#34;: num_workers,
+        &#34;batch_size&#34;: batch_size,
+        &#34;available_gb&#34;: available_gb,
+        &#34;total_gb&#34;: total_gb,
+    }</code></pre>
+</details>
+<div class="desc"><p>Inspect available system memory and CPU count, then compute safe values for:
+- <code>num_workers</code>
+— parallelism for <code>Dataset.map()</code>
+- <code>batch_size</code>
+— rows per batch for streaming parquet writes</p>
+<h2 id="parameters">Parameters</h2>
+<p>num_rows:
+Estimated total number of rows across all splits.
+bytes_per_row_estimate:
+Estimated bytes per row in memory (input_ids + masks, etc.).
+safety_factor:
+Fraction of available memory that this process may consume.
+max_workers:
+Hard upper bound on the returned <code>num_workers</code>.
+target_batch_bytes:
+Target memory footprint per parquet write batch.</p>
+<h2 id="returns">Returns</h2>
+<p>dict with keys <code>num_workers</code>, <code>batch_size</code>, <code>available_gb</code>, <code>total_gb</code>.</p></div>
+</dd>
+<dt id="molcrawl.molecule_nat_lang.utils.general.get_available_memory_bytes"><code class="name flex">
+<span>def <span class="ident">get_available_memory_bytes</span></span>(<span>) ‑> tuple[int, int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_available_memory_bytes() -&gt; tuple[int, int]:
+    &#34;&#34;&#34;
+    Return (available_bytes, total_bytes) from /proc/meminfo.
+    Falls back to psutil if /proc/meminfo is absent (non-Linux).
+    &#34;&#34;&#34;
+    proc_meminfo = Path(&#34;/proc/meminfo&#34;)
+    if proc_meminfo.exists():
+        mem: dict[str, int] = {}
+        with open(proc_meminfo) as fh:
+            for line in fh:
+                parts = line.split()
+                if len(parts) &gt;= 2:
+                    mem[parts[0].rstrip(&#34;:&#34;)] = int(parts[1]) * 1024  # kB → bytes
+        available = mem.get(&#34;MemAvailable&#34;, mem.get(&#34;MemFree&#34;, 8 * 1024**3))
+        total = mem.get(&#34;MemTotal&#34;, available)
+        return available, total
+
+    try:
+        import psutil  # type: ignore[import]
+
+        vm = psutil.virtual_memory()
+        return vm.available, vm.total
+    except ImportError:
+        fallback = 8 * 1024**3  # assume 8 GB when nothing else is available
+        return fallback, fallback</code></pre>
+</details>
+<div class="desc"><p>Return (available_bytes, total_bytes) from /proc/meminfo.
+Falls back to psutil if /proc/meminfo is absent (non-Linux).</p></div>
+</dd>
 <dt id="molcrawl.molecule_nat_lang.utils.general.load_jsonl_dataset"><code class="name flex">
 <span>def <span class="ident">load_jsonl_dataset</span></span>(<span>dataset_path: Union[str, Path])</span>
 </code></dt>
@@ -228,20 +354,21 @@ el.replaceWith(d);
 </dl></div>
 </dd>
 <dt id="molcrawl.molecule_nat_lang.utils.general.save_dataset"><code class="name flex">
-<span>def <span class="ident">save_dataset</span></span>(<span>dataset, dataset_path: Union[str, Path])</span>
+<span>def <span class="ident">save_dataset</span></span>(<span>dataset, dataset_path: Union[str, Path], batch_size: int = 50000)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_dataset(dataset, dataset_path: Union[str, Path]):
+<pre><code class="python">def save_dataset(dataset, dataset_path: Union[str, Path], batch_size: int = 50000):
     &#34;&#34;&#34;
     Save dataset to disk or as parquet file
 
     Args:
         dataset: Dictionary of Dataset objects or DatasetDict
         dataset_path: Path to save the dataset (directory or .parquet file)
+        batch_size: Number of rows per batch when writing parquet (avoids OOM)
     &#34;&#34;&#34;
     dataset_path_obj = Path(dataset_path)
 
@@ -256,24 +383,34 @@ el.replaceWith(d);
         if not isinstance(dataset, DatasetDict):
             dataset = DatasetDict(dataset)
 
-        # Concatenate all splits and save as single parquet
         import pyarrow as pa
         import pyarrow.parquet as pq
 
-        # Combine all splits
-        all_data = []
-        for split_name, split_dataset in dataset.items():
-            # Add split column
-            split_data = split_dataset.to_pandas()
-            split_data[&#34;split&#34;] = split_name
-            all_data.append(split_data)
+        writer = None
+        total_saved = 0
+        try:
+            for split_name, split_dataset in dataset.items():
+                logger.info(f&#34;Writing split &#39;{split_name}&#39; ({len(split_dataset)} samples) to parquet...&#34;)
+                num_rows = len(split_dataset)
+                # .data returns a huggingface InMemoryTable wrapper; .table is the
+                # actual pyarrow.lib.Table that ParquetWriter.write_table() requires.
+                # .slice() on a pyarrow Table is zero-copy — no extra memory allocated.
+                pa_table = split_dataset.data.table
+                for start in range(0, num_rows, batch_size):
+                    length = min(batch_size, num_rows - start)
+                    batch_pa = pa_table.slice(start, length)
+                    split_col = pa.array([split_name] * length, type=pa.string())
+                    batch_pa = batch_pa.append_column(&#34;split&#34;, split_col)
+                    if writer is None:
+                        writer = pq.ParquetWriter(str(dataset_path_obj), batch_pa.schema)
+                    writer.write_table(batch_pa)
+                    total_saved += length
+                    logger.info(f&#34;  ... written {start + length}/{num_rows} rows for &#39;{split_name}&#39;&#34;)
+        finally:
+            if writer is not None:
+                writer.close()
 
-        import pandas as pd
-
-        combined_df = pd.concat(all_data, ignore_index=True)
-        table = pa.Table.from_pandas(combined_df)
-        pq.write_table(table, dataset_path_obj)
-        logger.info(f&#34;Saved {len(combined_df)} samples to parquet file&#34;)
+        logger.info(f&#34;Saved {total_saved} samples to parquet file&#34;)
         return
 
     # Otherwise save as directory structure
@@ -302,6 +439,8 @@ el.replaceWith(d);
 <dd>Dictionary of Dataset objects or DatasetDict</dd>
 <dt><strong><code>dataset_path</code></strong></dt>
 <dd>Path to save the dataset (directory or .parquet file)</dd>
+<dt><strong><code>batch_size</code></strong></dt>
+<dd>Number of rows per batch when writing parquet (avoids OOM)</dd>
 </dl></div>
 </dd>
 </dl>
@@ -321,6 +460,8 @@ el.replaceWith(d);
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.molecule_nat_lang.utils.general.compute_resource_aware_params" href="#molcrawl.molecule_nat_lang.utils.general.compute_resource_aware_params">compute_resource_aware_params</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils.general.get_available_memory_bytes" href="#molcrawl.molecule_nat_lang.utils.general.get_available_memory_bytes">get_available_memory_bytes</a></code></li>
 <li><code><a title="molcrawl.molecule_nat_lang.utils.general.load_jsonl_dataset" href="#molcrawl.molecule_nat_lang.utils.general.load_jsonl_dataset">load_jsonl_dataset</a></code></li>
 <li><code><a title="molcrawl.molecule_nat_lang.utils.general.read_dataset" href="#molcrawl.molecule_nat_lang.utils.general.read_dataset">read_dataset</a></code></li>
 <li><code><a title="molcrawl.molecule_nat_lang.utils.general.save_dataset" href="#molcrawl.molecule_nat_lang.utils.general.save_dataset">save_dataset</a></code></li>
