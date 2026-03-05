@@ -168,15 +168,15 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def combine_all(raw_data_path: str, save_path: str):
     &#34;&#34;&#34;
-    全データセットを統合してOrganiX13を生成
+    Combine all datasets to generate OrganiX13
 
-    Args:
-        raw_data_path: COMPOUNDS_DIR (例: learning_20251104/compounds)
-        save_path: 出力先ディレクトリ (例: learning_20251104/compounds/organix13)
+        Args:
+    raw_data_path: COMPOUNDS_DIR (example: learning_20251104/compounds)
+    save_path: Output directory (e.g. learning_20251104/compounds/organix13)
     &#34;&#34;&#34;
     import pandas as pd
 
-    # データディレクトリのパス
+    # data directory path
     data_dir = os.path.join(raw_data_path, &#34;data&#34;)
     llamol_dir = os.path.join(data_dir, &#34;Fraunhofer-SCAI-llamol&#34;)
 
@@ -253,14 +253,11 @@ el.replaceWith(d);
     logging.info(&#34;Combined len: {}&#34;.format(len(df)))
     df.to_parquet(os.path.join(save_path, &#34;OrganiX13.parquet&#34;))</code></pre>
 </details>
-<div class="desc"><p>全データセットを統合してOrganiX13を生成</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>raw_data_path</code></strong></dt>
-<dd>COMPOUNDS_DIR (例: learning_20251104/compounds)</dd>
-<dt><strong><code>save_path</code></strong></dt>
-<dd>出力先ディレクトリ (例: learning_20251104/compounds/organix13)</dd>
-</dl></div>
+<div class="desc"><p>Combine all datasets to generate OrganiX13</p>
+<pre><code>Args:
+</code></pre>
+<p>raw_data_path: COMPOUNDS_DIR (example: learning_20251104/compounds)
+save_path: Output directory (e.g. learning_20251104/compounds/organix13)</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.organix13.combine_all.safe_read_parquet"><code class="name flex">
 <span>def <span class="ident">safe_read_parquet</span></span>(<span>file_path, dataset_name)</span>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.compounds.dataset.dataset_config API documentation</title>
-<meta name="description" content="化合物データセットの定義と設定 …">
+<meta name="description" content="Defining and configuring compound datasets …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,8 +36,8 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.compounds.dataset.dataset_config</code></h1>
 </header>
 <section id="section-intro">
-<p>化合物データセットの定義と設定</p>
-<p>各データセットを個別に処理するための統一的な定義を提供します。</p>
+<p>Defining and configuring compound datasets</p>
+<p>Provides a uniform definition for processing each dataset individually.</p>
 </section>
 <section>
 </section>
@@ -55,10 +55,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_all_dataset_types() -&gt; List[CompoundDatasetType]:
-    &#34;&#34;&#34;全データセット種別のリストを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get list of all dataset types&#34;&#34;&#34;
     return list(CompoundDatasetType)</code></pre>
 </details>
-<div class="desc"><p>全データセット種別のリストを取得</p></div>
+<div class="desc"><p>Get list of all dataset types</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.dataset_config.get_available_datasets"><code class="name flex">
 <span>def <span class="ident">get_available_datasets</span></span>(<span>compounds_dir: pathlib.Path) ‑> List[<a title="molcrawl.compounds.dataset.dataset_config.CompoundDatasetType" href="#molcrawl.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>]</span>
@@ -70,15 +70,15 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_available_datasets(compounds_dir: Path) -&gt; List[CompoundDatasetType]:
     &#34;&#34;&#34;
-    利用可能なデータセットのリストを取得
+    Get list of available datasets
 
-    生データが存在するデータセットのみを返します。
+    Returns only datasets with raw data.
 
     Args:
-        compounds_dir: compoundsディレクトリのパス
+        compounds_dir: compounds directorypath of
 
     Returns:
-        利用可能なデータセットのリスト
+        List of available datasets
     &#34;&#34;&#34;
     available = []
     for dataset_type, info in DATASET_DEFINITIONS.items():
@@ -87,15 +87,15 @@ el.replaceWith(d);
             available.append(dataset_type)
     return available</code></pre>
 </details>
-<div class="desc"><p>利用可能なデータセットのリストを取得</p>
-<p>生データが存在するデータセットのみを返します。</p>
+<div class="desc"><p>Get list of available datasets</p>
+<p>Returns only datasets with raw data.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>compounds_dir</code></strong></dt>
-<dd>compoundsディレクトリのパス</dd>
+<dd>compounds directorypath of</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>利用可能なデータセットのリスト</p></div>
+<p>List of available datasets</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.dataset_config.get_dataset_info"><code class="name flex">
 <span>def <span class="ident">get_dataset_info</span></span>(<span>dataset_type: <a title="molcrawl.compounds.dataset.dataset_config.CompoundDatasetType" href="#molcrawl.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>) ‑> <a title="molcrawl.compounds.dataset.dataset_config.DatasetInfo" href="#molcrawl.compounds.dataset.dataset_config.DatasetInfo">DatasetInfo</a></span>
@@ -106,10 +106,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_dataset_info(dataset_type: CompoundDatasetType) -&gt; DatasetInfo:
-    &#34;&#34;&#34;データセット情報を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get dataset information&#34;&#34;&#34;
     return DATASET_DEFINITIONS[dataset_type]</code></pre>
 </details>
-<div class="desc"><p>データセット情報を取得</p></div>
+<div class="desc"><p>Get dataset information</p></div>
 </dd>
 </dl>
 </section>
@@ -126,7 +126,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class CompoundDatasetType(str, Enum):
-    &#34;&#34;&#34;化合物データセットの種類&#34;&#34;&#34;
+    &#34;&#34;&#34;Compound dataset type&#34;&#34;&#34;
 
     ZINC20 = &#34;zinc20&#34;
     OPV = &#34;opv&#34;
@@ -136,9 +136,9 @@ el.replaceWith(d);
     CHEMBL = &#34;chembl&#34;
     PUBCHEMQC_2017 = &#34;pubchemqc_2017&#34;
     PUBCHEMQC_2020 = &#34;pubchemqc_2020&#34;
-    GUACAMOL = &#34;guacamol&#34;  # GPT2用のベンチマークデータセット</code></pre>
+    GUACAMOL = &#34;guacamol&#34;  # Benchmark dataset for GPT2</code></pre>
 </details>
-<div class="desc"><p>化合物データセットの種類</p></div>
+<div class="desc"><p>Compound dataset type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -195,33 +195,33 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@dataclass
 class DatasetInfo:
-    &#34;&#34;&#34;データセット情報&#34;&#34;&#34;
+    &#34;&#34;&#34;Dataset information&#34;&#34;&#34;
 
-    name: str  # データセット名
-    dataset_type: CompoundDatasetType  # データセット種別
-    source_subdir: str  # 生データのサブディレクトリ (data/ 以下)
-    source_filename: str  # 生データのファイル名
-    requires_download: bool = True  # ダウンロードが必要か
-    requires_properties: bool = True  # 物性計算が必要か
-    sample_size: Optional[int] = None  # サンプリングサイズ（Noneの場合は全データ使用）
+    name: str  # dataset name
+    dataset_type: CompoundDatasetType  # Dataset type
+    source_subdir: str  # Raw data subdirectory (under data/)
+    source_filename: str  # Raw data file name
+    requires_download: bool = True  # Is download required?
+    requires_properties: bool = True  # Is property calculation required?
+    sample_size: Optional[int] = None  # Sampling size (if None, all data will be used)
 
     def get_raw_path(self, compounds_dir: Path) -&gt; Path:
-        &#34;&#34;&#34;生データのパスを取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get raw data path&#34;&#34;&#34;
         return compounds_dir / &#34;data&#34; / self.source_subdir / self.source_filename
 
     def get_processed_path(self, compounds_dir: Path) -&gt; Path:
-        &#34;&#34;&#34;処理済みデータのパスを取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get path to processed data&#34;&#34;&#34;
         return compounds_dir / &#34;processed&#34; / f&#34;{self.name}.parquet&#34;
 
     def get_tokenized_path(self, compounds_dir: Path) -&gt; Path:
-        &#34;&#34;&#34;トークナイズ済みデータのパスを取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get path to tokenized data&#34;&#34;&#34;
         return compounds_dir / &#34;tokenized&#34; / f&#34;{self.name}_tokenized.parquet&#34;
 
     def get_hf_dataset_path(self, compounds_dir: Path) -&gt; Path:
-        &#34;&#34;&#34;HuggingFace Dataset形式のパスを取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get the path in HuggingFace Dataset format&#34;&#34;&#34;
         return compounds_dir / &#34;hf_datasets&#34; / self.name</code></pre>
 </details>
-<div class="desc"><p>データセット情報</p></div>
+<div class="desc"><p>Dataset information</p></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="molcrawl.compounds.dataset.dataset_config.DatasetInfo.dataset_type"><code class="name">var <span class="ident">dataset_type</span> : <a title="molcrawl.compounds.dataset.dataset_config.CompoundDatasetType" href="#molcrawl.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a></code></dt>
@@ -264,10 +264,10 @@ class DatasetInfo:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_hf_dataset_path(self, compounds_dir: Path) -&gt; Path:
-    &#34;&#34;&#34;HuggingFace Dataset形式のパスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get the path in HuggingFace Dataset format&#34;&#34;&#34;
     return compounds_dir / &#34;hf_datasets&#34; / self.name</code></pre>
 </details>
-<div class="desc"><p>HuggingFace Dataset形式のパスを取得</p></div>
+<div class="desc"><p>Get the path in HuggingFace Dataset format</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.dataset_config.DatasetInfo.get_processed_path"><code class="name flex">
 <span>def <span class="ident">get_processed_path</span></span>(<span>self, compounds_dir: pathlib.Path) ‑> pathlib.Path</span>
@@ -278,10 +278,10 @@ class DatasetInfo:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_processed_path(self, compounds_dir: Path) -&gt; Path:
-    &#34;&#34;&#34;処理済みデータのパスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get path to processed data&#34;&#34;&#34;
     return compounds_dir / &#34;processed&#34; / f&#34;{self.name}.parquet&#34;</code></pre>
 </details>
-<div class="desc"><p>処理済みデータのパスを取得</p></div>
+<div class="desc"><p>Get path to processed data</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.dataset_config.DatasetInfo.get_raw_path"><code class="name flex">
 <span>def <span class="ident">get_raw_path</span></span>(<span>self, compounds_dir: pathlib.Path) ‑> pathlib.Path</span>
@@ -292,10 +292,10 @@ class DatasetInfo:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_raw_path(self, compounds_dir: Path) -&gt; Path:
-    &#34;&#34;&#34;生データのパスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get raw data path&#34;&#34;&#34;
     return compounds_dir / &#34;data&#34; / self.source_subdir / self.source_filename</code></pre>
 </details>
-<div class="desc"><p>生データのパスを取得</p></div>
+<div class="desc"><p>Get raw data path</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.dataset_config.DatasetInfo.get_tokenized_path"><code class="name flex">
 <span>def <span class="ident">get_tokenized_path</span></span>(<span>self, compounds_dir: pathlib.Path) ‑> pathlib.Path</span>
@@ -306,10 +306,10 @@ class DatasetInfo:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_tokenized_path(self, compounds_dir: Path) -&gt; Path:
-    &#34;&#34;&#34;トークナイズ済みデータのパスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get path to tokenized data&#34;&#34;&#34;
     return compounds_dir / &#34;tokenized&#34; / f&#34;{self.name}_tokenized.parquet&#34;</code></pre>
 </details>
-<div class="desc"><p>トークナイズ済みデータのパスを取得</p></div>
+<div class="desc"><p>Get path to tokenized data</p></div>
 </dd>
 </dl>
 </dd>

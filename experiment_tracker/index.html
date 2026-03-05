@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.experiment_tracker API documentation</title>
-<meta name="description" content="実験管理システム - Experiment Tracking System
-各工程の実行状況、結果、ログを一元管理するモジュール">
+<meta name="description" content="Experiment Tracking System
+A module that centrally manages the execution status, results, and logs of each process">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,34 +37,34 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.experiment_tracker</code></h1>
 </header>
 <section id="section-intro">
-<p>実験管理システム - Experiment Tracking System
-各工程の実行状況、結果、ログを一元管理するモジュール</p>
+<p>Experiment Tracking System
+A module that centrally manages the execution status, results, and logs of each process</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
 <dt><code class="name"><a title="molcrawl.experiment_tracker.api" href="api.html">molcrawl.experiment_tracker.api</a></code></dt>
 <dd>
-<div class="desc"><p>FastAPI ベースの実験管理API
-molcrawl-webのバックエンドとして動作</p></div>
+<div class="desc"><p>FastAPI-based experiment management API
+Works as a backend for molcrawl-web</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.experiment_tracker.database" href="database.html">molcrawl.experiment_tracker.database</a></code></dt>
 <dd>
-<div class="desc"><p>実験管理データベース - SQLiteベース</p></div>
+<div class="desc"><p>Experiment management database - SQLite based</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.experiment_tracker.helpers" href="helpers.html">molcrawl.experiment_tracker.helpers</a></code></dt>
 <dd>
-<div class="desc"><p>実験トラッキングのヘルパー関数
-既存のスクリプトに簡単に統合できるデコレータとコンテキストマネージャー</p></div>
+<div class="desc"><p>Experiment tracking helper functions
+Decorators and context managers that can be easily integrated into existing scripts</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.experiment_tracker.models" href="models.html">molcrawl.experiment_tracker.models</a></code></dt>
 <dd>
-<div class="desc"><p>実験管理のデータモデル定義</p></div>
+<div class="desc"><p>Experiment management data model definition</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.experiment_tracker.tracker" href="tracker.html">molcrawl.experiment_tracker.tracker</a></code></dt>
 <dd>
-<div class="desc"><p>実験トラッカー - メインインターフェース
-各スクリプトから実験を管理するための簡易API</p></div>
+<div class="desc"><p>Experiment Tracker - Main Interface
+Simple API to manage experiments from each script</p></div>
 </dd>
 </dl>
 </section>
@@ -85,7 +85,7 @@ molcrawl-webのバックエンドとして動作</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class DatasetType(str, Enum):
-    &#34;&#34;&#34;データセットタイプ&#34;&#34;&#34;
+    &#34;&#34;&#34;Dataset type&#34;&#34;&#34;
 
     COMPOUNDS = &#34;compounds&#34;
     GENOME_SEQUENCE = &#34;genome_sequence&#34;
@@ -98,7 +98,7 @@ molcrawl-webのバックエンドとして動作</p></div>
     COSMIC = &#34;cosmic&#34;
     OTHER = &#34;other&#34;</code></pre>
 </details>
-<div class="desc"><p>データセットタイプ</p></div>
+<div class="desc"><p>Dataset type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -159,7 +159,7 @@ molcrawl-webのバックエンドとして動作</p></div>
 </summary>
 <pre><code class="python">@dataclass
 class Experiment:
-    &#34;&#34;&#34;実験の全体情報&#34;&#34;&#34;
+    &#34;&#34;&#34;Overall information about the experiment&#34;&#34;&#34;
 
     experiment_id: str
     experiment_name: str
@@ -172,20 +172,20 @@ class Experiment:
     completed_at: Optional[datetime] = None
     total_duration_seconds: Optional[float] = None
 
-    # 設定情報
+    # Setting information
     config_path: Optional[str] = None
     config: Dict[str, Any] = field(default_factory=dict)
 
-    # 結果情報
+    # Results information
     results_dir: Optional[str] = None
     results: Dict[str, Any] = field(default_factory=dict)
     metrics: Dict[str, float] = field(default_factory=dict)
 
-    # ステップとログ
+    # steps and logs
     steps: List[ExperimentStep] = field(default_factory=list)
     logs: List[ExperimentLog] = field(default_factory=list)
 
-    # メタデータ
+    # metadata
     tags: List[str] = field(default_factory=list)
     notes: str = &#34;&#34;
     environment: Dict[str, Any] = field(default_factory=dict)
@@ -230,15 +230,15 @@ class Experiment:
         return cls(**data)
 
     def to_json(self) -&gt; str:
-        &#34;&#34;&#34;JSON文字列に変換&#34;&#34;&#34;
+        &#34;&#34;&#34;Convert to JSON string&#34;&#34;&#34;
         return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
 
     @classmethod
     def from_json(cls, json_str: str) -&gt; &#34;Experiment&#34;:
-        &#34;&#34;&#34;JSON文字列から復元&#34;&#34;&#34;
+        &#34;&#34;&#34;Restore from JSON string&#34;&#34;&#34;
         return cls.from_dict(json.loads(json_str))</code></pre>
 </details>
-<div class="desc"><p>実験の全体情報</p></div>
+<div class="desc"><p>Overall information about the experiment</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="molcrawl.experiment_tracker.Experiment.from_dict"><code class="name flex">
@@ -251,7 +251,7 @@ class Experiment:
 <span>def <span class="ident">from_json</span></span>(<span>json_str: str) ‑> <a title="molcrawl.experiment_tracker.models.Experiment" href="models.html#molcrawl.experiment_tracker.models.Experiment">Experiment</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>JSON文字列から復元</p></div>
+<div class="desc"><p>Restore from JSON string</p></div>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -382,10 +382,10 @@ class Experiment:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def to_json(self) -&gt; str:
-    &#34;&#34;&#34;JSON文字列に変換&#34;&#34;&#34;
+    &#34;&#34;&#34;Convert to JSON string&#34;&#34;&#34;
     return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)</code></pre>
 </details>
-<div class="desc"><p>JSON文字列に変換</p></div>
+<div class="desc"><p>Convert to JSON string</p></div>
 </dd>
 </dl>
 </dd>
@@ -400,12 +400,12 @@ class Experiment:
 </summary>
 <pre><code class="python">@dataclass
 class ExperimentLog:
-    &#34;&#34;&#34;実験ログエントリ&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment Log Entry&#34;&#34;&#34;
 
     timestamp: datetime
     level: str  # INFO, WARNING, ERROR, DEBUG
     message: str
-    source: Optional[str] = None  # ログのソース（ファイル名、関数名など）
+    source: Optional[str] = None  # Log source (file name, function name, etc.)
 
     def to_dict(self) -&gt; Dict[str, Any]:
         return {
@@ -420,7 +420,7 @@ class ExperimentLog:
         data[&#34;timestamp&#34;] = datetime.fromisoformat(data[&#34;timestamp&#34;])
         return cls(**data)</code></pre>
 </details>
-<div class="desc"><p>実験ログエントリ</p></div>
+<div class="desc"><p>Experiment Log Entry</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="molcrawl.experiment_tracker.ExperimentLog.from_dict"><code class="name flex">
@@ -481,16 +481,16 @@ class ExperimentLog:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ExperimentStatus(str, Enum):
-    &#34;&#34;&#34;実験ステータス&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment Status&#34;&#34;&#34;
 
-    PENDING = &#34;pending&#34;  # 未実行
-    RUNNING = &#34;running&#34;  # 実行中
-    COMPLETED = &#34;completed&#34;  # 完了
-    FAILED = &#34;failed&#34;  # 失敗
-    CANCELLED = &#34;cancelled&#34;  # キャンセル
-    SKIPPED = &#34;skipped&#34;  # スキップ</code></pre>
+    PENDING = &#34;pending&#34;  # Not executed
+    RUNNING = &#34;running&#34;  # Running
+    COMPLETED = &#34;completed&#34;  # Completed
+    FAILED = &#34;failed&#34;  # failed
+    CANCELLED = &#34;cancelled&#34;  # cancel
+    SKIPPED = &#34;skipped&#34;  # skipped</code></pre>
 </details>
-<div class="desc"><p>実験ステータス</p></div>
+<div class="desc"><p>Experiment Status</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -535,7 +535,7 @@ class ExperimentLog:
 </summary>
 <pre><code class="python">@dataclass
 class ExperimentStep:
-    &#34;&#34;&#34;実験の各ステップ&#34;&#34;&#34;
+    &#34;&#34;&#34;Each step of the experiment&#34;&#34;&#34;
 
     step_id: str
     step_name: str
@@ -564,7 +564,7 @@ class ExperimentStep:
             data[&#34;end_time&#34;] = datetime.fromisoformat(data[&#34;end_time&#34;])
         return cls(**data)</code></pre>
 </details>
-<div class="desc"><p>実験の各ステップ</p></div>
+<div class="desc"><p>Each step of the experiment</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="molcrawl.experiment_tracker.ExperimentStep.from_dict"><code class="name flex">
@@ -649,7 +649,7 @@ class ExperimentStep:
 </summary>
 <pre><code class="python">class ExperimentTracker:
     &#34;&#34;&#34;
-    実験トラッカー
+    experiment tracker
 
     Usage:
         tracker = ExperimentTracker()
@@ -661,7 +661,7 @@ class ExperimentStep:
         )
 
         step_id = tracker.start_step(exp_id, &#34;data_loading&#34;, &#34;Load dataset&#34;)
-        # ... 処理 ...
+        # ... process ...
         tracker.complete_step(exp_id, step_id)
 
         tracker.complete_experiment(exp_id, results={&#34;accuracy&#34;: 0.95})
@@ -670,10 +670,10 @@ class ExperimentStep:
     def __init__(self, db_path: Optional[str] = None):
         &#34;&#34;&#34;
         Args:
-            db_path: データベースファイルのパス。指定しない場合は環境変数から取得
+            db_path: Database file path. If not specified, get from environment variable
         &#34;&#34;&#34;
         if db_path is None:
-            # デフォルトのデータベースパス
+            # defaultdatabase path of
             project_root = Path(__file__).parent.parent.parent
             db_dir = project_root / &#34;experiment_data&#34;
             db_dir.mkdir(exist_ok=True)
@@ -694,26 +694,26 @@ class ExperimentStep:
         notes: str = &#34;&#34;,
     ) -&gt; str:
         &#34;&#34;&#34;
-        実験を開始
+        Start experiment
 
         Args:
-            name: 実験名
-            experiment_type: 実験タイプ
-            model_type: モデルタイプ
-            dataset_type: データセットタイプ
-            config: 設定情報
-            config_path: 設定ファイルのパス
-            tags: タグリスト
-            notes: メモ
+            name: Experiment name
+            experiment_type: Experiment type
+            model_type: Model type
+            dataset_type: Dataset type
+            config: configuration information
+            config_path: configuration file path
+            tags: tag list
+            notes: notes
 
         Returns:
-            実験ID
+            Experiment ID
         &#34;&#34;&#34;
         experiment_id = (
             f&#34;{model_type.value}_{dataset_type.value}_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}_{uuid.uuid4().hex[:8]}&#34;
         )
 
-        # 環境情報を取得
+        # Get environment information
         environment = {
             &#34;hostname&#34;: os.environ.get(&#34;HOSTNAME&#34;, &#34;unknown&#34;),
             &#34;user&#34;: os.environ.get(&#34;USER&#34;, &#34;unknown&#34;),
@@ -755,17 +755,17 @@ class ExperimentStep:
         metadata: Optional[Dict[str, Any]] = None,
     ) -&gt; str:
         &#34;&#34;&#34;
-        ステップを開始
+        start step
 
         Args:
-            experiment_id: 実験ID
-            step_id: ステップID
-            step_name: ステップ名
-            command: 実行コマンド
-            metadata: メタデータ
+            experiment_id: Experiment ID
+            step_id: Step ID
+            step_name: Step name
+            command: execution command
+            metadata: metadata
 
         Returns:
-            ステップID
+            Step ID
         &#34;&#34;&#34;
         experiment = self.db.get_experiment(experiment_id)
         if not experiment:
@@ -795,13 +795,13 @@ class ExperimentStep:
         metadata: Optional[Dict[str, Any]] = None,
     ) -&gt; None:
         &#34;&#34;&#34;
-        ステップを完了
+        complete the step
 
         Args:
-            experiment_id: 実験ID
-            step_id: ステップID
-            output_path: 出力パス
-            metadata: 追加メタデータ
+            experiment_id: Experiment ID
+            step_id: Step ID
+            output_path: output path
+            metadata: additional metadata
         &#34;&#34;&#34;
         experiment = self.db.get_experiment(experiment_id)
         if not experiment:
@@ -823,12 +823,12 @@ class ExperimentStep:
 
     def fail_step(self, experiment_id: str, step_id: str, error_message: str) -&gt; None:
         &#34;&#34;&#34;
-        ステップを失敗状態にする
+        put a step in a failed state
 
         Args:
-            experiment_id: 実験ID
-            step_id: ステップID
-            error_message: エラーメッセージ
+            experiment_id: Experiment ID
+            step_id: Step ID
+            error_message: Error message
         &#34;&#34;&#34;
         experiment = self.db.get_experiment(experiment_id)
         if not experiment:
@@ -854,13 +854,13 @@ class ExperimentStep:
         results_dir: Optional[str] = None,
     ) -&gt; None:
         &#34;&#34;&#34;
-        実験を完了
+        Complete the experiment
 
         Args:
-            experiment_id: 実験ID
-            results: 結果情報
-            metrics: メトリクス
-            results_dir: 結果ディレクトリ
+            experiment_id: Experiment ID
+            results: Results information
+            metrics: metrics
+            results_dir: results directory
         &#34;&#34;&#34;
         experiment = self.db.get_experiment(experiment_id)
         if not experiment:
@@ -883,11 +883,11 @@ class ExperimentStep:
 
     def fail_experiment(self, experiment_id: str, error_message: str) -&gt; None:
         &#34;&#34;&#34;
-        実験を失敗状態にする
+        put the experiment into a failed state
 
         Args:
-            experiment_id: 実験ID
-            error_message: エラーメッセージ
+            experiment_id: Experiment ID
+            error_message: Error message
         &#34;&#34;&#34;
         experiment = self.db.get_experiment(experiment_id)
         if not experiment:
@@ -903,19 +903,19 @@ class ExperimentStep:
 
     def log(self, experiment_id: str, level: str, message: str, source: Optional[str] = None) -&gt; None:
         &#34;&#34;&#34;
-        ログを追加
+        add log
 
         Args:
-            experiment_id: 実験ID
-            level: ログレベル (INFO, WARNING, ERROR, DEBUG)
-            message: メッセージ
-            source: ソース
+            experiment_id: Experiment ID
+            level: Log level (INFO, WARNING, ERROR, DEBUG)
+            message: message
+            source: source
         &#34;&#34;&#34;
         log = ExperimentLog(timestamp=datetime.now(), level=level, message=message, source=source)
         self.db.add_log(experiment_id, log)
 
     def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
-        &#34;&#34;&#34;実験を取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
         return self.db.get_experiment(experiment_id)
 
     def list_experiments(
@@ -927,7 +927,7 @@ class ExperimentStep:
         limit: int = 100,
         offset: int = 0,
     ) -&gt; List[Experiment]:
-        &#34;&#34;&#34;実験一覧を取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
         return self.db.list_experiments(
             status=status,
             experiment_type=experiment_type,
@@ -938,11 +938,11 @@ class ExperimentStep:
         )
 
     def get_statistics(self) -&gt; Dict[str, Any]:
-        &#34;&#34;&#34;統計情報を取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
         return self.db.get_statistics()
 
     def export_experiment_json(self, experiment_id: str, output_path: str) -&gt; None:
-        &#34;&#34;&#34;実験をJSON形式でエクスポート&#34;&#34;&#34;
+        &#34;&#34;&#34;Export experiment in JSON format&#34;&#34;&#34;
         experiment = self.db.get_experiment(experiment_id)
         if not experiment:
             raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
@@ -951,7 +951,7 @@ class ExperimentStep:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(experiment.to_json(), encoding=&#34;utf-8&#34;)</code></pre>
 </details>
-<div class="desc"><p>実験トラッカー</p>
+<div class="desc"><p>experiment tracker</p>
 <h2 id="usage">Usage</h2>
 <p>tracker = ExperimentTracker()
 exp_id = tracker.start_experiment(
@@ -961,13 +961,13 @@ model_type=ModelType.GPT2,
 dataset_type=DatasetType.PROTEINGYM
 )</p>
 <p>step_id = tracker.start_step(exp_id, "data_loading", "Load dataset")</p>
-<h1 id="_1">&hellip; 処理 &hellip;</h1>
+<h1 id="process">&hellip; process &hellip;</h1>
 <p>tracker.complete_step(exp_id, step_id)</p>
 <p>tracker.complete_experiment(exp_id, results={"accuracy": 0.95})</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>db_path</code></strong></dt>
-<dd>データベースファイルのパス。指定しない場合は環境変数から取得</dd>
+<dd>Database file path. If not specified, get from environment variable</dd>
 </dl></div>
 <h3>Methods</h3>
 <dl>
@@ -987,13 +987,13 @@ dataset_type=DatasetType.PROTEINGYM
     results_dir: Optional[str] = None,
 ) -&gt; None:
     &#34;&#34;&#34;
-    実験を完了
+    Complete the experiment
 
     Args:
-        experiment_id: 実験ID
-        results: 結果情報
-        metrics: メトリクス
-        results_dir: 結果ディレクトリ
+        experiment_id: Experiment ID
+        results: Results information
+        metrics: metrics
+        results_dir: results directory
     &#34;&#34;&#34;
     experiment = self.db.get_experiment(experiment_id)
     if not experiment:
@@ -1014,17 +1014,17 @@ dataset_type=DatasetType.PROTEINGYM
     self.db.save_experiment(experiment)
     self.log(experiment_id, &#34;INFO&#34;, &#34;Experiment completed successfully&#34;)</code></pre>
 </details>
-<div class="desc"><p>実験を完了</p>
+<div class="desc"><p>Complete the experiment</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>experiment_id</code></strong></dt>
-<dd>実験ID</dd>
+<dd>Experiment ID</dd>
 <dt><strong><code>results</code></strong></dt>
-<dd>結果情報</dd>
+<dd>Results information</dd>
 <dt><strong><code>metrics</code></strong></dt>
-<dd>メトリクス</dd>
+<dd>metrics</dd>
 <dt><strong><code>results_dir</code></strong></dt>
-<dd>結果ディレクトリ</dd>
+<dd>results directory</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.complete_step"><code class="name flex">
@@ -1043,13 +1043,13 @@ dataset_type=DatasetType.PROTEINGYM
     metadata: Optional[Dict[str, Any]] = None,
 ) -&gt; None:
     &#34;&#34;&#34;
-    ステップを完了
+    complete the step
 
     Args:
-        experiment_id: 実験ID
-        step_id: ステップID
-        output_path: 出力パス
-        metadata: 追加メタデータ
+        experiment_id: Experiment ID
+        step_id: Step ID
+        output_path: output path
+        metadata: additional metadata
     &#34;&#34;&#34;
     experiment = self.db.get_experiment(experiment_id)
     if not experiment:
@@ -1069,17 +1069,17 @@ dataset_type=DatasetType.PROTEINGYM
     self.db.save_experiment(experiment)
     self.log(experiment_id, &#34;INFO&#34;, f&#34;Step completed: {step_id}&#34;)</code></pre>
 </details>
-<div class="desc"><p>ステップを完了</p>
+<div class="desc"><p>complete the step</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>experiment_id</code></strong></dt>
-<dd>実験ID</dd>
+<dd>Experiment ID</dd>
 <dt><strong><code>step_id</code></strong></dt>
-<dd>ステップID</dd>
+<dd>Step ID</dd>
 <dt><strong><code>output_path</code></strong></dt>
-<dd>出力パス</dd>
+<dd>output path</dd>
 <dt><strong><code>metadata</code></strong></dt>
-<dd>追加メタデータ</dd>
+<dd>additional metadata</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.export_experiment_json"><code class="name flex">
@@ -1091,7 +1091,7 @@ dataset_type=DatasetType.PROTEINGYM
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def export_experiment_json(self, experiment_id: str, output_path: str) -&gt; None:
-    &#34;&#34;&#34;実験をJSON形式でエクスポート&#34;&#34;&#34;
+    &#34;&#34;&#34;Export experiment in JSON format&#34;&#34;&#34;
     experiment = self.db.get_experiment(experiment_id)
     if not experiment:
         raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
@@ -1100,7 +1100,7 @@ dataset_type=DatasetType.PROTEINGYM
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(experiment.to_json(), encoding=&#34;utf-8&#34;)</code></pre>
 </details>
-<div class="desc"><p>実験をJSON形式でエクスポート</p></div>
+<div class="desc"><p>Export experiment in JSON format</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.fail_experiment"><code class="name flex">
 <span>def <span class="ident">fail_experiment</span></span>(<span>self, experiment_id: str, error_message: str) ‑> None</span>
@@ -1112,11 +1112,11 @@ dataset_type=DatasetType.PROTEINGYM
 </summary>
 <pre><code class="python">def fail_experiment(self, experiment_id: str, error_message: str) -&gt; None:
     &#34;&#34;&#34;
-    実験を失敗状態にする
+    put the experiment into a failed state
 
     Args:
-        experiment_id: 実験ID
-        error_message: エラーメッセージ
+        experiment_id: Experiment ID
+        error_message: Error message
     &#34;&#34;&#34;
     experiment = self.db.get_experiment(experiment_id)
     if not experiment:
@@ -1130,13 +1130,13 @@ dataset_type=DatasetType.PROTEINGYM
     self.db.save_experiment(experiment)
     self.log(experiment_id, &#34;ERROR&#34;, f&#34;Experiment failed: {error_message}&#34;)</code></pre>
 </details>
-<div class="desc"><p>実験を失敗状態にする</p>
+<div class="desc"><p>put the experiment into a failed state</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>experiment_id</code></strong></dt>
-<dd>実験ID</dd>
+<dd>Experiment ID</dd>
 <dt><strong><code>error_message</code></strong></dt>
-<dd>エラーメッセージ</dd>
+<dd>Error message</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.fail_step"><code class="name flex">
@@ -1149,12 +1149,12 @@ dataset_type=DatasetType.PROTEINGYM
 </summary>
 <pre><code class="python">def fail_step(self, experiment_id: str, step_id: str, error_message: str) -&gt; None:
     &#34;&#34;&#34;
-    ステップを失敗状態にする
+    put a step in a failed state
 
     Args:
-        experiment_id: 実験ID
-        step_id: ステップID
-        error_message: エラーメッセージ
+        experiment_id: Experiment ID
+        step_id: Step ID
+        error_message: Error message
     &#34;&#34;&#34;
     experiment = self.db.get_experiment(experiment_id)
     if not experiment:
@@ -1172,15 +1172,15 @@ dataset_type=DatasetType.PROTEINGYM
     self.db.save_experiment(experiment)
     self.log(experiment_id, &#34;ERROR&#34;, f&#34;Step failed: {step_id} - {error_message}&#34;)</code></pre>
 </details>
-<div class="desc"><p>ステップを失敗状態にする</p>
+<div class="desc"><p>put a step in a failed state</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>experiment_id</code></strong></dt>
-<dd>実験ID</dd>
+<dd>Experiment ID</dd>
 <dt><strong><code>step_id</code></strong></dt>
-<dd>ステップID</dd>
+<dd>Step ID</dd>
 <dt><strong><code>error_message</code></strong></dt>
-<dd>エラーメッセージ</dd>
+<dd>Error message</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.get_experiment"><code class="name flex">
@@ -1192,10 +1192,10 @@ dataset_type=DatasetType.PROTEINGYM
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
-    &#34;&#34;&#34;実験を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
     return self.db.get_experiment(experiment_id)</code></pre>
 </details>
-<div class="desc"><p>実験を取得</p></div>
+<div class="desc"><p>Get the experiment</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.get_statistics"><code class="name flex">
 <span>def <span class="ident">get_statistics</span></span>(<span>self) ‑> Dict[str, Any]</span>
@@ -1206,10 +1206,10 @@ dataset_type=DatasetType.PROTEINGYM
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_statistics(self) -&gt; Dict[str, Any]:
-    &#34;&#34;&#34;統計情報を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
     return self.db.get_statistics()</code></pre>
 </details>
-<div class="desc"><p>統計情報を取得</p></div>
+<div class="desc"><p>Get statistics</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.list_experiments"><code class="name flex">
 <span>def <span class="ident">list_experiments</span></span>(<span>self,<br>status: <a title="molcrawl.experiment_tracker.models.ExperimentStatus" href="models.html#molcrawl.experiment_tracker.models.ExperimentStatus">ExperimentStatus</a> | None = None,<br>experiment_type: <a title="molcrawl.experiment_tracker.models.ExperimentType" href="models.html#molcrawl.experiment_tracker.models.ExperimentType">ExperimentType</a> | None = None,<br>model_type: <a title="molcrawl.experiment_tracker.models.ModelType" href="models.html#molcrawl.experiment_tracker.models.ModelType">ModelType</a> | None = None,<br>dataset_type: <a title="molcrawl.experiment_tracker.models.DatasetType" href="models.html#molcrawl.experiment_tracker.models.DatasetType">DatasetType</a> | None = None,<br>limit: int = 100,<br>offset: int = 0) ‑> List[<a title="molcrawl.experiment_tracker.models.Experiment" href="models.html#molcrawl.experiment_tracker.models.Experiment">Experiment</a>]</span>
@@ -1228,7 +1228,7 @@ dataset_type=DatasetType.PROTEINGYM
     limit: int = 100,
     offset: int = 0,
 ) -&gt; List[Experiment]:
-    &#34;&#34;&#34;実験一覧を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
     return self.db.list_experiments(
         status=status,
         experiment_type=experiment_type,
@@ -1238,7 +1238,7 @@ dataset_type=DatasetType.PROTEINGYM
         offset=offset,
     )</code></pre>
 </details>
-<div class="desc"><p>実験一覧を取得</p></div>
+<div class="desc"><p>Get experiment list</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.log"><code class="name flex">
 <span>def <span class="ident">log</span></span>(<span>self, experiment_id: str, level: str, message: str, source: str | None = None) ‑> None</span>
@@ -1250,28 +1250,28 @@ dataset_type=DatasetType.PROTEINGYM
 </summary>
 <pre><code class="python">def log(self, experiment_id: str, level: str, message: str, source: Optional[str] = None) -&gt; None:
     &#34;&#34;&#34;
-    ログを追加
+    add log
 
     Args:
-        experiment_id: 実験ID
-        level: ログレベル (INFO, WARNING, ERROR, DEBUG)
-        message: メッセージ
-        source: ソース
+        experiment_id: Experiment ID
+        level: Log level (INFO, WARNING, ERROR, DEBUG)
+        message: message
+        source: source
     &#34;&#34;&#34;
     log = ExperimentLog(timestamp=datetime.now(), level=level, message=message, source=source)
     self.db.add_log(experiment_id, log)</code></pre>
 </details>
-<div class="desc"><p>ログを追加</p>
+<div class="desc"><p>add log</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>experiment_id</code></strong></dt>
-<dd>実験ID</dd>
+<dd>Experiment ID</dd>
 <dt><strong><code>level</code></strong></dt>
-<dd>ログレベル (INFO, WARNING, ERROR, DEBUG)</dd>
+<dd>Log level (INFO, WARNING, ERROR, DEBUG)</dd>
 <dt><strong><code>message</code></strong></dt>
-<dd>メッセージ</dd>
+<dd>message</dd>
 <dt><strong><code>source</code></strong></dt>
-<dd>ソース</dd>
+<dd>source</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.start_experiment"><code class="name flex">
@@ -1294,26 +1294,26 @@ dataset_type=DatasetType.PROTEINGYM
     notes: str = &#34;&#34;,
 ) -&gt; str:
     &#34;&#34;&#34;
-    実験を開始
+    Start experiment
 
     Args:
-        name: 実験名
-        experiment_type: 実験タイプ
-        model_type: モデルタイプ
-        dataset_type: データセットタイプ
-        config: 設定情報
-        config_path: 設定ファイルのパス
-        tags: タグリスト
-        notes: メモ
+        name: Experiment name
+        experiment_type: Experiment type
+        model_type: Model type
+        dataset_type: Dataset type
+        config: configuration information
+        config_path: configuration file path
+        tags: tag list
+        notes: notes
 
     Returns:
-        実験ID
+        Experiment ID
     &#34;&#34;&#34;
     experiment_id = (
         f&#34;{model_type.value}_{dataset_type.value}_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}_{uuid.uuid4().hex[:8]}&#34;
     )
 
-    # 環境情報を取得
+    # Get environment information
     environment = {
         &#34;hostname&#34;: os.environ.get(&#34;HOSTNAME&#34;, &#34;unknown&#34;),
         &#34;user&#34;: os.environ.get(&#34;USER&#34;, &#34;unknown&#34;),
@@ -1346,28 +1346,28 @@ dataset_type=DatasetType.PROTEINGYM
 
     return experiment_id</code></pre>
 </details>
-<div class="desc"><p>実験を開始</p>
+<div class="desc"><p>Start experiment</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>name</code></strong></dt>
-<dd>実験名</dd>
+<dd>Experiment name</dd>
 <dt><strong><code>experiment_type</code></strong></dt>
-<dd>実験タイプ</dd>
+<dd>Experiment type</dd>
 <dt><strong><code>model_type</code></strong></dt>
-<dd>モデルタイプ</dd>
+<dd>Model type</dd>
 <dt><strong><code>dataset_type</code></strong></dt>
-<dd>データセットタイプ</dd>
+<dd>Dataset type</dd>
 <dt><strong><code>config</code></strong></dt>
-<dd>設定情報</dd>
+<dd>configuration information</dd>
 <dt><strong><code>config_path</code></strong></dt>
-<dd>設定ファイルのパス</dd>
+<dd>configuration file path</dd>
 <dt><strong><code>tags</code></strong></dt>
-<dd>タグリスト</dd>
+<dd>tag list</dd>
 <dt><strong><code>notes</code></strong></dt>
-<dd>メモ</dd>
+<dd>notes</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>実験ID</p></div>
+<p>Experiment ID</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.ExperimentTracker.start_step"><code class="name flex">
 <span>def <span class="ident">start_step</span></span>(<span>self,<br>experiment_id: str,<br>step_id: str,<br>step_name: str,<br>command: str | None = None,<br>metadata: Dict[str, Any] | None = None) ‑> str</span>
@@ -1386,17 +1386,17 @@ dataset_type=DatasetType.PROTEINGYM
     metadata: Optional[Dict[str, Any]] = None,
 ) -&gt; str:
     &#34;&#34;&#34;
-    ステップを開始
+    start step
 
     Args:
-        experiment_id: 実験ID
-        step_id: ステップID
-        step_name: ステップ名
-        command: 実行コマンド
-        metadata: メタデータ
+        experiment_id: Experiment ID
+        step_id: Step ID
+        step_name: Step name
+        command: execution command
+        metadata: metadata
 
     Returns:
-        ステップID
+        Step ID
     &#34;&#34;&#34;
     experiment = self.db.get_experiment(experiment_id)
     if not experiment:
@@ -1418,22 +1418,22 @@ dataset_type=DatasetType.PROTEINGYM
 
     return step_id</code></pre>
 </details>
-<div class="desc"><p>ステップを開始</p>
+<div class="desc"><p>start step</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>experiment_id</code></strong></dt>
-<dd>実験ID</dd>
+<dd>Experiment ID</dd>
 <dt><strong><code>step_id</code></strong></dt>
-<dd>ステップID</dd>
+<dd>Step ID</dd>
 <dt><strong><code>step_name</code></strong></dt>
-<dd>ステップ名</dd>
+<dd>Step name</dd>
 <dt><strong><code>command</code></strong></dt>
-<dd>実行コマンド</dd>
+<dd>execution command</dd>
 <dt><strong><code>metadata</code></strong></dt>
-<dd>メタデータ</dd>
+<dd>metadata</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>ステップID</p></div>
+<p>Step ID</p></div>
 </dd>
 </dl>
 </dd>
@@ -1447,15 +1447,15 @@ dataset_type=DatasetType.PROTEINGYM
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ExperimentType(str, Enum):
-    &#34;&#34;&#34;実験タイプ&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment type&#34;&#34;&#34;
 
-    DATA_PREPARATION = &#34;data_preparation&#34;  # データ準備
-    TRAINING = &#34;training&#34;  # モデル訓練
-    EVALUATION = &#34;evaluation&#34;  # 評価
-    VISUALIZATION = &#34;visualization&#34;  # 可視化
-    INFERENCE = &#34;inference&#34;  # 推論</code></pre>
+    DATA_PREPARATION = &#34;data_preparation&#34;  # Data preparation
+    TRAINING = &#34;training&#34;  # model training
+    EVALUATION = &#34;evaluation&#34;  # Evaluation
+    VISUALIZATION = &#34;visualization&#34;  # visualization
+    INFERENCE = &#34;inference&#34;  # inference</code></pre>
 </details>
-<div class="desc"><p>実験タイプ</p></div>
+<div class="desc"><p>Experiment type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -1495,14 +1495,14 @@ dataset_type=DatasetType.PROTEINGYM
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ModelType(str, Enum):
-    &#34;&#34;&#34;モデルタイプ&#34;&#34;&#34;
+    &#34;&#34;&#34;Model type&#34;&#34;&#34;
 
     GPT2 = &#34;gpt2&#34;
     BERT = &#34;bert&#34;
     GPN = &#34;gpn&#34;
     OTHER = &#34;other&#34;</code></pre>
 </details>
-<div class="desc"><p>モデルタイプ</p></div>
+<div class="desc"><p>Model type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>

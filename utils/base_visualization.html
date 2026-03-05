@@ -60,15 +60,15 @@ evaluation result visualization classes.</p>
 </summary>
 <pre><code class="python">class BaseVisualizationGenerator(ABC):
     &#34;&#34;&#34;
-    評価結果可視化の抽象基底クラス
+    Abstract base class for visualization of evaluation results
 
-    全ての可視化クラスが継承すべき共通インターフェースと機能を提供する。
+    Provides common interfaces and functionality that all visualization classes should inherit.
 
-    共通機能:
-    - 出力ディレクトリの管理
-    - プロット設定の統一
-    - 共通ユーティリティメソッド
-    - HTMLレポート生成の基盤
+    Common features:
+    - Manage output directory
+    - Unification of plot settings
+    - Common utility methods
+    - Foundation for HTML report generation
     &#34;&#34;&#34;
 
     def __init__(
@@ -79,15 +79,15 @@ evaluation result visualization classes.</p>
         model_type: Optional[str] = None,
     ):
         &#34;&#34;&#34;
-        基底クラス初期化
+        Base class initialization
 
         Args:
-            results_source: 評価結果（ファイルパスまたは辞書データ）
-            output_dir: 可視化結果の出力ディレクトリ
-            logger: ログ出力用のロガー
-            model_type: モデルタイプ（画像保存ディレクトリの判定用）
+            results_source: Evaluation results (file path or dictionary data)
+            output_dir: Output directory of visualization results
+            logger: logger for log output
+            model_type: Model type(For determining image storage directory)
         &#34;&#34;&#34;
-        # モデルタイプが指定されている場合は統一画像ディレクトリを使用
+        # Use unified image directory if model type is specified
         if model_type:
             try:
                 self.image_dir = Path(get_image_output_dir(model_type))
@@ -95,7 +95,7 @@ evaluation result visualization classes.</p>
                 self.output_dir.mkdir(parents=True, exist_ok=True)
                 self.model_type = model_type
             except Exception:
-                # 環境変数設定エラーなどの場合はフォールバック
+                # Fallback in case of environment variable setting error etc.
                 self.output_dir = Path(output_dir)
                 self.output_dir.mkdir(parents=True, exist_ok=True)
                 self.image_dir = self.output_dir
@@ -108,19 +108,19 @@ evaluation result visualization classes.</p>
 
         self.logger = logger or self._setup_logger()
 
-        # 結果データの読み込み
+        # Load result data
         self.results = self._load_results(results_source)
 
-        # 可視化設定の初期化
+        # Initializing visualization settings
         self._setup_plot_style()
 
-        # 生成されたファイルリスト
+        # generatelist of files
         self.generated_files: List[Path] = []
 
         self.logger.info(f&#34;Visualization generator initialized. Output directory: {self.output_dir}&#34;)
 
     def _setup_logger(self) -&gt; logging.Logger:
-        &#34;&#34;&#34;デフォルトのロガーを設定&#34;&#34;&#34;
+        &#34;&#34;&#34;Set default logger&#34;&#34;&#34;
         logging.basicConfig(
             level=logging.INFO,
             format=&#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#34;,
@@ -128,7 +128,7 @@ evaluation result visualization classes.</p>
         return logging.getLogger(self.__class__.__name__)
 
     def _detect_model_type_from_output_dir(self, output_dir: str) -&gt; Optional[str]:
-        &#34;&#34;&#34;出力ディレクトリパスからモデルタイプを推定&#34;&#34;&#34;
+        &#34;&#34;&#34;Infer model type from output directory path&#34;&#34;&#34;
         output_path = str(output_dir).lower()
 
         model_keywords = {
@@ -147,13 +147,13 @@ evaluation result visualization classes.</p>
 
     def _load_results(self, results_source: Union[str, Dict[str, Any]]) -&gt; Dict[str, Any]:
         &#34;&#34;&#34;
-        評価結果データの読み込み
+        Loading evaluation result data
 
         Args:
-            results_source: ファイルパスまたは辞書データ
+            results_source: file path or dictionary data
 
         Returns:
-            評価結果辞書
+            Evaluation result dictionary
         &#34;&#34;&#34;
         if isinstance(results_source, dict):
             self.logger.info(&#34;Using provided results dictionary&#34;)
@@ -170,15 +170,15 @@ evaluation result visualization classes.</p>
             raise ValueError(&#34;results_source must be a file path or dictionary&#34;)
 
     def _setup_plot_style(self):
-        &#34;&#34;&#34;プロットスタイルの統一設定&#34;&#34;&#34;
+        &#34;&#34;&#34;Unified plotting style settings&#34;&#34;&#34;
         if plt is None or sns is None:
             raise RuntimeError(&#34;matplotlib and seaborn are required for visualization&#34;)
 
-        # 基本スタイル設定
+        # Basic style settings
         plt.style.use(&#34;default&#34;)
         sns.set_palette(&#34;husl&#34;)
 
-        # 日本語フォント対応
+        # Supports Japanese fonts
         plt.rcParams[&#34;font.family&#34;] = [
             &#34;DejaVu Sans&#34;,
             &#34;Hiragino Sans&#34;,
@@ -191,39 +191,38 @@ evaluation result visualization classes.</p>
             &#34;Noto Sans CJK JP&#34;,
         ]
 
-        # 図のデフォルト設定
+        # Default settings for diagrams
         plt.rcParams[&#34;figure.figsize&#34;] = (10, 6)
         plt.rcParams[&#34;figure.dpi&#34;] = 100
         plt.rcParams[&#34;savefig.dpi&#34;] = 300
         plt.rcParams[&#34;savefig.bbox&#34;] = &#34;tight&#34;
 
-        # グリッドとスタイル
         sns.set_style(&#34;whitegrid&#34;)
 
         self.logger.debug(&#34;Plot style configured&#34;)
 
     def _save_plot(self, filename: str, formats: List[str] = None, dpi: int = 300) -&gt; List[Path]:
         &#34;&#34;&#34;
-        プロットを指定された形式で保存
+        Save plot in specified format
 
         Args:
-            filename: ファイル名（拡張子なし）
-            formats: 保存する形式のリスト（デフォルト: [&#39;png&#39;]）
-            dpi: 解像度（デフォルト: 300）
+            filename: file name (without extension)
+            formats: list of formats to save (default: [&#39;png&#39;])
+            dpi: resolution (default: 300)
 
         Returns:
-            保存されたファイルパスのリスト
+            List of saved file paths
         &#34;&#34;&#34;
         if formats is None:
-            formats = [&#34;png&#34;]  # PNG優先で統一
+            formats = [&#34;png&#34;]  # Unified with PNG priority
 
         saved_files = []
         for fmt in formats:
-            # 画像ファイル（png, jpg等）は統一画像ディレクトリに保存
+            # Save image files (png, jpg, etc.) in the unified image directory
             if fmt.lower() in [&#34;png&#34;, &#34;jpg&#34;, &#34;jpeg&#34;, &#34;gif&#34;, &#34;bmp&#34;, &#34;svg&#34;]:
                 filepath = self.image_dir / f&#34;{filename}.{fmt}&#34;
             else:
-                # PDF等は従来通りoutput_dirに保存
+                # Save PDF etc. in output_dir as usual
                 filepath = self.output_dir / f&#34;{filename}.{fmt}&#34;
 
             plt.savefig(filepath, format=fmt, bbox_inches=&#34;tight&#34;, dpi=dpi)
@@ -244,19 +243,19 @@ evaluation result visualization classes.</p>
         custom_title: str = &#34;Model Evaluation Dashboard&#34;,
     ):
         &#34;&#34;&#34;
-        汎用的な包括ダッシュボードを作成（BERT形式ベース）
+        Create a generic comprehensive dashboard (based on BERT format)
 
         Args:
-            results_df: 結果データフレーム
-            prediction_score_col: 予測スコア列名
-            true_label_col: 真の正解ラベル列名
-            confidence_col: 信頼度列名（オプション）
-            similarity_col: 類似度列名（オプション）
-            custom_title: ダッシュボードのタイトル
+            results_df: results data frame
+            prediction_score_col: Prediction score column name
+            true_label_col: True correct label column name
+            confidence_col: confidence column name (optional)
+            similarity_col: similarity column name (optional)
+            custom_title: Dashboard title
         &#34;&#34;&#34;
         self.logger.info(&#34;Creating comprehensive evaluation dashboard&#34;)
 
-        # データの検証
+        # Validate data
         required_cols = [prediction_score_col, true_label_col]
         missing_cols = [col for col in required_cols if col not in results_df.columns]
         if missing_cols:
@@ -266,10 +265,10 @@ evaluation result visualization classes.</p>
         plt.style.use(&#34;default&#34;)
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
 
-        # 予測スコアの分布（ラベル別）
+        # Distribution of prediction scores (by label)
         self._plot_score_distribution(axes[0, 0], results_df, prediction_score_col, true_label_col)
 
-        # 類似度分布（もし利用可能なら）
+        # Similarity distribution (if available)
         if similarity_col and similarity_col in results_df.columns:
             self._plot_similarity_distribution(axes[0, 1], results_df, similarity_col, true_label_col)
         else:
@@ -283,7 +282,7 @@ evaluation result visualization classes.</p>
             )
             axes[0, 1].set_title(&#34;Similarity Distribution (N/A)&#34;)
 
-        # 散布図: スコア vs 類似度
+        # Scatterplot: Score vs Similarity
         if similarity_col and similarity_col in results_df.columns:
             self._plot_score_vs_similarity_scatter(
                 axes[0, 2],
@@ -303,17 +302,17 @@ evaluation result visualization classes.</p>
             )
             axes[0, 2].set_title(&#34;Score vs Similarity (N/A)&#34;)
 
-        # ROC曲線
+        # ROCcurve
         self._plot_roc_curve(axes[1, 0], results_df, prediction_score_col, true_label_col)
 
-        # 混同行列
+        # Mix rows
         self._plot_confusion_matrix_subplot(axes[1, 1], results_df, prediction_score_col, true_label_col)
 
-        # 信頼度分布
+        # Confidence distribution
         if confidence_col and confidence_col in results_df.columns:
             self._plot_confidence_distribution(axes[1, 2], results_df, confidence_col)
         else:
-            # 予測スコアの代替として使用
+            # Use as an alternative to prediction score
             self._plot_confidence_distribution(axes[1, 2], results_df, prediction_score_col)
 
         plt.suptitle(custom_title, fontsize=16, y=0.98)
@@ -321,7 +320,7 @@ evaluation result visualization classes.</p>
         self._save_plot(&#34;comprehensive_dashboard&#34;)
 
     def _plot_score_distribution(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
-        &#34;&#34;&#34;予測スコアの分布をプロット&#34;&#34;&#34;
+        &#34;&#34;&#34;Plot the distribution of predicted scores&#34;&#34;&#34;
         try:
             positive_scores = results_df[results_df[label_col] == 1][score_col]
             negative_scores = results_df[results_df[label_col] == 0][score_col]
@@ -344,7 +343,7 @@ evaluation result visualization classes.</p>
             ax.set_title(&#34;Score Distribution (Error)&#34;)
 
     def _plot_similarity_distribution(self, ax, results_df: pd.DataFrame, sim_col: str, label_col: str):
-        &#34;&#34;&#34;類似度分布をプロット&#34;&#34;&#34;
+        &#34;&#34;&#34;Plot similarity distribution&#34;&#34;&#34;
         try:
             positive_sim = results_df[results_df[label_col] == 1][sim_col]
             negative_sim = results_df[results_df[label_col] == 0][sim_col]
@@ -367,7 +366,7 @@ evaluation result visualization classes.</p>
             ax.set_title(&#34;Similarity Distribution (Error)&#34;)
 
     def _plot_score_vs_similarity_scatter(self, ax, results_df: pd.DataFrame, score_col: str, sim_col: str, label_col: str):
-        &#34;&#34;&#34;スコア vs 類似度の散布図&#34;&#34;&#34;
+        &#34;&#34;&#34;Score vs Similarity Scatter Plot&#34;&#34;&#34;
         try:
             positive_data = results_df[results_df[label_col] == 1]
             negative_data = results_df[results_df[label_col] == 0]
@@ -404,7 +403,7 @@ evaluation result visualization classes.</p>
             ax.set_title(&#34;Score vs Similarity (Error)&#34;)
 
     def _plot_roc_curve(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
-        &#34;&#34;&#34;ROC曲線をプロット&#34;&#34;&#34;
+        &#34;&#34;&#34;Plot ROC curve&#34;&#34;&#34;
         try:
             from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -430,11 +429,11 @@ evaluation result visualization classes.</p>
             ax.set_title(&#34;ROC Curve (Error)&#34;)
 
     def _plot_confusion_matrix_subplot(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
-        &#34;&#34;&#34;混同行列をサブプロットとしてプロット&#34;&#34;&#34;
+        &#34;&#34;&#34;Plot the confusion matrix as a subplot&#34;&#34;&#34;
         try:
             from sklearn.metrics import confusion_matrix
 
-            # 予測値を生成（閾値0.5または0）
+            # Generate predicted value (threshold 0.5 or 0)
             threshold = 0.5 if results_df[score_col].max() &gt; 1 else 0
             predictions = (results_df[score_col] &gt; threshold).astype(int)
             cm = confusion_matrix(results_df[label_col], predictions)
@@ -463,7 +462,7 @@ evaluation result visualization classes.</p>
             ax.set_title(&#34;Confusion Matrix (Error)&#34;)
 
     def _plot_confidence_distribution(self, ax, results_df: pd.DataFrame, conf_col: str):
-        &#34;&#34;&#34;信頼度分布をプロット&#34;&#34;&#34;
+        &#34;&#34;&#34;Plot confidence distribution&#34;&#34;&#34;
         try:
             ax.hist(results_df[conf_col], bins=30, alpha=0.7, color=&#34;green&#34;)
             ax.set_xlabel(&#34;Confidence Score&#34;)
@@ -482,15 +481,15 @@ evaluation result visualization classes.</p>
 
     def _create_figure_grid(self, nrows: int, ncols: int, figsize: tuple = None) -&gt; tuple:
         &#34;&#34;&#34;
-        グリッド形式の図を作成
+        Create a diagram in grid format
 
         Args:
-            nrows: 行数
-            ncols: 列数
-            figsize: 図のサイズ
+            nrows: number of rows
+            ncols: number of columns
+            figsize: figure size
 
         Returns:
-            (figure, axes)のタプル
+            tuple of (figure, axes)
         &#34;&#34;&#34;
         if figsize is None:
             figsize = (ncols * 5, nrows * 4)
@@ -505,24 +504,24 @@ evaluation result visualization classes.</p>
 
     def _validate_results(self, required_keys: List[str]):
         &#34;&#34;&#34;
-        結果データに必要なキーが存在するか検証
+        Verify that the required key exists in the result data
 
         Args:
-            required_keys: 必要なキーのリスト
+            required_keys: list of required keys
 
         Raises:
-            KeyError: 必要なキーが存在しない場合
+            KeyError: If the required key does not exist
         &#34;&#34;&#34;
         missing_keys = [key for key in required_keys if key not in self.results]
         if missing_keys:
             raise KeyError(f&#34;Missing required keys in results: {missing_keys}&#34;)
 
     def _get_timestamp(self) -&gt; str:
-        &#34;&#34;&#34;現在のタイムスタンプを取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get current timestamp&#34;&#34;&#34;
         return datetime.now().strftime(&#34;%Y-%m-%d %H:%M:%S&#34;)
 
     def _create_html_header(self, title: str) -&gt; str:
-        &#34;&#34;&#34;HTML レポートのヘッダー部分を生成&#34;&#34;&#34;
+        &#34;&#34;&#34;Generate header part of HTML report&#34;&#34;&#34;
         return f&#34;&#34;&#34;
         &lt;!DOCTYPE html&gt;
         &lt;html&gt;
@@ -605,7 +604,7 @@ evaluation result visualization classes.</p>
         &#34;&#34;&#34;
 
     def _create_html_footer(self) -&gt; str:
-        &#34;&#34;&#34;HTML レポートのフッター部分を生成&#34;&#34;&#34;
+        &#34;&#34;&#34;Generate footer part of HTML report&#34;&#34;&#34;
         return f&#34;&#34;&#34;
             &lt;div class=&#34;footer&#34;&gt;
                 &lt;p&gt;Report generated by {self.__class__.__name__}&lt;/p&gt;
@@ -616,68 +615,68 @@ evaluation result visualization classes.</p>
         &#34;&#34;&#34;
 
     def get_generated_files(self) -&gt; List[Path]:
-        &#34;&#34;&#34;生成されたファイルのリストを取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get list of generated files&#34;&#34;&#34;
         return self.generated_files.copy()
 
-    # 抽象メソッド群 - サブクラスで実装必須
+    # Abstract methods - Must be implemented in subclasses
 
     @abstractmethod
     def plot_confusion_matrix(self):
-        &#34;&#34;&#34;混同行列プロットの生成（実装必須）&#34;&#34;&#34;
+        &#34;&#34;&#34;Generation of confusion matrix plot (required to implement)&#34;&#34;&#34;
         pass
 
     @abstractmethod
     def plot_performance_metrics(self):
-        &#34;&#34;&#34;性能指標プロットの生成（実装必須）&#34;&#34;&#34;
+        &#34;&#34;&#34;Generation of performance index plot (required to implement)&#34;&#34;&#34;
         pass
 
     @abstractmethod
     def create_summary_dashboard(self):
-        &#34;&#34;&#34;サマリーダッシュボードの生成（実装必須）&#34;&#34;&#34;
+        &#34;&#34;&#34;Generate summary dashboard (required to implement)&#34;&#34;&#34;
         pass
 
     @abstractmethod
     def generate_all_visualizations(self):
-        &#34;&#34;&#34;全ての可視化の生成（実装必須）&#34;&#34;&#34;
+        &#34;&#34;&#34;Generation of all visualizations (required to implement)&#34;&#34;&#34;
         pass
 
     @abstractmethod
     def create_html_report(self):
-        &#34;&#34;&#34;HTMLレポートの生成（実装必須）&#34;&#34;&#34;
+        &#34;&#34;&#34;Generate HTML report (required to implement)&#34;&#34;&#34;
         pass
 
-    # オプショナル抽象メソッド（サブクラスで必要に応じて実装）
+    # Optional abstract method (implemented by subclass as needed)
 
     def plot_auc_comparison(self):
-        &#34;&#34;&#34;AUC指標の比較プロット（オプション）&#34;&#34;&#34;
+        &#34;&#34;&#34;Comparison plot of AUC metrics (optional)&#34;&#34;&#34;
         self.logger.info(&#34;AUC comparison plot not implemented in this visualizer&#34;)
 
     def create_performance_radar_chart(self):
-        &#34;&#34;&#34;性能指標レーダーチャート（オプション）&#34;&#34;&#34;
+        &#34;&#34;&#34;Performance indicator radar chart (optional)&#34;&#34;&#34;
         self.logger.info(&#34;Performance radar chart not implemented in this visualizer&#34;)
 
     def plot_score_distribution(self):
-        &#34;&#34;&#34;スコア分布プロット（オプション）&#34;&#34;&#34;
+        &#34;&#34;&#34;Score distribution plot (optional)&#34;&#34;&#34;
         self.logger.info(&#34;Score distribution plot not implemented in this visualizer&#34;)</code></pre>
 </details>
-<div class="desc"><p>評価結果可視化の抽象基底クラス</p>
-<p>全ての可視化クラスが継承すべき共通インターフェースと機能を提供する。</p>
-<p>共通機能:
-- 出力ディレクトリの管理
-- プロット設定の統一
-- 共通ユーティリティメソッド
-- HTMLレポート生成の基盤</p>
-<p>基底クラス初期化</p>
+<div class="desc"><p>Abstract base class for visualization of evaluation results</p>
+<p>Provides common interfaces and functionality that all visualization classes should inherit.</p>
+<p>Common features:
+- Manage output directory
+- Unification of plot settings
+- Common utility methods
+- Foundation for HTML report generation</p>
+<p>Base class initialization</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>results_source</code></strong></dt>
-<dd>評価結果（ファイルパスまたは辞書データ）</dd>
+<dd>Evaluation results (file path or dictionary data)</dd>
 <dt><strong><code>output_dir</code></strong></dt>
-<dd>可視化結果の出力ディレクトリ</dd>
+<dd>Output directory of visualization results</dd>
 <dt><strong><code>logger</code></strong></dt>
-<dd>ログ出力用のロガー</dd>
+<dd>logger for log output</dd>
 <dt><strong><code>model_type</code></strong></dt>
-<dd>モデルタイプ（画像保存ディレクトリの判定用）</dd>
+<dd>Model type(For determining image storage directory)</dd>
 </dl></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -695,10 +694,10 @@ evaluation result visualization classes.</p>
 </summary>
 <pre><code class="python">@abstractmethod
 def create_html_report(self):
-    &#34;&#34;&#34;HTMLレポートの生成（実装必須）&#34;&#34;&#34;
+    &#34;&#34;&#34;Generate HTML report (required to implement)&#34;&#34;&#34;
     pass</code></pre>
 </details>
-<div class="desc"><p>HTMLレポートの生成（実装必須）</p></div>
+<div class="desc"><p>Generate HTML report (required to implement)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.create_performance_radar_chart"><code class="name flex">
 <span>def <span class="ident">create_performance_radar_chart</span></span>(<span>self)</span>
@@ -709,10 +708,10 @@ def create_html_report(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_performance_radar_chart(self):
-    &#34;&#34;&#34;性能指標レーダーチャート（オプション）&#34;&#34;&#34;
+    &#34;&#34;&#34;Performance indicator radar chart (optional)&#34;&#34;&#34;
     self.logger.info(&#34;Performance radar chart not implemented in this visualizer&#34;)</code></pre>
 </details>
-<div class="desc"><p>性能指標レーダーチャート（オプション）</p></div>
+<div class="desc"><p>Performance indicator radar chart (optional)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.create_summary_dashboard"><code class="name flex">
 <span>def <span class="ident">create_summary_dashboard</span></span>(<span>self)</span>
@@ -724,10 +723,10 @@ def create_html_report(self):
 </summary>
 <pre><code class="python">@abstractmethod
 def create_summary_dashboard(self):
-    &#34;&#34;&#34;サマリーダッシュボードの生成（実装必須）&#34;&#34;&#34;
+    &#34;&#34;&#34;Generate summary dashboard (required to implement)&#34;&#34;&#34;
     pass</code></pre>
 </details>
-<div class="desc"><p>サマリーダッシュボードの生成（実装必須）</p></div>
+<div class="desc"><p>Generate summary dashboard (required to implement)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.generate_all_visualizations"><code class="name flex">
 <span>def <span class="ident">generate_all_visualizations</span></span>(<span>self)</span>
@@ -739,10 +738,10 @@ def create_summary_dashboard(self):
 </summary>
 <pre><code class="python">@abstractmethod
 def generate_all_visualizations(self):
-    &#34;&#34;&#34;全ての可視化の生成（実装必須）&#34;&#34;&#34;
+    &#34;&#34;&#34;Generation of all visualizations (required to implement)&#34;&#34;&#34;
     pass</code></pre>
 </details>
-<div class="desc"><p>全ての可視化の生成（実装必須）</p></div>
+<div class="desc"><p>Generation of all visualizations (required to implement)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.get_generated_files"><code class="name flex">
 <span>def <span class="ident">get_generated_files</span></span>(<span>self) ‑> List[pathlib.Path]</span>
@@ -753,10 +752,10 @@ def generate_all_visualizations(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_generated_files(self) -&gt; List[Path]:
-    &#34;&#34;&#34;生成されたファイルのリストを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get list of generated files&#34;&#34;&#34;
     return self.generated_files.copy()</code></pre>
 </details>
-<div class="desc"><p>生成されたファイルのリストを取得</p></div>
+<div class="desc"><p>Get list of generated files</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.plot_auc_comparison"><code class="name flex">
 <span>def <span class="ident">plot_auc_comparison</span></span>(<span>self)</span>
@@ -767,10 +766,10 @@ def generate_all_visualizations(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def plot_auc_comparison(self):
-    &#34;&#34;&#34;AUC指標の比較プロット（オプション）&#34;&#34;&#34;
+    &#34;&#34;&#34;Comparison plot of AUC metrics (optional)&#34;&#34;&#34;
     self.logger.info(&#34;AUC comparison plot not implemented in this visualizer&#34;)</code></pre>
 </details>
-<div class="desc"><p>AUC指標の比較プロット（オプション）</p></div>
+<div class="desc"><p>Comparison plot of AUC metrics (optional)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.plot_confusion_matrix"><code class="name flex">
 <span>def <span class="ident">plot_confusion_matrix</span></span>(<span>self)</span>
@@ -782,10 +781,10 @@ def generate_all_visualizations(self):
 </summary>
 <pre><code class="python">@abstractmethod
 def plot_confusion_matrix(self):
-    &#34;&#34;&#34;混同行列プロットの生成（実装必須）&#34;&#34;&#34;
+    &#34;&#34;&#34;Generation of confusion matrix plot (required to implement)&#34;&#34;&#34;
     pass</code></pre>
 </details>
-<div class="desc"><p>混同行列プロットの生成（実装必須）</p></div>
+<div class="desc"><p>Generation of confusion matrix plot (required to implement)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.plot_performance_metrics"><code class="name flex">
 <span>def <span class="ident">plot_performance_metrics</span></span>(<span>self)</span>
@@ -797,10 +796,10 @@ def plot_confusion_matrix(self):
 </summary>
 <pre><code class="python">@abstractmethod
 def plot_performance_metrics(self):
-    &#34;&#34;&#34;性能指標プロットの生成（実装必須）&#34;&#34;&#34;
+    &#34;&#34;&#34;Generation of performance index plot (required to implement)&#34;&#34;&#34;
     pass</code></pre>
 </details>
-<div class="desc"><p>性能指標プロットの生成（実装必須）</p></div>
+<div class="desc"><p>Generation of performance index plot (required to implement)</p></div>
 </dd>
 <dt id="molcrawl.utils.base_visualization.BaseVisualizationGenerator.plot_score_distribution"><code class="name flex">
 <span>def <span class="ident">plot_score_distribution</span></span>(<span>self)</span>
@@ -811,10 +810,10 @@ def plot_performance_metrics(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def plot_score_distribution(self):
-    &#34;&#34;&#34;スコア分布プロット（オプション）&#34;&#34;&#34;
+    &#34;&#34;&#34;Score distribution plot (optional)&#34;&#34;&#34;
     self.logger.info(&#34;Score distribution plot not implemented in this visualizer&#34;)</code></pre>
 </details>
-<div class="desc"><p>スコア分布プロット（オプション）</p></div>
+<div class="desc"><p>Score distribution plot (optional)</p></div>
 </dd>
 </dl>
 </dd>

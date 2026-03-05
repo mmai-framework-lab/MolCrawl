@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.debug.test_experiment_system API documentation</title>
-<meta name="description" content="実験管理システムの基本テスト">
+<meta name="description" content="Basic test of experiment management system">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.debug.test_experiment_system</code></h1>
 </header>
 <section id="section-intro">
-<p>実験管理システムの基本テスト</p>
+<p>Basic test of experiment management system</p>
 </section>
 <section>
 </section>
@@ -54,7 +54,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
-    &#34;&#34;&#34;すべてのテストを実行&#34;&#34;&#34;
+    &#34;&#34;&#34;Run all tests&#34;&#34;&#34;
     print(&#34;=&#34; * 60)
     print(&#34;🧪 Experiment Tracking System - Basic Tests&#34;)
     print(&#34;=&#34; * 60)
@@ -85,7 +85,7 @@ el.replaceWith(d);
         print(&#34;\n❌ Some tests failed!&#34;)
         return 1</code></pre>
 </details>
-<div class="desc"><p>すべてのテストを実行</p></div>
+<div class="desc"><p>Run all tests</p></div>
 </dd>
 <dt id="molcrawl.debug.test_experiment_system.test_database"><code class="name flex">
 <span>def <span class="ident">test_database</span></span>(<span>)</span>
@@ -96,7 +96,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_database():
-    &#34;&#34;&#34;データベース接続テスト&#34;&#34;&#34;
+    &#34;&#34;&#34;Database connection test&#34;&#34;&#34;
     print(&#34;\nTesting database...&#34;)
     try:
         import os
@@ -104,7 +104,7 @@ el.replaceWith(d);
 
         from molcrawl.experiment_tracker.database import ExperimentDatabase
 
-        # 一時ファイルを使用
+        # use temporary files
         temp_dir = tempfile.mkdtemp()
         db_path = os.path.join(temp_dir, &#34;test.db&#34;)
 
@@ -112,7 +112,7 @@ el.replaceWith(d);
         stats = db.get_statistics()
         assert stats[&#34;total_experiments&#34;] == 0
 
-        # クリーンアップ
+        # cleanup
         import shutil
 
         shutil.rmtree(temp_dir)
@@ -126,7 +126,7 @@ el.replaceWith(d);
         print(traceback.format_exc())
         return False</code></pre>
 </details>
-<div class="desc"><p>データベース接続テスト</p></div>
+<div class="desc"><p>Database connection test</p></div>
 </dd>
 <dt id="molcrawl.debug.test_experiment_system.test_helpers"><code class="name flex">
 <span>def <span class="ident">test_helpers</span></span>(<span>)</span>
@@ -137,7 +137,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_helpers():
-    &#34;&#34;&#34;ヘルパー関数テスト&#34;&#34;&#34;
+    &#34;&#34;&#34;Helper function test&#34;&#34;&#34;
     print(&#34;\nTesting helpers...&#34;)
     try:
         import tempfile
@@ -151,7 +151,7 @@ el.replaceWith(d);
 
         temp_dir = tempfile.mkdtemp()
 
-        # コンテキストマネージャーテスト
+        # Context manager test
         with experiment_context(
             name=&#34;Test Context Experiment&#34;,
             experiment_type=ExperimentType.EVALUATION,
@@ -165,7 +165,7 @@ el.replaceWith(d);
 
         print(&#34;    Context manager test passed&#34;)
 
-        # クリーンアップ
+        # cleanup
         import shutil
 
         shutil.rmtree(temp_dir)
@@ -179,7 +179,7 @@ el.replaceWith(d);
         print(traceback.format_exc())
         return False</code></pre>
 </details>
-<div class="desc"><p>ヘルパー関数テスト</p></div>
+<div class="desc"><p>Helper function test</p></div>
 </dd>
 <dt id="molcrawl.debug.test_experiment_system.test_imports"><code class="name flex">
 <span>def <span class="ident">test_imports</span></span>(<span>)</span>
@@ -190,7 +190,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_imports():
-    &#34;&#34;&#34;モジュールのインポートテスト&#34;&#34;&#34;
+    &#34;&#34;&#34;Module import test&#34;&#34;&#34;
     print(&#34;Testing imports...&#34;)
     try:
         from molcrawl.experiment_tracker import (  # noqa: F401
@@ -207,7 +207,7 @@ el.replaceWith(d);
         print(f&#34;  ✗ Import failed: {e}&#34;)
         return False</code></pre>
 </details>
-<div class="desc"><p>モジュールのインポートテスト</p></div>
+<div class="desc"><p>Module import test</p></div>
 </dd>
 <dt id="molcrawl.debug.test_experiment_system.test_tracker"><code class="name flex">
 <span>def <span class="ident">test_tracker</span></span>(<span>)</span>
@@ -218,12 +218,12 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_tracker():
-    &#34;&#34;&#34;トラッカーの基本機能テスト&#34;&#34;&#34;
+    &#34;&#34;&#34;Tracker basic functionality test&#34;&#34;&#34;
     print(&#34;\nTesting tracker...&#34;)
     try:
         import os
 
-        # テスト用の一時データベース
+        # Temporary database for testing
         import tempfile
 
         from molcrawl.experiment_tracker import (
@@ -238,7 +238,7 @@ el.replaceWith(d);
 
         tracker = ExperimentTracker(db_path)
 
-        # 実験作成
+        # Create experiment
         exp_id = tracker.start_experiment(
             name=&#34;Test Experiment&#34;,
             experiment_type=ExperimentType.TRAINING,
@@ -247,21 +247,21 @@ el.replaceWith(d);
         )
         print(f&#34;    Created experiment: {exp_id}&#34;)
 
-        # ステップ追加
+        # add step
         tracker.start_step(exp_id, &#34;test_step&#34;, &#34;Test Step&#34;)
         time.sleep(0.1)
         tracker.complete_step(exp_id, &#34;test_step&#34;)
         print(&#34;    Added and completed step&#34;)
 
-        # ログ追加
+        # add log
         tracker.log(exp_id, &#34;INFO&#34;, &#34;Test log message&#34;)
         print(&#34;    Added log entry&#34;)
 
-        # 実験完了
+        # Experiment completed
         tracker.complete_experiment(exp_id, metrics={&#34;accuracy&#34;: 0.95})
         print(&#34;    Completed experiment&#34;)
 
-        # 取得テスト
+        # Acquisition test
         experiment = tracker.get_experiment(exp_id)
         assert experiment is not None
         assert len(experiment.steps) == 1
@@ -269,7 +269,7 @@ el.replaceWith(d);
         assert experiment.metrics[&#34;accuracy&#34;] == 0.95
         print(&#34;    Retrieved and verified experiment&#34;)
 
-        # クリーンアップ
+        # cleanup
         import shutil
 
         shutil.rmtree(temp_dir)
@@ -283,7 +283,7 @@ el.replaceWith(d);
         print(traceback.format_exc())
         return False</code></pre>
 </details>
-<div class="desc"><p>トラッカーの基本機能テスト</p></div>
+<div class="desc"><p>Tracker basic functionality test</p></div>
 </dd>
 </dl>
 </section>

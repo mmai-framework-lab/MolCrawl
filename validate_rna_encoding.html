@@ -38,7 +38,7 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <h1 id="rna-encoding-validation-script">RNA Encoding Validation Script</h1>
-<p>RNAデータセットのエンコード整合性を詳細に検証するスクリプト</p>
+<p>Script for detailed encoding integrity verification of RNA datasets</p>
 </section>
 <section>
 </section>
@@ -56,10 +56,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
-    &#34;&#34;&#34;メイン関数&#34;&#34;&#34;
+    &#34;&#34;&#34;Main function&#34;&#34;&#34;
     import argparse
 
-    # LEARNING_SOURCE_DIRを取得
+    # Get LEARNING_SOURCE_DIR
     learning_source_dir = check_learning_source_dir()
 
     parser = argparse.ArgumentParser(description=&#34;RNA Encoding Validation&#34;)
@@ -72,10 +72,10 @@ el.replaceWith(d);
 
     args = parser.parse_args()
 
-    # データセットディレクトリを構築
+    # Build dataset directory
     dataset_dir = os.path.join(learning_source_dir, args.dataset_subdir)
 
-    # ディレクトリの存在確認
+    # Check the existence of the directory
     if not os.path.exists(dataset_dir):
         print(f&#34;❌ ERROR: Dataset directory does not exist: {dataset_dir}&#34;)
         print(f&#34;Expected structure: {learning_source_dir}/{args.dataset_subdir}&#34;)
@@ -90,7 +90,7 @@ el.replaceWith(d);
 
     sys.exit(0 if success else 1)</code></pre>
 </details>
-<div class="desc"><p>メイン関数</p></div>
+<div class="desc"><p>Main function</p></div>
 </dd>
 </dl>
 </section>
@@ -107,7 +107,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class RNAEncodingValidator:
-    &#34;&#34;&#34;RNAエンコード整合性検証クラス&#34;&#34;&#34;
+    &#34;&#34;&#34;RNA encoding integrity verification class&#34;&#34;&#34;
 
     def __init__(self, dataset_dir: str):
         self.dataset_dir = Path(dataset_dir)
@@ -120,7 +120,7 @@ el.replaceWith(d);
         self.issues: list[str] = []
 
     def load_vocabulary(self) -&gt; bool:
-        &#34;&#34;&#34;語彙ファイルを読み込み&#34;&#34;&#34;
+        &#34;&#34;&#34;Load vocabulary file&#34;&#34;&#34;
         try:
             if not self.vocab_file.exists():
                 self.issues.append(f&#34;Vocabulary file not found: {self.vocab_file}&#34;)
@@ -137,7 +137,7 @@ el.replaceWith(d);
             return False
 
     def load_dataset(self) -&gt; bool:
-        &#34;&#34;&#34;パーケットデータセットを読み込み&#34;&#34;&#34;
+        &#34;&#34;&#34;Load parquet dataset&#34;&#34;&#34;
         try:
             if not self.parquet_dir.exists():
                 self.issues.append(f&#34;Parquet directory not found: {self.parquet_dir}&#34;)
@@ -166,7 +166,7 @@ el.replaceWith(d);
             return False
 
     def validate_token_ranges(self) -&gt; bool:
-        &#34;&#34;&#34;トークンIDの範囲を検証&#34;&#34;&#34;
+        &#34;&#34;&#34;Validate token ID range&#34;&#34;&#34;
         try:
             if not self.vocab or not self.dataset:
                 return False
@@ -177,7 +177,7 @@ el.replaceWith(d);
             logger.info(f&#34;Vocabulary size: {vocab_size}&#34;)
             logger.info(f&#34;Max vocabulary ID: {max_vocab_id}&#34;)
 
-            # サンプルのトークンIDをチェック
+            # Check sample token ID
             sample_size = min(1000, len(self.dataset))
             logger.info(f&#34;Checking token ranges in {sample_size} samples...&#34;)
 
@@ -187,7 +187,7 @@ el.replaceWith(d);
 
             for i in range(sample_size):
                 tokens = self.dataset[i][&#34;token&#34;]
-                if tokens:  # 空でない場合
+                if tokens:  # if not empty
                     total_tokens += len(tokens)
                     for token_id in tokens:
                         if token_id &lt; 0 or token_id &gt; max_vocab_id:
@@ -196,7 +196,7 @@ el.replaceWith(d);
 
             if invalid_tokens:
                 self.issues.append(f&#34;Found {out_of_range_count} out-of-range tokens in {len(invalid_tokens)} sequences&#34;)
-                # 最初の10個の無効なトークンを表示
+                # show first 10 invalid tokens
                 for seq_idx, token_id in invalid_tokens[:10]:
                     self.issues.append(f&#34;  Sequence {seq_idx}: token_id {token_id} (valid range: 0-{max_vocab_id})&#34;)
                 return False
@@ -209,12 +209,12 @@ el.replaceWith(d);
             return False
 
     def validate_vocabulary_consistency(self) -&gt; bool:
-        &#34;&#34;&#34;語彙の一貫性を検証&#34;&#34;&#34;
+        &#34;&#34;&#34;Verify vocabulary consistency&#34;&#34;&#34;
         try:
             if not self.vocab:
                 return False
 
-            # 重複チェック
+            # Duplicate check
             gene_names = list(self.vocab.keys())
             token_ids = list(self.vocab.values())
 
@@ -229,7 +229,7 @@ el.replaceWith(d);
                 self.issues.append(&#34;Duplicate token IDs found in vocabulary&#34;)
                 return False
 
-            # ID範囲チェック
+            # ID range check
             min_id, max_id = min(token_ids), max(token_ids)
             expected_range = list(range(len(token_ids)))
             actual_range = sorted(token_ids)
@@ -238,7 +238,7 @@ el.replaceWith(d);
                 self.issues.append(f&#34;Token ID range is not continuous: expected 0-{len(token_ids) - 1}, got {min_id}-{max_id}&#34;)
                 missing_ids = set(expected_range) - set(actual_range)
                 if missing_ids:
-                    self.issues.append(f&#34;Missing token IDs: {sorted(list(missing_ids))[:10]}...&#34;)  # 最初の10個
+                    self.issues.append(f&#34;Missing token IDs: {sorted(list(missing_ids))[:10]}...&#34;)  # First 10
                 return False
 
             logger.info(f&#34;✓ Vocabulary consistency validated: {len(gene_names)} unique genes, IDs 0-{max_id}&#34;)
@@ -249,12 +249,12 @@ el.replaceWith(d);
             return False
 
     def validate_tokenization_quality(self) -&gt; bool:
-        &#34;&#34;&#34;トークン化品質を検証&#34;&#34;&#34;
+        &#34;&#34;&#34;Verify tokenization quality&#34;&#34;&#34;
         try:
             if not self.dataset:
                 return False
 
-            # 統計情報の収集
+            # Collect statistics
             token_counts = []
             empty_sequences = 0
             total_sequences = min(1000, len(self.dataset))
@@ -272,7 +272,7 @@ el.replaceWith(d);
                 self.issues.append(&#34;All sequences are empty (no tokens)&#34;)
                 return False
 
-            # 統計計算
+            # statistical calculation
             avg_tokens = np.mean(token_counts)
             median_tokens = np.median(token_counts)
             min_tokens = np.min(token_counts)
@@ -284,7 +284,7 @@ el.replaceWith(d);
             logger.info(f&#34;  Median tokens per sequence: {median_tokens:.1f}&#34;)
             logger.info(f&#34;  Token count range: {min_tokens}-{max_tokens}&#34;)
 
-            # 品質チェック
+            # Quality check
             if empty_sequences / total_sequences &gt; 0.5:
                 self.issues.append(f&#34;Too many empty sequences: {empty_sequences}/{total_sequences}&#34;)
                 return False
@@ -301,16 +301,16 @@ el.replaceWith(d);
             return False
 
     def check_encoding_pipeline_consistency(self) -&gt; bool:
-        &#34;&#34;&#34;エンコードパイプライン全体の一貫性をチェック&#34;&#34;&#34;
+        &#34;&#34;&#34;Check consistency across encoding pipeline&#34;&#34;&#34;
         try:
-            # 異なるトークン化手法の整合性チェック
+            # Consistency check of different tokenization methods
             if not self.dataset or not self.vocab:
                 return False
 
-            # Geneformerとscgptのトークン化の違いをチェック
-            # (この部分は実際の実装に合わせて調整が必要)
+            # Check the difference between tokenization between Geneformer and scgpt
+            # (This part needs to be adjusted according to the actual implementation)
 
-            # データセット内のtoken_countフィールドの整合性チェック
+            # Check the integrity of the token_count field in the dataset
             inconsistent_counts = 0
             total_checked = min(100, len(self.dataset))
 
@@ -335,7 +335,7 @@ el.replaceWith(d);
             return False
 
     def run_full_validation(self) -&gt; bool:
-        &#34;&#34;&#34;完全な検証を実行&#34;&#34;&#34;
+        &#34;&#34;&#34;Run full validation&#34;&#34;&#34;
         logger.info(&#34;=== RNA Encoding Validation Started ===&#34;)
 
         validation_steps = [
@@ -361,7 +361,7 @@ el.replaceWith(d);
                 logger.error(f&#34;❌ {step_name} ERROR: {e}&#34;)
                 all_passed = False
 
-        # 結果サマリー
+        # Result summary
         logger.info(&#34;=== Validation Results ===&#34;)
         if all_passed:
             logger.info(&#34;✅ All validation checks PASSED&#34;)
@@ -373,7 +373,7 @@ el.replaceWith(d);
 
         return all_passed</code></pre>
 </details>
-<div class="desc"><p>RNAエンコード整合性検証クラス</p></div>
+<div class="desc"><p>RNA encoding integrity verification class</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.check_encoding_pipeline_consistency"><code class="name flex">
@@ -385,16 +385,16 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def check_encoding_pipeline_consistency(self) -&gt; bool:
-    &#34;&#34;&#34;エンコードパイプライン全体の一貫性をチェック&#34;&#34;&#34;
+    &#34;&#34;&#34;Check consistency across encoding pipeline&#34;&#34;&#34;
     try:
-        # 異なるトークン化手法の整合性チェック
+        # Consistency check of different tokenization methods
         if not self.dataset or not self.vocab:
             return False
 
-        # Geneformerとscgptのトークン化の違いをチェック
-        # (この部分は実際の実装に合わせて調整が必要)
+        # Check the difference between tokenization between Geneformer and scgpt
+        # (This part needs to be adjusted according to the actual implementation)
 
-        # データセット内のtoken_countフィールドの整合性チェック
+        # Check the integrity of the token_count field in the dataset
         inconsistent_counts = 0
         total_checked = min(100, len(self.dataset))
 
@@ -418,7 +418,7 @@ el.replaceWith(d);
         self.issues.append(f&#34;Pipeline consistency check failed: {e}&#34;)
         return False</code></pre>
 </details>
-<div class="desc"><p>エンコードパイプライン全体の一貫性をチェック</p></div>
+<div class="desc"><p>Check consistency across encoding pipeline</p></div>
 </dd>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.load_dataset"><code class="name flex">
 <span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> bool</span>
@@ -429,7 +429,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; bool:
-    &#34;&#34;&#34;パーケットデータセットを読み込み&#34;&#34;&#34;
+    &#34;&#34;&#34;Load parquet dataset&#34;&#34;&#34;
     try:
         if not self.parquet_dir.exists():
             self.issues.append(f&#34;Parquet directory not found: {self.parquet_dir}&#34;)
@@ -457,7 +457,7 @@ el.replaceWith(d);
         traceback.print_exc()
         return False</code></pre>
 </details>
-<div class="desc"><p>パーケットデータセットを読み込み</p></div>
+<div class="desc"><p>Load parquet dataset</p></div>
 </dd>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.load_vocabulary"><code class="name flex">
 <span>def <span class="ident">load_vocabulary</span></span>(<span>self) ‑> bool</span>
@@ -468,7 +468,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def load_vocabulary(self) -&gt; bool:
-    &#34;&#34;&#34;語彙ファイルを読み込み&#34;&#34;&#34;
+    &#34;&#34;&#34;Load vocabulary file&#34;&#34;&#34;
     try:
         if not self.vocab_file.exists():
             self.issues.append(f&#34;Vocabulary file not found: {self.vocab_file}&#34;)
@@ -484,7 +484,7 @@ el.replaceWith(d);
         self.issues.append(f&#34;Failed to load vocabulary: {e}&#34;)
         return False</code></pre>
 </details>
-<div class="desc"><p>語彙ファイルを読み込み</p></div>
+<div class="desc"><p>Load vocabulary file</p></div>
 </dd>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.run_full_validation"><code class="name flex">
 <span>def <span class="ident">run_full_validation</span></span>(<span>self) ‑> bool</span>
@@ -495,7 +495,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def run_full_validation(self) -&gt; bool:
-    &#34;&#34;&#34;完全な検証を実行&#34;&#34;&#34;
+    &#34;&#34;&#34;Run full validation&#34;&#34;&#34;
     logger.info(&#34;=== RNA Encoding Validation Started ===&#34;)
 
     validation_steps = [
@@ -521,7 +521,7 @@ el.replaceWith(d);
             logger.error(f&#34;❌ {step_name} ERROR: {e}&#34;)
             all_passed = False
 
-    # 結果サマリー
+    # Result summary
     logger.info(&#34;=== Validation Results ===&#34;)
     if all_passed:
         logger.info(&#34;✅ All validation checks PASSED&#34;)
@@ -533,7 +533,7 @@ el.replaceWith(d);
 
     return all_passed</code></pre>
 </details>
-<div class="desc"><p>完全な検証を実行</p></div>
+<div class="desc"><p>Run full validation</p></div>
 </dd>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.validate_token_ranges"><code class="name flex">
 <span>def <span class="ident">validate_token_ranges</span></span>(<span>self) ‑> bool</span>
@@ -544,7 +544,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def validate_token_ranges(self) -&gt; bool:
-    &#34;&#34;&#34;トークンIDの範囲を検証&#34;&#34;&#34;
+    &#34;&#34;&#34;Validate token ID range&#34;&#34;&#34;
     try:
         if not self.vocab or not self.dataset:
             return False
@@ -555,7 +555,7 @@ el.replaceWith(d);
         logger.info(f&#34;Vocabulary size: {vocab_size}&#34;)
         logger.info(f&#34;Max vocabulary ID: {max_vocab_id}&#34;)
 
-        # サンプルのトークンIDをチェック
+        # Check sample token ID
         sample_size = min(1000, len(self.dataset))
         logger.info(f&#34;Checking token ranges in {sample_size} samples...&#34;)
 
@@ -565,7 +565,7 @@ el.replaceWith(d);
 
         for i in range(sample_size):
             tokens = self.dataset[i][&#34;token&#34;]
-            if tokens:  # 空でない場合
+            if tokens:  # if not empty
                 total_tokens += len(tokens)
                 for token_id in tokens:
                     if token_id &lt; 0 or token_id &gt; max_vocab_id:
@@ -574,7 +574,7 @@ el.replaceWith(d);
 
         if invalid_tokens:
             self.issues.append(f&#34;Found {out_of_range_count} out-of-range tokens in {len(invalid_tokens)} sequences&#34;)
-            # 最初の10個の無効なトークンを表示
+            # show first 10 invalid tokens
             for seq_idx, token_id in invalid_tokens[:10]:
                 self.issues.append(f&#34;  Sequence {seq_idx}: token_id {token_id} (valid range: 0-{max_vocab_id})&#34;)
             return False
@@ -586,7 +586,7 @@ el.replaceWith(d);
         self.issues.append(f&#34;Token range validation failed: {e}&#34;)
         return False</code></pre>
 </details>
-<div class="desc"><p>トークンIDの範囲を検証</p></div>
+<div class="desc"><p>Validate token ID range</p></div>
 </dd>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.validate_tokenization_quality"><code class="name flex">
 <span>def <span class="ident">validate_tokenization_quality</span></span>(<span>self) ‑> bool</span>
@@ -597,12 +597,12 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def validate_tokenization_quality(self) -&gt; bool:
-    &#34;&#34;&#34;トークン化品質を検証&#34;&#34;&#34;
+    &#34;&#34;&#34;Verify tokenization quality&#34;&#34;&#34;
     try:
         if not self.dataset:
             return False
 
-        # 統計情報の収集
+        # Collect statistics
         token_counts = []
         empty_sequences = 0
         total_sequences = min(1000, len(self.dataset))
@@ -620,7 +620,7 @@ el.replaceWith(d);
             self.issues.append(&#34;All sequences are empty (no tokens)&#34;)
             return False
 
-        # 統計計算
+        # statistical calculation
         avg_tokens = np.mean(token_counts)
         median_tokens = np.median(token_counts)
         min_tokens = np.min(token_counts)
@@ -632,7 +632,7 @@ el.replaceWith(d);
         logger.info(f&#34;  Median tokens per sequence: {median_tokens:.1f}&#34;)
         logger.info(f&#34;  Token count range: {min_tokens}-{max_tokens}&#34;)
 
-        # 品質チェック
+        # Quality check
         if empty_sequences / total_sequences &gt; 0.5:
             self.issues.append(f&#34;Too many empty sequences: {empty_sequences}/{total_sequences}&#34;)
             return False
@@ -648,7 +648,7 @@ el.replaceWith(d);
         self.issues.append(f&#34;Tokenization quality validation failed: {e}&#34;)
         return False</code></pre>
 </details>
-<div class="desc"><p>トークン化品質を検証</p></div>
+<div class="desc"><p>Verify tokenization quality</p></div>
 </dd>
 <dt id="molcrawl.validate_rna_encoding.RNAEncodingValidator.validate_vocabulary_consistency"><code class="name flex">
 <span>def <span class="ident">validate_vocabulary_consistency</span></span>(<span>self) ‑> bool</span>
@@ -659,12 +659,12 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def validate_vocabulary_consistency(self) -&gt; bool:
-    &#34;&#34;&#34;語彙の一貫性を検証&#34;&#34;&#34;
+    &#34;&#34;&#34;Verify vocabulary consistency&#34;&#34;&#34;
     try:
         if not self.vocab:
             return False
 
-        # 重複チェック
+        # Duplicate check
         gene_names = list(self.vocab.keys())
         token_ids = list(self.vocab.values())
 
@@ -679,7 +679,7 @@ el.replaceWith(d);
             self.issues.append(&#34;Duplicate token IDs found in vocabulary&#34;)
             return False
 
-        # ID範囲チェック
+        # ID range check
         min_id, max_id = min(token_ids), max(token_ids)
         expected_range = list(range(len(token_ids)))
         actual_range = sorted(token_ids)
@@ -688,7 +688,7 @@ el.replaceWith(d);
             self.issues.append(f&#34;Token ID range is not continuous: expected 0-{len(token_ids) - 1}, got {min_id}-{max_id}&#34;)
             missing_ids = set(expected_range) - set(actual_range)
             if missing_ids:
-                self.issues.append(f&#34;Missing token IDs: {sorted(list(missing_ids))[:10]}...&#34;)  # 最初の10個
+                self.issues.append(f&#34;Missing token IDs: {sorted(list(missing_ids))[:10]}...&#34;)  # First 10
             return False
 
         logger.info(f&#34;✓ Vocabulary consistency validated: {len(gene_names)} unique genes, IDs 0-{max_id}&#34;)
@@ -698,7 +698,7 @@ el.replaceWith(d);
         self.issues.append(f&#34;Vocabulary consistency validation failed: {e}&#34;)
         return False</code></pre>
 </details>
-<div class="desc"><p>語彙の一貫性を検証</p></div>
+<div class="desc"><p>Verify vocabulary consistency</p></div>
 </dd>
 </dl>
 </dd>

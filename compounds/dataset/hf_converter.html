@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.compounds.dataset.hf_converter API documentation</title>
-<meta name="description" content="HuggingFace Dataset形式への変換 …">
+<meta name="description" content="Conversion to HuggingFace Dataset format …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,8 +36,8 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.compounds.dataset.hf_converter</code></h1>
 </header>
 <section id="section-intro">
-<p>HuggingFace Dataset形式への変換</p>
-<p>トークナイズ済みデータをHuggingFace Dataset形式に変換します。</p>
+<p>Conversion to HuggingFace Dataset format</p>
+<p>Convert tokenized data to HuggingFace Dataset format.</p>
 </section>
 <section>
 </section>
@@ -64,25 +64,25 @@ el.replaceWith(d);
     random_seed: int = 42,
 ) -&gt; dict:
     &#34;&#34;&#34;
-    トークナイズ済みの全データセットをHuggingFace形式に変換
+    Convert all tokenized datasets to HuggingFace format
 
-    Args:
-        compounds_dir: compoundsディレクトリのパス
-        dataset_types: 変換するデータセット種別のリスト（Noneの場合はトークナイズ済みの全て）
-        train_ratio: 訓練データの割合
-        valid_ratio: 検証データの割合
-        test_ratio: テストデータの割合
-        force: 強制再変換フラグ
-        random_seed: ランダムシード
+        Args:
+    compounds_dir: compounds directorypath of
+    dataset_types: List of dataset types to convert (if None, all tokenized)
+    train_ratio: Ratio of training data
+    valid_ratio: Ratio of valid data
+    test_ratio: Ratio of test data
+    force: forced reconversion flag
+    random_seed: random seed
 
-    Returns:
-        {dataset_type: dataset_dict} の辞書
+        Returns:
+    Dictionary of {dataset_type: dataset_dict}
     &#34;&#34;&#34;
     from molcrawl.compounds.dataset.dataset_config import get_dataset_info, DATASET_DEFINITIONS
 
-    # 処理対象のデータセットを決定
+    # Determine the dataset to be processed
     if dataset_types is None:
-        # トークナイズ済みデータが存在するデータセットを取得
+        # Get the dataset with tokenized data
         dataset_types = []
         for dt, info in DATASET_DEFINITIONS.items():
             tokenized_path = info.get_tokenized_path(compounds_dir)
@@ -93,7 +93,7 @@ el.replaceWith(d);
             logger.warning(&#34;No tokenized datasets available for conversion&#34;)
             return {}
     else:
-        # 指定されたデータセットが文字列の場合はEnumに変換
+        # If the specified dataset is a string, convert it to an Enum
         if isinstance(dataset_types[0], str):
             dataset_types = [CompoundDatasetType(dt) for dt in dataset_types]
 
@@ -118,26 +118,19 @@ el.replaceWith(d);
     logger.info(f&#34;Successfully converted {len(results)}/{len(dataset_types)} datasets&#34;)
     return results</code></pre>
 </details>
-<div class="desc"><p>トークナイズ済みの全データセットをHuggingFace形式に変換</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>compounds_dir</code></strong></dt>
-<dd>compoundsディレクトリのパス</dd>
-<dt><strong><code>dataset_types</code></strong></dt>
-<dd>変換するデータセット種別のリスト（Noneの場合はトークナイズ済みの全て）</dd>
-<dt><strong><code>train_ratio</code></strong></dt>
-<dd>訓練データの割合</dd>
-<dt><strong><code>valid_ratio</code></strong></dt>
-<dd>検証データの割合</dd>
-<dt><strong><code>test_ratio</code></strong></dt>
-<dd>テストデータの割合</dd>
-<dt><strong><code>force</code></strong></dt>
-<dd>強制再変換フラグ</dd>
-<dt><strong><code>random_seed</code></strong></dt>
-<dd>ランダムシード</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>{dataset_type: dataset_dict} の辞書</p></div>
+<div class="desc"><p>Convert all tokenized datasets to HuggingFace format</p>
+<pre><code>Args:
+</code></pre>
+<p>compounds_dir: compounds directorypath of
+dataset_types: List of dataset types to convert (if None, all tokenized)
+train_ratio: Ratio of training data
+valid_ratio: Ratio of valid data
+test_ratio: Ratio of test data
+force: forced reconversion flag
+random_seed: random seed</p>
+<pre><code>Returns:
+</code></pre>
+<p>Dictionary of {dataset_type: dataset_dict}</p></div>
 </dd>
 </dl>
 </section>
@@ -155,16 +148,16 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">class HFDatasetConverter:
     &#34;&#34;&#34;
-    HuggingFace Dataset変換クラス
+    HuggingFace Dataset transformation class
 
-    トークナイズ済みデータをHuggingFace Dataset形式に変換します。
+    Convert tokenized data to HuggingFace Dataset format.
     &#34;&#34;&#34;
 
     def __init__(self, dataset_info: DatasetInfo, compounds_dir: Path):
         &#34;&#34;&#34;
-        Args:
-            dataset_info: データセット情報
-            compounds_dir: compoundsディレクトリのパス
+                Args:
+        dataset_info: Dataset information
+        compounds_dir: Path to the compounds directory
         &#34;&#34;&#34;
         self.dataset_info = dataset_info
         self.compounds_dir = Path(compounds_dir)
@@ -178,25 +171,25 @@ el.replaceWith(d);
         random_seed: int = 42,
     ) -&gt; Optional[DatasetDict]:
         &#34;&#34;&#34;
-        HuggingFace Dataset形式に変換
+        Convert to HuggingFace Dataset format
 
-        Args:
-            train_ratio: 訓練データの割合
-            valid_ratio: 検証データの割合
-            test_ratio: テストデータの割合
-            force: 強制再変換フラグ
-            random_seed: ランダムシード
+                Args:
+        train_ratio: Ratio of training data
+        valid_ratio: Ratio of valid data
+        test_ratio: Ratio of test data
+        force: forced reconversion flag
+        random_seed: random seed
 
-        Returns:
-            DatasetDict（エラー時はNone）
+                Returns:
+        DatasetDict (None in case of error)
         &#34;&#34;&#34;
         hf_path = self.dataset_info.get_hf_dataset_path(self.compounds_dir)
 
-        # 既に変換済みの場合はスキップ
+        # Skip if already converted
         if not force and hf_path.exists():
             try:
                 logger.info(f&#34;✓ {self.dataset_info.name}: Already converted, loading from {hf_path}&#34;)
-                # train/valid/testの全てが存在するか確認
+                # Check if train/valid/test all exist
                 train_path = hf_path / &#34;train&#34;
                 valid_path = hf_path / &#34;valid&#34;
                 test_path = hf_path / &#34;test&#34;
@@ -212,7 +205,7 @@ el.replaceWith(d);
             except Exception as e:
                 logger.warning(f&#34;Failed to load existing dataset: {e}, will reconvert&#34;)
 
-        # トークナイズ済みデータを読み込み
+        # Load tokenized data
         tokenized_path = self.dataset_info.get_tokenized_path(self.compounds_dir)
         if not tokenized_path.exists():
             logger.warning(
@@ -223,11 +216,11 @@ el.replaceWith(d);
         logger.info(f&#34;🔄 {self.dataset_info.name}: Converting to HuggingFace Dataset format...&#34;)
 
         try:
-            # データ読み込み
+            # Load data
             table = pq.read_table(tokenized_path)
             df = table.to_pandas()
 
-            # データ分割
+            # data split
             df = df.sample(frac=1, random_state=random_seed).reset_index(drop=True)
             total_samples = len(df)
 
@@ -240,7 +233,7 @@ el.replaceWith(d);
 
             logger.info(f&#34;  Split: train={len(train_df)}, valid={len(valid_df)}, test={len(test_df)}&#34;)
 
-            # HuggingFace Dataset形式に変換
+            # Convert to HuggingFace Dataset format
             dataset_dict = DatasetDict(
                 {
                     &#34;train&#34;: Dataset.from_pandas(train_df, preserve_index=False),
@@ -249,10 +242,10 @@ el.replaceWith(d);
                 }
             )
 
-            # 保存
+            # keep
             hf_path.mkdir(parents=True, exist_ok=True)
 
-            # 各splitを個別に保存
+            # Save each split separately
             for split_name, split_dataset in dataset_dict.items():
                 split_path = hf_path / split_name
                 split_dataset.save_to_disk(str(split_path))
@@ -265,15 +258,12 @@ el.replaceWith(d);
             logger.error(f&#34;✗ {self.dataset_info.name}: Conversion failed - {e}&#34;)
             return None</code></pre>
 </details>
-<div class="desc"><p>HuggingFace Dataset変換クラス</p>
-<p>トークナイズ済みデータをHuggingFace Dataset形式に変換します。</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataset_info</code></strong></dt>
-<dd>データセット情報</dd>
-<dt><strong><code>compounds_dir</code></strong></dt>
-<dd>compoundsディレクトリのパス</dd>
-</dl></div>
+<div class="desc"><p>HuggingFace Dataset transformation class</p>
+<p>Convert tokenized data to HuggingFace Dataset format.</p>
+<pre><code>    Args:
+</code></pre>
+<p>dataset_info: Dataset information
+compounds_dir: Path to the compounds directory</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.compounds.dataset.hf_converter.HFDatasetConverter.convert"><code class="name flex">
@@ -293,25 +283,25 @@ el.replaceWith(d);
     random_seed: int = 42,
 ) -&gt; Optional[DatasetDict]:
     &#34;&#34;&#34;
-    HuggingFace Dataset形式に変換
+    Convert to HuggingFace Dataset format
 
-    Args:
-        train_ratio: 訓練データの割合
-        valid_ratio: 検証データの割合
-        test_ratio: テストデータの割合
-        force: 強制再変換フラグ
-        random_seed: ランダムシード
+            Args:
+    train_ratio: Ratio of training data
+    valid_ratio: Ratio of valid data
+    test_ratio: Ratio of test data
+    force: forced reconversion flag
+    random_seed: random seed
 
-    Returns:
-        DatasetDict（エラー時はNone）
+            Returns:
+    DatasetDict (None in case of error)
     &#34;&#34;&#34;
     hf_path = self.dataset_info.get_hf_dataset_path(self.compounds_dir)
 
-    # 既に変換済みの場合はスキップ
+    # Skip if already converted
     if not force and hf_path.exists():
         try:
             logger.info(f&#34;✓ {self.dataset_info.name}: Already converted, loading from {hf_path}&#34;)
-            # train/valid/testの全てが存在するか確認
+            # Check if train/valid/test all exist
             train_path = hf_path / &#34;train&#34;
             valid_path = hf_path / &#34;valid&#34;
             test_path = hf_path / &#34;test&#34;
@@ -327,7 +317,7 @@ el.replaceWith(d);
         except Exception as e:
             logger.warning(f&#34;Failed to load existing dataset: {e}, will reconvert&#34;)
 
-    # トークナイズ済みデータを読み込み
+    # Load tokenized data
     tokenized_path = self.dataset_info.get_tokenized_path(self.compounds_dir)
     if not tokenized_path.exists():
         logger.warning(
@@ -338,11 +328,11 @@ el.replaceWith(d);
     logger.info(f&#34;🔄 {self.dataset_info.name}: Converting to HuggingFace Dataset format...&#34;)
 
     try:
-        # データ読み込み
+        # Load data
         table = pq.read_table(tokenized_path)
         df = table.to_pandas()
 
-        # データ分割
+        # data split
         df = df.sample(frac=1, random_state=random_seed).reset_index(drop=True)
         total_samples = len(df)
 
@@ -355,7 +345,7 @@ el.replaceWith(d);
 
         logger.info(f&#34;  Split: train={len(train_df)}, valid={len(valid_df)}, test={len(test_df)}&#34;)
 
-        # HuggingFace Dataset形式に変換
+        # Convert to HuggingFace Dataset format
         dataset_dict = DatasetDict(
             {
                 &#34;train&#34;: Dataset.from_pandas(train_df, preserve_index=False),
@@ -364,10 +354,10 @@ el.replaceWith(d);
             }
         )
 
-        # 保存
+        # keep
         hf_path.mkdir(parents=True, exist_ok=True)
 
-        # 各splitを個別に保存
+        # Save each split separately
         for split_name, split_dataset in dataset_dict.items():
             split_path = hf_path / split_name
             split_dataset.save_to_disk(str(split_path))
@@ -380,22 +370,17 @@ el.replaceWith(d);
         logger.error(f&#34;✗ {self.dataset_info.name}: Conversion failed - {e}&#34;)
         return None</code></pre>
 </details>
-<div class="desc"><p>HuggingFace Dataset形式に変換</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>train_ratio</code></strong></dt>
-<dd>訓練データの割合</dd>
-<dt><strong><code>valid_ratio</code></strong></dt>
-<dd>検証データの割合</dd>
-<dt><strong><code>test_ratio</code></strong></dt>
-<dd>テストデータの割合</dd>
-<dt><strong><code>force</code></strong></dt>
-<dd>強制再変換フラグ</dd>
-<dt><strong><code>random_seed</code></strong></dt>
-<dd>ランダムシード</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>DatasetDict（エラー時はNone）</p></div>
+<div class="desc"><p>Convert to HuggingFace Dataset format</p>
+<pre><code>    Args:
+</code></pre>
+<p>train_ratio: Ratio of training data
+valid_ratio: Ratio of valid data
+test_ratio: Ratio of test data
+force: forced reconversion flag
+random_seed: random seed</p>
+<pre><code>    Returns:
+</code></pre>
+<p>DatasetDict (None in case of error)</p></div>
 </dd>
 </dl>
 </dd>

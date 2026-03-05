@@ -54,21 +54,21 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def divide_workload(path: Union[str, Path], size_workload: int) -&gt; List[Tuple[str, int, int, List[int]]]:
     &#34;&#34;&#34;
-    ワークロードを指定されたサイズに分割する関数
+    Function to split workload into specified sizes
 
-    指定されたディレクトリ内の*.obs_id.tsvファイルを読み込み、
-    各ファイルのIDリストを指定されたワークロードサイズに分割する。
+    Read the *.obs_id.tsv file in the specified directory,
+    Split each file&#39;s ID list into specified workload sizes.
 
-    Args:
-        path (Union[str, Path]): メタデータ準備ディレクトリのパス
-        size_workload (int): 各ワークロードのサイズ（サンプル数）
+        Args:
+    path (Union[str, Path]): path of metadata preparation directory
+    size_workload (int): Size of each workload (number of samples)
 
-    Returns:
-        List[Tuple[str, int, int, List[int]]]: 分割されたワークロードのリスト
-            - str: ファイル名（拡張子なし）
-            - int: 開始行番号
-            - int: 終了行番号
-            - List[int]: 該当範囲のIDリスト
+        Returns:
+    List[Tuple[str, int, int, List[int]]]: List of partitioned workloads
+    - str: file name (no extension)
+    - int: starting line number
+    - int: end line number
+    - List[int]: ID list of applicable range
     &#34;&#34;&#34;
     divided_workload = []
     for filename in Path(path).rglob(&#34;*.obs_id.tsv&#34;):
@@ -84,25 +84,20 @@ el.replaceWith(d);
 
     return divided_workload</code></pre>
 </details>
-<div class="desc"><p>ワークロードを指定されたサイズに分割する関数</p>
-<p>指定されたディレクトリ内の*.obs_id.tsvファイルを読み込み、
-各ファイルのIDリストを指定されたワークロードサイズに分割する。</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>path</code></strong> :&ensp;<code>Union[str, Path]</code></dt>
-<dd>メタデータ準備ディレクトリのパス</dd>
-<dt><strong><code>size_workload</code></strong> :&ensp;<code>int</code></dt>
-<dd>各ワークロードのサイズ（サンプル数）</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>List[Tuple[str, int, int, List[int]]]</code></dt>
-<dd>分割されたワークロードのリスト
-- str: ファイル名（拡張子なし）
-- int: 開始行番号
-- int: 終了行番号
-- List[int]: 該当範囲のIDリスト</dd>
-</dl></div>
+<div class="desc"><p>Function to split workload into specified sizes</p>
+<p>Read the *.obs_id.tsv file in the specified directory,
+Split each file's ID list into specified workload sizes.</p>
+<pre><code>Args:
+</code></pre>
+<p>path (Union[str, Path]): path of metadata preparation directory
+size_workload (int): Size of each workload (number of samples)</p>
+<pre><code>Returns:
+</code></pre>
+<p>List[Tuple[str, int, int, List[int]]]: List of partitioned workloads
+- str: file name (no extension)
+- int: starting line number
+- int: end line number
+- List[int]: ID list of applicable range</p></div>
 </dd>
 <dt id="molcrawl.rna.dataset.cellxgene.script.download.download"><code class="name flex">
 <span>def <span class="ident">download</span></span>(<span>output_dir, version, num_worker, size_workload)</span>

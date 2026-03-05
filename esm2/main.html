@@ -37,14 +37,14 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>ESM-2 Training Script for Protein Sequence Data</p>
-<p>ESM-2 (Evolutionary Scale Modeling 2) は、Metaが開発したタンパク質配列専用の
-最先端トランスフォーマーモデルです。</p>
-<p>主な特徴:
-- タンパク質配列に特化した事前学習
-- 6.5億パラメータまでのスケーラブルなアーキテクチャ
-- Structure prediction, function annotation, variant effect predictionなど幅広いタスクに対応
-- ESM-1bよりも高速で高精度</p>
-<p>参考:
+<p>ESM-2 (Evolutionary Scale Modeling 2) is a protein sequence-specific software developed by Meta.
+This is a cutting edge Transformer model.</p>
+<p>Main features:
+- Pre-learning specialized for protein sequences
+- Scalable architecture up to 650 million parameters
+- Supports a wide range of tasks such as structure prediction, function annotation, variant effect prediction, etc.
+- Faster and more accurate than ESM-1b</p>
+<p>reference:
 - Language models of protein sequences at the scale of evolution enable accurate structure prediction
 - <a href="https://github.com/facebookresearch/esm">https://github.com/facebookresearch/esm</a></p>
 </section>
@@ -68,10 +68,10 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">class ProteinDatasetLoader:
     &#34;&#34;&#34;
-    タンパク質配列データセット用のローダー
+    Loader for protein sequence datasets
 
-    既存のprotein_sequenceデータセットを読み込み、
-    ESM-2用に前処理を行います。
+    Load the existing protein_sequence dataset,
+    Perform preprocessing for ESM-2.
     &#34;&#34;&#34;
 
     def __init__(self, data_dir, split=&#34;train&#34;, test_size=0.1):
@@ -154,9 +154,9 @@ el.replaceWith(d);
         &#34;&#34;&#34;Return the HuggingFace Dataset object&#34;&#34;&#34;
         return self.data</code></pre>
 </details>
-<div class="desc"><p>タンパク質配列データセット用のローダー</p>
-<p>既存のprotein_sequenceデータセットを読み込み、
-ESM-2用に前処理を行います。</p></div>
+<div class="desc"><p>Loader for protein sequence datasets</p>
+<p>Load the existing protein_sequence dataset,
+Perform preprocessing for ESM-2.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.esm2.main.ProteinDatasetLoader.get_dataset"><code class="name flex">

@@ -54,21 +54,21 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def combine_datasets(raw_data_dir: str, output_dir: str):
     &#34;&#34;&#34;
-    全データセットを統合してOrganiX13を生成
+    Combine all datasets to generate OrganiX13
 
     Args:
-        raw_data_dir: 生データディレクトリ
-        output_dir: 統合データ出力ディレクトリ
+        raw_data_dir: raw data directory
+        output_dir: Integrated data output directory
     &#34;&#34;&#34;
     combine_all(raw_data_dir, output_dir)</code></pre>
 </details>
-<div class="desc"><p>全データセットを統合してOrganiX13を生成</p>
+<div class="desc"><p>Combine all datasets to generate OrganiX13</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>raw_data_dir</code></strong></dt>
-<dd>生データディレクトリ</dd>
+<dd>raw data directory</dd>
 <dt><strong><code>output_dir</code></strong></dt>
-<dd>統合データ出力ディレクトリ</dd>
+<dd>Integrated data output directory</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.compounds.utils.general.download_additional_datasets"><code class="name flex">
@@ -80,10 +80,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def download_additional_datasets(raw_data_dir: str):
-    &#34;&#34;&#34;後方互換性のためのエイリアス。download_llamol_datasetsを使用してください。&#34;&#34;&#34;
+    &#34;&#34;&#34;Alias ​​for backwards compatibility. Please use download_llamol_datasets.&#34;&#34;&#34;
     download_llamol_datasets(raw_data_dir)</code></pre>
 </details>
-<div class="desc"><p>後方互換性のためのエイリアス。download_llamol_datasetsを使用してください。</p></div>
+<div class="desc"><p>Alias ​​for backwards compatibility. Please use download_llamol_datasets.</p></div>
 </dd>
 <dt id="molcrawl.compounds.utils.general.download_datasets"><code class="name flex">
 <span>def <span class="ident">download_datasets</span></span>(<span>raw_data_dir: str, output_dir: str)</span>
@@ -95,24 +95,24 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_datasets(raw_data_dir: str, output_dir: str):
     &#34;&#34;&#34;
-    全データセットのダウンロードと統合（レガシー互換用）
+    Download and integrate all datasets (for legacy compatibility)
 
     Args:
-        raw_data_dir: 生データ保存ディレクトリ
-        output_dir: 統合データ出力ディレクトリ
+        raw_data_dir: raw data storage directory
+        output_dir: Integrated data output directory
     &#34;&#34;&#34;
     download_zinc20(raw_data_dir)
     download_opv(raw_data_dir)
     download_llamol_datasets(raw_data_dir)
     combine_datasets(raw_data_dir, output_dir)</code></pre>
 </details>
-<div class="desc"><p>全データセットのダウンロードと統合（レガシー互換用）</p>
+<div class="desc"><p>Download and integrate all datasets (for legacy compatibility)</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>raw_data_dir</code></strong></dt>
-<dd>生データ保存ディレクトリ</dd>
+<dd>raw data storage directory</dd>
 <dt><strong><code>output_dir</code></strong></dt>
-<dd>統合データ出力ディレクトリ</dd>
+<dd>Integrated data output directory</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.compounds.utils.general.download_llamol_datasets"><code class="name flex">
@@ -125,30 +125,30 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_llamol_datasets(raw_data_dir: str):
     &#34;&#34;&#34;
-    LlaMolデータセット（Fraunhofer-SCAI/llamolリポジトリからのダウンロード）
+    LlaMol dataset (download from Fraunhofer-SCAI/llamol repository)
 
     Args:
-        raw_data_dir: 生データ保存ディレクトリ (COMPOUNDS_DIR)
+        raw_data_dir: raw data storage directory (COMPOUNDS_DIR)
     &#34;&#34;&#34;
-    # data/Fraunhofer-SCAI-llamolディレクトリに保存
+    # Save in data/Fraunhofer-SCAI-llamol directory
     llamol_dir = os.path.join(raw_data_dir, &#34;data&#34;, &#34;Fraunhofer-SCAI-llamol&#34;)
     os.makedirs(llamol_dir, exist_ok=True)
 
-    # 既存のparquetファイルの整合性をチェック
+    # Check the integrity of existing parquet files
     _verify_llamol_parquet_files(llamol_dir)
 
     download_datasets_from_repo(llamol_dir)
 
-    # マーカーファイル作成
+    # Create marker file
     data_dir = os.path.join(raw_data_dir, &#34;data&#34;)
     marker_file = Path(data_dir) / &#34;llamol_download.marker&#34;
     marker_file.touch()</code></pre>
 </details>
-<div class="desc"><p>LlaMolデータセット（Fraunhofer-SCAI/llamolリポジトリからのダウンロード）</p>
+<div class="desc"><p>LlaMol dataset (download from Fraunhofer-SCAI/llamol repository)</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>raw_data_dir</code></strong></dt>
-<dd>生データ保存ディレクトリ (COMPOUNDS_DIR)</dd>
+<dd>raw data storage directory (COMPOUNDS_DIR)</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.compounds.utils.general.download_opv"><code class="name flex">
@@ -161,27 +161,27 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_opv(raw_data_dir: str):
     &#34;&#34;&#34;
-    OPVデータセットのダウンロード
+    Download OPV dataset
 
     Args:
-        raw_data_dir: 生データ保存ディレクトリ (COMPOUNDS_DIR)
+        raw_data_dir: raw data storage directory (COMPOUNDS_DIR)
     &#34;&#34;&#34;
-    # data/opvディレクトリに保存
+    # save to data/opv directory
     opv_dir = os.path.join(raw_data_dir, &#34;data&#34;, &#34;opv&#34;)
     os.makedirs(opv_dir, exist_ok=True)
 
     OPV(opv_dir)
 
-    # マーカーファイル作成
+    # Create marker file
     data_dir = os.path.join(raw_data_dir, &#34;data&#34;)
     marker_file = Path(data_dir) / &#34;opv_download.marker&#34;
     marker_file.touch()</code></pre>
 </details>
-<div class="desc"><p>OPVデータセットのダウンロード</p>
+<div class="desc"><p>Download OPV dataset</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>raw_data_dir</code></strong></dt>
-<dd>生データ保存ディレクトリ (COMPOUNDS_DIR)</dd>
+<dd>raw data storage directory (COMPOUNDS_DIR)</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.compounds.utils.general.download_zinc20"><code class="name flex">
@@ -194,27 +194,27 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_zinc20(raw_data_dir: str):
     &#34;&#34;&#34;
-    ZINC20データセットのダウンロードと変換
+    Download and convert ZINC20 dataset
 
     Args:
-        raw_data_dir: 生データ保存ディレクトリ (COMPOUNDS_DIR)
+        raw_data_dir: raw data storage directory (COMPOUNDS_DIR)
     &#34;&#34;&#34;
     download_zinc_files()
     # Save to data/zinc20 directory
     zinc_save_path = os.path.join(raw_data_dir, &#34;data&#34;, &#34;zinc20&#34;)
     convert_zinc_to_parquet(zinc_save_path)
 
-    # マーカーファイル作成
+    # Create marker file
     data_dir = os.path.join(raw_data_dir, &#34;data&#34;)
     os.makedirs(data_dir, exist_ok=True)
     marker_file = Path(data_dir) / &#34;zinc20_download.marker&#34;
     marker_file.touch()</code></pre>
 </details>
-<div class="desc"><p>ZINC20データセットのダウンロードと変換</p>
+<div class="desc"><p>Download and convert ZINC20 dataset</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>raw_data_dir</code></strong></dt>
-<dd>生データ保存ディレクトリ (COMPOUNDS_DIR)</dd>
+<dd>raw data storage directory (COMPOUNDS_DIR)</dd>
 </dl></div>
 </dd>
 </dl>

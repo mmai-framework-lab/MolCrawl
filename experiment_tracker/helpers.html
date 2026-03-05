@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.experiment_tracker.helpers API documentation</title>
-<meta name="description" content="実験トラッキングのヘルパー関数
-既存のスクリプトに簡単に統合できるデコレータとコンテキストマネージャー">
+<meta name="description" content="Experiment tracking helper functions
+Decorators and context managers that can be easily integrated into existing scripts">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,8 +37,8 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.experiment_tracker.helpers</code></h1>
 </header>
 <section id="section-intro">
-<p>実験トラッキングのヘルパー関数
-既存のスクリプトに簡単に統合できるデコレータとコンテキストマネージャー</p>
+<p>Experiment tracking helper functions
+Decorators and context managers that can be easily integrated into existing scripts</p>
 </section>
 <section>
 </section>
@@ -65,7 +65,7 @@ def experiment_context(
     config_path: Optional[str] = None,
 ):
     &#34;&#34;&#34;
-    実験をコンテキストマネージャーで管理
+    Manage experiments with a context manager
 
     Usage:
         with experiment_context(
@@ -74,7 +74,7 @@ def experiment_context(
             model_type=ModelType.GPT2,
             dataset_type=DatasetType.PROTEIN_SEQUENCE
         ) as exp:
-            # 処理
+            # process
             exp.log(&#34;INFO&#34;, &#34;Processing started&#34;)
             exp.start_step(&#34;step1&#34;, &#34;Load data&#34;)
             # ...
@@ -99,27 +99,27 @@ def experiment_context(
             self.metrics: dict[str, float] = {}
 
         def log(self, level: str, message: str, source: Optional[str] = None):
-            &#34;&#34;&#34;ログを追加&#34;&#34;&#34;
+            &#34;&#34;&#34;Add log&#34;&#34;&#34;
             self.tracker.log(self.experiment_id, level, message, source)
 
         def start_step(self, step_id: str, step_name: str, command: Optional[str] = None):
-            &#34;&#34;&#34;ステップを開始&#34;&#34;&#34;
+            &#34;&#34;&#34;Start step&#34;&#34;&#34;
             return self.tracker.start_step(self.experiment_id, step_id, step_name, command)
 
         def complete_step(self, step_id: str, output_path: Optional[str] = None):
-            &#34;&#34;&#34;ステップを完了&#34;&#34;&#34;
+            &#34;&#34;&#34;Complete step&#34;&#34;&#34;
             self.tracker.complete_step(self.experiment_id, step_id, output_path)
 
         def fail_step(self, step_id: str, error_message: str):
-            &#34;&#34;&#34;ステップを失敗&#34;&#34;&#34;
+            &#34;&#34;&#34;Failed Step&#34;&#34;&#34;
             self.tracker.fail_step(self.experiment_id, step_id, error_message)
 
         def add_result(self, key: str, value: Any):
-            &#34;&#34;&#34;結果を追加&#34;&#34;&#34;
+            &#34;&#34;&#34;Add result&#34;&#34;&#34;
             self.results[key] = value
 
         def add_metric(self, key: str, value: float):
-            &#34;&#34;&#34;メトリクスを追加&#34;&#34;&#34;
+            &#34;&#34;&#34;Add metric&#34;&#34;&#34;
             self.metrics[key] = value
 
     ctx = ExperimentContext(exp_id, tracker)
@@ -132,7 +132,7 @@ def experiment_context(
         tracker.fail_experiment(exp_id, error_msg)
         raise</code></pre>
 </details>
-<div class="desc"><p>実験をコンテキストマネージャーで管理</p>
+<div class="desc"><p>Manage experiments with a context manager</p>
 <h2 id="usage">Usage</h2>
 <p>with experiment_context(
 name="Data Preparation",
@@ -140,7 +140,7 @@ experiment_type=ExperimentType.DATA_PREPARATION,
 model_type=ModelType.GPT2,
 dataset_type=DatasetType.PROTEIN_SEQUENCE
 ) as exp:
-# 処理
+# process
 exp.log("INFO", "Processing started")
 exp.start_step("step1", "Load data")
 # &hellip;
@@ -156,24 +156,24 @@ exp.complete_step("step1")</p></div>
 </summary>
 <pre><code class="python">def simple_track(tracker: ExperimentTracker, exp_id: str, step_name: str):
     &#34;&#34;&#34;
-    シンプルなステップトラッキングのコンテキストマネージャー
+    Simple step tracking context manager
 
     Usage:
         tracker = ExperimentTracker()
         exp_id = tracker.start_experiment(...)
 
         with simple_track(tracker, exp_id, &#34;Data Loading&#34;):
-            # 処理
+            # process
             pass
     &#34;&#34;&#34;
     return _SimpleStepContext(tracker, exp_id, step_name)</code></pre>
 </details>
-<div class="desc"><p>シンプルなステップトラッキングのコンテキストマネージャー</p>
+<div class="desc"><p>Simple step tracking context manager</p>
 <h2 id="usage">Usage</h2>
 <p>tracker = ExperimentTracker()
 exp_id = tracker.start_experiment(&hellip;)</p>
 <p>with simple_track(tracker, exp_id, "Data Loading"):
-# 処理
+# process
 pass</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.helpers.track_experiment"><code class="name flex">
@@ -193,7 +193,7 @@ pass</p></div>
     config_path: Optional[str] = None,
 ):
     &#34;&#34;&#34;
-    関数を実験としてトラッキングするデコレータ
+    Decorator to track functions as experiments
 
     Usage:
         @track_experiment(
@@ -203,7 +203,7 @@ pass</p></div>
             dataset_type=DatasetType.PROTEIN_SEQUENCE
         )
         def train_model(config):
-            # 訓練処理
+            # Training process
             return {&#34;accuracy&#34;: 0.95}
     &#34;&#34;&#34;
 
@@ -212,7 +212,7 @@ pass</p></div>
         def wrapper(*args, **kwargs):
             tracker = ExperimentTracker()
 
-            # 実験開始
+            # Start experiment
             exp_id = tracker.start_experiment(
                 name=name,
                 experiment_type=experiment_type,
@@ -223,10 +223,10 @@ pass</p></div>
             )
 
             try:
-                # 関数実行
+                # function execution
                 result = func(*args, **kwargs)
 
-                # 結果を記録
+                # record the result
                 if isinstance(result, dict):
                     metrics = {k: v for k, v in result.items() if isinstance(v, (int, float))}
                     other_results = {k: v for k, v in result.items() if not isinstance(v, (int, float))}
@@ -237,7 +237,7 @@ pass</p></div>
                 return result
 
             except Exception as e:
-                # エラー処理
+                # Error handling
                 error_msg = f&#34;{type(e).__name__}: {str(e)}\n{traceback.format_exc()}&#34;
                 tracker.fail_experiment(exp_id, error_msg)
                 raise
@@ -246,7 +246,7 @@ pass</p></div>
 
     return decorator</code></pre>
 </details>
-<div class="desc"><p>関数を実験としてトラッキングするデコレータ</p>
+<div class="desc"><p>Decorator to track functions as experiments</p>
 <h2 id="usage">Usage</h2>
 <p>@track_experiment(
 name="GPT2 Training",
@@ -255,7 +255,7 @@ model_type=ModelType.GPT2,
 dataset_type=DatasetType.PROTEIN_SEQUENCE
 )
 def train_model(config):
-# 訓練処理
+# Training process
 return {"accuracy": 0.95}</p></div>
 </dd>
 </dl>

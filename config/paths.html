@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.config.paths API documentation</title>
-<meta name="description" content="プロジェクト全体で使用するパス設定の定数定義">
+<meta name="description" content="Define constants for path settings used throughout the project">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.config.paths</code></h1>
 </header>
 <section id="section-intro">
-<p>プロジェクト全体で使用するパス設定の定数定義</p>
+<p>Define constants for path settings used throughout the project</p>
 </section>
 <section>
 </section>
@@ -54,10 +54,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_bert_model_output_path(domain, model_size):
-    &#34;&#34;&#34;BERTモデル出力パスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get BERT model output path&#34;&#34;&#34;
     return get_bert_output_path(domain, model_size)</code></pre>
 </details>
-<div class="desc"><p>BERTモデル出力パスを取得</p></div>
+<div class="desc"><p>Get BERT model output path</p></div>
 </dd>
 <dt id="molcrawl.config.paths.get_bert_output_path"><code class="name flex">
 <span>def <span class="ident">get_bert_output_path</span></span>(<span>domain, model_size)</span>
@@ -69,29 +69,29 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_bert_output_path(domain, model_size):
     &#34;&#34;&#34;
-    BERTモデルの出力パスを取得する関数
+    Function to get output path of BERT model
 
     Args:
-        domain (str): ドメイン名 (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
-        model_size (str): モデルサイズ (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;)
+        domain (str): domain name (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
+        model_size (str): Model size (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;)
 
     Returns:
-        str: BERT出力ディレクトリのパス
+        str: BERT output directory path
     &#34;&#34;&#34;
     return os.path.join(LEARNING_SOURCE_DIR, domain, BERT_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
 </details>
-<div class="desc"><p>BERTモデルの出力パスを取得する関数</p>
+<div class="desc"><p>Function to get output path of BERT model</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
-<dd>ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
+<dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルサイズ ('small', 'medium', 'large')</dd>
+<dd>Model size ('small', 'medium', 'large')</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>BERT出力ディレクトリのパス</dd>
+<dd>BERT output directory path</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.config.paths.get_bert_tensorboard_path"><code class="name flex">
@@ -103,10 +103,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_bert_tensorboard_path(domain, model_size):
-    &#34;&#34;&#34;BERT TensorBoard出力パスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get BERT TensorBoard output path&#34;&#34;&#34;
     return get_bert_output_path(domain, model_size)</code></pre>
 </details>
-<div class="desc"><p>BERT TensorBoard出力パスを取得</p></div>
+<div class="desc"><p>Get BERT TensorBoard output path</p></div>
 </dd>
 <dt id="molcrawl.config.paths.get_dataset_path"><code class="name flex">
 <span>def <span class="ident">get_dataset_path</span></span>(<span>dataset_type, relative_path='')</span>
@@ -118,14 +118,14 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_dataset_path(dataset_type, relative_path=&#34;&#34;):
     &#34;&#34;&#34;
-    データセットのパスを取得する関数
+    Function to get dataset path
 
     Args:
-        dataset_type (str): データセットタイプ (&#39;uniprot&#39;, &#39;refseq&#39;, &#39;cellxgene&#39;, &#39;molecule_nat_lang&#39;)
-        relative_path (str): データセット内の相対パス
+        dataset_type (str): dataset type (&#39;uniprot&#39;, &#39;refseq&#39;, &#39;cellxgene&#39;, &#39;molecule_nat_lang&#39;)
+        relative_path (str): relative path within the dataset
 
     Returns:
-        str: 完全なパス
+        str: complete path
     &#34;&#34;&#34;
     if dataset_type == &#34;molecule_nat_lang&#34;:
         base_path = os.path.join(PROJECT_ROOT, MOLECULE_NAT_LANG_DATASET_DIR)
@@ -136,18 +136,18 @@ el.replaceWith(d);
         return os.path.join(base_path, relative_path)
     return base_path</code></pre>
 </details>
-<div class="desc"><p>データセットのパスを取得する関数</p>
+<div class="desc"><p>Function to get dataset path</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>dataset_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>データセットタイプ ('uniprot', 'refseq', 'cellxgene', 'molecule_nat_lang')</dd>
+<dd>dataset type ('uniprot', 'refseq', 'cellxgene', 'molecule_nat_lang')</dd>
 <dt><strong><code>relative_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>データセット内の相対パス</dd>
+<dd>relative path within the dataset</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>完全なパス</dd>
+<dd>complete path</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.config.paths.get_genome_tokenizer_path"><code class="name flex">
@@ -160,19 +160,19 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_genome_tokenizer_path():
     &#34;&#34;&#34;
-    ゲノム配列用のトークナイザーパスを取得
+    Get tokenizer path for genome sequence
 
     Returns:
-        str: ゲノム配列用トークナイザーのパス（文字列）
+        str: Genome sequence tokenizer path (string)
     &#34;&#34;&#34;
-    # RefSeqゲノム配列用のトークナイザーを使用
+    # Use tokenizer for RefSeq genome sequences
     return get_refseq_tokenizer_path()</code></pre>
 </details>
-<div class="desc"><p>ゲノム配列用のトークナイザーパスを取得</p>
+<div class="desc"><p>Get tokenizer path for genome sequence</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>ゲノム配列用トークナイザーのパス（文字列）</dd>
+<dd>Genome sequence tokenizer path (string)</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.config.paths.get_gpt2_model_output_path"><code class="name flex">
@@ -184,10 +184,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_gpt2_model_output_path(domain, model_size):
-    &#34;&#34;&#34;GPT-2モデル出力パスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get GPT-2 model output path&#34;&#34;&#34;
     return get_gpt2_output_path(domain, model_size)</code></pre>
 </details>
-<div class="desc"><p>GPT-2モデル出力パスを取得</p></div>
+<div class="desc"><p>Get GPT-2 model output path</p></div>
 </dd>
 <dt id="molcrawl.config.paths.get_gpt2_output_path"><code class="name flex">
 <span>def <span class="ident">get_gpt2_output_path</span></span>(<span>domain, model_size)</span>
@@ -199,16 +199,16 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_gpt2_output_path(domain, model_size):
     &#34;&#34;&#34;
-    GPT-2モデルの出力パスを取得する関数
+    Function to get output path of GPT-2 model
 
     Args:
-        domain (str): ドメイン名 (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
-        model_size (str): モデルサイズ (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;xl&#39;, &#39;ex-large&#39;)
+        domain (str): domain name (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
+        model_size (str): Model size (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;xl&#39;, &#39;ex-large&#39;)
 
     Returns:
-        str: GPT-2出力ディレクトリのパス
+        str: GPT-2 output directory path
     &#34;&#34;&#34;
-    # model_sizeの標準化
+    # Standardize model_size
     if model_size == &#34;xl&#34;:
         size_suffix = &#34;ex-large&#34;
     else:
@@ -216,18 +216,18 @@ el.replaceWith(d);
 
     return os.path.join(LEARNING_SOURCE_DIR, domain, GPT2_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
 </details>
-<div class="desc"><p>GPT-2モデルの出力パスを取得する関数</p>
+<div class="desc"><p>Function to get output path of GPT-2 model</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
-<dd>ドメイン名 ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
+<dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルサイズ ('small', 'medium', 'large', 'xl', 'ex-large')</dd>
+<dd>Model size ('small', 'medium', 'large', 'xl', 'ex-large')</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>GPT-2出力ディレクトリのパス</dd>
+<dd>GPT-2 output directory path</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.config.paths.get_gpt2_tensorboard_path"><code class="name flex">
@@ -239,10 +239,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_gpt2_tensorboard_path(domain, model_size):
-    &#34;&#34;&#34;GPT-2 TensorBoard出力パスを取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get GPT-2 TensorBoard output path&#34;&#34;&#34;
     return get_gpt2_output_path(domain, model_size)</code></pre>
 </details>
-<div class="desc"><p>GPT-2 TensorBoard出力パスを取得</p></div>
+<div class="desc"><p>Get GPT-2 TensorBoard output path</p></div>
 </dd>
 <dt id="molcrawl.config.paths.get_refseq_tokenizer_path"><code class="name flex">
 <span>def <span class="ident">get_refseq_tokenizer_path</span></span>(<span>)</span>

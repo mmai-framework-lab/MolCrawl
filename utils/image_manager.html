@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.utils.image_manager API documentation</title>
-<meta name="description" content="画像管理ユーティリティ …">
+<meta name="description" content="Image management utility …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,8 +36,8 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.utils.image_manager</code></h1>
 </header>
 <section id="section-intro">
-<p>画像管理ユーティリティ</p>
-<p>データセット準備・検証の結果画像を統一的に管理するためのユーティリティ</p>
+<p>Image management utility</p>
+<p>Utility for unified management of images resulting from dataset preparation and verification</p>
 </section>
 <section>
 </section>
@@ -56,30 +56,26 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_image_output_dir(model_type: str) -&gt; str:
     &#34;&#34;&#34;
-    指定されたモデルタイプの画像出力ディレクトリを取得
+    Get image output directory for specified model type
 
-    Args:
-        model_type (str): モデルタイプ (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;compounds&#39;, &#39;rna&#39;, &#39;molecule_nat_lang&#39;)
+        Args:
+    model_type (str): Model type (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;compounds&#39;, &#39;rna&#39;, &#39;molecule_nat_lang&#39;)
 
-    Returns:
-        str: 画像出力ディレクトリのパス
+        Returns:
+    str: path of image output directory
     &#34;&#34;&#34;
     learning_source_dir = check_learning_source_dir()
     image_dir = os.path.join(learning_source_dir, model_type, &#34;image&#34;)
     os.makedirs(image_dir, exist_ok=True)
     return image_dir</code></pre>
 </details>
-<div class="desc"><p>指定されたモデルタイプの画像出力ディレクトリを取得</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルタイプ ('protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nat_lang')</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>画像出力ディレクトリのパス</dd>
-</dl></div>
+<div class="desc"><p>Get image output directory for specified model type</p>
+<pre><code>Args:
+</code></pre>
+<p>model_type (str): Model type ('protein_sequence', 'genome_sequence', 'compounds', 'rna', 'molecule_nat_lang')</p>
+<pre><code>Returns:
+</code></pre>
+<p>str: path of image output directory</p></div>
 </dd>
 <dt id="molcrawl.utils.image_manager.get_image_path"><code class="name flex">
 <span>def <span class="ident">get_image_path</span></span>(<span>model_type: str, filename: str) ‑> str</span>
@@ -91,31 +87,26 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_image_path(model_type: str, filename: str) -&gt; str:
     &#34;&#34;&#34;
-    指定されたモデルタイプとファイル名の画像パスを取得
+    Get image path for specified model type and file name
 
-    Args:
-        model_type (str): モデルタイプ
-        filename (str): ファイル名（拡張子含む）
+        Args:
+    model_type (str): Model type
+    filename (str): File name (including extension)
 
-    Returns:
-        str: 完全な画像ファイルパス
+        Returns:
+    str: complete image file path
     &#34;&#34;&#34;
     image_dir = get_image_output_dir(model_type)
     return os.path.join(image_dir, filename)</code></pre>
 </details>
-<div class="desc"><p>指定されたモデルタイプとファイル名の画像パスを取得</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルタイプ</dd>
-<dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
-<dd>ファイル名（拡張子含む）</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>完全な画像ファイルパス</dd>
-</dl></div>
+<div class="desc"><p>Get image path for specified model type and file name</p>
+<pre><code>Args:
+</code></pre>
+<p>model_type (str): Model type
+filename (str): File name (including extension)</p>
+<pre><code>Returns:
+</code></pre>
+<p>str: complete image file path</p></div>
 </dd>
 <dt id="molcrawl.utils.image_manager.list_images_in_model_dir"><code class="name flex">
 <span>def <span class="ident">list_images_in_model_dir</span></span>(<span>model_type: str) ‑> list[<a title="molcrawl.utils.image_manager.ImageInfo" href="#molcrawl.utils.image_manager.ImageInfo">ImageInfo</a>]</span>
@@ -127,13 +118,13 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def list_images_in_model_dir(model_type: str) -&gt; list[ImageInfo]:
     &#34;&#34;&#34;
-    指定されたモデルタイプディレクトリ内の画像ファイル一覧を取得
+    Get a list of image files in the specified model type directory
 
-    Args:
-        model_type (str): モデルタイプ
+        Args:
+    model_type (str): Model type
 
-    Returns:
-        list: 画像ファイル情報のリスト [{&#39;filename&#39;: str, &#39;path&#39;: str, &#39;size&#39;: int, &#39;modified&#39;: float}]
+        Returns:
+    list: List of image file information [{&#39;filename&#39;: str, &#39;path&#39;: str, &#39;size&#39;: int, &#39;modified&#39;: float}]
     &#34;&#34;&#34;
     image_dir = get_image_output_dir(model_type)
 
@@ -152,21 +143,17 @@ el.replaceWith(d);
             except OSError:
                 continue
 
-    # 更新日時でソート（新しい順）
+    # Sort by update date (newest first)
     images.sort(key=lambda x: float(x[&#34;modified&#34;]), reverse=True)
     return images</code></pre>
 </details>
-<div class="desc"><p>指定されたモデルタイプディレクトリ内の画像ファイル一覧を取得</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルタイプ</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>list</code></dt>
-<dd>画像ファイル情報のリスト [{'filename': str, 'path': str, 'size': int, 'modified': float}]</dd>
-</dl></div>
+<div class="desc"><p>Get a list of image files in the specified model type directory</p>
+<pre><code>Args:
+</code></pre>
+<p>model_type (str): Model type</p>
+<pre><code>Returns:
+</code></pre>
+<p>list: List of image file information [{'filename': str, 'path': str, 'size': int, 'modified': float}]</p></div>
 </dd>
 <dt id="molcrawl.utils.image_manager.migrate_legacy_images"><code class="name flex">
 <span>def <span class="ident">migrate_legacy_images</span></span>(<span>)</span>
@@ -178,14 +165,14 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def migrate_legacy_images():
     &#34;&#34;&#34;
-    既存のassets/imgディレクトリから新しい構造に画像を移行
+    Migrate images from existing assets/img directory to new structure
     &#34;&#34;&#34;
     legacy_dir = os.path.join(&#34;assets&#34;, &#34;img&#34;)
 
     if not os.path.exists(legacy_dir):
         return
 
-    # 画像ファイルのマッピング（ファイル名パターンからモデルタイプを判定）
+    # Image file mapping (determine model type from file name pattern)
     model_mappings = {
         &#34;protein_sequence&#34;: [&#34;protein_sequence_&#34;],
         &#34;genome_sequence&#34;: [&#34;genome_sequence_&#34;],
@@ -198,7 +185,7 @@ el.replaceWith(d);
         if not any(filename.lower().endswith(ext) for ext in [&#34;.png&#34;, &#34;.jpg&#34;, &#34;.jpeg&#34;, &#34;.gif&#34;, &#34;.bmp&#34;, &#34;.svg&#34;]):
             continue
 
-        # ファイル名からモデルタイプを判定
+        # Determine model type from file name
         model_type = None
         for mt, patterns in model_mappings.items():
             if any(pattern in filename for pattern in patterns):
@@ -209,7 +196,7 @@ el.replaceWith(d);
             source_path = os.path.join(legacy_dir, filename)
             dest_path = get_image_path(model_type, filename)
 
-            # ファイルをコピー（既存ファイルがない場合のみ）
+            # Copy file (only if there is no existing file)
             if not os.path.exists(dest_path):
                 try:
                     import shutil
@@ -219,7 +206,7 @@ el.replaceWith(d);
                 except Exception as e:
                     print(f&#34;Failed to migrate {source_path}: {e}&#34;)</code></pre>
 </details>
-<div class="desc"><p>既存のassets/imgディレクトリから新しい構造に画像を移行</p></div>
+<div class="desc"><p>Migrate images from existing assets/img directory to new structure</p></div>
 </dd>
 </dl>
 </section>

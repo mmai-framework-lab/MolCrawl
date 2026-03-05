@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.utils.evaluation_output API documentation</title>
-<meta name="description" content="AI モデル評価スクリプト用の出力ディレクトリ管理ユーティリティ …">
+<meta name="description" content="Output directory management utility for AI model evaluation scripts …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,8 +36,8 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.utils.evaluation_output</code></h1>
 </header>
 <section id="section-intro">
-<p>AI モデル評価スクリプト用の出力ディレクトリ管理ユーティリティ</p>
-<p>LEARNING_SOURCE_DIR環境変数に基づいて、構造化された評価レポートディレクトリを生成する。</p>
+<p>Output directory management utility for AI model evaluation scripts</p>
+<p>Generate a structured assessment report directory based on the LEARNING_SOURCE_DIR environment variable.</p>
 </section>
 <section>
 </section>
@@ -56,11 +56,11 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def create_evaluation_summary(output_dir, evaluation_info):
     &#34;&#34;&#34;
-    評価サマリーファイルを作成
+    Create evaluation summary file
 
-    Args:
-        output_dir (Path): 出力ディレクトリ
-        evaluation_info (dict): 評価情報
+        Args:
+    output_dir (Path): Output directory
+    evaluation_info (dict): Evaluation information
     &#34;&#34;&#34;
     summary_file = output_dir / &#34;evaluation_summary.json&#34;
 
@@ -71,14 +71,11 @@ el.replaceWith(d);
 
     logger.info(f&#34;Evaluation summary saved to: {summary_file}&#34;)</code></pre>
 </details>
-<div class="desc"><p>評価サマリーファイルを作成</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>output_dir</code></strong> :&ensp;<code>Path</code></dt>
-<dd>出力ディレクトリ</dd>
-<dt><strong><code>evaluation_info</code></strong> :&ensp;<code>dict</code></dt>
-<dd>評価情報</dd>
-</dl></div>
+<div class="desc"><p>Create evaluation summary file</p>
+<pre><code>Args:
+</code></pre>
+<p>output_dir (Path): Output directory
+evaluation_info (dict): Evaluation information</p></div>
 </dd>
 <dt id="molcrawl.utils.evaluation_output.get_evaluation_output_dir"><code class="name flex">
 <span>def <span class="ident">get_evaluation_output_dir</span></span>(<span>model_type, evaluation_type, model_name=None, timestamp=None)</span>
@@ -90,36 +87,36 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_evaluation_output_dir(model_type, evaluation_type, model_name=None, timestamp=None):
     &#34;&#34;&#34;
-    評価レポート用の出力ディレクトリパスを生成
+    Generate output directory path for assessment report
 
-    Args:
-        model_type (str): モデルタイプ (&#39;genome_sequence&#39;, &#39;protein_sequence&#39;, etc.)
-        evaluation_type (str): 評価タイプ (&#39;proteingym&#39;, &#39;clinvar&#39;, &#39;protein_classification&#39;, etc.)
-        model_name (str, optional): モデル名（指定しない場合は自動生成）
-        timestamp (str, optional): タイムスタンプ（指定しない場合は現在時刻）
+        Args:
+    model_type (str): Model type (&#39;genome_sequence&#39;, &#39;protein_sequence&#39;, etc.)
+    evaluation_type (str): Evaluation type (&#39;proteingym&#39;, &#39;clinvar&#39;, &#39;protein_classification&#39;, etc.)
+    model_name (str, optional): Model name (automatically generated if not specified)
+    timestamp (str, optional): timestamp (current time if not specified)
 
-    Returns:
-        Path: 評価結果出力ディレクトリのパス
+        Returns:
+    Path: Path of evaluation result output directory
 
-    Example:
-        get_evaluation_output_dir(&#39;genome_sequence&#39;, &#39;clinvar&#39;)
-        -&gt; {LEARNING_SOURCE_DIR}/genome_sequence/report/clinvar_20241015_143022
+        Example:
+            get_evaluation_output_dir(&#39;genome_sequence&#39;, &#39;clinvar&#39;)
+            -&gt; {LEARNING_SOURCE_DIR}/genome_sequence/report/clinvar_20241015_143022
 
-        get_evaluation_output_dir(&#39;protein_sequence&#39;, &#39;proteingym&#39;, &#39;bert_medium&#39;)
-        -&gt; {LEARNING_SOURCE_DIR}/protein_sequence/report/proteingym_bert_medium_20241015_143022
+            get_evaluation_output_dir(&#39;protein_sequence&#39;, &#39;proteingym&#39;, &#39;bert_medium&#39;)
+            -&gt; {LEARNING_SOURCE_DIR}/protein_sequence/report/proteingym_bert_medium_20241015_143022
     &#34;&#34;&#34;
     if timestamp is None:
         timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
 
     learning_source_dir = Path(check_learning_source_dir())
 
-    # モデルタイプディレクトリ（genome_sequence, protein_sequence等）
+    # Model type directory (genome_sequence, protein_sequence, etc.)
     model_type_dir = learning_source_dir / model_type
 
-    # reportディレクトリ
+    # report directory
     report_dir = model_type_dir / &#34;report&#34;
 
-    # 評価タイプとモデル名を含むディレクトリ名を生成
+    # Generate directory name including evaluation type and model name
     if model_name:
         dir_name = f&#34;{evaluation_type}_{model_name}_{timestamp}&#34;
     else:
@@ -127,35 +124,30 @@ el.replaceWith(d);
 
     output_dir = report_dir / dir_name
 
-    # ディレクトリを作成
+    # create directory
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(f&#34;Created evaluation output directory: {output_dir}&#34;)
 
     return output_dir</code></pre>
 </details>
-<div class="desc"><p>評価レポート用の出力ディレクトリパスを生成</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルタイプ ('genome_sequence', 'protein_sequence', etc.)</dd>
-<dt><strong><code>evaluation_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>評価タイプ ('proteingym', 'clinvar', 'protein_classification', etc.)</dd>
-<dt><strong><code>model_name</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>モデル名（指定しない場合は自動生成）</dd>
-<dt><strong><code>timestamp</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>タイムスタンプ（指定しない場合は現在時刻）</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Path</code></dt>
-<dd>評価結果出力ディレクトリのパス</dd>
-</dl>
-<h2 id="example">Example</h2>
-<p>get_evaluation_output_dir('genome_sequence', 'clinvar')
--&gt; {LEARNING_SOURCE_DIR}/genome_sequence/report/clinvar_20241015_143022</p>
-<p>get_evaluation_output_dir('protein_sequence', 'proteingym', 'bert_medium')
--&gt; {LEARNING_SOURCE_DIR}/protein_sequence/report/proteingym_bert_medium_20241015_143022</p></div>
+<div class="desc"><p>Generate output directory path for assessment report</p>
+<pre><code>Args:
+</code></pre>
+<p>model_type (str): Model type ('genome_sequence', 'protein_sequence', etc.)
+evaluation_type (str): Evaluation type ('proteingym', 'clinvar', 'protein_classification', etc.)
+model_name (str, optional): Model name (automatically generated if not specified)
+timestamp (str, optional): timestamp (current time if not specified)</p>
+<pre><code>Returns:
+</code></pre>
+<p>Path: Path of evaluation result output directory</p>
+<pre><code>Example:
+    get_evaluation_output_dir('genome_sequence', 'clinvar')
+    -&gt; {LEARNING_SOURCE_DIR}/genome_sequence/report/clinvar_20241015_143022
+
+    get_evaluation_output_dir('protein_sequence', 'proteingym', 'bert_medium')
+    -&gt; {LEARNING_SOURCE_DIR}/protein_sequence/report/proteingym_bert_medium_20241015_143022
+</code></pre></div>
 </dd>
 <dt id="molcrawl.utils.evaluation_output.get_model_name_from_path"><code class="name flex">
 <span>def <span class="ident">get_model_name_from_path</span></span>(<span>model_path)</span>
@@ -167,40 +159,36 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_model_name_from_path(model_path):
     &#34;&#34;&#34;
-    モデルパスからモデル名を推定
+    Infer model name from model path
 
-    Args:
-        model_path (str): モデルのパス
+        Args:
+    model_path (str): model path
 
-    Returns:
-        str: 推定されたモデル名
+        Returns:
+    str: Estimated model name
     &#34;&#34;&#34;
     model_path = Path(model_path)
 
-    # パスの最後の部分からモデル名を推定
+    # Infer model name from the last part of the path
     if model_path.is_dir():
         model_name = model_path.name
     else:
         model_name = model_path.stem
 
-    # 共通のプレフィックス/サフィックスを除去
+    # remove common prefixes/suffixes
     model_name = model_name.replace(&#34;runs_train_&#34;, &#34;&#34;)
     model_name = model_name.replace(&#34;bert_&#34;, &#34;&#34;)
     model_name = model_name.replace(&#34;gpt2_&#34;, &#34;&#34;)
 
     return model_name</code></pre>
 </details>
-<div class="desc"><p>モデルパスからモデル名を推定</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>model_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルのパス</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>推定されたモデル名</dd>
-</dl></div>
+<div class="desc"><p>Infer model name from model path</p>
+<pre><code>Args:
+</code></pre>
+<p>model_path (str): model path</p>
+<pre><code>Returns:
+</code></pre>
+<p>str: Estimated model name</p></div>
 </dd>
 <dt id="molcrawl.utils.evaluation_output.get_model_type_from_path"><code class="name flex">
 <span>def <span class="ident">get_model_type_from_path</span></span>(<span>model_path)</span>
@@ -212,13 +200,13 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_model_type_from_path(model_path):
     &#34;&#34;&#34;
-    モデルパスからモデルタイプを推定
+    Infer model type from model path
 
-    Args:
-        model_path (str): モデルのパス
+        Args:
+    model_path (str): model path
 
-    Returns:
-        str: 推定されたモデルタイプ
+        Returns:
+    str: estimated model type
     &#34;&#34;&#34;
     model_path_str = str(model_path).lower()
 
@@ -235,17 +223,13 @@ el.replaceWith(d);
     else:
         return &#34;general&#34;</code></pre>
 </details>
-<div class="desc"><p>モデルパスからモデルタイプを推定</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>model_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>モデルのパス</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>推定されたモデルタイプ</dd>
-</dl></div>
+<div class="desc"><p>Infer model type from model path</p>
+<pre><code>Args:
+</code></pre>
+<p>model_path (str): model path</p>
+<pre><code>Returns:
+</code></pre>
+<p>str: estimated model type</p></div>
 </dd>
 <dt id="molcrawl.utils.evaluation_output.setup_evaluation_logging"><code class="name flex">
 <span>def <span class="ident">setup_evaluation_logging</span></span>(<span>output_dir, script_name)</span>
@@ -257,31 +241,31 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def setup_evaluation_logging(output_dir, script_name):
     &#34;&#34;&#34;
-    評価スクリプト用のログ設定
+    Log settings for evaluation scripts
 
-    Args:
-        output_dir (Path): 出力ディレクトリ
-        script_name (str): スクリプト名
+        Args:
+    output_dir (Path): Output directory
+    script_name (str): Script name
 
-    Returns:
-        logging.Logger: 設定されたロガー
+        Returns:
+    logging.Logger: configured logger
     &#34;&#34;&#34;
     log_file = output_dir / f&#34;{script_name}.log&#34;
 
-    # ログフォーマット
+    # log format
     formatter = logging.Formatter(&#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#34;)
 
-    # ファイルハンドラー
+    # file handler
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
 
-    # コンソールハンドラー
+    # console handler
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.INFO)
 
-    # ロガー設定
+    # logger settings
     logger = logging.getLogger(script_name)
     logger.setLevel(logging.INFO)
     logger.addHandler(file_handler)
@@ -289,19 +273,14 @@ el.replaceWith(d);
 
     return logger</code></pre>
 </details>
-<div class="desc"><p>評価スクリプト用のログ設定</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>output_dir</code></strong> :&ensp;<code>Path</code></dt>
-<dd>出力ディレクトリ</dd>
-<dt><strong><code>script_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>スクリプト名</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>logging.Logger</code></dt>
-<dd>設定されたロガー</dd>
-</dl></div>
+<div class="desc"><p>Log settings for evaluation scripts</p>
+<pre><code>Args:
+</code></pre>
+<p>output_dir (Path): Output directory
+script_name (str): Script name</p>
+<pre><code>Returns:
+</code></pre>
+<p>logging.Logger: configured logger</p></div>
 </dd>
 </dl>
 </section>

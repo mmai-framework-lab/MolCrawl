@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.evaluation.gpt2.cosmic_data_preparation API documentation</title>
-<meta name="description" content="COSMICデータダウンロード・前処理スクリプト …">
+<meta name="description" content="COSMIC data download/preprocessing script …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,10 +36,10 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.evaluation.gpt2.cosmic_data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>COSMICデータダウンロード・前処理スクリプト</p>
-<p>COSMICデータベースから癌関連変異データをダウンロードし、
-genome sequenceモデルの評価に適した形式に前処理します。</p>
-<p>注意: LEARNING_SOURCE_DIR環境変数の設定が必須です。</p>
+<p>COSMIC data download/preprocessing script</p>
+<p>Download cancer-related mutation data from the COSMIC database,
+Preprocess the genome sequence model into a format suitable for evaluation.</p>
+<p>Notice: LEARNING_SOURCE_DIRSetting environment variables is required.</p>
 </section>
 <section>
 </section>
@@ -57,7 +57,7 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
-    &#34;&#34;&#34;メイン処理&#34;&#34;&#34;
+    &#34;&#34;&#34;Main processing&#34;&#34;&#34;
     parser = argparse.ArgumentParser(
         description=&#34;COSMIC data preparation for genome sequence evaluation&#34;,
         epilog=&#34;Note: LEARNING_SOURCE_DIR environment variable must be set.&#34;,
@@ -81,7 +81,6 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
     processor = COSMICProcessor(args.output_dir)
 
     if args.create_sample_data:
-        # サンプルデータの作成
         logger.info(&#34;Creating sample COSMIC data&#34;)
         processor.create_sample_cosmic_data(args.max_samples)
     else:
@@ -92,7 +91,7 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     logger.info(&#34;COSMIC data preparation completed&#34;)</code></pre>
 </details>
-<div class="desc"><p>メイン処理</p></div>
+<div class="desc"><p>Main processing</p></div>
 </dd>
 </dl>
 </section>
@@ -109,14 +108,14 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class COSMICProcessor:
-    &#34;&#34;&#34;COSMICデータの取得・前処理クラス&#34;&#34;&#34;
+    &#34;&#34;&#34;COSMIC data acquisition/preprocessing class&#34;&#34;&#34;
 
     def __init__(self, output_dir=None):
         &#34;&#34;&#34;
-        初期化
+        initialization
 
         Args:
-            output_dir (str): 出力ディレクトリ（Noneの場合は$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）
+            output_dir (str): Output directory（NoneIn the case of$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）
         &#34;&#34;&#34;
         if output_dir is None:
             learning_source = check_learning_source_dir()
@@ -127,13 +126,13 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
         logger.info(f&#34;Output directory: {self.output_dir}&#34;)
 
-        # COSMIC公開データのURL（認証不要のデータセット）
+        # COSMIC public data URL (dataset that does not require authentication)
         self.cosmic_urls = {
             &#34;census&#34;: &#34;https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v97/Cancer_Gene_Census.csv&#34;,
             &#34;mutations&#34;: &#34;https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v97/CosmicMutantExport.tsv.gz&#34;,
         }
 
-        # 癌の重要度分類
+        # Cancer severity classification
         self.cancer_significance_map = {
             &#34;pathogenic&#34;: [&#34;pathogenic&#34;, &#34;likely_pathogenic&#34;, &#34;oncogenic&#34;],
             &#34;benign&#34;: [&#34;benign&#34;, &#34;likely_benign&#34;, &#34;neutral&#34;],
@@ -142,10 +141,10 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     def download_cosmic_data(self, dataset_type=&#34;census&#34;):
         &#34;&#34;&#34;
-        COSMICデータをダウンロード
+        Download COSMIC data
 
         Args:
-            dataset_type (str): データセットタイプ (&#39;census&#39;, &#39;mutations&#39;)
+            dataset_type (str): dataset type (&#39;census&#39;, &#39;mutations&#39;)
         &#34;&#34;&#34;
         if dataset_type not in self.cosmic_urls:
             raise ValueError(f&#34;Unknown dataset type: {dataset_type}&#34;)
@@ -172,17 +171,17 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     def create_sample_cosmic_data(self, num_samples=20):
         &#34;&#34;&#34;
-        サンプルCOSMICデータを作成（テスト用）
+        Create sample COSMIC data (for testing)
 
         Args:
-            num_samples (int): 作成するサンプル数
+            num_samples (int): Number of samples to create
         &#34;&#34;&#34;
         logger.info(f&#34;Creating sample COSMIC data with {num_samples} samples&#34;)
 
-        # 実際のCOSMIC変異パターンに基づくサンプルデータ
+        # Sample data based on actual COSMIC mutation patterns
         sample_data = []
 
-        # 既知の癌関連遺伝子と変異パターン
+        # Known cancer-related genes and mutation patterns
         cancer_genes = [
             &#34;TP53&#34;,
             &#34;KRAS&#34;,
@@ -204,32 +203,32 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
             gene = np.random.choice(cancer_genes)
             mutation_type = np.random.choice(mutation_types)
 
-            # DNA配列の生成（100bp）
+            # Generate DNA sequence (100bp)
             bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
             ref_sequence = &#34;&#34;.join(np.random.choice(bases, 100))
 
-            # 変異の導入
+            # Introducing mutations
             var_sequence = list(ref_sequence)
-            mutation_pos = np.random.randint(45, 55)  # 中央付近に変異
+            mutation_pos = np.random.randint(45, 55)  # Mutation near the center
 
             if &#34;Missense&#34; in mutation_type or &#34;Nonsense&#34; in mutation_type:
-                # 点変異
+                # point mutation
                 original_base = var_sequence[mutation_pos]
                 possible_bases = [b for b in bases if b != original_base]
                 var_sequence[mutation_pos] = np.random.choice(possible_bases)
             elif &#34;Deletion&#34; in mutation_type:
-                # 欠失
+                # deletion
                 del_length = np.random.randint(1, 4)
                 del var_sequence[mutation_pos : mutation_pos + del_length]
             elif &#34;Insertion&#34; in mutation_type:
-                # 挿入
+                # insert
                 ins_length = np.random.randint(1, 4)
                 insert_bases = &#34;&#34;.join(np.random.choice(bases, ins_length))
                 var_sequence.insert(mutation_pos, insert_bases)
 
             var_sequence = &#34;&#34;.join(var_sequence)
 
-            # 癌関連度の決定（遺伝子と変異タイプに基づく）
+            # Determination of cancer relevance (based on gene and mutation type)
             if gene in [&#34;TP53&#34;, &#34;BRCA1&#34;, &#34;BRCA2&#34;] and &#34;Nonsense&#34; in mutation_type:
                 significance = &#34;pathogenic&#34;
                 oncogenic = 1
@@ -260,10 +259,10 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
                 }
             )
 
-        # DataFrameに変換
+        # convert to DataFrame
         df = pd.DataFrame(sample_data)
 
-        # CSVファイルとして保存
+        # Save as CSV file
         output_file = self.output_dir / &#34;cosmic_evaluation_dataset.csv&#34;
         df.to_csv(output_file, index=False)
 
@@ -274,13 +273,13 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     def parse_cosmic_vcf(self, vcf_file):
         &#34;&#34;&#34;
-        COSMIC VCFファイルを解析
+        Analyze COSMIC VCF files
 
         Args:
-            vcf_file (str): VCFファイルのパス
+            vcf_file (str): VCF file path
 
         Returns:
-            pd.DataFrame: 解析されたデータ
+            pd.DataFrame: parsed data
         &#34;&#34;&#34;
         logger.info(f&#34;Parsing COSMIC VCF file: {vcf_file}&#34;)
 
@@ -303,7 +302,7 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
                     alt = parts[4]
                     info = parts[7]
 
-                    # INFOフィールドから情報を抽出
+                    # extract information from INFO field
                     info_dict = {}
                     for item in info.split(&#34;;&#34;):
                         if &#34;=&#34; in item:
@@ -324,8 +323,8 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
                         }
                     )
 
-                    # メモリ使用量制限
-                    if line_num &gt; 100000:  # 最初の10万行のみ処理
+                    # Memory usage limit
+                    if line_num &gt; 100000:  # Process only the first 100,000 lines
                         logger.info(&#34;Limiting to first 100k variants for memory efficiency&#34;)
                         break
 
@@ -337,14 +336,14 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     def generate_sequences_from_variants(self, df, sequence_length=100):
         &#34;&#34;&#34;
-        変異情報から参照配列と変異配列を生成
+        Generate reference and mutant sequences from mutation information
 
         Args:
-            df (pd.DataFrame): 変異データ
-            sequence_length (int): 生成する配列長
+            df (pd.DataFrame): variant data
+            sequence_length (int): length of the sequence to generate
 
         Returns:
-            pd.DataFrame: 配列情報が追加されたデータ
+            pd.DataFrame: Data with array information added
         &#34;&#34;&#34;
         logger.info(f&#34;Generating sequences of length {sequence_length}&#34;)
 
@@ -352,18 +351,18 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
         bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
 
         for _, row in df.iterrows():
-            # ランダムなコンテキスト配列を生成
+            # Generate random context array
             half_len = sequence_length // 2
 
-            # 参照配列の生成
+            # Generate reference array
             prefix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
             suffix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
             ref_sequence = prefix + row[&#34;reference_allele&#34;] + suffix
 
-            # 変異配列の生成
+            # Generate mutant array
             var_sequence = prefix + row[&#34;alternate_allele&#34;] + suffix
 
-            # 長さの調整
+            # Adjust length
             if len(ref_sequence) &lt; sequence_length:
                 ref_sequence += &#34;&#34;.join(np.random.choice(bases, sequence_length - len(ref_sequence)))
             elif len(ref_sequence) &gt; sequence_length:
@@ -376,18 +375,18 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
             sequences.append({&#34;reference_sequence&#34;: ref_sequence, &#34;variant_sequence&#34;: var_sequence})
 
-        # 元のDataFrameに配列情報を追加
+        # Add array information to the original DataFrame
         sequence_df = pd.DataFrame(sequences)
         result_df = pd.concat([df.reset_index(drop=True), sequence_df], axis=1)
 
         return result_df</code></pre>
 </details>
-<div class="desc"><p>COSMICデータの取得・前処理クラス</p>
-<p>初期化</p>
+<div class="desc"><p>COSMIC data acquisition/preprocessing class</p>
+<p>initialization</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>output_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>出力ディレクトリ（Noneの場合は$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）</dd>
+<dd>Output directory（NoneIn the case of$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）</dd>
 </dl></div>
 <h3>Methods</h3>
 <dl>
@@ -401,17 +400,17 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 </summary>
 <pre><code class="python">def create_sample_cosmic_data(self, num_samples=20):
     &#34;&#34;&#34;
-    サンプルCOSMICデータを作成（テスト用）
+    Create sample COSMIC data (for testing)
 
     Args:
-        num_samples (int): 作成するサンプル数
+        num_samples (int): Number of samples to create
     &#34;&#34;&#34;
     logger.info(f&#34;Creating sample COSMIC data with {num_samples} samples&#34;)
 
-    # 実際のCOSMIC変異パターンに基づくサンプルデータ
+    # Sample data based on actual COSMIC mutation patterns
     sample_data = []
 
-    # 既知の癌関連遺伝子と変異パターン
+    # Known cancer-related genes and mutation patterns
     cancer_genes = [
         &#34;TP53&#34;,
         &#34;KRAS&#34;,
@@ -433,32 +432,32 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
         gene = np.random.choice(cancer_genes)
         mutation_type = np.random.choice(mutation_types)
 
-        # DNA配列の生成（100bp）
+        # Generate DNA sequence (100bp)
         bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
         ref_sequence = &#34;&#34;.join(np.random.choice(bases, 100))
 
-        # 変異の導入
+        # Introducing mutations
         var_sequence = list(ref_sequence)
-        mutation_pos = np.random.randint(45, 55)  # 中央付近に変異
+        mutation_pos = np.random.randint(45, 55)  # Mutation near the center
 
         if &#34;Missense&#34; in mutation_type or &#34;Nonsense&#34; in mutation_type:
-            # 点変異
+            # point mutation
             original_base = var_sequence[mutation_pos]
             possible_bases = [b for b in bases if b != original_base]
             var_sequence[mutation_pos] = np.random.choice(possible_bases)
         elif &#34;Deletion&#34; in mutation_type:
-            # 欠失
+            # deletion
             del_length = np.random.randint(1, 4)
             del var_sequence[mutation_pos : mutation_pos + del_length]
         elif &#34;Insertion&#34; in mutation_type:
-            # 挿入
+            # insert
             ins_length = np.random.randint(1, 4)
             insert_bases = &#34;&#34;.join(np.random.choice(bases, ins_length))
             var_sequence.insert(mutation_pos, insert_bases)
 
         var_sequence = &#34;&#34;.join(var_sequence)
 
-        # 癌関連度の決定（遺伝子と変異タイプに基づく）
+        # Determination of cancer relevance (based on gene and mutation type)
         if gene in [&#34;TP53&#34;, &#34;BRCA1&#34;, &#34;BRCA2&#34;] and &#34;Nonsense&#34; in mutation_type:
             significance = &#34;pathogenic&#34;
             oncogenic = 1
@@ -489,10 +488,10 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
             }
         )
 
-    # DataFrameに変換
+    # convert to DataFrame
     df = pd.DataFrame(sample_data)
 
-    # CSVファイルとして保存
+    # Save as CSV file
     output_file = self.output_dir / &#34;cosmic_evaluation_dataset.csv&#34;
     df.to_csv(output_file, index=False)
 
@@ -501,11 +500,11 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     return output_file</code></pre>
 </details>
-<div class="desc"><p>サンプルCOSMICデータを作成（テスト用）</p>
+<div class="desc"><p>Create sample COSMIC data (for testing)</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>num_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>作成するサンプル数</dd>
+<dd>Number of samples to create</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.cosmic_data_preparation.COSMICProcessor.download_cosmic_data"><code class="name flex">
@@ -518,10 +517,10 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 </summary>
 <pre><code class="python">def download_cosmic_data(self, dataset_type=&#34;census&#34;):
     &#34;&#34;&#34;
-    COSMICデータをダウンロード
+    Download COSMIC data
 
     Args:
-        dataset_type (str): データセットタイプ (&#39;census&#39;, &#39;mutations&#39;)
+        dataset_type (str): dataset type (&#39;census&#39;, &#39;mutations&#39;)
     &#34;&#34;&#34;
     if dataset_type not in self.cosmic_urls:
         raise ValueError(f&#34;Unknown dataset type: {dataset_type}&#34;)
@@ -546,11 +545,11 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
         logger.error(f&#34;Failed to download {dataset_type}: {e}&#34;)
         return None</code></pre>
 </details>
-<div class="desc"><p>COSMICデータをダウンロード</p>
+<div class="desc"><p>Download COSMIC data</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>dataset_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>データセットタイプ ('census', 'mutations')</dd>
+<dd>dataset type ('census', 'mutations')</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.cosmic_data_preparation.COSMICProcessor.generate_sequences_from_variants"><code class="name flex">
@@ -563,14 +562,14 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 </summary>
 <pre><code class="python">def generate_sequences_from_variants(self, df, sequence_length=100):
     &#34;&#34;&#34;
-    変異情報から参照配列と変異配列を生成
+    Generate reference and mutant sequences from mutation information
 
     Args:
-        df (pd.DataFrame): 変異データ
-        sequence_length (int): 生成する配列長
+        df (pd.DataFrame): variant data
+        sequence_length (int): length of the sequence to generate
 
     Returns:
-        pd.DataFrame: 配列情報が追加されたデータ
+        pd.DataFrame: Data with array information added
     &#34;&#34;&#34;
     logger.info(f&#34;Generating sequences of length {sequence_length}&#34;)
 
@@ -578,18 +577,18 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
     bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
 
     for _, row in df.iterrows():
-        # ランダムなコンテキスト配列を生成
+        # Generate random context array
         half_len = sequence_length // 2
 
-        # 参照配列の生成
+        # Generate reference array
         prefix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
         suffix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
         ref_sequence = prefix + row[&#34;reference_allele&#34;] + suffix
 
-        # 変異配列の生成
+        # Generate mutant array
         var_sequence = prefix + row[&#34;alternate_allele&#34;] + suffix
 
-        # 長さの調整
+        # Adjust length
         if len(ref_sequence) &lt; sequence_length:
             ref_sequence += &#34;&#34;.join(np.random.choice(bases, sequence_length - len(ref_sequence)))
         elif len(ref_sequence) &gt; sequence_length:
@@ -602,24 +601,24 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
         sequences.append({&#34;reference_sequence&#34;: ref_sequence, &#34;variant_sequence&#34;: var_sequence})
 
-    # 元のDataFrameに配列情報を追加
+    # Add array information to the original DataFrame
     sequence_df = pd.DataFrame(sequences)
     result_df = pd.concat([df.reset_index(drop=True), sequence_df], axis=1)
 
     return result_df</code></pre>
 </details>
-<div class="desc"><p>変異情報から参照配列と変異配列を生成</p>
+<div class="desc"><p>Generate reference and mutant sequences from mutation information</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>変異データ</dd>
+<dd>variant data</dd>
 <dt><strong><code>sequence_length</code></strong> :&ensp;<code>int</code></dt>
-<dd>生成する配列長</dd>
+<dd>length of the sequence to generate</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>pd.DataFrame</code></dt>
-<dd>配列情報が追加されたデータ</dd>
+<dd>Data with array information added</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.cosmic_data_preparation.COSMICProcessor.parse_cosmic_vcf"><code class="name flex">
@@ -632,13 +631,13 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 </summary>
 <pre><code class="python">def parse_cosmic_vcf(self, vcf_file):
     &#34;&#34;&#34;
-    COSMIC VCFファイルを解析
+    Analyze COSMIC VCF files
 
     Args:
-        vcf_file (str): VCFファイルのパス
+        vcf_file (str): VCF file path
 
     Returns:
-        pd.DataFrame: 解析されたデータ
+        pd.DataFrame: parsed data
     &#34;&#34;&#34;
     logger.info(f&#34;Parsing COSMIC VCF file: {vcf_file}&#34;)
 
@@ -661,7 +660,7 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
                 alt = parts[4]
                 info = parts[7]
 
-                # INFOフィールドから情報を抽出
+                # extract information from INFO field
                 info_dict = {}
                 for item in info.split(&#34;;&#34;):
                     if &#34;=&#34; in item:
@@ -682,8 +681,8 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
                     }
                 )
 
-                # メモリ使用量制限
-                if line_num &gt; 100000:  # 最初の10万行のみ処理
+                # Memory usage limit
+                if line_num &gt; 100000:  # Process only the first 100,000 lines
                     logger.info(&#34;Limiting to first 100k variants for memory efficiency&#34;)
                     break
 
@@ -693,16 +692,16 @@ genome sequenceモデルの評価に適した形式に前処理します。</p>
 
     return pd.DataFrame(mutations)</code></pre>
 </details>
-<div class="desc"><p>COSMIC VCFファイルを解析</p>
+<div class="desc"><p>Analyze COSMIC VCF files</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>vcf_file</code></strong> :&ensp;<code>str</code></dt>
-<dd>VCFファイルのパス</dd>
+<dd>VCF file path</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>pd.DataFrame</code></dt>
-<dd>解析されたデータ</dd>
+<dd>parsed data</dd>
 </dl></div>
 </dd>
 </dl>

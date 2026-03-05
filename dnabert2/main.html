@@ -37,12 +37,12 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>DNABERT-2 Training Script for Genome Sequence Data</p>
-<p>DNABERT-2は、DNA配列解析に特化したBERTベースモデルです。
-主な改良点：
-- BPE (Byte Pair Encoding) トークナイゼーション（k-mer不要）
-- より効率的なアテンション機構
-- DNA特有の特性を考慮したアーキテクチャ</p>
-<p>参考: DNABERT-2: Efficient Foundation Model and Benchmark for Multi-Species Genome
+<p>DNABERT-2 is a BERT base model specialized for DNA sequence analysis.
+Main improvements:
+- BPE (Byte Pair Encoding) Tokenization（k-merunnecessary)
+- More efficient attention mechanism
+- Architecture that takes into account the unique characteristics of DNA</p>
+<p>reference: DNABERT-2: Efficient Foundation Model and Benchmark for Multi-Species Genome
 <a href="https://github.com/MAGICS-LAB/DNABERT_2">https://github.com/MAGICS-LAB/DNABERT_2</a></p>
 </section>
 <section>
@@ -65,10 +65,10 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">class DNADatasetLoader:
     &#34;&#34;&#34;
-    DNA配列データセット用のローダー
+    Loader for DNA sequence datasets
 
-    既存のgenome_sequenceデータセットを読み込み、
-    DNABERT-2用に前処理を行います。
+    Load the existing genome_sequence dataset,
+    Perform preprocessing for DNABERT-2.
     &#34;&#34;&#34;
 
     def __init__(self, data_dir, split=&#34;train&#34;, test_size=0.1):
@@ -149,9 +149,9 @@ el.replaceWith(d);
         &#34;&#34;&#34;Return the HuggingFace Dataset object&#34;&#34;&#34;
         return self.data</code></pre>
 </details>
-<div class="desc"><p>DNA配列データセット用のローダー</p>
-<p>既存のgenome_sequenceデータセットを読み込み、
-DNABERT-2用に前処理を行います。</p></div>
+<div class="desc"><p>Loader for DNA sequence datasets</p>
+<p>Load the existing genome_sequence dataset,
+Perform preprocessing for DNABERT-2.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.dnabert2.main.DNADatasetLoader.get_dataset"><code class="name flex">

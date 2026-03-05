@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.evaluation.gpt2.proteingym_data_preparation API documentation</title>
-<meta name="description" content="ProteinGymデータセットのダウンロードと前処理ユーティリティ …">
+<meta name="description" content="ProteinGym dataset download and preprocessing utility …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,9 +36,9 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.evaluation.gpt2.proteingym_data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>ProteinGymデータセットのダウンロードと前処理ユーティリティ</p>
-<p>このスクリプトは、ProteinGymデータセットをダウンロードし、
-評価用に適切な形式に前処理します。</p>
+<p>ProteinGym dataset download and preprocessing utility</p>
+<p>This script downloads the ProteinGym dataset and
+Preprocess it into a format suitable for evaluation.</p>
 </section>
 <section>
 </section>
@@ -56,7 +56,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
-    # LEARNING_SOURCE_DIRの設定
+    # Setting LEARNING_SOURCE_DIR
     learning_source_dir = check_learning_source_dir()
 
     parser = argparse.ArgumentParser(description=&#34;ProteinGym data downloader and preparation utility&#34;)
@@ -87,7 +87,7 @@ el.replaceWith(d);
         help=&#34;Prepare evaluation data for specific assay ID&#34;,
     )
 
-    # バランスサンプリング関連のオプション
+    # Options related to balanced sampling
     parser.add_argument(
         &#34;--balanced_sampling&#34;,
         action=&#34;store_true&#34;,
@@ -157,11 +157,11 @@ el.replaceWith(d);
 
     args = parser.parse_args()
 
-    # デフォルトのdata_dirを環境変数から設定
+    # Set default data_dir from environment variable
     if args.data_dir is None:
         args.data_dir = f&#34;{learning_source_dir}/protein_sequence/gym&#34;
 
-    # data_dirの存在確認
+    # Check the existence of data_dir
     if not os.path.exists(os.path.dirname(args.data_dir)):
         print(f&#34;❌ ERROR: Parent directory does not exist: {os.path.dirname(args.data_dir)}&#34;)
         print(f&#34;Expected structure: {learning_source_dir}/protein_sequence/&#34;)
@@ -174,10 +174,9 @@ el.replaceWith(d);
     downloader = ProteinGymDataDownloader(data_dir=args.data_dir)
 
     try:
-        # ダウンロード
         if args.download:
             if args.download == &#34;recommended&#34;:
-                # protein_sequence評価に推奨されるデータセットをダウンロード
+                # Download the recommended dataset for protein_sequence evaluation
                 downloaded_paths = downloader.download_recommended_datasets(force_download=args.force)
                 logger.info(&#34;Recommended datasets downloaded:&#34;)
                 for dataset, path in downloaded_paths.items():
@@ -186,7 +185,7 @@ el.replaceWith(d);
                     else:
                         logger.warning(f&#34;  ✗ {dataset}: Failed to download&#34;)
             elif args.download == &#34;all&#34;:
-                # 主要なデータセットをすべてダウンロード
+                # Download all major datasets
                 main_datasets = [
                     &#34;substitutions&#34;,
                     &#34;indels&#34;,
@@ -203,7 +202,7 @@ el.replaceWith(d);
             else:
                 downloader.download_proteingym_data(args.download, force_download=args.force)
 
-        # アッセイリスト表示
+        # Display assay list
         if args.list_assays:
             ref_df = downloader.load_reference_file(data_type=args.data_type)
             print(f&#34;\nAvailable {args.data_type} assays:&#34;)
@@ -215,7 +214,7 @@ el.replaceWith(d);
 
             print(f&#34;\nTotal assays: {len(ref_df)}&#34;)
 
-        # テスト用アッセイの取得
+        # Get assay for testing
         if args.get_test_assays:
             ref_df = downloader.load_reference_file(data_type=args.data_type)
             test_assays = downloader.get_small_test_assays(ref_df, max_assays=args.get_test_assays)
@@ -224,7 +223,7 @@ el.replaceWith(d);
             for assay_id in test_assays:
                 print(f&#34;  {assay_id}&#34;)
 
-            # サンプル実行コマンドを表示
+            # Display sample execution command
             if test_assays:
                 print(&#34;\nExample evaluation command:&#34;)
                 print(&#34;python scripts/proteingym_evaluation.py \\&#34;)
@@ -233,7 +232,6 @@ el.replaceWith(d);
                 print(f&#34;    --output_dir results_{test_assays[0]}/&#34;)
                 print(&#34;    --batch_size 16&#34;)
 
-        # アッセイデータ準備（単一アッセイ）
         if args.prepare_assay:
             eval_data = downloader.prepare_evaluation_data(
                 assay_id=args.prepare_assay,
@@ -252,7 +250,7 @@ el.replaceWith(d);
             eval_data.to_csv(output_file, index=False)
             logger.info(f&#34;Evaluation data saved to: {output_file}&#34;)
 
-            # 統計情報を表示
+            # show statistics
             if args.balanced_sampling and args.score_threshold:
                 threshold = args.score_threshold
             else:
@@ -265,7 +263,7 @@ el.replaceWith(d);
             logger.info(f&#34;  Positive samples (&gt;= {threshold:.3f}): {positive_count}&#34;)
             logger.info(f&#34;  Negative samples (&lt; {threshold:.3f}): {negative_count}&#34;)
 
-        # 複数アッセイの一括バランス抽出
+        # Batch balance extraction of multiple assays
         if args.prepare_multiple_assays:
             balanced_datasets = downloader.prepare_multiple_assays_balanced(
                 assay_ids=args.prepare_multiple_assays,
@@ -279,7 +277,7 @@ el.replaceWith(d);
             for assay_id, df in balanced_datasets.items():
                 logger.info(f&#34;  {assay_id}: {len(df)} variants&#34;)
 
-        # テストデータセットの作成（メタデータから）
+        # Create test dataset (from metadata)
         if args.setup_test_data:
             try:
                 created_datasets = downloader.setup_test_data_from_metadata(
@@ -296,7 +294,7 @@ el.replaceWith(d);
                     )
                     logger.info(f&#34;    File: {info[&#39;file&#39;]}&#34;)
 
-                # 使用例を表示
+                # Show usage example
                 if created_datasets:
                     first_assay = list(created_datasets.keys())[0]
                     first_file = created_datasets[first_assay][&#34;file&#34;]
@@ -309,7 +307,7 @@ el.replaceWith(d);
                 logger.error(f&#34;Failed to create test data: {e}&#34;)
                 return 1
 
-        # テストデータセット作成
+        # Create test data set
         if args.create_test:
             downloader.create_test_dataset(args.create_test, n_variants=args.test_size)
 
@@ -336,52 +334,52 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ProteinGymDataDownloader:
-    &#34;&#34;&#34;ProteinGymデータセットのダウンロードと前処理クラス&#34;&#34;&#34;
+    &#34;&#34;&#34;ProteinGym dataset download and preprocessing class&#34;&#34;&#34;
 
-    # ProteinGym v1.3データセットの公式URL
+    # Official URL of ProteinGym v1.3 dataset
     PROTEINGYM_URLS = {
-        # DMS (Deep Mutational Scanning) データ - メイン評価用
+        # DMS (Deep Mutational Scanning) data - for main evaluation
         &#34;substitutions&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/DMS_ProteinGym_substitutions.zip&#34;,
         &#34;indels&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/DMS_ProteinGym_indels.zip&#34;,
-        # 参照ファイル - アッセイメタデータ
+        # Reference file - assay metadata
         &#34;reference_substitutions&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/DMS_substitutions.csv&#34;,
         &#34;reference_indels&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/DMS_indels.csv&#34;,
-        # 臨床変異データ - 補完評価用
+        # Clinical variation data - for complementary evaluation
         &#34;clinical_substitutions&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/clinical_ProteinGym_substitutions.zip&#34;,
         &#34;clinical_indels&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/clinical_ProteinGym_indels.zip&#34;,
         &#34;clinical_reference_substitutions&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/clinical_substitutions.csv&#34;,
         &#34;clinical_reference_indels&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/clinical_indels.csv&#34;,
-        # 生データ（必要に応じて）
+        # Raw data (if necessary)
         &#34;raw_substitutions&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/substitutions_raw_DMS.zip&#34;,
         &#34;raw_indels&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/indels_raw_DMS.zip&#34;,
-        # 多重配列アライメント（高度な分析用）
+        # Multiple sequence alignment (for advanced analysis)
         &#34;msa_dms&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/DMS_msa_files.zip&#34;,
         &#34;msa_clinical&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/clinical_msa_files.zip&#34;,
-        # タンパク質構造（構造ベース分析用）
+        # Protein structure (for structure-based analysis)
         &#34;structures&#34;: &#34;https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/ProteinGym_AF2_structures.zip&#34;,
     }
 
     def __init__(self, data_dir=&#34;./proteingym_data&#34;):
         &#34;&#34;&#34;
-        初期化
+        initialization
 
         Args:
-            data_dir (str): データ保存ディレクトリ
+            data_dir (str): Data storage directory
         &#34;&#34;&#34;
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
     def download_file(self, url, filename=None, force_download=False):
         &#34;&#34;&#34;
-        ファイルをダウンロード
+        Download file
 
         Args:
-            url (str): ダウンロードURL
-            filename (str): 保存ファイル名（Noneの場合はURLから推定）
-            force_download (bool): 既存ファイルを上書きするか
+            url (str): Download URL
+            filename (str): Save file name（NoneIn the case ofURLestimated from)
+            force_download (bool): Overwrite existing file?
 
         Returns:
-            str: ダウンロードされたファイルのパス
+            str: path of downloaded file
         &#34;&#34;&#34;
         if filename is None:
             filename = os.path.basename(urlparse(url).path)
@@ -426,14 +424,14 @@ el.replaceWith(d);
 
     def extract_zip(self, zip_path, extract_dir=None):
         &#34;&#34;&#34;
-        ZIPファイルを展開
+        Extract the ZIP file
 
         Args:
-            zip_path (str): ZIPファイルのパス
-            extract_dir (str): 展開先ディレクトリ（Noneの場合は同じディレクトリ）
+            zip_path (str): ZIP file path
+            extract_dir (str): Extraction destination directory (same directory if None)
 
         Returns:
-            str: 展開先ディレクトリ
+            str: extraction destination directory
         &#34;&#34;&#34;
         zip_path = Path(zip_path)
 
@@ -454,22 +452,22 @@ el.replaceWith(d);
 
     def download_proteingym_data(self, data_type=&#34;substitutions&#34;, force_download=False):
         &#34;&#34;&#34;
-        ProteinGymデータセットをダウンロード
+        Download the ProteinGym dataset
 
         Args:
-            data_type (str): データタイプ
-                          - &#39;substitutions&#39;: DMS単一置換データ（推奨）
-                          - &#39;indels&#39;: DMS挿入・欠失データ
-                          - &#39;clinical_substitutions&#39;: 臨床変異置換データ
-                          - &#39;clinical_indels&#39;: 臨床変異挿入・欠失データ
-                          - &#39;reference_substitutions&#39;: DMS置換参照ファイル
-                          - &#39;reference_indels&#39;: DMS挿入・欠失参照ファイル
-                          - &#39;msa_dms&#39;: 多重配列アライメント（DMS）
-                          - &#39;structures&#39;: タンパク質構造データ
-            force_download (bool): 強制ダウンロード
+            data_type (str): data type
+                          - &#39;substitutions&#39;: DMS single substitution data (recommended)
+                          - &#39;indels&#39;: DMS insertion/deletion data
+                          - &#39;clinical_substitutions&#39;: clinical variant substitution data
+                          - &#39;clinical_indels&#39;: clinical mutation insertion/deletion data
+                          - &#39;reference_substitutions&#39;: DMS substitution reference file
+                          - &#39;reference_indels&#39;: DMS insertion/deletion reference file
+                          - &#39;msa_dms&#39;: Multiple Sequence Alignment (DMS)
+                          - &#39;structures&#39;: protein structure data
+            force_download (bool): Force download
 
         Returns:
-            str: ダウンロードされたファイル/ディレクトリのパス
+            str: path of downloaded file/directory
         &#34;&#34;&#34;
         if data_type not in self.PROTEINGYM_URLS:
             available_types = list(self.PROTEINGYM_URLS.keys())
@@ -478,7 +476,7 @@ el.replaceWith(d);
         url = self.PROTEINGYM_URLS[data_type]
         downloaded_file = self.download_file(url, force_download=force_download)
 
-        # ZIPファイルの場合は展開
+        # If it is a ZIP file, extract it
         if downloaded_file.endswith(&#34;.zip&#34;):
             extracted_dir = self.extract_zip(downloaded_file)
             return extracted_dir
@@ -487,19 +485,19 @@ el.replaceWith(d);
 
     def load_reference_file(self, reference_path=None, data_type=&#34;substitutions&#34;):
         &#34;&#34;&#34;
-        ProteinGym参照ファイルを読み込み
+        Load ProteinGym reference file
 
         Args:
-            reference_path (str): 参照ファイルのパス（Noneの場合は自動ダウンロード）
-            data_type (str): データタイプ (&#39;substitutions&#39; or &#39;indels&#39;)
+            reference_path (str): Reference file path (automatically downloaded if None)
+            data_type (str): data type (&#39;substitutions&#39; or &#39;indels&#39;)
 
         Returns:
-            pd.DataFrame: 参照データ
+            pd.DataFrame: Reference data
         &#34;&#34;&#34;
         if reference_path is None:
             reference_key = f&#34;reference_{data_type}&#34;
             if reference_key not in self.PROTEINGYM_URLS:
-                reference_key = &#34;reference_substitutions&#34;  # デフォルト
+                reference_key = &#34;reference_substitutions&#34;  # default
             reference_path = self.download_proteingym_data(reference_key)
 
         logger.info(f&#34;Loading reference file: {reference_path}&#34;)
@@ -520,24 +518,24 @@ el.replaceWith(d);
         score_threshold=None,
     ):
         &#34;&#34;&#34;
-        特定のアッセイの評価データを準備
+        Prepare evaluation data for specific assays
 
         Args:
-            assay_id (str): アッセイID
-            data_dir (str): データディレクトリ（Noneの場合は自動ダウンロード）
-            max_variants (int): 最大変異数（制限しない場合はNone）
-            balanced_sampling (bool): バランスサンプリングを使用するか
-            positive_samples (int): 陽性サンプル数（balanced_sampling=Trueの場合）
-            negative_samples (int): 陰性サンプル数（balanced_sampling=Trueの場合）
-            score_threshold (float): 陽性/陰性の閾値（Noneの場合は中央値を使用）
+            assay_id (str): Assay ID
+            data_dir (str): data directory（None(automatic download if
+            max_variants (int): Maximum number of variants (None for no limit)
+            balanced_sampling (bool): Use balanced sampling?
+            positive_samples (int): Number of positive samples（balanced_sampling=Truein the case of)
+            negative_samples (int): Number of negative samples（balanced_sampling=Truein the case of)
+            score_threshold (float): Positive/negative threshold（None(use median value)
 
         Returns:
-            pd.DataFrame: 評価用データ
+            pd.DataFrame: Evaluation data
         &#34;&#34;&#34;
         if data_dir is None:
             data_dir = self.download_proteingym_data(&#34;substitutions&#34;)
 
-        # アッセイファイルを探す
+        # Find assay file
         assay_file = None
         data_path = Path(data_dir)
 
@@ -551,23 +549,23 @@ el.replaceWith(d);
         logger.info(f&#34;Loading assay data: {assay_file}&#34;)
         df = pd.read_csv(assay_file)
 
-        # 必要なカラムをチェック
+        # Check required columns
         required_columns = [&#34;mutant&#34;, &#34;mutated_sequence&#34;, &#34;DMS_score&#34;]
         missing_columns = [col for col in required_columns if col not in df.columns]
 
         if missing_columns:
             raise ValueError(f&#34;Missing required columns: {missing_columns}&#34;)
 
-        # データのクリーニング
+        # data cleaning
         df = df.dropna(subset=[&#34;DMS_score&#34;])
         original_size = len(df)
 
-        # バランスサンプリングの実行
+        # Execute balanced sampling
         if balanced_sampling:
             df = self._balanced_sampling(df, positive_samples, negative_samples, score_threshold)
             logger.info(f&#34;Applied balanced sampling: {original_size} → {len(df)} variants&#34;)
         elif max_variants and len(df) &gt; max_variants:
-            # 従来のランダムサンプリング
+            # Traditional random sampling
             logger.info(f&#34;Limiting to {max_variants} variants (from {len(df)})&#34;)
             df = df.sample(n=max_variants, random_state=42)
 
@@ -578,18 +576,18 @@ el.replaceWith(d);
 
     def create_test_dataset(self, output_file, n_variants=100):
         &#34;&#34;&#34;
-        テスト用の小さなデータセットを作成
+        Create a small dataset for testing
 
         Args:
-            output_file (str): 出力ファイルパス
-            n_variants (int): 変異数
+            output_file (str): Output file path
+            n_variants (int): number of variants
         &#34;&#34;&#34;
         logger.info(f&#34;Creating test dataset with {n_variants} variants&#34;)
 
-        # サンプルタンパク質配列
+        # Sample protein sequence
         base_sequence = &#34;MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHSLAKWKRQTLGQHDFSAGEGLYTHMKALRPDEDRLSPLHSVYVDQWDWERVMGDGERQFSTLKSTVEAIWAGIKATEAAVSEEFGLAPFLPDQIHFVHSQELLSRYPDLDAKGRERAIAKDLGAVFLVGIGGKLSDGHRHDVRAPDYDDWUAAFRVTLNEKLATWTEESS&#34;
 
-        # ランダムな変異を生成
+        # generate random mutations
         amino_acids = list(&#34;ACDEFGHIKLMNPQRSTVWY&#34;)
         data = []
 
@@ -597,12 +595,12 @@ el.replaceWith(d);
 
         for i in range(n_variants):
             if i == 0:
-                # 野生型
+                # wild type
                 mutant = &#34;WT&#34;
                 mutated_seq = base_sequence
                 score = 1.0
             else:
-                # ランダム変異
+                # random mutation
                 pos = np.random.randint(1, len(base_sequence) + 1)
                 orig_aa = base_sequence[pos - 1]
                 mut_aa = np.random.choice([aa for aa in amino_acids if aa != orig_aa])
@@ -610,8 +608,8 @@ el.replaceWith(d);
                 mutant = f&#34;{orig_aa}{pos}{mut_aa}&#34;
                 mutated_seq = base_sequence[: pos - 1] + mut_aa + base_sequence[pos:]
 
-                # ランダムなスコア（より現実的な分布）
-                score = np.random.beta(2, 5)  # 0に偏った分布
+                # Random scores (more realistic distribution)
+                score = np.random.beta(2, 5)  # distribution biased towards 0
 
             data.append(
                 {
@@ -630,16 +628,16 @@ el.replaceWith(d);
 
     def _balanced_sampling(self, df, positive_samples=1000, negative_samples=1000, score_threshold=None):
         &#34;&#34;&#34;
-        陽性と陰性のサンプルをバランス良く抽出
+        Extract positive and negative samples in a well-balanced manner
 
         Args:
-            df (pd.DataFrame): 元データフレーム
-            positive_samples (int): 陽性サンプル数
-            negative_samples (int): 陰性サンプル数
-            score_threshold (float): 陽性/陰性の閾値（Noneの場合は中央値を使用）
+            df (pd.DataFrame): Original data frame
+            positive_samples (int): Number of positive samples
+            negative_samples (int): Number of negative samples
+            score_threshold (float): Positive/negative threshold（None(use median value)
 
         Returns:
-            pd.DataFrame: バランス抽出されたデータフレーム
+            pd.DataFrame: Balanced extracted data frame
         &#34;&#34;&#34;
         if score_threshold is None:
             score_threshold = df[&#34;DMS_score&#34;].median()
@@ -647,16 +645,16 @@ el.replaceWith(d);
         else:
             logger.info(f&#34;Using specified threshold: {score_threshold:.3f}&#34;)
 
-        # 陽性・陰性にラベル分け
+        # Label as positive/negative
         positive_df = df[df[&#34;DMS_score&#34;] &gt;= score_threshold].copy()
         negative_df = df[df[&#34;DMS_score&#34;] &lt; score_threshold].copy()
 
         logger.info(f&#34;Original distribution: {len(positive_df)} positive, {len(negative_df)} negative&#34;)
 
-        # 各クラスからランダムサンプリング
+        # Random sampling from each class
         sampled_dfs = []
 
-        # 陽性サンプルの抽出
+        # Extracting positive samples
         if len(positive_df) &gt;= positive_samples:
             positive_sampled = positive_df.sample(n=positive_samples, random_state=42)
             logger.info(f&#34;Sampled {positive_samples} positive samples from {len(positive_df)} available&#34;)
@@ -666,7 +664,7 @@ el.replaceWith(d);
 
         sampled_dfs.append(positive_sampled)
 
-        # 陰性サンプルの抽出
+        # Extraction of negative samples
         if len(negative_df) &gt;= negative_samples:
             negative_sampled = negative_df.sample(n=negative_samples, random_state=42)
             logger.info(f&#34;Sampled {negative_samples} negative samples from {len(negative_df)} available&#34;)
@@ -676,11 +674,11 @@ el.replaceWith(d);
 
         sampled_dfs.append(negative_sampled)
 
-        # 結合してシャッフル
+        # combine and shuffle
         balanced_df = pd.concat(sampled_dfs, ignore_index=True)
         balanced_df = balanced_df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-        # バランス情報をログ出力
+        # Output balance information to log
         final_positive = len(balanced_df[balanced_df[&#34;DMS_score&#34;] &gt;= score_threshold])
         final_negative = len(balanced_df[balanced_df[&#34;DMS_score&#34;] &lt; score_threshold])
         logger.info(f&#34;Final balanced dataset: {final_positive} positive, {final_negative} negative&#34;)
@@ -697,18 +695,18 @@ el.replaceWith(d);
         output_dir=None,
     ):
         &#34;&#34;&#34;
-        複数のアッセイからバランス抽出したデータを準備
+        Prepare balanced data extraction from multiple assays
 
         Args:
-            assay_ids (list): アッセイIDのリスト
-            data_dir (str): データディレクトリ
-            positive_samples (int): アッセイあたりの陽性サンプル数
-            negative_samples (int): アッセイあたりの陰性サンプル数
-            score_threshold (float): 陽性/陰性の閾値
-            output_dir (str): 出力ディレクトリ
+            assay_ids (list): list of assay IDs
+            data_dir (str): data directory
+            positive_samples (int): Number of positive samples per assay
+            negative_samples (int): Number of negative samples per assay
+            score_threshold (float): Positive/negative threshold
+            output_dir (str): Output directory
 
         Returns:
-            dict: {assay_id: dataframe} の辞書
+            dict: Dictionary of {assay_id: dataframe}
         &#34;&#34;&#34;
         if output_dir:
             output_path = Path(output_dir)
@@ -730,7 +728,7 @@ el.replaceWith(d);
 
                 balanced_datasets[assay_id] = balanced_df
 
-                # 個別ファイルに保存
+                # save to separate file
                 if output_dir:
                     output_file = output_path / f&#34;{assay_id}_balanced.csv&#34;
                     balanced_df.to_csv(output_file, index=False)
@@ -750,19 +748,19 @@ el.replaceWith(d);
         test_assay_count=5,
     ):
         &#34;&#34;&#34;
-        メタデータファイルからテスト用のバランスデータセットを作成
+        Create a balanced dataset for testing from metadata files
 
         Args:
-            metadata_file (str): メタデータファイルのパス
-            positive_samples (int): 陽性サンプル数
-            negative_samples (int): 陰性サンプル数
-            test_assay_count (int): 作成するテストアッセイ数
+            metadata_file (str): Metadata file path
+            positive_samples (int): Number of positive samples
+            negative_samples (int): Number of negative samples
+            test_assay_count (int): Number of test assays to create
 
         Returns:
-            dict: 作成されたテストデータセットの情報
+            dict: Information about the created test dataset
         &#34;&#34;&#34;
         if metadata_file is None:
-            # デフォルトのメタデータファイルを探す
+            # defaultFind the metadata file for
             possible_paths = [
                 Path(self.data_dir) / &#34;DMS_substitutions.csv&#34;,
                 Path(self.data_dir) / &#34;reference_substitutions.csv&#34;,
@@ -779,25 +777,25 @@ el.replaceWith(d);
 
         logger.info(f&#34;Setting up test data from metadata: {metadata_file}&#34;)
 
-        # メタデータを読み込み
+        # load metadata
         metadata_df = pd.read_csv(metadata_file)
         logger.info(f&#34;Found {len(metadata_df)} assays in metadata&#34;)
 
-        # テスト用ディレクトリを作成
+        # create test directory
         test_data_dir = Path(self.data_dir) / &#34;balanced_evaluation_data&#34;
         test_data_dir.mkdir(exist_ok=True)
 
-        # 上位のアッセイからテスト用を選択
+        # Select one for testing from the top assays
         test_assays = metadata_df.head(test_assay_count)
         created_datasets = {}
 
         for _, row in test_assays.iterrows():
             assay_id = row[&#34;DMS_id&#34;]
-            target_sequence = row.get(&#34;target_seq&#34;, &#34;MKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFVAPFPEVFGKEKVNEL&#34;)  # デフォルト配列
+            target_sequence = row.get(&#34;target_seq&#34;, &#34;MKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFVAPFPEVFGKEKVNEL&#34;)  # Default array
 
             logger.info(f&#34;Creating test data for assay: {assay_id}&#34;)
 
-            # サンプル変異データを生成
+            # Generate sample mutation data
             test_data = self._generate_sample_mutations(
                 assay_id=assay_id,
                 target_seq=target_sequence,
@@ -805,7 +803,7 @@ el.replaceWith(d);
                 negative_samples=negative_samples,
             )
 
-            # ファイルに保存
+            # save to file
             output_file = test_data_dir / f&#34;{assay_id}_balanced_evaluation_data.csv&#34;
             test_data.to_csv(output_file, index=False)
 
@@ -822,34 +820,34 @@ el.replaceWith(d);
 
     def _generate_sample_mutations(self, assay_id, target_seq, positive_samples, negative_samples):
         &#34;&#34;&#34;
-        特定のアッセイ用にサンプル変異データを生成
+        Generate sample mutation data for specific assays
 
         Args:
-            assay_id (str): アッセイID
-            target_seq (str): 標的配列
-            positive_samples (int): 陽性サンプル数
-            negative_samples (int): 陰性サンプル数
+            assay_id (str): Assay ID
+            target_seq (str): target sequence
+            positive_samples (int): Number of positive samples
+            negative_samples (int): Number of negative samples
 
         Returns:
-            pd.DataFrame: 生成された変異データ
+            pd.DataFrame: Generated mutation data
         &#34;&#34;&#34;
         import random
 
         mutations = []
         amino_acids = &#34;ACDEFGHIKLMNPQRSTVWY&#34;
 
-        # ランダムシードを設定（再現性のため）
+        # Set random seed (for reproducibility)
         random.seed(42)
         np.random.seed(42)
 
-        # 陽性サンプル生成（高いDMS_score: 0.5〜1.5）
+        # Positive sample generation (high DMS_score: 0.5~1.5)
         for _i in range(positive_samples):
-            pos = random.randint(1, min(len(target_seq), 200))  # 配列長の制限
+            pos = random.randint(1, min(len(target_seq), 200))  # Array length limit
             if pos &lt;= len(target_seq):
                 orig_aa = target_seq[pos - 1]
                 mut_aa = random.choice([aa for aa in amino_acids if aa != orig_aa])
 
-                # 変異配列を作成
+                # create mutant array
                 mut_sequence = target_seq[: pos - 1] + mut_aa + target_seq[pos:]
             else:
                 orig_aa = &#34;A&#34;
@@ -861,13 +859,13 @@ el.replaceWith(d);
                     &#34;mutant&#34;: f&#34;{orig_aa}{pos}{mut_aa}&#34;,
                     &#34;mutated_sequence&#34;: mut_sequence,
                     &#34;target_seq&#34;: target_seq,
-                    &#34;DMS_score&#34;: np.random.uniform(0.5, 1.5),  # 陽性スコア
+                    &#34;DMS_score&#34;: np.random.uniform(0.5, 1.5),  # Positive score
                     &#34;protein_name&#34;: assay_id,
                     &#34;DMS_id&#34;: assay_id,
                 }
             )
 
-        # 陰性サンプル生成（低いDMS_score: -1.5〜0.0）
+        # Negative sample generation (low DMS_score: -1.5~0.0)
         for _i in range(negative_samples):
             pos = random.randint(1, min(len(target_seq), 200))
             if pos &lt;= len(target_seq):
@@ -884,13 +882,13 @@ el.replaceWith(d);
                     &#34;mutant&#34;: f&#34;{orig_aa}{pos}{mut_aa}&#34;,
                     &#34;mutated_sequence&#34;: mut_sequence,
                     &#34;target_seq&#34;: target_seq,
-                    &#34;DMS_score&#34;: np.random.uniform(-1.5, 0.0),  # 陰性スコア
+                    &#34;DMS_score&#34;: np.random.uniform(-1.5, 0.0),  # Negative score
                     &#34;protein_name&#34;: assay_id,
                     &#34;DMS_id&#34;: assay_id,
                 }
             )
 
-        # データフレームを作成してシャッフル
+        # Create a data frame and shuffle it
         df = pd.DataFrame(mutations)
         df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
@@ -898,21 +896,21 @@ el.replaceWith(d);
 
     def download_recommended_datasets(self, force_download=False):
         &#34;&#34;&#34;
-        protein_sequence評価に推奨されるデータセットをダウンロード
+        Download recommended datasets for protein_sequence evaluation
 
         Args:
-            force_download (bool): 強制ダウンロード
+            force_download (bool): Force download
 
         Returns:
-            dict: ダウンロードされたファイルパスの辞書
+            dict: dictionary of downloaded file paths
         &#34;&#34;&#34;
         logger.info(&#34;Downloading recommended datasets for protein_sequence evaluation...&#34;)
 
         recommended_datasets = [
-            &#34;substitutions&#34;,  # メイン評価用：DMS単一置換データ
-            &#34;reference_substitutions&#34;,  # アッセイメタデータ
-            &#34;clinical_substitutions&#34;,  # 補完評価用：臨床変異データ
-            &#34;clinical_reference_substitutions&#34;,  # 臨床変異メタデータ
+            &#34;substitutions&#34;,  # For main evaluation: DMS single substitution data
+            &#34;reference_substitutions&#34;,  # assay metadata
+            &#34;clinical_substitutions&#34;,  # For complementary evaluation: clinical mutation data
+            &#34;clinical_reference_substitutions&#34;,  # Clinical variant metadata
         ]
 
         downloaded_paths = {}
@@ -931,26 +929,26 @@ el.replaceWith(d);
 
     def get_small_test_assays(self, reference_df, max_assays=5, max_variants_per_assay=500):
         &#34;&#34;&#34;
-        テスト用の小さなアッセイを選択
+        Select a small assay for testing
 
         Args:
-            reference_df (pd.DataFrame): 参照データフレーム
-            max_assays (int): 最大アッセイ数
-            max_variants_per_assay (int): アッセイあたりの最大変異数
+            reference_df (pd.DataFrame): Reference data frame
+            max_assays (int): Maximum number of assays
+            max_variants_per_assay (int): Maximum number of variants per assay
 
         Returns:
-            list: 選択されたアッセイIDのリスト
+            list: list of selected assay IDs
         &#34;&#34;&#34;
-        # 変異数でフィルタリング
+        # Filter by number of mutations
         if &#34;DMS_total_number_mutants&#34; in reference_df.columns:
             filtered_df = reference_df[
                 (reference_df[&#34;DMS_total_number_mutants&#34;] &lt;= max_variants_per_assay)
-                &amp; (reference_df[&#34;DMS_total_number_mutants&#34;] &gt;= 50)  # 最小50変異
+                &amp; (reference_df[&#34;DMS_total_number_mutants&#34;] &gt;= 50)  # Minimum 50 mutations
             ]
         else:
             filtered_df = reference_df
 
-        # ランダムに選択
+        # randomly selected
         if len(filtered_df) &gt; max_assays:
             selected_df = filtered_df.sample(n=max_assays, random_state=42)
         else:
@@ -967,12 +965,12 @@ el.replaceWith(d);
 
         return assay_ids</code></pre>
 </details>
-<div class="desc"><p>ProteinGymデータセットのダウンロードと前処理クラス</p>
-<p>初期化</p>
+<div class="desc"><p>ProteinGym dataset download and preprocessing class</p>
+<p>initialization</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>data_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>データ保存ディレクトリ</dd>
+<dd>Data storage directory</dd>
 </dl></div>
 <h3>Class variables</h3>
 <dl>
@@ -993,18 +991,18 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def create_test_dataset(self, output_file, n_variants=100):
     &#34;&#34;&#34;
-    テスト用の小さなデータセットを作成
+    Create a small dataset for testing
 
     Args:
-        output_file (str): 出力ファイルパス
-        n_variants (int): 変異数
+        output_file (str): Output file path
+        n_variants (int): number of variants
     &#34;&#34;&#34;
     logger.info(f&#34;Creating test dataset with {n_variants} variants&#34;)
 
-    # サンプルタンパク質配列
+    # Sample protein sequence
     base_sequence = &#34;MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHSLAKWKRQTLGQHDFSAGEGLYTHMKALRPDEDRLSPLHSVYVDQWDWERVMGDGERQFSTLKSTVEAIWAGIKATEAAVSEEFGLAPFLPDQIHFVHSQELLSRYPDLDAKGRERAIAKDLGAVFLVGIGGKLSDGHRHDVRAPDYDDWUAAFRVTLNEKLATWTEESS&#34;
 
-    # ランダムな変異を生成
+    # generate random mutations
     amino_acids = list(&#34;ACDEFGHIKLMNPQRSTVWY&#34;)
     data = []
 
@@ -1012,12 +1010,12 @@ el.replaceWith(d);
 
     for i in range(n_variants):
         if i == 0:
-            # 野生型
+            # wild type
             mutant = &#34;WT&#34;
             mutated_seq = base_sequence
             score = 1.0
         else:
-            # ランダム変異
+            # random mutation
             pos = np.random.randint(1, len(base_sequence) + 1)
             orig_aa = base_sequence[pos - 1]
             mut_aa = np.random.choice([aa for aa in amino_acids if aa != orig_aa])
@@ -1025,8 +1023,8 @@ el.replaceWith(d);
             mutant = f&#34;{orig_aa}{pos}{mut_aa}&#34;
             mutated_seq = base_sequence[: pos - 1] + mut_aa + base_sequence[pos:]
 
-            # ランダムなスコア（より現実的な分布）
-            score = np.random.beta(2, 5)  # 0に偏った分布
+            # Random scores (more realistic distribution)
+            score = np.random.beta(2, 5)  # distribution biased towards 0
 
         data.append(
             {
@@ -1043,13 +1041,13 @@ el.replaceWith(d);
     logger.info(f&#34;Test dataset created: {output_file}&#34;)
     logger.info(f&#34;Score statistics: mean={df[&#39;DMS_score&#39;].mean():.3f}, std={df[&#39;DMS_score&#39;].std():.3f}&#34;)</code></pre>
 </details>
-<div class="desc"><p>テスト用の小さなデータセットを作成</p>
+<div class="desc"><p>Create a small dataset for testing</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>output_file</code></strong> :&ensp;<code>str</code></dt>
-<dd>出力ファイルパス</dd>
+<dd>Output file path</dd>
 <dt><strong><code>n_variants</code></strong> :&ensp;<code>int</code></dt>
-<dd>変異数</dd>
+<dd>number of variants</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.download_file"><code class="name flex">
@@ -1062,15 +1060,15 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_file(self, url, filename=None, force_download=False):
     &#34;&#34;&#34;
-    ファイルをダウンロード
+    Download file
 
     Args:
-        url (str): ダウンロードURL
-        filename (str): 保存ファイル名（Noneの場合はURLから推定）
-        force_download (bool): 既存ファイルを上書きするか
+        url (str): Download URL
+        filename (str): Save file name（NoneIn the case ofURLestimated from)
+        force_download (bool): Overwrite existing file?
 
     Returns:
-        str: ダウンロードされたファイルのパス
+        str: path of downloaded file
     &#34;&#34;&#34;
     if filename is None:
         filename = os.path.basename(urlparse(url).path)
@@ -1113,20 +1111,20 @@ el.replaceWith(d);
             filepath.unlink()
         raise</code></pre>
 </details>
-<div class="desc"><p>ファイルをダウンロード</p>
+<div class="desc"><p>Download file</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
-<dd>ダウンロードURL</dd>
+<dd>Download URL</dd>
 <dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
-<dd>保存ファイル名（Noneの場合はURLから推定）</dd>
+<dd>Save file name（NoneIn the case ofURLestimated from)</dd>
 <dt><strong><code>force_download</code></strong> :&ensp;<code>bool</code></dt>
-<dd>既存ファイルを上書きするか</dd>
+<dd>Overwrite existing file?</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>ダウンロードされたファイルのパス</dd>
+<dd>path of downloaded file</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.download_proteingym_data"><code class="name flex">
@@ -1139,22 +1137,22 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_proteingym_data(self, data_type=&#34;substitutions&#34;, force_download=False):
     &#34;&#34;&#34;
-    ProteinGymデータセットをダウンロード
+    Download the ProteinGym dataset
 
     Args:
-        data_type (str): データタイプ
-                      - &#39;substitutions&#39;: DMS単一置換データ（推奨）
-                      - &#39;indels&#39;: DMS挿入・欠失データ
-                      - &#39;clinical_substitutions&#39;: 臨床変異置換データ
-                      - &#39;clinical_indels&#39;: 臨床変異挿入・欠失データ
-                      - &#39;reference_substitutions&#39;: DMS置換参照ファイル
-                      - &#39;reference_indels&#39;: DMS挿入・欠失参照ファイル
-                      - &#39;msa_dms&#39;: 多重配列アライメント（DMS）
-                      - &#39;structures&#39;: タンパク質構造データ
-        force_download (bool): 強制ダウンロード
+        data_type (str): data type
+                      - &#39;substitutions&#39;: DMS single substitution data (recommended)
+                      - &#39;indels&#39;: DMS insertion/deletion data
+                      - &#39;clinical_substitutions&#39;: clinical variant substitution data
+                      - &#39;clinical_indels&#39;: clinical mutation insertion/deletion data
+                      - &#39;reference_substitutions&#39;: DMS substitution reference file
+                      - &#39;reference_indels&#39;: DMS insertion/deletion reference file
+                      - &#39;msa_dms&#39;: Multiple Sequence Alignment (DMS)
+                      - &#39;structures&#39;: protein structure data
+        force_download (bool): Force download
 
     Returns:
-        str: ダウンロードされたファイル/ディレクトリのパス
+        str: path of downloaded file/directory
     &#34;&#34;&#34;
     if data_type not in self.PROTEINGYM_URLS:
         available_types = list(self.PROTEINGYM_URLS.keys())
@@ -1163,33 +1161,33 @@ el.replaceWith(d);
     url = self.PROTEINGYM_URLS[data_type]
     downloaded_file = self.download_file(url, force_download=force_download)
 
-    # ZIPファイルの場合は展開
+    # If it is a ZIP file, extract it
     if downloaded_file.endswith(&#34;.zip&#34;):
         extracted_dir = self.extract_zip(downloaded_file)
         return extracted_dir
     else:
         return downloaded_file</code></pre>
 </details>
-<div class="desc"><p>ProteinGymデータセットをダウンロード</p>
+<div class="desc"><p>Download the ProteinGym dataset</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>data_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>データタイプ
-- 'substitutions': DMS単一置換データ（推奨）
-- 'indels': DMS挿入・欠失データ
-- 'clinical_substitutions': 臨床変異置換データ
-- 'clinical_indels': 臨床変異挿入・欠失データ
-- 'reference_substitutions': DMS置換参照ファイル
-- 'reference_indels': DMS挿入・欠失参照ファイル
-- 'msa_dms': 多重配列アライメント（DMS）
-- 'structures': タンパク質構造データ</dd>
+<dd>data type
+- 'substitutions': DMS single substitution data (recommended)
+- 'indels': DMS insertion/deletion data
+- 'clinical_substitutions': clinical variant substitution data
+- 'clinical_indels': clinical mutation insertion/deletion data
+- 'reference_substitutions': DMS substitution reference file
+- 'reference_indels': DMS insertion/deletion reference file
+- 'msa_dms': Multiple Sequence Alignment (DMS)
+- 'structures': protein structure data</dd>
 <dt><strong><code>force_download</code></strong> :&ensp;<code>bool</code></dt>
-<dd>強制ダウンロード</dd>
+<dd>Force download</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>ダウンロードされたファイル/ディレクトリのパス</dd>
+<dd>path of downloaded file/directory</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.download_recommended_datasets"><code class="name flex">
@@ -1202,21 +1200,21 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def download_recommended_datasets(self, force_download=False):
     &#34;&#34;&#34;
-    protein_sequence評価に推奨されるデータセットをダウンロード
+    Download recommended datasets for protein_sequence evaluation
 
     Args:
-        force_download (bool): 強制ダウンロード
+        force_download (bool): Force download
 
     Returns:
-        dict: ダウンロードされたファイルパスの辞書
+        dict: dictionary of downloaded file paths
     &#34;&#34;&#34;
     logger.info(&#34;Downloading recommended datasets for protein_sequence evaluation...&#34;)
 
     recommended_datasets = [
-        &#34;substitutions&#34;,  # メイン評価用：DMS単一置換データ
-        &#34;reference_substitutions&#34;,  # アッセイメタデータ
-        &#34;clinical_substitutions&#34;,  # 補完評価用：臨床変異データ
-        &#34;clinical_reference_substitutions&#34;,  # 臨床変異メタデータ
+        &#34;substitutions&#34;,  # For main evaluation: DMS single substitution data
+        &#34;reference_substitutions&#34;,  # assay metadata
+        &#34;clinical_substitutions&#34;,  # For complementary evaluation: clinical mutation data
+        &#34;clinical_reference_substitutions&#34;,  # Clinical variant metadata
     ]
 
     downloaded_paths = {}
@@ -1233,16 +1231,16 @@ el.replaceWith(d);
 
     return downloaded_paths</code></pre>
 </details>
-<div class="desc"><p>protein_sequence評価に推奨されるデータセットをダウンロード</p>
+<div class="desc"><p>Download recommended datasets for protein_sequence evaluation</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>force_download</code></strong> :&ensp;<code>bool</code></dt>
-<dd>強制ダウンロード</dd>
+<dd>Force download</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>dict</code></dt>
-<dd>ダウンロードされたファイルパスの辞書</dd>
+<dd>dictionary of downloaded file paths</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.extract_zip"><code class="name flex">
@@ -1255,14 +1253,14 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def extract_zip(self, zip_path, extract_dir=None):
     &#34;&#34;&#34;
-    ZIPファイルを展開
+    Extract the ZIP file
 
     Args:
-        zip_path (str): ZIPファイルのパス
-        extract_dir (str): 展開先ディレクトリ（Noneの場合は同じディレクトリ）
+        zip_path (str): ZIP file path
+        extract_dir (str): Extraction destination directory (same directory if None)
 
     Returns:
-        str: 展開先ディレクトリ
+        str: extraction destination directory
     &#34;&#34;&#34;
     zip_path = Path(zip_path)
 
@@ -1281,18 +1279,18 @@ el.replaceWith(d);
     logger.info(f&#34;Extracted successfully to {extract_dir}&#34;)
     return str(extract_dir)</code></pre>
 </details>
-<div class="desc"><p>ZIPファイルを展開</p>
+<div class="desc"><p>Extract the ZIP file</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>zip_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>ZIPファイルのパス</dd>
+<dd>ZIP file path</dd>
 <dt><strong><code>extract_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>展開先ディレクトリ（Noneの場合は同じディレクトリ）</dd>
+<dd>Extraction destination directory (same directory if None)</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
-<dd>展開先ディレクトリ</dd>
+<dd>extraction destination directory</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.get_small_test_assays"><code class="name flex">
@@ -1305,26 +1303,26 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_small_test_assays(self, reference_df, max_assays=5, max_variants_per_assay=500):
     &#34;&#34;&#34;
-    テスト用の小さなアッセイを選択
+    Select a small assay for testing
 
     Args:
-        reference_df (pd.DataFrame): 参照データフレーム
-        max_assays (int): 最大アッセイ数
-        max_variants_per_assay (int): アッセイあたりの最大変異数
+        reference_df (pd.DataFrame): Reference data frame
+        max_assays (int): Maximum number of assays
+        max_variants_per_assay (int): Maximum number of variants per assay
 
     Returns:
-        list: 選択されたアッセイIDのリスト
+        list: list of selected assay IDs
     &#34;&#34;&#34;
-    # 変異数でフィルタリング
+    # Filter by number of mutations
     if &#34;DMS_total_number_mutants&#34; in reference_df.columns:
         filtered_df = reference_df[
             (reference_df[&#34;DMS_total_number_mutants&#34;] &lt;= max_variants_per_assay)
-            &amp; (reference_df[&#34;DMS_total_number_mutants&#34;] &gt;= 50)  # 最小50変異
+            &amp; (reference_df[&#34;DMS_total_number_mutants&#34;] &gt;= 50)  # Minimum 50 mutations
         ]
     else:
         filtered_df = reference_df
 
-    # ランダムに選択
+    # randomly selected
     if len(filtered_df) &gt; max_assays:
         selected_df = filtered_df.sample(n=max_assays, random_state=42)
     else:
@@ -1341,20 +1339,20 @@ el.replaceWith(d);
 
     return assay_ids</code></pre>
 </details>
-<div class="desc"><p>テスト用の小さなアッセイを選択</p>
+<div class="desc"><p>Select a small assay for testing</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>reference_df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
-<dd>参照データフレーム</dd>
+<dd>Reference data frame</dd>
 <dt><strong><code>max_assays</code></strong> :&ensp;<code>int</code></dt>
-<dd>最大アッセイ数</dd>
+<dd>Maximum number of assays</dd>
 <dt><strong><code>max_variants_per_assay</code></strong> :&ensp;<code>int</code></dt>
-<dd>アッセイあたりの最大変異数</dd>
+<dd>Maximum number of variants per assay</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>list</code></dt>
-<dd>選択されたアッセイIDのリスト</dd>
+<dd>list of selected assay IDs</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.load_reference_file"><code class="name flex">
@@ -1367,19 +1365,19 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def load_reference_file(self, reference_path=None, data_type=&#34;substitutions&#34;):
     &#34;&#34;&#34;
-    ProteinGym参照ファイルを読み込み
+    Load ProteinGym reference file
 
     Args:
-        reference_path (str): 参照ファイルのパス（Noneの場合は自動ダウンロード）
-        data_type (str): データタイプ (&#39;substitutions&#39; or &#39;indels&#39;)
+        reference_path (str): Reference file path (automatically downloaded if None)
+        data_type (str): data type (&#39;substitutions&#39; or &#39;indels&#39;)
 
     Returns:
-        pd.DataFrame: 参照データ
+        pd.DataFrame: Reference data
     &#34;&#34;&#34;
     if reference_path is None:
         reference_key = f&#34;reference_{data_type}&#34;
         if reference_key not in self.PROTEINGYM_URLS:
-            reference_key = &#34;reference_substitutions&#34;  # デフォルト
+            reference_key = &#34;reference_substitutions&#34;  # default
         reference_path = self.download_proteingym_data(reference_key)
 
     logger.info(f&#34;Loading reference file: {reference_path}&#34;)
@@ -1389,18 +1387,18 @@ el.replaceWith(d);
 
     return df</code></pre>
 </details>
-<div class="desc"><p>ProteinGym参照ファイルを読み込み</p>
+<div class="desc"><p>Load ProteinGym reference file</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>reference_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>参照ファイルのパス（Noneの場合は自動ダウンロード）</dd>
+<dd>Reference file path (automatically downloaded if None)</dd>
 <dt><strong><code>data_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>データタイプ ('substitutions' or 'indels')</dd>
+<dd>data type ('substitutions' or 'indels')</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>pd.DataFrame</code></dt>
-<dd>参照データ</dd>
+<dd>Reference data</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.prepare_evaluation_data"><code class="name flex">
@@ -1422,24 +1420,24 @@ el.replaceWith(d);
     score_threshold=None,
 ):
     &#34;&#34;&#34;
-    特定のアッセイの評価データを準備
+    Prepare evaluation data for specific assays
 
     Args:
-        assay_id (str): アッセイID
-        data_dir (str): データディレクトリ（Noneの場合は自動ダウンロード）
-        max_variants (int): 最大変異数（制限しない場合はNone）
-        balanced_sampling (bool): バランスサンプリングを使用するか
-        positive_samples (int): 陽性サンプル数（balanced_sampling=Trueの場合）
-        negative_samples (int): 陰性サンプル数（balanced_sampling=Trueの場合）
-        score_threshold (float): 陽性/陰性の閾値（Noneの場合は中央値を使用）
+        assay_id (str): Assay ID
+        data_dir (str): data directory（None(automatic download if
+        max_variants (int): Maximum number of variants (None for no limit)
+        balanced_sampling (bool): Use balanced sampling?
+        positive_samples (int): Number of positive samples（balanced_sampling=Truein the case of)
+        negative_samples (int): Number of negative samples（balanced_sampling=Truein the case of)
+        score_threshold (float): Positive/negative threshold（None(use median value)
 
     Returns:
-        pd.DataFrame: 評価用データ
+        pd.DataFrame: Evaluation data
     &#34;&#34;&#34;
     if data_dir is None:
         data_dir = self.download_proteingym_data(&#34;substitutions&#34;)
 
-    # アッセイファイルを探す
+    # Find assay file
     assay_file = None
     data_path = Path(data_dir)
 
@@ -1453,23 +1451,23 @@ el.replaceWith(d);
     logger.info(f&#34;Loading assay data: {assay_file}&#34;)
     df = pd.read_csv(assay_file)
 
-    # 必要なカラムをチェック
+    # Check required columns
     required_columns = [&#34;mutant&#34;, &#34;mutated_sequence&#34;, &#34;DMS_score&#34;]
     missing_columns = [col for col in required_columns if col not in df.columns]
 
     if missing_columns:
         raise ValueError(f&#34;Missing required columns: {missing_columns}&#34;)
 
-    # データのクリーニング
+    # data cleaning
     df = df.dropna(subset=[&#34;DMS_score&#34;])
     original_size = len(df)
 
-    # バランスサンプリングの実行
+    # Execute balanced sampling
     if balanced_sampling:
         df = self._balanced_sampling(df, positive_samples, negative_samples, score_threshold)
         logger.info(f&#34;Applied balanced sampling: {original_size} → {len(df)} variants&#34;)
     elif max_variants and len(df) &gt; max_variants:
-        # 従来のランダムサンプリング
+        # Traditional random sampling
         logger.info(f&#34;Limiting to {max_variants} variants (from {len(df)})&#34;)
         df = df.sample(n=max_variants, random_state=42)
 
@@ -1478,28 +1476,28 @@ el.replaceWith(d);
 
     return df</code></pre>
 </details>
-<div class="desc"><p>特定のアッセイの評価データを準備</p>
+<div class="desc"><p>Prepare evaluation data for specific assays</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>assay_id</code></strong> :&ensp;<code>str</code></dt>
-<dd>アッセイID</dd>
+<dd>Assay ID</dd>
 <dt><strong><code>data_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>データディレクトリ（Noneの場合は自動ダウンロード）</dd>
+<dd>data directory（None(automatic download if</dd>
 <dt><strong><code>max_variants</code></strong> :&ensp;<code>int</code></dt>
-<dd>最大変異数（制限しない場合はNone）</dd>
+<dd>Maximum number of variants (None for no limit)</dd>
 <dt><strong><code>balanced_sampling</code></strong> :&ensp;<code>bool</code></dt>
-<dd>バランスサンプリングを使用するか</dd>
+<dd>Use balanced sampling?</dd>
 <dt><strong><code>positive_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>陽性サンプル数（balanced_sampling=Trueの場合）</dd>
+<dd>Number of positive samples（balanced_sampling=Truein the case of)</dd>
 <dt><strong><code>negative_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>陰性サンプル数（balanced_sampling=Trueの場合）</dd>
+<dd>Number of negative samples（balanced_sampling=Truein the case of)</dd>
 <dt><strong><code>score_threshold</code></strong> :&ensp;<code>float</code></dt>
-<dd>陽性/陰性の閾値（Noneの場合は中央値を使用）</dd>
+<dd>Positive/negative threshold（None(use median value)</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>pd.DataFrame</code></dt>
-<dd>評価用データ</dd>
+<dd>Evaluation data</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.prepare_multiple_assays_balanced"><code class="name flex">
@@ -1520,18 +1518,18 @@ el.replaceWith(d);
     output_dir=None,
 ):
     &#34;&#34;&#34;
-    複数のアッセイからバランス抽出したデータを準備
+    Prepare balanced data extraction from multiple assays
 
     Args:
-        assay_ids (list): アッセイIDのリスト
-        data_dir (str): データディレクトリ
-        positive_samples (int): アッセイあたりの陽性サンプル数
-        negative_samples (int): アッセイあたりの陰性サンプル数
-        score_threshold (float): 陽性/陰性の閾値
-        output_dir (str): 出力ディレクトリ
+        assay_ids (list): list of assay IDs
+        data_dir (str): data directory
+        positive_samples (int): Number of positive samples per assay
+        negative_samples (int): Number of negative samples per assay
+        score_threshold (float): Positive/negative threshold
+        output_dir (str): Output directory
 
     Returns:
-        dict: {assay_id: dataframe} の辞書
+        dict: Dictionary of {assay_id: dataframe}
     &#34;&#34;&#34;
     if output_dir:
         output_path = Path(output_dir)
@@ -1553,7 +1551,7 @@ el.replaceWith(d);
 
             balanced_datasets[assay_id] = balanced_df
 
-            # 個別ファイルに保存
+            # save to separate file
             if output_dir:
                 output_file = output_path / f&#34;{assay_id}_balanced.csv&#34;
                 balanced_df.to_csv(output_file, index=False)
@@ -1565,26 +1563,26 @@ el.replaceWith(d);
 
     return balanced_datasets</code></pre>
 </details>
-<div class="desc"><p>複数のアッセイからバランス抽出したデータを準備</p>
+<div class="desc"><p>Prepare balanced data extraction from multiple assays</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>assay_ids</code></strong> :&ensp;<code>list</code></dt>
-<dd>アッセイIDのリスト</dd>
+<dd>list of assay IDs</dd>
 <dt><strong><code>data_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>データディレクトリ</dd>
+<dd>data directory</dd>
 <dt><strong><code>positive_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>アッセイあたりの陽性サンプル数</dd>
+<dd>Number of positive samples per assay</dd>
 <dt><strong><code>negative_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>アッセイあたりの陰性サンプル数</dd>
+<dd>Number of negative samples per assay</dd>
 <dt><strong><code>score_threshold</code></strong> :&ensp;<code>float</code></dt>
-<dd>陽性/陰性の閾値</dd>
+<dd>Positive/negative threshold</dd>
 <dt><strong><code>output_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>出力ディレクトリ</dd>
+<dd>Output directory</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>dict</code></dt>
-<dd>{assay_id: dataframe} の辞書</dd>
+<dd>Dictionary of {assay_id: dataframe}</dd>
 </dl></div>
 </dd>
 <dt id="molcrawl.evaluation.gpt2.proteingym_data_preparation.ProteinGymDataDownloader.setup_test_data_from_metadata"><code class="name flex">
@@ -1603,19 +1601,19 @@ el.replaceWith(d);
     test_assay_count=5,
 ):
     &#34;&#34;&#34;
-    メタデータファイルからテスト用のバランスデータセットを作成
+    Create a balanced dataset for testing from metadata files
 
     Args:
-        metadata_file (str): メタデータファイルのパス
-        positive_samples (int): 陽性サンプル数
-        negative_samples (int): 陰性サンプル数
-        test_assay_count (int): 作成するテストアッセイ数
+        metadata_file (str): Metadata file path
+        positive_samples (int): Number of positive samples
+        negative_samples (int): Number of negative samples
+        test_assay_count (int): Number of test assays to create
 
     Returns:
-        dict: 作成されたテストデータセットの情報
+        dict: Information about the created test dataset
     &#34;&#34;&#34;
     if metadata_file is None:
-        # デフォルトのメタデータファイルを探す
+        # defaultFind the metadata file for
         possible_paths = [
             Path(self.data_dir) / &#34;DMS_substitutions.csv&#34;,
             Path(self.data_dir) / &#34;reference_substitutions.csv&#34;,
@@ -1632,25 +1630,25 @@ el.replaceWith(d);
 
     logger.info(f&#34;Setting up test data from metadata: {metadata_file}&#34;)
 
-    # メタデータを読み込み
+    # load metadata
     metadata_df = pd.read_csv(metadata_file)
     logger.info(f&#34;Found {len(metadata_df)} assays in metadata&#34;)
 
-    # テスト用ディレクトリを作成
+    # create test directory
     test_data_dir = Path(self.data_dir) / &#34;balanced_evaluation_data&#34;
     test_data_dir.mkdir(exist_ok=True)
 
-    # 上位のアッセイからテスト用を選択
+    # Select one for testing from the top assays
     test_assays = metadata_df.head(test_assay_count)
     created_datasets = {}
 
     for _, row in test_assays.iterrows():
         assay_id = row[&#34;DMS_id&#34;]
-        target_sequence = row.get(&#34;target_seq&#34;, &#34;MKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFVAPFPEVFGKEKVNEL&#34;)  # デフォルト配列
+        target_sequence = row.get(&#34;target_seq&#34;, &#34;MKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFVAPFPEVFGKEKVNEL&#34;)  # Default array
 
         logger.info(f&#34;Creating test data for assay: {assay_id}&#34;)
 
-        # サンプル変異データを生成
+        # Generate sample mutation data
         test_data = self._generate_sample_mutations(
             assay_id=assay_id,
             target_seq=target_sequence,
@@ -1658,7 +1656,7 @@ el.replaceWith(d);
             negative_samples=negative_samples,
         )
 
-        # ファイルに保存
+        # save to file
         output_file = test_data_dir / f&#34;{assay_id}_balanced_evaluation_data.csv&#34;
         test_data.to_csv(output_file, index=False)
 
@@ -1673,22 +1671,22 @@ el.replaceWith(d);
 
     return created_datasets</code></pre>
 </details>
-<div class="desc"><p>メタデータファイルからテスト用のバランスデータセットを作成</p>
+<div class="desc"><p>Create a balanced dataset for testing from metadata files</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>metadata_file</code></strong> :&ensp;<code>str</code></dt>
-<dd>メタデータファイルのパス</dd>
+<dd>Metadata file path</dd>
 <dt><strong><code>positive_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>陽性サンプル数</dd>
+<dd>Number of positive samples</dd>
 <dt><strong><code>negative_samples</code></strong> :&ensp;<code>int</code></dt>
-<dd>陰性サンプル数</dd>
+<dd>Number of negative samples</dd>
 <dt><strong><code>test_assay_count</code></strong> :&ensp;<code>int</code></dt>
-<dd>作成するテストアッセイ数</dd>
+<dd>Number of test assays to create</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>dict</code></dt>
-<dd>作成されたテストデータセットの情報</dd>
+<dd>Information about the created test dataset</dd>
 </dl></div>
 </dd>
 </dl>

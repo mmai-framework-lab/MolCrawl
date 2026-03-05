@@ -327,7 +327,7 @@ el.replaceWith(d);
 
     csv_header = [&#34;relative_path&#34;, &#34;filename&#34;, &#34;size_bytes&#34;, &#34;num_lines&#34;, &#34;md5&#34;]
     csv_path = os.path.join(directory, &#34;download_results.csv&#34;)
-    # ヘッダーがなければ書く
+    # write if there is no header
     if not os.path.exists(csv_path):
         with open(csv_path, &#34;w&#34;, newline=&#34;&#34;) as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=csv_header)
@@ -348,9 +348,9 @@ el.replaceWith(d);
             target_path = os.path.join(directory, file_info[&#34;directory&#34;], file_info[&#34;filename&#34;])
             if success and os.path.exists(target_path):
                 successful_downloads += 1
-                # ファイルサイズ
+                # file size
                 file_result[&#34;size_bytes&#34;] = os.path.getsize(target_path)
-                # データ数（行数）
+                # Number of data (number of rows)
                 try:
                     with open(target_path, &#34;rb&#34;) as f:
                         file_result[&#34;num_lines&#34;] = sum(1 for _ in f)
@@ -370,7 +370,7 @@ el.replaceWith(d);
         except Exception as e:
             logger.error(f&#34;Error processing {file_info[&#39;filename&#39;]}: {e}&#34;)
             failed_downloads += 1
-        # 成功・失敗問わず追記
+        # Add regardless of success or failure
         try:
             with open(csv_path, &#34;a&#34;, newline=&#34;&#34;) as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=csv_header)

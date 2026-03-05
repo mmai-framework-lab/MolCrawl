@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.experiment_tracker.database API documentation</title>
-<meta name="description" content="実験管理データベース - SQLiteベース">
+<meta name="description" content="Experiment management database - SQLite based">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.experiment_tracker.database</code></h1>
 </header>
 <section id="section-intro">
-<p>実験管理データベース - SQLiteベース</p>
+<p>Experiment management database - SQLite based</p>
 </section>
 <section>
 </section>
@@ -57,12 +57,12 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ExperimentDatabase:
-    &#34;&#34;&#34;実験管理データベース&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment management database&#34;&#34;&#34;
 
     def __init__(self, db_path: str = &#34;experiments.db&#34;):
         &#34;&#34;&#34;
         Args:
-            db_path: データベースファイルのパス
+            db_path: Database file path
         &#34;&#34;&#34;
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,7 +70,7 @@ el.replaceWith(d);
 
     @contextmanager
     def get_connection(self):
-        &#34;&#34;&#34;データベース接続のコンテキストマネージャー&#34;&#34;&#34;
+        &#34;&#34;&#34;Context manager for database connections&#34;&#34;&#34;
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
         try:
@@ -83,11 +83,11 @@ el.replaceWith(d);
             conn.close()
 
     def _initialize_database(self):
-        &#34;&#34;&#34;データベースの初期化&#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize the database&#34;&#34;&#34;
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # 実験テーブル
+            # Experiment table
             cursor.execute(
                 &#34;&#34;&#34;
                 CREATE TABLE IF NOT EXISTS experiments (
@@ -113,7 +113,7 @@ el.replaceWith(d);
             &#34;&#34;&#34;
             )
 
-            # ステップテーブル
+            # step table
             cursor.execute(
                 &#34;&#34;&#34;
                 CREATE TABLE IF NOT EXISTS experiment_steps (
@@ -134,7 +134,7 @@ el.replaceWith(d);
             &#34;&#34;&#34;
             )
 
-            # ログテーブル
+            # log table
             cursor.execute(
                 &#34;&#34;&#34;
                 CREATE TABLE IF NOT EXISTS experiment_logs (
@@ -149,7 +149,7 @@ el.replaceWith(d);
             &#34;&#34;&#34;
             )
 
-            # インデックス作成
+            # create index
             cursor.execute(
                 &#34;&#34;&#34;
                 CREATE INDEX IF NOT EXISTS idx_experiments_status
@@ -170,7 +170,7 @@ el.replaceWith(d);
             )
 
     def save_experiment(self, experiment: Experiment) -&gt; None:
-        &#34;&#34;&#34;実験を保存&#34;&#34;&#34;
+        &#34;&#34;&#34;Save experiment&#34;&#34;&#34;
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
@@ -207,7 +207,7 @@ el.replaceWith(d);
                 ),
             )
 
-            # ステップを保存
+            # save step
             cursor.execute(
                 &#34;DELETE FROM experiment_steps WHERE experiment_id = ?&#34;,
                 (experiment.experiment_id,),
@@ -237,7 +237,7 @@ el.replaceWith(d);
                 )
 
     def add_log(self, experiment_id: str, log: ExperimentLog) -&gt; None:
-        &#34;&#34;&#34;ログを追加&#34;&#34;&#34;
+        &#34;&#34;&#34;Add log&#34;&#34;&#34;
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -256,11 +256,11 @@ el.replaceWith(d);
             )
 
     def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
-        &#34;&#34;&#34;実験を取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # 実験情報を取得
+            # Get experiment information
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT * FROM experiments WHERE experiment_id = ?
@@ -272,7 +272,7 @@ el.replaceWith(d);
             if not row:
                 return None
 
-            # ステップを取得
+            # get step
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT * FROM experiment_steps WHERE experiment_id = ?
@@ -282,7 +282,7 @@ el.replaceWith(d);
             )
             steps_rows = cursor.fetchall()
 
-            # ログを取得
+            # get log
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT * FROM experiment_logs WHERE experiment_id = ?
@@ -292,7 +292,7 @@ el.replaceWith(d);
             )
             logs_rows = cursor.fetchall()
 
-            # Experimentオブジェクトを構築
+            # Build the Experiment object
             experiment_data = dict(row)
             experiment_data[&#34;experiment_type&#34;] = ExperimentType(experiment_data[&#34;experiment_type&#34;])
             experiment_data[&#34;model_type&#34;] = ModelType(experiment_data[&#34;model_type&#34;])
@@ -313,7 +313,7 @@ el.replaceWith(d);
                 json.loads(experiment_data[&#34;environment&#34;]) if experiment_data[&#34;environment&#34;] else {}
             )
 
-            # ステップを構築
+            # build step
             steps = []
             for step_row in steps_rows:
                 step_data = dict(step_row)
@@ -323,17 +323,17 @@ el.replaceWith(d);
                 if step_data.get(&#34;end_time&#34;):
                     step_data[&#34;end_time&#34;] = datetime.fromisoformat(step_data[&#34;end_time&#34;])
                 step_data[&#34;metadata&#34;] = json.loads(step_data[&#34;metadata&#34;]) if step_data[&#34;metadata&#34;] else {}
-                # 不要なフィールドを削除
+                # remove unnecessary fields
                 del step_data[&#34;id&#34;]
                 del step_data[&#34;experiment_id&#34;]
                 steps.append(ExperimentStep(**step_data))
 
-            # ログを構築
+            # build log
             logs = []
             for log_row in logs_rows:
                 log_data = dict(log_row)
                 log_data[&#34;timestamp&#34;] = datetime.fromisoformat(log_data[&#34;timestamp&#34;])
-                # 不要なフィールドを削除
+                # remove unnecessary fields
                 del log_data[&#34;id&#34;]
                 del log_data[&#34;experiment_id&#34;]
                 logs.append(ExperimentLog(**log_data))
@@ -352,7 +352,7 @@ el.replaceWith(d);
         limit: int = 100,
         offset: int = 0,
     ) -&gt; List[Experiment]:
-        &#34;&#34;&#34;実験一覧を取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
@@ -387,17 +387,17 @@ el.replaceWith(d);
             return experiments
 
     def get_statistics(self) -&gt; Dict[str, Any]:
-        &#34;&#34;&#34;統計情報を取得&#34;&#34;&#34;
+        &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
             stats = {}
 
-            # 全実験数
+            # Total number of experiments
             cursor.execute(&#34;SELECT COUNT(*) as count FROM experiments&#34;)
             stats[&#34;total_experiments&#34;] = cursor.fetchone()[&#34;count&#34;]
 
-            # ステータス別
+            # By status
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT status, COUNT(*) as count
@@ -407,7 +407,7 @@ el.replaceWith(d);
             )
             stats[&#34;by_status&#34;] = {row[&#34;status&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
 
-            # タイプ別
+            # By type
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT experiment_type, COUNT(*) as count
@@ -417,7 +417,7 @@ el.replaceWith(d);
             )
             stats[&#34;by_type&#34;] = {row[&#34;experiment_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
 
-            # モデル別
+            # By model
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT model_type, COUNT(*) as count
@@ -427,7 +427,7 @@ el.replaceWith(d);
             )
             stats[&#34;by_model&#34;] = {row[&#34;model_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
 
-            # データセット別
+            # By dataset
             cursor.execute(
                 &#34;&#34;&#34;
                 SELECT dataset_type, COUNT(*) as count
@@ -439,11 +439,11 @@ el.replaceWith(d);
 
             return stats</code></pre>
 </details>
-<div class="desc"><p>実験管理データベース</p>
+<div class="desc"><p>Experiment management database</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>db_path</code></strong></dt>
-<dd>データベースファイルのパス</dd>
+<dd>Database file path</dd>
 </dl></div>
 <h3>Methods</h3>
 <dl>
@@ -456,7 +456,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def add_log(self, experiment_id: str, log: ExperimentLog) -&gt; None:
-    &#34;&#34;&#34;ログを追加&#34;&#34;&#34;
+    &#34;&#34;&#34;Add log&#34;&#34;&#34;
     with self.get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -474,7 +474,7 @@ el.replaceWith(d);
             ),
         )</code></pre>
 </details>
-<div class="desc"><p>ログを追加</p></div>
+<div class="desc"><p>Add log</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.database.ExperimentDatabase.get_connection"><code class="name flex">
 <span>def <span class="ident">get_connection</span></span>(<span>self)</span>
@@ -486,7 +486,7 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@contextmanager
 def get_connection(self):
-    &#34;&#34;&#34;データベース接続のコンテキストマネージャー&#34;&#34;&#34;
+    &#34;&#34;&#34;Context manager for database connections&#34;&#34;&#34;
     conn = sqlite3.connect(str(self.db_path))
     conn.row_factory = sqlite3.Row
     try:
@@ -498,7 +498,7 @@ def get_connection(self):
     finally:
         conn.close()</code></pre>
 </details>
-<div class="desc"><p>データベース接続のコンテキストマネージャー</p></div>
+<div class="desc"><p>Context manager for database connections</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.database.ExperimentDatabase.get_experiment"><code class="name flex">
 <span>def <span class="ident">get_experiment</span></span>(<span>self, experiment_id: str) ‑> <a title="molcrawl.experiment_tracker.models.Experiment" href="models.html#molcrawl.experiment_tracker.models.Experiment">Experiment</a> | None</span>
@@ -509,11 +509,11 @@ def get_connection(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
-    &#34;&#34;&#34;実験を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
     with self.get_connection() as conn:
         cursor = conn.cursor()
 
-        # 実験情報を取得
+        # Get experiment information
         cursor.execute(
             &#34;&#34;&#34;
             SELECT * FROM experiments WHERE experiment_id = ?
@@ -525,7 +525,7 @@ def get_connection(self):
         if not row:
             return None
 
-        # ステップを取得
+        # get step
         cursor.execute(
             &#34;&#34;&#34;
             SELECT * FROM experiment_steps WHERE experiment_id = ?
@@ -535,7 +535,7 @@ def get_connection(self):
         )
         steps_rows = cursor.fetchall()
 
-        # ログを取得
+        # get log
         cursor.execute(
             &#34;&#34;&#34;
             SELECT * FROM experiment_logs WHERE experiment_id = ?
@@ -545,7 +545,7 @@ def get_connection(self):
         )
         logs_rows = cursor.fetchall()
 
-        # Experimentオブジェクトを構築
+        # Build the Experiment object
         experiment_data = dict(row)
         experiment_data[&#34;experiment_type&#34;] = ExperimentType(experiment_data[&#34;experiment_type&#34;])
         experiment_data[&#34;model_type&#34;] = ModelType(experiment_data[&#34;model_type&#34;])
@@ -566,7 +566,7 @@ def get_connection(self):
             json.loads(experiment_data[&#34;environment&#34;]) if experiment_data[&#34;environment&#34;] else {}
         )
 
-        # ステップを構築
+        # build step
         steps = []
         for step_row in steps_rows:
             step_data = dict(step_row)
@@ -576,17 +576,17 @@ def get_connection(self):
             if step_data.get(&#34;end_time&#34;):
                 step_data[&#34;end_time&#34;] = datetime.fromisoformat(step_data[&#34;end_time&#34;])
             step_data[&#34;metadata&#34;] = json.loads(step_data[&#34;metadata&#34;]) if step_data[&#34;metadata&#34;] else {}
-            # 不要なフィールドを削除
+            # remove unnecessary fields
             del step_data[&#34;id&#34;]
             del step_data[&#34;experiment_id&#34;]
             steps.append(ExperimentStep(**step_data))
 
-        # ログを構築
+        # build log
         logs = []
         for log_row in logs_rows:
             log_data = dict(log_row)
             log_data[&#34;timestamp&#34;] = datetime.fromisoformat(log_data[&#34;timestamp&#34;])
-            # 不要なフィールドを削除
+            # remove unnecessary fields
             del log_data[&#34;id&#34;]
             del log_data[&#34;experiment_id&#34;]
             logs.append(ExperimentLog(**log_data))
@@ -596,7 +596,7 @@ def get_connection(self):
 
         return Experiment(**experiment_data)</code></pre>
 </details>
-<div class="desc"><p>実験を取得</p></div>
+<div class="desc"><p>Get the experiment</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.database.ExperimentDatabase.get_statistics"><code class="name flex">
 <span>def <span class="ident">get_statistics</span></span>(<span>self) ‑> Dict[str, Any]</span>
@@ -607,17 +607,17 @@ def get_connection(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_statistics(self) -&gt; Dict[str, Any]:
-    &#34;&#34;&#34;統計情報を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
     with self.get_connection() as conn:
         cursor = conn.cursor()
 
         stats = {}
 
-        # 全実験数
+        # Total number of experiments
         cursor.execute(&#34;SELECT COUNT(*) as count FROM experiments&#34;)
         stats[&#34;total_experiments&#34;] = cursor.fetchone()[&#34;count&#34;]
 
-        # ステータス別
+        # By status
         cursor.execute(
             &#34;&#34;&#34;
             SELECT status, COUNT(*) as count
@@ -627,7 +627,7 @@ def get_connection(self):
         )
         stats[&#34;by_status&#34;] = {row[&#34;status&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
 
-        # タイプ別
+        # By type
         cursor.execute(
             &#34;&#34;&#34;
             SELECT experiment_type, COUNT(*) as count
@@ -637,7 +637,7 @@ def get_connection(self):
         )
         stats[&#34;by_type&#34;] = {row[&#34;experiment_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
 
-        # モデル別
+        # By model
         cursor.execute(
             &#34;&#34;&#34;
             SELECT model_type, COUNT(*) as count
@@ -647,7 +647,7 @@ def get_connection(self):
         )
         stats[&#34;by_model&#34;] = {row[&#34;model_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
 
-        # データセット別
+        # By dataset
         cursor.execute(
             &#34;&#34;&#34;
             SELECT dataset_type, COUNT(*) as count
@@ -659,7 +659,7 @@ def get_connection(self):
 
         return stats</code></pre>
 </details>
-<div class="desc"><p>統計情報を取得</p></div>
+<div class="desc"><p>Get statistics</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.database.ExperimentDatabase.list_experiments"><code class="name flex">
 <span>def <span class="ident">list_experiments</span></span>(<span>self,<br>status: <a title="molcrawl.experiment_tracker.models.ExperimentStatus" href="models.html#molcrawl.experiment_tracker.models.ExperimentStatus">ExperimentStatus</a> | None = None,<br>experiment_type: <a title="molcrawl.experiment_tracker.models.ExperimentType" href="models.html#molcrawl.experiment_tracker.models.ExperimentType">ExperimentType</a> | None = None,<br>model_type: <a title="molcrawl.experiment_tracker.models.ModelType" href="models.html#molcrawl.experiment_tracker.models.ModelType">ModelType</a> | None = None,<br>dataset_type: <a title="molcrawl.experiment_tracker.models.DatasetType" href="models.html#molcrawl.experiment_tracker.models.DatasetType">DatasetType</a> | None = None,<br>limit: int = 100,<br>offset: int = 0) ‑> List[<a title="molcrawl.experiment_tracker.models.Experiment" href="models.html#molcrawl.experiment_tracker.models.Experiment">Experiment</a>]</span>
@@ -678,7 +678,7 @@ def get_connection(self):
     limit: int = 100,
     offset: int = 0,
 ) -&gt; List[Experiment]:
-    &#34;&#34;&#34;実験一覧を取得&#34;&#34;&#34;
+    &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
     with self.get_connection() as conn:
         cursor = conn.cursor()
 
@@ -712,7 +712,7 @@ def get_connection(self):
 
         return experiments</code></pre>
 </details>
-<div class="desc"><p>実験一覧を取得</p></div>
+<div class="desc"><p>Get experiment list</p></div>
 </dd>
 <dt id="molcrawl.experiment_tracker.database.ExperimentDatabase.save_experiment"><code class="name flex">
 <span>def <span class="ident">save_experiment</span></span>(<span>self,<br>experiment: <a title="molcrawl.experiment_tracker.models.Experiment" href="models.html#molcrawl.experiment_tracker.models.Experiment">Experiment</a>) ‑> None</span>
@@ -723,7 +723,7 @@ def get_connection(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def save_experiment(self, experiment: Experiment) -&gt; None:
-    &#34;&#34;&#34;実験を保存&#34;&#34;&#34;
+    &#34;&#34;&#34;Save experiment&#34;&#34;&#34;
     with self.get_connection() as conn:
         cursor = conn.cursor()
 
@@ -760,7 +760,7 @@ def get_connection(self):
             ),
         )
 
-        # ステップを保存
+        # save step
         cursor.execute(
             &#34;DELETE FROM experiment_steps WHERE experiment_id = ?&#34;,
             (experiment.experiment_id,),
@@ -789,7 +789,7 @@ def get_connection(self):
                 ),
             )</code></pre>
 </details>
-<div class="desc"><p>実験を保存</p></div>
+<div class="desc"><p>Save experiment</p></div>
 </dd>
 </dl>
 </dd>

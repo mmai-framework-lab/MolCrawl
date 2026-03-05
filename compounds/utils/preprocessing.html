@@ -54,22 +54,20 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_invalid_smiles_stats():
     &#34;&#34;&#34;
-    無効なSMILESの統計を取得
+    Get statistics for invalid SMILES
 
-    Returns:
-        tuple: (無効なSMILES数, 総SMILES数, 無効率, 無効例のリスト)
+        Returns:
+    tuple: (number of invalid SMILES, total number of SMILES, ineffectiveness, list of invalid examples)
     &#34;&#34;&#34;
     if _total_smiles_count == 0:
         return 0, 0, 0.0, []
     invalid_rate = (_invalid_smiles_count / _total_smiles_count) * 100
     return _invalid_smiles_count, _total_smiles_count, invalid_rate, _invalid_smiles_examples</code></pre>
 </details>
-<div class="desc"><p>無効なSMILESの統計を取得</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>tuple</code></dt>
-<dd>(無効なSMILES数, 総SMILES数, 無効率, 無効例のリスト)</dd>
-</dl></div>
+<div class="desc"><p>Get statistics for invalid SMILES</p>
+<pre><code>Returns:
+</code></pre>
+<p>tuple: (number of invalid SMILES, total number of SMILES, ineffectiveness, list of invalid examples)</p></div>
 </dd>
 <dt id="molcrawl.compounds.utils.preprocessing.prepare_scaffolds"><code class="name flex">
 <span>def <span class="ident">prepare_scaffolds</span></span>(<span>smiles: str)</span>
@@ -81,22 +79,22 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def prepare_scaffolds(smiles: str):
     &#34;&#34;&#34;
-    Prepare the scaffolds of a molecule.
+        Prepare the scaffolds of a molecule.
 
-    Args:
-        smiles: SMILES文字列
+        Args:
+    smiles: SMILES string
 
-    Returns:
-        str: scaffold SMILES文字列、無効な場合は空文字列
+        Returns:
+    str: scaffold SMILES string, empty string if invalid
 
-    Note:
-        ZINC20などの大規模データベースには以下の理由で無効なSMILESが含まれることがあります：
-        1. 四級アンモニウム（N+）などのイオン構造の表記問題
-        2. 異なるフォーマットからの変換エラー
-        3. 特殊な立体化学の表現
-        4. データベース作成時の自動処理エラー
+        Note:
+    Large databases such as ZINC20 may contain invalid SMILES for the following reasons:
+    1. Notation problems for ionic structures such as quaternary ammonium (N+)
+    2. Conversion error from different formats
+    3. Expression of special stereochemistry
+    4. Automatic processing error when creating database
 
-        これらは通常、データベース全体の数%程度で許容範囲内です。
+    These are usually within an acceptable range of a few percent of the total database.
     &#34;&#34;&#34;
     global _invalid_smiles_count, _total_smiles_count, _invalid_smiles_examples
     _total_smiles_count += 1
@@ -114,11 +112,11 @@ el.replaceWith(d);
         molecule = Chem.MolFromSmiles(smiles)
         if molecule is None:
             _invalid_smiles_count += 1
-            # 最初の10件の無効例を保存
+            # save first 10 invalid examples
             if len(_invalid_smiles_examples) &lt; 10:
                 _invalid_smiles_examples.append((&#34;parse_failed&#34;, smiles[:100]))
 
-            # 1000件ごとに統計をログ出力
+            # Log statistics every 1000 items
             if _invalid_smiles_count % 1000 == 0:
                 invalid_count, total_count, invalid_rate, examples = get_invalid_smiles_stats()
                 logger.warning(f&#34;Invalid SMILES detected: {invalid_count}/{total_count} ({invalid_rate:.2f}%)&#34;)
@@ -135,23 +133,20 @@ el.replaceWith(d);
         return &#34;&#34;</code></pre>
 </details>
 <div class="desc"><p>Prepare the scaffolds of a molecule.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>smiles</code></strong></dt>
-<dd>SMILES文字列</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>scaffold SMILES文字列、無効な場合は空文字列</dd>
-</dl>
-<h2 id="note">Note</h2>
-<p>ZINC20などの大規模データベースには以下の理由で無効なSMILESが含まれることがあります：
-1. 四級アンモニウム（N+）などのイオン構造の表記問題
-2. 異なるフォーマットからの変換エラー
-3. 特殊な立体化学の表現
-4. データベース作成時の自動処理エラー</p>
-<p>これらは通常、データベース全体の数%程度で許容範囲内です。</p></div>
+<pre><code>Args:
+</code></pre>
+<p>smiles: SMILES string</p>
+<pre><code>Returns:
+</code></pre>
+<p>str: scaffold SMILES string, empty string if invalid</p>
+<pre><code>Note:
+</code></pre>
+<p>Large databases such as ZINC20 may contain invalid SMILES for the following reasons:
+1. Notation problems for ionic structures such as quaternary ammonium (N+)
+2. Conversion error from different formats
+3. Expression of special stereochemistry
+4. Automatic processing error when creating database</p>
+<p>These are usually within an acceptable range of a few percent of the total database.</p></div>
 </dd>
 </dl>
 </section>

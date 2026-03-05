@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.experiment_tracker.models API documentation</title>
-<meta name="description" content="実験管理のデータモデル定義">
+<meta name="description" content="Experiment management data model definition">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.experiment_tracker.models</code></h1>
 </header>
 <section id="section-intro">
-<p>実験管理のデータモデル定義</p>
+<p>Experiment management data model definition</p>
 </section>
 <section>
 </section>
@@ -57,7 +57,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class DatasetType(str, Enum):
-    &#34;&#34;&#34;データセットタイプ&#34;&#34;&#34;
+    &#34;&#34;&#34;Dataset type&#34;&#34;&#34;
 
     COMPOUNDS = &#34;compounds&#34;
     GENOME_SEQUENCE = &#34;genome_sequence&#34;
@@ -70,7 +70,7 @@ el.replaceWith(d);
     COSMIC = &#34;cosmic&#34;
     OTHER = &#34;other&#34;</code></pre>
 </details>
-<div class="desc"><p>データセットタイプ</p></div>
+<div class="desc"><p>Dataset type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -131,7 +131,7 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@dataclass
 class Experiment:
-    &#34;&#34;&#34;実験の全体情報&#34;&#34;&#34;
+    &#34;&#34;&#34;Overall information about the experiment&#34;&#34;&#34;
 
     experiment_id: str
     experiment_name: str
@@ -144,20 +144,20 @@ class Experiment:
     completed_at: Optional[datetime] = None
     total_duration_seconds: Optional[float] = None
 
-    # 設定情報
+    # Setting information
     config_path: Optional[str] = None
     config: Dict[str, Any] = field(default_factory=dict)
 
-    # 結果情報
+    # Results information
     results_dir: Optional[str] = None
     results: Dict[str, Any] = field(default_factory=dict)
     metrics: Dict[str, float] = field(default_factory=dict)
 
-    # ステップとログ
+    # steps and logs
     steps: List[ExperimentStep] = field(default_factory=list)
     logs: List[ExperimentLog] = field(default_factory=list)
 
-    # メタデータ
+    # metadata
     tags: List[str] = field(default_factory=list)
     notes: str = &#34;&#34;
     environment: Dict[str, Any] = field(default_factory=dict)
@@ -202,15 +202,15 @@ class Experiment:
         return cls(**data)
 
     def to_json(self) -&gt; str:
-        &#34;&#34;&#34;JSON文字列に変換&#34;&#34;&#34;
+        &#34;&#34;&#34;Convert to JSON string&#34;&#34;&#34;
         return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
 
     @classmethod
     def from_json(cls, json_str: str) -&gt; &#34;Experiment&#34;:
-        &#34;&#34;&#34;JSON文字列から復元&#34;&#34;&#34;
+        &#34;&#34;&#34;Restore from JSON string&#34;&#34;&#34;
         return cls.from_dict(json.loads(json_str))</code></pre>
 </details>
-<div class="desc"><p>実験の全体情報</p></div>
+<div class="desc"><p>Overall information about the experiment</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="molcrawl.experiment_tracker.models.Experiment.from_dict"><code class="name flex">
@@ -223,7 +223,7 @@ class Experiment:
 <span>def <span class="ident">from_json</span></span>(<span>json_str: str) ‑> <a title="molcrawl.experiment_tracker.models.Experiment" href="#molcrawl.experiment_tracker.models.Experiment">Experiment</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>JSON文字列から復元</p></div>
+<div class="desc"><p>Restore from JSON string</p></div>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -354,10 +354,10 @@ class Experiment:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def to_json(self) -&gt; str:
-    &#34;&#34;&#34;JSON文字列に変換&#34;&#34;&#34;
+    &#34;&#34;&#34;Convert to JSON string&#34;&#34;&#34;
     return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)</code></pre>
 </details>
-<div class="desc"><p>JSON文字列に変換</p></div>
+<div class="desc"><p>Convert to JSON string</p></div>
 </dd>
 </dl>
 </dd>
@@ -372,12 +372,12 @@ class Experiment:
 </summary>
 <pre><code class="python">@dataclass
 class ExperimentLog:
-    &#34;&#34;&#34;実験ログエントリ&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment Log Entry&#34;&#34;&#34;
 
     timestamp: datetime
     level: str  # INFO, WARNING, ERROR, DEBUG
     message: str
-    source: Optional[str] = None  # ログのソース（ファイル名、関数名など）
+    source: Optional[str] = None  # Log source (file name, function name, etc.)
 
     def to_dict(self) -&gt; Dict[str, Any]:
         return {
@@ -392,7 +392,7 @@ class ExperimentLog:
         data[&#34;timestamp&#34;] = datetime.fromisoformat(data[&#34;timestamp&#34;])
         return cls(**data)</code></pre>
 </details>
-<div class="desc"><p>実験ログエントリ</p></div>
+<div class="desc"><p>Experiment Log Entry</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="molcrawl.experiment_tracker.models.ExperimentLog.from_dict"><code class="name flex">
@@ -453,16 +453,16 @@ class ExperimentLog:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ExperimentStatus(str, Enum):
-    &#34;&#34;&#34;実験ステータス&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment Status&#34;&#34;&#34;
 
-    PENDING = &#34;pending&#34;  # 未実行
-    RUNNING = &#34;running&#34;  # 実行中
-    COMPLETED = &#34;completed&#34;  # 完了
-    FAILED = &#34;failed&#34;  # 失敗
-    CANCELLED = &#34;cancelled&#34;  # キャンセル
-    SKIPPED = &#34;skipped&#34;  # スキップ</code></pre>
+    PENDING = &#34;pending&#34;  # Not executed
+    RUNNING = &#34;running&#34;  # Running
+    COMPLETED = &#34;completed&#34;  # Completed
+    FAILED = &#34;failed&#34;  # failed
+    CANCELLED = &#34;cancelled&#34;  # cancel
+    SKIPPED = &#34;skipped&#34;  # skipped</code></pre>
 </details>
-<div class="desc"><p>実験ステータス</p></div>
+<div class="desc"><p>Experiment Status</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -507,7 +507,7 @@ class ExperimentLog:
 </summary>
 <pre><code class="python">@dataclass
 class ExperimentStep:
-    &#34;&#34;&#34;実験の各ステップ&#34;&#34;&#34;
+    &#34;&#34;&#34;Each step of the experiment&#34;&#34;&#34;
 
     step_id: str
     step_name: str
@@ -536,7 +536,7 @@ class ExperimentStep:
             data[&#34;end_time&#34;] = datetime.fromisoformat(data[&#34;end_time&#34;])
         return cls(**data)</code></pre>
 </details>
-<div class="desc"><p>実験の各ステップ</p></div>
+<div class="desc"><p>Each step of the experiment</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="molcrawl.experiment_tracker.models.ExperimentStep.from_dict"><code class="name flex">
@@ -620,15 +620,15 @@ class ExperimentStep:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ExperimentType(str, Enum):
-    &#34;&#34;&#34;実験タイプ&#34;&#34;&#34;
+    &#34;&#34;&#34;Experiment type&#34;&#34;&#34;
 
-    DATA_PREPARATION = &#34;data_preparation&#34;  # データ準備
-    TRAINING = &#34;training&#34;  # モデル訓練
-    EVALUATION = &#34;evaluation&#34;  # 評価
-    VISUALIZATION = &#34;visualization&#34;  # 可視化
-    INFERENCE = &#34;inference&#34;  # 推論</code></pre>
+    DATA_PREPARATION = &#34;data_preparation&#34;  # Data preparation
+    TRAINING = &#34;training&#34;  # model training
+    EVALUATION = &#34;evaluation&#34;  # Evaluation
+    VISUALIZATION = &#34;visualization&#34;  # visualization
+    INFERENCE = &#34;inference&#34;  # inference</code></pre>
 </details>
-<div class="desc"><p>実験タイプ</p></div>
+<div class="desc"><p>Experiment type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>
@@ -668,14 +668,14 @@ class ExperimentStep:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ModelType(str, Enum):
-    &#34;&#34;&#34;モデルタイプ&#34;&#34;&#34;
+    &#34;&#34;&#34;Model type&#34;&#34;&#34;
 
     GPT2 = &#34;gpt2&#34;
     BERT = &#34;bert&#34;
     GPN = &#34;gpn&#34;
     OTHER = &#34;other&#34;</code></pre>
 </details>
-<div class="desc"><p>モデルタイプ</p></div>
+<div class="desc"><p>Model type</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.str</li>

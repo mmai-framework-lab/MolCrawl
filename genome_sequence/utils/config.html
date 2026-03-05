@@ -114,7 +114,7 @@ class RefSeqPreparationConfig:
     # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
     input_sentence_size: int = 700000
 
-    # 追加: 高速化用オプション（任意）
+    # Added: Speed-up options (optional)
     num_proc_parquet: Optional[int] = None
     parquet_batch_size: Optional[int] = None
     local_base_dir: Optional[str] = None</code></pre>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.compounds.dataset.multi_loader API documentation</title>
-<meta name="description" content="マルチデータセットローダー …">
+<meta name="description" content="Multi dataset loader …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,8 +36,8 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.compounds.dataset.multi_loader</code></h1>
 </header>
 <section id="section-intro">
-<p>マルチデータセットローダー</p>
-<p>複数のデータセットを動的に読み込み、結合して学習に使用するためのユーティリティを提供します。</p>
+<p>Multi dataset loader</p>
+<p>Provides utilities for dynamically loading and combining multiple datasets for use in training.</p>
 </section>
 <section>
 </section>
@@ -61,16 +61,16 @@ el.replaceWith(d);
     combine: bool = True,
 ) -&gt; Union[DatasetDict, dict]:
     &#34;&#34;&#34;
-    化合物データセットを読み込むヘルパー関数
+    Helper function to load compound dataset
 
-    Args:
-        compounds_dir: compoundsディレクトリのパス
-        dataset_types: 読み込むデータセット種別のリスト（Noneの場合は利用可能な全て）
-        splits: 読み込むsplit
-        combine: データセットを結合するか
+        Args:
+    compounds_dir: compounds directorypath of
+    dataset_types: List of dataset types to load (all available if None)
+    splits: read splits
+    combine: whether to combine datasets
 
-    Returns:
-        読み込まれたデータセット
+        Returns:
+    Loaded dataset
     &#34;&#34;&#34;
     if splits is None:
         splits = [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]
@@ -78,20 +78,16 @@ el.replaceWith(d);
     loader = MultiDatasetLoader(compounds_dir)
     return loader.load_datasets(dataset_types, splits, combine)</code></pre>
 </details>
-<div class="desc"><p>化合物データセットを読み込むヘルパー関数</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>compounds_dir</code></strong></dt>
-<dd>compoundsディレクトリのパス</dd>
-<dt><strong><code>dataset_types</code></strong></dt>
-<dd>読み込むデータセット種別のリスト（Noneの場合は利用可能な全て）</dd>
-<dt><strong><code>splits</code></strong></dt>
-<dd>読み込むsplit</dd>
-<dt><strong><code>combine</code></strong></dt>
-<dd>データセットを結合するか</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>読み込まれたデータセット</p></div>
+<div class="desc"><p>Helper function to load compound dataset</p>
+<pre><code>Args:
+</code></pre>
+<p>compounds_dir: compounds directorypath of
+dataset_types: List of dataset types to load (all available if None)
+splits: read splits
+combine: whether to combine datasets</p>
+<pre><code>Returns:
+</code></pre>
+<p>Loaded dataset</p></div>
 </dd>
 </dl>
 </section>
@@ -109,24 +105,24 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">class MultiDatasetLoader:
     &#34;&#34;&#34;
-    マルチデータセットローダー
+    Multi dataset loader
 
-    複数のデータセットを動的に読み込み、結合します。
+    Dynamically load and combine multiple datasets.
     &#34;&#34;&#34;
 
     def __init__(self, compounds_dir: Path):
         &#34;&#34;&#34;
-        Args:
-            compounds_dir: compoundsディレクトリのパス
+                Args:
+        compounds_dir: Path to the compounds directory
         &#34;&#34;&#34;
         self.compounds_dir = Path(compounds_dir)
 
     def get_available_datasets(self) -&gt; List[CompoundDatasetType]:
         &#34;&#34;&#34;
-        利用可能なHuggingFace Dataset形式のデータセットを取得
+        Get available HuggingFace Dataset format datasets
 
-        Returns:
-            利用可能なデータセット種別のリスト
+                Returns:
+        List of available dataset types
         &#34;&#34;&#34;
         available = []
         for dataset_type, info in DATASET_DEFINITIONS.items():
@@ -145,21 +141,21 @@ el.replaceWith(d);
         combine: bool = True,
     ) -&gt; Union[DatasetDict, dict]:
         &#34;&#34;&#34;
-        データセットを読み込み
+        Load dataset
 
-        Args:
-            dataset_types: 読み込むデータセット種別のリスト（Noneの場合は利用可能な全て）
-            splits: 読み込むsplit（train, valid, test）
-            combine: Trueの場合は全データセットを結合、Falseの場合は個別に保持
+                Args:
+        dataset_types: List of dataset types to load (all available if None)
+        splits: read split(train, valid, test)
+        combine: If True, combine all datasets; if False, keep them separate
 
-        Returns:
-            combine=Trueの場合: DatasetDict {split_name: combined_dataset}
-            combine=Falseの場合: dict {dataset_type: DatasetDict}
+                Returns:
+        If combine=True: DatasetDict {split_name: combined_dataset}
+        If combine=False: dict {dataset_type: DatasetDict}
         &#34;&#34;&#34;
         if splits is None:
             splits = [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]
 
-        # 読み込むデータセットを決定
+        # Decide which dataset to load
         enum_types: List[CompoundDatasetType]
         if dataset_types is None:
             enum_types = self.get_available_datasets()
@@ -169,12 +165,12 @@ el.replaceWith(d);
                     &#34;Please run the preparation pipeline first.&#34;
                 )
         else:
-            # 文字列の場合はEnumに変換
+            # If it is a string, convert it to Enum
             enum_types = [CompoundDatasetType(dt) if isinstance(dt, str) else dt for dt in dataset_types]  # type: ignore[misc]
 
         logger.info(f&#34;Loading {len(enum_types)} datasets: {[dt.value for dt in enum_types]}&#34;)
 
-        # 各データセットを読み込み
+        # load each dataset
         loaded_datasets = {}
         for dataset_type in enum_types:
             info = get_dataset_info(dataset_type)
@@ -200,7 +196,7 @@ el.replaceWith(d);
         if not loaded_datasets:
             raise ValueError(&#34;No datasets could be loaded&#34;)
 
-        # 結合モード
+        # Combine mode
         if combine:
             return self._combine_datasets(loaded_datasets, splits)
         else:
@@ -208,27 +204,27 @@ el.replaceWith(d);
 
     def _combine_datasets(self, loaded_datasets: dict, splits: List[str]) -&gt; DatasetDict:
         &#34;&#34;&#34;
-        複数のデータセットを結合
+        Combine multiple datasets
 
-        Args:
-            loaded_datasets: {dataset_type: DatasetDict} の辞書
-            splits: 結合するsplit
+                Args:
+        loaded_datasets: Dictionary of {dataset_type: DatasetDict}
+        splits: splits to combine
 
-        Returns:
-            結合されたDatasetDict
+                Returns:
+        Combined DatasetDict
         &#34;&#34;&#34;
         logger.info(&#34;Combining datasets...&#34;)
 
         combined = {}
         for split in splits:
-            # 各データセットの同じsplitを収集
+            # Collect the same split of each dataset
             split_datasets = []
             for _dataset_type, dataset_dict in loaded_datasets.items():
                 if split in dataset_dict:
                     split_datasets.append(dataset_dict[split])
 
             if split_datasets:
-                # 結合
+                # join
                 combined[split] = concatenate_datasets(split_datasets)
                 logger.info(f&#34;  Combined {split}: {len(combined[split])} samples from {len(split_datasets)} datasets&#34;)
 
@@ -236,13 +232,13 @@ el.replaceWith(d);
 
     def load_single_dataset(self, dataset_type: Union[str, CompoundDatasetType]) -&gt; DatasetDict:
         &#34;&#34;&#34;
-        単一のデータセットを読み込み
+        Load a single dataset
 
-        Args:
-            dataset_type: データセット種別
+                Args:
+        dataset_type: Dataset type
 
-        Returns:
-            DatasetDict
+                Returns:
+                    DatasetDict
         &#34;&#34;&#34;
         if isinstance(dataset_type, str):
             dataset_type = CompoundDatasetType(dataset_type)
@@ -264,13 +260,11 @@ el.replaceWith(d);
 
         return DatasetDict(dataset_dict)</code></pre>
 </details>
-<div class="desc"><p>マルチデータセットローダー</p>
-<p>複数のデータセットを動的に読み込み、結合します。</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>compounds_dir</code></strong></dt>
-<dd>compoundsディレクトリのパス</dd>
-</dl></div>
+<div class="desc"><p>Multi dataset loader</p>
+<p>Dynamically load and combine multiple datasets.</p>
+<pre><code>    Args:
+</code></pre>
+<p>compounds_dir: Path to the compounds directory</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.compounds.dataset.multi_loader.MultiDatasetLoader.get_available_datasets"><code class="name flex">
@@ -283,10 +277,10 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_available_datasets(self) -&gt; List[CompoundDatasetType]:
     &#34;&#34;&#34;
-    利用可能なHuggingFace Dataset形式のデータセットを取得
+    Get available HuggingFace Dataset format datasets
 
-    Returns:
-        利用可能なデータセット種別のリスト
+            Returns:
+    List of available dataset types
     &#34;&#34;&#34;
     available = []
     for dataset_type, info in DATASET_DEFINITIONS.items():
@@ -298,9 +292,10 @@ el.replaceWith(d);
 
     return available</code></pre>
 </details>
-<div class="desc"><p>利用可能なHuggingFace Dataset形式のデータセットを取得</p>
-<h2 id="returns">Returns</h2>
-<p>利用可能なデータセット種別のリスト</p></div>
+<div class="desc"><p>Get available HuggingFace Dataset format datasets</p>
+<pre><code>    Returns:
+</code></pre>
+<p>List of available dataset types</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.multi_loader.MultiDatasetLoader.load_datasets"><code class="name flex">
 <span>def <span class="ident">load_datasets</span></span>(<span>self,<br>dataset_types: List[str | <a title="molcrawl.compounds.dataset.dataset_config.CompoundDatasetType" href="dataset_config.html#molcrawl.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>] | None = None,<br>splits: List[str] | None = None,<br>combine: bool = True) ‑> datasets.dataset_dict.DatasetDict | dict</span>
@@ -317,21 +312,21 @@ el.replaceWith(d);
     combine: bool = True,
 ) -&gt; Union[DatasetDict, dict]:
     &#34;&#34;&#34;
-    データセットを読み込み
+    Load dataset
 
-    Args:
-        dataset_types: 読み込むデータセット種別のリスト（Noneの場合は利用可能な全て）
-        splits: 読み込むsplit（train, valid, test）
-        combine: Trueの場合は全データセットを結合、Falseの場合は個別に保持
+            Args:
+    dataset_types: List of dataset types to load (all available if None)
+    splits: read split(train, valid, test)
+    combine: If True, combine all datasets; if False, keep them separate
 
-    Returns:
-        combine=Trueの場合: DatasetDict {split_name: combined_dataset}
-        combine=Falseの場合: dict {dataset_type: DatasetDict}
+            Returns:
+    If combine=True: DatasetDict {split_name: combined_dataset}
+    If combine=False: dict {dataset_type: DatasetDict}
     &#34;&#34;&#34;
     if splits is None:
         splits = [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]
 
-    # 読み込むデータセットを決定
+    # Decide which dataset to load
     enum_types: List[CompoundDatasetType]
     if dataset_types is None:
         enum_types = self.get_available_datasets()
@@ -341,12 +336,12 @@ el.replaceWith(d);
                 &#34;Please run the preparation pipeline first.&#34;
             )
     else:
-        # 文字列の場合はEnumに変換
+        # If it is a string, convert it to Enum
         enum_types = [CompoundDatasetType(dt) if isinstance(dt, str) else dt for dt in dataset_types]  # type: ignore[misc]
 
     logger.info(f&#34;Loading {len(enum_types)} datasets: {[dt.value for dt in enum_types]}&#34;)
 
-    # 各データセットを読み込み
+    # load each dataset
     loaded_datasets = {}
     for dataset_type in enum_types:
         info = get_dataset_info(dataset_type)
@@ -372,25 +367,22 @@ el.replaceWith(d);
     if not loaded_datasets:
         raise ValueError(&#34;No datasets could be loaded&#34;)
 
-    # 結合モード
+    # Combine mode
     if combine:
         return self._combine_datasets(loaded_datasets, splits)
     else:
         return loaded_datasets</code></pre>
 </details>
-<div class="desc"><p>データセットを読み込み</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataset_types</code></strong></dt>
-<dd>読み込むデータセット種別のリスト（Noneの場合は利用可能な全て）</dd>
-<dt><strong><code>splits</code></strong></dt>
-<dd>読み込むsplit（train, valid, test）</dd>
-<dt><strong><code>combine</code></strong></dt>
-<dd>Trueの場合は全データセットを結合、Falseの場合は個別に保持</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>combine=Trueの場合: DatasetDict {split_name: combined_dataset}
-combine=Falseの場合: dict {dataset_type: DatasetDict}</p></div>
+<div class="desc"><p>Load dataset</p>
+<pre><code>    Args:
+</code></pre>
+<p>dataset_types: List of dataset types to load (all available if None)
+splits: read split(train, valid, test)
+combine: If True, combine all datasets; if False, keep them separate</p>
+<pre><code>    Returns:
+</code></pre>
+<p>If combine=True: DatasetDict {split_name: combined_dataset}
+If combine=False: dict {dataset_type: DatasetDict}</p></div>
 </dd>
 <dt id="molcrawl.compounds.dataset.multi_loader.MultiDatasetLoader.load_single_dataset"><code class="name flex">
 <span>def <span class="ident">load_single_dataset</span></span>(<span>self,<br>dataset_type: str | <a title="molcrawl.compounds.dataset.dataset_config.CompoundDatasetType" href="dataset_config.html#molcrawl.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>) ‑> datasets.dataset_dict.DatasetDict</span>
@@ -402,13 +394,13 @@ combine=Falseの場合: dict {dataset_type: DatasetDict}</p></div>
 </summary>
 <pre><code class="python">def load_single_dataset(self, dataset_type: Union[str, CompoundDatasetType]) -&gt; DatasetDict:
     &#34;&#34;&#34;
-    単一のデータセットを読み込み
+    Load a single dataset
 
-    Args:
-        dataset_type: データセット種別
+            Args:
+    dataset_type: Dataset type
 
-    Returns:
-        DatasetDict
+            Returns:
+                DatasetDict
     &#34;&#34;&#34;
     if isinstance(dataset_type, str):
         dataset_type = CompoundDatasetType(dataset_type)
@@ -430,14 +422,13 @@ combine=Falseの場合: dict {dataset_type: DatasetDict}</p></div>
 
     return DatasetDict(dataset_dict)</code></pre>
 </details>
-<div class="desc"><p>単一のデータセットを読み込み</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>dataset_type</code></strong></dt>
-<dd>データセット種別</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>DatasetDict</p></div>
+<div class="desc"><p>Load a single dataset</p>
+<pre><code>    Args:
+</code></pre>
+<p>dataset_type: Dataset type</p>
+<pre><code>    Returns:
+        DatasetDict
+</code></pre></div>
 </dd>
 </dl>
 </dd>
