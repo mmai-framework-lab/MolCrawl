@@ -619,9 +619,9 @@ There is a separate readme inside the `gpn` folder, detailling how to train and 
   - Test tokens: 4,514,586
   - Total samples: 3,342,414
   - Total tokens: 467,530,577
-  - Samples length size distribution Training Set: ![mol nl sample dist](../../assets/img/molecule_nl_tokenized_train_lengths_dist.png)
-  - Samples length size distribution Validation Set: ![mol nl sample dist](../../assets/img/molecule_nl_tokenized_validation_lengths_dist.png)
-  - Samples length size distribution Test Set: ![mol nl sample dist](../../assets/img/molecule_nl_tokenized_test_lengths_dist.png)
+  - Samples length size distribution Training Set: ![mol nl sample dist](../../assets/img/molecule_nat_lang_tokenized_train_lengths_dist.png)
+  - Samples length size distribution Validation Set: ![mol nl sample dist](../../assets/img/molecule_nat_lang_tokenized_validation_lengths_dist.png)
+  - Samples length size distribution Test Set: ![mol nl sample dist](../../assets/img/molecule_nat_lang_tokenized_test_lengths_dist.png)
 
 - **Genome Sequence** (status: still on going)
   - Number of sequence: 248,678
