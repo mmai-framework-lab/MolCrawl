@@ -42,7 +42,7 @@ LEARNING_SOURCE_DIR/
 │
 ├── logs/                        # Root-level training logs
 │
-├── molecule_nl/                 # Molecule-related Natural Language data
+├── molecule_nat_lang/                 # Molecule-related Natural Language data
 │   ├── arrow_splits/           # Arrow format split data
 │   ├── bert-output/            # BERT model outputs
 │   ├── gpt2-output/            # GPT-2 model outputs
@@ -95,6 +95,7 @@ LEARNING_SOURCE_DIR/
 
 The following mapping uses fixed-width columns for `less` readability.
 Column widths:
+
 - `Directory`: 47 chars
 - `Program`: 64 chars
 - `Function`: starts at column 116
@@ -172,19 +173,20 @@ rna/rnaformer-output/...                         molcrawl/rnaformer/main.py     
 rna/logs/                                        workflows/*.sh                                                    mkdir -p ${LEARNING_SOURCE_DIR}/rna/logs
 ```
 
-### molecule_nl
+### molecule_nat_lang
 
 ```text
 Directory                                        Program                                                           Function
 -----------------------------------------------  ----------------------------------------------------------------  -----------------------------------------------
-molecule_nl/osunlp/SMolInstruct/                 molcrawl/preparation/download_smolinstruct.sh                     shell entry (snapshot_download)
-molecule_nl/logs/                                molcrawl/preparation/preparation_script_molecule_related_nat_...  main(os.makedirs(logging_dir)) + workflows mkdir -p
-molecule_nl/arrow_splits/                        molcrawl/preparation/preparation_script_molecule_related_nat_...  main (Arrow save block)
-molecule_nl/gpt2_format/                         molcrawl/preparation/preparation_script_molecule_related_nat_...  main (GPT-2 format save block)
-molecule_nl/training_ready_hf_dataset/           molcrawl/molecule_related_nl/dataset/prepare_gpt2.py              tokenize_batch_dataset()
-molecule_nl/bert-output/...                      molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
-molecule_nl/gpt2-output/...                      molcrawl/gpt2/train.py                                            training entry (out_dir)
+molecule_nat_lang/osunlp/SMolInstruct/                 molcrawl/preparation/download_smolinstruct.sh                     shell entry (snapshot_download)
+molecule_nat_lang/logs/                                molcrawl/preparation/preparation_script_molecule_related_nat_...  main(os.makedirs(logging_dir)) + workflows mkdir -p
+molecule_nat_lang/arrow_splits/                        molcrawl/preparation/preparation_script_molecule_related_nat_...  main (Arrow save block)
+molecule_nat_lang/gpt2_format/                         molcrawl/preparation/preparation_script_molecule_related_nat_...  main (GPT-2 format save block)
+molecule_nat_lang/training_ready_hf_dataset/           molcrawl/molecule_related_nl/dataset/prepare_gpt2.py              tokenize_batch_dataset()
+molecule_nat_lang/bert-output/...                      molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
+molecule_nat_lang/gpt2-output/...                      molcrawl/gpt2/train.py                                            training entry (out_dir)
 ```
+
 ### Notes
 
 - `LEARNING_SOURCE_DIR/logs` (root-level logs) is not created by a single mandatory pipeline entrypoint; it is mainly created by workflow scripts.

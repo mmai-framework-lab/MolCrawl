@@ -66,13 +66,13 @@ export LEARNING_SOURCE_DIR="learning_source"
 - `PROTEIN_SEQUENCE_DIR`: Protein Sequence directory path
 - `GENOME_SEQUENCE_DIR`: Genome Sequence directory path
 - `RNA_DATASET_DIR`: RNA directory path
-- `MOLECULE_NL_DIR`: Molecule_NL directory path
+- `MOLECULE_NAT_LANG_DIR`: Molecule_Nat_Lang directory path
 - `COMPOUNDS_DIR`: Compounds directory path
 - `UNIPROT_DATASET_DIR`: UniProt dataset path
 - `REFSEQ_DATASET_DIR`: RefSeq dataset path
 - `CELLXGENE_DATASET_DIR`: CellxGene dataset path
 - `COMPOUNDS_DATASET_DIR`: Compounds dataset path (includes `organix13_tokenized.parquet`)
-- `MOLECULE_NL_DATASET_DIR`: Molecule_NL dataset path (includes `molecule_related_natural_language_tokenized.parquet`)
+- `MOLECULE_NAT_LANG_DATASET_DIR`: Molecule_Nat_Lang dataset path (includes `molecule_related_natural_language_tokenized.parquet`)
 - `ABSOLUTE_LEARNING_SOURCE_PATH`: absolute path of the base directory
 
 ### Shell (env.sh)
@@ -88,4 +88,4 @@ Legacy variables should be derived from `$LEARNING_SOURCE_DIR` as follows:
 - `$REFSEQ_DATASET_DIR` → `$LEARNING_SOURCE_DIR/genome_sequence/training_ready_hf_dataset`
 - `$CELLXGENE_DATASET_DIR` → `$LEARNING_SOURCE_DIR/rna/training_ready_hf_dataset`
 - `$COMPOUNDS_DATASET_DIR` → `$LEARNING_SOURCE_DIR/compounds/organix13/compounds/training_ready_hf_dataset`
-- `$MOLECULE_NL_DATASET_DIR` → `$LEARNING_SOURCE_DIR/molecule_nl/training_ready_hf_dataset`
+- `$MOLECULE_NAT_LANG_DATASET_DIR` → `$LEARNING_SOURCE_DIR/molecule_nat_lang/training_ready_hf_dataset`

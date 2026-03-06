@@ -66,13 +66,13 @@ export LEARNING_SOURCE_DIR="learning_source"
 - `PROTEIN_SEQUENCE_DIR`: Protein Sequence ディレクトリパス
 - `GENOME_SEQUENCE_DIR`: Genome Sequence ディレクトリパス
 - `RNA_DATASET_DIR`: RNA ディレクトリパス
-- `MOLECULE_NL_DIR`: Molecule_NL ディレクトリパス
+- `MOLECULE_NAT_LANG_DIR`: Molecule_Nat_Lang ディレクトリパス
 - `COMPOUNDS_DIR`: Compounds ディレクトリパス
 - `UNIPROT_DATASET_DIR`: UniProt データセットパス
 - `REFSEQ_DATASET_DIR`: RefSeq データセットパス
 - `CELLXGENE_DATASET_DIR`: CellxGene データセットパス
 - `COMPOUNDS_DATASET_DIR`: Compounds データセットパス（`organix13_tokenized.parquet` を含む）
-- `MOLECULE_NL_DATASET_DIR`: Molecule_NL データセットパス（`molecule_related_natural_language_tokenized.parquet` を含む）
+- `MOLECULE_NAT_LANG_DATASET_DIR`: Molecule_Nat_Lang データセットパス（`molecule_related_natural_language_tokenized.parquet` を含む）
 - `ABSOLUTE_LEARNING_SOURCE_PATH`: ベースディレクトリの絶対パス
 
 ### Shell (`env.sh`)
@@ -88,4 +88,4 @@ export LEARNING_SOURCE_DIR="learning_source"
 - `$REFSEQ_DATASET_DIR` -> `$LEARNING_SOURCE_DIR/genome_sequence/training_ready_hf_dataset`
 - `$CELLXGENE_DATASET_DIR` -> `$LEARNING_SOURCE_DIR/rna/training_ready_hf_dataset`
 - `$COMPOUNDS_DATASET_DIR` -> `$LEARNING_SOURCE_DIR/compounds/organix13/compounds/training_ready_hf_dataset`
-- `$MOLECULE_NL_DATASET_DIR` -> `$LEARNING_SOURCE_DIR/molecule_nl/training_ready_hf_dataset`
+- `$MOLECULE_NAT_LANG_DATASET_DIR` -> `$LEARNING_SOURCE_DIR/molecule_nat_lang/training_ready_hf_dataset`

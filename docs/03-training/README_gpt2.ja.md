@@ -12,15 +12,18 @@
 `python gpt2/configs/<dataset>/prepare.py path/to/the/tokenized/dataset`
 
 このステップでは:
+
 - データセットを読み込み、
 - サブセットをサンプリングし、
 - 同一長のバッチを作成します。
 
 サブセットサイズは以下で制御します:
+
 - `--training-set-subset-len`
 - `--test-set-subset-len`
 
 ルール:
+
 - 値が `< 1` の場合: 全データに対する割合として解釈
 - 値が `>= 1` の場合: サンプル数として解釈（`1` は 1 サンプル）
 
@@ -34,7 +37,7 @@
 
 例:
 
-`python gpt2/train.py gpt2/configs/molecule_nl/train_gpt2_large_config.py`
+`python gpt2/train.py gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
 
 これで学習が開始され、チェックポイント（例: `out/ckpt.pt`）が保存されます。
 
@@ -56,7 +59,7 @@
 
 例:
 
-`python gpt2/sample.py gpt2/configs/molecule_nl/train_gpt2_large_config.py`
+`python gpt2/sample.py gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
 
 ## 設定パラメータ
 

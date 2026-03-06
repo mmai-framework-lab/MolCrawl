@@ -25,7 +25,7 @@ python molcrawl/gpt2/test_checkpoint.py \
 - `--output_dir`: output directory (default: `gpt2_test_output`)
 - `--convert_to_hf`: convert to Hugging Face format
 - `--test_dataset_params`: JSON string, for example `{"dataset_dir":"..."}`
-- `--domain`: `compounds|molecule_nl|genome|protein_sequence|rna`
+- `--domain`: `compounds|molecule_nat_lang|genome|protein_sequence|rna`
 - `--vocab_path`: vocab/model file path (used for some domains)
 - `--max_test_samples`: max evaluation samples
 - `--device`: for example `cuda`, `cpu`, `cuda:0`
@@ -36,9 +36,9 @@ python molcrawl/gpt2/test_checkpoint.py \
 
 ```bash
 python molcrawl/gpt2/test_checkpoint.py \
-  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nl/gpt2-output/molecule_nl-small/ckpt.pt" \
-  --domain molecule_nl \
-  --test_dataset_params '{"dataset_dir":"<LEARNING_SOURCE_DIR>/molecule_nl/training_ready_hf_dataset"}' \
+  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nat_lang/gpt2-output/molecule_nat_lang-small/ckpt.pt" \
+  --domain molecule_nat_lang \
+  --test_dataset_params '{"dataset_dir":"<LEARNING_SOURCE_DIR>/molecule_nat_lang/training_ready_hf_dataset"}' \
   --max_test_samples 1000
 ```
 

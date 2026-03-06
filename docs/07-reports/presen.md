@@ -91,7 +91,7 @@ python scripts/preparation/preparation_script_genome_sequence.py \
 # Molecule NL preparation
 bash scripts/preparation/download_smolinstruct.sh
 python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
-    assets/configs/molecule_nl_config.yaml
+    assets/configs/molecule_nat_lang_config.yaml
 ```
 
 ## Value Proposition

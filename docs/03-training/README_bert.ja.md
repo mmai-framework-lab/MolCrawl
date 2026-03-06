@@ -28,7 +28,7 @@
   前処理済み Hugging Face 互換データセットへのパス:
   これは処理済みデータセットへのパスです。詳細は [Training of GPT-2 model Section in](../01-getting_started/README.md) を参照してください。
 
-- **`model_path = get_bert_output_path("molecule_nl", model_size)`**
+- **`model_path = get_bert_output_path("molecule_nat_lang", model_size)`**
   モデル出力（チェックポイント、ログ）を保存するディレクトリ。
 
 ---

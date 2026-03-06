@@ -11,7 +11,7 @@ Verify that GPT-2 training runs correctly on the Molecule NL dataset in `learnin
 ## Dataset Summary
 
 ```text
-learning_20251125/molecule_nl/
+learning_20251125/molecule_nat_lang/
 ├── arrow_splits/
 │   ├── train.arrow/    (3,267,176 samples)
 │   ├── test.arrow/     (30,344 samples)
@@ -58,7 +58,7 @@ learning_rate = 3e-4
 gradient_accumulation_steps = 1
 
 # Data
-dataset_dir = "learning_20251125/molecule_nl/arrow_splits"
+dataset_dir = "learning_20251125/molecule_nat_lang/arrow_splits"
 vocab_size = 32008
 ```
 
@@ -83,7 +83,7 @@ vocab_size = 32008
 ## Generated Files
 
 ```text
-test_gpt2_molecule_nl_20251125/
+test_gpt2_molecule_nat_lang_20251125/
 ├── ckpt.pt       # model + optimizer states
 └── logging.csv   # training log
 ```

@@ -3,7 +3,7 @@
 ## Comparison Scope
 
 - Old dataset: `learning_source`
-- New dataset: `learning_source/molecule_nl/arrow_splits`
+- New dataset: `learning_source/molecule_nat_lang/arrow_splits`
 - Run date: 2025-11-25
 
 ## Key Differences

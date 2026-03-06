@@ -5,7 +5,7 @@
 **比較対象:**
 
 - 旧データ: `learning_source`
-- 新データ: `learning_source/molecule_nl/arrow_splits`
+- 新データ: `learning_source/molecule_nat_lang/arrow_splits`
 
 **実行日時:** 2025年11月25日
 
@@ -153,7 +153,7 @@ def load_jsonl_dataset(dataset_path):
 
 ## 互換性評価
 
-###  破壊的変更（Breaking Changes）
+### 破壊的変更（Breaking Changes）
 
 1. **カラム名の変更**
    - `task` → `task_type`
@@ -167,7 +167,7 @@ def load_jsonl_dataset(dataset_path):
    - `input_text`にタスク指示文が含まれない
    - 影響: プロンプト生成ロジックの見直しが必要
 
-###  マイナーな変更
+### マイナーな変更
 
 1. **サンプル数の減少**
    - 全体で約0.81%減少
@@ -177,7 +177,7 @@ def load_jsonl_dataset(dataset_path):
    - `input_too_long`, `valid_sample`
    - 影響: 新機能として活用可能（後方互換性あり）
 
-###  互換性のある部分
+### 互換性のある部分
 
 1. **コアカラムは維持**
    - `input_ids`, `attention_mask`, `labels`, `output_ids`
@@ -299,9 +299,9 @@ class MoleculeNLDataset:
 
 ## 次のステップ
 
-1.  データ構造の検証完了
-2.  既存コードの互換性チェック
-3.  必要な修正箇所のリストアップ
-4.  移行計画の策定
-5.  テスト・検証
-6.  本番環境への適用
+1. データ構造の検証完了
+2. 既存コードの互換性チェック
+3. 必要な修正箇所のリストアップ
+4. 移行計画の策定
+5. テスト・検証
+6. 本番環境への適用

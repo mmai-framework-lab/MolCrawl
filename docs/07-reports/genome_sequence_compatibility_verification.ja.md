@@ -6,29 +6,29 @@
 
 ## 検証目的
 
-molecule_nlデータセットの更新により、既存のgenome_sequence GPT-2学習が損なわれていないか確認
+molecule_nat_langデータセットの更新により、既存のgenome_sequence GPT-2学習が損なわれていないか確認
 
 ---
 
 ## 検証結果サマリー
 
-###  成功項目
+### 成功項目
 
 1. **既存コードの保持**
-   -  `gpt2/train.py` - 変更なし、正常に保持
-   -  `gpt2/configs/genome_sequence/train_gpt2_config.py` - 変更なし、正常に保持
-   -  `gpt2/model.py` - 変更なし、正常に保持
-   -  `src/config/paths.py` - REFSEQ_DATASET_DIR定義保持
+   - `gpt2/train.py` - 変更なし、正常に保持
+   - `gpt2/configs/genome_sequence/train_gpt2_config.py` - 変更なし、正常に保持
+   - `gpt2/model.py` - 変更なし、正常に保持
+   - `src/config/paths.py` - REFSEQ_DATASET_DIR定義保持
 
 2. **データ存在確認**
-   -  生データファイル存在: `learning_20251104/genome_sequence/raw_files/` (111GB)
-   -  トークナイザー存在: `learning_20251104/genome_sequence/spm_tokenizer.model`
-   -  中間キャッシュ存在: `learning_20251104/genome_sequence/hf_cache/` (199GB)
+   - 生データファイル存在: `learning_20251104/genome_sequence/raw_files/` (111GB)
+   - トークナイザー存在: `learning_20251104/genome_sequence/spm_tokenizer.model`
+   - 中間キャッシュ存在: `learning_20251104/genome_sequence/hf_cache/` (199GB)
 
 3. **後方互換性**
-   -  PreparedDataset更新はgenome_sequenceに影響なし
-   -  molecule_nl用のarrow形式読み込み追加は既存コードと共存
-   -  環境変数LEARNING_SOURCE_DIR使用は従来通り
+   - PreparedDataset更新はgenome_sequenceに影響なし
+   - molecule_nat_lang用のarrow形式読み込み追加は既存コードと共存
+   - 環境変数LEARNING_SOURCE_DIR使用は従来通り
 
 ---
 
@@ -94,10 +94,10 @@ dataset_params = {"dataset_dir": dataset_dir}
 
 **特徴:**
 
--  sentencepieceトークナイザー使用
--  独自のデータセットパス設定
--  大規模学習用のパラメータ設定
--  molecule_nlとは独立した設定
+- sentencepieceトークナイザー使用
+- 独自のデータセットパス設定
+- 大規模学習用のパラメータ設定
+- molecule_nat_langとは独立した設定
 
 ---
 
@@ -110,13 +110,13 @@ dataset_params = {"dataset_dir": dataset_dir}
 **変更内容:**
 
 - Arrow形式データセット(.arrow suffix)の自動検出追加
-- input_ids + output_idsの自動結合機能追加（molecule_nl用）
+- input_ids + output_idsの自動結合機能追加（molecule_nat_lang用）
 
 **genome_sequenceへの影響:**
 
--  **影響なし** - genome_sequenceは独自のデータローディングを使用
--  **影響なし** - dataset == "genome_sequence"の場合は特殊処理
--  **影響なし** - PreparedDatasetの拡張は後方互換性を保持
+- **影響なし** - genome_sequenceは独自のデータローディングを使用
+- **影響なし** - dataset == "genome_sequence"の場合は特殊処理
+- **影響なし** - PreparedDatasetの拡張は後方互換性を保持
 
 #### gpt2/train.pyの状態
 
@@ -134,9 +134,9 @@ else:
 
 **分析:**
 
--  genome_sequenceは`else`ブロックでPreparedDataset使用
--  `dataset_params`で柔軟なデータ指定可能
--  molecule_nl用の更新はこのフローに影響しない
+- genome_sequenceは`else`ブロックでPreparedDataset使用
+- `dataset_params`で柔軟なデータ指定可能
+- molecule_nat_lang用の更新はこのフローに影響しない
 
 ### 2. データ準備状況
 
@@ -150,9 +150,9 @@ genome_sequenceの学習には以下が必要:
 
 #### 現在の状況
 
--  `training_ready_hf_dataset`ディレクトリが存在しない
--  生データと中間キャッシュは存在
--  データ準備スクリプトの実行が必要
+- `training_ready_hf_dataset`ディレクトリが存在しない
+- 生データと中間キャッシュは存在
+- データ準備スクリプトの実行が必要
 
 **データ準備コマンド:**
 
@@ -205,11 +205,11 @@ python src/genome_sequence/dataset/prepare_gpt2.py \
 
 ---
 
-## molecule_nlとの比較
+## molecule_nat_langとの比較
 
 ### データ形式の違い
 
-| 項目               | molecule_nl            | genome_sequence           |
+| 項目               | molecule_nat_lang            | genome_sequence           |
 | ------------------ | ---------------------- | ------------------------- |
 | **データ形式**     | Arrow (\*.arrow)       | HuggingFace Dataset       |
 | **トークナイザー** | Llama-2 (BPE)          | SentencePiece             |
@@ -220,7 +220,7 @@ python src/genome_sequence/dataset/prepare_gpt2.py \
 
 ### 学習フローの違い
 
-**molecule_nl:**
+**molecule_nat_lang:**
 
 ```
 JSONL → Parquet → Arrow splits → PreparedDataset → GPT-2 Training
@@ -236,20 +236,20 @@ FASTA → Raw chunks → HF Cache → training_ready_hf_dataset → PreparedData
 
 ## 結論
 
-###  既存のgenome_sequence学習は損なわれていない
+### 既存のgenome_sequence学習は損なわれていない
 
 **確認事項:**
 
-1.  既存のコードファイルは全て保持されている
-2.  molecule_nlの更新はgenome_sequenceと独立している
-3.  PreparedDatasetの拡張は後方互換性を保持
-4.  既存の設定ファイルは変更されていない
-5.  データファイルとトークナイザーは正常に存在
+1. 既存のコードファイルは全て保持されている
+2. molecule_nat_langの更新はgenome_sequenceと独立している
+3. PreparedDatasetの拡張は後方互換性を保持
+4. 既存の設定ファイルは変更されていない
+5. データファイルとトークナイザーは正常に存在
 
 **必要な追加作業:**
 
--  `training_ready_hf_dataset`の作成（データ準備スクリプト実行）
--  作成後に学習の動作確認推奨
+- `training_ready_hf_dataset`の作成（データ準備スクリプト実行）
+- 作成後に学習の動作確認推奨
 
 ---
 
@@ -371,12 +371,12 @@ ls -lh learning_20251104/genome_sequence/spm_tokenizer.model
 
 ### 検証結果
 
- **molecule_nlデータセットの更新による影響: なし**
+ **molecule_nat_langデータセットの更新による影響: なし**
 
--  既存のgenome_sequence学習コードは全て保持
--  PreparedDatasetの拡張は後方互換性を保持
--  データファイルとトークナイザーは正常
--  training_ready_hf_datasetの作成が必要（既存の準備スクリプトで対応可能）
+- 既存のgenome_sequence学習コードは全て保持
+- PreparedDatasetの拡張は後方互換性を保持
+- データファイルとトークナイザーは正常
+- training_ready_hf_datasetの作成が必要（既存の準備スクリプトで対応可能）
 
 ### 次のステップ
 
@@ -384,7 +384,7 @@ ls -lh learning_20251104/genome_sequence/spm_tokenizer.model
    - `workflows/02-genome_sequence-prepare-gpt2.sh`を実行
 2. **学習開始** (データ準備完了後)
    - 既存の設定ファイルで学習可能
-   - molecule_nlの学習と並行実行も可能
+   - molecule_nat_langの学習と並行実行も可能
 
 3. **継続的な検証**
    - 新しいデータセット追加時も後方互換性を維持

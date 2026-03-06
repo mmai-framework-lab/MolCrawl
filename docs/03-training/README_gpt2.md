@@ -12,15 +12,18 @@ Run:
 `python gpt2/configs/<dataset>/prepare.py path/to/the/tokenized/dataset`
 
 This step:
+
 - loads the dataset,
 - samples a subset, and
 - creates batches of the same length.
 
 Subset size is controlled by:
+
 - `--training-set-subset-len`
 - `--test-set-subset-len`
 
 Rules:
+
 - if value `< 1`: interpreted as a fraction of the full dataset
 - if value `>= 1`: interpreted as the number of samples (`1` means one sample)
 
@@ -34,7 +37,7 @@ Each dataset has a corresponding `train_gpt2_config.py` that defines training pa
 
 Example:
 
-`python gpt2/train.py gpt2/configs/molecule_nl/train_gpt2_large_config.py`
+`python gpt2/train.py gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
 
 This starts training and writes checkpoints (for example, `out/ckpt.pt`).
 
@@ -56,7 +59,7 @@ Use the same config file used in training.
 
 Example:
 
-`python gpt2/sample.py gpt2/configs/molecule_nl/train_gpt2_large_config.py`
+`python gpt2/sample.py gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
 
 ## Configuration Parameters
 

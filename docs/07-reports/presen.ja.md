@@ -4,11 +4,11 @@
 
 ---
 
-##  プロジェクト概要
+## プロジェクト概要
 
 生物学・化学分野の大規模データセットを活用した5つの基盤モデル（Foundational Models）を構築・評価するための統合プラットフォーム
 
-###  目的
+### 目的
 
 - **マルチモーダル学習**: ゲノム、タンパク質、RNA、化合物、自然言語の5つのモダリティを統合
 - **評価自動化**: 8種類の評価パイプラインによる性能検証
@@ -16,7 +16,7 @@
 
 ---
 
-##  5つのAIモデル
+## 5つのAIモデル
 
 ### 1. **Genome Sequence Model** (ゲノム配列)
 
@@ -95,7 +95,7 @@ HuggingFace Hub Download → ZIP展開 → トークン化 → 統計処理
 
 ---
 
-##  システムアーキテクチャ
+## システムアーキテクチャ
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -139,7 +139,7 @@ HuggingFace Hub Download → ZIP展開 → トークン化 → 統計処理
 
 ---
 
-##  データ処理フロー（統一パターン）
+## データ処理フロー（統一パターン）
 
 ### Phase 1: データ準備
 
@@ -179,7 +179,7 @@ HuggingFace Hub Download → ZIP展開 → トークン化 → 統計処理
 
 ---
 
-##  可視化機能
+## 可視化機能
 
 ### 各評価パイプラインが生成する可視化
 
@@ -196,7 +196,7 @@ HuggingFace Hub Download → ZIP展開 → トークン化 → 統計処理
 
 ---
 
-##  実行例
+## 実行例
 
 ### 1. データセット準備
 
@@ -208,7 +208,7 @@ python scripts/preparation/preparation_script_genome_sequence.py \
 # Molecule NLデータのダウンロード
 bash scripts/preparation/download_smolinstruct.sh
 python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
-    assets/configs/molecule_nl_config.yaml
+    assets/configs/molecule_nat_lang_config.yaml
 ```
 
 ### 2. 評価実行
@@ -225,7 +225,7 @@ python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
 
 ---
 
-##  技術スタック
+## 技術スタック
 
 ### バックエンド
 
@@ -256,7 +256,7 @@ python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
 
 ---
 
-##  評価指標
+## 評価指標
 
 ### 分類タスク (ClinVar, COSMIC, Protein Classification)
 
@@ -274,7 +274,7 @@ python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
 
 ---
 
-##  主要機能
+## 主要機能
 
 ### 1. **柔軟な出力先指定**
 
@@ -304,7 +304,7 @@ Webインターフェースでリアルタイムに進捗確認
 
 ---
 
-##  ディレクトリ構造
+## ディレクトリ構造
 
 ```
 riken-dataset-fundational-model/
@@ -343,7 +343,7 @@ riken-dataset-fundational-model/
 
 ---
 
-##  CI/CD パイプライン
+## CI/CD パイプライン
 
 ### GitHub Actions ワークフロー
 
@@ -359,7 +359,7 @@ riken-dataset-fundational-model/
 
 ---
 
-##  プロジェクトの成果
+## プロジェクトの成果
 
 ### コード品質
 
@@ -380,7 +380,7 @@ riken-dataset-fundational-model/
 
 ---
 
-##  今後の展開
+## 今後の展開
 
 ### 短期目標
 
@@ -402,7 +402,7 @@ riken-dataset-fundational-model/
 
 ---
 
-##  まとめ
+## まとめ
 
 ### プロジェクトの強み
 
@@ -421,6 +421,6 @@ riken-dataset-fundational-model/
 
 ---
 
-##  質疑応答
+## 質疑応答
 
 ご質問をお待ちしております！

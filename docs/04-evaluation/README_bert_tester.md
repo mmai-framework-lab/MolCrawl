@@ -23,7 +23,7 @@ python molcrawl/bert/test_checkpoint.py \
 ## Main Arguments
 
 - `--checkpoint_path` (required): target checkpoint
-- `--domain`: `compounds|molecule_nl|genome|protein_sequence|rna`
+- `--domain`: `compounds|molecule_nat_lang|genome|protein_sequence|rna`
 - `--vocab_path`: required for some domains such as compounds/genome
 - `--dataset_path`: optional; runs dataset-based evaluation if provided
 - `--test_texts`: optional; overrides default test samples
@@ -34,8 +34,8 @@ python molcrawl/bert/test_checkpoint.py \
 
 ```bash
 python molcrawl/bert/test_checkpoint.py \
-  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nl/bert-output/molecule_nl-small/checkpoint-1000" \
-  --domain molecule_nl
+  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nat_lang/bert-output/molecule_nat_lang-small/checkpoint-1000" \
+  --domain molecule_nat_lang
 ```
 
 ### Genome

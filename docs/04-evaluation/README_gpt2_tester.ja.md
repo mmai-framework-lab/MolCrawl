@@ -25,7 +25,7 @@ python molcrawl/gpt2/test_checkpoint.py \
 - `--output_dir`: 出力先（既定: `gpt2_test_output`）
 - `--convert_to_hf`: HF 形式へ変換
 - `--test_dataset_params`: JSON 文字列（例: `{"dataset_dir":"..."}`）
-- `--domain`: `compounds|molecule_nl|genome|protein_sequence|rna`
+- `--domain`: `compounds|molecule_nat_lang|genome|protein_sequence|rna`
 - `--vocab_path`: compounds などで語彙を指定
 - `--max_test_samples`: 評価サンプル上限
 - `--device`: 例 `cuda`, `cpu`, `cuda:0`
@@ -36,9 +36,9 @@ python molcrawl/gpt2/test_checkpoint.py \
 
 ```bash
 python molcrawl/gpt2/test_checkpoint.py \
-  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nl/gpt2-output/molecule_nl-small/ckpt.pt" \
-  --domain molecule_nl \
-  --test_dataset_params '{"dataset_dir":"<LEARNING_SOURCE_DIR>/molecule_nl/training_ready_hf_dataset"}' \
+  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nat_lang/gpt2-output/molecule_nat_lang-small/ckpt.pt" \
+  --domain molecule_nat_lang \
+  --test_dataset_params '{"dataset_dir":"<LEARNING_SOURCE_DIR>/molecule_nat_lang/training_ready_hf_dataset"}' \
   --max_test_samples 1000
 ```
 

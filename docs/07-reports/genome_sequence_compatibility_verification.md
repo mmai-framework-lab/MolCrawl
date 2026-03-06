@@ -6,7 +6,7 @@
 
 ## Objective
 
-Confirm that updates for the `molecule_nl` dataset did not break existing `genome_sequence` GPT-2 training.
+Confirm that updates for the `molecule_nat_lang` dataset did not break existing `genome_sequence` GPT-2 training.
 
 ## Summary Result
 
@@ -25,7 +25,7 @@ Confirm that updates for the `molecule_nl` dataset did not break existing `genom
 
 3. **Backward compatibility preserved**
    - `PreparedDataset` updates are compatible with existing genome flow
-   - Arrow-loading support for molecule_nl does not interfere with genome training
+   - Arrow-loading support for molecule_nat_lang does not interfere with genome training
    - `LEARNING_SOURCE_DIR` usage remains compatible
 
 ## Dataset State
@@ -82,5 +82,5 @@ python src/genome_sequence/dataset/prepare_gpt2.py \
 
 ## Conclusion
 
-No regression was detected in existing genome-sequence GPT-2 training logic due to molecule_nl updates.
+No regression was detected in existing genome-sequence GPT-2 training logic due to molecule_nat_lang updates.
 The remaining action is dataset preparation to recreate `training_ready_hf_dataset` before a full training run.

@@ -23,7 +23,7 @@ python molcrawl/bert/test_checkpoint.py \
 ## 主な引数
 
 - `--checkpoint_path` (必須): テスト対象チェックポイント
-- `--domain`: `compounds|molecule_nl|genome|protein_sequence|rna`
+- `--domain`: `compounds|molecule_nat_lang|genome|protein_sequence|rna`
 - `--vocab_path`: compounds/genome などで必要になる語彙/モデルファイル
 - `--dataset_path`: 任意。指定時はデータセット評価も実施
 - `--test_texts`: 任意。テスト用文字列を上書き
@@ -34,8 +34,8 @@ python molcrawl/bert/test_checkpoint.py \
 
 ```bash
 python molcrawl/bert/test_checkpoint.py \
-  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nl/bert-output/molecule_nl-small/checkpoint-1000" \
-  --domain molecule_nl
+  --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nat_lang/bert-output/molecule_nat_lang-small/checkpoint-1000" \
+  --domain molecule_nat_lang
 ```
 
 ### Genome

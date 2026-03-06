@@ -4,7 +4,7 @@ This web interface visualizes and manages information about Hugging Face pre-tra
 
 ## Overview
 
-You can comprehensively view and manage `training_ready_hf_dataset` data under `learning_source` for `genome_sequence`, `molecule_nl`, `protein_sequence`, and `rna`.
+You can comprehensively view and manage `training_ready_hf_dataset` data under `learning_source` for `genome_sequence`, `molecule_nat_lang`, `protein_sequence`, and `rna`.
 
 ### Main Features
 
@@ -89,7 +89,7 @@ molcrawl-web/
 - **Model grid**: Per-model detail cards
   - compounds: Chemical compound structures
   - genome_sequence: Genome DNA sequences
-  - molecule_nl: Molecule-related natural language descriptions
+  - molecule_nat_lang: Molecule-related natural language descriptions
   - protein_sequence: Protein amino acid sequences
   - rna: RNA nucleotide sequences
 

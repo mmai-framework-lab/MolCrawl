@@ -11,7 +11,7 @@ Verify that BERT training runs correctly on the Molecule NL dataset in `learning
 ## Dataset Summary
 
 ```text
-learning_20251125/molecule_nl/
+learning_20251125/molecule_nat_lang/
 ├── arrow_splits/
 │   ├── train.arrow/    (3,267,176 samples)
 │   ├── test.arrow/     (30,344 samples)

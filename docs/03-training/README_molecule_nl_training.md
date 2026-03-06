@@ -17,25 +17,25 @@ This guide summarizes the current Molecule NL workflow and dataset compatibility
 
 ```bash
 export LEARNING_SOURCE_DIR="learning_source"
-bash workflows/01-molecule_nl-prepare.sh
+bash workflows/01-molecule_nat_lang-prepare.sh
 ```
 
 This step runs `molcrawl/preparation/preparation_script_molecule_related_nat_lang.py` and creates:
 
-- `${LEARNING_SOURCE_DIR}/molecule_nl/molecule_related_natural_language_tokenized.parquet`
-- `${LEARNING_SOURCE_DIR}/molecule_nl/arrow_splits/` (split datasets)
-- `${LEARNING_SOURCE_DIR}/molecule_nl/gpt2_format/` (token-stream `.pt` files)
+- `${LEARNING_SOURCE_DIR}/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet`
+- `${LEARNING_SOURCE_DIR}/molecule_nat_lang/arrow_splits/` (split datasets)
+- `${LEARNING_SOURCE_DIR}/molecule_nat_lang/gpt2_format/` (token-stream `.pt` files)
 
 ### Step 2: Build training-ready HF dataset
 
 ```bash
 export LEARNING_SOURCE_DIR="learning_source"
-bash workflows/02-molecule_nl-prepare-gpt2.sh
+bash workflows/02-molecule_nat_lang-prepare-gpt2.sh
 ```
 
 This generates:
 
-- `${LEARNING_SOURCE_DIR}/molecule_nl/training_ready_hf_dataset`
+- `${LEARNING_SOURCE_DIR}/molecule_nat_lang/training_ready_hf_dataset`
 
 Both current BERT and GPT-2 Molecule NL configs use this `training_ready_hf_dataset` as `dataset_dir`.
 
@@ -46,13 +46,13 @@ Both current BERT and GPT-2 Molecule NL configs use this `training_ready_hf_data
 Direct run:
 
 ```bash
-python molcrawl/bert/main.py molcrawl/bert/configs/molecule_nl.py
+python molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
 ```
 
 Workflow script:
 
 ```bash
-bash workflows/03c-molecule_nl-train-bert-small.sh
+bash workflows/03c-molecule_nat_lang-train-bert-small.sh
 ```
 
 ### GPT-2 (Molecule NL)
@@ -60,13 +60,13 @@ bash workflows/03c-molecule_nl-train-bert-small.sh
 Direct run:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nl/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py
 ```
 
 Workflow script:
 
 ```bash
-bash workflows/03a-molecule_nl-train-small.sh
+bash workflows/03a-molecule_nat_lang-train-small.sh
 ```
 
 ## Data Compatibility
@@ -95,7 +95,7 @@ Before training, you can run:
 
 ```bash
 export LEARNING_SOURCE_DIR="learning_source"
-python molcrawl/preparation/test_molecule_nl_compatibility.py
+python molcrawl/preparation/test_molecule_nat_lang_compatibility.py
 ```
 
 Expected summary includes:
@@ -111,8 +111,8 @@ Expected summary includes:
 - Re-run preparation:
 
 ```bash
-bash workflows/01-molecule_nl-prepare.sh
-bash workflows/02-molecule_nl-prepare-gpt2.sh
+bash workflows/01-molecule_nat_lang-prepare.sh
+bash workflows/02-molecule_nat_lang-prepare-gpt2.sh
 ```
 
 ### Out-of-memory during training
@@ -128,7 +128,7 @@ bash workflows/02-molecule_nl-prepare-gpt2.sh
 
 ## Related Files
 
-- BERT config: `molcrawl/bert/configs/molecule_nl.py`
-- GPT-2 config: `molcrawl/gpt2/configs/molecule_nl/train_gpt2_config.py`
-- Compatibility test: `molcrawl/preparation/test_molecule_nl_compatibility.py`
-- Dataset comparison report: `docs/07-reports/molecule_nl_dataset_comparison_report.md`
+- BERT config: `molcrawl/bert/configs/molecule_nat_lang.py`
+- GPT-2 config: `molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py`
+- Compatibility test: `molcrawl/preparation/test_molecule_nat_lang_compatibility.py`
+- Dataset comparison report: `docs/07-reports/molecule_nat_lang_dataset_comparison_report.md`

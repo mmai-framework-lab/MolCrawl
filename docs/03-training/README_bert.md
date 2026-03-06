@@ -1,4 +1,4 @@
-#  Configuration Parameters — Molecule Natural Language Training
+# Configuration Parameters — Molecule Natural Language Training
 
 This document explains the configuration parameters, formatted to match the style of the README sections.
 
@@ -6,7 +6,7 @@ This configuration sets up training for a BERT-style model on a dataset of molec
 
 ---
 
-##  Training Hyperparameters
+## Training Hyperparameters
 
 - **`max_steps = 600000`**
   Total number of training steps (i.e., optimizer updates).
@@ -22,25 +22,25 @@ This configuration sets up training for a BERT-style model on a dataset of molec
 
 ---
 
-##  Dataset & Model Paths
+## Dataset & Model Paths
 
 - **`dataset_dir`**
   Path to the preprocessed Hugging Face-compatible dataset:
   THIS IS THE PATH TO YOUR PROCESSED DATASET. See [Training of GPT-2 model Section in](../01-getting_started/README.md).
 
-- **`model_path = get_bert_output_path("molecule_nl", model_size)`**
+- **`model_path = get_bert_output_path("molecule_nat_lang", model_size)`**
   Directory where model outputs (checkpoints, logs) will be saved.
 
 ---
 
-##  Tokenization Parameters
+## Tokenization Parameters
 
 - **`max_length = 1024`**
   Maximum sequence length for input tokenization. Inputs longer than this will be truncated.
 
 ---
 
-##  Batch Settings
+## Batch Settings
 
 - **`batch_size = 8`**
   Training batch size per GPU/device.
@@ -52,11 +52,11 @@ This configuration sets up training for a BERT-style model on a dataset of molec
   Number of steps to accumulate gradients before an optimizer step.
   Allows simulating a larger effective batch size without exceeding memory limits.
 
->  **Effective Batch Size** = `batch_size × gradient_accumulation_steps × num_GPUs`
+> **Effective Batch Size** = `batch_size × gradient_accumulation_steps × num_GPUs`
 
 ---
 
-##  Special Tokens
+## Special Tokens
 
 - **`start_instruction = 1`**
   Token ID representing the start of an instruction.
@@ -69,7 +69,7 @@ This configuration sets up training for a BERT-style model on a dataset of molec
 
 ---
 
-##  Model Variant
+## Model Variant
 
 - **`model_size = "small"`**
   Specifies the model variant to use: choose between `"small"`, `"medium"`, or `"large"` depending on available compute and use case.

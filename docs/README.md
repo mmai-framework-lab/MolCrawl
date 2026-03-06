@@ -21,7 +21,7 @@
 
 - [BERT Configuration Parameters](03-training/README_bert.md)
 - [GPT-2 Test](03-training/README_gpt2.md)
-- [Molecule NL Training Guide](03-training/README_molecule_nl_training.md)
+- [Molecule NL Training Guide](03-training/README_molecule_nat_lang_training.md)
 
 ## 04 – Evaluation
 
@@ -47,7 +47,7 @@
 - [BERT Training Verification Report (learning_20251125)](07-reports/bert_training_verification_learning_20251125.md)
 - [GPT-2 Training Verification Report (learning_20251125)](07-reports/gpt2_training_verification_learning_20251125.md)
 - [Genome Sequence GPT-2 Compatibility Verification](07-reports/genome_sequence_compatibility_verification.md)
-- [Molecule NL Dataset Structure Comparison Report](07-reports/molecule_nl_dataset_comparison_report.md)
+- [Molecule NL Dataset Structure Comparison Report](07-reports/molecule_nat_lang_dataset_comparison_report.md)
 - [Compounds Workflow Verification Notes](07-reports/verification_in_compounds.md)
 
 ## 08 – Archive (deprecated / historical)
