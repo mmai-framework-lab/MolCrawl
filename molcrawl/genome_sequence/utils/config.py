@@ -26,6 +26,13 @@ class RefSeqPreparationConfig:
     # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
     input_sentence_size: int = 700000
 
+    # Per-species download timeout in seconds (default: 30 min)
+    # If a species download takes longer than this, the child process is killed.
+    species_timeout: int = 30 * 60
+
+    # Maximum number of retries per species before giving up
+    max_retries: int = 2
+
     # Added: Speed-up options (optional)
     num_proc_parquet: Optional[int] = None
     parquet_batch_size: Optional[int] = None

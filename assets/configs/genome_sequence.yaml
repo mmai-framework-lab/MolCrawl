@@ -20,3 +20,8 @@ data_preparation:
   # We will sample input_sentence_size randomly from input_sentence_size * 2 number of sequence.
   # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
   input_sentence_size: 700000
+  # Per-species download timeout in seconds (default: 1800 = 30 min)
+  # If a single species download hangs longer than this, the process is killed and the species is retried.
+  species_timeout: 1800
+  # Maximum number of retries per species before giving up and moving to the next species
+  max_retries: 2

@@ -93,12 +93,14 @@ def check_progress_status(base_dir):
     return steps_completed == total_steps
 
 
-def process1_download_refseq(base_dir, path_species, num_worker, force=False):
+def process1_download_refseq(base_dir, path_species, num_worker, species_timeout=30 * 60, max_retries=2, force=False):
     """Process 1: Download RefSeq dataset
     Args:
         base_dir (str): Base directory for genome sequence data
         path_species (str): Path to species list file
         num_worker (int): Number of workers for parallel processing
+        species_timeout (int): Per-species download timeout in seconds
+        max_retries (int): Maximum retries per species before giving up
         force (bool): Force re-download even if already completed
     Returns:
         bool: True if successful, False otherwise
@@ -116,7 +118,10 @@ def process1_download_refseq(base_dir, path_species, num_worker, force=False):
         else:
             logger.info("👉Process1 : Downloading RefSeq dataset...")
 
-        download_refseq(base_dir, path_species, num_worker)
+        logger.info(f" - Species timeout : {species_timeout}s")
+        logger.info(f" - Max retries     : {max_retries}")
+
+        download_refseq(base_dir, path_species, num_worker, species_timeout=species_timeout, max_retries=max_retries)
         download_marker.touch()
         logger.info("RefSeq download completed.")
         return True
@@ -318,7 +323,14 @@ def main():
     success = True
 
     # Process 1: Download RefSeq dataset
-    success &= process1_download_refseq(base_dir, cfg.path_species, cfg.num_worker, args.force)
+    success &= process1_download_refseq(
+        base_dir,
+        cfg.path_species,
+        cfg.num_worker,
+        species_timeout=getattr(cfg, "species_timeout", 30 * 60),
+        max_retries=getattr(cfg, "max_retries", 2),
+        force=args.force,
+    )
     if not success:
         logger.error("Process 1 failed. Stopping execution.")
         exit(1)
