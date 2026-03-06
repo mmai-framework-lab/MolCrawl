@@ -45,58 +45,146 @@ el.replaceWith(d);
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="molcrawl.genome_sequence.dataset.refseq.download_refseq.download_refseq"><code class="name flex">
-<span>def <span class="ident">download_refseq</span></span>(<span>output_dir, path_species, num_worker)</span>
+<span>def <span class="ident">download_refseq</span></span>(<span>output_dir, path_species, num_worker, species_timeout=1800, max_retries=2)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def download_refseq(output_dir, path_species, num_worker):
-    download_species_refseq(output_dir, path_species, num_worker)
+<pre><code class="python">def download_refseq(
+    output_dir, path_species, num_worker, species_timeout=DEFAULT_SPECIES_TIMEOUT, max_retries=DEFAULT_MAX_RETRIES
+):
+    download_species_refseq(output_dir, path_species, num_worker, species_timeout=species_timeout, max_retries=max_retries)
     extract_refseq(output_dir, num_worker)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.genome_sequence.dataset.refseq.download_refseq.download_species_refseq"><code class="name flex">
-<span>def <span class="ident">download_species_refseq</span></span>(<span>output_dir, path_species, num_worker)</span>
+<span>def <span class="ident">download_species_refseq</span></span>(<span>output_dir, path_species, num_worker, species_timeout=1800, max_retries=2)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def download_species_refseq(output_dir, path_species, num_worker):
-    &#34;&#34;&#34;To check a species name and refseq presence: https://www.ncbi.nlm.nih.gov/datasets/genome/&#34;&#34;&#34;
-    import ncbi_genome_download as ngd
+<pre><code class="python">def download_species_refseq(
+    output_dir,
+    path_species,
+    num_worker,
+    species_timeout=DEFAULT_SPECIES_TIMEOUT,
+    max_retries=DEFAULT_MAX_RETRIES,
+):
+    &#34;&#34;&#34;Download RefSeq genome data for all species in the species list.
+
+    Key safety features:
+    - **Timeout**: Each species download runs in a separate process with a timeout.
+      If ncbi_genome_download hangs, the child process is forcefully killed.
+    - **Resume**: Species that already have downloaded files are automatically skipped.
+    - **Retry**: Failed/timed-out species are retried up to ``max_retries`` times.
+    - **Reporting**: A ``failed_species.json`` is written listing all species that
+      could not be downloaded even after retries.
+    &#34;&#34;&#34;
     from rich.progress import Progress
 
     download_dir = Path(output_dir) / &#34;download_dir&#34;
 
     group_species_map = get_species(path_species)
 
-    total_species = sum([len(v) for v in group_species_map.values()])
+    total_species = sum(len(v) for v in group_species_map.values())
+    failed_species: list[dict] = []
+    skipped_count = 0
+
     with Progress() as progress_bar:
         task = progress_bar.add_task(&#34;Processing ...&#34;, total=total_species)
 
         for group, species in group_species_map.items():
             download_group_dir = download_dir / group
             for sp in species:
-                progress_bar.update(task, description=f&#34;Downloading refseq for species {sp} in {group}...&#34;)
-                logging.info(f&#34;Downloading refseq for species {sp} in {group}&#34;)
-                sp_dir = download_group_dir / to_snake_case(sp.strip())
-                ngd.download(
-                    genera=sp.strip(),
-                    groups=group,
-                    output=str(sp_dir),
-                    flat_output=True,
-                    progress_bar=True,
-                    file_formats=&#34;fasta&#34;,
-                    parallel=num_worker,
-                )
-                progress_bar.update(task, advance=1)</code></pre>
+                sp_name = sp.strip()
+                sp_dir = download_group_dir / to_snake_case(sp_name)
+
+                # ── Resume: skip already-downloaded species ──
+                if _is_species_downloaded(sp_dir):
+                    logger.info(f&#34;Skipping &#39;{sp_name}&#39; in {group} (already downloaded)&#34;)
+                    skipped_count += 1
+                    progress_bar.update(task, advance=1)
+                    continue
+
+                progress_bar.update(task, description=f&#34;Downloading refseq for species {sp_name} in {group}...&#34;)
+                logger.info(f&#34;Downloading refseq for species {sp_name} in {group}&#34;)
+
+                # ── Retry loop ──
+                success = False
+                last_result = {}
+                for attempt in range(1, max_retries + 1):
+                    t0 = time.time()
+                    result = _download_single_species(
+                        genera=sp_name,
+                        group=group,
+                        sp_dir=str(sp_dir),
+                        num_worker=num_worker,
+                        timeout=species_timeout,
+                    )
+                    elapsed = time.time() - t0
+                    last_result = result
+
+                    if result[&#34;status&#34;] == &#34;ok&#34;:
+                        logger.info(f&#34;Successfully downloaded &#39;{sp_name}&#39; in {group} (attempt {attempt}, {elapsed:.1f}s)&#34;)
+                        success = True
+                        break
+                    else:
+                        logger.warning(
+                            f&#34;Download of &#39;{sp_name}&#39; in {group} failed &#34;
+                            f&#34;(attempt {attempt}/{max_retries}, {elapsed:.1f}s): &#34;
+                            f&#34;{result.get(&#39;error&#39;, &#39;unknown error&#39;)}&#34;
+                        )
+
+                if not success:
+                    error_info = {
+                        &#34;species&#34;: sp_name,
+                        &#34;group&#34;: group,
+                        &#34;error&#34;: last_result.get(&#34;error&#34;, &#34;unknown&#34;),
+                        &#34;status&#34;: last_result.get(&#34;status&#34;, &#34;unknown&#34;),
+                        &#34;timestamp&#34;: datetime.now().isoformat(),
+                    }
+                    failed_species.append(error_info)
+                    logger.error(
+                        f&#34;Giving up on &#39;{sp_name}&#39; in {group} after {max_retries} attempts. Continuing with next species...&#34;
+                    )
+
+                progress_bar.update(task, advance=1)
+
+    # ── Summary report ──
+    total_attempted = total_species - skipped_count
+    total_failed = len(failed_species)
+    total_succeeded = total_attempted - total_failed
+
+    logger.info(&#34;=&#34; * 60)
+    logger.info(&#34;Download Summary&#34;)
+    logger.info(f&#34;  Total species     : {total_species}&#34;)
+    logger.info(f&#34;  Skipped (cached)  : {skipped_count}&#34;)
+    logger.info(f&#34;  Attempted         : {total_attempted}&#34;)
+    logger.info(f&#34;  Succeeded         : {total_succeeded}&#34;)
+    logger.info(f&#34;  Failed            : {total_failed}&#34;)
+    logger.info(&#34;=&#34; * 60)
+
+    if failed_species:
+        failed_path = Path(output_dir) / &#34;failed_species.json&#34;
+        with open(failed_path, &#34;w&#34;) as f:
+            json.dump(failed_species, f, indent=2, ensure_ascii=False)
+        logger.warning(f&#34;Failed species list saved to {failed_path}&#34;)
+        for fs in failed_species:
+            logger.warning(f&#34;  - {fs[&#39;species&#39;]} ({fs[&#39;group&#39;]}): {fs[&#39;error&#39;]}&#34;)</code></pre>
 </details>
-<div class="desc"><p>To check a species name and refseq presence: <a href="https://www.ncbi.nlm.nih.gov/datasets/genome/">https://www.ncbi.nlm.nih.gov/datasets/genome/</a></p></div>
+<div class="desc"><p>Download RefSeq genome data for all species in the species list.</p>
+<p>Key safety features:
+- <strong>Timeout</strong>: Each species download runs in a separate process with a timeout.
+If ncbi_genome_download hangs, the child process is forcefully killed.
+- <strong>Resume</strong>: Species that already have downloaded files are automatically skipped.
+- <strong>Retry</strong>: Failed/timed-out species are retried up to <code>max_retries</code> times.
+- <strong>Reporting</strong>: A <code>failed_species.json</code> is written listing all species that
+could not be downloaded even after retries.</p></div>
 </dd>
 <dt id="molcrawl.genome_sequence.dataset.refseq.download_refseq.extract_file"><code class="name flex">
 <span>def <span class="ident">extract_file</span></span>(<span>archive_path: str, try_count: int = 0, max_try: int = 3)</span>

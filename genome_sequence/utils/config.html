@@ -86,7 +86,7 @@ class GenomeSequenceConfig(Config):
 </dd>
 <dt id="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig"><code class="flex name class">
 <span>class <span class="ident">RefSeqPreparationConfig</span></span>
-<span>(</span><span>output_dir: str = 'learning_source_dummy/genome_sequence',<br>path_species: str = 'assets/genome_species_list/filtered_species_refseq',<br>num_worker: int = 16,<br>max_lines_per_file: int = 10000,<br>vocab_size: int = 4096,<br>input_sentence_size: int = 700000,<br>num_proc_parquet: int | None = None,<br>parquet_batch_size: int | None = None,<br>local_base_dir: str | None = None)</span>
+<span>(</span><span>output_dir: str = 'learning_source_dummy/genome_sequence',<br>path_species: str = 'assets/genome_species_list/filtered_species_refseq',<br>num_worker: int = 16,<br>max_lines_per_file: int = 10000,<br>vocab_size: int = 4096,<br>input_sentence_size: int = 700000,<br>species_timeout: int = 1800,<br>max_retries: int = 2,<br>num_proc_parquet: int | None = None,<br>parquet_batch_size: int | None = None,<br>local_base_dir: str | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -114,12 +114,19 @@ class RefSeqPreparationConfig:
     # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
     input_sentence_size: int = 700000
 
+    # Per-species download timeout in seconds (default: 30 min)
+    # If a species download takes longer than this, the child process is killed.
+    species_timeout: int = 30 * 60
+
+    # Maximum number of retries per species before giving up
+    max_retries: int = 2
+
     # Added: Speed-up options (optional)
     num_proc_parquet: Optional[int] = None
     parquet_batch_size: Optional[int] = None
     local_base_dir: Optional[str] = None</code></pre>
 </details>
-<div class="desc"><p>RefSeqPreparationConfig(output_dir: str = 'learning_source_dummy/genome_sequence', path_species: str = 'assets/genome_species_list/filtered_species_refseq', num_worker: int = 16, max_lines_per_file: int = 10000, vocab_size: int = 4096, input_sentence_size: int = 700000, num_proc_parquet: Optional[int] = None, parquet_batch_size: Optional[int] = None, local_base_dir: Optional[str] = None)</p></div>
+<div class="desc"><p>RefSeqPreparationConfig(output_dir: str = 'learning_source_dummy/genome_sequence', path_species: str = 'assets/genome_species_list/filtered_species_refseq', num_worker: int = 16, max_lines_per_file: int = 10000, vocab_size: int = 4096, input_sentence_size: int = 700000, species_timeout: int = 1800, max_retries: int = 2, num_proc_parquet: Optional[int] = None, parquet_batch_size: Optional[int] = None, local_base_dir: Optional[str] = None)</p></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.input_sentence_size"><code class="name">var <span class="ident">input_sentence_size</span> : int</code></dt>
@@ -131,6 +138,10 @@ class RefSeqPreparationConfig:
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.max_lines_per_file"><code class="name">var <span class="ident">max_lines_per_file</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.max_retries"><code class="name">var <span class="ident">max_retries</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -151,6 +162,10 @@ class RefSeqPreparationConfig:
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.path_species"><code class="name">var <span class="ident">path_species</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.species_timeout"><code class="name">var <span class="ident">species_timeout</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -187,11 +202,13 @@ class RefSeqPreparationConfig:
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.input_sentence_size" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.input_sentence_size">input_sentence_size</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.local_base_dir" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.local_base_dir">local_base_dir</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.max_lines_per_file" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.max_lines_per_file">max_lines_per_file</a></code></li>
+<li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.max_retries" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.max_retries">max_retries</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.num_proc_parquet" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.num_proc_parquet">num_proc_parquet</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.num_worker" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.num_worker">num_worker</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.output_dir" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.output_dir">output_dir</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.parquet_batch_size" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.parquet_batch_size">parquet_batch_size</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.path_species" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.path_species">path_species</a></code></li>
+<li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.species_timeout" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.species_timeout">species_timeout</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.vocab_size" href="#molcrawl.genome_sequence.utils.config.RefSeqPreparationConfig.vocab_size">vocab_size</a></code></li>
 </ul>
 </li>
