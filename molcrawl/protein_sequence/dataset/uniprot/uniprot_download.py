@@ -69,8 +69,8 @@ def download(url: str, path: str, use_md5: bool, md5: Optional[str] = None) -> s
 def need_download(path: str, use_md5: bool, md5: Optional[str] = None):
     if md5 is not None and use_md5:
         logger.info(f"Compute md5 of file {path}")
-        need_download = md5 == compute_md5(path)
-        if not need_download:
+        need_download = md5 != compute_md5(path)
+        if need_download:
             logger.warning(f"MD5 is different redownloading {path}")
     else:
         need_download = not os.path.exists(path) or os.path.getsize(path) == 0
@@ -104,14 +104,20 @@ def unzip_file(archive_path: str, output_path: Path):
     return output_path
 
 
+def _download_with_md5_check(url: str, path: str, md5: str) -> str:
+    """Wrapper used by ProcessPoolExecutor so that MD5 verification is always enabled."""
+    return download(url, path, use_md5=True, md5=md5)
+
+
 def download_full_http_dir(url: str, download_dir: Union[str, os.PathLike[str]], num_worker: int) -> List[str]:
     file_md5_dict = get_url_md5_mapping(url)
     urls = [os.path.join(url, file) for file in file_md5_dict.keys()]
     paths = [os.path.join(download_dir, file) for file in file_md5_dict.keys()]
+    md5s = list(file_md5_dict.values())
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_worker) as executor:
         archive_paths = list(
             track(
-                executor.map(download, urls, paths, file_md5_dict.values()),
+                executor.map(_download_with_md5_check, urls, paths, md5s),
                 total=len(urls),
                 description="Downloading...",
             )

@@ -5,6 +5,7 @@ from functools import partial
 from multiprocessing import Manager
 from multiprocessing.managers import ListProxy
 import concurrent.futures
+import threading
 import time
 
 import rich.progress as pb
@@ -67,13 +68,15 @@ def iterate_over_chunk_raw_files(fasta_filepaths: List[Path], num_worker: int, m
     - A sequence string (without the header).
     """
     unfinished_jobs = len(fasta_filepaths)
+    _lock = threading.Lock()
     columns = list(pb.Progress.get_default_columns()) + [pb.MofNCompleteColumn()]
     with pb.Progress(*columns) as progress:
         task = progress.add_task("Processing fasta files to raw...", total=unfinished_jobs)
 
         def job_done_callback(future):
             nonlocal unfinished_jobs
-            unfinished_jobs -= 1
+            with _lock:
+                unfinished_jobs -= 1
             progress.advance(task)
 
         sequence_chunk: List[str] = []

@@ -80,14 +80,19 @@ def calcMol(smi):
 def calcMolWeight(smi):
     Chem, Descriptors, _ = _get_rdkit_helpers()
     mol = Chem.MolFromSmiles(smi)
-    return Descriptors.ExactMolWt(mol)
+    if mol is not None:
+        return Descriptors.ExactMolWt(mol)
+    else:
+        return None
 
 
 def calcSascore(smi):
     Chem, _, sascorer = _get_rdkit_helpers()
     mol = Chem.MolFromSmiles(smi)
-
-    return sascorer.calculateScore(mol)
+    if mol is not None:
+        return sascorer.calculateScore(mol)
+    else:
+        return None
 
 
 def calculateValues(smi: pd.Series):

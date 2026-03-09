@@ -47,16 +47,17 @@ def retrieve_adata(
             var_coords=target_gene_ids,
         )
     except KeyboardInterrupt as e:
+        census.close()
         raise e
     except Exception as e:
+        census.close()
         if try_count > max_try:
-            census.close()
             raise e
         logging.warning(f"[Error] while retrieving adata, retrying (try: {try_count + 1})")
         time.sleep(10)
-        adata = retrieve_adata(version, id_list, target_gene_ids, try_count + 1)
-
-    census.close()
+        return retrieve_adata(version, id_list, target_gene_ids, try_count + 1)
+    else:
+        census.close()
     return adata
 
 
