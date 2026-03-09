@@ -108,6 +108,41 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Get BERT TensorBoard output path</p></div>
 </dd>
+<dt id="molcrawl.config.paths.get_custom_tokenizer_path"><code class="name flex">
+<span>def <span class="ident">get_custom_tokenizer_path</span></span>(<span>domain, model_type='bert')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_custom_tokenizer_path(domain, model_type=&#34;bert&#34;):
+    &#34;&#34;&#34;
+    Get path for custom tokenizer output
+
+    Args:
+        domain (str): domain name (&#39;genome_sequence&#39;, &#39;rna&#39;, etc.)
+        model_type (str): model type (&#39;bert&#39;, &#39;rnaformer&#39;, &#39;dnabert2&#39;)
+
+    Returns:
+        str: custom tokenizer directory path
+    &#34;&#34;&#34;
+    return os.path.join(LEARNING_SOURCE_DIR, domain, f&#34;custom_tokenizer_{model_type}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Get path for custom tokenizer output</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
+<dd>domain name ('genome_sequence', 'rna', etc.)</dd>
+<dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>model type ('bert', 'rnaformer', 'dnabert2')</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>custom tokenizer directory path</dd>
+</dl></div>
+</dd>
 <dt id="molcrawl.config.paths.get_dataset_path"><code class="name flex">
 <span>def <span class="ident">get_dataset_path</span></span>(<span>dataset_type, relative_path='')</span>
 </code></dt>
@@ -277,6 +312,7 @@ el.replaceWith(d);
 <li><code><a title="molcrawl.config.paths.get_bert_model_output_path" href="#molcrawl.config.paths.get_bert_model_output_path">get_bert_model_output_path</a></code></li>
 <li><code><a title="molcrawl.config.paths.get_bert_output_path" href="#molcrawl.config.paths.get_bert_output_path">get_bert_output_path</a></code></li>
 <li><code><a title="molcrawl.config.paths.get_bert_tensorboard_path" href="#molcrawl.config.paths.get_bert_tensorboard_path">get_bert_tensorboard_path</a></code></li>
+<li><code><a title="molcrawl.config.paths.get_custom_tokenizer_path" href="#molcrawl.config.paths.get_custom_tokenizer_path">get_custom_tokenizer_path</a></code></li>
 <li><code><a title="molcrawl.config.paths.get_dataset_path" href="#molcrawl.config.paths.get_dataset_path">get_dataset_path</a></code></li>
 <li><code><a title="molcrawl.config.paths.get_genome_tokenizer_path" href="#molcrawl.config.paths.get_genome_tokenizer_path">get_genome_tokenizer_path</a></code></li>
 <li><code><a title="molcrawl.config.paths.get_gpt2_model_output_path" href="#molcrawl.config.paths.get_gpt2_model_output_path">get_gpt2_model_output_path</a></code></li>
