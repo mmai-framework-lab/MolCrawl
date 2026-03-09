@@ -125,3 +125,17 @@ def get_bert_tensorboard_path(domain, model_size):
 def get_bert_model_output_path(domain, model_size):
     """Get BERT model output path"""
     return get_bert_output_path(domain, model_size)
+
+
+def get_custom_tokenizer_path(domain, model_type="bert"):
+    """
+    Get path for custom tokenizer output
+
+    Args:
+        domain (str): domain name ('genome_sequence', 'rna', etc.)
+        model_type (str): model type ('bert', 'rnaformer', 'dnabert2')
+
+    Returns:
+        str: custom tokenizer directory path
+    """
+    return os.path.join(LEARNING_SOURCE_DIR, domain, f"custom_tokenizer_{model_type}")

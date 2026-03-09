@@ -67,6 +67,7 @@ logs/*
 temp
 temp/*
 gpt2-output*/
+custom_tokenizer*/
 learning_source*/
 experiments_data/
 experiments_data

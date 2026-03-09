@@ -75,9 +75,8 @@ tmp_tokenizer.cls_token = "<eos>"  # Use <eos> as CLS token for RNA
 tmp_tokenizer.mask_token = "<mask>"
 
 # Save and reload
-custom_tokenizer_path = "custom_tokenizer_rnaformer"
-if not os.path.exists(custom_tokenizer_path):
-    os.makedirs(custom_tokenizer_path, exist_ok=True)
+custom_tokenizer_path = os.path.join(RNA_REFINED_DIR, "rna", "custom_tokenizer_rnaformer")
+os.makedirs(custom_tokenizer_path, exist_ok=True)
 tmp_tokenizer.save_pretrained(custom_tokenizer_path)
 
 tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)

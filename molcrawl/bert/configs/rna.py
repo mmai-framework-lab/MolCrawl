@@ -13,7 +13,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from molcrawl.config.paths import CELLXGENE_DATASET_DIR, get_bert_output_path
+from molcrawl.config.paths import CELLXGENE_DATASET_DIR, get_bert_output_path, get_custom_tokenizer_path
 
 # Build the tokenizer using the WordLevel model
 from molcrawl.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
@@ -30,9 +30,10 @@ tmp_tokenizer.pad_token = "<pad>"
 tmp_tokenizer.cls_token = "[CLS]"
 tmp_tokenizer.mask_token = "<mask>"
 
-tmp_tokenizer.save_pretrained("custom_tokenizer")
+_custom_tokenizer_path = get_custom_tokenizer_path("rna", "bert")
+tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 
-tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
+tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 
 max_steps: int = 600000

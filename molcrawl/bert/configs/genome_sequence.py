@@ -3,7 +3,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from molcrawl.config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path, get_bert_output_path
+from molcrawl.config.paths import REFSEQ_DATASET_DIR, get_refseq_tokenizer_path, get_bert_output_path, get_custom_tokenizer_path
 
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("genome_sequence", model_size)
@@ -42,9 +42,10 @@ tmp_tokenizer.pad_token = "[PAD]"
 tmp_tokenizer.cls_token = "[CLS]"
 tmp_tokenizer.mask_token = "[MASK]"
 
-tmp_tokenizer.save_pretrained("custom_tokenizer")
+_custom_tokenizer_path = get_custom_tokenizer_path("genome_sequence", "bert")
+tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 
-tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
+tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 
 # Add preprocessing function to create attention_mask

@@ -75,7 +75,12 @@ tmp_tokenizer.cls_token = "[CLS]"
 tmp_tokenizer.mask_token = "[MASK]"
 
 # Save and reload
-custom_tokenizer_path = "custom_tokenizer_dnabert2"
+custom_tokenizer_path = os.path.join(
+    os.environ.get("LEARNING_SOURCE_DIR", "learning_source_20251210"),
+    "genome_sequence",
+    "custom_tokenizer_dnabert2",
+)
+os.makedirs(custom_tokenizer_path, exist_ok=True)
 tmp_tokenizer.save_pretrained(custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(custom_tokenizer_path)
 

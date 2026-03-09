@@ -3,7 +3,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from molcrawl.config.paths import REFSEQ_DATASET_DIR
+from molcrawl.config.paths import REFSEQ_DATASET_DIR, get_custom_tokenizer_path
 
 # Add common environment check module
 from molcrawl.utils.environment_check import check_learning_source_dir
@@ -45,8 +45,9 @@ tmp_tokenizer.pad_token = "[PAD]"
 tmp_tokenizer.cls_token = "[CLS]"
 tmp_tokenizer.mask_token = "[MASK]"
 
-tmp_tokenizer.save_pretrained("custom_tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("custom_tokenizer")
+_custom_tokenizer_path = get_custom_tokenizer_path("genome_sequence", "bert")
+tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
+tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 # Model size for ClinVar evaluation - use medium for good balance
 model_size = "medium"
