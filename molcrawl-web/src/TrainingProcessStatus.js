@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from './i18n';
 import './TrainingProcessStatus.css';
 
 /**
@@ -6,6 +7,7 @@ import './TrainingProcessStatus.css';
  * Confirmation dialog for critical actions
  */
 function ConfirmDialog({ isOpen, onClose, onConfirm, processInfo }) {
+  const { t } = useI18n();
   if (!isOpen) {
     return null;
   }
@@ -14,19 +16,19 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, processInfo }) {
     <div className="confirm-dialog-overlay" onClick={onClose}>
       <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-dialog-header">
-          <h3>⚠️ プロセス停止の確認</h3>
+          <h3>⚠️ {t('trainingProcess.stopConfirmTitle')}</h3>
         </div>
         <div className="confirm-dialog-body">
           <p className="warning-text">
-            この操作は実行中の学習プロセスを強制終了します。
+            {t('trainingProcess.stopWarning')}
           </p>
           <div className="process-details">
             <div className="detail-row">
-              <span className="detail-label">プロセスタイプ:</span>
+              <span className="detail-label">{t('trainingProcess.processType')}</span>
               <span className="detail-value">{processInfo.processType}</span>
             </div>
             <div className="detail-row">
-              <span className="detail-label">データセット:</span>
+              <span className="detail-label">{t('trainingProcess.dataset')}</span>
               <span className="detail-value">{processInfo.datasetType}</span>
             </div>
             <div className="detail-row">
@@ -34,20 +36,20 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, processInfo }) {
               <span className="detail-value">{processInfo.pid}</span>
             </div>
             <div className="detail-row">
-              <span className="detail-label">実行時間:</span>
+              <span className="detail-label">{t('trainingProcess.elapsedTime')}</span>
               <span className="detail-value">{processInfo.time}</span>
             </div>
           </div>
           <p className="caution-text">
-            本当にこのプロセスを停止しますか？
+            {t('trainingProcess.confirmStop')}
           </p>
         </div>
         <div className="confirm-dialog-footer">
           <button className="cancel-button" onClick={onClose}>
-            キャンセル
+            {t('trainingProcess.cancelButton')}
           </button>
           <button className="confirm-stop-button" onClick={onConfirm}>
-            停止する
+            {t('trainingProcess.stopButton')}
           </button>
         </div>
       </div>
@@ -60,6 +62,7 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, processInfo }) {
  * Displays running training processes and their status
  */
 function TrainingProcessStatus() {
+  const { t } = useI18n();
   const [processData, setProcessData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -96,14 +99,14 @@ function TrainingProcessStatus() {
       // eslint-disable-next-line no-console
       console.error('Error fetching process status:', err);
       if (err.name === 'AbortError') {
-        setError('リクエストがタイムアウトしました');
+        setError(t('trainingProcess.requestTimeout'));
       } else {
         setError(err.message);
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Initial fetch and auto-refresh
   useEffect(() => {
@@ -174,16 +177,16 @@ function TrainingProcessStatus() {
       const result = await response.json();
 
       if (result.success) {
-        alert(`✓ プロセス ${process.pid} (${process.processType} - ${process.datasetType}) を停止しました。\n信号: ${result.signal || 'SIGTERM'}`);
+        alert(t('trainingProcess.stopSuccess', { pid: process.pid, type: process.processType, dataset: process.datasetType, signal: result.signal || 'SIGTERM' }));
         // Refresh the process list
         await fetchProcessStatus();
       } else {
-        alert(`✗ プロセス停止に失敗しました: ${result.error}`);
+        alert(t('trainingProcess.stopFailed', { error: result.error }));
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error stopping process:', error);
-      alert(`✗ プロセス停止中にエラーが発生しました: ${error.message}`);
+      alert(t('trainingProcess.stopError', { error: error.message }));
     } finally {
       setStoppingPid(null);
     }
@@ -198,11 +201,11 @@ function TrainingProcessStatus() {
     return (
       <div className="training-process-status-card">
         <div className="status-header">
-          <h2>🔄 学習プロセス稼働状況</h2>
+          <h2>🔄 {t('trainingProcess.title')}</h2>
         </div>
         <div className="loading-state">
           <div className="spinner"></div>
-          <p>プロセス情報を取得中...</p>
+          <p>{t('trainingProcess.loadingProcesses')}</p>
         </div>
       </div>
     );
@@ -212,12 +215,12 @@ function TrainingProcessStatus() {
     return (
       <div className="training-process-status-card">
         <div className="status-header">
-          <h2>🔄 学習プロセス稼働状況</h2>
+          <h2>🔄 {t('trainingProcess.title')}</h2>
         </div>
         <div className="error-state">
-          <p>❌ エラー: {error}</p>
+          <p>❌ {t('common.error')}: {error}</p>
           <button onClick={fetchProcessStatus} className="retry-button">
-            再試行
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -237,7 +240,7 @@ function TrainingProcessStatus() {
       <div className="training-process-status-card">
         <div className="status-header">
           <div className="header-left">
-            <h2>🔄 学習プロセス稼働状況</h2>
+            <h2>🔄 {t('trainingProcess.title')}</h2>
             <span className="learning-source-badge">
               {currentLearningSource}
             </span>
@@ -249,7 +252,7 @@ function TrainingProcessStatus() {
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
               />
-              自動更新
+              {t('trainingProcess.autoRefresh')}
             </label>
             {autoRefresh && (
               <select
@@ -257,31 +260,31 @@ function TrainingProcessStatus() {
                 onChange={(e) => setRefreshInterval(Number(e.target.value))}
                 className="refresh-interval-select"
               >
-                <option value={10}>10秒</option>
-                <option value={30}>30秒</option>
-                <option value={60}>1分</option>
-                <option value={300}>5分</option>
+                <option value={10}>{t('trainingProcess.interval10s')}</option>
+                <option value={30}>{t('trainingProcess.interval30s')}</option>
+                <option value={60}>{t('trainingProcess.interval1m')}</option>
+                <option value={300}>{t('trainingProcess.interval5m')}</option>
               </select>
             )}
             <button onClick={fetchProcessStatus} className="refresh-button" disabled={loading}>
-              {loading ? '更新中...' : '🔄 更新'}
+              {loading ? t('trainingProcess.refreshing') : `🔄 ${t('common.refresh')}`}
             </button>
           </div>
         </div>
 
         {lastUpdate && (
           <div className="last-update">
-            最終更新: {lastUpdate.toLocaleTimeString('ja-JP')}
+            {t('trainingProcess.lastUpdate')} {lastUpdate.toLocaleTimeString()}
           </div>
         )}
 
         <div className="summary-section">
           <div className="summary-item">
-            <span className="summary-label">合計プロセス:</span>
+            <span className="summary-label">{t('trainingProcess.totalProcesses')}</span>
             <span className="summary-value">{summary.total}</span>
           </div>
           <div className="summary-item">
-            <span className="summary-label">現在のソース使用:</span>
+            <span className="summary-label">{t('trainingProcess.currentSource')}</span>
             <span className={`summary-value ${summary.usingCurrentSource > 0 ? 'active' : ''}`}>
               {summary.usingCurrentSource}
             </span>
@@ -298,23 +301,23 @@ function TrainingProcessStatus() {
 
         {processes.length === 0 ? (
           <div className="no-processes">
-            <p>現在実行中の学習プロセスはありません</p>
+            <p>{t('trainingProcess.noProcesses')}</p>
           </div>
         ) : (
           <div className="processes-list">
             <table className="processes-table">
               <thead>
                 <tr>
-                  <th>タイプ</th>
-                  <th>データセット</th>
-                  <th>PID</th>
-                  <th>CPU %</th>
-                  <th>メモリ %</th>
-                  <th>開始時刻</th>
-                  <th>実行時間</th>
-                  <th>ソース一致</th>
-                  <th>設定ファイル</th>
-                  <th>操作</th>
+                  <th>{t('trainingProcess.colType')}</th>
+                  <th>{t('trainingProcess.colDataset')}</th>
+                  <th>{t('trainingProcess.colPid')}</th>
+                  <th>{t('trainingProcess.colCpu')}</th>
+                  <th>{t('trainingProcess.colMem')}</th>
+                  <th>{t('trainingProcess.colStarted')}</th>
+                  <th>{t('trainingProcess.colRuntime')}</th>
+                  <th>{t('trainingProcess.colSourceMatch')}</th>
+                  <th>{t('trainingProcess.colConfig')}</th>
+                  <th>{t('trainingProcess.colAction')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,9 +349,9 @@ function TrainingProcessStatus() {
                     <td>{formatTime(process.time)}</td>
                     <td>
                       {process.usesCurrentLearningSource ? (
-                        <span className="status-badge active">✓ 一致</span>
+                        <span className="status-badge active">{t('trainingProcess.statusMatch')}</span>
                       ) : (
-                        <span className="status-badge inactive">✗ 不一致</span>
+                        <span className="status-badge inactive">{t('trainingProcess.statusNoMatch')}</span>
                       )}
                     </td>
                     <td className="config-file">
@@ -359,9 +362,9 @@ function TrainingProcessStatus() {
                         className="stop-process-button"
                         onClick={() => handleStopClick(process)}
                         disabled={stoppingPid === process.pid}
-                        title="プロセスを停止"
+                        title="Stop process"
                       >
-                        {stoppingPid === process.pid ? '停止中...' : '⏹ 停止'}
+                        {stoppingPid === process.pid ? t('trainingProcess.stopping') : t('trainingProcess.stopAction')}
                       </button>
                     </td>
                   </tr>
@@ -374,11 +377,11 @@ function TrainingProcessStatus() {
         <div className="legend">
           <div className="legend-item">
             <span className="legend-badge current-source-sample"></span>
-            <span>現在のLEARNING_SOURCE_DIRを使用</span>
+            <span>{t('trainingProcess.legendCurrentSource')}</span>
           </div>
           <div className="legend-item">
             <span className="legend-badge different-source-sample"></span>
-            <span>異なるソースまたは不明</span>
+            <span>{t('trainingProcess.legendDifferentSource')}</span>
           </div>
         </div>
       </div>

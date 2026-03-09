@@ -232,13 +232,13 @@ const GPT2TrainingStatus = ({ dataset }) => {
                  modelData.hf_compatibility &&
                  !modelData.hf_compatibility.isFromPretrainedReady && (
                     <div className="hf-warning">
-                        <div className="hf-warning-title">⚠ HuggingFace形式不完全</div>
+                        <div className="hf-warning-title">⚠ {t('gpt2.hfCompatibility.incompleteTitle')}</div>
                         <div className="hf-warning-detail">
-                            <code>transformers.from_pretrained()</code> で読み込めません
+                            <code>transformers.from_pretrained()</code> {t('gpt2.hfCompatibility.cannotLoad')}
                         </div>
                         {modelData.hf_compatibility.missingFiles?.length > 0 && (
                             <div className="hf-missing-files">
-                                <span className="missing-label">不足ファイル:</span>
+                                <span className="missing-label">{t('gpt2.hfCompatibility.missingFilesLabel')}</span>
                                 <ul>
                                     {modelData.hf_compatibility.missingFiles.map((file) => (
                                         <li key={file}><code>{file}</code></li>
@@ -247,7 +247,7 @@ const GPT2TrainingStatus = ({ dataset }) => {
                             </div>
                         )}
                         <div className="hf-warning-hint">
-                            新しい学習スクリプトで再学習が必要です
+                            {t('gpt2.hfCompatibility.retrainHint')}
                         </div>
                     </div>
                 )}
@@ -255,19 +255,19 @@ const GPT2TrainingStatus = ({ dataset }) => {
                 {/* Legacy形式警告 */}
                 {modelData.checkpoint_format === 'legacy' && (
                     <div className="hf-warning legacy-warning">
-                        <div className="hf-warning-title">📦 Legacy形式</div>
+                        <div className="hf-warning-title">📦 {t('gpt2.hfCompatibility.legacyTitle')}</div>
                         <div className="hf-warning-detail">
-                            HuggingFace Transformersに非対応の旧形式です
+                            {t('gpt2.hfCompatibility.legacyDetail')}
                         </div>
                         <div className="hf-missing-files">
-                            <span className="missing-label">不足ファイル:</span>
+                            <span className="missing-label">{t('gpt2.hfCompatibility.missingFilesLabel')}</span>
                             <ul>
                                 <li><code>config.json</code></li>
-                                <li><code>pytorch_model.bin</code> (HF互換形式)</li>
+                                <li><code>pytorch_model.bin</code> {t('gpt2.hfCompatibility.hfCompatForm')}</li>
                             </ul>
                         </div>
                         <div className="hf-warning-hint">
-                            新しい学習スクリプトで再学習が必要です
+                            {t('gpt2.hfCompatibility.retrainHint')}
                         </div>
                     </div>
                 )}

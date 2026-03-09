@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useI18n } from './i18n';
 import './LogsViewer.css';
 
 /**
@@ -7,6 +8,7 @@ import './LogsViewer.css';
  * クリックするとモーダルでログ内容を表示する
  */
 const LogsViewer = ({ modelPath }) => {
+    const { t } = useI18n();
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -120,34 +122,34 @@ const LogsViewer = ({ modelPath }) => {
     return (
         <div className="logs-viewer">
             <div className="logs-header">
-                <h3>📄 ログファイル一覧</h3>
+                <h3>📄 {t('logsViewer.title')}</h3>
                 <button
                     className="refresh-button"
                     onClick={fetchLogs}
                     disabled={loading}
                 >
-                    🔄 更新
+                    🔄 {t('common.refresh')}
                 </button>
             </div>
 
             {loading && (
                 <div className="logs-loading">
                     <div className="spinner"></div>
-                    <p>ログファイルを読み込み中...</p>
+                    <p>{t('logsViewer.loading')}</p>
                 </div>
             )}
 
             {error && (
                 <div className="logs-error">
-                    <p>❌ エラー: {error}</p>
+                    <p>❌ {t('logsViewer.overviewError')} {error}</p>
                 </div>
             )}
 
             {!loading && !error && logs.length === 0 && (
                 <div className="logs-empty">
-                    <p>ログファイルが見つかりませんでした</p>
+                    <p>{t('logsViewer.emptyState')}</p>
                     <p className="logs-empty-hint">
-                        <code>{modelPath}/logs/</code> ディレクトリにログファイルがありません
+                        <code>{modelPath}/logs/</code> {t('logsViewer.emptyHint')}
                     </p>
                 </div>
             )}
@@ -155,14 +157,14 @@ const LogsViewer = ({ modelPath }) => {
             {!loading && !error && logs.length > 0 && (
                 <div className="logs-list">
                     <div className="logs-count">
-                        {logs.length} 件のログファイル
+                        {t('logsViewer.fileCount', { count: logs.length })}
                     </div>
                     <table className="logs-table">
                         <thead>
                             <tr>
-                                <th>ファイル名</th>
-                                <th>サイズ</th>
-                                <th>更新日時</th>
+                                <th>{t('logsViewer.colFileName')}</th>
+                                <th>{t('logsViewer.colSize')}</th>
+                                <th>{t('logsViewer.colUpdated')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -203,22 +205,22 @@ const LogsViewer = ({ modelPath }) => {
                         </div>
 
                         <div className="log-modal-info">
-                            <span>サイズ: {formatFileSize(selectedLog.size)}</span>
-                            <span>更新: {formatDateTime(selectedLog.modifiedTime)}</span>
-                            <span>パス: {selectedLog.path}</span>
+                            <span>{t('logsViewer.sizeLabel')} {formatFileSize(selectedLog.size)}</span>
+                            <span>{t('logsViewer.updatedLabel')} {formatDateTime(selectedLog.modifiedTime)}</span>
+                            <span>{t('logsViewer.pathLabel')} {selectedLog.path}</span>
                         </div>
 
                         <div className="log-modal-content">
                             {loadingContent && (
                                 <div className="log-modal-loading">
                                     <div className="spinner"></div>
-                                    <p>ログを読み込み中...</p>
+                                    <p>{t('logsViewer.loadingContent')}</p>
                                 </div>
                             )}
 
                             {contentError && (
                                 <div className="log-modal-error">
-                                    <p>❌ エラー: {contentError}</p>
+                                    <p>❌ {t('common.error')}: {contentError}</p>
                                 </div>
                             )}
 
@@ -241,14 +243,14 @@ const LogsViewer = ({ modelPath }) => {
                                 className="button-secondary"
                                 onClick={handleCloseModal}
                             >
-                                閉じる
+                                {t('common.close')}
                             </button>
                             <button
                                 className="button-primary"
                                 onClick={() => fetchLogContent(selectedLog.path, selectedLog.size)}
                                 disabled={loadingContent}
                             >
-                                🔄 再読み込み
+                                🔄 {t('logsViewer.reloadButton')}
                             </button>
                         </div>
                     </div>
@@ -262,6 +264,7 @@ const LogsViewer = ({ modelPath }) => {
  * 全モデルのログ概要を表示するコンポーネント
  */
 export const LogsOverview = () => {
+    const { t } = useI18n();
     const [overview, setOverview] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -305,26 +308,26 @@ export const LogsOverview = () => {
     return (
         <div className="logs-overview">
             <div className="logs-overview-header">
-                <h2>📊 全モデルのログ概要</h2>
+                <h2>📊 {t('logsViewer.overviewTitle')}</h2>
                 <button
                     className="refresh-button"
                     onClick={fetchOverview}
                     disabled={loading}
                 >
-                    🔄 更新
+                    🔄 {t('common.refresh')}
                 </button>
             </div>
 
             {loading && (
                 <div className="logs-loading">
                     <div className="spinner"></div>
-                    <p>概要を読み込み中...</p>
+                    <p>{t('logsViewer.overviewLoading')}</p>
                 </div>
             )}
 
             {error && (
                 <div className="logs-error">
-                    <p>❌ エラー: {error}</p>
+                    <p>❌ {t('common.error')}: {error}</p>
                 </div>
             )}
 
@@ -336,11 +339,11 @@ export const LogsOverview = () => {
                             {model.exists ? (
                                 <>
                                     <div className="logs-overview-count">
-                                        {model.logCount} 件のログファイル
+                                        {t('logsViewer.overviewFileCount', { count: model.logCount })}
                                     </div>
                                     {model.logs.length > 0 && (
                                         <div className="logs-overview-recent">
-                                            <h4>最新のログ（最大5件）:</h4>
+                                            <h4>{t('logsViewer.recentTitle')}</h4>
                                             <ul>
                                                 {model.logs.map((log) => (
                                                     <li key={`${model.modelPath}-${log.path}`}>
@@ -353,13 +356,13 @@ export const LogsOverview = () => {
                                     )}
                                     {model.error && (
                                         <div className="logs-overview-error">
-                                            エラー: {model.error}
+                                            {t('logsViewer.overviewError')} {model.error}
                                         </div>
                                     )}
                                 </>
                             ) : (
                                 <div className="logs-overview-not-found">
-                                    logsディレクトリが存在しません
+                                    {t('logsViewer.noLogsDir')}
                                 </div>
                             )}
                         </div>

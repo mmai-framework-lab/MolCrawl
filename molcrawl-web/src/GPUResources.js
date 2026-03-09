@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useI18n } from './i18n';
 import './GPUResources.css';
 
@@ -11,7 +11,7 @@ const GPUResources = () => {
     const [refreshInterval, setRefreshInterval] = useState(5000); // 5秒
 
     // GPU情報を取得
-    const fetchGpuInfo = async () => {
+    const fetchGpuInfo = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -22,22 +22,22 @@ const GPUResources = () => {
             if (data.success) {
                 setGpuInfo(data.data);
             } else {
-                setError(data.error || 'GPU情報の取得に失敗しました');
+                setError(data.error || t('gpu.fetchFailed'));
                 setGpuInfo(null);
             }
         } catch (err) {
             console.error('GPU info fetch error:', err);
-            setError('GPU情報の取得中にエラーが発生しました: ' + err.message);
+            setError(t('gpu.fetchError', { message: err.message }));
             setGpuInfo(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
 
     // 初回読み込み
     useEffect(() => {
         fetchGpuInfo();
-    }, []);
+    }, [fetchGpuInfo]);
 
     // 自動更新
     useEffect(() => {
@@ -48,7 +48,7 @@ const GPUResources = () => {
 
             return () => clearInterval(intervalId);
         }
-    }, [autoRefresh, refreshInterval]);
+    }, [autoRefresh, refreshInterval, fetchGpuInfo]);
 
     const handleRefresh = () => {
         fetchGpuInfo();

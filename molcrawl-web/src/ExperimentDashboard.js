@@ -159,19 +159,19 @@ function ExperimentDashboard() {
       {statistics && (
         <div className="statistics-panel">
           <div className="stat-card">
-            <h3>総実験数</h3>
+            <h3>{t('experiment.totalExperiments')}</h3>
             <p className="stat-value">{statistics.total_experiments}</p>
           </div>
           <div className="stat-card">
-            <h3>完了</h3>
+            <h3>{t('experiment.completedCount')}</h3>
             <p className="stat-value completed">{statistics.by_status?.completed || 0}</p>
           </div>
           <div className="stat-card">
-            <h3>実行中</h3>
+            <h3>{t('experiment.runningCount')}</h3>
             <p className="stat-value running">{statistics.by_status?.running || 0}</p>
           </div>
           <div className="stat-card">
-            <h3>失敗</h3>
+            <h3>{t('experiment.failedCount')}</h3>
             <p className="stat-value failed">{statistics.by_status?.failed || 0}</p>
           </div>
         </div>
@@ -179,25 +179,25 @@ function ExperimentDashboard() {
 
       {/* フィルター */}
       <div className="filters-panel">
-        <h3>フィルター</h3>
+        <h3>{t('experiment.filterTitle')}</h3>
         <div className="filters">
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
           >
-            <option value="">全ステータス</option>
-            <option value="pending">未実行</option>
-            <option value="running">実行中</option>
-            <option value="completed">完了</option>
-            <option value="failed">失敗</option>
-            <option value="cancelled">キャンセル</option>
+            <option value="">{t('experiment.allStatus')}</option>
+            <option value="pending">{t('experiment.statusPending')}</option>
+            <option value="running">{t('experiment.statusRunning')}</option>
+            <option value="completed">{t('experiment.statusCompleted')}</option>
+            <option value="failed">{t('experiment.statusFailed')}</option>
+            <option value="cancelled">{t('experiment.statusCancelled')}</option>
           </select>
 
           <select
             value={filters.model_type}
             onChange={(e) => handleFilterChange('model_type', e.target.value)}
           >
-            <option value="">全モデル</option>
+            <option value="">{t('experiment.allModels')}</option>
             <option value="gpt2">GPT-2</option>
             <option value="bert">BERT</option>
             <option value="gpn">GPN</option>
@@ -207,7 +207,7 @@ function ExperimentDashboard() {
             value={filters.dataset_type}
             onChange={(e) => handleFilterChange('dataset_type', e.target.value)}
           >
-            <option value="">全データセット</option>
+            <option value="">{t('experiment.allDatasets')}</option>
             <option value="protein_sequence">Protein Sequence</option>
             <option value="genome_sequence">Genome Sequence</option>
             <option value="compounds">Compounds</option>
@@ -222,11 +222,11 @@ function ExperimentDashboard() {
             value={filters.experiment_type}
             onChange={(e) => handleFilterChange('experiment_type', e.target.value)}
           >
-            <option value="">全タイプ</option>
-            <option value="data_preparation">データ準備</option>
-            <option value="training">訓練</option>
-            <option value="evaluation">評価</option>
-            <option value="visualization">可視化</option>
+            <option value="">{t('experiment.allTypes')}</option>
+            <option value="data_preparation">{t('experiment.typeDataPrep')}</option>
+            <option value="training">{t('experiment.typeTraining')}</option>
+            <option value="evaluation">{t('experiment.typeEvaluation')}</option>
+            <option value="visualization">{t('experiment.typeVisualization')}</option>
           </select>
         </div>
       </div>
@@ -234,27 +234,27 @@ function ExperimentDashboard() {
       {/* エラー表示 */}
       {error && (
         <div className="error-message">
-          ⚠️ Weights & Biases 接続エラー: {error}
+          ⚠️ {t('experiment.wandbError')}: {error}
           <br />
           <small style={{ marginTop: '8px', display: 'block', color: '#666' }}>
-            以下を確認してください：
+            {t('experiment.wandbErrorHints')}:
             <br />
-            1. サーバー起動時に WANDB_API_KEY 環境変数が設定されているか
+            {t('experiment.wandbCheck1')}
             <br />
-            2. サーバー起動時に WANDB_ENTITY 環境変数が設定されているか
+            {t('experiment.wandbCheck2')}
             <br />
-            3. wandb にログインしているか (wandb login)
+            {t('experiment.wandbCheck3')}
             <br />
-            学習プロセス監視機能は独立して動作しています。
+            {t('experiment.wandbIndependent')}
           </small>
         </div>
       )}
 
       {/* 実験一覧 */}
       <div className="experiments-panel">
-        <h3>実験一覧 ({experiments.length}件)</h3>
+        <h3>{t('experiment.experimentList', { count: experiments.length })}</h3>
         {loading ? (
-          <div className="loading">読み込み中...</div>
+          <div className="loading">{t('experiment.loadingExperiments')}</div>
         ) : (
           <div className="experiments-list">
             {experiments.map((exp) => (
@@ -274,12 +274,12 @@ function ExperimentDashboard() {
                   <span>🔬 {exp.experiment_type}</span>
                 </div>
                 <div className="experiment-times">
-                  <div>作成: {formatDate(exp.created_at)}</div>
+                  <div>{t('experiment.createdAt')} {formatDate(exp.created_at)}</div>
                   {exp.completed_at && (
-                    <div>完了: {formatDate(exp.completed_at)}</div>
+                    <div>{t('experiment.completedAt')} {formatDate(exp.completed_at)}</div>
                   )}
                   {exp.total_duration_seconds && (
-                    <div>実行時間: {formatDuration(exp.total_duration_seconds)}</div>
+                    <div>{t('experiment.durationLabel')} {formatDuration(exp.total_duration_seconds)}</div>
                   )}
                 </div>
                 {exp.metrics && Object.keys(exp.metrics).length > 0 && (
@@ -350,21 +350,21 @@ function ExperimentDashboard() {
             )}
 
             <div className="detail-section">
-              <h3>基本情報</h3>
+              <h3>{t('experiment.basicInfo')}</h3>
               <table className="detail-table">
                 <tbody>
-                  <tr><th>実験ID</th><td>{selectedExperiment.experiment_id}</td></tr>
-                  <tr><th>ステータス</th><td><span className={`status-badge ${getStatusBadgeClass(selectedExperiment.status)}`}>{selectedExperiment.status}</span></td></tr>
-                  <tr><th>モデル</th><td>{selectedExperiment.model_type}</td></tr>
-                  <tr><th>データセット</th><td>{selectedExperiment.dataset_type}</td></tr>
-                  <tr><th>タイプ</th><td>{selectedExperiment.experiment_type}</td></tr>
-                  <tr><th>作成日時</th><td>{formatDate(selectedExperiment.created_at)}</td></tr>
-                  <tr><th>開始日時</th><td>{formatDate(selectedExperiment.started_at)}</td></tr>
-                  <tr><th>完了日時</th><td>{formatDate(selectedExperiment.completed_at)}</td></tr>
-                  <tr><th>実行時間</th><td>{formatDuration(selectedExperiment.total_duration_seconds)}</td></tr>
+                  <tr><th>{t('experiment.experimentId')}</th><td>{selectedExperiment.experiment_id}</td></tr>
+                  <tr><th>{t('experiment.statusLabel')}</th><td><span className={`status-badge ${getStatusBadgeClass(selectedExperiment.status)}`}>{selectedExperiment.status}</span></td></tr>
+                  <tr><th>{t('experiment.modelLabel')}</th><td>{selectedExperiment.model_type}</td></tr>
+                  <tr><th>{t('experiment.datasetLabel')}</th><td>{selectedExperiment.dataset_type}</td></tr>
+                  <tr><th>{t('experiment.typeLabel')}</th><td>{selectedExperiment.experiment_type}</td></tr>
+                  <tr><th>{t('experiment.createdLabel')}</th><td>{formatDate(selectedExperiment.created_at)}</td></tr>
+                  <tr><th>{t('experiment.startedLabel')}</th><td>{formatDate(selectedExperiment.started_at)}</td></tr>
+                  <tr><th>{t('experiment.completedLabel')}</th><td>{formatDate(selectedExperiment.completed_at)}</td></tr>
+                  <tr><th>{t('experiment.durationTableLabel')}</th><td>{formatDuration(selectedExperiment.total_duration_seconds)}</td></tr>
                   {selectedExperiment.tags && selectedExperiment.tags.length > 0 && (
                     <tr>
-                      <th>タグ</th>
+                      <th>{t('experiment.tagsLabel')}</th>
                       <td>
                         {selectedExperiment.tags.map((tag) => (
                           <span key={`tag-${tag}`} style={{
@@ -387,7 +387,7 @@ function ExperimentDashboard() {
 
             {selectedExperiment.steps && selectedExperiment.steps.length > 0 && (
               <div className="detail-section">
-                <h3>実行ステップ ({selectedExperiment.steps.length})</h3>
+                <h3>{t('experiment.stepsDetail', { count: selectedExperiment.steps.length })}</h3>
                 <div className="steps-list">
                   {selectedExperiment.steps?.map((step, idx) => (
                     // eslint-disable-next-line react/no-array-index-key
@@ -417,7 +417,7 @@ function ExperimentDashboard() {
 
             {selectedExperiment.metrics && Object.keys(selectedExperiment.metrics).length > 0 && (
               <div className="detail-section">
-                <h3>メトリクス</h3>
+                <h3>{t('experiment.metricsTitle')}</h3>
                 <div className="metrics-grid">
                   {Object.entries(selectedExperiment.metrics).map(([key, value]) => (
                     <div key={key} className="metric-item">
@@ -431,7 +431,7 @@ function ExperimentDashboard() {
 
             {selectedExperiment.logs && selectedExperiment.logs.length > 0 && (
               <div className="detail-section">
-                <h3>最新ログ (最新20件)</h3>
+                <h3>{t('experiment.recentLogs')}</h3>
                 <div className="logs-list">
                   {selectedExperiment.logs.slice(-20).reverse().map((log, idx) => (
                     <div key={`${selectedExperiment.id}-log-${log.timestamp || idx}`} className={`log-item log-${log.level.toLowerCase()}`}>
