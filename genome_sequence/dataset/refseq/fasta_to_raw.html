@@ -103,13 +103,15 @@ el.replaceWith(d);
     - A sequence string (without the header).
     &#34;&#34;&#34;
     unfinished_jobs = len(fasta_filepaths)
+    _lock = threading.Lock()
     columns = list(pb.Progress.get_default_columns()) + [pb.MofNCompleteColumn()]
     with pb.Progress(*columns) as progress:
         task = progress.add_task(&#34;Processing fasta files to raw...&#34;, total=unfinished_jobs)
 
         def job_done_callback(future):
             nonlocal unfinished_jobs
-            unfinished_jobs -= 1
+            with _lock:
+                unfinished_jobs -= 1
             progress.advance(task)
 
         sequence_chunk: List[str] = []

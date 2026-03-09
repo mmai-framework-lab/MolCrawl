@@ -87,7 +87,10 @@ el.replaceWith(d);
 <pre><code class="python">def calcMolWeight(smi):
     Chem, Descriptors, _ = _get_rdkit_helpers()
     mol = Chem.MolFromSmiles(smi)
-    return Descriptors.ExactMolWt(mol)</code></pre>
+    if mol is not None:
+        return Descriptors.ExactMolWt(mol)
+    else:
+        return None</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -102,8 +105,10 @@ el.replaceWith(d);
 <pre><code class="python">def calcSascore(smi):
     Chem, _, sascorer = _get_rdkit_helpers()
     mol = Chem.MolFromSmiles(smi)
-
-    return sascorer.calculateScore(mol)</code></pre>
+    if mol is not None:
+        return sascorer.calculateScore(mol)
+    else:
+        return None</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
