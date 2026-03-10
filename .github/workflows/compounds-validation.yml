@@ -209,21 +209,26 @@ jobs:
       - name: Download all reports
         uses: actions/download-artifact@v4
       - name: Generate summary
+        env:
+          UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
+          INTEGRATION_TESTS_RESULT: ${{ needs.integration-tests.result }}
+          SMILES_VALIDATION_RESULT: ${{ needs.smiles-validation.result }}
+          TOKENIZATION_TESTS_RESULT: ${{ needs.tokenization-tests.result }}
         run: |
           echo "# Compounds Validation Summary" > summary.md
           echo "Date: $(date)" >> summary.md
           echo "" >> summary.md
           echo "## Test Results" >> summary.md
-          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> summary.md
-          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> summary.md
-          echo "- SMILES Validation: ${{ needs.smiles-validation.result }}" >> summary.md
-          echo "- Tokenization Tests: ${{ needs.tokenization-tests.result }}" >> summary.md
+          echo "- Unit Tests: $UNIT_TESTS_RESULT" >> summary.md
+          echo "- Integration Tests: $INTEGRATION_TESTS_RESULT" >> summary.md
+          echo "- SMILES Validation: $SMILES_VALIDATION_RESULT" >> summary.md
+          echo "- Tokenization Tests: $TOKENIZATION_TESTS_RESULT" >> summary.md
           echo "" >> summary.md
 
-          if [ "${{ needs.unit-tests.result }}" == "success" ] && \
-             [ "${{ needs.integration-tests.result }}" == "success" ] && \
-             [ "${{ needs.smiles-validation.result }}" == "success" ] && \
-             [ "${{ needs.tokenization-tests.result }}" == "success" ]; then
+          if [ "$UNIT_TESTS_RESULT" == "success" ] && \
+             [ "$INTEGRATION_TESTS_RESULT" == "success" ] && \
+             [ "$SMILES_VALIDATION_RESULT" == "success" ] && \
+             [ "$TOKENIZATION_TESTS_RESULT" == "success" ]; then
             echo "✅ **All Compounds tests passed!**" >> summary.md
           else
             echo "❌ **Some Compounds tests failed. Please review the reports.**" >> summary.md

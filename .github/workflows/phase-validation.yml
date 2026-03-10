@@ -39,15 +39,19 @@ jobs:
           pip install transformers==4.45.1 accelerate==0.34.2
           pip install -e .
       - name: Run BERT verification for ${{ matrix.domain }}
+        env:
+          DOMAIN: ${{ matrix.domain }}
         run: |
-          echo "Running BERT verification for ${{ matrix.domain }}"
-          python molcrawl/bert/test_checkpoint.py --domain ${{ matrix.domain }} --quick-test
+          echo "Running BERT verification for $DOMAIN"
+          python molcrawl/bert/test_checkpoint.py --domain "$DOMAIN" --quick-test
         continue-on-error: true
       - name: Generate verification report
+        env:
+          DOMAIN: ${{ matrix.domain }}
         run: |
-          echo "# BERT Verification Report - ${{ matrix.domain }}" > bert-report-${{ matrix.domain }}.md
-          echo "Date: $(date)" >> bert-report-${{ matrix.domain }}.md
-          echo "Status: See test output above" >> bert-report-${{ matrix.domain }}.md
+          echo "# BERT Verification Report - $DOMAIN" > "bert-report-${DOMAIN}.md"
+          echo "Date: $(date)" >> "bert-report-${DOMAIN}.md"
+          echo "Status: See test output above" >> "bert-report-${DOMAIN}.md"
       - name: Upload verification report
         uses: actions/upload-artifact@v4
         with:
@@ -75,15 +79,19 @@ jobs:
           pip install transformers==4.45.1 accelerate==0.34.2
           pip install -e .
       - name: Run GPT2 verification for ${{ matrix.domain }}
+        env:
+          DOMAIN: ${{ matrix.domain }}
         run: |
-          echo "Running GPT2 verification for ${{ matrix.domain }}"
-          python molcrawl/gpt2/test_checkpoint.py --domain ${{ matrix.domain }} --quick-test
+          echo "Running GPT2 verification for $DOMAIN"
+          python molcrawl/gpt2/test_checkpoint.py --domain "$DOMAIN" --quick-test
         continue-on-error: true
       - name: Generate verification report
+        env:
+          DOMAIN: ${{ matrix.domain }}
         run: |
-          echo "# GPT2 Verification Report - ${{ matrix.domain }}" > gpt2-report-${{ matrix.domain }}.md
-          echo "Date: $(date)" >> gpt2-report-${{ matrix.domain }}.md
-          echo "Status: See test output above" >> gpt2-report-${{ matrix.domain }}.md
+          echo "# GPT2 Verification Report - $DOMAIN" > "gpt2-report-${DOMAIN}.md"
+          echo "Date: $(date)" >> "gpt2-report-${DOMAIN}.md"
+          echo "Status: See test output above" >> "gpt2-report-${DOMAIN}.md"
       - name: Upload verification report
         uses: actions/upload-artifact@v4
         with:
@@ -132,8 +140,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
       - name: Verify training scripts for ${{ matrix.domain }}
+        env:
+          DOMAIN: ${{ matrix.domain }}
         run: |
-          echo "Verifying training scripts for ${{ matrix.domain }}"
+          echo "Verifying training scripts for $DOMAIN"
           echo "scripts.verify_training_scripts: not yet implemented, skipping."
         continue-on-error: true
   phase3-alpha-evaluation:

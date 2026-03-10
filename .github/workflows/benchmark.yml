@@ -27,10 +27,13 @@ jobs:
           pip install pytest-benchmark
           pip install -e .
       - name: Run benchmarks for ${{ matrix.model }}-${{ matrix.domain }}
+        env:
+          MODEL: ${{ matrix.model }}
+          DOMAIN: ${{ matrix.domain }}
         run: |
-          python -m pytest tests/benchmarks/test_${{ matrix.model }}_${{ matrix.domain }}.py \
+          python -m pytest "tests/benchmarks/test_${MODEL}_${DOMAIN}.py" \
             --benchmark-only \
-            --benchmark-json=benchmark-${{ matrix.model }}-${{ matrix.domain }}.json
+            --benchmark-json="benchmark-${MODEL}-${DOMAIN}.json"
         continue-on-error: true
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
