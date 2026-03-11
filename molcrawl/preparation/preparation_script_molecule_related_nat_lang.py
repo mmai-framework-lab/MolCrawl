@@ -109,8 +109,63 @@ if __name__ == "__main__":
         action="store_true",
         help="Force reprocessing even if files exist",
     )
+    parser.add_argument(
+        "--datasets",
+        nargs="+",
+        choices=["smolinstruct", "mol_instructions"],
+        default=["smolinstruct"],
+        help=(
+            "Which dataset(s) to prepare. "
+            "'smolinstruct' processes osunlp/SMolInstruct (default). "
+            "'mol_instructions' processes zjunlp/Mol-Instructions via "
+            "molcrawl.molecule_nat_lang.dataset.prepare_mol_instructions."
+        ),
+    )
+    parser.add_argument(
+        "--download-only",
+        action="store_true",
+        help="Only download the dataset(s); skip tokenisation/preparation.",
+    )
     args = parser.parse_args()
 
+    # ── Dispatch mol_instructions early so we can exit without running the
+    # ── heavy SMolInstruct pipeline if the user only asked for that dataset.
+    if "mol_instructions" in args.datasets:
+        from molcrawl.molecule_nat_lang.dataset.download import download_mol_instructions
+        from molcrawl.molecule_nat_lang.dataset.prepare_mol_instructions import (
+            prepare_mol_instructions,
+        )
+        from molcrawl.utils.environment_check import check_learning_source_dir as _check_dir
+
+        _lsd = _check_dir()
+        _mi_source = Path(_lsd) / "molecule_nat_lang" / "mol_instructions" / "zjunlp_Mol-Instructions"
+        _mi_output = Path(_lsd) / "molecule_nat_lang" / "mol_instructions"
+
+        if not _mi_source.exists():
+            logger.info("Downloading Mol-Instructions...")
+            download_mol_instructions(str(_mi_source))
+        else:
+            logger.info("Mol-Instructions source already present at %s", _mi_source)
+
+        if not args.download_only:
+            _ready = _mi_output / "training_ready_hf_dataset"
+            if not args.force and _ready.exists():
+                logger.info(
+                    "Mol-Instructions training_ready_hf_dataset already exists at %s. " "Use --force to reprocess.",
+                    _ready,
+                )
+            else:
+                logger.info("Preparing Mol-Instructions dataset...")
+                prepare_mol_instructions(
+                    source_dir=str(_mi_source),
+                    output_dir=str(_mi_output),
+                )
+
+        if "smolinstruct" not in args.datasets:
+            # Nothing more to do — exit before the SMolInstruct block
+            exit(0)
+
+    # ── SMolInstruct pipeline ─────────────────────────────────────────────────
     # Use LEARNING_SOURCE_DIR environment variable for dataset storage
     from molcrawl.utils.environment_check import check_learning_source_dir
 

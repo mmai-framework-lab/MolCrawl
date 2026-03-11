@@ -63,6 +63,9 @@ REFSEQ_DATASET_DIR = GENOME_SEQUENCE_DIR + "/training_ready_hf_dataset"
 CELLXGENE_DATASET_DIR = RNA_DATASET_DIR + "/training_ready_hf_dataset"
 MOLECULE_NAT_LANG_DATASET_DIR = MOLECULE_NAT_LANG_DIR + "/training_ready_hf_dataset"
 COMPOUNDS_DATASET_DIR = COMPOUNDS_DIR + "/organix13/compounds/training_ready_hf_dataset"
+MOL_INSTRUCTIONS_DIR = MOLECULE_NAT_LANG_DIR + "/mol_instructions"
+MOL_INSTRUCTIONS_DATASET_DIR = MOL_INSTRUCTIONS_DIR + "/training_ready_hf_dataset"
+MOL_INSTRUCTIONS_SOURCE_DIR = MOL_INSTRUCTIONS_DIR + "/zjunlp_Mol-Instructions"
 
 # Absolute path version (used in web applications and APIs)
 ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
