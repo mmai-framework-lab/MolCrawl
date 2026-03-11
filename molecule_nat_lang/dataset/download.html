@@ -101,6 +101,81 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.molecule_nat_lang.dataset.download.download_mol_instructions"><code class="name flex">
+<span>def <span class="ident">download_mol_instructions</span></span>(<span>save_path)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_mol_instructions(save_path):
+    &#34;&#34;&#34;
+    Download Mol-Instructions (Molecule-oriented Instructions subset) from
+    Hugging Face Hub.
+
+    The dataset uses task names as split keys instead of train/validation/test.
+    Available splits: description_guided_molecule_design,
+    forward_reaction_prediction, molecular_description_generation,
+    property_prediction, reagent_prediction, retrosynthesis.
+
+    Reference: Fang et al., &#34;Mol-Instructions: A Large-Scale Biomolecular
+    Instruction Dataset for Large Language Models&#34;, ICLR 2024.
+    https://huggingface.co/datasets/zjunlp/Mol-Instructions
+
+    Args:
+        save_path: Path to save the dataset (will be created if not exists)
+    &#34;&#34;&#34;
+    from datasets import load_dataset
+
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        logger.info(&#34;Downloading Mol-Instructions (Molecule-oriented) from Hugging Face Hub...&#34;)
+        logger.info(&#34;Reference: https://huggingface.co/datasets/zjunlp/Mol-Instructions&#34;)
+
+        cache_dir = save_path.parent / &#34;hf_cache&#34;
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        data = load_dataset(
+            &#34;zjunlp/Mol-Instructions&#34;,
+            &#34;Molecule-oriented Instructions&#34;,
+            trust_remote_code=True,
+            cache_dir=str(cache_dir),
+        )
+
+        logger.info(f&#34;Dataset loaded. Splits (tasks): {list(data.keys())}&#34;)
+        for split in data.keys():
+            logger.info(f&#34;  {split}: {len(data[split])} samples&#34;)
+
+        logger.info(f&#34;Saving dataset to {save_path}...&#34;)
+        data.save_to_disk(str(save_path))
+
+        logger.info(&#34;Mol-Instructions download completed successfully&#34;)
+
+    except Exception as e:
+        logger.error(f&#34;Failed to download Mol-Instructions: {e}&#34;)
+        logger.error(&#34;Possible solutions:&#34;)
+        logger.error(&#34;- Check your internet connection&#34;)
+        logger.error(&#34;- Run: huggingface-cli login&#34;)
+        raise</code></pre>
+</details>
+<div class="desc"><p>Download Mol-Instructions (Molecule-oriented Instructions subset) from
+Hugging Face Hub.</p>
+<p>The dataset uses task names as split keys instead of train/validation/test.
+Available splits: description_guided_molecule_design,
+forward_reaction_prediction, molecular_description_generation,
+property_prediction, reagent_prediction, retrosynthesis.</p>
+<p>Reference: Fang et al., "Mol-Instructions: A Large-Scale Biomolecular
+Instruction Dataset for Large Language Models", ICLR 2024.
+<a href="https://huggingface.co/datasets/zjunlp/Mol-Instructions">https://huggingface.co/datasets/zjunlp/Mol-Instructions</a></p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>save_path</code></strong></dt>
+<dd>Path to save the dataset (will be created if not exists)</dd>
+</dl></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -119,6 +194,7 @@ el.replaceWith(d);
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.molecule_nat_lang.dataset.download.download_hf_dataset" href="#molcrawl.molecule_nat_lang.dataset.download.download_hf_dataset">download_hf_dataset</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.dataset.download.download_mol_instructions" href="#molcrawl.molecule_nat_lang.dataset.download.download_mol_instructions">download_mol_instructions</a></code></li>
 </ul>
 </li>
 </ul>
