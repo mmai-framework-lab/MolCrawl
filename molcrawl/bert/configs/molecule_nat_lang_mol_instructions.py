@@ -25,6 +25,8 @@ meta_vocab_size = 50002
 model_size = "small"
 # Fine-tuning checkpoint output — separate from pretraining output
 model_path = get_bert_output_path("molecule_nat_lang_mol_instructions", model_size)
+# Pretraining checkpoint to initialise weights from when no fine-tune checkpoint exists.
+pretrain_model_path = get_bert_output_path("molecule_nat_lang", model_size)
 
 max_length = 1024
 dataset_dir = MOL_INSTRUCTIONS_DATASET_DIR

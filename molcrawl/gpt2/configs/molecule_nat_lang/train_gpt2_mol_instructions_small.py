@@ -16,6 +16,8 @@ from molcrawl.config.paths import (
 tensorboard = True
 tensorboard_dir = get_gpt2_output_path("molecule_nat_lang_mol_instructions", "small")
 out_dir = get_gpt2_output_path("molecule_nat_lang_mol_instructions", "small")
+# Pretraining checkpoint to load weights from when out_dir has no checkpoint.
+pretrain_dir = get_gpt2_output_path("molecule_nat_lang", "small")
 
 dataset_dir = MOL_INSTRUCTIONS_DATASET_DIR
 

@@ -59,6 +59,7 @@ eval_iters = 200
 eval_only = False  # if True, script exits right after the first eval
 always_save_checkpoint = False  # if True, always save a checkpoint after each eval
 init_from = "scratch"  # 'scratch' or 'resume' or 'gpt2*'
+pretrain_dir = ""  # Path to pretraining out_dir; used when init_from='resume' and out_dir has no checkpoint
 # checkpoint management (Hugging Face style)
 save_hf_checkpoints = True  # if True, save checkpoints in HF format (checkpoint-{step}/)
 save_checkpoint_steps = None  # save checkpoint every N steps (None = use eval_interval)
@@ -338,13 +339,73 @@ elif init_from == "resume":
 
     if not checkpoint_loaded:
         print(f"No checkpoint found in {out_dir}")
-        print("Starting training from scratch instead")
-        # Initialize from scratch if checkpoint doesn't exist
-        if meta_vocab_size is None:
-            print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
-        model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
-        gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
-        model = GPT(gptconf)
+        # Try to load from pretrain_dir if specified
+        if pretrain_dir and os.path.exists(pretrain_dir):
+            print(f"Attempting to load pretraining checkpoint from {pretrain_dir}")
+            _pretrain_checkpoint_loaded = False
+            # Try HuggingFace format first
+            _pretrain_ckpt_dirs = glob.glob(os.path.join(pretrain_dir, "checkpoint-*"))
+            if _pretrain_ckpt_dirs:
+                _pretrain_steps = []
+                for _d in _pretrain_ckpt_dirs:
+                    try:
+                        _s = int(os.path.basename(_d).split("-")[1])
+                        _ts = os.path.join(_d, "training_state.bin")
+                        if os.path.exists(_ts):
+                            _pretrain_steps.append((_s, _ts))
+                    except (ValueError, IndexError):
+                        continue
+                if _pretrain_steps:
+                    _pretrain_steps.sort(reverse=True)
+                    _, _pretrain_ckpt_path = _pretrain_steps[0]
+                    print(f"Loading pretraining checkpoint from {_pretrain_ckpt_path}")
+                    checkpoint = torch.load(_pretrain_ckpt_path, map_location=device)
+                    _pretrain_checkpoint_loaded = True
+            # Fall back to legacy ckpt.pt
+            if not _pretrain_checkpoint_loaded:
+                _legacy = os.path.join(pretrain_dir, "ckpt.pt")
+                if os.path.exists(_legacy):
+                    print(f"Loading pretraining legacy checkpoint from {_legacy}")
+                    checkpoint = torch.load(_legacy, map_location=device)
+                    _pretrain_checkpoint_loaded = True
+            if not _pretrain_checkpoint_loaded:
+                raise ValueError(
+                    f"pretrain_dir={pretrain_dir!r} is set but no checkpoint was found inside it.\n"
+                    "Run pretraining first, or unset pretrain_dir to train from scratch."
+                )
+        else:
+            if pretrain_dir:
+                raise ValueError(
+                    f"pretrain_dir={pretrain_dir!r} is set but does not exist.\n"
+                    "Run pretraining first, or unset pretrain_dir to train from scratch."
+                )
+        if checkpoint is None:
+            print("No checkpoint found and pretrain_dir not set — starting training from scratch.")
+            # Initialize from scratch if checkpoint doesn't exist
+            if meta_vocab_size is None:
+                print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
+            model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
+            gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
+            model = GPT(gptconf)
+        else:
+            # Pretrain checkpoint loaded via pretrain_dir — use same loading path
+            # as the out_dir resume branch below.
+            checkpoint_model_args = checkpoint["model_args"]
+            for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
+                model_args[k] = checkpoint_model_args[k]
+            gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
+            model = GPT(gptconf)
+            state_dict = checkpoint["model"]
+            unwanted_prefix = "_orig_mod."
+            for k, _v in list(state_dict.items()):
+                if k.startswith(unwanted_prefix):
+                    state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
+            model.load_state_dict(state_dict)
+            # Reset training counters — we are fine-tuning, not resuming
+            iter_num = 0
+            best_val_loss = 1e9
+            early_stopping_counter = 0
+            print("Pretraining weights loaded. Starting fine-tuning from iter 0.")
     else:
         checkpoint_model_args = checkpoint["model_args"]
         # force these config attributes to be equal otherwise we can't even resume training

@@ -138,6 +138,7 @@ if __name__ == "__main__":
     )  # log model checkpoints as wandb artifacts
 
     model_path = ""
+    pretrain_model_path = ""  # Path to pretraining checkpoint dir; used when no fine-tune checkpoint exists
     max_length = 1024
     dataset_dir = ""
     learning_rate = 6e-6
@@ -199,7 +200,31 @@ if __name__ == "__main__":
     else:
         raise ValueError("model_size: {model_size} is not supported choose between small, medium and large")
 
-    model = BertForMaskedLM(config=model_config)
+    # Determine whether fine-tune checkpoints already exist in model_path
+    _has_finetune_ckpt = os.path.exists(model_path) and any(d.startswith("checkpoint-") for d in os.listdir(model_path))
+
+    if _has_finetune_ckpt:
+        # Trainer.train(resume_from_checkpoint=...) will load weights; just
+        # need the architecture here.
+        print(f"Fine-tune checkpoint found in {model_path} — will resume.")
+        model = BertForMaskedLM(config=model_config)
+    elif pretrain_model_path and os.path.exists(pretrain_model_path):
+        # Load weights from pretraining checkpoint.
+        # Find the latest checkpoint-N sub-directory if present.
+        _ckpt_dirs = sorted(
+            [d for d in os.listdir(pretrain_model_path) if d.startswith("checkpoint-")],
+            key=lambda x: int(x.split("-")[1]),
+        )
+        _load_path = os.path.join(pretrain_model_path, _ckpt_dirs[-1]) if _ckpt_dirs else pretrain_model_path
+        print(f"Loading pretraining weights from {_load_path}")
+        model = BertForMaskedLM.from_pretrained(_load_path, config=model_config, ignore_mismatched_sizes=True)
+    else:
+        if pretrain_model_path:
+            raise ValueError(
+                f"pretrain_model_path={pretrain_model_path!r} is set but does not exist.\n"
+                "Run pretraining first, or unset pretrain_model_path to train from scratch."
+            )
+        model = BertForMaskedLM(config=model_config)
 
     # Initialize wandb if enabled
     wandb_run = None
