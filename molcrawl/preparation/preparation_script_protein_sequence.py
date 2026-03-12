@@ -26,7 +26,7 @@ from datasets import load_dataset
 
 # Add project root src directory to path
 
-from molcrawl.config.paths import PROTEIN_SEQUENCE_DIR
+from molcrawl.config.paths import PROTEIN_SEQUENCE_DIR, PROTEINGYM_DIR, PROTEINGYM_SOURCE_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer, tokenize_to_parquet
 from molcrawl.protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
@@ -274,10 +274,61 @@ def process4_generate_statistics(base_dir, dataset, force=False):
         return False
 
 
+def process_proteingym(force: bool = False) -> bool:
+    """Download ProteinGym and prepare the training_ready_hf_dataset.
+
+    Args:
+        force: Re-download / re-prepare even if outputs already exist.
+
+    Returns:
+        True on success, False on failure.
+    """
+    from molcrawl.protein_sequence.dataset.download_proteingym import download_proteingym
+    from molcrawl.protein_sequence.dataset.prepare_proteingym import prepare_proteingym
+
+    source_dir = Path(PROTEINGYM_SOURCE_DIR)
+    output_dir = Path(PROTEINGYM_DIR)
+    ready_marker = output_dir / "proteingym_prepare_complete.marker"
+
+    if not force and ready_marker.exists():
+        logger.info("👉ProteinGym: dataset already prepared. Skipping (use --force to redo).")
+        return True
+
+    logger.info("👉ProteinGym Step 1/2: Downloading DMS substitution data...")
+    try:
+        csv_dir = download_proteingym(source_dir)
+        logger.info("ProteinGym download complete: %s", csv_dir)
+    except Exception as exc:
+        logger.error("ProteinGym download failed: %s", exc)
+        return False
+
+    logger.info("👉ProteinGym Step 2/2: Preparing training_ready_hf_dataset...")
+    try:
+        prepare_proteingym(source_dir=csv_dir, output_dir=str(output_dir))
+        ready_marker.touch()
+        logger.info("🎉 ProteinGym dataset preparation completed successfully!")
+        return True
+    except Exception as exc:
+        logger.error("ProteinGym preparation failed: %s", exc)
+        return False
+
+
 def main():
     """Main function to orchestrate the protein sequence dataset preparation"""
     parser = ArgumentParser()
     parser.add_argument("config", help="Path to configuration file")
+    parser.add_argument(
+        "--datasets",
+        nargs="+",
+        choices=["uniprot", "proteingym"],
+        default=["uniprot"],
+        help="Which dataset(s) to prepare (default: uniprot).",
+    )
+    parser.add_argument(
+        "--download-only",
+        action="store_true",
+        help="Only download; skip tokenisation / preparation.",
+    )
     parser.add_argument(
         "--force",
         action="store_true",
@@ -295,6 +346,14 @@ def main():
 
     setup_logging(PROTEIN_SEQUENCE_DIR)
 
+    # ── ProteinGym branch ─────────────────────────────────────────────────────
+    if "proteingym" in args.datasets:
+        if not process_proteingym(force=args.force):
+            exit(1)
+        if "uniprot" not in args.datasets:
+            return
+
+    # ── UniProt branch (original pipeline) ───────────────────────────────────
     # Check progress
     all_completed = check_progress_status(PROTEIN_SEQUENCE_DIR)
 
@@ -315,6 +374,10 @@ def main():
     if not success:
         logger.error("Process 1 failed. Stopping execution.")
         exit(1)
+
+    if args.download_only:
+        logger.info("--download-only specified. Stopping after download.")
+        return
 
     # Process 2: Convert FASTA to raw text
     success &= process2_fasta_to_raw(PROTEIN_SEQUENCE_DIR, cfg.dataset, cfg.max_lines_per_file, args.force)
