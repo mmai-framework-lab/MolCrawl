@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.protein_sequence.dataset API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.protein_sequence.dataset.download_proteingym API documentation</title>
+<meta name="description" content="Download ProteinGym v1.3 DMS substitution data for fine-tuning …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,38 +33,82 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Namespace <code>molcrawl.protein_sequence.dataset</code></h1>
+<h1 class="title">Module <code>molcrawl.protein_sequence.dataset.download_proteingym</code></h1>
 </header>
 <section id="section-intro">
+<p>Download ProteinGym v1.3 DMS substitution data for fine-tuning.</p>
+<p>The downloaded CSV files are saved to <em>save_path</em> so that
+prepare_proteingym.py can read them directly.</p>
+<h2 id="usage">Usage</h2>
+<p>from molcrawl.protein_sequence.dataset.download_proteingym import download_proteingym
+download_proteingym("/path/to/proteingym_v1.3")</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.protein_sequence.dataset.download_proteingym" href="download_proteingym.html">molcrawl.protein_sequence.dataset.download_proteingym</a></code></dt>
+<dt id="molcrawl.protein_sequence.dataset.download_proteingym.download_proteingym"><code class="name flex">
+<span>def <span class="ident">download_proteingym</span></span>(<span>save_path: str | pathlib.Path) ‑> pathlib.Path</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Download ProteinGym v1.3 DMS substitution data for fine-tuning …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.protein_sequence.dataset.prepare_gpt2" href="prepare_gpt2.html">molcrawl.protein_sequence.dataset.prepare_gpt2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.protein_sequence.dataset.prepare_proteingym" href="prepare_proteingym.html">molcrawl.protein_sequence.dataset.prepare_proteingym</a></code></dt>
-<dd>
-<div class="desc"><p>ProteinGym Dataset Preparation Script for GPT-2 / BERT Fine-tuning …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.protein_sequence.dataset.tokenizer" href="tokenizer.html">molcrawl.protein_sequence.dataset.tokenizer</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.protein_sequence.dataset.uniprot" href="uniprot/index.html">molcrawl.protein_sequence.dataset.uniprot</a></code></dt>
-<dd>
-<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_proteingym(save_path: Union[str, Path]) -&gt; Path:
+    &#34;&#34;&#34;
+    Download ProteinGym v1.3 DMS substitution CSV files into *save_path*.
+
+    After this function returns, *save_path* will contain:
+        DMS_ProteinGym_substitutions/   ← one CSV per assay
+        DMS_substitutions.csv           ← reference metadata (one row per assay)
+
+    Args:
+        save_path: Destination directory (created if missing).
+
+    Returns:
+        Path to the directory containing individual assay CSV files.
+    &#34;&#34;&#34;
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    # --- substitutions zip --------------------------------------------------
+    zip_path = save_path / &#34;DMS_ProteinGym_substitutions.zip&#34;
+    _download_with_progress(_SUBSTITUTIONS_URL, zip_path)
+
+    csv_dir = save_path / &#34;DMS_ProteinGym_substitutions&#34;
+    if not csv_dir.exists():
+        logger.info(&#34;Extracting %s ...&#34;, zip_path)
+        with zipfile.ZipFile(zip_path, &#34;r&#34;) as zf:
+            zf.extractall(save_path)
+        logger.info(&#34;Extracted to %s&#34;, csv_dir)
+    else:
+        logger.info(&#34;Already extracted: %s&#34;, csv_dir)
+
+    # --- reference CSV ------------------------------------------------------
+    ref_path = save_path / &#34;DMS_substitutions.csv&#34;
+    _download_with_progress(_REFERENCE_URL, ref_path)
+
+    return csv_dir</code></pre>
+</details>
+<div class="desc"><p>Download ProteinGym v1.3 DMS substitution CSV files into <em>save_path</em>.</p>
+<p>After this function returns, <em>save_path</em> will contain:
+DMS_ProteinGym_substitutions/
+← one CSV per assay
+DMS_substitutions.csv
+← reference metadata (one row per assay)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>save_path</code></strong></dt>
+<dd>Destination directory (created if missing).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Path to the directory containing individual assay CSV files.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -76,16 +120,12 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.protein_sequence" href="../index.html">molcrawl.protein_sequence</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset" href="index.html">molcrawl.protein_sequence.dataset</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.protein_sequence.dataset.download_proteingym" href="download_proteingym.html">molcrawl.protein_sequence.dataset.download_proteingym</a></code></li>
-<li><code><a title="molcrawl.protein_sequence.dataset.prepare_gpt2" href="prepare_gpt2.html">molcrawl.protein_sequence.dataset.prepare_gpt2</a></code></li>
-<li><code><a title="molcrawl.protein_sequence.dataset.prepare_proteingym" href="prepare_proteingym.html">molcrawl.protein_sequence.dataset.prepare_proteingym</a></code></li>
-<li><code><a title="molcrawl.protein_sequence.dataset.tokenizer" href="tokenizer.html">molcrawl.protein_sequence.dataset.tokenizer</a></code></li>
-<li><code><a title="molcrawl.protein_sequence.dataset.uniprot" href="uniprot/index.html">molcrawl.protein_sequence.dataset.uniprot</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.protein_sequence.dataset.download_proteingym.download_proteingym" href="#molcrawl.protein_sequence.dataset.download_proteingym.download_proteingym">download_proteingym</a></code></li>
 </ul>
 </li>
 </ul>
