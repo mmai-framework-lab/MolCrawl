@@ -66,6 +66,9 @@ COMPOUNDS_DATASET_DIR = COMPOUNDS_DIR + "/organix13/compounds/training_ready_hf_
 MOL_INSTRUCTIONS_DIR = MOLECULE_NAT_LANG_DIR + "/mol_instructions"
 MOL_INSTRUCTIONS_DATASET_DIR = MOL_INSTRUCTIONS_DIR + "/training_ready_hf_dataset"
 MOL_INSTRUCTIONS_SOURCE_DIR = MOL_INSTRUCTIONS_DIR + "/zjunlp_Mol-Instructions"
+CHEMBL_DIR = COMPOUNDS_DIR + "/chembl"
+CHEMBL_DATASET_DIR = CHEMBL_DIR + "/training_ready_hf_dataset"
+CHEMBL_SOURCE_DIR = CHEMBL_DIR + "/chembl_db"
 
 PROTEINGYM_DIR = PROTEIN_SEQUENCE_DIR + "/proteingym"
 PROTEINGYM_DATASET_DIR = PROTEINGYM_DIR + "/training_ready_hf_dataset"

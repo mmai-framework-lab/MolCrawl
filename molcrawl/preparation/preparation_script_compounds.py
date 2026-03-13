@@ -39,7 +39,9 @@ from molcrawl.compounds.utils.general import (
     download_opv,
     download_zinc20,
 )
-from molcrawl.config.paths import COMPOUNDS_DIR
+from molcrawl.compounds.dataset.download_chembl import download_chembl
+from molcrawl.compounds.dataset.prepare_chembl import prepare_chembl
+from molcrawl.config.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR, COMPOUNDS_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.preparation.download_guacamol import download_guacamol
 
@@ -112,15 +114,49 @@ def download_datasets_individually(cfg, compounds_dir, dataset_types, force=Fals
             logger.error(f"✗ {dataset_type.value}: Download failed - {e}")
 
 
+def process_chembl_finetune(force: bool = False) -> bool:
+    """Download ChEMBL 36 from EBI and prepare fine-tuning dataset.
+
+    Runs download_chembl (EBI FTP → SQLite → smiles.txt) followed by
+    prepare_chembl (tokenise → 80/10/10 split → HF Dataset).
+
+    Args:
+        force: Re-run all steps even if marker files already exist.
+
+    Returns:
+        True if both steps succeeded, False otherwise.
+    """
+    logger.info("=" * 70)
+    logger.info("ChEMBL fine-tuning dataset preparation")
+    logger.info("=" * 70)
+
+    logger.info("[1/2] Downloading ChEMBL 36 …")
+    ok = download_chembl(CHEMBL_SOURCE_DIR, force=force)
+    if not ok:
+        logger.error("ChEMBL download failed.")
+        return False
+
+    logger.info("[2/2] Tokenising and preparing HF Dataset …")
+    ok = prepare_chembl(source_dir=CHEMBL_SOURCE_DIR, output_dir=CHEMBL_DIR, force=force)
+    if not ok:
+        logger.error("ChEMBL preparation failed.")
+        return False
+
+    logger.info("ChEMBL fine-tuning dataset ready.")
+    return True
+
+
 def main():
     """Main execution function"""
+    _extra_choices = ["chembl_finetune"]
     parser = ArgumentParser(description="Compound dataset preparation script")
     parser.add_argument("config", help="Configuration file path")
     parser.add_argument(
         "--datasets",
         nargs="+",
-        choices=[dt.value for dt in get_all_dataset_types()],
-        help="Dataset to process (all available if not specified)",
+        choices=[dt.value for dt in get_all_dataset_types()] + _extra_choices,
+        help="Dataset to process (all available if not specified). "
+        "Use 'chembl_finetune' for the EBI ChEMBL 36 fine-tuning pipeline.",
     )
     parser.add_argument(
         "--force",
@@ -184,6 +220,13 @@ def main():
     logger.info("Compound dataset preparation script (revised version)")
     logger.info("=" * 70)
     logger.info(f"Compounds directory: {compounds_dir}")
+
+    # ── ChEMBL fine-tuning (separate EBI pipeline) ───────────────────────────
+    if args.datasets and "chembl_finetune" in args.datasets:
+        success = process_chembl_finetune(force=args.force)
+        import sys
+
+        sys.exit(0 if success else 1)
 
     # Decide which dataset to process
     if args.datasets:

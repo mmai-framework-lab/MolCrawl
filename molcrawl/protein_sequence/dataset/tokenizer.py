@@ -152,21 +152,24 @@ def get_parquet_paths(raw_paths: List[Path], parquet_dir: Union[Path, str]):
 
 
 def generate_parquet_from_raw(raw_dir: Path, parquet_dir: Path, num_worker=5):
-    from rich import progress
-
-    print(f"Tokenizing raw files in {raw_dir} to parquet files in {parquet_dir} with {num_worker} workers.")
-    raw_paths = [path for path in Path(raw_dir).iterdir() if path.suffix == ".raw"]
+    logger.info(f"Tokenizing raw files in {raw_dir} to parquet files in {parquet_dir} with {num_worker} workers.")
+    raw_paths = sorted(path for path in Path(raw_dir).iterdir() if path.suffix == ".raw")
     parquet_paths = get_parquet_paths(raw_paths, parquet_dir)
+    total = len(raw_paths)
+    logger.info(f"Total raw files to tokenize: {total}")
 
     tokenizer = EsmSequenceTokenizer()
 
     token_counts = []
+    completed = 0
+    log_interval = max(1, total // 20)  # log every ~5%
     with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
         func = partial(process_raw, tokenizer=tokenizer)
-        for result in progress.track(
-            executor.map(func, raw_paths, parquet_paths), "Tokenizing to parquet", total=len(raw_paths)
-        ):
+        for result in executor.map(func, raw_paths, parquet_paths):
             token_counts += result
+            completed += 1
+            if completed % log_interval == 0 or completed == total:
+                logger.info(f"Tokenizing to parquet: {completed}/{total} ({100 * completed // total}%)")
 
     with open(raw_dir.parent / "token_counts.pkl", "wb") as file:
         pickle.dump(token_counts, file)
