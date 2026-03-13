@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar API documentation</title>
+<meta name="description" content="ClinVar Dataset Preparation Script for GPT-2 / BERT Fine-tuning …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</code></h1>
+</header>
+<section id="section-intro">
+<p>ClinVar Dataset Preparation Script for GPT-2 / BERT Fine-tuning</p>
+<p>Converts the project-level <code>dataset/clinvar_sequences.csv</code> into the
+training_ready_hf_dataset format compatible with the genome_sequence
+training pipeline.</p>
+<h2 id="pipeline">Pipeline</h2>
+<ol>
+<li>Read <code>reference_sequence</code> and <code>variant_sequence</code> columns from
+the ClinVar CSV (Benign / Pathogenic variants on human chromosomes).</li>
+<li>Deduplicate by exact sequence string.</li>
+<li>Shuffle and apply an 80 / 10 / 10 train / valid / test split.</li>
+<li>Tokenise with the genome SentencePiece BPE tokenizer (vocab_size=4096).</li>
+<li>Concatenate all token sequences into one long stream (with EOS between
+sequences), then chunk into fixed-length blocks of <em>context_length</em>.</li>
+<li>Save as a HuggingFace DatasetDict to
+<code>CLINVAR_DIR/training_ready_hf_dataset/</code>.</li>
+</ol>
+<p>Usage (standalone):
+LEARNING_SOURCE_DIR=learning_source_20260311 \
+python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
+<pre><code>The output is saved to:
+    $LEARNING_SOURCE_DIR/genome_sequence/clinvar/training_ready_hf_dataset/
+</code></pre>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar"><code class="name flex">
+<span>def <span class="ident">prepare_clinvar</span></span>(<span>source_file: str | pathlib.Path,<br>output_dir: str | pathlib.Path,<br>tokenizer_path: str,<br>*,<br>context_length: int = 1024,<br>train_ratio: float = 0.8,<br>seed: int = 42,<br>num_proc: int = 4) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_clinvar(
+    source_file: Union[str, Path],
+    output_dir: Union[str, Path],
+    tokenizer_path: str,
+    *,
+    context_length: int = 1024,
+    train_ratio: float = 0.8,
+    seed: int = 42,
+    num_proc: int = 4,
+) -&gt; str:
+    &#34;&#34;&#34;
+    Load ClinVar sequences from *source_file*, build a language-model
+    training dataset, and save it to *output_dir*.
+
+    Args:
+        source_file: Path to ``clinvar_sequences.csv``.
+        output_dir: Parent directory; the dataset is written under
+                    ``output_dir/training_ready_hf_dataset/``.
+        tokenizer_path: Path to the SentencePiece ``.model`` file.
+        context_length: Token block length (default 1024).
+        train_ratio: Fraction of sequences used for training (rest split 50/50
+                     between validation and test).
+        seed: Random seed for reproducible shuffling.
+        num_proc: Parallel workers for HuggingFace Dataset.map() operations.
+
+    Returns:
+        Absolute path string of the saved dataset directory.
+    &#34;&#34;&#34;
+    import csv
+
+    import sentencepiece as spm
+
+    source_file = Path(source_file)
+    output_dir = Path(output_dir)
+
+    if not source_file.exists():
+        raise FileNotFoundError(
+            f&#34;ClinVar source file not found: {source_file}\n&#34; &#34;Expected at: dataset/clinvar_sequences.csv in the project root.&#34;
+        )
+
+    # ------------------------------------------------------------------
+    # 1. Collect sequences from CSV
+    # ------------------------------------------------------------------
+    logger.info(&#34;Reading ClinVar sequences from %s&#34;, source_file)
+    sequences: List[str] = []
+    with open(source_file, newline=&#34;&#34;) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            ref_seq = row.get(&#34;reference_sequence&#34;, &#34;&#34;).strip()
+            var_seq = row.get(&#34;variant_sequence&#34;, &#34;&#34;).strip()
+            if ref_seq:
+                sequences.append(ref_seq.upper())
+            if var_seq:
+                sequences.append(var_seq.upper())
+
+    logger.info(&#34;Total sequences collected (before dedup): %d&#34;, len(sequences))
+
+    # ------------------------------------------------------------------
+    # 2. Deduplicate
+    # ------------------------------------------------------------------
+    sequences = list(dict.fromkeys(s for s in sequences if s))
+    logger.info(&#34;Unique sequences after deduplication: %d&#34;, len(sequences))
+
+    # ------------------------------------------------------------------
+    # 3. Random 80 / 10 / 10 split
+    # ------------------------------------------------------------------
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(len(sequences))
+
+    n_train = int(len(idx) * train_ratio)
+    n_val = int(len(idx) * (1 - train_ratio) / 2)
+
+    train_seqs = [sequences[i] for i in idx[:n_train]]
+    val_seqs = [sequences[i] for i in idx[n_train : n_train + n_val]]
+    test_seqs = [sequences[i] for i in idx[n_train + n_val :]]
+
+    logger.info(
+        &#34;Split — train: %d, valid: %d, test: %d&#34;,
+        len(train_seqs),
+        len(val_seqs),
+        len(test_seqs),
+    )
+
+    raw_split = DatasetDict(
+        {
+            &#34;train&#34;: Dataset.from_dict({&#34;sequence&#34;: train_seqs}),
+            &#34;valid&#34;: Dataset.from_dict({&#34;sequence&#34;: val_seqs}),
+            &#34;test&#34;: Dataset.from_dict({&#34;sequence&#34;: test_seqs}),
+        }
+    )
+
+    # ------------------------------------------------------------------
+    # 4. Tokenise with SentencePiece BPE genome tokenizer
+    # ------------------------------------------------------------------
+    logger.info(&#34;Tokenising sequences with SentencePiece BPE from %s&#34;, tokenizer_path)
+    sp = spm.SentencePieceProcessor(model_file=tokenizer_path)
+    eos_token_id = sp.eos_id()
+    logger.info(&#34;vocab_size=%d  eos_token_id=%d&#34;, sp.get_piece_size(), eos_token_id)
+
+    tokenized = raw_split.map(
+        partial(_tokenize_batch, tokenizer_path=tokenizer_path),
+        batched=True,
+        batch_size=1000,
+        remove_columns=[&#34;sequence&#34;],
+        num_proc=num_proc,
+        desc=&#34;Tokenising&#34;,
+    )
+
+    # ------------------------------------------------------------------
+    # 5. Concatenate into a single stream, then chunk
+    # ------------------------------------------------------------------
+    logger.info(&#34;Concatenating and chunking to length %d...&#34;, context_length)
+
+    concatenated = tokenized.map(
+        partial(_concatenate_texts, eos_token_id=eos_token_id),
+        batched=True,
+        batch_size=-1,
+        remove_columns=tokenized[&#34;train&#34;].column_names,
+        desc=&#34;Concatenating&#34;,
+    )
+
+    chunked = concatenated.map(
+        partial(_create_chunks, context_length=context_length),
+        batched=True,
+        batch_size=-1,
+        desc=&#34;Chunking&#34;,
+    )
+
+    # ------------------------------------------------------------------
+    # 6. Save
+    # ------------------------------------------------------------------
+    output_path = output_dir / &#34;training_ready_hf_dataset&#34;
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    logger.info(&#34;Saving dataset to %s&#34;, output_path)
+    chunked.save_to_disk(str(output_path))
+
+    logger.info(&#34;Done! Dataset statistics:&#34;)
+    for split_name in chunked:
+        logger.info(
+            &#34;  %s: %d chunks of %d tokens&#34;,
+            split_name,
+            len(chunked[split_name]),
+            context_length,
+        )
+
+    return str(output_path)</code></pre>
+</details>
+<div class="desc"><p>Load ClinVar sequences from <em>source_file</em>, build a language-model
+training dataset, and save it to <em>output_dir</em>.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_file</code></strong></dt>
+<dd>Path to <code>clinvar_sequences.csv</code>.</dd>
+<dt><strong><code>output_dir</code></strong></dt>
+<dd>Parent directory; the dataset is written under
+<code>output_dir/training_ready_hf_dataset/</code>.</dd>
+<dt><strong><code>tokenizer_path</code></strong></dt>
+<dd>Path to the SentencePiece <code>.model</code> file.</dd>
+<dt><strong><code>context_length</code></strong></dt>
+<dd>Token block length (default 1024).</dd>
+<dt><strong><code>train_ratio</code></strong></dt>
+<dd>Fraction of sequences used for training (rest split 50/50
+between validation and test).</dd>
+<dt><strong><code>seed</code></strong></dt>
+<dd>Random seed for reproducible shuffling.</dd>
+<dt><strong><code>num_proc</code></strong></dt>
+<dd>Parallel workers for HuggingFace Dataset.map() operations.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Absolute path string of the saved dataset directory.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.genome_sequence.dataset.clinvar" href="index.html">molcrawl.genome_sequence.dataset.clinvar</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar" href="#molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar">prepare_clinvar</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
