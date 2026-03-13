@@ -22,7 +22,7 @@ from datasets import load_dataset
 from datasets.utils.logging import enable_progress_bar
 
 # Add project root src directory to path
-from molcrawl.config.paths import RNA_DATASET_DIR
+from molcrawl.config.paths import RNA_CELLTYPE_DIR, RNA_CELLTYPE_SOURCE_DIR, RNA_DATASET_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.rna.dataset.cellxgene.script.build_list import build_list
 from molcrawl.rna.dataset.cellxgene.script.download import download
@@ -81,15 +81,73 @@ def create_enhanced_gene_list(vocab, data, out_dir):
             f.write(f"{gene_id}\t{gene_name}\t{count}\t{frequency:.6f}\n")
 
 
+def process_celltype_finetune(force: bool = False) -> bool:
+    """Prepare the Geneformer cell type annotation LM fine-tuning dataset.
+
+    Downloads ``cell_type_train_data.dataset`` from ctheodoris/Genecorpus-30M
+    on HuggingFace, splits it 80/10/10, chunks to context_length=1024, and
+    saves a HuggingFace DatasetDict to
+    ``$LEARNING_SOURCE_DIR/rna/celltype/training_ready_hf_dataset/``.
+
+    Args:
+        force: Re-prepare even if outputs already exist.
+
+    Returns:
+        True on success, False on failure.
+    """
+    from molcrawl.rna.dataset.celltype.prepare_celltype import (
+        download_celltype,
+        prepare_celltype,
+    )
+
+    output_dir = Path(RNA_CELLTYPE_DIR)
+    ready_marker = output_dir / "celltype_prepare_complete.marker"
+
+    if not force and ready_marker.exists():
+        logger.info("👉 CellType: dataset already prepared. Skipping (use --force to redo).")
+        return True
+
+    logger.info("👉 CellType: Downloading and preparing cell type annotation dataset ...")
+    try:
+        download_celltype(RNA_CELLTYPE_SOURCE_DIR)
+        prepare_celltype(
+            source_dir=RNA_CELLTYPE_SOURCE_DIR,
+            output_dir=output_dir,
+        )
+        ready_marker.touch()
+        logger.info("🎉 CellType dataset preparation completed successfully!")
+        return True
+    except Exception as exc:
+        logger.error("CellType preparation failed: %s", exc)
+        return False
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("config")
+    parser.add_argument(
+        "--datasets",
+        nargs="+",
+        choices=["cellxgene", "celltype"],
+        default=["cellxgene"],
+        help="Which dataset(s) to prepare (default: cellxgene).",
+    )
     parser.add_argument(
         "--force",
         action="store_true",
         help="Force re-download and reprocessing even if files exist",
     )
     args = parser.parse_args()
+
+    if "celltype" in args.datasets and "cellxgene" not in args.datasets:
+        # celltype-only: skip CellxGene pretraining pipeline; just setup logging
+        setup_logging(str(RNA_CELLTYPE_DIR))
+        success = process_celltype_finetune(force=args.force)
+        if not success:
+            logger.error("CellType preparation failed.")
+            exit(1)
+        exit(0)
+
     cfg = RnaConfig.from_file(args.config).data_preparation
 
     setup_logging(str(RNA_DATASET_DIR))
@@ -283,3 +341,9 @@ if __name__ == "__main__":
         logger.error(f"Failed to load or process final dataset: {e}")
         logger.error("Some processing steps may have failed. Please check logs and consider using --force option.")
         exit(1)
+
+    # Fine-tuning dataset: cell type annotation
+    if "celltype" in args.datasets:
+        if not process_celltype_finetune(force=args.force):
+            logger.error("CellType preparation failed.")
+            exit(1)
