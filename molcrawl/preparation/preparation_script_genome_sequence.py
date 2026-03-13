@@ -8,7 +8,7 @@ from datasets import load_dataset
 
 # Add project root src directory to path
 
-from molcrawl.config.paths import GENOME_SEQUENCE_DIR
+from molcrawl.config.paths import CLINVAR_DIR, CLINVAR_SOURCE_FILE, GENOME_SEQUENCE_DIR, get_refseq_tokenizer_path
 from molcrawl.core.base import setup_logging
 from molcrawl.genome_sequence.dataset.refseq.download_refseq import download_refseq
 from molcrawl.genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome
@@ -287,10 +287,55 @@ def process5_generate_statistics(base_dir, vocab_size, force=False):
         return False
 
 
+def process_clinvar_finetune(force: bool = False) -> bool:
+    """Prepare the ClinVar language-model fine-tuning dataset.
+
+    Reads project-level ``dataset/clinvar_sequences.csv``, tokenises the
+    reference + variant sequences with the genome SentencePiece BPE tokenizer,
+    and saves a chunked HuggingFace DatasetDict to
+    ``$LEARNING_SOURCE_DIR/genome_sequence/clinvar/training_ready_hf_dataset/``.
+
+    Args:
+        force: Re-prepare even if outputs already exist.
+
+    Returns:
+        True on success, False on failure.
+    """
+    from molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar import prepare_clinvar
+
+    output_dir = Path(CLINVAR_DIR)
+    ready_marker = output_dir / "clinvar_prepare_complete.marker"
+
+    if not force and ready_marker.exists():
+        logger.info("👉ClinVar: dataset already prepared. Skipping (use --force to redo).")
+        return True
+
+    logger.info("👉ClinVar: Preparing training_ready_hf_dataset from clinvar_sequences.csv...")
+    try:
+        prepare_clinvar(
+            source_file=CLINVAR_SOURCE_FILE,
+            output_dir=output_dir,
+            tokenizer_path=get_refseq_tokenizer_path(),
+        )
+        ready_marker.touch()
+        logger.info("🎉 ClinVar dataset preparation completed successfully!")
+        return True
+    except Exception as exc:
+        logger.error("ClinVar preparation failed: %s", exc)
+        return False
+
+
 def main():
     """Main function to orchestrate the genome sequence dataset preparation"""
     parser = ArgumentParser()
     parser.add_argument("config", help="Path to configuration file")
+    parser.add_argument(
+        "--datasets",
+        nargs="+",
+        choices=["refseq", "clinvar"],
+        default=["refseq"],
+        help="Which dataset(s) to prepare (default: refseq).",
+    )
     parser.add_argument(
         "--force",
         action="store_true",
@@ -306,6 +351,14 @@ def main():
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
     setup_logging(GENOME_SEQUENCE_DIR)
 
+    # ── ClinVar fine-tuning branch ─────────────────────────────────────────────
+    if "clinvar" in args.datasets:
+        if not process_clinvar_finetune(force=args.force):
+            exit(1)
+        if "refseq" not in args.datasets:
+            return
+
+    # ── RefSeq pretraining branch (original pipeline) ─────────────────────────
     # base_dir for heavy processing (specify in config if you want to release to local SSD etc.)
     base_dir = GENOME_SEQUENCE_DIR + getattr(cfg, "local_base_dir", "scratch")
     logger.info(f"Using base_dir: {base_dir}")

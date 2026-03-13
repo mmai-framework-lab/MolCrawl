@@ -71,6 +71,10 @@ PROTEINGYM_DIR = PROTEIN_SEQUENCE_DIR + "/proteingym"
 PROTEINGYM_DATASET_DIR = PROTEINGYM_DIR + "/training_ready_hf_dataset"
 PROTEINGYM_SOURCE_DIR = PROTEINGYM_DIR + "/proteingym_v1.3"
 
+CLINVAR_DIR = GENOME_SEQUENCE_DIR + "/clinvar"
+CLINVAR_DATASET_DIR = CLINVAR_DIR + "/training_ready_hf_dataset"
+CLINVAR_SOURCE_FILE = os.path.join(PROJECT_ROOT, "dataset", "clinvar_sequences.csv")
+
 # Absolute path version (used in web applications and APIs)
 ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
 
