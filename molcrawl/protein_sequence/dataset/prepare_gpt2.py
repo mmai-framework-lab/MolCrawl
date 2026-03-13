@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from functools import partial
 from argparse import ArgumentParser
-from importlib import import_module
+from functools import partial
 from pathlib import Path
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 # add project root to path（utilsetc.)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -21,7 +20,7 @@ else:
     # Can operate even in an environment without cache_config
     print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 
-ProteinSequenceConfig = import_module("protein_sequence.utils.configs").ProteinSequenceConfig
+from molcrawl.protein_sequence.utils.configs import ProteinSequenceConfig  # noqa: E402
 
 if TYPE_CHECKING:
     from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
@@ -63,6 +62,7 @@ def create_chunks(examples: Dict[str, List[int]], context_length: int) -> Dict[s
 
 def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -> None:
     from datasets import DatasetDict, load_dataset
+
     from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
     raw_dir: Path = Path(path_output) / "raw_files"
