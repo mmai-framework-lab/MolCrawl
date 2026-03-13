@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 # HuggingFace source
 _HF_REPO_ID = "ctheodoris/Genecorpus-30M"
-_HF_DATASET_SUBPATH = "example_input_files/cell_classification" "/cell_type_annotation/cell_type_train_data.dataset"
+_HF_DATASET_SUBPATH = "example_input_files/cell_classification/cell_type_annotation/cell_type_train_data.dataset"
 _DOWNLOADED_DIRNAME = "cell_type_train_data.dataset"
 
 
@@ -114,15 +114,20 @@ def _concatenate_texts(examples: Dict, eos_token_id: int) -> Dict:
     for ids in examples["input_ids"]:
         all_ids.extend(ids)
         all_ids.append(eos_token_id)
-    return {"input_ids": all_ids}
+    # Return as a list containing one sequence (for batched=True)
+    return {"input_ids": [all_ids]}
 
 
 def _create_chunks(examples: Dict, context_length: int) -> Dict:
     """Split a flat input_ids list into fixed-length blocks."""
-    ids = examples["input_ids"]
-    n_chunks = len(ids) // context_length
-    chunks = [ids[i * context_length : (i + 1) * context_length] for i in range(n_chunks)]
-    return {"input_ids": chunks}
+    # When batched=True, examples["input_ids"] is a list of sequences
+    # For batch_size=1, we get [[token1, token2, ...]]
+    all_chunks = []
+    for ids in examples["input_ids"]:
+        n_chunks = len(ids) // context_length
+        chunks = [ids[i * context_length : (i + 1) * context_length] for i in range(n_chunks)]
+        all_chunks.extend(chunks)
+    return {"input_ids": all_chunks}
 
 
 # ---------------------------------------------------------------------------

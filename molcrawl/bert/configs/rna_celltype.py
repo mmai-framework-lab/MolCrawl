@@ -42,7 +42,8 @@ _custom_tokenizer_path = get_custom_tokenizer_path("rna", "bert")
 _tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
-meta_vocab_size = len(original_tokenizer)
+# Round up to nearest multiple of 8 to match pretraining model
+meta_vocab_size = (len(original_tokenizer) // 8 + 1) * 8
 
 model_size = "small"
 # Fine-tuning checkpoint output — separate from pretraining output
@@ -67,7 +68,7 @@ gradient_accumulation_steps = 5 * 16
 
 
 def preprocess_function(examples: Dict[str, List[List[int]]]) -> Dict[str, List[List[int]]]:
-    """Add attention_mask to the dataset."""
+    """Add attention_mask and token_type_ids to the dataset."""
     if "input_ids" in examples:
         pad_token_id = (
             tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
@@ -75,6 +76,8 @@ def preprocess_function(examples: Dict[str, List[List[int]]]) -> Dict[str, List[
         examples["attention_mask"] = [
             [1 if token_id != pad_token_id else 0 for token_id in seq] for seq in examples["input_ids"]
         ]
+        # Add token_type_ids (all zeros for single segment)
+        examples["token_type_ids"] = [[0] * len(seq) for seq in examples["input_ids"]]
     return examples
 
 
