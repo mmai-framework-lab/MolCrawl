@@ -4,11 +4,9 @@
 
 from typing import Dict, List
 
-
 # config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
-
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
@@ -56,10 +54,11 @@ preprocess_num_proc: int = 18
 
 # Add preprocessing function to create attention_mask
 def preprocess_function(examples: Dict[str, List[List[int]]]) -> Dict[str, List[List[int]]]:
-    """Add attention_mask to the dataset"""
+    """Add attention_mask and token_type_ids to the dataset"""
     if "input_ids" in examples:
         # Create attention_mask: 1 for real tokens, 0 for padding
         attention_masks: List[List[int]] = []
+        token_type_ids_list: List[List[int]] = []
         for input_ids in examples["input_ids"]:
             # Assuming pad_token_id is tokenizer.pad_token_id or 0
             pad_token_id: int = (
@@ -67,8 +66,11 @@ def preprocess_function(examples: Dict[str, List[List[int]]]) -> Dict[str, List[
             )
             attention_mask = [1 if token_id != pad_token_id else 0 for token_id in input_ids]
             attention_masks.append(attention_mask)
+            # Add token_type_ids (all zeros for single segment)
+            token_type_ids_list.append([0] * len(input_ids))
 
         examples["attention_mask"] = attention_masks
+        examples["token_type_ids"] = token_type_ids_list
 
     return examples
 

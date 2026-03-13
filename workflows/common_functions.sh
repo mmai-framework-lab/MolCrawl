@@ -9,7 +9,7 @@ _LOCAL_MINICONDA_PYTHON="${_SCRIPT_DIR_CF}/../miniconda/bin/python"
 if [ -f "$_LOCAL_MINICONDA_PYTHON" ]; then
     PYTHON="$(realpath "$_LOCAL_MINICONDA_PYTHON")"
 else
-    _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null)"
+    _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null || true)"
     if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
         PYTHON="$_MOLCRAWL_PYTHON"
     else
