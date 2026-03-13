@@ -42,6 +42,133 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.protein_sequence.dataset.prepare_gpt2.concatenate_texts"><code class="name flex">
+<span>def <span class="ident">concatenate_texts</span></span>(<span>examples: Dict[str, List[List[int]]], eos_token_id: int) ‑> Dict[str, List[int]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def concatenate_texts(examples: Dict[str, List[List[int]]], eos_token_id: int) -&gt; Dict[str, List[int]]:
+    concatenated_ids: List[int] = []
+    for input_ids in examples[&#34;input_ids&#34;]:
+        concatenated_ids.extend(input_ids + [eos_token_id])
+    return {&#34;input_ids&#34;: concatenated_ids}</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.prepare_gpt2.create_chunks"><code class="name flex">
+<span>def <span class="ident">create_chunks</span></span>(<span>examples: Dict[str, List[int]], context_length: int) ‑> Dict[str, List[List[int]]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_chunks(examples: Dict[str, List[int]], context_length: int) -&gt; Dict[str, List[List[int]]]:
+    concatenated_ids: List[int] = examples[&#34;input_ids&#34;]
+
+    # Calculate the total number of chunks
+    total_length = len(concatenated_ids)
+    num_chunks = total_length // context_length
+
+    # Truncate the concatenated_ids to a multiple of context_length
+    total_length = num_chunks * context_length
+    concatenated_ids = concatenated_ids[:total_length]
+
+    # Split into chunks
+    input_ids = [concatenated_ids[i : i + context_length] for i in range(0, total_length, context_length)]
+
+    return {&#34;input_ids&#34;: input_ids}</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset"><code class="name flex">
+<span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>path_output: Path, context_length: int, number_sample: int) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -&gt; None:
+    from datasets import DatasetDict, load_dataset
+
+    from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+
+    raw_dir: Path = Path(path_output) / &#34;raw_files&#34;
+    raw_files: List[Path] = sorted(raw_dir.glob(&#34;*.raw&#34;)) + sorted(raw_dir.glob(&#34;*.txt&#34;))
+    if not raw_files:
+        raise FileNotFoundError(
+            f&#34;No raw data files found in {raw_dir}. &#34;
+            &#34;Expected *.raw or *.txt files. Check symlinks or rerun the preparation step.&#34;
+        )
+
+    # Avoid the effect of extension determination by explicitly passing the file list
+    data = (
+        load_dataset(
+            &#34;text&#34;,
+            data_files={&#34;train&#34;: [str(p) for p in raw_files]},
+            split=&#34;train&#34;,
+        )
+        .shuffle()
+        .select(range(number_sample))
+    )
+    raw_datasets = data.train_test_split(test_size=0.2)
+    valid_test_split = raw_datasets[&#34;test&#34;].train_test_split(test_size=0.5)
+    raw_datasets = DatasetDict(
+        {&#34;train&#34;: raw_datasets[&#34;train&#34;], &#34;valid&#34;: valid_test_split[&#34;train&#34;], &#34;test&#34;: valid_test_split[&#34;test&#34;]}
+    )
+
+    tokenizer: EsmSequenceTokenizer = EsmSequenceTokenizer()
+
+    tokenized_datasets = raw_datasets.map(
+        partial(tokenize_function, tokenizer=tokenizer),
+        batched=True,
+        remove_columns=[&#34;text&#34;],
+    )
+
+    concatenated_dataset = tokenized_datasets.map(
+        partial(concatenate_texts, eos_token_id=tokenizer.eos_token_id),
+        batched=True,
+        batch_size=-1,
+    )
+
+    chunked_dataset = concatenated_dataset.map(
+        partial(create_chunks, context_length=context_length),
+        batched=True,
+        batch_size=-1,
+    )
+
+    path_dataset: str = str(path_output / &#34;training_ready_hf_dataset&#34;)
+    print(f&#34;Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py-&gt;dataset_dir parameter.&#34;)
+    chunked_dataset.save_to_disk(path_dataset)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.protein_sequence.dataset.prepare_gpt2.tokenize_function"><code class="name flex">
+<span>def <span class="ident">tokenize_function</span></span>(<span>examples: Dict[str, List[str]], tokenizer: EsmSequenceTokenizer) ‑> Dict[str, List[List[int]]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_function(examples: Dict[str, List[str]], tokenizer: EsmSequenceTokenizer) -&gt; Dict[str, List[List[int]]]:
+    return {
+        &#34;input_ids&#34;: tokenizer(
+            examples[&#34;text&#34;],
+            truncation=False,
+            add_special_tokens=False,  # We&#39;ll add special tokens manually
+        )[&#34;input_ids&#34;]
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -54,6 +181,14 @@ el.replaceWith(d);
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="molcrawl.protein_sequence.dataset" href="index.html">molcrawl.protein_sequence.dataset</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.protein_sequence.dataset.prepare_gpt2.concatenate_texts" href="#molcrawl.protein_sequence.dataset.prepare_gpt2.concatenate_texts">concatenate_texts</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.prepare_gpt2.create_chunks" href="#molcrawl.protein_sequence.dataset.prepare_gpt2.create_chunks">create_chunks</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset" href="#molcrawl.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset">tokenize_batch_dataset</a></code></li>
+<li><code><a title="molcrawl.protein_sequence.dataset.prepare_gpt2.tokenize_function" href="#molcrawl.protein_sequence.dataset.prepare_gpt2.tokenize_function">tokenize_function</a></code></li>
 </ul>
 </li>
 </ul>
