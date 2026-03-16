@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.compounds.dataset API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.compounds.dataset.download_chembl API documentation</title>
+<meta name="description" content="Download ChEMBL database (SQLite) and extract canonical SMILES strings …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,58 +33,99 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Namespace <code>molcrawl.compounds.dataset</code></h1>
+<h1 class="title">Module <code>molcrawl.compounds.dataset.download_chembl</code></h1>
 </header>
 <section id="section-intro">
+<p>Download ChEMBL database (SQLite) and extract canonical SMILES strings.</p>
+<p>Downloads ChEMBL 36 SQLite archive from the EBI FTP server, unpacks it, then
+queries the <code>compound_structures</code> table for canonical SMILES with valid,
+non-null values and writes them as one SMILES string per line into a text file
+ready for the subsequent <code>prepare_chembl.py</code> tokenisation step.</p>
+<p>Output layout under <em>output_dir</em>
+─────────────────────────────────
+chembl_db/
+chembl_36_sqlite.tar.gz
+← downloaded archive (kept for resumability)
+chembl_36.db
+← unpacked SQLite database
+smiles.txt
+← one canonical SMILES per line
+download_complete.marker
+← written when this script finishes cleanly</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.dataset_config" href="dataset_config.html">molcrawl.compounds.dataset.dataset_config</a></code></dt>
+<dt id="molcrawl.compounds.dataset.download_chembl.download_chembl"><code class="name flex">
+<span>def <span class="ident">download_chembl</span></span>(<span>output_dir: str, force: bool = False) ‑> bool</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Defining and configuring compound datasets …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.download_chembl" href="download_chembl.html">molcrawl.compounds.dataset.download_chembl</a></code></dt>
-<dd>
-<div class="desc"><p>Download ChEMBL database (SQLite) and extract canonical SMILES strings …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.hf_converter" href="hf_converter.html">molcrawl.compounds.dataset.hf_converter</a></code></dt>
-<dd>
-<div class="desc"><p>Conversion to HuggingFace Dataset format …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.multi_loader" href="multi_loader.html">molcrawl.compounds.dataset.multi_loader</a></code></dt>
-<dd>
-<div class="desc"><p>Multi dataset loader …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.organix13" href="organix13/index.html">molcrawl.compounds.dataset.organix13</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.prepare_chembl" href="prepare_chembl.html">molcrawl.compounds.dataset.prepare_chembl</a></code></dt>
-<dd>
-<div class="desc"><p>Prepare ChEMBL for GPT-2 / BERT fine-tuning on the compounds domain …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.prepare_gpt2" href="prepare_gpt2.html">molcrawl.compounds.dataset.prepare_gpt2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.prepare_gpt2_organix13" href="prepare_gpt2_organix13.html">molcrawl.compounds.dataset.prepare_gpt2_organix13</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.processor" href="processor.html">molcrawl.compounds.dataset.processor</a></code></dt>
-<dd>
-<div class="desc"><p>Individual dataset processing processor …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds.dataset.tokenizer" href="tokenizer.html">molcrawl.compounds.dataset.tokenizer</a></code></dt>
-<dd>
-<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_chembl(output_dir: str, force: bool = False) -&gt; bool:
+    &#34;&#34;&#34;Download ChEMBL SQLite and extract canonical SMILES.
+
+    Args:
+        output_dir: Root directory for ChEMBL data (e.g. ``CHEMBL_SOURCE_DIR``).
+        force: Re-run all steps even if marker file exists.
+
+    Returns:
+        ``True`` on success, ``False`` on failure.
+    &#34;&#34;&#34;
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    marker = out / &#34;download_complete.marker&#34;
+    if not force and marker.exists():
+        logger.info(&#34;ChEMBL download already completed. Skipping. (use force=True to re-run)&#34;)
+        return True
+
+    archive_path = out / CHEMBL_ARCHIVE_NAME
+    db_path = out / CHEMBL_DB_NAME
+    smiles_path = out / SMILES_FILE_NAME
+
+    try:
+        # Step 1 – download archive
+        if not archive_path.exists():
+            _download_with_progress(CHEMBL_ARCHIVE_URL, archive_path)
+        else:
+            logger.info(f&#34;Archive already present at {archive_path}, skipping download.&#34;)
+
+        # Step 2 – extract SQLite DB
+        if not db_path.exists():
+            db_path = _extract_db(archive_path, out)
+        else:
+            logger.info(f&#34;SQLite DB already present at {db_path}, skipping extraction.&#34;)
+
+        # Step 3 – extract canonical SMILES
+        _extract_smiles(db_path, smiles_path)
+
+        marker.touch()
+        logger.info(f&#34;ChEMBL download pipeline complete. Marker written to {marker}&#34;)
+        return True
+
+    except Exception as exc:
+        logger.error(f&#34;ChEMBL download failed: {exc}&#34;, exc_info=True)
+        return False</code></pre>
+</details>
+<div class="desc"><p>Download ChEMBL SQLite and extract canonical SMILES.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_dir</code></strong></dt>
+<dd>Root directory for ChEMBL data (e.g. <code>CHEMBL_SOURCE_DIR</code>).</dd>
+<dt><strong><code>force</code></strong></dt>
+<dd>Re-run all steps even if marker file exists.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p><code>True</code> on success, <code>False</code> on failure.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -96,21 +137,12 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.compounds" href="../index.html">molcrawl.compounds</a></code></li>
+<li><code><a title="molcrawl.compounds.dataset" href="index.html">molcrawl.compounds.dataset</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.compounds.dataset.dataset_config" href="dataset_config.html">molcrawl.compounds.dataset.dataset_config</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.download_chembl" href="download_chembl.html">molcrawl.compounds.dataset.download_chembl</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.hf_converter" href="hf_converter.html">molcrawl.compounds.dataset.hf_converter</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.multi_loader" href="multi_loader.html">molcrawl.compounds.dataset.multi_loader</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.organix13" href="organix13/index.html">molcrawl.compounds.dataset.organix13</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.prepare_chembl" href="prepare_chembl.html">molcrawl.compounds.dataset.prepare_chembl</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.prepare_gpt2" href="prepare_gpt2.html">molcrawl.compounds.dataset.prepare_gpt2</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.prepare_gpt2_organix13" href="prepare_gpt2_organix13.html">molcrawl.compounds.dataset.prepare_gpt2_organix13</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.processor" href="processor.html">molcrawl.compounds.dataset.processor</a></code></li>
-<li><code><a title="molcrawl.compounds.dataset.tokenizer" href="tokenizer.html">molcrawl.compounds.dataset.tokenizer</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.compounds.dataset.download_chembl.download_chembl" href="#molcrawl.compounds.dataset.download_chembl.download_chembl">download_chembl</a></code></li>
 </ul>
 </li>
 </ul>
