@@ -7,8 +7,12 @@ import numpy as np
 from datasets import load_dataset
 
 # Add project root src directory to path
-
-from molcrawl.config.paths import CLINVAR_DIR, CLINVAR_SOURCE_FILE, GENOME_SEQUENCE_DIR, get_refseq_tokenizer_path
+from molcrawl.config.paths import (
+    CLINVAR_DIR,
+    CLINVAR_SOURCE_FILE,
+    GENOME_SEQUENCE_DIR,
+    get_refseq_tokenizer_path,
+)
 from molcrawl.core.base import setup_logging
 from molcrawl.genome_sequence.dataset.refseq.download_refseq import download_refseq
 from molcrawl.genome_sequence.dataset.refseq.fasta_to_raw import fasta_to_raw_genome
@@ -93,7 +97,14 @@ def check_progress_status(base_dir):
     return steps_completed == total_steps
 
 
-def process1_download_refseq(base_dir, path_species, num_worker, species_timeout=30 * 60, max_retries=2, force=False):
+def process1_download_refseq(
+    base_dir,
+    path_species,
+    num_worker,
+    species_timeout=30 * 60,
+    max_retries=2,
+    force=False,
+):
     """Process 1: Download RefSeq dataset
     Args:
         base_dir (str): Base directory for genome sequence data
@@ -121,7 +132,29 @@ def process1_download_refseq(base_dir, path_species, num_worker, species_timeout
         logger.info(f" - Species timeout : {species_timeout}s")
         logger.info(f" - Max retries     : {max_retries}")
 
-        download_refseq(base_dir, path_species, num_worker, species_timeout=species_timeout, max_retries=max_retries)
+        download_refseq(
+            base_dir,
+            path_species,
+            num_worker,
+            species_timeout=species_timeout,
+            max_retries=max_retries,
+        )
+
+        # Check if all species failed — treat that as a hard failure
+        failed_path = Path(base_dir) / "failed_species.json"
+        if failed_path.exists():
+            import json
+
+            with open(failed_path) as fp:
+                failed = json.load(fp)
+            if len(failed) > 0:
+                logger.warning(f"{len(failed)} species failed to download.")
+                # Count how many species exist in total to check total failure
+                species_count = sum(1 for _ in open(path_species)) if path_species else 0
+                if species_count > 0 and len(failed) >= species_count:
+                    logger.error("ALL species failed to download. Not marking step as complete.")
+                    return False
+
         download_marker.touch()
         logger.info("RefSeq download completed.")
         return True
@@ -160,8 +193,15 @@ def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False)
         logger.info(f" - Max Lines per File : {max_lines_per_file}")
 
         fasta_to_raw_genome(base_dir, num_worker, max_lines_per_file)
+
+        # Verify output was actually produced
+        raw_count = len(list(raw_files_dir.glob("*.raw"))) if raw_files_dir.exists() else 0
+        if raw_count == 0:
+            logger.error("FASTA to raw conversion produced 0 files. Not marking step as complete.")
+            return False
+
         fasta_to_raw_marker.touch()
-        logger.info("FASTA to raw conversion completed.")
+        logger.info(f"FASTA to raw conversion completed ({raw_count} files).")
         return True
 
     except Exception as e:
