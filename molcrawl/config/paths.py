@@ -76,7 +76,10 @@ PROTEINGYM_SOURCE_DIR = PROTEINGYM_DIR + "/proteingym_v1.3"
 
 CLINVAR_DIR = GENOME_SEQUENCE_DIR + "/clinvar"
 CLINVAR_DATASET_DIR = CLINVAR_DIR + "/training_ready_hf_dataset"
-CLINVAR_SOURCE_FILE = os.path.join(PROJECT_ROOT, "dataset", "clinvar_sequences.csv")
+CLINVAR_SOURCE_FILE = CLINVAR_DIR + "/clinvar_sequences.csv"
+
+# GRCh38 reference genome FASTA (shared large asset kept in project-root dataset/)
+GRCh38_REF_FASTA = os.path.join(PROJECT_ROOT, "dataset", "GCA_000001405.28_GRCh38.p13_genomic.fna")
 
 RNA_CELLTYPE_DIR = RNA_DATASET_DIR + "/celltype"
 RNA_CELLTYPE_DATASET_DIR = RNA_CELLTYPE_DIR + "/training_ready_hf_dataset"

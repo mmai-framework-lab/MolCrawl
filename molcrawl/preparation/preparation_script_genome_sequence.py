@@ -330,9 +330,14 @@ def process5_generate_statistics(base_dir, vocab_size, force=False):
 def process_clinvar_finetune(force: bool = False) -> bool:
     """Prepare the ClinVar language-model fine-tuning dataset.
 
-    Reads project-level ``dataset/clinvar_sequences.csv``, tokenises the
-    reference + variant sequences with the genome SentencePiece BPE tokenizer,
-    and saves a chunked HuggingFace DatasetDict to
+    If ``$LEARNING_SOURCE_DIR/genome_sequence/clinvar/clinvar_sequences.csv``
+    does not exist, it is generated automatically by downloading the
+    ``gonzalobenegas/clinvar`` dataset from HuggingFace and embedding each
+    variant in its GRCh38 genomic context (requires
+    ``dataset/GCA_000001405.28_GRCh38.p13_genomic.fna`` in the project root).
+
+    Tokenises the reference + variant sequences with the genome SentencePiece
+    BPE tokenizer and saves a chunked HuggingFace DatasetDict to
     ``$LEARNING_SOURCE_DIR/genome_sequence/clinvar/training_ready_hf_dataset/``.
 
     Args:
