@@ -37,13 +37,20 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>ClinVar Dataset Preparation Script for GPT-2 / BERT Fine-tuning</p>
-<p>Converts the project-level <code>dataset/clinvar_sequences.csv</code> into the
-training_ready_hf_dataset format compatible with the genome_sequence
-training pipeline.</p>
+<p>Downloads ClinVar variants from HuggingFace (<code>gonzalobenegas/clinvar</code>) and
+embeds each variant in its GRCh38 genomic context, then tokenises the
+resulting sequences and saves a chunked HuggingFace DatasetDict for
+language-model fine-tuning.</p>
 <h2 id="pipeline">Pipeline</h2>
 <ol>
-<li>Read <code>reference_sequence</code> and <code>variant_sequence</code> columns from
-the ClinVar CSV (Benign / Pathogenic variants on human chromosomes).</li>
+<li>If <code>$CLINVAR_DIR/clinvar_sequences.csv</code> does not exist, download it
+automatically via :func:<code><a title="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences" href="#molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences">download_clinvar_sequences()</a></code>:
+a. Load <code>gonzalobenegas/clinvar</code> from HuggingFace Hub.
+b. For each variant, extract a (2*flank)-bp window from the GRCh38
+reference FASTA, substituting the ALT allele for the variant copy.
+c. Write <code>chrom, pos, ref, alt, reference_sequence, variant_sequence,
+ClinicalSignificance</code> to the CSV.</li>
+<li>Read <code>reference_sequence</code> and <code>variant_sequence</code> columns.</li>
 <li>Deduplicate by exact sequence string.</li>
 <li>Shuffle and apply an 80 / 10 / 10 train / valid / test split.</li>
 <li>Tokenise with the genome SentencePiece BPE tokenizer (vocab_size=4096).</li>
@@ -57,6 +64,9 @@ LEARNING_SOURCE_DIR=learning_source_20260311 \
 python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
 <pre><code>The output is saved to:
     $LEARNING_SOURCE_DIR/genome_sequence/clinvar/training_ready_hf_dataset/
+
+The intermediate CSV is saved to:
+    $LEARNING_SOURCE_DIR/genome_sequence/clinvar/clinvar_sequences.csv
 </code></pre>
 </section>
 <section>
@@ -66,8 +76,189 @@ python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences"><code class="name flex">
+<span>def <span class="ident">download_clinvar_sequences</span></span>(<span>output_file: str | pathlib.Path, ref_fasta: str | pathlib.Path, flank: int = 64) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_clinvar_sequences(
+    output_file: Union[str, Path],
+    ref_fasta: Union[str, Path],
+    flank: int = 64,
+) -&gt; None:
+    &#34;&#34;&#34;
+    Download the ``gonzalobenegas/clinvar`` dataset from HuggingFace and
+    embed each variant in its GRCh38 genomic context.
+
+    The result is a CSV with columns:
+        chrom, pos, ref, alt, reference_sequence, variant_sequence,
+        ClinicalSignificance
+
+    Args:
+        output_file: Destination path for the generated CSV.
+        ref_fasta: Path to the GRCh38 reference FASTA
+                   (e.g. ``dataset/GCA_000001405.28_GRCh38.p13_genomic.fna``).
+                   Both plain and ``.gz`` files are accepted; if a ``.gz`` is
+                   given without a pre-existing uncompressed copy it will be
+                   decompressed automatically.
+        flank: Number of base pairs to extract on each side of the variant
+               (default 64, producing a 128-bp window).
+    &#34;&#34;&#34;
+    import pandas as pd
+    from datasets import load_dataset
+    from pyfaidx import Fasta
+
+    output_file = Path(output_file)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    ref_fasta_path = str(ref_fasta)
+    if ref_fasta_path.endswith(&#34;.gz&#34;):
+        uncompressed = ref_fasta_path[:-3]
+        if Path(uncompressed).exists():
+            ref_fasta_path = uncompressed
+        else:
+            logger.info(&#34;Decompressing %s …&#34;, ref_fasta_path)
+            with gzip.open(ref_fasta_path, &#34;rb&#34;) as f_in, open(uncompressed, &#34;wb&#34;) as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            ref_fasta_path = uncompressed
+
+    logger.info(&#34;Loading gonzalobenegas/clinvar from HuggingFace …&#34;)
+    dataset = load_dataset(&#34;gonzalobenegas/clinvar&#34;)
+    df: pd.DataFrame = dataset[&#34;test&#34;].to_pandas()
+    logger.info(&#34;Loaded %d variants&#34;, len(df))
+
+    # Detect ClinicalSignificance column (name varies across dataset versions)
+    clin_col: Optional[str] = None
+    for candidate in (&#34;ClinicalSignificance&#34;, &#34;clinical_significance&#34;, &#34;clin_sig&#34;, &#34;clnsig&#34;, &#34;significance&#34;):
+        if candidate in df.columns:
+            clin_col = candidate
+            break
+    if clin_col is None:
+        logger.warning(&#34;ClinicalSignificance column not found — available: %s&#34;, df.columns.tolist())
+
+    ref_genome = Fasta(ref_fasta_path)
+    mapping = _build_chrom_mapping(ref_genome)
+
+    records = []
+    for _, row in df.iterrows():
+        try:
+            ref_seq, var_seq = _get_sequences(
+                ref_genome,
+                mapping,
+                row[&#34;chrom&#34;],
+                int(row[&#34;pos&#34;]),
+                str(row[&#34;ref&#34;]),
+                str(row[&#34;alt&#34;]),
+                flank=flank,
+            )
+            records.append(
+                {
+                    &#34;chrom&#34;: row[&#34;chrom&#34;],
+                    &#34;pos&#34;: row[&#34;pos&#34;],
+                    &#34;ref&#34;: row[&#34;ref&#34;],
+                    &#34;alt&#34;: row[&#34;alt&#34;],
+                    &#34;reference_sequence&#34;: ref_seq,
+                    &#34;variant_sequence&#34;: var_seq,
+                    &#34;ClinicalSignificance&#34;: row[clin_col] if clin_col else None,
+                }
+            )
+        except Exception as exc:
+            logger.warning(&#34;Skipping %s:%s — %s&#34;, row.get(&#34;chrom&#34;), row.get(&#34;pos&#34;), exc)
+
+    pd.DataFrame(records).to_csv(output_file, index=False)
+    logger.info(&#34;Saved %d records to %s&#34;, len(records), output_file)</code></pre>
+</details>
+<div class="desc"><p>Download the <code>gonzalobenegas/clinvar</code> dataset from HuggingFace and
+embed each variant in its GRCh38 genomic context.</p>
+<p>The result is a CSV with columns:
+chrom, pos, ref, alt, reference_sequence, variant_sequence,
+ClinicalSignificance</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_file</code></strong></dt>
+<dd>Destination path for the generated CSV.</dd>
+<dt><strong><code>ref_fasta</code></strong></dt>
+<dd>Path to the GRCh38 reference FASTA
+(e.g. <code>dataset/GCA_000001405.28_GRCh38.p13_genomic.fna</code>).
+Both plain and <code>.gz</code> files are accepted; if a <code>.gz</code> is
+given without a pre-existing uncompressed copy it will be
+decompressed automatically.</dd>
+<dt><strong><code>flank</code></strong></dt>
+<dd>Number of base pairs to extract on each side of the variant
+(default 64, producing a 128-bp window).</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_grch38_fasta"><code class="name flex">
+<span>def <span class="ident">download_grch38_fasta</span></span>(<span>dest_fasta: str | pathlib.Path) ‑> pathlib.Path</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_grch38_fasta(dest_fasta: Union[str, Path]) -&gt; Path:
+    &#34;&#34;&#34;Download the GRCh38.p13 reference FASTA from NCBI FTP if not already present.
+
+    Downloads the ``.fna.gz`` file and decompresses it to *dest_fasta*
+    (the uncompressed ``.fna`` path).  If *dest_fasta* already exists the
+    function returns immediately.
+
+    Args:
+        dest_fasta: Destination path for the uncompressed FASTA
+                    (e.g. ``dataset/GCA_000001405.28_GRCh38.p13_genomic.fna``).
+
+    Returns:
+        Path to the uncompressed FASTA file.
+    &#34;&#34;&#34;
+    dest_fasta = Path(dest_fasta)
+    dest_gz = Path(str(dest_fasta) + &#34;.gz&#34;)
+
+    if dest_fasta.exists():
+        logger.info(&#34;GRCh38 reference FASTA already exists at %s — skipping download.&#34;, dest_fasta)
+        return dest_fasta
+
+    dest_fasta.parent.mkdir(parents=True, exist_ok=True)
+
+    if not dest_gz.exists():
+        logger.info(&#34;Downloading GRCh38 reference FASTA (~3 GB) from NCBI FTP …&#34;)
+        logger.info(&#34;  URL : %s&#34;, _GRCh38_FTP_URL)
+        logger.info(&#34;  Dest: %s&#34;, dest_gz)
+
+        def _reporthook(block_num, block_size, total_size):
+            if total_size &gt; 0 and block_num % 500 == 0:
+                downloaded = block_num * block_size
+                pct = min(downloaded / total_size * 100, 100)
+                logger.info(&#34;  … %.1f%%  (%d / %d bytes)&#34;, pct, downloaded, total_size)
+
+        urllib.request.urlretrieve(_GRCh38_FTP_URL, dest_gz, reporthook=_reporthook)
+        logger.info(&#34;Download complete: %s&#34;, dest_gz)
+
+    logger.info(&#34;Decompressing %s …&#34;, dest_gz)
+    with gzip.open(dest_gz, &#34;rb&#34;) as f_in, open(dest_fasta, &#34;wb&#34;) as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    logger.info(&#34;Decompression complete: %s&#34;, dest_fasta)
+
+    return dest_fasta</code></pre>
+</details>
+<div class="desc"><p>Download the GRCh38.p13 reference FASTA from NCBI FTP if not already present.</p>
+<p>Downloads the <code>.fna.gz</code> file and decompresses it to <em>dest_fasta</em>
+(the uncompressed <code>.fna</code> path).
+If <em>dest_fasta</em> already exists the
+function returns immediately.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dest_fasta</code></strong></dt>
+<dd>Destination path for the uncompressed FASTA
+(e.g. <code>dataset/GCA_000001405.28_GRCh38.p13_genomic.fna</code>).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Path to the uncompressed FASTA file.</p></div>
+</dd>
 <dt id="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar"><code class="name flex">
-<span>def <span class="ident">prepare_clinvar</span></span>(<span>source_file: str | pathlib.Path,<br>output_dir: str | pathlib.Path,<br>tokenizer_path: str,<br>*,<br>context_length: int = 1024,<br>train_ratio: float = 0.8,<br>seed: int = 42,<br>num_proc: int = 4) ‑> str</span>
+<span>def <span class="ident">prepare_clinvar</span></span>(<span>source_file: str | pathlib.Path,<br>output_dir: str | pathlib.Path,<br>tokenizer_path: str,<br>*,<br>ref_fasta: str | pathlib.Path | None = None,<br>context_length: int = 1024,<br>train_ratio: float = 0.8,<br>seed: int = 42,<br>num_proc: int = 4) ‑> str</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -79,6 +270,7 @@ python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
     output_dir: Union[str, Path],
     tokenizer_path: str,
     *,
+    ref_fasta: Optional[Union[str, Path]] = None,
     context_length: int = 1024,
     train_ratio: float = 0.8,
     seed: int = 42,
@@ -88,11 +280,17 @@ python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
     Load ClinVar sequences from *source_file*, build a language-model
     training dataset, and save it to *output_dir*.
 
+    If *source_file* does not exist it is generated automatically by
+    :func:`download_clinvar_sequences` using the GRCh38 reference FASTA
+    at *ref_fasta* (defaults to ``paths.GRCh38_REF_FASTA``).
+
     Args:
-        source_file: Path to ``clinvar_sequences.csv``.
+        source_file: Path to ``clinvar_sequences.csv`` inside ``CLINVAR_DIR``.
         output_dir: Parent directory; the dataset is written under
                     ``output_dir/training_ready_hf_dataset/``.
         tokenizer_path: Path to the SentencePiece ``.model`` file.
+        ref_fasta: Path to the GRCh38 reference FASTA used when the source CSV
+                   must be generated.  Defaults to ``paths.GRCh38_REF_FASTA``.
         context_length: Token block length (default 1024).
         train_ratio: Fraction of sequences used for training (rest split 50/50
                      between validation and test).
@@ -110,9 +308,24 @@ python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
     output_dir = Path(output_dir)
 
     if not source_file.exists():
-        raise FileNotFoundError(
-            f&#34;ClinVar source file not found: {source_file}\n&#34; &#34;Expected at: dataset/clinvar_sequences.csv in the project root.&#34;
+        from molcrawl.config.paths import GRCh38_REF_FASTA
+
+        fasta_path = Path(ref_fasta) if ref_fasta is not None else Path(GRCh38_REF_FASTA)
+        if not fasta_path.exists() and Path(str(fasta_path) + &#34;.gz&#34;).exists():
+            fasta_path = Path(str(fasta_path) + &#34;.gz&#34;)
+        if not fasta_path.exists():
+            # FASTA が未存在の場合は NCBI FTP から自動ダウンロードする
+            logger.info(
+                &#34;GRCh38 reference FASTA not found at %s — downloading from NCBI FTP …&#34;,
+                fasta_path,
+            )
+            fasta_path = download_grch38_fasta(Path(GRCh38_REF_FASTA))
+        logger.info(
+            &#34;ClinVar source CSV not found at %s — generating from HuggingFace + %s&#34;,
+            source_file,
+            fasta_path,
         )
+        download_clinvar_sequences(output_file=source_file, ref_fasta=fasta_path)
 
     # ------------------------------------------------------------------
     # 1. Collect sequences from CSV
@@ -224,15 +437,22 @@ python -m molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar</p>
 </details>
 <div class="desc"><p>Load ClinVar sequences from <em>source_file</em>, build a language-model
 training dataset, and save it to <em>output_dir</em>.</p>
+<p>If <em>source_file</em> does not exist it is generated automatically by
+:func:<code><a title="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences" href="#molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences">download_clinvar_sequences()</a></code> using the GRCh38 reference FASTA
+at <em>ref_fasta</em> (defaults to <code>paths.GRCh38_REF_FASTA</code>).</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>source_file</code></strong></dt>
-<dd>Path to <code>clinvar_sequences.csv</code>.</dd>
+<dd>Path to <code>clinvar_sequences.csv</code> inside <code>CLINVAR_DIR</code>.</dd>
 <dt><strong><code>output_dir</code></strong></dt>
 <dd>Parent directory; the dataset is written under
 <code>output_dir/training_ready_hf_dataset/</code>.</dd>
 <dt><strong><code>tokenizer_path</code></strong></dt>
 <dd>Path to the SentencePiece <code>.model</code> file.</dd>
+<dt><strong><code>ref_fasta</code></strong></dt>
+<dd>Path to the GRCh38 reference FASTA used when the source CSV
+must be generated.
+Defaults to <code>paths.GRCh38_REF_FASTA</code>.</dd>
 <dt><strong><code>context_length</code></strong></dt>
 <dd>Token block length (default 1024).</dd>
 <dt><strong><code>train_ratio</code></strong></dt>
@@ -263,6 +483,8 @@ between validation and test).</dd>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences" href="#molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences">download_clinvar_sequences</a></code></li>
+<li><code><a title="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_grch38_fasta" href="#molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.download_grch38_fasta">download_grch38_fasta</a></code></li>
 <li><code><a title="molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar" href="#molcrawl.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar">prepare_clinvar</a></code></li>
 </ul>
 </li>
