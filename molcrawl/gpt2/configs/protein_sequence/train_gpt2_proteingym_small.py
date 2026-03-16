@@ -10,7 +10,9 @@
 
 
 from molcrawl.config.paths import PROTEINGYM_DATASET_DIR, get_gpt2_output_path
-from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
+from molcrawl.protein_sequence.dataset.tokenizer import (
+    EsmSequenceTokenizer as Tokenizer,
+)
 
 dataset_dir = PROTEINGYM_DATASET_DIR
 
@@ -29,6 +31,7 @@ gradient_accumulation_steps = 5 * 8
 # Fine-tuning: much shorter run than pretraining (600k → 2000 iters)
 max_iters = 2000
 lr_decay_iters = 2000
+warmup_iters = 100  # must be < lr_decay_iters to avoid ZeroDivisionError in get_lr
 
 eval_interval = 200
 eval_iters = 50

@@ -26,8 +26,13 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-from molcrawl.compounds.dataset.dataset_config import CompoundDatasetType, get_all_dataset_types
+from molcrawl.compounds.dataset.dataset_config import (
+    CompoundDatasetType,
+    get_all_dataset_types,
+)
+from molcrawl.compounds.dataset.download_chembl import download_chembl
 from molcrawl.compounds.dataset.hf_converter import convert_all_tokenized_datasets
+from molcrawl.compounds.dataset.prepare_chembl import prepare_chembl
 from molcrawl.compounds.dataset.processor import process_all_available_datasets
 from molcrawl.compounds.dataset.tokenizer import (
     compute_tokenization_statistics,
@@ -39,8 +44,6 @@ from molcrawl.compounds.utils.general import (
     download_opv,
     download_zinc20,
 )
-from molcrawl.compounds.dataset.download_chembl import download_chembl
-from molcrawl.compounds.dataset.prepare_chembl import prepare_chembl
 from molcrawl.config.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR, COMPOUNDS_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.preparation.download_guacamol import download_guacamol
