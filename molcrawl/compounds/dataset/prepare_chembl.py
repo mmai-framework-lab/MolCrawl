@@ -114,7 +114,7 @@ def prepare_chembl(
             else:
                 all_input_ids.append(ids)
         if (start // BATCH_SIZE) % 10 == 0:
-            logger.info(f"  … {start + len(batch):,} / {len(smiles_list):,} processed " f"({skipped:,} skipped so far)")
+            logger.info(f"  … {start + len(batch):,} / {len(smiles_list):,} processed ({skipped:,} skipped so far)")
 
     logger.info(
         f"Tokenisation complete. "
@@ -157,8 +157,8 @@ def prepare_chembl(
 
 
 if __name__ == "__main__":
+    from molcrawl.config.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR
     from molcrawl.core.base import setup_logging
-    from molcrawl.config.paths import CHEMBL_SOURCE_DIR, CHEMBL_DIR
 
     setup_logging(CHEMBL_DIR)
     force_flag = "--force" in sys.argv

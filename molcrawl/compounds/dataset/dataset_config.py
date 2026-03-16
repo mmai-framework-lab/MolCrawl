@@ -96,7 +96,8 @@ DATASET_DEFINITIONS = {
         dataset_type=CompoundDatasetType.CHEMBL,
         source_subdir="Fraunhofer-SCAI-llamol",
         source_filename="chembl_log_sascore.parquet",
-        requires_properties=True,
+        # logp and sascore are pre-computed in the source parquet; no recalculation needed.
+        requires_properties=False,
     ),
     CompoundDatasetType.PUBCHEMQC_2017: DatasetInfo(
         name="pubchemqc_2017",

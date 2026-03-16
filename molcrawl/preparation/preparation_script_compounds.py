@@ -51,6 +51,17 @@ from molcrawl.preparation.download_guacamol import download_guacamol
 logger = logging.getLogger(__name__)
 
 
+def _assert_all_datasets_succeeded(step_name: str, target_datasets: list, succeeded_results: dict):
+    """Fail fast when one or more target datasets fail at a pipeline step."""
+    succeeded = {dt.value for dt in succeeded_results.keys()}
+    expected = {dt.value for dt in target_datasets}
+    missing = sorted(expected - succeeded)
+    if missing:
+        raise RuntimeError(
+            f"{step_name} failed for datasets: {', '.join(missing)}. Aborting preprocessing. Please check the error logs above."
+        )
+
+
 def download_datasets_individually(cfg, compounds_dir, dataset_types, force=False):
     """
     Download datasets individually
@@ -263,68 +274,84 @@ def main():
         logger.info("\n✅ Only download completed")
         return
 
-    # Step 2: Processing (physical property calculation)
-    if not args.skip_process:
-        logger.info("\n" + "=" * 70)
-        logger.info("STEP 2: Dataset processing (physical property calculation)")
-        logger.info("=" * 70)
+    try:
+        target_dataset_types = [CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None
 
-        processed = process_all_available_datasets(
-            Path(compounds_dir),
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
-            force=args.force,
-            num_processes=args.num_processes,
-        )
+        # Step 2: Processing (physical property calculation)
+        if not args.skip_process:
+            logger.info("\n" + "=" * 70)
+            logger.info("STEP 2: Dataset processing (physical property calculation)")
+            logger.info("=" * 70)
 
-        logger.info(f"\n✓ {len(processed)} datasets processed")
+            processed = process_all_available_datasets(
+                Path(compounds_dir),
+                dataset_types=target_dataset_types,
+                force=args.force,
+                num_processes=args.num_processes,
+            )
 
-    # Step 3: Tokenize
-    if not args.skip_tokenize:
-        logger.info("\n" + "=" * 70)
-        logger.info("STEP 3: Tokenize")
-        logger.info("=" * 70)
+            logger.info(f"\n✓ {len(processed)} datasets processed")
+            if target_dataset_types is not None:
+                _assert_all_datasets_succeeded("STEP 2 processing", target_dataset_types, processed)
 
-        tokenized = tokenize_all_processed_datasets(
-            Path(compounds_dir),
-            cfg.vocab_path,
-            cfg.max_length,
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
-            force=args.force,
-            num_processes=args.tokenization_processes,
-        )
+        # Step 3: Tokenize
+        if not args.skip_tokenize:
+            logger.info("\n" + "=" * 70)
+            logger.info("STEP 3: Tokenize")
+            logger.info("=" * 70)
 
-        logger.info(f"\n✓ {len(tokenized)} datasets tokenized")
+            tokenized = tokenize_all_processed_datasets(
+                Path(compounds_dir),
+                cfg.vocab_path,
+                cfg.max_length,
+                dataset_types=target_dataset_types,
+                force=args.force,
+                num_processes=args.tokenization_processes,
+            )
 
-    # Step 4: Convert to HuggingFace format
-    if not args.skip_convert:
-        logger.info("\n" + "=" * 70)
-        logger.info("STEP 4: Convert to HuggingFace Dataset format")
-        logger.info("=" * 70)
+            logger.info(f"\n✓ {len(tokenized)} datasets tokenized")
+            if target_dataset_types is not None:
+                _assert_all_datasets_succeeded("STEP 3 tokenization", target_dataset_types, tokenized)
 
-        converted = convert_all_tokenized_datasets(
-            Path(compounds_dir),
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
-            train_ratio=0.9,
-            valid_ratio=0.05,
-            test_ratio=0.05,
-            force=args.force,
-        )
+        # Step 4: Convert to HuggingFace format
+        if not args.skip_convert:
+            logger.info("\n" + "=" * 70)
+            logger.info("STEP 4: Convert to HuggingFace Dataset format")
+            logger.info("=" * 70)
 
-        logger.info(f"\n✓ {len(converted)} datasets converted")
+            converted = convert_all_tokenized_datasets(
+                Path(compounds_dir),
+                dataset_types=target_dataset_types,
+                train_ratio=0.9,
+                valid_ratio=0.05,
+                test_ratio=0.05,
+                force=args.force,
+            )
 
-    # Step 5: Statistical calculation/visualization
-    if not args.skip_stats:
-        logger.info("\n" + "=" * 70)
-        logger.info("STEP 5: Statistical calculation/visualization")
-        logger.info("=" * 70)
+            logger.info(f"\n✓ {len(converted)} datasets converted")
+            if target_dataset_types is not None:
+                _assert_all_datasets_succeeded("STEP 4 conversion", target_dataset_types, converted)
 
-        stats = compute_tokenization_statistics(
-            Path(compounds_dir),
-            dataset_types=[CompoundDatasetType(dt) for dt in args.datasets] if args.datasets else None,
-            force=args.force,
-        )
+        # Step 5: Statistical calculation/visualization
+        if not args.skip_stats:
+            logger.info("\n" + "=" * 70)
+            logger.info("STEP 5: Statistical calculation/visualization")
+            logger.info("=" * 70)
 
-        logger.info(f"\n✓ {len(stats)} datasets statistics computed")
+            stats = compute_tokenization_statistics(
+                Path(compounds_dir),
+                dataset_types=target_dataset_types,
+                force=args.force,
+            )
+
+            logger.info(f"\n✓ {len(stats)} datasets statistics computed")
+            if target_dataset_types is not None:
+                _assert_all_datasets_succeeded("STEP 5 statistics", target_dataset_types, stats)
+    except RuntimeError as e:
+        logger.error("=" * 70)
+        logger.error(f"❌ Preprocessing aborted: {e}")
+        logger.error("=" * 70)
+        raise SystemExit(1) from e
 
     logger.info("\n" + "=" * 70)
     logger.info("✅ All processing completed")

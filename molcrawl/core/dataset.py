@@ -32,6 +32,13 @@ class PreparedDataset:
 
         sample = self.data[idx]
 
+        # Backward/format compatibility:
+        # compounds datasets often store token ids under `tokens`.
+        if "input_ids" not in sample and "tokens" in sample:
+            sample["input_ids"] = sample["tokens"]
+        if "input_ids" not in sample and "sequence_tokens" in sample:
+            sample["input_ids"] = sample["sequence_tokens"]
+
         # For GPT-2: return combined input_ids and output_ids as single sequence
         if "output_ids" in sample and "input_ids" in sample:
             # Combine input and output for autoregressive training
@@ -44,4 +51,7 @@ class PreparedDataset:
             input_ids = sample["input_ids"]
             return torch.tensor(input_ids, dtype=torch.long)
         else:
-            raise KeyError(f"Sample does not contain 'input_ids': {sample.keys()}")
+            raise KeyError(
+                "Sample does not contain any token id field. "
+                f"Expected one of ['input_ids', 'tokens', 'sequence_tokens'], got: {sample.keys()}"
+            )

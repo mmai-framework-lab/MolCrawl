@@ -158,8 +158,9 @@ def download_chembl(output_dir: str, force: bool = False) -> bool:
 
 if __name__ == "__main__":
     import sys
-    from molcrawl.core.base import setup_logging
+
     from molcrawl.config.paths import CHEMBL_SOURCE_DIR
+    from molcrawl.core.base import setup_logging
 
     setup_logging(CHEMBL_SOURCE_DIR)
     force_flag = "--force" in sys.argv

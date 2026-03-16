@@ -112,14 +112,11 @@ class HFDatasetConverter:
                 }
             )
 
-            # keep
+            # Save as DatasetDict so `load_from_disk(hf_path)` works directly.
             hf_path.mkdir(parents=True, exist_ok=True)
-
-            # Save each split separately
+            dataset_dict.save_to_disk(str(hf_path))
             for split_name, split_dataset in dataset_dict.items():
-                split_path = hf_path / split_name
-                split_dataset.save_to_disk(str(split_path))
-                logger.info(f"  Saved {split_name} to {split_path}")
+                logger.info(f"  Saved {split_name}: {len(split_dataset)} samples to {hf_path / split_name}")
 
             logger.info(f"✓ {self.dataset_info.name}: Converted to HuggingFace Dataset format")
             return dataset_dict

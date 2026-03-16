@@ -28,7 +28,11 @@ mkdir -p "${LOG_DIR}"
 echo "[1/1] Preparing ChEMBL fine-tuning dataset (download + tokenise if needed)..."
 nohup $PYTHON molcrawl/preparation/preparation_script_compounds.py \
     assets/configs/compounds.yaml \
+<<<<<<< HEAD
     --datasets chembl_finetune \
+=======
+    --datasets chembl \
+>>>>>>> 3e02228 (fix(chembl-finetuning): stabilize ChEMBL prep + BERT/GPT-2 training pipeline)
     > "${LOG_DIR}/chembl-prepare-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &
 
 echo "Preparation running in background. Logs: ${LOG_DIR}/"

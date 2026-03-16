@@ -82,6 +82,9 @@ RNA_CELLTYPE_DIR = RNA_DATASET_DIR + "/celltype"
 RNA_CELLTYPE_DATASET_DIR = RNA_CELLTYPE_DIR + "/training_ready_hf_dataset"
 RNA_CELLTYPE_SOURCE_DIR = RNA_CELLTYPE_DIR + "/genecorpus_celltype"
 
+CHEMBL_DIR = COMPOUNDS_DIR + "/chembl"
+CHEMBL_DATASET_DIR = COMPOUNDS_DIR + "/hf_datasets/chembl"
+
 # Absolute path version (used in web applications and APIs)
 ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
 
