@@ -86,6 +86,13 @@ el.replaceWith(d);
 
         sample = self.data[idx]
 
+        # Backward/format compatibility:
+        # compounds datasets often store token ids under `tokens`.
+        if &#34;input_ids&#34; not in sample and &#34;tokens&#34; in sample:
+            sample[&#34;input_ids&#34;] = sample[&#34;tokens&#34;]
+        if &#34;input_ids&#34; not in sample and &#34;sequence_tokens&#34; in sample:
+            sample[&#34;input_ids&#34;] = sample[&#34;sequence_tokens&#34;]
+
         # For GPT-2: return combined input_ids and output_ids as single sequence
         if &#34;output_ids&#34; in sample and &#34;input_ids&#34; in sample:
             # Combine input and output for autoregressive training
@@ -98,7 +105,10 @@ el.replaceWith(d);
             input_ids = sample[&#34;input_ids&#34;]
             return torch.tensor(input_ids, dtype=torch.long)
         else:
-            raise KeyError(f&#34;Sample does not contain &#39;input_ids&#39;: {sample.keys()}&#34;)</code></pre>
+            raise KeyError(
+                &#34;Sample does not contain any token id field. &#34;
+                f&#34;Expected one of [&#39;input_ids&#39;, &#39;tokens&#39;, &#39;sequence_tokens&#39;], got: {sample.keys()}&#34;
+            )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>

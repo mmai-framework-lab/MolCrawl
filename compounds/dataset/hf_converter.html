@@ -242,14 +242,11 @@ random_seed: random seed</p>
                 }
             )
 
-            # keep
+            # Save as DatasetDict so `load_from_disk(hf_path)` works directly.
             hf_path.mkdir(parents=True, exist_ok=True)
-
-            # Save each split separately
+            dataset_dict.save_to_disk(str(hf_path))
             for split_name, split_dataset in dataset_dict.items():
-                split_path = hf_path / split_name
-                split_dataset.save_to_disk(str(split_path))
-                logger.info(f&#34;  Saved {split_name} to {split_path}&#34;)
+                logger.info(f&#34;  Saved {split_name}: {len(split_dataset)} samples to {hf_path / split_name}&#34;)
 
             logger.info(f&#34;✓ {self.dataset_info.name}: Converted to HuggingFace Dataset format&#34;)
             return dataset_dict
@@ -354,14 +351,11 @@ compounds_dir: Path to the compounds directory</p></div>
             }
         )
 
-        # keep
+        # Save as DatasetDict so `load_from_disk(hf_path)` works directly.
         hf_path.mkdir(parents=True, exist_ok=True)
-
-        # Save each split separately
+        dataset_dict.save_to_disk(str(hf_path))
         for split_name, split_dataset in dataset_dict.items():
-            split_path = hf_path / split_name
-            split_dataset.save_to_disk(str(split_path))
-            logger.info(f&#34;  Saved {split_name} to {split_path}&#34;)
+            logger.info(f&#34;  Saved {split_name}: {len(split_dataset)} samples to {hf_path / split_name}&#34;)
 
         logger.info(f&#34;✓ {self.dataset_info.name}: Converted to HuggingFace Dataset format&#34;)
         return dataset_dict

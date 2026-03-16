@@ -138,7 +138,7 @@ python -m molcrawl.compounds.dataset.prepare_chembl &ndash;force</p>
             else:
                 all_input_ids.append(ids)
         if (start // BATCH_SIZE) % 10 == 0:
-            logger.info(f&#34;  … {start + len(batch):,} / {len(smiles_list):,} processed &#34; f&#34;({skipped:,} skipped so far)&#34;)
+            logger.info(f&#34;  … {start + len(batch):,} / {len(smiles_list):,} processed ({skipped:,} skipped so far)&#34;)
 
     logger.info(
         f&#34;Tokenisation complete. &#34;
