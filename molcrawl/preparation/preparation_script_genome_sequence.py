@@ -149,11 +149,21 @@ def process1_download_refseq(
                 failed = json.load(fp)
             if len(failed) > 0:
                 logger.warning(f"{len(failed)} species failed to download.")
-                # Count how many species exist in total to check total failure
-                species_count = sum(1 for _ in open(path_species)) if path_species else 0
+                # Count total species from directory of .txt files
+                species_path = Path(path_species)
+                if species_path.is_dir():
+                    species_count = sum(
+                        sum(1 for _ in open(f)) for f in species_path.glob("*.txt") if f.is_file()
+                    )
+                elif species_path.is_file():
+                    species_count = sum(1 for _ in open(species_path))
+                else:
+                    species_count = 0
                 if species_count > 0 and len(failed) >= species_count:
                     logger.error("ALL species failed to download. Not marking step as complete.")
                     return False
+                elif len(failed) > 0:
+                    logger.warning(f"Continuing despite {len(failed)} failed species.")
 
         download_marker.touch()
         logger.info("RefSeq download completed.")
