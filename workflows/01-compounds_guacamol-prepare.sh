@@ -1,20 +1,17 @@
 #!/bin/bash
-#
-# GuacaMol Dataset Download Script
+# Download GuacaMol benchmark SMILES files for GPT-2 pre-training on compounds.
 #
 # Usage:
-#   LEARNING_SOURCE_DIR="learning_20251104" bash workflows/download_guacamol.sh
-#
+#   export LEARNING_SOURCE_DIR=<path>
+#   bash workflows/01-compounds_guacamol-prepare.sh
 
 set -e
 
-# Check LEARNING_SOURCE_DIR
-if [ -z "$LEARNING_SOURCE_DIR" ]; then
-    echo "ERROR: LEARNING_SOURCE_DIR environment variable is not set."
-    echo "Please set it before running this script:"
-    echo "  export LEARNING_SOURCE_DIR='...'"
-    exit 1
-fi
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common_functions.sh"
+
+check_learning_source_dir
 
 echo "Using LEARNING_SOURCE_DIR: $LEARNING_SOURCE_DIR"
 
@@ -24,4 +21,4 @@ $PYTHON molcrawl/preparation/download_guacamol.py
 echo ""
 echo "GuacaMol download complete!"
 echo "You can now run the GPT-2 preparation script:"
-echo "  LEARNING_SOURCE_DIR=$LEARNING_SOURCE_DIR $PYTHON molcrawl/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml"
+echo "  bash workflows/02-compounds-prepare-gpt2.sh"

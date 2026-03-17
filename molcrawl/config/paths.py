@@ -70,6 +70,9 @@ CHEMBL_DIR = COMPOUNDS_DIR + "/chembl"
 CHEMBL_DATASET_DIR = CHEMBL_DIR + "/training_ready_hf_dataset"
 CHEMBL_SOURCE_DIR = CHEMBL_DIR + "/chembl_db"
 
+GUACAMOL_DIR = COMPOUNDS_DIR + "/benchmark/GuacaMol"
+GUACAMOL_DATASET_DIR = GUACAMOL_DIR + "/compounds/training_ready_hf_dataset"
+
 PROTEINGYM_DIR = PROTEIN_SEQUENCE_DIR + "/proteingym"
 PROTEINGYM_DATASET_DIR = PROTEINGYM_DIR + "/training_ready_hf_dataset"
 PROTEINGYM_SOURCE_DIR = PROTEINGYM_DIR + "/proteingym_v1.3"

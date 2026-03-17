@@ -1,17 +1,32 @@
 #!/bin/bash
+# Fine-tune the compounds GPT-2 (small) model on GuacaMol benchmark data.
+#
+# Prerequisites:
+#   - compounds GPT-2 pretraining checkpoint must exist in
+#       $LEARNING_SOURCE_DIR/compounds/gpt2-output/compounds-small/
+#   - GuacaMol training_ready_hf_dataset must be prepared via
+#       workflows/01-compounds_guacamol-prepare.sh and
+#       workflows/02-compounds-prepare-gpt2.sh
+#
+# Usage:
+#   export LEARNING_SOURCE_DIR=<path>
+#   bash workflows/03a-compounds_guacamol-train-small.sh
 
 set -e
 
-# Load common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common_functions.sh"
 
-# Check LEARNING_SOURCE_DIR
 check_learning_source_dir
-
-# Auto-select GPU if not manually specified (small model needs ~10GB)
 auto_select_gpu 10
 
-mkdir -p ${LEARNING_SOURCE_DIR}/compounds/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c '$PYTHON molcrawl/gpt2/train.py gpt2/configs/compounds/train_gpt2_small_config.py' > \
-    ${LEARNING_SOURCE_DIR}/compounds/logs/compounds-train-small-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &
+LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/guacamol/logs"
+mkdir -p "${LOG_DIR}"
+
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} PYTHONUNBUFFERED=1 \
+nohup bash -c '$PYTHON molcrawl/gpt2/train.py \
+    gpt2/configs/compounds/train_gpt2_guacamol_small.py' \
+    > "${LOG_DIR}/compounds_guacamol-train-small-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &
+
+echo "GPT-2 fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
+echo "Logs: ${LOG_DIR}/"

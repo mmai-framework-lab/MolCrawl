@@ -12,16 +12,13 @@ n_layer = 36
 n_head = 20
 n_embd = 1280
 
-dataset_dir = COMPOUNDS_DATASET_DIR  # path to the dataset directory
-out_dir = get_gpt2_output_path("compounds", "large")
-
-tokenizer_path = "assets/molecules/vocab.txt"  # path to the tokenizer vocab file
+dataset_dir = COMPOUNDS_DATASET_DIR
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("compounds", "large")
 out_dir = get_gpt2_output_path("compounds", "large")
 
-tokenizer = Tokenizer(tokenizer_path, 256)
+tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 meta_vocab_size = tokenizer.vocab_size
 
 # these make the total batch size be ~0.5M

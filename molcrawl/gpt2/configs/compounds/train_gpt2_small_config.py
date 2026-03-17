@@ -2,22 +2,16 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-import os
-
-
 from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.config.paths import LEARNING_SOURCE_DIR, get_gpt2_output_path
+from molcrawl.config.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
 
-# Compounds Directly specify the dataset path
-dataset_dir = os.path.join(LEARNING_SOURCE_DIR, "compounds", "organix13", "compounds", "training_ready_hf_dataset")
-
-tokenizer_path = "assets/molecules/vocab.txt"  # path to the tokenizer vocab file
+dataset_dir = COMPOUNDS_DATASET_DIR
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("compounds", "small")
 out_dir = get_gpt2_output_path("compounds", "small")
 
-tokenizer = Tokenizer(tokenizer_path, 256)
+tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 meta_vocab_size = tokenizer.vocab_size
 
 # these make the total batch size be ~0.5M
