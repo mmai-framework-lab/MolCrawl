@@ -45,14 +45,14 @@ el.replaceWith(d);
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="molcrawl.rna.dataset.cellxgene.script.build_list.build_list"><code class="name flex">
-<span>def <span class="ident">build_list</span></span>(<span>output_directory, version)</span>
+<span>def <span class="ident">build_list</span></span>(<span>output_directory, version, sqrt_scale_factor: float = 0)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_list(output_directory, version):
+<pre><code class="python">def build_list(output_directory, version, sqrt_scale_factor: float = 0):
     import cellxgene_census
 
     output_directory = Path(output_directory)
@@ -64,13 +64,20 @@ el.replaceWith(d);
     with open(data_directory.parent / &#34;tissue_list.tsv&#34;, &#34;w&#34;) as fp:
         fp.writelines(tissue_list)
 
+    total_sampled = 0
     with Progress() as progress_bar:
         task = progress_bar.add_task(&#34;Processing ...&#34;, total=len(tissue_list))
         for target_tissue in tissue_list:
             progress_bar.update(task, advance=1, description=f&#34;Processing {target_tissue}...&#34;)
 
             save_tissue_var(target_tissue, census, data_directory)
-            save_tissue_obs(target_tissue, census, data_directory)</code></pre>
+            save_tissue_obs(target_tissue, census, data_directory, sqrt_scale_factor=sqrt_scale_factor)
+
+            obs_file = data_directory / f&#34;{target_tissue}.obs_id.tsv&#34;
+            total_sampled += sum(1 for _ in open(obs_file))
+
+    if sqrt_scale_factor &gt; 0:
+        logger.info(f&#34;Sqrt-scaling complete: {total_sampled:,} total cells retained across {len(tissue_list)} tissues (C={sqrt_scale_factor})&#34;)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -91,23 +98,36 @@ el.replaceWith(d);
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.rna.dataset.cellxgene.script.build_list.save_tissue_obs"><code class="name flex">
-<span>def <span class="ident">save_tissue_obs</span></span>(<span>target_tissue, census, dir_path: pathlib.Path) ‑> None</span>
+<span>def <span class="ident">save_tissue_obs</span></span>(<span>target_tissue, census, dir_path: pathlib.Path, sqrt_scale_factor: float = 0) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_tissue_obs(target_tissue, census, dir_path: Path) -&gt; None:
+<pre><code class="python">def save_tissue_obs(target_tissue, census, dir_path: Path, sqrt_scale_factor: float = 0) -&gt; None:
     tissue_obs = (
         census[&#34;census_data&#34;][&#34;homo_sapiens&#34;]
         .obs.read(value_filter=&#34;tissue_general == &#39;&#34; + target_tissue + &#34;&#39; and is_primary_data == True&#34;)
         .concat()
         .to_pandas()
     )
+    ids = tissue_obs[&#34;soma_joinid&#34;]
+    total = len(ids)
+
+    if sqrt_scale_factor &gt; 0:
+        n_sample = min(total, int(sqrt_scale_factor * math.sqrt(total)))
+        if n_sample &lt; total:
+            ids = ids.sample(n=n_sample, random_state=42)
+            logger.info(f&#34;  {target_tissue}: sampled {n_sample:,} / {total:,} cells (sqrt-scale C={sqrt_scale_factor})&#34;)
+        else:
+            logger.info(f&#34;  {target_tissue}: kept all {total:,} cells (below sqrt threshold)&#34;)
+    else:
+        logger.info(f&#34;  {target_tissue}: kept all {total:,} cells (subsampling disabled)&#34;)
+
     filename = dir_path / f&#34;{target_tissue}.obs_id.tsv&#34;
     with open(filename, &#34;w&#34;) as fp:
-        fp.writelines([f&#34;{_id}\n&#34; for _id in tissue_obs[&#34;soma_joinid&#34;]])</code></pre>
+        fp.writelines([f&#34;{_id}\n&#34; for _id in ids])</code></pre>
 </details>
 <div class="desc"></div>
 </dd>

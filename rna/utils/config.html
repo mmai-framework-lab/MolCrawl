@@ -48,7 +48,7 @@ el.replaceWith(d);
 <dl>
 <dt id="molcrawl.rna.utils.config.CellxGenePreparationConfig"><code class="flex name class">
 <span>class <span class="ident">CellxGenePreparationConfig</span></span>
-<span>(</span><span>output_dir: str = 'learning_source_dummy/rna',<br>num_worker: int = 8,<br>size_workload: int = 10000,<br>census_version: str = '2023-12-15',<br>min_counts_genes: int = 2)</span>
+<span>(</span><span>output_dir: str = 'learning_source_dummy/rna',<br>num_worker: int = 8,<br>size_workload: int = 10000,<br>census_version: str = '2023-12-15',<br>min_counts_genes: int = 2,<br>sqrt_scale_factor: float = 0)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -70,9 +70,14 @@ class CellxGenePreparationConfig:
     census_version: str = &#34;2023-12-15&#34;
 
     # Filter condition to filter genes with few counts across a dataset.
-    min_counts_genes: int = 2</code></pre>
+    min_counts_genes: int = 2
+
+    # Sqrt-scaling factor C for per-tissue cell subsampling.
+    # Each tissue retains min(N, C * sqrt(N)) cells drawn without replacement.
+    # Set to 0 (or omit) to disable subsampling and use all cells.
+    sqrt_scale_factor: float = 0</code></pre>
 </details>
-<div class="desc"><p>CellxGenePreparationConfig(output_dir: str = 'learning_source_dummy/rna', num_worker: int = 8, size_workload: int = 10000, census_version: str = '2023-12-15', min_counts_genes: int = 2)</p></div>
+<div class="desc"><p>CellxGenePreparationConfig(output_dir: str = 'learning_source_dummy/rna', num_worker: int = 8, size_workload: int = 10000, census_version: str = '2023-12-15', min_counts_genes: int = 2, sqrt_scale_factor: float = 0)</p></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="molcrawl.rna.utils.config.CellxGenePreparationConfig.census_version"><code class="name">var <span class="ident">census_version</span> : str</code></dt>
@@ -92,6 +97,10 @@ class CellxGenePreparationConfig:
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.rna.utils.config.CellxGenePreparationConfig.size_workload"><code class="name">var <span class="ident">size_workload</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.rna.utils.config.CellxGenePreparationConfig.sqrt_scale_factor"><code class="name">var <span class="ident">sqrt_scale_factor</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -152,12 +161,13 @@ class RnaConfig(Config):
 <ul>
 <li>
 <h4><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig">CellxGenePreparationConfig</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig.census_version" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig.census_version">census_version</a></code></li>
 <li><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig.min_counts_genes" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig.min_counts_genes">min_counts_genes</a></code></li>
 <li><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig.num_worker" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig.num_worker">num_worker</a></code></li>
 <li><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig.output_dir" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig.output_dir">output_dir</a></code></li>
 <li><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig.size_workload" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig.size_workload">size_workload</a></code></li>
+<li><code><a title="molcrawl.rna.utils.config.CellxGenePreparationConfig.sqrt_scale_factor" href="#molcrawl.rna.utils.config.CellxGenePreparationConfig.sqrt_scale_factor">sqrt_scale_factor</a></code></li>
 </ul>
 </li>
 <li>
