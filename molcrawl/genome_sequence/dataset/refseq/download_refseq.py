@@ -94,7 +94,10 @@ def _download_single_species(
     proc = Process(
         target=_download_single_species_worker,
         args=(queue, genera, group, sp_dir, num_worker),
-        daemon=True,
+        # daemon=True cannot be used: Since the SLURM job process itself is treated as a daemon,
+        # a “daemonic processes are not allowed to have children” error occurs.
+        # Instead, ensure termination using terminate/kill after the timeout.
+        daemon=False,
     )
     proc.start()
     proc.join(timeout=timeout)
@@ -102,8 +105,11 @@ def _download_single_species(
     if proc.is_alive():
         # Download exceeded the timeout – kill the child process
         logger.warning(f"Download of '{genera}' in '{group}' timed out after {timeout}s. Killing child process...")
-        proc.kill()
+        proc.terminate()
         proc.join(timeout=10)
+        if proc.is_alive():
+            proc.kill()
+            proc.join(timeout=5)
         return {"status": "timeout", "error": f"Timed out after {timeout}s"}
 
     if not queue.empty():
