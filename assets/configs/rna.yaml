@@ -2,8 +2,12 @@ data_preparation:
   # Special case for Uniparc download, num of worker to use.
   num_worker: 16
   # Size of list of ids to give to each worker, save file will have `size_workload` number of ids in them.
-  # Reduced from 10000 to 1000 for better progress tracking and faster individual task completion
-  size_workload: 1000
+  # Larger workload reduces API call overhead without sacrificing stability
+  size_workload: 5000
+  # Sqrt-scaling factor C: each tissue keeps min(N, C*sqrt(N)) cells.
+  # C=2000 yields ~2.6M total cells (vs 36M unsampled), cutting API tasks ~93%.
+  # Set to 0 to disable subsampling.
+  sqrt_scale_factor: 2000
   # Version of the CellxGene census
   census_version: "2023-12-15"
   # Filter condition to filter genes with few counts across a dataset.

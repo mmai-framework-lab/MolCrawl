@@ -21,6 +21,11 @@ class CellxGenePreparationConfig:
     # Filter condition to filter genes with few counts across a dataset.
     min_counts_genes: int = 2
 
+    # Sqrt-scaling factor C for per-tissue cell subsampling.
+    # Each tissue retains min(N, C * sqrt(N)) cells drawn without replacement.
+    # Set to 0 (or omit) to disable subsampling and use all cells.
+    sqrt_scale_factor: float = 0
+
 
 @dataclass
 class RnaConfig(Config):

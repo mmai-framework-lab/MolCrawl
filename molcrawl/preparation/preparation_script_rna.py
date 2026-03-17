@@ -210,7 +210,7 @@ if __name__ == "__main__":
         if args.force:
             logger.info("Force option specified. Rebuilding list...")
         logger.info("Building dataset list...")
-        build_list(RNA_DATASET_DIR, cfg.census_version)
+        build_list(RNA_DATASET_DIR, cfg.census_version, sqrt_scale_factor=getattr(cfg, "sqrt_scale_factor", 0))
         build_list_marker.touch()
         logger.info("Build list completed.")
 
