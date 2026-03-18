@@ -67,9 +67,14 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
 
     name, start_l, end_l, id_list = argv
     save_filename = output_dir / f"download_dir/{name}.{start_l:08d}-{end_l:08d}.h5ad"
-    if save_filename.exists() and len(sc.read(save_filename)):
-        logging.info(f"{save_filename} exists, skipping download")
-        return
+    if save_filename.exists():
+        try:
+            if len(sc.read(save_filename)):
+                logging.info(f"{save_filename} exists, skipping download")
+                return
+        except Exception as e:
+            logging.warning(f"{save_filename} is corrupt ({e}), re-downloading")
+            save_filename.unlink()
 
     tsv_file = output_dir / "metadata_preparation_dir" / f"{name}.var.tsv"
     target_var = pd.read_csv(tsv_file, sep="\t", index_col=0)
