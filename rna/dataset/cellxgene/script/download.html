@@ -205,9 +205,14 @@ size_workload (int): Size of each workload (number of samples)</p>
 
     name, start_l, end_l, id_list = argv
     save_filename = output_dir / f&#34;download_dir/{name}.{start_l:08d}-{end_l:08d}.h5ad&#34;
-    if save_filename.exists() and len(sc.read(save_filename)):
-        logging.info(f&#34;{save_filename} exists, skipping download&#34;)
-        return
+    if save_filename.exists():
+        try:
+            if len(sc.read(save_filename)):
+                logging.info(f&#34;{save_filename} exists, skipping download&#34;)
+                return
+        except Exception as e:
+            logging.warning(f&#34;{save_filename} is corrupt ({e}), re-downloading&#34;)
+            save_filename.unlink()
 
     tsv_file = output_dir / &#34;metadata_preparation_dir&#34; / f&#34;{name}.var.tsv&#34;
     target_var = pd.read_csv(tsv_file, sep=&#34;\t&#34;, index_col=0)
