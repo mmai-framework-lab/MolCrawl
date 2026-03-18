@@ -248,8 +248,9 @@ if __name__ == "__main__":
     # Initialize wandb if enabled
     wandb_run = None
     if use_wandb:
-        import wandb
         from datetime import datetime
+
+        import wandb
 
         # Generate run name if not provided
         if wandb_run_name is None:
@@ -551,9 +552,22 @@ if __name__ == "__main__":
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)
     except Exception as e:
-        if "checkpoint" in str(e).lower() and resume_checkpoint:
+        if resume_checkpoint and (
+            "checkpoint" in str(e).lower() or "weights only" in str(e).lower() or "weightsunpickler" in str(e).lower()
+        ):
             print(f"⚠️  Failed to resume from checkpoint: {e}")
-            print("   Starting training from scratch instead...")
+            # Re-initialise the model with pretrain weights (if available) so
+            # we don't accidentally train from random weights.
+            if pretrain_model_path and os.path.exists(pretrain_model_path):
+                _ckpt_dirs = sorted(
+                    [d for d in os.listdir(pretrain_model_path) if d.startswith("checkpoint-")],
+                    key=lambda x: int(x.split("-")[1]),
+                )
+                _load_path = os.path.join(pretrain_model_path, _ckpt_dirs[-1]) if _ckpt_dirs else pretrain_model_path
+                print(f"   Reloading pretrain weights from {_load_path} and restarting fine-tuning...")
+                trainer.model = BertForMaskedLM.from_pretrained(_load_path, config=model_config, ignore_mismatched_sizes=True)
+            else:
+                print("   No pretrain_model_path available — starting from current model weights...")
             trainer.train(resume_from_checkpoint=None)
         else:
             raise
