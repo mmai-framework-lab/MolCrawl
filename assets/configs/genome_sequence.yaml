@@ -7,14 +7,14 @@ data_preparation:
   max_lines_per_file: 10000
   # Size of the vocabulary of the BPE tokenizer
   vocab_size: 4096
-  # Process4: raw → parquet の CPU 並列数
-  # デフォルトは num_worker と同じになるが、ここで明示すると上書きできる
-  num_proc_parquet: 32
-  # Process4: raw → parquet のバッチ処理サイズ
-  # 512 ～ 4096 が現実的。メモリに余裕があるなら 2048 以上も可。
+  # Number of CPU workers for Process4: raw → parquet conversion.
+  # Defaults to num_worker if not specified; set this field to override.
+  num_proc_parquet: 4
+  # Batch size for Process4: raw → parquet conversion.
+  # Values between 512 and 4096 are practical. 2048 or higher is fine if memory allows.
   parquet_batch_size: 2048
-  # 重い処理を別ディレクトリ（ローカルSSDなど）に逃がしたい場合だけ
-  # 指定がなければ GENOME_SEQUENCE_DIR を使う
+  # Only specify this to redirect heavy processing to a separate directory (e.g. a local SSD).
+  # If not set, GENOME_SEQUENCE_DIR is used.
   local_base_dir: ""
   # Number of genome sequence to use to train the BPE tokenizer.
   # We will sample input_sentence_size randomly from input_sentence_size * 2 number of sequence.
