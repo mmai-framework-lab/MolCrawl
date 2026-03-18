@@ -76,21 +76,22 @@ mkdir -p "$FULL_OUTPUT_DIR"
 
 # Pythonとhuggingface_hubの確認
 log_info "Checking Python environment..."
-if ! command -v python3 &> /dev/null; then
-    log_error "Python3 is not installed or not in PATH"
+PYTHON_CMD="${PYTHON:-python3}"
+if ! command -v "$PYTHON_CMD" &> /dev/null; then
+    log_error "Python ($PYTHON_CMD) is not installed or not in PATH"
     exit 1
 fi
 
 # huggingface_hubパッケージの確認
 log_info "Checking huggingface_hub package..."
-if ! python3 -c "import huggingface_hub" 2>/dev/null; then
+if ! "$PYTHON_CMD" -c "import huggingface_hub" 2>/dev/null; then
     log_warning "huggingface_hub package not found. Installing..."
-    pip install huggingface_hub
+    "$PYTHON_CMD" -m pip install huggingface_hub
 fi
 
 # Hugging Face認証の確認（オプション）
 log_info "Checking Hugging Face authentication..."
-if python3 -c "from huggingface_hub import HfFolder; token = HfFolder.get_token(); exit(0 if token else 1)" 2>/dev/null; then
+if "$PYTHON_CMD" -c "from huggingface_hub import HfFolder; token = HfFolder.get_token(); exit(0 if token else 1)" 2>/dev/null; then
     log_success "Hugging Face authentication found"
 else
     log_warning "No Hugging Face authentication found"
@@ -102,7 +103,7 @@ fi
 log_info "Starting dataset download..."
 log_info "This may take a while (dataset is several GB)..."
 
-python3 << 'PYTHON_SCRIPT'
+"${PYTHON:-python3}" << 'PYTHON_SCRIPT'
 import os
 import sys
 import logging
