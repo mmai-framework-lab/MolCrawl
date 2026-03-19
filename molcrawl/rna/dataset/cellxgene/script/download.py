@@ -69,9 +69,11 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
     save_filename = output_dir / f"download_dir/{name}.{start_l:08d}-{end_l:08d}.h5ad"
     if save_filename.exists():
         try:
-            if len(sc.read(save_filename)):
-                logging.info(f"{save_filename} exists, skipping download")
-                return
+            import h5py
+            with h5py.File(save_filename, "r") as _f:
+                pass  # header check only — avoids loading full data into memory
+            logging.info(f"{save_filename} exists, skipping download")
+            return
         except Exception as e:
             logging.warning(f"{save_filename} is corrupt ({e}), re-downloading")
             save_filename.unlink()
