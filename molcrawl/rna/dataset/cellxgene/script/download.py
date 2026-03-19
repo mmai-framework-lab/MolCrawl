@@ -18,7 +18,7 @@ _SOCKET_TIMEOUT_SEC = 300  # 5 minutes
 # Wall-clock timeout for the entire download+write of one chunk.
 # Needed because socket.setdefaulttimeout only bounds individual recv() calls,
 # not the total transfer time when the API trickles data slowly.
-_DOWNLOAD_TOTAL_TIMEOUT_SEC = 600  # 10 minutes per attempt
+_DOWNLOAD_TOTAL_TIMEOUT_SEC = 1200  # 20 minutes per attempt
 _DOWNLOAD_MAX_RETRY = 5
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -26,9 +26,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -> Any:
     import cellxgene_census
+    import tiledbsoma
 
+    # Access S3 directly instead of via the SOMA HTTPS API endpoint.
+    # This bypasses the API server bottleneck and reads TileDB chunks from S3
+    # client-side, which is significantly faster for bulk downloads.
+    ctx = tiledbsoma.SOMATileDBContext(
+        tiledb_config={
+            "vfs.s3.region": "us-west-2",
+            "vfs.s3.no_sign_request": "true",
+        }
+    )
     try:
-        return cellxgene_census.open_soma(census_version=version)
+        return cellxgene_census.open_soma(census_version=version, context=ctx)
     except KeyboardInterrupt as e:
         raise e
     except Exception as e:
@@ -143,7 +153,11 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
         if attempt < _DOWNLOAD_MAX_RETRY:
             time.sleep(10)
 
-    raise RuntimeError(f"All {_DOWNLOAD_MAX_RETRY} download attempts failed for {save_filename}")
+    # All retries exhausted — log and skip so the worker continues with remaining chunks
+    # instead of crashing the entire ThreadPoolExecutor.
+    logging.error(
+        f"Skipping {save_filename}: all {_DOWNLOAD_MAX_RETRY} download attempts failed"
+    )
 
 
 def divide_workload(path: Union[str, Path], size_workload: int) -> List[Tuple[str, int, int, List[int]]]:
