@@ -8,6 +8,15 @@ import time
 from functools import partial
 from argparse import ArgumentParser
 
+# Prevent CellxGene API calls from hanging indefinitely.
+# Each socket operation (connect, read) will raise socket.timeout after this.
+_SOCKET_TIMEOUT_SEC = 300  # 5 minutes
+# Wall-clock timeout for the entire download+write of one chunk.
+# Needed because socket.setdefaulttimeout only bounds individual recv() calls,
+# not the total transfer time when the API trickles data slowly.
+_DOWNLOAD_TOTAL_TIMEOUT_SEC = 600  # 10 minutes per attempt
+_DOWNLOAD_MAX_RETRY = 5
+
 from rich.progress import track
 
 from molcrawl.rna.utils.config import RnaConfig
