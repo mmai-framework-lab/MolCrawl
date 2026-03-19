@@ -25,7 +25,7 @@ from datasets.utils.logging import enable_progress_bar
 from molcrawl.config.paths import RNA_CELLTYPE_DIR, RNA_CELLTYPE_SOURCE_DIR, RNA_DATASET_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.rna.dataset.cellxgene.script.build_list import build_list
-from molcrawl.rna.dataset.cellxgene.script.download import download
+from molcrawl.rna.dataset.cellxgene.script.download_by_dataset import download
 from molcrawl.rna.dataset.cellxgene.script.h5ad_to_loom import h5ad_to_loom
 from molcrawl.rna.dataset.cellxgene.script.scgpt_tokenization import get_census_gene_vocab
 from molcrawl.rna.dataset.tokenization import tokenize
