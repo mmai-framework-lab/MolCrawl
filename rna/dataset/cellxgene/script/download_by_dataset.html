@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.rna.dataset.cellxgene.script API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.rna.dataset.cellxgene.script.download_by_dataset API documentation</title>
+<meta name="description" content="Per-dataset download strategy for CellxGene census data …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,42 +33,84 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.rna.dataset.cellxgene.script</code></h1>
+<h1 class="title">Module <code>molcrawl.rna.dataset.cellxgene.script.download_by_dataset</code></h1>
 </header>
 <section id="section-intro">
+<p>Per-dataset download strategy for CellxGene census data.</p>
+<p>Problem with the original download.py approach:
+get_anndata(obs_coords=[5000 arbitrary soma_joinids])
+→ These IDs span many datasets/TileDB fragments → expensive random I/O.</p>
+<p>This module instead:
+1. Queries census obs metadata once per tissue (no X, fast) → soma_joinid→dataset_id
+2. Groups our needed obs_ids by dataset_id
+3. For each dataset: queries get_anndata in sub-batches of _MAX_CELLS_PER_BATCH
+cells, routes them into chunk buffers, and flushes complete chunks to disk
+immediately to keep peak memory low.</p>
+<p>Compatible drop-in replacement for download.download().</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.rna.dataset.cellxgene.script.build_list" href="build_list.html">molcrawl.rna.dataset.cellxgene.script.build_list</a></code></dt>
+<dt id="molcrawl.rna.dataset.cellxgene.script.download_by_dataset.download"><code class="name flex">
+<span>def <span class="ident">download</span></span>(<span>output_dir: str, version: str, num_worker: int, size_workload: int) ‑> None</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rna.dataset.cellxgene.script.conv" href="conv.html">molcrawl.rna.dataset.cellxgene.script.conv</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rna.dataset.cellxgene.script.download" href="download.html">molcrawl.rna.dataset.cellxgene.script.download</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rna.dataset.cellxgene.script.download_by_dataset" href="download_by_dataset.html">molcrawl.rna.dataset.cellxgene.script.download_by_dataset</a></code></dt>
-<dd>
-<div class="desc"><p>Per-dataset download strategy for CellxGene census data …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rna.dataset.cellxgene.script.h5ad_to_loom" href="h5ad_to_loom.html">molcrawl.rna.dataset.cellxgene.script.h5ad_to_loom</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rna.dataset.cellxgene.script.scgpt_tokenization" href="scgpt_tokenization.html">molcrawl.rna.dataset.cellxgene.script.scgpt_tokenization</a></code></dt>
-<dd>
-<div class="desc"><p>Legacy code use for scgpt, in the end geneformer is used to compute the tokenization</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download(
+    output_dir: str,
+    version: str,
+    num_worker: int,
+    size_workload: int,
+) -&gt; None:
+    &#34;&#34;&#34;Drop-in replacement for download.download() using per-dataset queries.
+
+    Processes tissues sequentially; within each tissue, dataset queries run
+    sequentially to avoid SOMA rate-limiting.  num_worker is accepted for
+    interface compatibility but currently unused at the tissue level.
+    &#34;&#34;&#34;
+    output_path = Path(output_dir)
+    output_path.joinpath(&#34;download_dir&#34;).mkdir(exist_ok=True, parents=True)
+
+    remaining = _find_remaining_chunks(output_path, size_workload)
+    if not remaining:
+        logger.info(&#34;All chunks already downloaded.&#34;)
+        return
+
+    total_chunks = sum(len(v) for v in remaining.values())
+    logger.info(
+        f&#34;download_by_dataset: {len(remaining)} tissues, &#34;
+        f&#34;{total_chunks} remaining chunks&#34;
+    )
+    for tissue, n in sorted(
+        ((t, len(c)) for t, c in remaining.items()), key=lambda x: -x[1]
+    ):
+        logger.info(f&#34;  {tissue}: {n} chunks remaining&#34;)
+
+    total_written = 0
+    for tissue, chunks in sorted(
+        remaining.items(), key=lambda x: -len(x[1])
+    ):
+        logger.info(f&#34;=== Processing tissue: {tissue} ({len(chunks)} chunks) ===&#34;)
+        written = _process_tissue(output_path, version, tissue, chunks)
+        total_written += written
+        logger.info(f&#34;[{tissue}] Done: {written}/{len(chunks)} chunks written&#34;)
+
+    logger.info(f&#34;download_by_dataset complete: {total_written}/{total_chunks} chunks written&#34;)</code></pre>
+</details>
+<div class="desc"><p>Drop-in replacement for download.download() using per-dataset queries.</p>
+<p>Processes tissues sequentially; within each tissue, dataset queries run
+sequentially to avoid SOMA rate-limiting.
+num_worker is accepted for
+interface compatibility but currently unused at the tissue level.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -80,17 +122,12 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.rna.dataset.cellxgene" href="../index.html">molcrawl.rna.dataset.cellxgene</a></code></li>
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script" href="index.html">molcrawl.rna.dataset.cellxgene.script</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.rna.dataset.cellxgene.script.build_list" href="build_list.html">molcrawl.rna.dataset.cellxgene.script.build_list</a></code></li>
-<li><code><a title="molcrawl.rna.dataset.cellxgene.script.conv" href="conv.html">molcrawl.rna.dataset.cellxgene.script.conv</a></code></li>
-<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download" href="download.html">molcrawl.rna.dataset.cellxgene.script.download</a></code></li>
-<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download_by_dataset" href="download_by_dataset.html">molcrawl.rna.dataset.cellxgene.script.download_by_dataset</a></code></li>
-<li><code><a title="molcrawl.rna.dataset.cellxgene.script.h5ad_to_loom" href="h5ad_to_loom.html">molcrawl.rna.dataset.cellxgene.script.h5ad_to_loom</a></code></li>
-<li><code><a title="molcrawl.rna.dataset.cellxgene.script.scgpt_tokenization" href="scgpt_tokenization.html">molcrawl.rna.dataset.cellxgene.script.scgpt_tokenization</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.rna.dataset.cellxgene.script.download_by_dataset.download" href="#molcrawl.rna.dataset.cellxgene.script.download_by_dataset.download">download</a></code></li>
 </ul>
 </li>
 </ul>

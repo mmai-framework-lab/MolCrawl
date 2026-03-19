@@ -177,9 +177,19 @@ size_workload (int): Size of each workload (number of samples)</p>
 </summary>
 <pre><code class="python">def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -&gt; Any:
     import cellxgene_census
+    import tiledbsoma
 
+    # Access S3 directly instead of via the SOMA HTTPS API endpoint.
+    # This bypasses the API server bottleneck and reads TileDB chunks from S3
+    # client-side, which is significantly faster for bulk downloads.
+    ctx = tiledbsoma.SOMATileDBContext(
+        tiledb_config={
+            &#34;vfs.s3.region&#34;: &#34;us-west-2&#34;,
+            &#34;vfs.s3.no_sign_request&#34;: &#34;true&#34;,
+        }
+    )
     try:
-        return cellxgene_census.open_soma(census_version=version)
+        return cellxgene_census.open_soma(census_version=version, context=ctx)
     except KeyboardInterrupt as e:
         raise e
     except Exception as e:
@@ -259,7 +269,11 @@ size_workload (int): Size of each workload (number of samples)</p>
         if attempt &lt; _DOWNLOAD_MAX_RETRY:
             time.sleep(10)
 
-    raise RuntimeError(f&#34;All {_DOWNLOAD_MAX_RETRY} download attempts failed for {save_filename}&#34;)</code></pre>
+    # All retries exhausted — log and skip so the worker continues with remaining chunks
+    # instead of crashing the entire ThreadPoolExecutor.
+    logging.error(
+        f&#34;Skipping {save_filename}: all {_DOWNLOAD_MAX_RETRY} download attempts failed&#34;
+    )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
