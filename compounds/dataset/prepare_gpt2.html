@@ -77,7 +77,7 @@ el.replaceWith(d);
         # Use relative path from compounds directory
         smiles_file = benchmark_dir / f&#34;guacamol_v1_{split}.smiles&#34;
 
-        if not smiles_file.exists():
+        if not smiles_file.exists() or smiles_file.stat().st_size == 0:
             raise FileNotFoundError(
                 f&#34;GuacaMol benchmark file not found: {smiles_file}\n\n&#34;
                 f&#34;Please download GuacaMol data by running:\n&#34;
@@ -95,6 +95,11 @@ el.replaceWith(d);
 
         df = pd.DataFrame(lines, columns=[&#34;smiles&#34;])
         df[&#34;tokens&#34;] = df[&#34;smiles&#34;].apply(tokenizer.tokenize_text)
+        if df.empty:
+            raise ValueError(
+                f&#34;No valid SMILES found in {smiles_file}. &#34;
+                &#34;The file may be empty or all entries were filtered out.&#34;
+            )
         print(f&#34;{split} - First molecule decoded: {tokenizer.decode(df[&#39;tokens&#39;].iloc[0])}&#34;)
         dataset_dic[split] = df
 
