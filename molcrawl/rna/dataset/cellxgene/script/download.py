@@ -1,11 +1,16 @@
 from typing import Any, List, Sequence, Tuple, Union
 import os
+import socket
 from pathlib import Path
 import logging
 import concurrent.futures
 import time
 from functools import partial
 from argparse import ArgumentParser
+
+# Prevent CellxGene API calls from hanging indefinitely.
+# Each socket operation (connect, read) will raise socket.timeout after this.
+_SOCKET_TIMEOUT_SEC = 300  # 5 minutes
 
 from rich.progress import track
 
@@ -81,9 +86,12 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
     tsv_file = output_dir / "metadata_preparation_dir" / f"{name}.var.tsv"
     target_var = pd.read_csv(tsv_file, sep="\t", index_col=0)
     target_gene_ids = target_var["soma_joinid"].to_numpy()
+
+    socket.setdefaulttimeout(_SOCKET_TIMEOUT_SEC)
     target_adata = retrieve_adata(version, id_list, target_gene_ids)
 
     target_adata.write_h5ad(save_filename, compression="gzip")
+    logging.info(f"Downloaded {save_filename} ({len(id_list)} cells)")
     # joblib.dump(target_adata, save_filename, compress=3)
     # time.sleep(1)
 
