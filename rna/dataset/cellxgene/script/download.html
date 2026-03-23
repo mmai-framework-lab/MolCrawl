@@ -217,6 +217,7 @@ size_workload (int): Size of each workload (number of samples)</p>
     if save_filename.exists():
         try:
             import h5py
+
             with h5py.File(save_filename, &#34;r&#34;) as _f:
                 pass  # header check only — avoids loading full data into memory
             logging.info(f&#34;{save_filename} exists, skipping download&#34;)
@@ -234,9 +235,7 @@ size_workload (int): Size of each workload (number of samples)</p>
         # timeout via future.result(timeout=…).  The abandoned thread will terminate
         # on its own once _SOCKET_TIMEOUT_SEC fires on the next socket recv().
         _exec = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        fut = _exec.submit(
-            _do_download_and_write, save_filename, version, id_list, target_gene_ids
-        )
+        fut = _exec.submit(_do_download_and_write, save_filename, version, id_list, target_gene_ids)
         timed_out = failed = False
         try:
             fut.result(timeout=_DOWNLOAD_TOTAL_TIMEOUT_SEC)
@@ -248,10 +247,7 @@ size_workload (int): Size of each workload (number of samples)</p>
             )
         except Exception as exc:
             failed = True
-            logging.warning(
-                f&#34;[Error] Download failed: {exc} &#34;
-                f&#34;(attempt {attempt}/{_DOWNLOAD_MAX_RETRY}): {save_filename}&#34;
-            )
+            logging.warning(f&#34;[Error] Download failed: {exc} (attempt {attempt}/{_DOWNLOAD_MAX_RETRY}): {save_filename}&#34;)
         finally:
             _exec.shutdown(wait=False)  # don&#39;t block; stuck thread ends via socket timeout
 
@@ -271,9 +267,7 @@ size_workload (int): Size of each workload (number of samples)</p>
 
     # All retries exhausted — log and skip so the worker continues with remaining chunks
     # instead of crashing the entire ThreadPoolExecutor.
-    logging.error(
-        f&#34;Skipping {save_filename}: all {_DOWNLOAD_MAX_RETRY} download attempts failed&#34;
-    )</code></pre>
+    logging.error(f&#34;Skipping {save_filename}: all {_DOWNLOAD_MAX_RETRY} download attempts failed&#34;)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>

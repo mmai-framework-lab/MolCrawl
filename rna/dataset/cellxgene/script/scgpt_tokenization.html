@@ -55,7 +55,6 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def get_census_gene_vocab(version: str):
     import cellxgene_census
-    import scgpt as scg
 
     with cellxgene_census.open_soma(census_version=version) as census:
         meta_data = (
@@ -69,7 +68,7 @@ el.replaceWith(d);
         )
 
     gene_list = meta_data.concat().to_pandas()[&#34;feature_name&#34;].to_list()
-    return scg.tokenizer.GeneVocab(gene_list)</code></pre>
+    return _SimpleGeneVocab(gene_list)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
