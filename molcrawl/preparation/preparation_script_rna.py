@@ -39,7 +39,8 @@ def create_distribution_plot(data):
     """Save token length distribution as a histogram"""
     from molcrawl.utils.image_manager import get_image_path
 
-    plt.hist(data["num_tokens"], bins=200)
+    token_col = "token_count" if "token_count" in data.column_names else "num_tokens"
+    plt.hist(data[token_col], bins=200)
     plt.xlabel("Length of tokenized dataset")
     plt.title("Distribution of tokenized lengths")
     plt.tight_layout()

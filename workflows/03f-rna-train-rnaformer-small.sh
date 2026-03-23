@@ -2,11 +2,15 @@
 # RNAformer Small Model Training Script
 # RNA transcriptome learning with Geneformer-based architecture
 
+# Load common functions (sets $PYTHON)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common_functions.sh"
+
+# Check LEARNING_SOURCE_DIR
+check_learning_source_dir
+
 # Set CUDA device (modify as needed)
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
-
-# Set learning source directory
-export LEARNING_SOURCE_DIR=${LEARNING_SOURCE_DIR:-learning_source_20250904-rna-refined}
 
 # Weights & Biases configuration
 export USE_WANDB=${USE_WANDB:-True}

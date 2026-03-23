@@ -90,9 +90,32 @@ def process_h5ad_to_parquet(h5ad_path: Union[str, Path], output_dir: Union[str, 
         logging.info(f"Skipping processing since file already exist: {parquet_path}")
 
 
+class _SimpleGeneVocab:
+    """Minimal vocab wrapper that saves {gene: index} JSON without requiring scgpt/torchtext."""
+
+    def __init__(self, gene_list: List[str]):
+        # Deduplicate while preserving order, then assign sequential IDs
+        seen: dict[str, int] = {}
+        for gene in gene_list:
+            if gene not in seen:
+                seen[gene] = len(seen)
+        self._vocab: Dict[str, int] = seen
+
+    def __len__(self) -> int:
+        return len(self._vocab)
+
+    def __getitem__(self, gene: str) -> int:
+        return self._vocab[gene]
+
+    def save_json(self, path: Union[str, Path]) -> None:
+        import json
+
+        with open(path, "w") as f:
+            json.dump(self._vocab, f, indent=2)
+
+
 def get_census_gene_vocab(version: str):
     import cellxgene_census
-    import scgpt as scg
 
     with cellxgene_census.open_soma(census_version=version) as census:
         meta_data = (
@@ -106,7 +129,7 @@ def get_census_gene_vocab(version: str):
         )
 
     gene_list = meta_data.concat().to_pandas()["feature_name"].to_list()
-    return scg.tokenizer.GeneVocab(gene_list)
+    return _SimpleGeneVocab(gene_list)
 
 
 def prepare_parquet(output_dir: str, version: str, num_worker: int, min_counts_genes: int):

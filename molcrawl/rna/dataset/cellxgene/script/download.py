@@ -1,16 +1,25 @@
-from typing import Any, List, Sequence, Tuple, Union
+import concurrent.futures
+import logging
 import os
 import socket
-from pathlib import Path
-import logging
-import concurrent.futures
 import time
-from functools import partial
 from argparse import ArgumentParser
+from functools import partial
+from pathlib import Path
+from typing import Any, List, Sequence, Tuple, Union
 
 from rich.progress import track
 
 from molcrawl.rna.utils.config import RnaConfig
+
+# Prevent CellxGene API calls from hanging indefinitely.
+# Each socket operation (connect, read) will raise socket.timeout after this.
+_SOCKET_TIMEOUT_SEC = 300  # 5 minutes
+# Wall-clock timeout for the entire download+write of one chunk.
+# Needed because socket.setdefaulttimeout only bounds individual recv() calls,
+# not the total transfer time when the API trickles data slowly.
+_DOWNLOAD_TOTAL_TIMEOUT_SEC = 600  # 10 minutes per attempt
+_DOWNLOAD_MAX_RETRY = 5
 
 # Prevent CellxGene API calls from hanging indefinitely.
 # Each socket operation (connect, read) will raise socket.timeout after this.
@@ -101,6 +110,7 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
     if save_filename.exists():
         try:
             import h5py
+
             with h5py.File(save_filename, "r") as _f:
                 pass  # header check only — avoids loading full data into memory
             logging.info(f"{save_filename} exists, skipping download")
@@ -118,9 +128,7 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
         # timeout via future.result(timeout=…).  The abandoned thread will terminate
         # on its own once _SOCKET_TIMEOUT_SEC fires on the next socket recv().
         _exec = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        fut = _exec.submit(
-            _do_download_and_write, save_filename, version, id_list, target_gene_ids
-        )
+        fut = _exec.submit(_do_download_and_write, save_filename, version, id_list, target_gene_ids)
         timed_out = failed = False
         try:
             fut.result(timeout=_DOWNLOAD_TOTAL_TIMEOUT_SEC)
@@ -132,10 +140,7 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
             )
         except Exception as exc:
             failed = True
-            logging.warning(
-                f"[Error] Download failed: {exc} "
-                f"(attempt {attempt}/{_DOWNLOAD_MAX_RETRY}): {save_filename}"
-            )
+            logging.warning(f"[Error] Download failed: {exc} (attempt {attempt}/{_DOWNLOAD_MAX_RETRY}): {save_filename}")
         finally:
             _exec.shutdown(wait=False)  # don't block; stuck thread ends via socket timeout
 
@@ -155,9 +160,7 @@ def run(output_dir: Path, version, argv: Tuple[str, int, int, List[int]]) -> Non
 
     # All retries exhausted — log and skip so the worker continues with remaining chunks
     # instead of crashing the entire ThreadPoolExecutor.
-    logging.error(
-        f"Skipping {save_filename}: all {_DOWNLOAD_MAX_RETRY} download attempts failed"
-    )
+    logging.error(f"Skipping {save_filename}: all {_DOWNLOAD_MAX_RETRY} download attempts failed")
 
 
 def divide_workload(path: Union[str, Path], size_workload: int) -> List[Tuple[str, int, int, List[int]]]:
