@@ -34,7 +34,8 @@ tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 
-max_steps: int = 600000
+max_steps: int = 60000
+early_stopping_patience: int = 3  # Stop after 3 evals (300 steps) with no improvement
 model_size: str = "small"  # Choose between small, medium or large
 model_path: str = get_bert_output_path("rna", model_size)
 max_length: int = 1024
