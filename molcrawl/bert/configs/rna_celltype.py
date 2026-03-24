@@ -61,6 +61,7 @@ weight_decay = 1e-1
 
 log_interval = 100
 save_steps = 100
+early_stopping_patience = 3  # Stop after 3 evals (300 steps) with no improvement
 
 batch_size = 8
 per_device_eval_batch_size = 8
