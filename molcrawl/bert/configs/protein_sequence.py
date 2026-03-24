@@ -75,7 +75,7 @@ dataset_dir = UNIPROT_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
 log_interval = 100
-save_steps = 100  # Save checkpoint every 100 steps instead of default 1000
+save_steps = 1000  # Save checkpoint every 1000 steps instead of 100
 
 batch_size = 8
 per_device_eval_batch_size = 8
