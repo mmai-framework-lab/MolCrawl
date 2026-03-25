@@ -77,3 +77,4 @@ experiments.db-journal
 *.db-journal
 
 assets/configs/omim_real_data.yaml
+workflows/hugging_face/
