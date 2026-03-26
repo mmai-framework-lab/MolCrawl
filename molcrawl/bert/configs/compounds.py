@@ -8,7 +8,8 @@ from molcrawl.config.paths import COMPOUNDS_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
-max_steps = 600000
+max_steps = 60000
+early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 1024

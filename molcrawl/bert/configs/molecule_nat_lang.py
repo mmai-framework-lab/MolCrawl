@@ -40,7 +40,8 @@ except Exception:
 # Round up to nearest multiple of 8 for efficiency
 meta_vocab_size = (meta_vocab_size // 8 + 1) * 8
 
-max_steps = 600000
+max_steps = 60000
+early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nat_lang", model_size)
 max_length = 1024

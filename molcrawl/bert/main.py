@@ -163,7 +163,7 @@ if __name__ == "__main__":
     learning_rate = 6e-6
     weight_decay = 1e-1
     warmup_steps = 200
-    max_steps = 600000
+    max_steps = 60000
     batch_size = 10
 
     gradient_accumulation_steps = 5 * 8

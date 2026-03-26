@@ -14,7 +14,7 @@ max_length = 512  # Short sequences are sufficient for ClinVar evaluation
 dataset_dir = REFSEQ_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
-max_steps = 600000
+max_steps = 60000
 
 log_interval = 100
 

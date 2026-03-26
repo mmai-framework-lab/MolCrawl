@@ -11,7 +11,8 @@ max_length = 1024
 dataset_dir = REFSEQ_DATASET_DIR
 learning_rate = 6e-6
 weight_decay = 1e-1
-max_steps = 600000
+max_steps = 60000
+early_stopping = False  # Pretraining: run the full schedule, no early stopping
 
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100
