@@ -4,6 +4,7 @@ on:
     branches: [main, develop]
     paths:
       - "docs/**"
+      - "docs-src/**"
       - "README.md"
       - "**.py"
       - ".github/workflows/documentation.yml"
@@ -48,21 +49,55 @@ jobs:
         with:
           name: api-documentation
           path: api-docs/
-  deploy-to-gh-pages:
-    name: Deploy API Docs to GitHub Pages
+  build-site:
+    name: Build Complete Documentation Site
     needs: generate-api-docs
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
+      - uses: actions/checkout@v4
       - name: Download API documentation
         uses: actions/download-artifact@v4
         with:
           name: api-documentation
           path: api-docs/
+      - name: Build documentation site
+        run: |
+          # Create output directory
+          mkdir -p site
+
+          # Copy custom pages from docs-src
+          cp -r docs-src/* site/
+
+          # Copy pdoc API docs to api/ subdirectory
+          mkdir -p site/api
+          cp -r api-docs/molcrawl/* site/api/
+
+          # Create .nojekyll file for GitHub Pages
+          touch site/.nojekyll
+
+          # List final structure
+          echo "📁 Final site structure:"
+          find site -type f | head -50
+      - name: Upload complete site
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-site
+          path: site/
+  deploy-to-gh-pages:
+    name: Deploy Documentation to GitHub Pages
+    needs: build-site
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Download complete documentation site
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-site
+          path: site/
       - name: Deploy to GitHub Pages (gh-pages branch)
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./api-docs/molcrawl
+          publish_dir: ./site
           publish_branch: gh-pages
-          commit_message: "docs: update API documentation [skip ci]"
+          commit_message: "docs: update documentation site [skip ci]"
