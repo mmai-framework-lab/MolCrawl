@@ -18,6 +18,11 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 check_learning_source_dir
 
+# Use local GPT-2 tokenizer (overridable via env var)
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-$PROJECT_ROOT/assets/tokenizers/gpt2}"
+
+
 LOG_DIR="${LEARNING_SOURCE_DIR}/molecule_nat_lang/mol_instructions/logs"
 mkdir -p "${LOG_DIR}"
 

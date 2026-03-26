@@ -12,6 +12,7 @@ from molcrawl.config.paths import (
     MOL_INSTRUCTIONS_DATASET_DIR,
     get_gpt2_output_path,
 )
+from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 
 tensorboard = True
 tensorboard_dir = get_gpt2_output_path("molecule_nat_lang_mol_instructions", "small")
@@ -21,12 +22,10 @@ pretrain_dir = get_gpt2_output_path("molecule_nat_lang", "small")
 
 dataset_dir = MOL_INSTRUCTIONS_DATASET_DIR
 
-# Use the vocab size reported by MoleculeNatLangTokenizer.
-# - CodeLlama-7b-hf: 32016
-# - Offline fallback (MinimalTokenizer): 50002  ← used for data preparation in
-#   this environment because the network is unavailable.
-# Set to 50002 so the embedding table covers all token IDs in the dataset.
-meta_vocab_size = 50002
+# vocab_size is read dynamically from the tokenizer so that switching
+# tokenizers (e.g. GPT-2 via GPT2_TOKENIZER_DIR) is reflected automatically.
+tokenizer = Tokenizer()
+meta_vocab_size = tokenizer.vocab_size
 
 # Batch / accumulation settings — same as pretraining config
 batch_size = 8
@@ -60,10 +59,13 @@ weight_decay = 1e-1
 # Dataset identifier used by the data-loader
 dataset = "molecule_nat_lang_mol_instructions"
 
-# Special tokens (same as pretraining config — CodeLlama tokenizer)
-start_instruction = 1
-end_instruction = [518, 29914, 25580, 29962]
-eos_token = 2  # eos
+# Special tokens — GPT-2 tokenizer equivalents
+# [INST]  -> [58, 38604, 60]
+# [/INST] -> [13412, 38604, 60]
+# eos     -> 50256 (<|endoftext|>)
+start_instruction = 58  # first token of "[INST]"
+end_instruction = [13412, 38604, 60]  # "[/INST]"
+eos_token = 50256  # <|endoftext|>
 
 dataset_params = {
     "dataset_dir": dataset_dir,

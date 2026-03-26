@@ -9,6 +9,11 @@ source "${SCRIPT_DIR}/common_functions.sh"
 # Check LEARNING_SOURCE_DIR
 check_learning_source_dir
 
+# Use local GPT-2 tokenizer (overridable via env var)
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-$PROJECT_ROOT/assets/tokenizers/gpt2}"
+
+
 # Auto-select GPU if not manually specified (small model needs ~10GB)
 auto_select_gpu 10
 

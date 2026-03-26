@@ -15,12 +15,9 @@ from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 # HuggingFace tokenizer in .tokenizer; main.py handles that unwrapping.
 tokenizer = MoleculeNatLangTokenizer()
 
-# Use the vocab size reported by MoleculeNatLangTokenizer.
-# - CodeLlama-7b-hf: 32016
-# - Offline fallback (MinimalTokenizer): 50002  ← used for data preparation in
-#   this environment because the network is unavailable.
-# Set to 50002 so the embedding table covers all token IDs in the dataset.
-meta_vocab_size = 50002
+# vocab_size is read dynamically from the tokenizer so that switching
+# tokenizers (e.g. GPT-2 via GPT2_TOKENIZER_DIR) is reflected automatically.
+meta_vocab_size = tokenizer.vocab_size
 
 model_size = "small"
 # Fine-tuning checkpoint output — separate from pretraining output
