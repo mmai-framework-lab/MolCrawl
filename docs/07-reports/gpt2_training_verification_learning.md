@@ -1,4 +1,4 @@
-# GPT-2 Training Verification Report - `learning_20251125`
+# GPT-2 Training Verification Report
 
 ## Verification Time
 
@@ -6,7 +6,7 @@
 
 ## Objective
 
-Verify that GPT-2 training runs correctly on the Molecule NL dataset in `learning_20251125`.
+Verify that GPT-2 training runs correctly on the Molecule NL dataset.
 
 ## Dataset Summary
 

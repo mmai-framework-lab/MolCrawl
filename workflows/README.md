@@ -767,7 +767,7 @@ source molcrawl/config/env.sh
 
    ```bash
    # エラー: LEARNING_SOURCE_DIR環境変数が設定されていません
-   export LEARNING_SOURCE_DIR=/path/to/learning_source_202508
+   export LEARNING_SOURCE_DIR=/path/to/learning_source
    ```
 
 2. **モデルファイルが見つからない**

@@ -1,4 +1,4 @@
-# BERT Training Verification Report - `learning_20251125`
+# BERT Training Verification Report
 
 ## Verification Time
 
@@ -6,7 +6,7 @@
 
 ## Objective
 
-Verify that BERT training runs correctly on the Molecule NL dataset in `learning_20251125`.
+Verify that BERT training runs correctly on the Molecule NL dataset.
 
 ## Dataset Summary
 

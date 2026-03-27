@@ -1,4 +1,4 @@
-# GPT-2学習検証レポート - learning_20251125データセット
+# GPT-2学習検証レポート
 
 ## 検証日時
 
@@ -6,7 +6,7 @@
 
 ## 検証目的
 
-learning_20251125のMolecule NLデータセットでGPT-2の学習が正常に動作するかを検証
+Molecule NLデータセットでGPT-2の学習が正常に動作するかを検証
 
 ---
 
@@ -249,7 +249,7 @@ eval_interval = 2000
 python gpt2/train.py gpt2/molecule_nat_lang_gpt2_config.py
 
 # または環境変数で指定
-LEARNING_SOURCE_DIR="learning_20251125" python gpt2/train.py gpt2/molecule_nat_lang_gpt2_config.py
+LEARNING_SOURCE_DIR="learning_source" python gpt2/train.py gpt2/molecule_nat_lang_gpt2_config.py
 ```
 
 ---

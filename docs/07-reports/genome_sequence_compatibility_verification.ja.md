@@ -1,4 +1,4 @@
-# Genome Sequence GPT-2 学習互換性検証レポート - learning_20251104
+# Genome Sequence GPT-2 学習互換性検証レポート
 
 ## 検証日時
 
@@ -165,7 +165,7 @@ bash workflows/02-genome_sequence-prepare-gpt2.sh
 
 ```bash
 # 直接実行
-LEARNING_SOURCE_DIR="learning_20251104" \
+LEARNING_SOURCE_DIR="learning_source" \
 python src/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
@@ -261,7 +261,7 @@ FASTA → Raw chunks → HF Cache → training_ready_hf_dataset → PreparedData
 
 ```bash
 # 環境変数設定
-export LEARNING_SOURCE_DIR="learning_20251104"
+export LEARNING_SOURCE_DIR="learning_source"
 
 # データ準備スクリプト実行
 bash workflows/02-genome_sequence-prepare-gpt2.sh
@@ -308,7 +308,7 @@ ERROR: Environment variable 'LEARNING_SOURCE_DIR' is not set.
 **解決策:**
 
 ```bash
-export LEARNING_SOURCE_DIR="learning_20251104"
+export LEARNING_SOURCE_DIR="learning_source"
 ```
 
 #### 2. training_ready_hf_dataset not found

@@ -75,7 +75,7 @@ bash workflows/02-genome_sequence-prepare-gpt2.sh
 or
 
 ```bash
-LEARNING_SOURCE_DIR="learning_20251104" \
+LEARNING_SOURCE_DIR="learning_source" \
 python src/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```

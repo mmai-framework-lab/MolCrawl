@@ -193,7 +193,7 @@ The backend spawns a Python process to run inference:
 3. Set the `LEARNING_SOURCE_DIR` environment variable:
 
    ```bash
-   export LEARNING_SOURCE_DIR="learning_source_202508"
+   export LEARNING_SOURCE_DIR="learning_source"
    ```
 
 4. Start the server:

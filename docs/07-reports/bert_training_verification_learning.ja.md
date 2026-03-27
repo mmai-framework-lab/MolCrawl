@@ -1,4 +1,4 @@
-# BERT学習検証レポート - learning_20251125データセット
+# BERT学習検証レポート
 
 ## 検証日時
 
@@ -6,7 +6,7 @@
 
 ## 検証目的
 
-learning_20251125のMolecule NLデータセットでBERTの学習が正常に動作するかを検証
+Molecule NLデータセットでBERTの学習が正常に動作するかを検証
 
 ---
 
@@ -398,7 +398,7 @@ log_interval = 500
 python bert/main.py bert/molecule_nat_lang_bert_config.py
 
 # または環境変数で指定
-LEARNING_SOURCE_DIR="learning_20251125" python bert/main.py bert/molecule_nat_lang_bert_config.py
+LEARNING_SOURCE_DIR="learning_source" python bert/main.py bert/molecule_nat_lang_bert_config.py
 ```
 
 ---

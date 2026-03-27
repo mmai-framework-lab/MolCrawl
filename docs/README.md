@@ -44,16 +44,18 @@
 
 - [RIKEN Dataset Foundational Model Project (presentation)](07-reports/presen.md)
 - [Experiment Tracking System – Startup Report](07-reports/SYSTEM_STARTED.md)
-- [BERT Training Verification Report (learning_20251125)](07-reports/bert_training_verification_learning_20251125.md)
-- [GPT-2 Training Verification Report (learning_20251125)](07-reports/gpt2_training_verification_learning_20251125.md)
+- [BERT Training Verification Report](07-reports/bert_training_verification_learning.md)
+- [GPT-2 Training Verification Report](07-reports/gpt2_training_verification_learning.md)
 - [Genome Sequence GPT-2 Compatibility Verification](07-reports/genome_sequence_compatibility_verification.md)
 - [Molecule NL Dataset Structure Comparison Report](07-reports/molecule_nat_lang_dataset_comparison_report.md)
 - [Compounds Workflow Verification Notes](07-reports/verification_in_compounds.md)
 
-## 08 – Archive (deprecated / historical)
+## 08 – Web Interface
 
-- [LEARNING_SOURCE_DIR Environment Variable Migration Guide](08-archive/20251104_LEARNING_SOURCE_DIR_MIGRATION.md)
-- [GPT Training Script Overview (archived)](08-archive/README_gpt2_train.md)
+- [MolCrawl Web – Overview & Quick Start](08-web_interface/README.md)
+- [MolCrawl Web – Troubleshooting Guide](08-web_interface/TROUBLESHOOTING.md)
+- [GPT-2 Model Inference Feature](08-web_interface/INFERENCE_FEATURE.md)
+- [GPT-2 Inference – Visual Guide](08-web_interface/INFERENCE_VISUAL_GUIDE.md)
 
 ## 09 – Future / Next-Generation Models
 
@@ -70,12 +72,3 @@
 ## 10 – File Tree
 
 - [Repository File Tree](10-file-tree/FILE_TREE.md)
-
-## 11 – Web Interface
-
-- [MolCrawl Web – Overview & Quick Start](11-web_interface/README.md)
-- [MolCrawl Web – Troubleshooting Guide](11-web_interface/TROUBLESHOOTING.md)
-- [GPT-2 Model Inference Feature](11-web_interface/INFERENCE_FEATURE.md)
-- [GPT-2 Inference – Implementation Summary](11-web_interface/INFERENCE_IMPLEMENTATION_SUMMARY.md)
-- [GPT-2 Inference – Visual Guide](11-web_interface/INFERENCE_VISUAL_GUIDE.md)
-- [ESLint & Prettier Setup](11-web_interface/ESLINT_SETUP.md)
