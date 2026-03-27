@@ -151,7 +151,7 @@ if __name__ == "__main__":
             _ready = _mi_output / "training_ready_hf_dataset"
             if not args.force and _ready.exists():
                 logger.info(
-                    "Mol-Instructions training_ready_hf_dataset already exists at %s. " "Use --force to reprocess.",
+                    "Mol-Instructions training_ready_hf_dataset already exists at %s. Use --force to reprocess.",
                     _ready,
                 )
             else:
@@ -357,22 +357,23 @@ if __name__ == "__main__":
         total_num_samples += num_samples
         total_num_tokens += num_tokens
 
-        # Collect task-specific statistics
-        if "task_type" in processed_dataset[split].features:
-            task_types = processed_dataset[split]["task_type"]
-            for task_type in set(task_types):
-                if task_type not in task_stats:
-                    task_stats[task_type] = {"samples": 0, "tokens": 0}
-
-                task_samples = sum(1 for t in task_types if t == task_type)
-                task_indices = [i for i, t in enumerate(task_types) if t == task_type]
-                task_tokens = sum(
-                    len(processed_dataset[split][i]["input_ids"]) + len(processed_dataset[split][i]["output_ids"])
-                    for i in task_indices
-                )
-
-                task_stats[task_type]["samples"] += task_samples
-                task_stats[task_type]["tokens"] += task_tokens
+        # Collect task-specific statistics - DISABLED for performance
+        # (Too slow for large datasets - can be computed separately if needed)
+        # if "task_type" in processed_dataset[split].features:
+        #     task_types = processed_dataset[split]["task_type"]
+        #     for task_type in set(task_types):
+        #         if task_type not in task_stats:
+        #             task_stats[task_type] = {"samples": 0, "tokens": 0}
+        #
+        #         task_samples = sum(1 for t in task_types if t == task_type)
+        #         task_indices = [i for i, t in enumerate(task_types) if t == task_type]
+        #         task_tokens = sum(
+        #             len(processed_dataset[split][i]["input_ids"]) + len(processed_dataset[split][i]["output_ids"])
+        #             for i in task_indices
+        #         )
+        #
+        #         task_stats[task_type]["samples"] += task_samples
+        #         task_stats[task_type]["tokens"] += task_tokens
 
     logger.info(msg="=== OVERALL STATISTICS ===")
     logger.info(msg="Total number of samples: {}".format(total_num_samples))
