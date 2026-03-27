@@ -438,7 +438,7 @@ molcrawl-web/
 
 ### ESLint設定
 
-`.eslintrc.json`に設定があります。詳細は[ESLINT_SETUP.md](./ESLINT_SETUP.md)を参照。
+`.eslintrc.json`に設定があります。
 
 ### Prettier設定
 

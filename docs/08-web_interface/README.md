@@ -437,7 +437,7 @@ molcrawl-web/
 
 ### ESLint Configuration
 
-Configured in `.eslintrc.json`. See [ESLINT_SETUP.md](./ESLINT_SETUP.md) for details.
+Configured in `.eslintrc.json`.
 
 ### Prettier Configuration
 

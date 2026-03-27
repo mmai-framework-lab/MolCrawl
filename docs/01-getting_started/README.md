@@ -420,7 +420,7 @@ The is 4 separate scripts for CELLxGENE downloading.
 
   Transfer the h5ad file to loom and delete some unnecessary entries.
 
-- `scr/rna/dataset/CELLxGENE/tokenization.py`
+- `src/rna/dataset/CELLxGENE/tokenization.py`
   Create the gene token vocabulary, based on geneformer code.
 
 ## Training of GPT-2 model
