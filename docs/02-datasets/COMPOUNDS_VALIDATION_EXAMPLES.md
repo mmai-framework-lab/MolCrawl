@@ -82,7 +82,7 @@ You want to extend the tokenizer to support special chemical structures (for exa
 @pytest.mark.compound
 def test_stereochemistry_tokenization(self, sample_vocab_file):
     """Verify stereochemical notation is tokenized correctly"""
-    from src.compounds.utils.tokenizer import SmilesTokenizer
+    from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
 
     # SMILES including stereochemistry such as `C[C@H](O)C`
     smiles = "C[C@H](O)C"

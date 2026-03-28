@@ -27,7 +27,7 @@ pip install deepchem
 #### データ前処理
 
 - **Tokenizer の修正**
-  `./src/compounds/utils/tokenizer.py` 内の `CompoundsTokenizer` において、
+  `./molcrawl/compounds/utils/tokenizer.py` 内の `CompoundsTokenizer` において、
   `max_len` に応じた truncation と padding を行うように修正。
 
 - **max_length の修正**
@@ -40,7 +40,7 @@ pip install deepchem
   出力先: `./benchmark/GuacaMol/compounds/training_ready_hf_dataset`
 
   ```bash
-  python ./src/compounds/dataset/prepare_gpt2_.py ./assets/configs/compounds.yaml
+  python ./molcrawl/compounds/dataset/prepare_gpt2_.py ./assets/configs/compounds.yaml
   ```
 
 ---

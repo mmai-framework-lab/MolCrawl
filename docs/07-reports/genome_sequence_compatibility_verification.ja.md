@@ -18,7 +18,7 @@ molecule_nat_langデータセットの更新により、既存のgenome_sequence
    - `gpt2/train.py` - 変更なし、正常に保持
    - `gpt2/configs/genome_sequence/train_gpt2_config.py` - 変更なし、正常に保持
    - `gpt2/model.py` - 変更なし、正常に保持
-   - `src/config/paths.py` - REFSEQ_DATASET_DIR定義保持
+   - `molcrawl/config/paths.py` - REFSEQ_DATASET_DIR定義保持
 
 2. **データ存在確認**
    - 生データファイル存在: `learning_20251104/genome_sequence/raw_files/` (111GB)
@@ -166,7 +166,7 @@ bash workflows/02-genome_sequence-prepare-gpt2.sh
 ```bash
 # 直接実行
 LEARNING_SOURCE_DIR="learning_source" \
-python src/genome_sequence/dataset/prepare_gpt2.py \
+python molcrawl/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
 
@@ -267,7 +267,7 @@ export LEARNING_SOURCE_DIR="learning_source"
 bash workflows/02-genome_sequence-prepare-gpt2.sh
 
 # または直接実行
-python src/genome_sequence/dataset/prepare_gpt2.py \
+python molcrawl/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
 
@@ -357,7 +357,7 @@ ls -lh learning_20251104/genome_sequence/spm_tokenizer.model
 
 **データ準備:**
 
-- `src/genome_sequence/dataset/prepare_gpt2.py` - データ準備スクリプト
+- `molcrawl/genome_sequence/dataset/prepare_gpt2.py` - データ準備スクリプト
 - `workflows/02-genome_sequence-prepare-gpt2.sh` - 実行用シェルスクリプト
 
 **Bootstrap スクリプト:**

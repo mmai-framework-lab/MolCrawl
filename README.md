@@ -76,13 +76,13 @@ pip install --no-build-isolation -e .
 Example: Genome Sequence
 
 ```bash
-python -m src.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml
+python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml
 ```
 
 For other modalities:
 
 ```bash
-python -m src.preparation.preparation_script_<task> assets/configs/<task>.yaml
+python -m molcrawl.preparation.preparation_script_<task> assets/configs/<task>.yaml
 ```
 
 ---
@@ -92,13 +92,13 @@ python -m src.preparation.preparation_script_<task> assets/configs/<task>.yaml
 Example: Genome Sequence
 
 ```bash
-python src/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
+python molcrawl/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
 ```
 
 For other modalities:
 
 ```bash
-python src/<task>/dataset/prepare_gpt2.py assets/configs/<task>.yaml
+python molcrawl/<task>/dataset/prepare_gpt2.py assets/configs/<task>.yaml
 ```
 
 ---

@@ -82,7 +82,7 @@ GitHub → Actions タブ → "Compounds Validation" ワークフロー
 @pytest.mark.compound
 def test_stereochemistry_tokenization(self, sample_vocab_file):
     """立体化学表記が正しくトークン化されることを確認"""
-    from src.compounds.utils.tokenizer import SmilesTokenizer
+    from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
 
     # `C[C@H](O)C` のような立体化学を含むSMILES
     smiles = "C[C@H](O)C"

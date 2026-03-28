@@ -23,7 +23,7 @@ pip install deepchem
    `./benchmark/GuacaMol`
 
 2. Tokenizer update:
-   - Updated `CompoundsTokenizer` in `./src/compounds/utils/tokenizer.py`
+   - Updated `CompoundsTokenizer` in `./molcrawl/compounds/utils/tokenizer.py`
    - Added truncation/padding based on `max_len`
 
 3. Max length update:
@@ -36,7 +36,7 @@ pip install deepchem
    - Output: `./benchmark/GuacaMol/compounds/training_ready_hf_dataset`
 
 ```bash
-python ./src/compounds/dataset/prepare_gpt2_.py ./assets/configs/compounds.yaml
+python ./molcrawl/compounds/dataset/prepare_gpt2_.py ./assets/configs/compounds.yaml
 ```
 
 ### Config Changes

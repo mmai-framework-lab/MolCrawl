@@ -16,7 +16,7 @@ Confirm that updates for the `molecule_nat_lang` dataset did not break existing 
    - `gpt2/train.py`
    - `gpt2/configs/genome_sequence/train_gpt2_config.py`
    - `gpt2/model.py`
-   - `src/config/paths.py` (including `REFSEQ_DATASET_DIR`)
+   - `molcrawl/config/paths.py` (including `REFSEQ_DATASET_DIR`)
 
 2. **Required data assets exist**
    - Raw data: `learning_20251104/genome_sequence/raw_files/` (~111GB)
@@ -76,7 +76,7 @@ or
 
 ```bash
 LEARNING_SOURCE_DIR="learning_source" \
-python src/genome_sequence/dataset/prepare_gpt2.py \
+python molcrawl/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
 
