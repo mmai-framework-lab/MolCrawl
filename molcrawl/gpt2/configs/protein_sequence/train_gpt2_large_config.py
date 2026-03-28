@@ -24,7 +24,7 @@ meta_vocab_size = tokenizer.vocab_size
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 12
 block_size = 1024
-gradient_accumulation_steps = 5 * 8
+gradient_accumulation_steps = 5  # single-GPU (was 5 * 8 for 8-GPU setup)
 
 # this makes total number of tokens be 300B
 max_iters = 50000
@@ -42,6 +42,10 @@ init_from = "resume"  # 'scratch' or 'resume' - resume from checkpoint by defaul
 always_save_checkpoint = True  # Save regularly regardless of validation loss
 save_checkpoint_steps = None  # If None, save with eval_interval
 max_checkpoints = 5  # Keep up to 5 checkpoints
+
+# early stopping
+early_stopping = True
+early_stopping_patience = 5  # stop after 5 consecutive evals without val_loss improvement
 
 # weight decay
 weight_decay = 1e-1
