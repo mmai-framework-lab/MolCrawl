@@ -7,8 +7,8 @@ dependencies:
   - ipython_genutils=0.2.0
   - ipywidgets=7.8.0
   - pandas=1.5.2
-  - python=3.9.17
-  - python_abi=3.9
+  - python=3.11
+  - python_abi=3.11
   - pyyaml=5.4.1
   - pip=24.3.1
   - rdkit=2024.9.2
@@ -42,4 +42,4 @@ dependencies:
       - wandb>=0.18.0,<0.19
       - iniconfig==2.1.0
       - pytest==8.4.2
-      - pyallow==23.0.1
+      - pyarrow==23.0.1
