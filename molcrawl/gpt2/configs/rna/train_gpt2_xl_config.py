@@ -43,6 +43,10 @@ always_save_checkpoint = True  # Save regularly regardless of validation loss
 save_checkpoint_steps = None  # If None, save with eval_interval
 max_checkpoints = 5  # Keep up to 5 checkpoints
 
+# early stopping
+early_stopping = True
+early_stopping_patience = 5
+
 # weight decay
 weight_decay = 1e-1
 

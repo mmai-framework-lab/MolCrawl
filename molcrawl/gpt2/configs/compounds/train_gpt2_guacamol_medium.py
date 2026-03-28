@@ -53,6 +53,10 @@ always_save_checkpoint = True
 save_checkpoint_steps = None
 max_checkpoints = 5
 
+# early stopping
+early_stopping = True
+early_stopping_patience = 5
+
 # Regularisation
 weight_decay = 1e-1
 
