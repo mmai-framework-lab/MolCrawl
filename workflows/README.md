@@ -2,8 +2,8 @@
 
 Workflow scripts for data preparation, model training, evaluation, and maintenance for the RIKEN Dataset Foundational Model project.
 
-**最終更新**: 2026年1月15日
-**スクリプト総数**: 61 (Shell: 60, Python: 1)
+**最終更新**: 2026年3月28日
+**スクリプト総数**: 91 (Shell: 89, Python: 2)
 
 ## Table of Contents
 
@@ -29,11 +29,11 @@ This directory contains shell scripts for various project operations including d
 
 The workflow scripts are organized into several categories:
 
-- **Data Preparation** (Phase 01-02): Dataset tokenization and format conversion - 13 scripts
-- **Model Training** (Phase 03a-03c): Standard and enhanced training workflows - 28 scripts
-- **Model Evaluation**: Comprehensive evaluation with visualization - 8 scripts
-- **Development & Testing**: Debugging, batch testing, and validation tools - 4 scripts
-- **System Infrastructure**: Web services, experiment tracking, and utilities - 7 scripts
+- **Data Preparation** (Phase 01-02): Dataset tokenization and format conversion - 17 scripts
+- **Model Training** (Phase 03a-03g): GPT-2, BERT, DNABERT-2, ESM-2, RNAformer, ChemBERTa-2 - 46 scripts
+- **Model Evaluation**: Comprehensive evaluation with visualization - 9 scripts
+- **Development & Testing**: Debugging, batch testing, and validation tools - 6 scripts
+- **System Infrastructure**: Web services, experiment tracking, and utilities - 4 scripts
 - **Common Library**: Shared utility functions - 1 script
 
 ```bash
@@ -48,32 +48,38 @@ cd /path/to/riken-dataset-fundational-model
 
 | Script        | Purpose                      | Function                                                           |
 | ------------- | ---------------------------- | ------------------------------------------------------------------ |
-| `00_first.sh` | First-time environment setup | Configure conda channels, create environment, install dependencies |
+| `00-first.sh` | First-time environment setup | Configure conda channels, create environment, install dependencies |
 
 ## 📊 Data Preparation Scripts
 
-このセクションには**13個のデータ準備スクリプト**が含まれています（Phase 1: 6個、Phase 2: 5個、Utility: 2個）
+このセクションには**17個のデータ準備スクリプト**が含まれています（Phase 1: 11個、Phase 2: 6個）
 
 ### Phase 1: Dataset Preparation
 
-| Script                             | Purpose                        | Model Type       | Output                          |
-| ---------------------------------- | ------------------------------ | ---------------- | ------------------------------- |
-| `01_compounds_prepare.sh`          | Compounds dataset tokenization | compounds        | Tokenized SMILES/Scaffolds data |
-| `01_compounds-guacamol-prepare.sh` | GuacaMol compounds preparation | compounds        | GuacaMol benchmark data         |
-| `01_genome-sequence_prepare.sh`    | Genome sequence data prep      | genome_sequence  | Tokenized genome sequences      |
-| `01_molecule-nl_prepare.sh`        | Molecule natural language prep | molecule_nat_lang      | Molecule descriptions           |
-| `01_protein-sequence_prepare.sh`   | Protein sequence data prep     | protein_sequence | Tokenized protein sequences     |
-| `01_rna_prepare.sh`                | RNA sequence data preparation  | rna              | Tokenized RNA sequences         |
+| Script                                        | Purpose                                   | Model Type       | Output                              |
+| --------------------------------------------- | ----------------------------------------- | ---------------- | ----------------------------------- |
+| `01-compounds_prepare.sh`                     | Compounds (OrganiX13) dataset tokenization | compounds        | Tokenized SMILES/Scaffolds data     |
+| `01-compounds_chembl-prepare.sh`              | ChEMBL 36 dataset preparation             | compounds        | ChEMBL tokenized data               |
+| `01-compounds_guacamol-prepare.sh`            | GuacaMol compounds preparation            | compounds        | GuacaMol benchmark data             |
+| `01-genome_sequence-prepare.sh`               | Genome sequence (RefSeq) data prep        | genome_sequence  | Tokenized genome sequences          |
+| `01-genome_sequence_clinvar-prepare.sh`       | ClinVar variant dataset preparation       | genome_sequence  | ClinVar tokenized data              |
+| `01-molecule_nat_lang-prepare.sh`             | Molecule natural language (SMolInstruct)  | molecule_nat_lang | Molecule descriptions               |
+| `01-molecule_nat_lang_mol_instructions-prepare.sh` | Mol-Instructions dataset preparation | molecule_nat_lang | Mol-Instructions tokenized data |
+| `01-protein_sequence-prepare.sh`              | Protein sequence (UniRef50) data prep     | protein_sequence | Tokenized protein sequences         |
+| `01-protein_sequence_proteingym-prepare.sh`   | ProteinGym v1.3 DMS dataset preparation   | protein_sequence | ProteinGym tokenized data           |
+| `01-rna-prepare.sh`                           | RNA sequence (CELLxGENE) data preparation | rna              | Tokenized RNA sequences             |
+| `01-rna_celltype-prepare.sh`                  | Cell type annotation dataset preparation  | rna              | Geneformer cell type data           |
 
 ### Phase 2: GPT-2 Data Preparation
 
-| Script                                | Purpose                | Model Type       | Function                |
-| ------------------------------------- | ---------------------- | ---------------- | ----------------------- |
-| `02-compounds-prepare-gpt2.sh`        | GPT-2 compounds data   | compounds        | Convert to GPT-2 format |
-| `02-genome_sequence-prepare-gpt2.sh`  | GPT-2 genome data      | genome_sequence  | Convert to GPT-2 format |
-| `02-molecule_nat_lang-prepare-gpt2.sh`      | GPT-2 molecule NL data | molecule_nat_lang      | Convert to GPT-2 format |
-| `02-protein_sequence-prepare-gpt2.sh` | GPT-2 protein data     | protein_sequence | Convert to GPT-2 format |
-| `02-rna-prepare-gpt2.sh`              | GPT-2 RNA data         | rna              | Convert to GPT-2 format |
+| Script                                        | Purpose                            | Model Type       | Function                |
+| --------------------------------------------- | ---------------------------------- | ---------------- | ----------------------- |
+| `02-compounds-prepare-gpt2.sh`                | GPT-2 compounds (OrganiX13) data   | compounds        | Convert to GPT-2 format |
+| `02-compounds_organix13-prepare-gpt2.sh`      | GPT-2 OrganiX13 data (alternative) | compounds        | Convert to GPT-2 format |
+| `02-genome_sequence-prepare-gpt2.sh`          | GPT-2 genome data                  | genome_sequence  | Convert to GPT-2 format |
+| `02-molecule_nat_lang-prepare-gpt2.sh`        | GPT-2 molecule NL data             | molecule_nat_lang | Convert to GPT-2 format |
+| `02-protein_sequence-prepare-gpt2.sh`         | GPT-2 protein data                 | protein_sequence | Convert to GPT-2 format |
+| `02-rna-prepare-gpt2.sh`                      | GPT-2 RNA data                     | rna              | Convert to GPT-2 format |
 
 ### Utility Scripts
 
@@ -85,19 +91,41 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 🏋️ Model Training Scripts
 
-このセクションには**28個のトレーニングスクリプト**が含まれています（Phase 3a: 20個、Phase 3b: 2個、Phase 3c: 5個、Special: 1個）
+このセクションには**46個のトレーニングスクリプト**が含まれています（Phase 3a: 29個、Phase 3b: 1個、Phase 3c: 11個、Phase 3d: 3個、Phase 3e: 3個、Phase 3f: 3個、Phase 3g: 3個）
 
-### Phase 3a: Standard Training
+### Phase 3a: Standard GPT-2 Training
 
-| Script                                   | Purpose            | Model Size | Training Type |
-| ---------------------------------------- | ------------------ | ---------- | ------------- |
-| `03a-compounds_guacamol-train-small.sh`  | GuacaMol compounds | Small      | Standard      |
-| `03a-compounds_guacamol-train-medium.sh` | GuacaMol compounds | Medium     | Standard      |
-| `03a-compounds_guacamol-train-large.sh`  | GuacaMol compounds | Large      | Standard      |
-| `03a-compounds_guacamol-train-xl.sh`     | GuacaMol compounds | XL         | Standard      |
-| `03a-genome_sequence-train-small.sh`     | Genome sequence    | Small      | Standard      |
-| `03a-genome_sequence-train-medium.sh`    | Genome sequence    | Medium     | Standard      |
-| `03a-genome_sequence-train-large.sh`     | Genome sequence    | Large      | Standard      |
+| Script                                             | Purpose                         | Model Size | Training Type |
+| -------------------------------------------------- | ------------------------------- | ---------- | ------------- |
+| `03a-compounds-train-gpt2-small.sh`                | Compounds (OrganiX13) GPT-2     | Small      | Standard      |
+| `03a-compounds-train-gpt2-medium.sh`               | Compounds (OrganiX13) GPT-2     | Medium     | Standard      |
+| `03a-compounds-train-gpt2-large.sh`                | Compounds (OrganiX13) GPT-2     | Large      | Standard      |
+| `03a-compounds-train-gpt2-xl.sh`                   | Compounds (OrganiX13) GPT-2     | XL         | Standard      |
+| `03a-compounds_chembl-train-gpt2-small.sh`         | ChEMBL compounds GPT-2          | Small      | Standard      |
+| `03a-compounds_guacamol-train-small.sh`            | GuacaMol compounds              | Small      | Standard      |
+| `03a-compounds_guacamol-train-medium.sh`           | GuacaMol compounds              | Medium     | Standard      |
+| `03a-compounds_guacamol-train-large.sh`            | GuacaMol compounds              | Large      | Standard      |
+| `03a-compounds_guacamol-train-xl.sh`               | GuacaMol compounds              | XL         | Standard      |
+| `03a-genome_sequence-train-small.sh`               | Genome sequence (RefSeq)        | Small      | Standard      |
+| `03a-genome_sequence-train-medium.sh`              | Genome sequence (RefSeq)        | Medium     | Standard      |
+| `03a-genome_sequence-train-large.sh`               | Genome sequence (RefSeq)        | Large      | Standard      |
+| `03a-genome_sequence-train-xl.sh`                  | Genome sequence (RefSeq)        | XL         | Standard      |
+| `03a-genome_sequence_clinvar-train-gpt2-small.sh`  | ClinVar genome GPT-2            | Small      | Standard      |
+| `03a-molecule_nat_lang-train-small.sh`             | Molecule NL (SMolInstruct)      | Small      | Standard      |
+| `03a-molecule_nat_lang-train-medium.sh`            | Molecule NL (SMolInstruct)      | Medium     | Standard      |
+| `03a-molecule_nat_lang-train-large.sh`             | Molecule NL (SMolInstruct)      | Large      | Standard      |
+| `03a-molecule_nat_lang-train-xl.sh`                | Molecule NL (SMolInstruct)      | XL         | Standard      |
+| `03a-molecule_nat_lang_mol_instructions-train-small.sh` | Mol-Instructions GPT-2     | Small      | Standard      |
+| `03a-protein_sequence-train-small.sh`              | Protein sequence (UniRef50)     | Small      | Standard      |
+| `03a-protein_sequence-train-medium.sh`             | Protein sequence (UniRef50)     | Medium     | Standard      |
+| `03a-protein_sequence-train-large.sh`              | Protein sequence (UniRef50)     | Large      | Standard      |
+| `03a-protein_sequence-train-xl.sh`                 | Protein sequence (UniRef50)     | XL         | Standard      |
+| `03a-protein_sequence_proteingym-train-gpt2-small.sh` | ProteinGym GPT-2             | Small      | Standard      |
+| `03a-rna-train-small.sh`                           | RNA sequence (CELLxGENE)        | Small      | Standard      |
+| `03a-rna-train-medium.sh`                          | RNA sequence (CELLxGENE)        | Medium     | Standard      |
+| `03a-rna-train-large.sh`                           | RNA sequence (CELLxGENE)        | Large      | Standard      |
+| `03a-rna-train-xl.sh`                              | RNA sequence (CELLxGENE)        | XL         | Standard      |
+| `03a-rna_celltype-train-gpt2-small.sh`             | Cell type annotation GPT-2      | Small      | Standard      |
 | `03a-genome_sequence-train-xl.sh`        | Genome sequence    | XL         | Standard      |
 | `03a-molecule_nat_lang-train-small.sh`         | Molecule NL        | Small      | Standard      |
 | `03a-molecule_nat_lang-train-medium.sh`        | Molecule NL        | Medium     | Standard      |
@@ -117,23 +145,54 @@ cd /path/to/riken-dataset-fundational-model
 | Script                                     | Purpose                         | Enhancement                  |
 | ------------------------------------------ | ------------------------------- | ---------------------------- |
 | `03b-genome_sequence-train-wandb-small.sh` | Genome training with monitoring | Weights & Biases integration |
-| `03b-rna-train-yigarashi_refined-small.sh` | Refined RNA training            | Yigarashi method             |
 
 ### Phase 3c: BERT Model Training
 
-| Script                                     | Purpose                   | Model Type |
-| ------------------------------------------ | ------------------------- | ---------- |
-| `03c-compounds-train-bert-small.sh`        | Compounds BERT training   | Small      |
-| `03c-genome_sequence-train-bert-small.sh`  | Genome BERT training      | Small      |
-| `03c-molecule_nat_lang-train-bert-small.sh`      | Molecule NL BERT training | Small      |
-| `03c-protein_sequence-train-bert-small.sh` | Protein BERT training     | Small      |
-| `03c-rna-train-bert-small.sh`              | RNA BERT training         | Small      |
+| Script                                              | Purpose                           | Model Type |
+| --------------------------------------------------- | --------------------------------- | ---------- |
+| `03c-compounds-train-bert-small.sh`                 | Compounds (OrganiX13) BERT        | Small      |
+| `03c-compounds_chembl-train-bert-small.sh`          | ChEMBL compounds BERT             | Small      |
+| `03c-compounds_guacamol-train-bert-small.sh`        | GuacaMol compounds BERT           | Small      |
+| `03c-genome_sequence-train-bert-small.sh`           | Genome sequence (RefSeq) BERT     | Small      |
+| `03c-genome_sequence_clinvar-train-bert-small.sh`   | ClinVar genome BERT               | Small      |
+| `03c-molecule_nat_lang-train-bert-small.sh`         | Molecule NL (SMolInstruct) BERT   | Small      |
+| `03c-molecule_nat_lang_mol_instructions-train-bert-small.sh` | Mol-Instructions BERT  | Small      |
+| `03c-protein_sequence-train-bert-small.sh`          | Protein sequence (UniRef50) BERT  | Small      |
+| `03c-protein_sequence_proteingym-train-bert-small.sh` | ProteinGym BERT                 | Small      |
+| `03c-rna-train-bert-small.sh`                       | RNA sequence (CELLxGENE) BERT     | Small      |
+| `03c-rna_celltype-train-bert-small.sh`              | Cell type annotation BERT         | Small      |
 
-### Special Training Scripts
+### Phase 3d: DNABERT-2 Training
 
-| Script                   | Purpose                  | Function                    |
-| ------------------------ | ------------------------ | --------------------------- |
-| `train_rna_yigarashi.sh` | Alternative RNA training | Yigarashi-specific approach |
+| Script                                         | Purpose                       | Model Size |
+| ---------------------------------------------- | ----------------------------- | ---------- |
+| `03d-genome_sequence-train-dnabert2-small.sh`  | Genome sequence DNABERT-2     | Small      |
+| `03d-genome_sequence-train-dnabert2-medium.sh` | Genome sequence DNABERT-2     | Medium     |
+| `03d-genome_sequence-train-dnabert2-large.sh`  | Genome sequence DNABERT-2     | Large      |
+
+### Phase 3e: ESM-2 Training
+
+| Script                                       | Purpose                      | Model Size |
+| -------------------------------------------- | ---------------------------- | ---------- |
+| `03e-protein_sequence-train-esm2-small.sh`   | Protein sequence ESM-2       | Small      |
+| `03e-protein_sequence-train-esm2-medium.sh`  | Protein sequence ESM-2       | Medium     |
+| `03e-protein_sequence-train-esm2-large.sh`   | Protein sequence ESM-2       | Large      |
+
+### Phase 3f: RNAformer Training
+
+| Script                            | Purpose                          | Model Size |
+| --------------------------------- | -------------------------------- | ---------- |
+| `03f-rna-train-rnaformer-small.sh`  | RNA sequence RNAformer           | Small      |
+| `03f-rna-train-rnaformer-medium.sh` | RNA sequence RNAformer           | Medium     |
+| `03f-rna-train-rnaformer-large.sh`  | RNA sequence RNAformer           | Large      |
+
+### Phase 3g: ChemBERTa-2 Training
+
+| Script                                   | Purpose                     | Model Size |
+| ---------------------------------------- | --------------------------- | ---------- |
+| `03g-compounds-train-chemberta2-small.sh`  | Compounds ChemBERTa-2       | Small      |
+| `03g-compounds-train-chemberta2-medium.sh` | Compounds ChemBERTa-2       | Medium     |
+| `03g-compounds-train-chemberta2-large.sh`  | Compounds ChemBERTa-2       | Large      |
 
 ## 🚀 AI Model Evaluation Scripts
 
@@ -183,15 +242,21 @@ cd /path/to/riken-dataset-fundational-model
 - **GPU最適化**: デフォルトでGPU使用、`--device cpu`でCPU実行に切り替え可能
 - **可視化充実**: 10種類以上のグラフとHTML形式の詳細レポートを自動生成
 
+#### RNA Sequence (RNA配列)
+
+| Script                            | Purpose                     | Dataset      | Default Device | Output Location                                        |
+| --------------------------------- | --------------------------- | ------------ | -------------- | ------------------------------------------------------ |
+| `run_rna_benchmark_evaluation.sh` | RNA ベンチマーク評価         | RNA Benchmark | GPU (cuda)    | `$LEARNING_SOURCE_DIR/rna/report/rna_benchmark_*`      |
+
 ## 🔧 Development & Testing
 
 ### Testing Scripts
 
 | Script                    | Purpose                      | Function                                                                                                            |
 | ------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `batch_test_gpt2.sh`      | GPT-2モデル一括テスト        | 複数ドメイン（compounds, molecule_nat_lang, genome, protein_sequence, rna）のチェックポイントを自動検索して一括テスト実行 |
-| `gpt2_test_checkpoint.sh` | GPT-2 checkpoint validation  | Model checkpoint testing                                                                                            |
-| `debug_protein_bert.sh`   | BERT protein model debugging | Troubleshooting training issues                                                                                     |
+| `batch_test_gpt2.sh`           | GPT-2モデル一括テスト        | 複数ドメイン（compounds, molecule_nat_lang, genome, protein_sequence, rna）のチェックポイントを自動検索して一括テスト実行 |
+| `gpt2_test_checkpoint.sh`      | GPT-2 checkpoint validation  | Model checkpoint testing                                                                                            |
+| `debug_protein_bert.sh`        | BERT protein model debugging | Troubleshooting training issues                                                                                     |
 
 ### System Utilities
 
@@ -560,9 +625,9 @@ source molcrawl/config/env.sh
 
 ## 📝 Script Categories
 
-このディレクトリには61個のスクリプト（Shell: 60, Python: 1）が含まれています：
+このディレクトリには96個のスクリプト（Shell: 93, Python: 3）が含まれています：
 
-### 🔍 **Evaluation Scripts** (8 scripts)
+### 🔍 **Evaluation Scripts** (9 scripts)
 
 自動化されたモデル評価スクリプト（データ準備・評価・可視化の3フェーズ統合）
 
@@ -582,6 +647,10 @@ source molcrawl/config/env.sh
 
 - `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym評価
 - `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification評価
+
+**RNA Sequence:**
+
+- `run_rna_benchmark_evaluation.sh` - RNA Benchmark評価
 
 ### 🛠️ **Development Scripts** (4 scripts)
 
