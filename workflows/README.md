@@ -2,8 +2,8 @@
 
 Workflow scripts for data preparation, model training, evaluation, and maintenance for the RIKEN Dataset Foundational Model project.
 
-**最終更新**: 2026年3月28日
-**スクリプト総数**: 91 (Shell: 89, Python: 2)
+**Last Updated**: March 28, 2026
+**Total Scripts**: 91 (Shell: 89, Python: 2)
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ Workflow scripts for data preparation, model training, evaluation, and maintenan
 - [Quick Start Examples](#-quick-start-examples)
 - [Prerequisites](#-prerequisites)
 - [Script Categories](#-script-categories)
-- [統合スクリプトの構造](#-統合スクリプトの構造)
+- [Integrated Script Structure](#-integrated-script-structure)
 - [Important Notes](#-important-notes)
 - [Troubleshooting](#-troubleshooting)
 - [Migration Notes](#-migration-notes)
@@ -52,93 +52,80 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 📊 Data Preparation Scripts
 
-このセクションには**17個のデータ準備スクリプト**が含まれています（Phase 1: 11個、Phase 2: 6個）
+This section contains **17 data preparation scripts** (Phase 1: 11 scripts, Phase 2: 6 scripts)
 
 ### Phase 1: Dataset Preparation
 
-| Script                                        | Purpose                                   | Model Type       | Output                              |
-| --------------------------------------------- | ----------------------------------------- | ---------------- | ----------------------------------- |
-| `01-compounds_prepare.sh`                     | Compounds (OrganiX13) dataset tokenization | compounds        | Tokenized SMILES/Scaffolds data     |
-| `01-compounds_chembl-prepare.sh`              | ChEMBL 36 dataset preparation             | compounds        | ChEMBL tokenized data               |
-| `01-compounds_guacamol-prepare.sh`            | GuacaMol compounds preparation            | compounds        | GuacaMol benchmark data             |
-| `01-genome_sequence-prepare.sh`               | Genome sequence (RefSeq) data prep        | genome_sequence  | Tokenized genome sequences          |
-| `01-genome_sequence_clinvar-prepare.sh`       | ClinVar variant dataset preparation       | genome_sequence  | ClinVar tokenized data              |
-| `01-molecule_nat_lang-prepare.sh`             | Molecule natural language (SMolInstruct)  | molecule_nat_lang | Molecule descriptions               |
-| `01-molecule_nat_lang_mol_instructions-prepare.sh` | Mol-Instructions dataset preparation | molecule_nat_lang | Mol-Instructions tokenized data |
-| `01-protein_sequence-prepare.sh`              | Protein sequence (UniRef50) data prep     | protein_sequence | Tokenized protein sequences         |
-| `01-protein_sequence_proteingym-prepare.sh`   | ProteinGym v1.3 DMS dataset preparation   | protein_sequence | ProteinGym tokenized data           |
-| `01-rna-prepare.sh`                           | RNA sequence (CELLxGENE) data preparation | rna              | Tokenized RNA sequences             |
-| `01-rna_celltype-prepare.sh`                  | Cell type annotation dataset preparation  | rna              | Geneformer cell type data           |
+| Script                                             | Purpose                                    | Model Type        | Output                          |
+| -------------------------------------------------- | ------------------------------------------ | ----------------- | ------------------------------- |
+| `01-compounds_prepare.sh`                          | Compounds (OrganiX13) dataset tokenization | compounds         | Tokenized SMILES/Scaffolds data |
+| `01-compounds_chembl-prepare.sh`                   | ChEMBL 36 dataset preparation              | compounds         | ChEMBL tokenized data           |
+| `01-compounds_guacamol-prepare.sh`                 | GuacaMol compounds preparation             | compounds         | GuacaMol benchmark data         |
+| `01-genome_sequence-prepare.sh`                    | Genome sequence (RefSeq) data prep         | genome_sequence   | Tokenized genome sequences      |
+| `01-genome_sequence_clinvar-prepare.sh`            | ClinVar variant dataset preparation        | genome_sequence   | ClinVar tokenized data          |
+| `01-molecule_nat_lang-prepare.sh`                  | Molecule natural language (SMolInstruct)   | molecule_nat_lang | Molecule descriptions           |
+| `01-molecule_nat_lang_mol_instructions-prepare.sh` | Mol-Instructions dataset preparation       | molecule_nat_lang | Mol-Instructions tokenized data |
+| `01-protein_sequence-prepare.sh`                   | Protein sequence (UniRef50) data prep      | protein_sequence  | Tokenized protein sequences     |
+| `01-protein_sequence_proteingym-prepare.sh`        | ProteinGym v1.3 DMS dataset preparation    | protein_sequence  | ProteinGym tokenized data       |
+| `01-rna-prepare.sh`                                | RNA sequence (CELLxGENE) data preparation  | rna               | Tokenized RNA sequences         |
+| `01-rna_celltype-prepare.sh`                       | Cell type annotation dataset preparation   | rna               | Geneformer cell type data       |
 
 ### Phase 2: GPT-2 Data Preparation
 
-| Script                                        | Purpose                            | Model Type       | Function                |
-| --------------------------------------------- | ---------------------------------- | ---------------- | ----------------------- |
-| `02-compounds-prepare-gpt2.sh`                | GPT-2 compounds (OrganiX13) data   | compounds        | Convert to GPT-2 format |
-| `02-compounds_organix13-prepare-gpt2.sh`      | GPT-2 OrganiX13 data (alternative) | compounds        | Convert to GPT-2 format |
-| `02-genome_sequence-prepare-gpt2.sh`          | GPT-2 genome data                  | genome_sequence  | Convert to GPT-2 format |
-| `02-molecule_nat_lang-prepare-gpt2.sh`        | GPT-2 molecule NL data             | molecule_nat_lang | Convert to GPT-2 format |
-| `02-protein_sequence-prepare-gpt2.sh`         | GPT-2 protein data                 | protein_sequence | Convert to GPT-2 format |
-| `02-rna-prepare-gpt2.sh`                      | GPT-2 RNA data                     | rna              | Convert to GPT-2 format |
+| Script                                       | Purpose                            | Model Type        | Function                |
+| -------------------------------------------- | ---------------------------------- | ----------------- | ----------------------- |
+| `02-compounds-prepare-gpt2.sh`               | GPT-2 compounds (OrganiX13) data   | compounds         | Convert to GPT-2 format |
+| `02-compounds_organix13-prepare-gpt2.sh`     | GPT-2 OrganiX13 data (alternative) | compounds         | Convert to GPT-2 format |
+| `02-genome_sequence-prepare-gpt2.sh`         | GPT-2 genome data                  | genome_sequence   | Convert to GPT-2 format |
+| `02-molecule_nat_lang-prepare-gpt2.sh`       | GPT-2 molecule NL data             | molecule_nat_lang | Convert to GPT-2 format |
+| `02-protein_sequence-prepare-gpt2.sh`        | GPT-2 protein data                 | protein_sequence  | Convert to GPT-2 format |
+| `02-rna-prepare-gpt2.sh`                     | GPT-2 RNA data                     | rna               | Convert to GPT-2 format |
 
 ### Utility Scripts
 
-| Script                            | Purpose                    | Function                                                |
-| --------------------------------- | -------------------------- | ------------------------------------------------------- |
-| `common_functions.sh`             | 共通関数ライブラリ         | GPU選択、メモリチェック、環境変数検証などのヘルパー関数 |
-| `convert_molecule_nat_lang_to_arrow.sh` | Convert molecule data      | Convert to Arrow format                                 |
-| `create_sample_vocab.sh`          | Generate sample vocabulary | Development setup                                       |
+| Script                                  | Purpose                      | Function                                                                              |
+| --------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| `common_functions.sh`                   | Common function library      | Helper functions for GPU selection, memory check, and environment variable validation |
+| `convert_molecule_nat_lang_to_arrow.sh` | Convert molecule data        | Convert to Arrow format                                                               |
+| `create_sample_vocab.sh`                | Generate sample vocabulary   | Development setup                                                                     |
 
 ## 🏋️ Model Training Scripts
 
-このセクションには**46個のトレーニングスクリプト**が含まれています（Phase 3a: 29個、Phase 3b: 1個、Phase 3c: 11個、Phase 3d: 3個、Phase 3e: 3個、Phase 3f: 3個、Phase 3g: 3個）
+This section contains **46 training scripts** (Phase 3a: 29, Phase 3b: 1, Phase 3c: 11, Phase 3d: 3, Phase 3e: 3, Phase 3f: 3, Phase 3g: 3)
 
 ### Phase 3a: Standard GPT-2 Training
 
-| Script                                             | Purpose                         | Model Size | Training Type |
-| -------------------------------------------------- | ------------------------------- | ---------- | ------------- |
-| `03a-compounds-train-gpt2-small.sh`                | Compounds (OrganiX13) GPT-2     | Small      | Standard      |
-| `03a-compounds-train-gpt2-medium.sh`               | Compounds (OrganiX13) GPT-2     | Medium     | Standard      |
-| `03a-compounds-train-gpt2-large.sh`                | Compounds (OrganiX13) GPT-2     | Large      | Standard      |
-| `03a-compounds-train-gpt2-xl.sh`                   | Compounds (OrganiX13) GPT-2     | XL         | Standard      |
-| `03a-compounds_chembl-train-gpt2-small.sh`         | ChEMBL compounds GPT-2          | Small      | Standard      |
-| `03a-compounds_guacamol-train-small.sh`            | GuacaMol compounds              | Small      | Standard      |
-| `03a-compounds_guacamol-train-medium.sh`           | GuacaMol compounds              | Medium     | Standard      |
-| `03a-compounds_guacamol-train-large.sh`            | GuacaMol compounds              | Large      | Standard      |
-| `03a-compounds_guacamol-train-xl.sh`               | GuacaMol compounds              | XL         | Standard      |
-| `03a-genome_sequence-train-small.sh`               | Genome sequence (RefSeq)        | Small      | Standard      |
-| `03a-genome_sequence-train-medium.sh`              | Genome sequence (RefSeq)        | Medium     | Standard      |
-| `03a-genome_sequence-train-large.sh`               | Genome sequence (RefSeq)        | Large      | Standard      |
-| `03a-genome_sequence-train-xl.sh`                  | Genome sequence (RefSeq)        | XL         | Standard      |
-| `03a-genome_sequence_clinvar-train-gpt2-small.sh`  | ClinVar genome GPT-2            | Small      | Standard      |
-| `03a-molecule_nat_lang-train-small.sh`             | Molecule NL (SMolInstruct)      | Small      | Standard      |
-| `03a-molecule_nat_lang-train-medium.sh`            | Molecule NL (SMolInstruct)      | Medium     | Standard      |
-| `03a-molecule_nat_lang-train-large.sh`             | Molecule NL (SMolInstruct)      | Large      | Standard      |
-| `03a-molecule_nat_lang-train-xl.sh`                | Molecule NL (SMolInstruct)      | XL         | Standard      |
-| `03a-molecule_nat_lang_mol_instructions-train-small.sh` | Mol-Instructions GPT-2     | Small      | Standard      |
-| `03a-protein_sequence-train-small.sh`              | Protein sequence (UniRef50)     | Small      | Standard      |
-| `03a-protein_sequence-train-medium.sh`             | Protein sequence (UniRef50)     | Medium     | Standard      |
-| `03a-protein_sequence-train-large.sh`              | Protein sequence (UniRef50)     | Large      | Standard      |
-| `03a-protein_sequence-train-xl.sh`                 | Protein sequence (UniRef50)     | XL         | Standard      |
-| `03a-protein_sequence_proteingym-train-gpt2-small.sh` | ProteinGym GPT-2             | Small      | Standard      |
-| `03a-rna-train-small.sh`                           | RNA sequence (CELLxGENE)        | Small      | Standard      |
-| `03a-rna-train-medium.sh`                          | RNA sequence (CELLxGENE)        | Medium     | Standard      |
-| `03a-rna-train-large.sh`                           | RNA sequence (CELLxGENE)        | Large      | Standard      |
-| `03a-rna-train-xl.sh`                              | RNA sequence (CELLxGENE)        | XL         | Standard      |
-| `03a-rna_celltype-train-gpt2-small.sh`             | Cell type annotation GPT-2      | Small      | Standard      |
-| `03a-genome_sequence-train-xl.sh`        | Genome sequence    | XL         | Standard      |
-| `03a-molecule_nat_lang-train-small.sh`         | Molecule NL        | Small      | Standard      |
-| `03a-molecule_nat_lang-train-medium.sh`        | Molecule NL        | Medium     | Standard      |
-| `03a-molecule_nat_lang-train-large.sh`         | Molecule NL        | Large      | Standard      |
-| `03a-molecule_nat_lang-train-xl.sh`            | Molecule NL        | XL         | Standard      |
-| `03a-protein_sequence-train-small.sh`    | Protein sequence   | Small      | Standard      |
-| `03a-protein_sequence-train-medium.sh`   | Protein sequence   | Medium     | Standard      |
-| `03a-protein_sequence-train-large.sh`    | Protein sequence   | Large      | Standard      |
-| `03a-protein_sequence-train-xl.sh`       | Protein sequence   | XL         | Standard      |
-| `03a-rna-train-small.sh`                 | RNA sequence       | Small      | Standard      |
-| `03a-rna-train-medium.sh`                | RNA sequence       | Medium     | Standard      |
-| `03a-rna-train-large.sh`                 | RNA sequence       | Large      | Standard      |
-| `03a-rna-train-xl.sh`                    | RNA sequence       | XL         | Standard      |
+| Script                                                  | Purpose                     | Model Size | Training Type |
+| ------------------------------------------------------- | --------------------------- | ---------- | ------------- |
+| `03a-compounds-train-gpt2-small.sh`                     | Compounds (OrganiX13) GPT-2 | Small      | Standard      |
+| `03a-compounds-train-gpt2-medium.sh`                    | Compounds (OrganiX13) GPT-2 | Medium     | Standard      |
+| `03a-compounds-train-gpt2-large.sh`                     | Compounds (OrganiX13) GPT-2 | Large      | Standard      |
+| `03a-compounds-train-gpt2-xl.sh`                        | Compounds (OrganiX13) GPT-2 | XL         | Standard      |
+| `03a-compounds_chembl-train-gpt2-small.sh`              | ChEMBL compounds GPT-2      | Small      | Standard      |
+| `03a-compounds_guacamol-train-small.sh`                 | GuacaMol compounds          | Small      | Standard      |
+| `03a-compounds_guacamol-train-medium.sh`                | GuacaMol compounds          | Medium     | Standard      |
+| `03a-compounds_guacamol-train-large.sh`                 | GuacaMol compounds          | Large      | Standard      |
+| `03a-compounds_guacamol-train-xl.sh`                    | GuacaMol compounds          | XL         | Standard      |
+| `03a-genome_sequence-train-small.sh`                    | Genome sequence (RefSeq)    | Small      | Standard      |
+| `03a-genome_sequence-train-medium.sh`                   | Genome sequence (RefSeq)    | Medium     | Standard      |
+| `03a-genome_sequence-train-large.sh`                    | Genome sequence (RefSeq)    | Large      | Standard      |
+| `03a-genome_sequence-train-xl.sh`                       | Genome sequence (RefSeq)    | XL         | Standard      |
+| `03a-genome_sequence_clinvar-train-gpt2-small.sh`       | ClinVar genome GPT-2        | Small      | Standard      |
+| `03a-molecule_nat_lang-train-small.sh`                  | Molecule NL (SMolInstruct)  | Small      | Standard      |
+| `03a-molecule_nat_lang-train-medium.sh`                 | Molecule NL (SMolInstruct)  | Medium     | Standard      |
+| `03a-molecule_nat_lang-train-large.sh`                  | Molecule NL (SMolInstruct)  | Large      | Standard      |
+| `03a-molecule_nat_lang-train-xl.sh`                     | Molecule NL (SMolInstruct)  | XL         | Standard      |
+| `03a-molecule_nat_lang_mol_instructions-train-small.sh` | Mol-Instructions GPT-2      | Small      | Standard      |
+| `03a-protein_sequence-train-small.sh`                   | Protein sequence (UniRef50) | Small      | Standard      |
+| `03a-protein_sequence-train-medium.sh`                  | Protein sequence (UniRef50) | Medium     | Standard      |
+| `03a-protein_sequence-train-large.sh`                   | Protein sequence (UniRef50) | Large      | Standard      |
+| `03a-protein_sequence-train-xl.sh`                      | Protein sequence (UniRef50) | XL         | Standard      |
+| `03a-protein_sequence_proteingym-train-gpt2-small.sh`   | ProteinGym GPT-2            | Small      | Standard      |
+| `03a-rna-train-small.sh`                                | RNA sequence (CELLxGENE)    | Small      | Standard      |
+| `03a-rna-train-medium.sh`                               | RNA sequence (CELLxGENE)    | Medium     | Standard      |
+| `03a-rna-train-large.sh`                                | RNA sequence (CELLxGENE)    | Large      | Standard      |
+| `03a-rna-train-xl.sh`                                   | RNA sequence (CELLxGENE)    | XL         | Standard      |
+| `03a-rna_celltype-train-gpt2-small.sh`                  | Cell type annotation GPT-2  | Small      | Standard      |
 
 ### Phase 3b: Enhanced Training
 
@@ -148,115 +135,115 @@ cd /path/to/riken-dataset-fundational-model
 
 ### Phase 3c: BERT Model Training
 
-| Script                                              | Purpose                           | Model Type |
-| --------------------------------------------------- | --------------------------------- | ---------- |
-| `03c-compounds-train-bert-small.sh`                 | Compounds (OrganiX13) BERT        | Small      |
-| `03c-compounds_chembl-train-bert-small.sh`          | ChEMBL compounds BERT             | Small      |
-| `03c-compounds_guacamol-train-bert-small.sh`        | GuacaMol compounds BERT           | Small      |
-| `03c-genome_sequence-train-bert-small.sh`           | Genome sequence (RefSeq) BERT     | Small      |
-| `03c-genome_sequence_clinvar-train-bert-small.sh`   | ClinVar genome BERT               | Small      |
-| `03c-molecule_nat_lang-train-bert-small.sh`         | Molecule NL (SMolInstruct) BERT   | Small      |
-| `03c-molecule_nat_lang_mol_instructions-train-bert-small.sh` | Mol-Instructions BERT  | Small      |
-| `03c-protein_sequence-train-bert-small.sh`          | Protein sequence (UniRef50) BERT  | Small      |
-| `03c-protein_sequence_proteingym-train-bert-small.sh` | ProteinGym BERT                 | Small      |
-| `03c-rna-train-bert-small.sh`                       | RNA sequence (CELLxGENE) BERT     | Small      |
-| `03c-rna_celltype-train-bert-small.sh`              | Cell type annotation BERT         | Small      |
+| Script                                                       | Purpose                          | Model Size |
+| ------------------------------------------------------------ | -------------------------------- | ---------- |
+| `03c-compounds-train-bert-small.sh`                          | Compounds (OrganiX13) BERT       | Small      |
+| `03c-compounds_chembl-train-bert-small.sh`                   | ChEMBL compounds BERT            | Small      |
+| `03c-compounds_guacamol-train-bert-small.sh`                 | GuacaMol compounds BERT          | Small      |
+| `03c-genome_sequence-train-bert-small.sh`                    | Genome sequence (RefSeq) BERT    | Small      |
+| `03c-genome_sequence_clinvar-train-bert-small.sh`            | ClinVar genome BERT              | Small      |
+| `03c-molecule_nat_lang-train-bert-small.sh`                  | Molecule NL (SMolInstruct) BERT  | Small      |
+| `03c-molecule_nat_lang_mol_instructions-train-bert-small.sh` | Mol-Instructions BERT            | Small      |
+| `03c-protein_sequence-train-bert-small.sh`                   | Protein sequence (UniRef50) BERT | Small      |
+| `03c-protein_sequence_proteingym-train-bert-small.sh`        | ProteinGym BERT                  | Small      |
+| `03c-rna-train-bert-small.sh`                                | RNA sequence (CELLxGENE) BERT    | Small      |
+| `03c-rna_celltype-train-bert-small.sh`                       | Cell type annotation BERT        | Small      |
 
 ### Phase 3d: DNABERT-2 Training
 
-| Script                                         | Purpose                       | Model Size |
-| ---------------------------------------------- | ----------------------------- | ---------- |
-| `03d-genome_sequence-train-dnabert2-small.sh`  | Genome sequence DNABERT-2     | Small      |
-| `03d-genome_sequence-train-dnabert2-medium.sh` | Genome sequence DNABERT-2     | Medium     |
-| `03d-genome_sequence-train-dnabert2-large.sh`  | Genome sequence DNABERT-2     | Large      |
+| Script                                         | Purpose                   | Model Size |
+| ---------------------------------------------- | ------------------------- | ---------- |
+| `03d-genome_sequence-train-dnabert2-small.sh`  | Genome sequence DNABERT-2 | Small      |
+| `03d-genome_sequence-train-dnabert2-medium.sh` | Genome sequence DNABERT-2 | Medium     |
+| `03d-genome_sequence-train-dnabert2-large.sh`  | Genome sequence DNABERT-2 | Large      |
 
 ### Phase 3e: ESM-2 Training
 
-| Script                                       | Purpose                      | Model Size |
-| -------------------------------------------- | ---------------------------- | ---------- |
-| `03e-protein_sequence-train-esm2-small.sh`   | Protein sequence ESM-2       | Small      |
-| `03e-protein_sequence-train-esm2-medium.sh`  | Protein sequence ESM-2       | Medium     |
-| `03e-protein_sequence-train-esm2-large.sh`   | Protein sequence ESM-2       | Large      |
+| Script                                      | Purpose                | Model Size |
+| ------------------------------------------- | ---------------------- | ---------- |
+| `03e-protein_sequence-train-esm2-small.sh`  | Protein sequence ESM-2 | Small      |
+| `03e-protein_sequence-train-esm2-medium.sh` | Protein sequence ESM-2 | Medium     |
+| `03e-protein_sequence-train-esm2-large.sh`  | Protein sequence ESM-2 | Large      |
 
 ### Phase 3f: RNAformer Training
 
-| Script                            | Purpose                          | Model Size |
-| --------------------------------- | -------------------------------- | ---------- |
-| `03f-rna-train-rnaformer-small.sh`  | RNA sequence RNAformer           | Small      |
-| `03f-rna-train-rnaformer-medium.sh` | RNA sequence RNAformer           | Medium     |
-| `03f-rna-train-rnaformer-large.sh`  | RNA sequence RNAformer           | Large      |
+| Script                              | Purpose                | Model Size |
+| ----------------------------------- | ---------------------- | ---------- |
+| `03f-rna-train-rnaformer-small.sh`  | RNA sequence RNAformer | Small      |
+| `03f-rna-train-rnaformer-medium.sh` | RNA sequence RNAformer | Medium     |
+| `03f-rna-train-rnaformer-large.sh`  | RNA sequence RNAformer | Large      |
 
 ### Phase 3g: ChemBERTa-2 Training
 
-| Script                                   | Purpose                     | Model Size |
-| ---------------------------------------- | --------------------------- | ---------- |
-| `03g-compounds-train-chemberta2-small.sh`  | Compounds ChemBERTa-2       | Small      |
-| `03g-compounds-train-chemberta2-medium.sh` | Compounds ChemBERTa-2       | Medium     |
-| `03g-compounds-train-chemberta2-large.sh`  | Compounds ChemBERTa-2       | Large      |
+| Script                                     | Purpose              | Model Size |
+| ------------------------------------------ | -------------------- | ---------- |
+| `03g-compounds-train-chemberta2-small.sh`  | Compounds ChemBERTa-2 | Small     |
+| `03g-compounds-train-chemberta2-medium.sh` | Compounds ChemBERTa-2 | Medium    |
+| `03g-compounds-train-chemberta2-large.sh`  | Compounds ChemBERTa-2 | Large     |
 
 ## 🚀 AI Model Evaluation Scripts
 
 ### BERT Model Evaluations
 
-| Script                              | Purpose                                  | Dataset    | Dataset Size                | Output Location                                                  |
-| ----------------------------------- | ---------------------------------------- | ---------- | --------------------------- | ---------------------------------------------------------------- |
-| `run_bert_proteingym_evaluation.sh` | BERT protein fitness prediction (統合版) | ProteinGym | 可変                        | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_*` |
-| `run_bert_clinvar_evaluation.sh`    | BERT variant pathogenicity prediction    | ClinVar    | 2000件（陽性1000+陰性1000） | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_*`     |
+| Script                              | Purpose                                      | Dataset    | Dataset Size                            | Output Location                                                  |
+| ----------------------------------- | -------------------------------------------- | ---------- | --------------------------------------- | ---------------------------------------------------------------- |
+| `run_bert_proteingym_evaluation.sh` | BERT protein fitness prediction (integrated) | ProteinGym | Variable                                | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_*` |
+| `run_bert_clinvar_evaluation.sh`    | BERT variant pathogenicity prediction        | ClinVar    | 2,000 (1,000 positive + 1,000 negative) | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_*`     |
 
-**Note**:
+**Notes**:
 
-- BERT ProteinGymスクリプトは、データ準備・評価・可視化の3フェーズを統合した単一スクリプト
-- **ClinVarバランスサンプリング**: 病原性（pathogenic）1000件と良性（benign）1000件をランダム抽出してバランスの取れた評価を実現
+- The BERT ProteinGym script is a single integrated pipeline covering three phases: data preparation, evaluation, and visualization
+- **ClinVar balanced sampling**: Randomly samples 1,000 pathogenic and 1,000 benign variants to ensure a balanced evaluation dataset
 
 ### GPT-2 Model Evaluations
 
-#### Genome Sequence (ゲノム配列)
+#### Genome Sequence
 
-| Script                              | Purpose                    | Dataset | Dataset Size                | Default Device | Output Location                                                    |
-| ----------------------------------- | -------------------------- | ------- | --------------------------- | -------------- | ------------------------------------------------------------------ |
-| `run_gpt2_clinvar_evaluation.sh`    | 病原性バリアント予測       | ClinVar | 2000件（陽性1000+陰性1000） | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*`            |
-| `run_gpt2_cosmic_evaluation.sh`     | がん関連バリアント分析     | COSMIC  | サンプル                    | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*`             |
-| `run_gpt2_omim_evaluation_dummy.sh` | 遺伝性疾患予測（テスト用） | OMIM    | サンプル                    | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation`      |
-| `run_gpt2_omim_evaluation_real.sh`  | 遺伝性疾患予測（本番用）   | OMIM    | 実データ                    | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
+| Script                              | Purpose                              | Dataset | Dataset Size                            | Default Device | Output Location                                                    |
+| ----------------------------------- | ------------------------------------ | ------- | --------------------------------------- | -------------- | ------------------------------------------------------------------ |
+| `run_gpt2_clinvar_evaluation.sh`    | Pathogenic variant prediction        | ClinVar | 2,000 (1,000 positive + 1,000 negative) | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*`            |
+| `run_gpt2_cosmic_evaluation.sh`     | Cancer-related variant analysis      | COSMIC  | Sample                                  | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*`             |
+| `run_gpt2_omim_evaluation_dummy.sh` | Hereditary disease prediction (dev)  | OMIM    | Sample                                  | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation`      |
+| `run_gpt2_omim_evaluation_real.sh`  | Hereditary disease prediction (prod) | OMIM    | Real data                               | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
 
-**Note**:
+**Notes**:
 
-- `_dummy.sh`: 開発・テスト用サンプルデータで素早く動作確認
-- `_real.sh`: 本番評価用。OMIM公式データベースから実データを取得（認証必要）
-- **GPU最適化**: すべてのスクリプトはデフォルトでGPU (cuda)を使用（CPUより約4倍高速）
-- **既存データ再利用**: `run_gpt2_omim_evaluation_real.sh`は`--existing_omim_dir`オプションでダウンロード済みデータを再利用可能
-- **ClinVarバランスサンプリング**: 病原性（pathogenic）1000件と良性（benign）1000件をランダム抽出してバランスの取れた評価を実現
+- `_dummy.sh`: Uses sample data for quick development and testing
+- `_real.sh`: For production evaluation. Fetches real data from OMIM official database (authentication required)
+- **GPU optimization**: All scripts use GPU (cuda) by default (approx. 4× faster than CPU)
+- **Reuse existing data**: `run_gpt2_omim_evaluation_real.sh` supports `--existing_omim_dir` to skip re-downloading
+- **ClinVar balanced sampling**: Randomly samples 1,000 pathogenic and 1,000 benign variants for balanced evaluation
 
-#### Protein Sequence (タンパク質配列)
+#### Protein Sequence
 
-| Script                               | Purpose                        | Dataset    | Default Model          | Default Device | Output Location                                                            |
-| ------------------------------------ | ------------------------------ | ---------- | ---------------------- | -------------- | -------------------------------------------------------------------------- |
-| `run_gpt2_proteingym_evaluation.sh`  | タンパク質適応度予測（統合版） | ProteinGym | 指定必須               | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym`             |
-| `run_gpt2_protein_classification.sh` | タンパク質配列分類（統合版）   | Custom     | protein_sequence-small | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
+| Script                               | Purpose                                      | Dataset    | Default Model          | Default Device | Output Location                                                            |
+| ------------------------------------ | -------------------------------------------- | ---------- | ---------------------- | -------------- | -------------------------------------------------------------------------- |
+| `run_gpt2_proteingym_evaluation.sh`  | Protein fitness prediction (integrated)      | ProteinGym | Required               | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym`             |
+| `run_gpt2_protein_classification.sh` | Protein sequence classification (integrated) | Custom     | protein_sequence-small | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
 
-**Note**:
+**Notes**:
 
-- **統合スクリプト**: データ準備・評価・可視化の3フェーズを統合した単一スクリプト
-- **デフォルトモデル**: `run_gpt2_protein_classification.sh`はモデル指定なしで実行可能（`gpt2-output/protein_sequence-small/ckpt.pt`使用）
-- **サンプルデータ作成**: `run_gpt2_proteingym_evaluation.sh --create-sample`で推奨データセットを自動ダウンロード
-- **GPU最適化**: デフォルトでGPU使用、`--device cpu`でCPU実行に切り替え可能
-- **可視化充実**: 10種類以上のグラフとHTML形式の詳細レポートを自動生成
+- **Integrated script**: A single script covering three phases: data preparation, evaluation, and visualization
+- **Default model**: `run_gpt2_protein_classification.sh` can run without specifying a model (uses `gpt2-output/protein_sequence-small/ckpt.pt`)
+- **Auto sample creation**: `run_gpt2_proteingym_evaluation.sh --create-sample` automatically downloads the recommended dataset
+- **GPU optimization**: Uses GPU by default; switch to CPU with `--device cpu`
+- **Rich visualization**: Automatically generates 10+ charts and detailed HTML reports
 
-#### RNA Sequence (RNA配列)
+#### RNA Sequence
 
-| Script                            | Purpose                     | Dataset      | Default Device | Output Location                                        |
-| --------------------------------- | --------------------------- | ------------ | -------------- | ------------------------------------------------------ |
-| `run_rna_benchmark_evaluation.sh` | RNA ベンチマーク評価         | RNA Benchmark | GPU (cuda)    | `$LEARNING_SOURCE_DIR/rna/report/rna_benchmark_*`      |
+| Script                            | Purpose                  | Dataset       | Default Device | Output Location                                   |
+| --------------------------------- | ------------------------ | ------------- | -------------- | ------------------------------------------------- |
+| `run_rna_benchmark_evaluation.sh` | RNA benchmark evaluation | RNA Benchmark | GPU (cuda)     | `$LEARNING_SOURCE_DIR/rna/report/rna_benchmark_*` |
 
 ## 🔧 Development & Testing
 
 ### Testing Scripts
 
-| Script                    | Purpose                      | Function                                                                                                            |
-| ------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `batch_test_gpt2.sh`           | GPT-2モデル一括テスト        | 複数ドメイン（compounds, molecule_nat_lang, genome, protein_sequence, rna）のチェックポイントを自動検索して一括テスト実行 |
-| `gpt2_test_checkpoint.sh`      | GPT-2 checkpoint validation  | Model checkpoint testing                                                                                            |
-| `debug_protein_bert.sh`        | BERT protein model debugging | Troubleshooting training issues                                                                                     |
+| Script                    | Purpose                   | Function                                                                                                                           |
+| ------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `batch_test_gpt2.sh`      | GPT-2 model batch testing | Automatically finds and batch-tests checkpoints across multiple domains (compounds, molecule_nat_lang, genome, protein_sequence, rna) |
+| `gpt2_test_checkpoint.sh` | GPT-2 checkpoint validation | Model checkpoint testing                                                                                                         |
+| `debug_protein_bert.sh`   | BERT protein model debugging | Troubleshooting training issues                                                                                                  |
 
 ### System Utilities
 
@@ -266,7 +253,7 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 🏗️ Web Interface & Services
 
-このセクションには**5個のスクリプト**が含まれています（Web: 2個、Experiment Management: 3個）
+This section contains **5 scripts** (Web: 2, Experiment Management: 3)
 
 ### Web Interface
 
@@ -285,129 +272,129 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 📊 Output Structure
 
-All evaluation scripts use the structured directory format and support custom output directories.
+All evaluation scripts use a structured directory format and support custom output directories.
 
-### 環境変数
+### Environment Variables
 
-評価スクリプトは以下の環境変数を使用します：
+Evaluation scripts use the following environment variables:
 
-| 環境変数                | 目的                                   | デフォルト             | 必須 |
-| ----------------------- | -------------------------------------- | ---------------------- | ---- |
-| `LEARNING_SOURCE_DIR`   | 入力データディレクトリ（読み取り専用） | -                      | ✅   |
-| `EVALUATION_OUTPUT_DIR` | 出力データディレクトリ（書き込み可能） | `$LEARNING_SOURCE_DIR` | ❌   |
+| Variable                | Purpose                          | Default                | Required |
+| ----------------------- | -------------------------------- | ---------------------- | -------- |
+| `LEARNING_SOURCE_DIR`   | Input data directory (read-only) | —                      | ✅       |
+| `EVALUATION_OUTPUT_DIR` | Output data directory (writable) | `$LEARNING_SOURCE_DIR` | ❌       |
 
-**使用例**：
+**Usage examples**:
 
 ```bash
-# 初回セットアップ
+# Initial setup
 ./workflows/00_first.sh
 
-# データ準備の基本フロー
+# Basic data preparation flow
 export LEARNING_SOURCE_DIR=/data/learning_source
 
 # Phase 1: Dataset preparation
 ./workflows/01_compounds_prepare.sh
 ./workflows/01_genome-sequence_prepare.sh
 ./workflows/01_protein-sequence_prepare.sh
-# ... 他のデータセット
+# ... other datasets
 
 # Phase 2: GPT-2 format conversion (if needed)
 ./workflows/02-compounds-prepare-gpt2.sh
-# ... 対応するGPT-2準備スクリプト
+# ... corresponding GPT-2 preparation scripts
 
 # Phase 3: Training (optional)
 ./workflows/03a-compounds-guacamol-train-small.sh
-# ... 対応する訓練スクリプト
+# ... corresponding training scripts
 
-# Evaluation (標準的な使用方法)
+# Evaluation (standard usage)
 ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 
 # Web interface
 ./workflows/web.sh
 
-# 入力と出力を分離する場合
-export LEARNING_SOURCE_DIR=/readonly/learning_source  # 入力（読み取り専用）
-export EVALUATION_OUTPUT_DIR=/writable/outputs        # 出力（書き込み可能）
+# Separating input and output
+export LEARNING_SOURCE_DIR=/readonly/learning_source  # input (read-only)
+export EVALUATION_OUTPUT_DIR=/writable/outputs        # output (writable)
 ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 ```
 
-### ディレクトリ構造
+### Directory Structure
 
 ```
-$LEARNING_SOURCE_DIR/                   # 学習データディレクトリ
-├── compounds/                          # 化合物データ
-│   ├── image/                          # 可視化画像
-│   └── data/                           # トークン化済みデータ
-├── genome_sequence/                    # ゲノム配列データ
-│   ├── image/                          # 可視化画像
-│   ├── data/                           # トークン化済みデータ
-│   │   ├── clinvar/                    # ClinVarデータ
-│   │   ├── cosmic/                     # COSMICデータ
-│   │   └── omim/                       # OMIMデータ
-│   └── report/                         # 評価結果
+$LEARNING_SOURCE_DIR/                   # Learning data directory
+├── compounds/                          # Compound data
+│   ├── image/                          # Visualization images
+│   └── data/                           # Tokenized data
+├── genome_sequence/                    # Genome sequence data
+│   ├── image/                          # Visualization images
+│   ├── data/                           # Tokenized data
+│   │   ├── clinvar/                    # ClinVar data
+│   │   ├── cosmic/                     # COSMIC data
+│   │   └── omim/                       # OMIM data
+│   └── report/                         # Evaluation results
 │       ├── bert_clinvar_evaluation/
 │       ├── clinvar_evaluation/
 │       └── cosmic_evaluation/
-├── protein_sequence/                   # タンパク質配列データ
-│   ├── image/                          # 可視化画像
-│   ├── data/                           # トークン化済みデータ
-│   └── report/                         # 評価結果
+├── protein_sequence/                   # Protein sequence data
+│   ├── image/                          # Visualization images
+│   ├── data/                           # Tokenized data
+│   └── report/                         # Evaluation results
 │       ├── bert_proteingym/
 │       └── gpt2_proteingym/
-├── rna/                                # RNA配列データ
-│   ├── image/                          # 可視化画像
-│   └── data/                           # トークン化済みデータ
-└── molecule_nat_lang/                        # 分子自然言語データ
-    ├── image/                          # 可視化画像
-    └── data/                           # トークン化済みデータ
+├── rna/                                # RNA sequence data
+│   ├── image/                          # Visualization images
+│   └── data/                           # Tokenized data
+└── molecule_nat_lang/                  # Molecule natural language data
+    ├── image/                          # Visualization images
+    └── data/                           # Tokenized data
 
-# 学習済みモデル出力
-gpt2-output/                            # GPT-2モデル出力
+# Trained model outputs
+gpt2-output/                            # GPT-2 model outputs
 ├── compounds-small/
 ├── genome_sequence-small/
 ├── protein_sequence-small/
 └── rna-small/
 
-# 実行ログ
-logs/                                   # スクリプト実行ログ
-└── *.log                               # 各スクリプトのログファイル
+# Execution logs
+logs/                                   # Script execution logs
+└── *.log                               # Log files per script
 ```
 
-### 出力ディレクトリのカスタマイズ
+### Output Directory Customization
 
-すべての評価スクリプトは`-o`または`--output_dir`オプションで出力先を指定可能です：
+All evaluation scripts support custom output paths via `-o` or `--output_dir`:
 
 ```bash
-# BERT ProteinGym評価 - カスタム出力先
+# BERT ProteinGym evaluation - custom output
 ./workflows/run_bert_proteingym_evaluation.sh \
   --output_dir /custom/path/bert_proteingym_results
 
-# GPT-2 ClinVar評価 - カスタム出力先
+# GPT-2 ClinVar evaluation - custom output
 ./workflows/run_gpt2_clinvar_evaluation.sh \
   --output_dir /custom/path/clinvar_results
 
-# GPT-2 ProteinGym評価 - カスタム出力先
+# GPT-2 ProteinGym evaluation - custom output
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv \
   -o /custom/path/proteingym_results
 
-# GPT-2 OMIM実データ評価 - カスタム出力先
+# GPT-2 OMIM real data evaluation - custom output
 ./workflows/run_gpt2_omim_evaluation_real.sh \
   --output_dir /custom/path/omim_real_results
 ```
 
-**注意**:
+**Notes**:
 
-- 出力先を指定しない場合は、デフォルトで`$LEARNING_SOURCE_DIR/{model_type}/report/{evaluation_type}`に保存されます
-- データ準備フェーズ（`--data_dir`）とレポート/可視化フェーズ（`--output_dir`）は別々に指定可能
-- 可視化結果は`{output_dir}/visualizations/`サブディレクトリに保存されます
+- If no output path is specified, results are saved to `$LEARNING_SOURCE_DIR/{model_type}/report/{evaluation_type}` by default
+- The data preparation path (`--data_dir`) and report/visualization path (`--output_dir`) can be specified independently
+- Visualization results are saved to the `{output_dir}/visualizations/` subdirectory
 
-### 各評価ディレクトリの内容
+### Evaluation Directory Contents
 
-- `*_results.json` - 構造化された評価結果
-- `*_report.txt` - 人間が読める形式のサマリー
-- `*_detailed_results.csv` - サンプルごとの予測結果
-- `visualizations/` - 可視化フェーズで生成されたグラフ・チャート
+- `*_results.json` — Structured evaluation results
+- `*_report.txt` — Human-readable summary
+- `*_detailed_results.csv` — Per-sample predictions
+- `visualizations/` — Charts and graphs generated during the visualization phase
 
 ## 🎯 Quick Start Examples
 
@@ -416,52 +403,52 @@ logs/                                   # スクリプト実行ログ
 #### BERT Model Evaluations
 
 ```bash
-# BERT ProteinGym evaluation (統合版: データ準備→評価→可視化)
+# BERT ProteinGym evaluation (integrated: data prep -> evaluation -> visualization)
 ./workflows/run_bert_proteingym_evaluation.sh --max_variants 2000 --batch_size 32
 
-# サンプルデータのみ作成
+# Create sample data only
 ./workflows/run_bert_proteingym_evaluation.sh --sample_only
 
-# 評価のみ実行（データ準備をスキップ）
+# Run evaluation only (skip data preparation)
 ./workflows/run_bert_proteingym_evaluation.sh --skip_data_prep
 
-# BERT ClinVar評価（バランスサンプリング: 陽性1000件+陰性1000件）
-# 初回実行: データ準備から実行
+# BERT ClinVar evaluation (balanced sampling: 1,000 positive + 1,000 negative)
+# First run: start from data preparation
 ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 
-# データ準備済みの場合: 評価のみ実行
+# If data is already prepared: run evaluation only
 ./workflows/run_bert_clinvar_evaluation.sh
 
-# データ再ダウンロード（強制）
+# Force re-download data
 ./workflows/run_bert_clinvar_evaluation.sh --force-download
 ```
 
 #### GPT-2 Genome Sequence Evaluations
 
 ```bash
-# ClinVar評価（バランスサンプリング: 陽性1000件+陰性1000件）
-# 初回実行: HuggingFaceからデータダウンロード＆バランスサンプリング
+# ClinVar evaluation (balanced sampling: 1,000 positive + 1,000 negative)
+# First run: download data & balanced sampling
 ./workflows/run_gpt2_clinvar_evaluation.sh --download --model-size medium
 
-# データ準備済みの場合: 評価のみ実行
+# If data is already prepared: run evaluation only
 ./workflows/run_gpt2_clinvar_evaluation.sh --model-size small
 
-# 評価のみ（データ準備スキップ）
+# Run evaluation only (skip data preparation)
 ./workflows/run_gpt2_clinvar_evaluation.sh --eval-only --model-size medium
 
-# 可視化のみ実行
+# Run visualization only
 ./workflows/run_gpt2_clinvar_evaluation.sh --visualize-only
 
-# COSMIC評価
+# COSMIC evaluation
 ./workflows/run_gpt2_cosmic_evaluation.sh --model_size small --batch_size 32
 
-# OMIM評価（サンプルデータ・開発用）
+# OMIM evaluation (sample data, for development)
 ./workflows/run_gpt2_omim_evaluation_dummy.sh --max_samples 50
 
-# OMIM評価（実データ・本番用、認証必要）
+# OMIM evaluation (real data, for production; authentication required)
 ./workflows/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
 
-# OMIM評価（既存データを再利用）
+# OMIM evaluation (reuse existing data)
 ./workflows/run_gpt2_omim_evaluation_real.sh \
   --existing_omim_dir /path/to/downloaded/omim_data \
   --model_size medium
@@ -470,64 +457,64 @@ logs/                                   # スクリプト実行ログ
 #### GPT-2 Protein Sequence Evaluations
 
 ```bash
-# ProteinGym評価（統合版）
+# ProteinGym evaluation (integrated)
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m gpt2-output/protein_sequence-small/ckpt.pt \
   -d proteingym_data/sample.csv
 
-# サンプルデータ自動作成と評価（推奨データセットをダウンロード）
+# Auto-create sample data and evaluate (downloads recommended dataset)
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m gpt2-output/protein_sequence-small/ckpt.pt \
   --create-sample
 
-# Protein Classification評価（デフォルトモデル使用）
+# Protein Classification evaluation (using default model)
 ./workflows/run_gpt2_protein_classification.sh -s
 
-# Protein Classification評価（カスタムモデル指定）
+# Protein Classification evaluation (custom model)
 ./workflows/run_gpt2_protein_classification.sh \
   -m gpt2-output/protein_sequence-medium/ckpt.pt \
   -s
 
-# 可視化のみ実行（評価済みの場合）
+# Run visualization only (if evaluation is already complete)
 ./workflows/run_gpt2_protein_classification.sh \
   -s --skip_data_prep --skip_evaluation
 ```
 
 ### Advanced Options
 
-#### フェーズ別実行（GPT-2スクリプト）
+#### Phase-based Execution (GPT-2 scripts)
 
 ```bash
-# データ準備のみ
+# Data preparation only
 ./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_evaluation --skip_visualization
 
-# 評価のみ（データ準備済みの場合）
+# Evaluation only (if data is already prepared)
 ./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_visualization
 
-# 可視化のみ（評価結果がある場合）
+# Visualization only (if evaluation results exist)
 ./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
 ```
 
-#### デバイスとパフォーマンスの調整
+#### Device and Performance Tuning
 
 ```bash
-# CPU使用（GPU非搭載環境向け）
+# Use CPU (for environments without GPU)
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv --device cpu
 
-# バッチサイズとサンプル数の調整（メモリ節約）
+# Reduce batch size and sample count (to save memory)
 ./workflows/run_gpt2_clinvar_evaluation.sh \
   --max_samples 200 --batch_size 8
 
-# ProteinGym高速テスト（最大サンプル数制限）
+# ProteinGym quick test (limit max samples)
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv --max_samples 100
 ```
 
-#### データ管理オプション
+#### Data Management Options
 
 ```bash
-# カスタム出力ディレクトリ指定（すべての評価スクリプト共通）
+# Specify custom output directory (common to all evaluation scripts)
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt -d data.csv -o /custom/output/path
 
@@ -537,14 +524,14 @@ logs/                                   # スクリプト実行ログ
 ./workflows/run_gpt2_omim_evaluation_real.sh \
   --output_dir /custom/omim/results
 
-# データ準備先とレポート出力先を別々に指定
-# (一部のスクリプトで --data_dir と --output_dir を個別指定可能)
+# Specify data prep and report output separately
+# (some scripts support --data_dir and --output_dir independently)
 
-# OMIM既存データの再利用（ダウンロードスキップ）
+# Reuse existing OMIM data (skip download)
 ./workflows/run_gpt2_omim_evaluation_real.sh \
   --existing_omim_dir /path/to/omim_data
 
-# ProteinGymサンプルデータの自動作成
+# Auto-create ProteinGym sample data
 ./workflows/run_gpt2_proteingym_evaluation.sh \
   -m model.pt --create-sample
 ```
@@ -584,23 +571,23 @@ logs/                                   # スクリプト実行ログ
 
 `common_functions.sh` provides shared utility functions used across multiple bootstrap scripts:
 
-**主な機能**:
+**Main Features**:
 
-- `check_learning_source_dir()` - LEARNING_SOURCE_DIR環境変数の検証
-- `select_best_gpu()` - 最も空きメモリが多いGPUを自動選択
-- `check_gpu_memory(gpu_id, min_memory_gb)` - GPU空きメモリの確認
-- その他のエラーハンドリングとログ機能
+- `check_learning_source_dir()` — Validates the `LEARNING_SOURCE_DIR` environment variable
+- `select_best_gpu()` — Automatically selects the GPU with the most available memory
+- `check_gpu_memory(gpu_id, min_memory_gb)` — Checks available GPU memory
+- Other error handling and logging utilities
 
-**使用例**:
+**Usage**:
 
 ```bash
-# 他のスクリプトから読み込み
+# Load from another script
 source "$(dirname "$0")/common_functions.sh"
 
-# 環境変数チェック
+# Check environment variable
 check_learning_source_dir
 
-# 最適なGPUを選択
+# Select the best GPU
 BEST_GPU=$(select_best_gpu)
 export CUDA_VISIBLE_DEVICES=$BEST_GPU
 ```
@@ -625,111 +612,111 @@ source molcrawl/config/env.sh
 
 ## 📝 Script Categories
 
-このディレクトリには96個のスクリプト（Shell: 93, Python: 3）が含まれています：
+This directory contains 91 scripts (Shell: 89, Python: 2):
 
 ### 🔍 **Evaluation Scripts** (9 scripts)
 
-自動化されたモデル評価スクリプト（データ準備・評価・可視化の3フェーズ統合）
+Automated model evaluation scripts integrating three phases: data preparation, evaluation, and visualization
 
 **BERT Models:**
 
-- `run_bert_proteingym_evaluation.sh` - BERT ProteinGym評価
-- `run_bert_clinvar_evaluation.sh` - BERT ClinVar評価
+- `run_bert_proteingym_evaluation.sh` - BERT ProteinGym evaluation
+- `run_bert_clinvar_evaluation.sh` - BERT ClinVar evaluation
 
 **GPT-2 Genome Sequence:**
 
-- `run_gpt2_clinvar_evaluation.sh` - GPT-2 ClinVar評価
-- `run_gpt2_cosmic_evaluation.sh` - GPT-2 COSMIC評価
-- `run_gpt2_omim_evaluation_dummy.sh` - GPT-2 OMIM評価（サンプル）
-- `run_gpt2_omim_evaluation_real.sh` - GPT-2 OMIM評価（実データ）
+- `run_gpt2_clinvar_evaluation.sh` - GPT-2 ClinVar evaluation
+- `run_gpt2_cosmic_evaluation.sh` - GPT-2 COSMIC evaluation
+- `run_gpt2_omim_evaluation_dummy.sh` - GPT-2 OMIM evaluation (sample)
+- `run_gpt2_omim_evaluation_real.sh` - GPT-2 OMIM evaluation (real data)
 
 **GPT-2 Protein Sequence:**
 
-- `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym評価
-- `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification評価
+- `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym evaluation
+- `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification evaluation
 
 **RNA Sequence:**
 
-- `run_rna_benchmark_evaluation.sh` - RNA Benchmark評価
+- `run_rna_benchmark_evaluation.sh` - RNA Benchmark evaluation
 
 ### 🛠️ **Development Scripts** (4 scripts)
 
-デバッグ、テスト、開発用ユーティリティ
+Debugging, testing, and development utilities
 
-- `batch_test_gpt2.sh` - GPT-2チェックポイント一括テスト（全ドメイン対応）
-- `gpt2_test_checkpoint.sh` - GPT-2チェックポイント検証
-- `debug_protein_bert.sh` - BERTモデルのデバッグ
-- `reboot-cause-check.sh` - システムリブート原因の分析
+- `batch_test_gpt2.sh` - GPT-2 checkpoint batch testing (all domains)
+- `gpt2_test_checkpoint.sh` - GPT-2 checkpoint validation
+- `debug_protein_bert.sh` - BERT model debugging
+- `reboot-cause-check.sh` - System reboot cause analysis
 
 ### 🏭 **Infrastructure Scripts** (4 scripts)
 
-システムセットアップ、サービス管理、実験トラッキング基盤
+System setup, service management, and experiment tracking infrastructure
 
-- `setup_experiment_system.sh` - 実験システムの初期化
-- `start_experiment_system.sh` - 実験サービスの起動
-- `demo_experiment_system.sh` - システムデモンストレーション
-- `start_api_server.py` - Web APIサーバー起動
+- `setup_experiment_system.sh` - Initialize experiment system
+- `start_experiment_system.sh` - Start experiment services
+- `demo_experiment_system.sh` - System demonstration
+- `start_api_server.py` - Start web API server
 
 ### ⚙️ **Utility Scripts** (2 scripts)
 
-データ準備とプロジェクトセットアップ用ヘルパースクリプト
+Helper scripts for data preparation and project setup
 
-- `common_functions.sh` - 共通関数ライブラリ（GPU選択、メモリチェック、環境変数検証）
-- `create_sample_vocab.sh` - サンプル語彙ファイルの生成
+- `common_functions.sh` - Common function library (GPU selection, memory check, environment variable validation)
+- `create_sample_vocab.sh` - Generate sample vocabulary files
 
-## 🔄 統合スクリプトの構造
+## 🔄 Integrated Script Structure
 
-### 3フェーズパイプライン
+### Three-Phase Pipeline
 
-すべての評価スクリプトは以下の3フェーズで構成されています：
+All evaluation scripts are structured around three phases:
 
-1. **データ準備フェーズ** (`--skip_data_prep`でスキップ可能)
-   - データセットのダウンロード/生成
-   - 前処理とフォーマット変換
-   - `$LEARNING_SOURCE_DIR/{model_type}/data/`に保存
-   - **カスタマイズ**: 一部スクリプトで`--data_dir`オプション使用可能
+1. **Data Preparation Phase** (skippable with `--skip_data_prep`)
+   - Dataset download/generation
+   - Preprocessing and format conversion
+   - Saved to `$LEARNING_SOURCE_DIR/{model_type}/data/`
+   - **Customization**: Some scripts support `--data_dir` option
 
-2. **モデル評価フェーズ** (`--skip_evaluation`でスキップ可能)
-   - 訓練済みモデルのロード
-   - データセットでの推論実行
-   - メトリクス計算と結果保存
-   - **カスタマイズ**: すべてのスクリプトで`-o`または`--output_dir`使用可能
+2. **Model Evaluation Phase** (skippable with `--skip_evaluation`)
+   - Load trained model
+   - Run inference on dataset
+   - Calculate metrics and save results
+   - **Customization**: All scripts support `-o` or `--output_dir`
 
-3. **可視化フェーズ** (`--skip_visualization`でスキップ可能)
-   - 評価結果のグラフ生成
-   - HTMLレポート作成
-   - `{output_dir}/visualizations/`サブディレクトリに保存
-   - **カスタマイズ**: 可視化スクリプトで`--output_dir`使用可能
+3. **Visualization Phase** (skippable with `--skip_visualization`)
+   - Generate charts from evaluation results
+   - Create HTML reports
+   - Saved to `{output_dir}/visualizations/` subdirectory
+   - **Customization**: Visualization scripts support `--output_dir`
 
-### 出力ディレクトリの柔軟な指定
+### Flexible Output Directory
 
-すべての評価スクリプトで出力先をカスタマイズ可能：
+All evaluation scripts support customizable output paths:
 
 ```bash
-# デフォルト出力先（LEARNING_SOURCE_DIR配下）
+# Default output (under LEARNING_SOURCE_DIR)
 ./workflows/run_bert_proteingym_evaluation.sh
-# → $LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_YYYYMMDD_HHMMSS/
+# -> $LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_YYYYMMDD_HHMMSS/
 
-# カスタム出力先を指定
+# Specify custom output path
 ./workflows/run_bert_proteingym_evaluation.sh \
   --output_dir /mnt/results/my_proteingym_eval
-# → /mnt/results/my_proteingym_eval/
+# -> /mnt/results/my_proteingym_eval/
 
-# 相対パス指定も可能
+# Relative path also supported
 ./workflows/run_gpt2_clinvar_evaluation.sh \
   -o ./my_clinvar_results
-# → ./my_clinvar_results/
+# -> ./my_clinvar_results/
 
-# データ準備とレポート出力を別々に指定（一部スクリプト）
+# Specify data prep and report output separately (some scripts)
 ./workflows/run_gpt2_omim_evaluation_real.sh \
   --output_dir /results/omim_eval \
   --config /custom/config.yaml
 ```
 
-**出力先のデフォルト値:**
+**Default output paths:**
 
-| スクリプト | デフォルト出力先 |
-|-----------|----------------|
+| Script | Default Output Path |
+|--------|---------------------|
 | `run_bert_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation` |
 | `run_bert_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym` |
 | `run_gpt2_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation` |
@@ -739,303 +726,303 @@ source molcrawl/config/env.sh
 | `run_gpt2_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
 | `run_gpt2_protein_classification.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
 
-### フェーズ別実行の利点
+### Benefits of Phase-Based Execution
 
-- **開発効率**: データ準備は1回だけ、評価と可視化を繰り返し実行可能
-- **デバッグ容易性**: 各フェーズを個別にテスト可能
-- **リソース管理**: 必要なフェーズのみ実行してリソースを節約
-- **柔軟性**: 外部で準備したデータを使用する場合はデータ準備をスキップ
+- **Development efficiency**: Prepare data once, iterate over evaluation and visualization
+- **Easy debugging**: Test each phase independently
+- **Resource management**: Run only the phases needed to save resources
+- **Flexibility**: Skip data preparation when using externally prepared data
 
 ## 🚨 Important Notes
 
-### 実行環境
+### Execution Environment
 
-- **実行場所**: すべてのスクリプトはプロジェクトルートディレクトリから実行
-- **LEARNING_SOURCE_DIR**: 必須環境変数。すべての評価スクリプトで使用
-- **GPU要件**: CUDA対応GPUが推奨（CPU実行も可能だが遅い）
+- **Execution location**: All scripts should be run from the project root directory
+- **LEARNING_SOURCE_DIR**: Required environment variable used by all evaluation scripts
+- **GPU requirements**: CUDA-capable GPU recommended (CPU execution is possible but slower)
 
-### データ管理
+### Data Management
 
-- **出力管理**: 結果は自動的にタイムスタンプ付きで整理
-- **実データアクセス**: `run_gpt2_omim_evaluation_real.sh`はOMIM認証が必要
-- **サンプルデータ**: `_dummy.sh`スクリプトは認証不要で開発・テスト可能
+- **Output management**: Results are automatically organized with timestamps
+- **Real data access**: `run_gpt2_omim_evaluation_real.sh` requires OMIM authentication
+- **Sample data**: `_dummy.sh` scripts require no authentication and are suitable for development/testing
 
-### スクリプト構造
+### Script Structure
 
-- **統合スクリプト**: データ準備・評価・可視化の3フェーズを1つのスクリプトに統合
-- **フェーズスキップ**: `--skip_*`オプションで任意のフェーズをスキップ可能
-- **エラーハンドリング**: 堅牢なエラーチェックとリカバリー機能
+- **Integrated scripts**: Three phases (data preparation, evaluation, visualization) combined into a single script
+- **Phase skipping**: Use `--skip_*` options to skip any phase
+- **Error handling**: Robust error checking and recovery features
 
-### リソース管理
+### Resource Management
 
-- **GPUメモリ**: モデルサイズとバッチサイズに応じて変動
-- **ディスク容量**: データセットと結果ファイルのサイズを考慮
-- **ログ**: すべての操作で包括的なログを提供
-- **パフォーマンス**: GPU使用でCPUより約4倍高速（例: ProteinGym 50サンプル/GPU ≈ 12秒）
+- **GPU memory**: Varies with model size and batch size
+- **Disk space**: Account for dataset and result file sizes
+- **Logging**: Comprehensive logging for all operations
+- **Performance**: GPU usage is approx. 4× faster than CPU (e.g., ProteinGym 50 samples/GPU ≈ 12 seconds)
 
-### パフォーマンス最適化
+### Performance Optimization
 
-- **デフォルトデバイス**: すべての評価スクリプトはGPU (cuda)をデフォルト使用
-- **CPU切り替え**: `--device cpu`オプションでCPU実行可能（低速）
-- **サンプル数制限**: `--max_samples N`でテスト実行を高速化
-- **バッチサイズ調整**: `--batch_size N`でメモリ使用量を制御
-- **データ再利用**: `--existing_omim_dir`でダウンロード時間を節約
+- **Default device**: All evaluation scripts use GPU (cuda) by default
+- **CPU fallback**: Use `--device cpu` option to run on CPU (slower)
+- **Sample limit**: Use `--max_samples N` to speed up test runs
+- **Batch size tuning**: Use `--batch_size N` to control memory usage
+- **Data reuse**: Use `--existing_omim_dir` to avoid re-downloading
 
-### 新機能
+### New Features
 
-- **Protein Classification可視化**: 10種類以上のグラフとHTML詳細レポートを自動生成
-- **ProteinGymサンプルデータ**: `--create-sample`で推奨データセットを自動ダウンロード
-- **OMIM既存データ再利用**: `--existing_omim_dir`でダウンロード済みデータを活用
-- **デフォルトモデル**: Protein Classificationはモデル指定なしで実行可能
-- **ClinVarバランスサンプリング**: 病原性・良性が1000件ずつのバランスの取れたデータセットで正確な評価
+- **Protein Classification visualization**: Automatically generates 10+ charts and detailed HTML reports
+- **ProteinGym sample data**: Use `--create-sample` to automatically download the recommended dataset
+- **OMIM data reuse**: Use `--existing_omim_dir` to leverage already-downloaded data
+- **Default model**: Protein Classification can run without specifying a model
+- **ClinVar balanced sampling**: Accurate evaluation with 1,000 pathogenic and 1,000 benign variants each
 
-### ClinVarバランスサンプリングの詳細
+### ClinVar Balanced Sampling Details
 
-#### 背景
+#### Background
 
-従来のClinVarデータ準備では数件しか抽出されず、評価の信頼性が低い問題がありました。
+Previous ClinVar data preparation extracted only a few samples, resulting in low evaluation reliability.
 
-#### 改善点
+#### Improvements
 
-`extract_random_clinvar_samples.py`を使用して以下を実現：
+Using `extract_random_clinvar_samples.py` to achieve the following:
 
-**データ構成**:
+**Dataset composition**:
 
-- 病原性（Pathogenic）バリアント: 1000件
-- 良性（Benign）バリアント: 1000件
-- 合計: 2000件のバランスの取れたデータセット
+- Pathogenic variants: 1,000 samples
+- Benign variants: 1,000 samples
+- Total: 2,000 balanced samples
 
-**サンプリング方法**:
+**Sampling method**:
 
-1. HuggingFace DatasetsからClinVarデータを取得
-2. Clinical Significanceを自動分類（病原性/良性）
-3. 各クラスから1000件ずつランダムサンプリング
-4. 参照ゲノムから周辺配列を抽出（flanking領域含む）
+1. Fetch ClinVar data from HuggingFace Datasets
+2. Automatically classify by clinical significance (pathogenic/benign)
+3. Randomly sample 1,000 from each class
+4. Extract flanking sequences from the reference genome
 
-**利点**:
+**Benefits**:
 
-- クラス不均衡を解消し、正確な精度評価が可能
-- 再現可能なランダムサンプリング（seed=42固定）
-- 自動化されたデータ準備フロー
+- Eliminates class imbalance for accurate accuracy evaluation
+- Reproducible random sampling (fixed seed=42)
+- Automated data preparation workflow
 
-**使用方法**:
+**Usage**:
 
 ```bash
-# GPT-2 ClinVar評価
+# GPT-2 ClinVar evaluation
 ./workflows/run_gpt2_clinvar_evaluation.sh --download
 
-# BERT ClinVar評価
+# BERT ClinVar evaluation
 ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 ```
 
 ## 📞 Troubleshooting
 
-### よくある問題と解決方法
+### Common Issues and Solutions
 
-1. **環境変数エラー**
+1. **Environment variable error**
 
    ```bash
-   # エラー: LEARNING_SOURCE_DIR環境変数が設定されていません
+   # Error: LEARNING_SOURCE_DIR environment variable is not set
    export LEARNING_SOURCE_DIR=/path/to/learning_source
    ```
 
-2. **モデルファイルが見つからない**
+2. **Model file not found**
 
    ```bash
-   # モデルディレクトリを確認
+   # Check model directory
    ls -la gpt2-output/
    ls -la runs_train_bert_*/
 
-   # Protein Classificationはデフォルトモデルを使用
+   # Protein Classification uses default model automatically
    ./workflows/run_gpt2_protein_classification.sh -s
-   # → gpt2-output/protein_sequence-small/ckpt.pt を自動使用
+   # -> uses gpt2-output/protein_sequence-small/ckpt.pt automatically
    ```
 
-3. **CUDAエラー**
+3. **CUDA error**
 
    ```bash
-   # GPU確認
+   # Check GPU
    nvidia-smi
 
-   # CPU使用に切り替え（全スクリプトでサポート）
+   # Switch to CPU (supported by all scripts)
    ./workflows/run_gpt2_*.sh --device cpu
 
-   # 注意: CPUはGPUより約4倍遅い
+   # Note: CPU is approx. 4x slower than GPU
    ```
 
-4. **データファイルが見つからない**
+4. **Data file not found**
 
    ```bash
-   # データ準備フェーズを再実行
+   # Re-run data preparation phase
    ./workflows/run_gpt2_*.sh --force_download
 
-   # または、データ準備のみ実行
+   # Or run data preparation only
    ./workflows/run_gpt2_*.sh --skip_evaluation --skip_visualization
 
-   # ProteinGymサンプルデータの自動作成
+   # Auto-create ProteinGym sample data
    ./workflows/run_gpt2_proteingym_evaluation.sh \
      -m model.pt --create-sample
 
-   # ClinVarバランスサンプリングデータの作成
-   # GPT-2の場合
+   # Create ClinVar balanced sampling data
+   # For GPT-2
    ./workflows/run_gpt2_clinvar_evaluation.sh --download
-   # BERTの場合
+   # For BERT
    ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
    ```
 
-5. **OMIM実データアクセスエラー**
+5. **OMIM real data access error**
 
    ```bash
-   # 設定ファイルに認証URLが正しく設定されているか確認
+   # Verify authentication URL is correctly configured
    cat assets/configs/omim_real_data.yaml
 
-   # サンプルデータで動作確認
+   # Verify operation with sample data
    ./workflows/run_gpt2_omim_evaluation_dummy.sh
 
-   # 既存データを再利用（再ダウンロードを避ける）
+   # Reuse existing data (avoid re-downloading)
    ./workflows/run_gpt2_omim_evaluation_real.sh \
      --existing_omim_dir /path/to/omim_data
    ```
 
-6. **Pythonパッケージ不足**
+6. **Missing Python packages**
 
    ```bash
-   # 必要なパッケージをインストール
+   # Install required packages
    pip install torch transformers pandas numpy scikit-learn matplotlib seaborn sentencepiece scipy
    ```
 
-7. **ProteinGym評価が遅い**
+7. **ProteinGym evaluation is slow**
 
    ```bash
-   # GPUを使用（デフォルト、約4倍高速）
+   # Use GPU (default, approx. 4x faster)
    ./workflows/run_gpt2_proteingym_evaluation.sh -m model.pt -d data.csv
 
-   # サンプル数を制限してテスト
+   # Limit sample count for testing
    ./workflows/run_gpt2_proteingym_evaluation.sh \
      -m model.pt -d data.csv --max_samples 100
 
-   # 進捗状況: 50サンプル/GPU ≈ 12秒、2770サンプル/GPU ≈ 11分
+   # Progress: 50 samples/GPU ~ 12 sec, 2770 samples/GPU ~ 11 min
    ```
 
-8. **可視化エラー**
+8. **Visualization error**
 
    ```bash
-   # 評価結果があるか確認
+   # Check if evaluation results exist
    ls -la $LEARNING_SOURCE_DIR/*/report/*/
 
-   # 可視化のみ再実行
+   # Re-run visualization only
    ./workflows/run_gpt2_*.sh --skip_data_prep --skip_evaluation
 
-   # Protein Classificationの詳細レポート
-   # → visualizations/ディレクトリに10種類以上のグラフ + HTML
+   # Protein Classification detailed report
+   # -> 10+ charts + HTML in visualizations/ directory
 
-   # カスタム出力先を指定して可視化
+   # Specify custom output and re-run visualization
    ./workflows/run_gpt2_proteingym_evaluation.sh \
      --skip_data_prep --skip_evaluation \
      -o /custom/visualization/path
    ```
 
-9. **出力ディレクトリが見つからない**
+9. **Output directory not found**
 
    ```bash
-   # デフォルト出力先を確認
+   # Check default output path
    echo $LEARNING_SOURCE_DIR
    ls -la $LEARNING_SOURCE_DIR/*/report/
 
-   # カスタム出力先を使用した場合
+   # If custom output was used
    ls -la /path/to/custom/output/
 
-   # 出力先を明示的に指定して再実行
+   # Re-run with explicit output path
    ./workflows/run_bert_proteingym_evaluation.sh \
      --output_dir /specific/output/path
 
-   # 最新の評価結果ディレクトリを探す
+   # Find the latest evaluation result directory
    find $LEARNING_SOURCE_DIR -type d -name "*proteingym*" -o -name "*clinvar*" | sort
    ```
 
-10. **ClinVarデータが数件しか抽出されない**
+10. **ClinVar data has only a few samples**
 
 ```bash
-# 問題: 従来の方法では少数のサンプルのみ
-# 解決策: バランスサンプリングスクリプトを使用
+# Problem: legacy method extracts only a small number of samples
+# Solution: use balanced sampling script
 
-# GPT-2の場合（2000件のバランスデータを自動生成）
+# For GPT-2 (auto-generates 2,000 balanced samples)
 ./workflows/run_gpt2_clinvar_evaluation.sh --download
 
-# BERTの場合（2000件のバランスデータを自動生成）
+# For BERT (auto-generates 2,000 balanced samples)
 ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
 
-# データセットの統計を確認
+# Check dataset statistics
 python -c "
 import pandas as pd
 df = pd.read_csv('$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv')
-print(f'総サンプル数: {len(df)}')
+print(f'Total samples: {len(df)}')
 print(df['ClinicalSignificance'].value_counts())
 "
-# 期待結果: 病原性 1000件、良性 1000件
+# Expected: Pathogenic 1,000, Benign 1,000
 ```
 
-1. **参照ゲノムファイルが見つからない（ClinVarバランスサンプリング）**
+11. **Reference genome file not found (ClinVar balanced sampling)**
 
     ```bash
-    # 参照ゲノムのダウンロード
+    # Download reference genome
     wget -P $LEARNING_SOURCE_DIR/genome_sequence/data/ \
       https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
 
-    # または既にダウンロード済みの場合はパスを確認
+    # If already downloaded, verify path
     ls -lh $LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna*
 
-    # .gzファイルはそのまま使用可能（スクリプトが自動展開）
+    # .gz files can be used as-is (scripts auto-decompress)
     ```
 
-2. **複数のGPT-2チェックポイントをまとめてテストしたい**
+12. **Batch-testing multiple GPT-2 checkpoints**
 
     ```bash
-    # 全ドメインのチェックポイントを一括テスト
+    # Batch test all domain checkpoints
     ./workflows/batch_test_gpt2.sh gpt2-output/
 
-    # 特定のディレクトリ配下のみテスト
+    # Test only a specific subdirectory
     ./workflows/batch_test_gpt2.sh path/to/checkpoints/
 
-    # テスト結果は gpt2_test_results_TIMESTAMP/ に保存
+    # Results saved to gpt2_test_results_TIMESTAMP/
     ls -la gpt2_test_results_*/
 
-    # ドメイン別の結果を確認
-    # - compounds: 化合物生成の妥当性
-    # - genome_sequence: ゲノム配列の整合性
-    # - protein_sequence: タンパク質配列の品質
-    # - rna: RNA配列の構造妥当性
-    # - molecule_nat_lang: 分子記述テキストの品質
+    # Check per-domain results
+    # - compounds: compound generation validity
+    # - genome_sequence: genomic sequence consistency
+    # - protein_sequence: protein sequence quality
+    # - rna: RNA sequence structural validity
+    # - molecule_nat_lang: molecular description text quality
     ```
 
-### ログの確認
+### Log Inspection
 
-各スクリプトは詳細なログを出力します：
+Each script outputs detailed logs:
 
-- コンソール出力: リアルタイムの進行状況
-- `logs/`: システムログ（一部のスクリプト）
-- `$OUTPUT_DIR/*_report.txt`: 評価結果の詳細レポート
+- Console output: Real-time progress
+- `logs/`: System logs (some scripts)
+- `$OUTPUT_DIR/*_report.txt`: Detailed evaluation result reports
 
 ## 🔄 Migration Notes
 
-### スクリプト構造の変更
+### Script Structural Changes
 
-これらのスクリプトは以下の変更が行われました：
+These scripts have undergone the following changes:
 
-1. **ファイル名の明確化**
-   - GPT-2専用スクリプトに`run_gpt2_`プレフィックスを追加
-   - BERT専用スクリプトに`run_bert_`プレフィックスを追加
-   - OMIM実データスクリプトに`_real`サフィックスを追加
+1. **Clarified file naming**
+   - Added `run_gpt2_` prefix to GPT-2-specific scripts
+   - Added `run_bert_` prefix to BERT-specific scripts
+   - Added `_real` suffix to OMIM real data scripts
 
-2. **3フェーズ統合**
-   - データ準備、評価、可視化スクリプトを統合
-   - フェーズ別スキップオプションを追加
+2. **Three-phase integration**
+   - Merged data preparation, evaluation, and visualization scripts
+   - Added per-phase skip options
 
-3. **LEARNING_SOURCE_DIR構造の統一**
-   - すべてのスクリプトで統一されたディレクトリ構造を使用
-   - 環境変数チェックを追加
+3. **Unified LEARNING_SOURCE_DIR structure**
+   - Consistent directory structure across all scripts
+   - Added environment variable checks
 
-4. **スクリプトパスの統一**
-   - すべてのPython実行パスを`scripts/evaluation/{model_type}/`配下に統一
+4. **Unified script paths**
+   - All Python execution paths unified under `scripts/evaluation/{model_type}/`
 
-プロジェクトルートディレクトリから実行する限り、すべての機能は同一です。
+All functionality is identical as long as scripts are run from the project root directory.
