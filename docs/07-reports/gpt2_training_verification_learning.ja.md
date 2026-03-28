@@ -190,7 +190,7 @@ iter, train_loss, val_loss
 
 ### 更新されたコンポーネント
 
- `src/core/dataset.py` - `PreparedDataset`クラス
+ `molcrawl/core/dataset.py` - `PreparedDataset`クラス
 
 - Arrow形式の自動検出追加
 - input_ids + output_idsの自動結合追加
@@ -296,7 +296,7 @@ python scripts/preparation/convert_parquet_to_arrow.py \
 ### 学習スクリプト
 
 - `gpt2/train.py` (変更なし)
-- `src/core/dataset.py` (PreparedDataset更新済み)
+- `molcrawl/core/dataset.py` (PreparedDataset更新済み)
 
 ---
 

@@ -63,8 +63,8 @@ http://localhost:3000
 以下のコードを既存のスクリプトに追加するだけ:
 
 ```python
-from src.experiment_tracker.helpers import experiment_context
-from src.experiment_tracker import ExperimentType, ModelType, DatasetType
+from molcrawl.experiment_tracker.helpers import experiment_context
+from molcrawl.experiment_tracker import ExperimentType, ModelType, DatasetType
 
 # スクリプトの main() 関数を囲む
 with experiment_context(

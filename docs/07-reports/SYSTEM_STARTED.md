@@ -49,8 +49,8 @@ Then select the **Experiments** tab.
 ## Integration Example
 
 ```python
-from src.experiment_tracker.helpers import experiment_context
-from src.experiment_tracker import ExperimentType, ModelType, DatasetType
+from molcrawl.experiment_tracker.helpers import experiment_context
+from molcrawl.experiment_tracker import ExperimentType, ModelType, DatasetType
 
 with experiment_context(
     name="GPT2 ProteinGym Training",
