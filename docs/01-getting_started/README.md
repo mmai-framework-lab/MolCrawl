@@ -64,20 +64,22 @@ find in the src/utils folder.
 ├── assets
 │   ├── configs                                 -> Configuration file for all task
 │   ├── logging_config.json                     -> Logging base configuration
-│   ├── genome_species_refseq                   -> List of species used for RefSeq downloading
+│   ├── genome_species_list                     -> List of species used for RefSeq downloading
 │   └── molecules                               -> vocab.txt required for tokenizer
-├── bert                                        -> Folder containing functionality for training and executing BERT-based models
-├── gpn                                         -> Folder containing functionality for training and executing models that use MSA's
-├── gpt2                                        -> Folder containing functionality for training and executing GPT-2-based models
-├── scripts                                     -> Global script for preprocissing the datasets.
-│   └── preparation
-├── src                                         -> Main package
+├── molcrawl                                    -> Main package
+│   ├── bert                                    -> Folder containing functionality for training and executing BERT-based models
+│   ├── gpt2                                    -> Folder containing functionality for training and executing GPT-2-based models
+│   ├── preparation                             -> Global scripts for preprocessing the datasets
 │   ├── compounds
 │   ├── genome_sequence
-│   ├── molecule_related_natural_language
+│   ├── molecule_nat_lang
 │   ├── protein_sequence
 │   ├── rna
 │   └── utils
+├── molcrawl-web                                -> Web interface
+├── docs                                        -> Documentation
+├── tests                                       -> Test suite
+├── workflows                                   -> Workflow shell scripts
 ├── setup.cfg
 ├── environment.yaml
 ├── pyproject.toml
