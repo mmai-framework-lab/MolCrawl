@@ -1,10 +1,10 @@
 # MolCrawl
 
-[![CI Tests](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/ci-tests.yml)
-[![Ruff Lint](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/ruff.yml/badge.svg)](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/ruff.yml)
-[![ESLint](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/eslint.yml/badge.svg)](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/eslint.yml)
-[![Compounds Validation](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/compounds-validation.yml/badge.svg)](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/compounds-validation.yml)
-[![Documentation](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/documentation.yml/badge.svg)](https://github.com/elix-tech/riken-dataset-fundational-model/actions/workflows/documentation.yml)
+[![CI Tests](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ci-tests.yml)
+[![Ruff Lint](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ruff.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ruff.yml)
+[![ESLint](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/eslint.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/eslint.yml)
+[![Compounds Validation](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/compounds-validation.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/compounds-validation.yml)
+[![Documentation](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/documentation.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/documentation.yml)
 
 Multimodal Biological LLM Framework
 
@@ -13,6 +13,16 @@ Multimodal Biological LLM Framework
 ## Detailed Documentation
 
 For comprehensive documentation including environment setup details, dataset guides, training configuration, evaluation procedures, experiment tracking, and more, see the **[Documentation Index](docs/README.md)**.
+
+---
+
+## Pre-trained Models
+
+Pre-trained model checkpoints for all modalities (Genome Sequence, Protein Sequence, RNA, Compounds, and Molecule-related Natural Language) are publicly available on Hugging Face:
+
+**[https://huggingface.co/collections/kojima-lab/molcrawl](https://huggingface.co/collections/kojima-lab/molcrawl)**
+
+You can use these checkpoints directly for inference or as starting points for fine-tuning, without running the full data preparation and training pipeline described below.
 
 ---
 
