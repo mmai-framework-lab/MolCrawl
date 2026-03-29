@@ -110,25 +110,25 @@ python molcrawl/<task>/dataset/prepare_gpt2.py assets/configs/<task>.yaml
 Small:
 
 ```bash
-python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_small_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_small_config.py
 ```
 
 Medium:
 
 ```bash
-python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_medium_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_medium_config.py
 ```
 
 Large:
 
 ```bash
-python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_large_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_large_config.py
 ```
 
 Extra-Large (XL):
 
 ```bash
-python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_xl_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_xl_config.py
 ```
 
 ---
@@ -136,7 +136,7 @@ python gpt2/train.py gpt2/configs/<dataset>/train_gpt2_xl_config.py
 #### BERT (Encoder)
 
 ```bash
-python bert/main.py bert/configs/<dataset>.py
+python molcrawl/bert/main.py molcrawl/bert/configs/<dataset>.py
 ```
 
 Make sure the GPT-2 dataset preparation step (`prepare_gpt2.py`) has been completed before BERT training, since BERT uses the same prepared dataset format.
@@ -161,12 +161,12 @@ Examples:
 # GPT2
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-gpt2/train.py gpt2/configs/<dataset>/train_gpt2_small_config.py
+molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_small_config.py
 
 # BERT
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-bert/main.py bert/configs/<dataset>.py
+molcrawl/bert/main.py molcrawl/bert/configs/<dataset>.py
 ```
 
 Effective batch size:

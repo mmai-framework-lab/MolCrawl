@@ -509,7 +509,7 @@ is filled without any padding.
 > [!IMPORTANT]
 > Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT-2 Readme](../03-training/README_gpt2.md).
 
-Then the training can be launch for the prepared datasets. In the path `gpt2/configs/<dataset-name>`, you will find a folder with 3 files:
+Then the training can be launch for the prepared datasets. In the path `molcrawl/gpt2/configs/<dataset-name>`, you will find a folder with 3 files:
 
 1. `train_gpt2_config.py`: Config for training the small-sized version of the model,
 2. `train_gpt2_medium_config.py`: Config for training the middle-sized version of the model,
@@ -520,31 +520,31 @@ Which file you pass to the training command will determine which version of the 
 For Protein Sequence, the small version training can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/configs/protein_sequence/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_config.py
 ```
 
 For Molecule Related Natural Language, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/configs/molecule_nat_lang/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py
 ```
 
 For Genome Sequence, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/configs/genome_sequence/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_config.py
 ```
 
 For Compounds, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/configs/compounds/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_config.py
 ```
 
 For RNA, the small version training can can be done by running the following:
 
 ```bash
-python gpt2/train.py gpt2/configs/rna/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_config.py
 ```
 
 This will train a model and save it in outputdir.
@@ -556,27 +556,27 @@ FOR MORE INFORMATION REGARDING THE CONFIG FILES, PLEASE REFER TO THE [GPT-2 READ
 In a similar way, using the same config files, you can sample some example with the following:
 
 ```bash
-python gpt2/sample.py gpt2/configs/<dataset>/train_gpt2_config.py
+python molcrawl/gpt2/sample.py molcrawl/gpt2/configs/<dataset>/train_gpt2_config.py
 ```
 
-For more information, check the README in the folder `gpt2`.
+For more information, check the README in the folder `molcrawl/gpt2`.
 
 ## Training of the BERT model
 
 For the BERT model training we are using a custom script based on the Hugging Face Transformers library. The datasets used are the same as the ones for GPT-2, since we already tokenize them we just need to randomly mask part of the tokens. So make sure to follow the section "Data Preparation" in [Training of GPT-2 model](#Training of GPT-2 model) before proceeding.
 
-You can find the list of configs in `bert/configs`. Most parameter are similar to the ones in the gpt configuration. However, there is a `model_size` parameter that let you choose between small medium and large models. Note that medium correspond to BERT-large size, but we call it medium since the size in terms of parameter is close to GPT-2-medium. The large model is a custom size bert model witch matches the GPT-2 large size.
+You can find the list of configs in `molcrawl/bert/configs`. Most parameter are similar to the ones in the gpt configuration. However, there is a `model_size` parameter that let you choose between small medium and large models. Note that medium correspond to BERT-large size, but we call it medium since the size in terms of parameter is close to GPT-2-medium. The large model is a custom size bert model witch matches the GPT-2 large size.
 
 To run a training you can use the following command:
 
 ```bash
-python bert/main.py bert/configs/<dataset>.py
+python molcrawl/bert/main.py molcrawl/bert/configs/<dataset>.py
 ```
 
 If multiple GPUs are available, you can speed up training using `torchrun`. For example, to train on GPUs 0 and 2:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 bert/main.py bert/configs/compounds.py
+CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 molcrawl/bert/main.py molcrawl/bert/configs/compounds.py
 ```
 
 Replace `CUDA_VISIBLE_DEVICES` with the indices of the GPUs you wish to use and set `--nproc_per_node` to the number of GPUs accordingly.
