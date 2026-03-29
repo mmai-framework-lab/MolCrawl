@@ -272,15 +272,28 @@ def evaluate_perplexity(model, dataset, tokenizer=None, max_samples=1000, device
                     targets = targets[:, :min_len]
 
                 # Predict with model
-                outputs = model(inputs)
-                logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
-
-                # calculate loss
-                loss = torch.nn.functional.cross_entropy(
-                    logits.reshape(-1, logits.size(-1)),
-                    targets.reshape(-1),
-                    ignore_index=-100,
-                )
+                # Pass targets so the custom GPT computes logits for ALL positions.
+                # Without targets, the model only forwards the last token (inference
+                # optimisation), causing a shape mismatch when computing cross-entropy.
+                outputs = model(inputs, targets)
+                if isinstance(outputs, tuple):
+                    logits, model_loss = outputs
+                    if model_loss is not None:
+                        # Custom GPT already computed mean cross-entropy loss
+                        loss = model_loss
+                    else:
+                        loss = torch.nn.functional.cross_entropy(
+                            logits.reshape(-1, logits.size(-1)),
+                            targets.reshape(-1),
+                            ignore_index=-100,
+                        )
+                else:
+                    logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                    loss = torch.nn.functional.cross_entropy(
+                        logits.reshape(-1, logits.size(-1)),
+                        targets.reshape(-1),
+                        ignore_index=-100,
+                    )
 
                 total_loss += loss.item() * targets.numel()
                 total_tokens += targets.numel()
@@ -346,7 +359,11 @@ def generate_text_samples(model, tokenizer, device="cuda", num_samples=5, max_le
 
             # decode
             if hasattr(tokenizer, "decode"):
-                generated_text = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+                try:
+                    generated_text = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+                except TypeError:
+                    # Some domain tokenizers do not support skip_special_tokens
+                    generated_text = tokenizer.decode(input_ids[0])
             else:
                 generated_text = " ".join([f"token_{tid}" for tid in input_ids[0].tolist()])
 
