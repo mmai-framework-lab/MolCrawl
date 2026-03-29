@@ -16,6 +16,16 @@ For comprehensive documentation including environment setup details, dataset gui
 
 ---
 
+## Pre-trained Models
+
+Pre-trained model checkpoints for all modalities (Genome Sequence, Protein Sequence, RNA, Compounds, and Molecule-related Natural Language) are publicly available on Hugging Face:
+
+**[https://huggingface.co/collections/kojima-lab/molcrawl](https://huggingface.co/collections/kojima-lab/molcrawl)**
+
+You can use these checkpoints directly for inference or as starting points for fine-tuning, without running the full data preparation and training pipeline described below.
+
+---
+
 ## Quick Start (Minimum Steps)
 
 Follow these steps after cloning the repository.
