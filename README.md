@@ -200,7 +200,7 @@ Adjust `batch_size` or `gradient_accumulation_steps` accordingly to maintain rep
 Runs automatic evaluation on the test split, including language modeling metrics such as perplexity and token-level accuracy. It can also generate sample outputs and optionally convert the checkpoint to Hugging Face format.
 
 ```bash
-python gpt2/test_checkpoint.py \
+python molcrawl/gpt2/test_checkpoint.py \
   --checkpoint_path <path_to_checkpoint> \
   --domain <dataset>
 ```
@@ -220,7 +220,7 @@ Optional arguments:
 Runs evaluation on the test split using masked language modeling (MLM) metrics. It also supports prediction inspection and embedding extraction depending on configuration.
 
 ```bash
-python bert/test_checkpoint.py \
+python molcrawl/bert/test_checkpoint.py \
   --checkpoint_path <path_to_checkpoint> \
   --domain <dataset>
 ```
