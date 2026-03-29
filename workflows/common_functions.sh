@@ -18,6 +18,7 @@ else
     fi
 fi
 export PYTHON
+export PYTHONUNBUFFERED=1
 unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _SCRIPT_DIR_CF
 
 # Check if LEARNING_SOURCE_DIR environment variable is set
