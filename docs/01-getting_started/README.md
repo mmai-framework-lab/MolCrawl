@@ -507,42 +507,43 @@ is filled without any padding.
 > [!IMPORTANT]
 > Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT-2 Readme](../03-training/README_gpt2.md).
 
-Then the training can be launch for the prepared datasets. In the path `molcrawl/gpt2/configs/<dataset-name>`, you will find a folder with 3 files:
+Then the training can be launch for the prepared datasets. In the path `molcrawl/gpt2/configs/<dataset-name>`, you will find a folder with 4 files:
 
-1. `train_gpt2_config.py`: Config for training the small-sized version of the model,
-2. `train_gpt2_medium_config.py`: Config for training the middle-sized version of the model,
-3. `train_gpt2_large_config.py`: Config for training the large-sized version of the model.
+1. `train_gpt2_small_config.py`: Config for training the small-sized version of the model,
+2. `train_gpt2_medium_config.py`: Config for training the medium-sized version of the model,
+3. `train_gpt2_large_config.py`: Config for training the large-sized version of the model,
+4. `train_gpt2_xl_config.py`: Config for training the extra-large (XL) version of the model.
 
 Which file you pass to the training command will determine which version of the model it will train.
 
 For Protein Sequence, the small version training can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_small_config.py
 ```
 
 For Molecule Related Natural Language, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
 ```
 
 For Genome Sequence, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_small_config.py
 ```
 
 For Compounds, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py
 ```
 
 For RNA, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_small_config.py
 ```
 
 This will train a model and save it in outputdir.
