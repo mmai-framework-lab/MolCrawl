@@ -17,12 +17,15 @@ The BERT ProteinGym evaluation system uses a trained BERT model to predict fitne
 ## File Structure
 
 ```text
-bert/
+molcrawl/evaluation/bert/
 ├── proteingym_evaluation.py        # Main evaluation script
-└── configs/
-    └── bert_proteingym_config.py   # Configuration
+└── proteingym_data_preparation.py  # Dataset download and preprocessing
 
-run_bert_proteingym_evaluation.sh   # Runner script
+molcrawl/bert/configs/
+└── bert_proteingym_config.py       # Configuration
+
+workflows/
+└── run_bert_proteingym_evaluation.sh  # Runner script (run from repo root)
 ```
 
 ## Usage
@@ -31,24 +34,24 @@ run_bert_proteingym_evaluation.sh   # Runner script
 
 ```bash
 # Evaluate on a ProteinGym dataset
-./run_bert_proteingym_evaluation.sh --dataset /path/to/proteingym_data.csv
+./workflows/run_bert_proteingym_evaluation.sh --dataset /path/to/proteingym_data.csv
 
 # Limit sample size
-./run_bert_proteingym_evaluation.sh --dataset /path/to/proteingym_data.csv --sample_size 100
+./workflows/run_bert_proteingym_evaluation.sh --dataset /path/to/proteingym_data.csv --sample_size 100
 ```
 
 ### 2. Run with custom options
 
 ```bash
 # Specify model path and batch size
-./run_bert_proteingym_evaluation.sh \
+./workflows/run_bert_proteingym_evaluation.sh \
     --dataset /path/to/proteingym_data.csv \
     --model_path runs_train_bert_protein_sequence/checkpoint-1000 \
     --batch_size 8 \
     --device cuda
 
 # Specify output directory
-./run_bert_proteingym_evaluation.sh \
+./workflows/run_bert_proteingym_evaluation.sh \
     --dataset /path/to/proteingym_data.csv \
     --output_dir ./custom_results
 ```
@@ -57,10 +60,10 @@ run_bert_proteingym_evaluation.sh   # Runner script
 
 ```bash
 # Create sample input data
-./run_bert_proteingym_evaluation.sh --create_sample_data --dataset ./sample_data.csv
+./workflows/run_bert_proteingym_evaluation.sh --create_sample_data --dataset ./sample_data.csv
 
 # Evaluate using generated sample data
-./run_bert_proteingym_evaluation.sh --dataset ./sample_data.csv
+./workflows/run_bert_proteingym_evaluation.sh --dataset ./sample_data.csv
 ```
 
 ## Prerequisites
@@ -82,7 +85,7 @@ ProteinGym input must include the following columns:
 ### Environment
 
 - CUDA-capable GPU (recommended)
-- Conda environment: `conda activate conda`
+- Conda environment: `conda activate riken-fm`
 - Required packages: `torch`, `transformers`, `pandas`, `numpy`, `scipy`, `safetensors`
 
 ## Outputs
@@ -114,11 +117,10 @@ bert_proteingym_evaluation_results/
 
 ```bash
 # Activate conda environment
-source ./miniconda/etc/profile.d/conda.sh
-conda activate conda
+conda activate riken-fm
 
 # Run with sample data
-./run_bert_proteingym_evaluation.sh \
+./workflows/run_bert_proteingym_evaluation.sh \
     --create_sample_data \
     --dataset ./sample_data.csv \
     --visualize
