@@ -289,7 +289,7 @@ bash molcrawl/preparation/download_smolinstruct.sh
 Then run the preparation script:
 
 ```bash
-python -m molcrawl.preparation.preparation_script_molecule_related_nat_lang assets/configs/molecules_nl.yaml
+python -m molcrawl.preparation.preparation_script_molecule_related_nat_lang assets/configs/molecule_nat_lang_config.yaml
 ```
 
 ##### Loading a Processed Dataset (Molecule NL)
@@ -472,7 +472,7 @@ python molcrawl/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_
 For Molecule Related Natural Language, run the following command:
 
 ```bash
-python molcrawl/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecules_nl.yaml
+python molcrawl/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang_config.yaml
 ```
 
 For Genome Sequence, run the following command:
@@ -500,7 +500,7 @@ python molcrawl/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
 ```
 
 > [!IMPORTANT]
-> It us crucial that you adjust the config files in assets/configs so that for `assets/configs/genome_sequence.yaml`, `assets/configs/protein_sequence.yaml`, and `assets/configs/rna.yaml` the value `output_dir` is correctly pointing to the `output_dir` location where you saved the preprocessed data prepared in the [Modalities Dataset Preparation](#modalities-dataset-preparation) section. Make sure the same for `assets/configs/compounds.yaml`, and `assets/configs/molecules_nl.yaml`, where you should adjust the parameter `save_path` to match where your data is stored. \*
+> It us crucial that you adjust the config files in assets/configs so that for `assets/configs/genome_sequence.yaml`, `assets/configs/protein_sequence.yaml`, and `assets/configs/rna.yaml` the value `output_dir` is correctly pointing to the `output_dir` location where you saved the preprocessed data prepared in the [Modalities Dataset Preparation](#modalities-dataset-preparation) section. Make sure the same for `assets/configs/compounds.yaml`, and `assets/configs/molecule_nat_lang_config.yaml`, where you should adjust the parameter `save_path` to match where your data is stored. \*
 
 Now running these scripts will prepare the dataset in batch and make sure the context_size, here of 1024
 is filled without any padding.
