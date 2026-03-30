@@ -35,8 +35,8 @@ Follow these steps after cloning the repository.
 ### 0. Clone Repository
 
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/mmai-framework-lab/MolCrawl.git
+cd MolCrawl
 ```
 
 ---
@@ -74,8 +74,8 @@ conda config --remove channels defaults
 conda config --add channels conda-forge
 conda config --set channel_priority strict
 
-conda env create --name ENV_NAME --file=environment.yaml
-conda activate ENV_NAME
+conda env create --name "molcrawl" --file=environment.yaml
+conda activate molcrawl
 pip install --no-build-isolation -e .
 ```
 
@@ -83,32 +83,24 @@ pip install --no-build-isolation -e .
 
 ### 4. Preprocess Raw Data (Download + Tokenize)
 
-Example: Genome Sequence
-
 ```bash
 python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml
-```
-
-For other modalities:
-
-```bash
-python -m molcrawl.preparation.preparation_script_<task> assets/configs/<task>.yaml
+python -m molcrawl.preparation.preparation_script_protein_sequence assets/configs/protein_sequence.yaml
+python -m molcrawl.preparation.preparation_script_rna assets/configs/rna.yaml
+python -m molcrawl.preparation.preparation_script_compounds assets/configs/compounds.yaml
+python -m molcrawl.preparation.preparation_script_molecule_nat_lang assets/configs/molecule_nat_lang.yaml
 ```
 
 ---
 
 ### 5. Build GPT-2/BERT Training Dataset
 
-Example: Genome Sequence
-
 ```bash
 python molcrawl/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
-```
-
-For other modalities:
-
-```bash
-python molcrawl/<task>/dataset/prepare_gpt2.py assets/configs/<task>.yaml
+python molcrawl/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
+python molcrawl/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
+python molcrawl/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
+python molcrawl/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang.yaml
 ```
 
 ---
@@ -120,25 +112,41 @@ python molcrawl/<task>/dataset/prepare_gpt2.py assets/configs/<task>.yaml
 Small:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_small_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_small_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_small_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_small_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
 ```
 
 Medium:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_medium_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_medium_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_medium_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_medium_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_medium_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_medium_config.py
 ```
 
 Large:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_large_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_large_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_large_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_large_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_large_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py
 ```
 
 Extra-Large (XL):
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_xl_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_xl_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_xl_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_xl_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_xl_config.py
+python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_xl_config.py
 ```
 
 ---
@@ -146,7 +154,11 @@ python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_xl_conf
 #### BERT (Encoder)
 
 ```bash
-python molcrawl/bert/main.py molcrawl/bert/configs/<dataset>.py
+python molcrawl/bert/main.py molcrawl/bert/configs/genome_sequence.py
+python molcrawl/bert/main.py molcrawl/bert/configs/protein_sequence.py
+python molcrawl/bert/main.py molcrawl/bert/configs/rna.py
+python molcrawl/bert/main.py molcrawl/bert/configs/compounds.py
+python molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
 ```
 
 Make sure the GPT-2 dataset preparation step (`prepare_gpt2.py`) has been completed before BERT training, since BERT uses the same prepared dataset format.
@@ -157,26 +169,48 @@ Make sure the GPT-2 dataset preparation step (`prepare_gpt2.py`) has been comple
 
 Both GPT-2 and BERT support Distributed Data Parallel (DDP) via `torchrun`.
 
-Example (use GPU 0 and 2 on a 3-GPU machine):
-
-```bash
-CUDA_VISIBLE_DEVICES=0,2 \
-torchrun --standalone --nproc_per_node=2 \
-<entry_script> <config_file>
-```
-
-Examples:
-
 ```bash
 # GPT2
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_small_config.py
+molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_small_config.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_small_config.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_small_config.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
 
 # BERT
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/bert/main.py molcrawl/bert/configs/<dataset>.py
+molcrawl/bert/main.py molcrawl/bert/configs/genome_sequence.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/bert/main.py molcrawl/bert/configs/protein_sequence.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/bert/main.py molcrawl/bert/configs/rna.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/bert/main.py molcrawl/bert/configs/compounds.py
+
+CUDA_VISIBLE_DEVICES=0,2 \
+torchrun --standalone --nproc_per_node=2 \
+molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
 ```
 
 Effective batch size:
