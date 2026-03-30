@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.omim_real_data_processor API documentation</title>
+<title>molcrawl.evaluation.gpt2.omim_real_data_processor API documentation</title>
 <meta name="description" content="OMIM Real Data Processor
 …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -34,7 +34,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.omim_real_data_processor</code></h1>
+<h1 class="title">Module <code>molcrawl.evaluation.gpt2.omim_real_data_processor</code></h1>
 </header>
 <section id="section-intro">
 <h1 id="omim-real-data-processor">OMIM Real Data Processor</h1>
@@ -47,7 +47,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.omim_real_data_processor.process_omim_real_data"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.process_omim_real_data"><code class="name flex">
 <span>def <span class="ident">process_omim_real_data</span></span>(<span>config_path: str,<br>output_dir: str,<br>existing_omim_dir: str | None = None,<br>force_download: bool = False) ‑> str</span>
 </code></dt>
 <dd>
@@ -153,7 +153,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor"><code class="flex name class">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor"><code class="flex name class">
 <span>class <span class="ident">OMIMRealDataProcessor</span></span>
 <span>(</span><span>config_path: str, logger: logging.Logger | None = None)</span>
 </code></dt>
@@ -490,7 +490,7 @@ el.replaceWith(d);
 <div class="desc"><p>OMIM real data processing class</p></div>
 <h3>Methods</h3>
 <dl>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset"><code class="name flex">
 <span>def <span class="ident">create_evaluation_dataset</span></span>(<span>self, downloaded_files: Dict[str, str]) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
@@ -577,7 +577,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Create evaluation dataset</p></div>
 </dd>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files"><code class="name flex">
 <span>def <span class="ident">download_omim_files</span></span>(<span>self, force_download: bool = False) ‑> Dict[str, str]</span>
 </code></dt>
 <dd>
@@ -618,7 +618,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Download OMIM file</p></div>
 </dd>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes"><code class="name flex">
 <span>def <span class="ident">generate_sequences_for_genes</span></span>(<span>self, gene_symbols: List[str], sequence_length: int = 100) ‑> Dict[str, str]</span>
 </code></dt>
 <dd>
@@ -643,7 +643,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Generate dummy array based on gene symbol</p></div>
 </dd>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2"><code class="name flex">
 <span>def <span class="ident">parse_genemap2</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
@@ -692,7 +692,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Analyze genemap2.txt file</p></div>
 </dd>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene"><code class="name flex">
 <span>def <span class="ident">parse_mim2gene</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
@@ -729,7 +729,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Analyze mim2gene.txt file</p></div>
 </dd>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles"><code class="name flex">
 <span>def <span class="ident">parse_mim_titles</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
@@ -774,7 +774,7 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Parse mimTitles.txt file</p></div>
 </dd>
-<dt id="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap"><code class="name flex">
+<dt id="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap"><code class="name flex">
 <span>def <span class="ident">parse_morbidmap</span></span>(<span>self, file_path: str) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
@@ -834,26 +834,26 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl" href="index.html">molcrawl</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2" href="index.html">molcrawl.evaluation.gpt2</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="molcrawl.omim_real_data_processor.process_omim_real_data" href="#molcrawl.omim_real_data_processor.process_omim_real_data">process_omim_real_data</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.process_omim_real_data" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.process_omim_real_data">process_omim_real_data</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor">OMIMRealDataProcessor</a></code></h4>
+<h4><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor">OMIMRealDataProcessor</a></code></h4>
 <ul class="">
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset">create_evaluation_dataset</a></code></li>
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files">download_omim_files</a></code></li>
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes">generate_sequences_for_genes</a></code></li>
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2">parse_genemap2</a></code></li>
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene">parse_mim2gene</a></code></li>
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles">parse_mim_titles</a></code></li>
-<li><code><a title="molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap" href="#molcrawl.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap">parse_morbidmap</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.create_evaluation_dataset">create_evaluation_dataset</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.download_omim_files">download_omim_files</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.generate_sequences_for_genes">generate_sequences_for_genes</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_genemap2">parse_genemap2</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_mim2gene">parse_mim2gene</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_mim_titles">parse_mim_titles</a></code></li>
+<li><code><a title="molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap" href="#molcrawl.evaluation.gpt2.omim_real_data_processor.OMIMRealDataProcessor.parse_morbidmap">parse_morbidmap</a></code></li>
 </ul>
 </li>
 </ul>
