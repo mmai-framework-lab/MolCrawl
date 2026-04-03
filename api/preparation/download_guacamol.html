@@ -197,9 +197,18 @@ remote server blocks automated downloads (e.g. Figshare WAF challenge).</p>
             success_count += 1
 
     if success_count &lt; total_count:
-        raise RuntimeError(f&#34;GuacaMol download incomplete: {success_count}/{total_count} files downloaded&#34;)
-
-    logger.info(f&#34;✓ GuacaMol: All {total_count} files downloaded successfully&#34;)</code></pre>
+        logger.warning(
+            f&#34;Figshare download incomplete ({success_count}/{total_count}). &#34;
+            &#34;Trying HuggingFace fallback...&#34;
+        )
+        if not _download_from_huggingface(output_dir):
+            raise RuntimeError(
+                f&#34;GuacaMol download incomplete: {success_count}/{total_count} files downloaded &#34;
+                &#34;and HuggingFace fallback also failed.&#34;
+            )
+        logger.info(&#34;✓ GuacaMol: All files obtained via HuggingFace fallback.&#34;)
+    else:
+        logger.info(f&#34;✓ GuacaMol: All {total_count} files downloaded successfully&#34;)</code></pre>
 </details>
 <div class="desc"><p>Download GuacaMol dataset</p>
 <h2 id="args">Args</h2>
