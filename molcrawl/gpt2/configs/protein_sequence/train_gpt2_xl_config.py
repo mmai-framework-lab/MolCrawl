@@ -23,7 +23,7 @@ meta_vocab_size = tokenizer.vocab_size
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 12
 block_size = 1024
-gradient_accumulation_steps = 5  # single-GPU (was 5 * 8 for 8-GPU setup)
+gradient_accumulation_steps = 5 * 8  # match effective batch size to other domains
 
 # this makes total number of tokens be 300B
 max_iters = 50000
@@ -46,8 +46,13 @@ max_checkpoints = 5  # Keep up to 5 checkpoints
 early_stopping = True
 early_stopping_patience = 5  # stop after 5 consecutive evals without val_loss improvement
 
-# weight decay
+# learning rate (reduced from default 6e-4 to match rna/genome_sequence)
+learning_rate = 6e-6
+min_lr = learning_rate / 10
+
+# regularisation
 weight_decay = 1e-1
+dropout = 0.1
 
 # dataset
 dataset = "protein_sequence"

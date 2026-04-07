@@ -49,7 +49,7 @@ max_checkpoints = 5  # Keep up to 5 checkpoints
 
 # early stopping
 early_stopping = True
-early_stopping_patience = 5
+early_stopping_patience = 10  # increased from 5 to allow larger models more time to converge
 
 # weight decay
 weight_decay = 1e-1
