@@ -72,11 +72,17 @@ el.replaceWith(d);
             try:
                 self.data = load_from_disk(str(dataset_path))[split]
             except Exception:
-                # Try direct path (no split subdirectory)
-                print(f&#34;Trying to load from {dataset_path} directly...&#34;)
-                self.data = load_from_disk(str(dataset_path))
-                if hasattr(self.data, &#34;keys&#34;) and split in self.data:
-                    self.data = self.data[split]
+                # Try split subdirectory (e.g., {dataset_dir}/train/)
+                split_path = dataset_path / split
+                if split_path.exists():
+                    print(f&#34;Trying to load from split subdirectory {split_path}...&#34;)
+                    self.data = load_from_disk(str(split_path))
+                else:
+                    # Try direct path (no split subdirectory)
+                    print(f&#34;Trying to load from {dataset_path} directly...&#34;)
+                    self.data = load_from_disk(str(dataset_path))
+                    if hasattr(self.data, &#34;keys&#34;) and split in self.data:
+                        self.data = self.data[split]
 
     def __len__(self):
         return len(self.data)

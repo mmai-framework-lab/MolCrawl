@@ -367,7 +367,7 @@ inheritance.</p></div>
         super().__init__(vocab_file, **kwargs)
 
         self.sos = &#34;[CLS]&#34;
-        self.eos = &#34;[CLS]&#34;
+        self.eos = &#34;[SEP]&#34;
 
         if not os.path.isfile(vocab_file):
             raise ValueError(&#34;Can&#39;t find a vocab file at path &#39;{}&#39;.&#34;.format(vocab_file))

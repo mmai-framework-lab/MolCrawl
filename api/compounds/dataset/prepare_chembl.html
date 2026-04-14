@@ -165,15 +165,29 @@ python -m molcrawl.compounds.dataset.prepare_chembl &ndash;force</p>
 
     logger.info(f&#34;Split: train={len(train_ds):,}, valid={len(valid_ds):,}, test={len(test_ds):,}&#34;)
 
-    dataset_dict = DatasetDict({&#34;train&#34;: train_ds, &#34;valid&#34;: valid_ds, &#34;test&#34;: test_ds})
+    # ── 3b. Concatenate with [SEP] as EOS and chunk into 1024-token blocks ────
+    # Matches the genome_sequence / protein_sequence pretraining pipeline.
+    from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as _Tok
 
-    # ── 4. Save ───────────────────────────────────────────────────────────────
+    _tok = _Tok(vocab_file, max_len)
+    eos_id = _tok.eos_token_id  # 13 ([SEP])
+    context_length = 1024
+
+    logger.info(f&#34;Concatenating and chunking into {context_length}-token blocks (eos_id={eos_id}) …&#34;)
+    chunked_splits = {}
+    for split_name, split_ds in [(&#34;train&#34;, train_ds), (&#34;valid&#34;, valid_ds), (&#34;test&#34;, test_ds)]:
+        split_ds = split_ds.map(partial(_concat_with_eos, eos_token_id=eos_id), batched=True, batch_size=-1)
+        split_ds = split_ds.map(partial(_create_chunks, context_length=context_length), batched=True, batch_size=-1)
+        chunked_splits[split_name] = split_ds
+        logger.info(f&#34;  {split_name}: {len(split_ds):,} chunks&#34;)
+    dataset_dict = DatasetDict(chunked_splits)
+
+    # ── 4. Save ──────────────────────────────────────────────────────────────
     hf_path = out / &#34;training_ready_hf_dataset&#34;
     logger.info(f&#34;Saving dataset to {hf_path} …&#34;)
+    dataset_dict.save_to_disk(str(hf_path))
     for split_name, split_ds in dataset_dict.items():
-        split_path = hf_path / split_name
-        split_ds.save_to_disk(str(split_path))
-        logger.info(f&#34;  Saved {split_name}: {len(split_ds):,} samples → {split_path}&#34;)
+        logger.info(f&#34;  Saved {split_name}: {len(split_ds):,} chunks → {hf_path / split_name}&#34;)
 
     marker.touch()
     logger.info(f&#34;ChEMBL preparation complete. Marker written to {marker}&#34;)
