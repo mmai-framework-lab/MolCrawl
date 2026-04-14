@@ -6,7 +6,7 @@
 [![Compounds Validation](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/compounds-validation.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/compounds-validation.yml)
 [![Documentation](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/documentation.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/documentation.yml)
 
-Multimodal Biological LLM Framework
+MolCrawl is a pipeline framework to construct biological multimodal foundational models designed to handle chemical and life science data in a unified manner.
 
 ---
 
