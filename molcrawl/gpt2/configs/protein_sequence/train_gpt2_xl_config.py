@@ -60,3 +60,9 @@ dataset = "protein_sequence"
 dataset_params = {
     "dataset_dir": dataset_dir  # Adjust the path as necessary for your generated dataset.
 }
+
+# --- MolCrawl HF token IDs (added by patch_configs.py) ---
+# EsmSequenceTokenizer: <cls>=0, <pad>=1, <eos>=2
+bos_token_id = 0
+eos_token_id = 2
+pad_token_id = 1

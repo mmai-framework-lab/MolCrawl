@@ -67,3 +67,9 @@ except AttributeError:
     meta_vocab_size = 32000  # Fallback value
 
 print(f"Using vocab_size: {meta_vocab_size}")
+
+# --- MolCrawl HF token IDs (added by patch_configs.py) ---
+# MinimalTokenizer (internal hash-based, vocab=50002): <pad>=0, <eos>=2
+bos_token_id = 0
+eos_token_id = 2
+pad_token_id = 0
