@@ -61,3 +61,9 @@ dataset = "rna_celltype"
 dataset_params = {
     "dataset_dir": RNA_CELLTYPE_DATASET_DIR,
 }
+
+# --- MolCrawl HF token IDs (added by patch_configs.py) ---
+# WordLevel gene tokenizer: <pad>=0 (used as EOS in training concatenation)
+bos_token_id = 0
+eos_token_id = 0
+pad_token_id = 0

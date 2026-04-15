@@ -65,3 +65,9 @@ dataset = "genome_sequence_clinvar"
 dataset_params = {
     "dataset_dir": dataset_dir,
 }
+
+# --- MolCrawl HF token IDs (added by patch_configs.py) ---
+# SentencePiece: <unk>=0, <s>=1, </s>=2
+bos_token_id = 1
+eos_token_id = 2
+pad_token_id = 0
