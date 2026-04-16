@@ -63,7 +63,7 @@ echo ""
 
 # Run training in background
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c \
-    '$PYTHON molcrawl/dnabert2/main.py dnabert2/configs/genome_sequence.py' \
+    '$PYTHON molcrawl/dnabert2/main.py molcrawl/dnabert2/configs/genome_sequence.py' \
     > "${LOG_FILE}" 2>&1 &
 
 # Get PID

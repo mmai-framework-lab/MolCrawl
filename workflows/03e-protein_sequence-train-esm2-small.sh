@@ -63,7 +63,7 @@ echo ""
 
 # Run training in background
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c \
-    '$PYTHON molcrawl/esm2/main.py esm2/configs/protein_sequence.py' \
+    '$PYTHON molcrawl/esm2/main.py molcrawl/esm2/configs/protein_sequence.py' \
     > "${LOG_FILE}" 2>&1 &
 
 # Get PID

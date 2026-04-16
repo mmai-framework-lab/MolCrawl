@@ -50,7 +50,7 @@ echo ""
 
 # Run training in background with medium model size override
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c \
-    '$PYTHON molcrawl/dnabert2/main.py dnabert2/configs/genome_sequence.py --model_size=medium' \
+    '$PYTHON molcrawl/dnabert2/main.py molcrawl/dnabert2/configs/genome_sequence.py --model_size=medium' \
     > "${LOG_FILE}" 2>&1 &
 
 # Get PID
