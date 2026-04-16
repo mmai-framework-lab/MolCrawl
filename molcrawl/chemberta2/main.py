@@ -62,10 +62,21 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------------------
     config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 
-    # Load config from file
-    configurator_path = "chemberta2/configurator.py" if os.path.exists("chemberta2/configurator.py") else "configurator.py"
+    # Load config from file — locate configurator relative to this file so that
+    # the script works regardless of the current working directory.
+    _this_dir = os.path.dirname(os.path.abspath(__file__))
+    configurator_path = os.path.join(_this_dir, "configurator.py")
+    if not os.path.exists(configurator_path):
+        configurator_path = "chemberta2/configurator.py" if os.path.exists("chemberta2/configurator.py") else "configurator.py"
     if os.path.exists(configurator_path):
         exec(open(configurator_path).read())
+
+    # Reconcile model_path with the (possibly CLI-overridden) model_size.
+    if model_path and model_size:
+        import re as _re
+        model_path = _re.sub(
+            r"-(?:small|medium|large|xl)(?=/|$)", f"-{model_size}", model_path
+        )
 
     config = {k: globals()[k] for k in config_keys}
     # -----------------------------------------------------------------------------

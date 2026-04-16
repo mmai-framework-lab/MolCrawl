@@ -2,11 +2,27 @@
 # Common functions for bootstrap scripts
 
 # ---------------------------------------------------------------------------
-# Python executable — prefer local miniconda, then molcrawl conda env
+# Python executable — select ROCm env on AMD GPU nodes (gpu04), molcrawl elsewhere
 # ---------------------------------------------------------------------------
 _SCRIPT_DIR_CF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _LOCAL_MINICONDA_PYTHON="${_SCRIPT_DIR_CF}/../miniconda/bin/python"
-if [ -f "$_LOCAL_MINICONDA_PYTHON" ]; then
+
+_NODE_NAME="${SLURMD_NODENAME:-$(hostname -s 2>/dev/null)}"
+_IS_AMD_NODE="false"
+if [ "$_NODE_NAME" = "gpu04" ]; then
+    _IS_AMD_NODE="true"
+fi
+
+if [ "$_IS_AMD_NODE" = "true" ]; then
+    _ROCM_PYTHON="/lustre/home/matsubara/miniforge3/envs/molcrawl_rocm/bin/python"
+    if [ -f "$_ROCM_PYTHON" ]; then
+        PYTHON="$_ROCM_PYTHON"
+        echo "Using molcrawl_rocm env for ROCm node: $PYTHON"
+    else
+        echo "ERROR: Running on AMD GPU node $_NODE_NAME but molcrawl_rocm env not found." >&2
+        PYTHON="$(which python3 || which python)"
+    fi
+elif [ -f "$_LOCAL_MINICONDA_PYTHON" ]; then
     PYTHON="$(realpath "$_LOCAL_MINICONDA_PYTHON")"
 else
     _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null || true)"
@@ -19,7 +35,7 @@ else
 fi
 export PYTHON
 export PYTHONUNBUFFERED=1
-unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _SCRIPT_DIR_CF
+unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _ROCM_PYTHON _NODE_NAME _IS_AMD_NODE _SCRIPT_DIR_CF
 
 # Check if LEARNING_SOURCE_DIR environment variable is set
 # Usage: check_learning_source_dir
@@ -98,6 +114,19 @@ check_gpu_memory() {
 # Sets CUDA_VISIBLE_DEVICES to the best available GPU
 auto_select_gpu() {
     local min_memory_gb=${1:-10}  # Default: 10GB minimum
+
+    # On AMD GPU nodes, SLURM sets ROCR_VISIBLE_DEVICES; mirror it to CUDA_VISIBLE_DEVICES
+    # so downstream PyTorch code (which uses "cuda" device names via HIP) works transparently.
+    if [ "$(hostname -s 2>/dev/null)" = "gpu04" ] || [ "${SLURMD_NODENAME:-}" = "gpu04" ]; then
+        if [ -n "$ROCR_VISIBLE_DEVICES" ]; then
+            export CUDA_VISIBLE_DEVICES="$ROCR_VISIBLE_DEVICES"
+            echo "ROCm node detected: CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES (from ROCR_VISIBLE_DEVICES)"
+        else
+            export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
+            echo "ROCm node detected: CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES (fallback)"
+        fi
+        return 0
+    fi
 
     if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
         echo "CUDA_VISIBLE_DEVICES is already set to: $CUDA_VISIBLE_DEVICES"
