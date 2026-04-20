@@ -17,7 +17,7 @@ tokenizer = MoleculeNatLangTokenizer()
 
 # vocab_size is read dynamically from the tokenizer so that switching
 # tokenizers (e.g. GPT-2 via GPT2_TOKENIZER_DIR) is reflected automatically.
-meta_vocab_size = tokenizer.vocab_size
+meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8  # pad to multiple of 8 (must match pretrain)
 
 model_size = "medium"
 # Fine-tuning checkpoint output — separate from pretraining output

@@ -63,7 +63,7 @@ _custom_tokenizer_path = get_custom_tokenizer_path("genome_sequence", "bert")
 tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
-meta_vocab_size = vocab_size
+meta_vocab_size = (vocab_size // 8 + 1) * 8  # pad to multiple of 8 (must match pretrain)
 
 
 def preprocess_function(examples):
