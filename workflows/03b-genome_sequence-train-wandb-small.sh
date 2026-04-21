@@ -13,8 +13,12 @@ check_learning_source_dir
 NUM_GPUS=${NUM_GPUS:-1}
 select_multi_gpu "$NUM_GPUS" 10
 
+# Weights & Biases configuration (override WANDB_ENTITY in the environment)
+WANDB_PROJECT=${WANDB_PROJECT:-genome-sequence}
+WANDB_ENTITY=${WANDB_ENTITY:-}
+
 mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
 LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-small-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/gpt2/train.py \
-    ./gpt2/configs/genome_sequence/train_gpt2_small_config.py --use_wandb=True --wandb_project='genome-sequence' --wandb_entity='kaz-matsu-de-riken'
+    ./gpt2/configs/genome_sequence/train_gpt2_small_config.py --use_wandb=True --wandb_project="${WANDB_PROJECT}" --wandb_entity="${WANDB_ENTITY}"

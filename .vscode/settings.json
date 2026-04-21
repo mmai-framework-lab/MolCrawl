@@ -2,14 +2,6 @@
   // Git settings
   "git.ignoreLimitWarning": true,
 
-  // Chat settings
-  "chat.tools.terminal.autoApprove": {
-    "/^cd /data2/matsubara/MolCrawl/riken-dataset-fundational-model && \\./miniconda/bin/python -c \"import sys; paths = \\[p for p in sys\\.path if 'riken' in p and 'miniconda' not in p\\]; print\\(paths\\)\" 2>&1$/": {
-      "approve": true,
-      "matchCommandLine": true
-    }
-  },
-
   // Python settings
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",

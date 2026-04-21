@@ -82,8 +82,9 @@ async function checkProcessStatus() {
             }
         }
 
-        // Get all python processes for the user
-        // Use partial match to handle usernames like 'matsuba+' vs 'matsubara'
+        // Get all python processes for the user.
+        // Use a prefix match because `ps aux` truncates long usernames with
+        // a trailing '+' (e.g. 'longuser+' for a 10-char login).
         const usernamePrefix = username.substring(0, Math.min(username.length, 7));
         const { stdout } = await execPromise(
             `ps aux | grep python | grep "${usernamePrefix}" | grep -v grep`

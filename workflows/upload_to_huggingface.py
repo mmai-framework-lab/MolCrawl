@@ -39,10 +39,10 @@ def parse_args():
         epilog="""
 example:
   # Basic usage
-  python upload_to_huggingface.py ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2
+  python upload_to_huggingface.py ../gpt2-output/rna-small your-username/rna-small-gpt2
 
   # Upload as a private repository with model card
-  python upload_to_huggingface.py ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2 \\
+  python upload_to_huggingface.py ../gpt2-output/rna-small your-username/rna-small-gpt2 \\
       --private --create-model-card --model-type gpt2
         """,
     )

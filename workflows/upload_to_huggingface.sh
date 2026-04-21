@@ -6,8 +6,8 @@
 #   ./upload_to_huggingface.sh <model_path> <repo_id> [options]
 #
 # 例:
-#   ./upload_to_huggingface.sh ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2
-#   ./upload_to_huggingface.sh ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2 --private
+#   ./upload_to_huggingface.sh ../gpt2-output/rna-small your-username/rna-small-gpt2
+#   ./upload_to_huggingface.sh ../gpt2-output/rna-small your-username/rna-small-gpt2 --private
 #
 # 事前準備:
 #   1. Hugging Face アカウントを作成
@@ -69,14 +69,14 @@ show_usage() {
 
 例:
   # 基本的な使用
-  $(basename "$0") ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2
+  $(basename "$0") ../gpt2-output/rna-small your-username/rna-small-gpt2
 
   # プライベートリポジトリとして、モデルカード付きでアップロード
-  $(basename "$0") ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2 \\
+  $(basename "$0") ../gpt2-output/rna-small your-username/rna-small-gpt2 \\
       --private --create-model-card --model-type gpt2
 
   # ドライラン（確認のみ）
-  $(basename "$0") ../gpt2-output/rna-small matsubara-riken/rna-small-gpt2 --dry-run
+  $(basename "$0") ../gpt2-output/rna-small your-username/rna-small-gpt2 --dry-run
 EOF
 }
 
