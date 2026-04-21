@@ -206,19 +206,21 @@ class GeneralPrompter(object):
 
 
 def _load_molecule_nat_lang_tokenizer():
-    """Load the tokenizer used by MoleculeNatLangTokenizer.
+    """Load the GPT-2 tokenizer used by MoleculeNatLangTokenizer.
 
-    Tries CodeLlama first, then a user-specified GPT-2 directory
-    (``GPT2_TOKENIZER_DIR``) if it points to a real directory, and finally the
-    ``gpt2`` model id (which resolves against the local HuggingFace cache when
-    ``local_files_only=True``). Raises ``RuntimeError`` if none succeed —
-    previous versions silently fell back to a hash-based ``BasicTokenizer``,
-    which produced garbage IDs and shape-mismatched models.
+    All existing molecule_nat_lang datasets and pretraining checkpoints were
+    produced with the GPT-2 tokenizer (vocab_size=50257). The loader honours
+    ``GPT2_TOKENIZER_DIR`` when it points at a real directory (for offline
+    nodes that pre-stage the tokenizer files); otherwise it resolves the
+    bare ``gpt2`` id against the local HuggingFace cache. ``RuntimeError``
+    is raised if neither succeeds — previous versions silently fell back to
+    CodeLlama or a hash-based ``BasicTokenizer``, producing shape-mismatched
+    models that wasted days of compute.
     """
     if AutoTokenizer is None:
         raise ModuleNotFoundError("transformers is required to use MoleculeNatLangTokenizer")
 
-    candidates = [("codellama/CodeLlama-7b-hf", "CodeLlama-7b-hf")]
+    candidates = []
 
     gpt2_dir = os.environ.get("GPT2_TOKENIZER_DIR")
     if gpt2_dir and os.path.isdir(gpt2_dir):
@@ -228,7 +230,7 @@ def _load_molecule_nat_lang_tokenizer():
             "GPT2_TOKENIZER_DIR=%s is set but is not a directory; ignoring.", gpt2_dir
         )
 
-    # Always try the HF cache as a last resort before giving up.
+    # HF cache (populated by `huggingface-cli download gpt2`).
     candidates.append(("gpt2", "gpt2 (HF cache)"))
 
     errors = []
@@ -245,10 +247,10 @@ def _load_molecule_nat_lang_tokenizer():
             errors.append(f"{label}: {exc}")
 
     raise RuntimeError(
-        "Failed to load any tokenizer for MoleculeNatLangTokenizer. Attempts:\n  - "
+        "Failed to load the GPT-2 tokenizer for MoleculeNatLangTokenizer. Attempts:\n  - "
         + "\n  - ".join(errors)
-        + "\nPopulate the HuggingFace cache (e.g. `huggingface-cli download codellama/CodeLlama-7b-hf` "
-        "or `gpt2`) or set GPT2_TOKENIZER_DIR to an existing directory containing a GPT-2 tokenizer."
+        + "\nPopulate the HuggingFace cache with `huggingface-cli download gpt2`, "
+        "or set GPT2_TOKENIZER_DIR to an existing directory containing a GPT-2 tokenizer."
     )
 
 

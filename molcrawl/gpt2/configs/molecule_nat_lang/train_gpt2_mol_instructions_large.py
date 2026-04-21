@@ -76,7 +76,10 @@ check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 print(f"Using vocab_size: {meta_vocab_size}")
 
 # --- MolCrawl HF token IDs (added by patch_configs.py) ---
-# MinimalTokenizer (internal hash-based, vocab=50002): <pad>=0, <eos>=2
+# WARNING: these values are stale leftovers from the MinimalTokenizer era
+# and are read by molcrawl/gpt2/train.py, overriding the GPT-2 values set
+# above (eos_token=50256). They need realignment with the current GPT-2
+# tokenizer but that is intentionally deferred (tracked separately).
 bos_token_id = 0
 eos_token_id = 2
 pad_token_id = 0

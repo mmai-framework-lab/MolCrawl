@@ -20,6 +20,10 @@ tensorboard_dir = get_gpt2_output_path("molecule_nat_lang", "medium")
 out_dir = get_gpt2_output_path("molecule_nat_lang", "medium")
 
 tokenizer = Tokenizer()
+# GPT-2 tokenizer (vocab_size=50257) — nanoGPT configs use the raw size.
+# check_vocab_size() below fails fast if a different tokenizer is loaded.
+meta_vocab_size = tokenizer.vocab_size
+check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
@@ -69,20 +73,12 @@ dataset_params = {
 }
 
 
-# Vocabulary size for the model
-try:
-    if hasattr(tokenizer.tokenizer, "vocab_size"):
-        meta_vocab_size = tokenizer.tokenizer.vocab_size
-    else:
-        meta_vocab_size = 32000  # CodeLlama default vocab size
-except AttributeError:
-    meta_vocab_size = 32000  # Fallback value
-
-check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 print(f"Using vocab_size: {meta_vocab_size}")
 
 # --- MolCrawl HF token IDs (added by patch_configs.py) ---
-# MinimalTokenizer (internal hash-based, vocab=50002): <pad>=0, <eos>=2
+# NOTE: these values predate the GPT-2 tokenizer migration and have not yet
+# been realigned with GPT-2 semantics (eos=50256, no dedicated pad). Do not
+# treat as authoritative without cross-checking the GPT-2 training loop.
 bos_token_id = 0
 eos_token_id = 2
 pad_token_id = 0
