@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.molecule_nat_lang.utils API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.molecule_nat_lang.utils.vocab_guard API documentation</title>
+<meta name="description" content="Fail-fast vocab_size guard for molecule_nat_lang configs …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,39 +33,76 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.molecule_nat_lang.utils</code></h1>
+<h1 class="title">Module <code>molcrawl.molecule_nat_lang.utils.vocab_guard</code></h1>
 </header>
 <section id="section-intro">
+<p>Fail-fast vocab_size guard for molecule_nat_lang configs.</p>
+<p>All molecule_nat_lang pretraining and fine-tuning checkpoints produced so far
+were trained with the GPT-2 tokenizer (vocab_size=50257). BERT-based configs
+round the vocabulary up to the next multiple of 8 (50264) for efficient
+embedding lookups; the GPT-2 configs use the raw size (50257). If the
+tokenizer is ever swapped (e.g. to CodeLlama, or to a local GPT-2 copy with
+extra special tokens), the derived <code>meta_vocab_size</code> will differ from the
+expected value and the resulting model will not be compatible with the
+existing checkpoints.</p>
+<p>Past experience: silent vocab drift (BasicTokenizer fallback → 50002, or
+CodeLlama → 32024) produced checkpoints that looked fine but actually had
+random decoder weights, wasting days of compute. Call
+<code>check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_BERT)</code> (or
+<code>EXPECTED_VOCAB_SIZE_GPT2</code>) at the bottom of every molecule_nat_lang config
+so the mismatch crashes loudly at startup instead.</p>
+<p>If you intentionally want to retrain with a different tokenizer, update the
+constants here — the change will be visible in a single diff.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer" href="bert_tokenizer.html">molcrawl.molecule_nat_lang.utils.bert_tokenizer</a></code></dt>
+<dt id="molcrawl.molecule_nat_lang.utils.vocab_guard.check_vocab_size"><code class="name flex">
+<span>def <span class="ident">check_vocab_size</span></span>(<span>meta_vocab_size: int, *, expected: int = 50264) ‑> None</span>
+</code></dt>
 <dd>
-<div class="desc"><p>BERT-compatible tokenizer wrapper for Molecule Natural Language
-Wrap MoleculeNatLangTokenizer in a format compatible with BERT learning</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.molecule_nat_lang.utils.config" href="config.html">molcrawl.molecule_nat_lang.utils.config</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.molecule_nat_lang.utils.general" href="general.html">molcrawl.molecule_nat_lang.utils.general</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.molecule_nat_lang.utils.tokenizer" href="tokenizer.html">molcrawl.molecule_nat_lang.utils.tokenizer</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.molecule_nat_lang.utils.vocab_guard" href="vocab_guard.html">molcrawl.molecule_nat_lang.utils.vocab_guard</a></code></dt>
-<dd>
-<div class="desc"><p>Fail-fast vocab_size guard for molecule_nat_lang configs …</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_vocab_size(meta_vocab_size: int, *, expected: int = EXPECTED_VOCAB_SIZE) -&gt; None:
+    &#34;&#34;&#34;Raise ``RuntimeError`` unless ``meta_vocab_size == expected``.
+
+    Intended to be called once per config at module load, after
+    ``meta_vocab_size`` has been derived from the tokenizer. BERT configs
+    should pass ``expected=EXPECTED_VOCAB_SIZE_BERT`` (50264, padded) and
+    GPT-2 configs ``expected=EXPECTED_VOCAB_SIZE_GPT2`` (50257, raw).
+    &#34;&#34;&#34;
+    if meta_vocab_size == expected:
+        return
+
+    raise RuntimeError(
+        f&#34;molecule_nat_lang meta_vocab_size mismatch: expected {expected} &#34;
+        f&#34;(GPT-2 tokenizer, {&#39;padded to multiple of 8&#39; if expected == EXPECTED_VOCAB_SIZE_BERT else &#39;raw&#39;}), &#34;
+        f&#34;got {meta_vocab_size}.\n&#34;
+        &#34;Existing pretraining checkpoints were trained with the GPT-2 &#34;
+        &#34;tokenizer. If the active tokenizer has changed (e.g. CodeLlama was &#34;
+        &#34;made available, GPT2_TOKENIZER_DIR points to a different tokenizer, &#34;
+        &#34;or a silent fallback kicked in) the resulting model will NOT be &#34;
+        &#34;compatible with the existing checkpoints.\n&#34;
+        &#34;Either restore the GPT-2 tokenizer (populate the HuggingFace cache &#34;
+        &#34;with `huggingface-cli download gpt2` and unset any overriding env &#34;
+        &#34;vars) or — if this change is intentional — update the expected &#34;
+        &#34;constants in molcrawl/molecule_nat_lang/utils/vocab_guard.py AND &#34;
+        &#34;retrain the pretrained checkpoints from scratch.&#34;
+    )</code></pre>
+</details>
+<div class="desc"><p>Raise <code>RuntimeError</code> unless <code>meta_vocab_size == expected</code>.</p>
+<p>Intended to be called once per config at module load, after
+<code>meta_vocab_size</code> has been derived from the tokenizer. BERT configs
+should pass <code>expected=EXPECTED_VOCAB_SIZE_BERT</code> (50264, padded) and
+GPT-2 configs <code>expected=EXPECTED_VOCAB_SIZE_GPT2</code> (50257, raw).</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -77,16 +114,12 @@ Wrap MoleculeNatLangTokenizer in a format compatible with BERT learning</p></div
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.molecule_nat_lang" href="../index.html">molcrawl.molecule_nat_lang</a></code></li>
+<li><code><a title="molcrawl.molecule_nat_lang.utils" href="index.html">molcrawl.molecule_nat_lang.utils</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.molecule_nat_lang.utils.bert_tokenizer" href="bert_tokenizer.html">molcrawl.molecule_nat_lang.utils.bert_tokenizer</a></code></li>
-<li><code><a title="molcrawl.molecule_nat_lang.utils.config" href="config.html">molcrawl.molecule_nat_lang.utils.config</a></code></li>
-<li><code><a title="molcrawl.molecule_nat_lang.utils.general" href="general.html">molcrawl.molecule_nat_lang.utils.general</a></code></li>
-<li><code><a title="molcrawl.molecule_nat_lang.utils.tokenizer" href="tokenizer.html">molcrawl.molecule_nat_lang.utils.tokenizer</a></code></li>
-<li><code><a title="molcrawl.molecule_nat_lang.utils.vocab_guard" href="vocab_guard.html">molcrawl.molecule_nat_lang.utils.vocab_guard</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.molecule_nat_lang.utils.vocab_guard.check_vocab_size" href="#molcrawl.molecule_nat_lang.utils.vocab_guard.check_vocab_size">check_vocab_size</a></code></li>
 </ul>
 </li>
 </ul>
