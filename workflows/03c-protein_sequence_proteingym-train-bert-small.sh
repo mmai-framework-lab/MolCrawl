@@ -21,10 +21,12 @@ check_learning_source_dir
 LOG_DIR="${LEARNING_SOURCE_DIR}/protein_sequence/proteingym/logs"
 mkdir -p "${LOG_DIR}"
 
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} PYTHONUNBUFFERED=1 \
-nohup bash -c '$PYTHON molcrawl/bert/main.py \
-    bert/configs/protein_sequence_proteingym.py' \
-    > "${LOG_DIR}/protein_sequence_proteingym-train-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 10
+
+run_training_background "${LOG_DIR}/protein_sequence_proteingym-train-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log" \
+    molcrawl/bert/main.py \
+    bert/configs/protein_sequence_proteingym.py
 
 echo "BERT fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES:-0})."
 echo "Logs: ${LOG_DIR}/"

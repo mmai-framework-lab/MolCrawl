@@ -22,15 +22,15 @@ check_learning_source_dir
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-$PROJECT_ROOT/assets/tokenizers/gpt2}"
 
-auto_select_gpu 30
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 30
 
 LOG_DIR="${LEARNING_SOURCE_DIR}/molecule_nat_lang/mol_instructions/logs"
 mkdir -p "${LOG_DIR}"
 
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} PYTHONUNBUFFERED=1 \
-nohup bash -c '$PYTHON molcrawl/gpt2/train.py \
-    gpt2/configs/molecule_nat_lang/train_gpt2_mol_instructions_large.py' \
-    > "${LOG_DIR}/molecule_nat_lang_mol_instructions-train-large-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &
+run_training_background "${LOG_DIR}/molecule_nat_lang_mol_instructions-train-large-$(date +%Y-%m-%d_%H-%M-%S).log" \
+    molcrawl/gpt2/train.py \
+    gpt2/configs/molecule_nat_lang/train_gpt2_mol_instructions_large.py
 
 echo "GPT-2 large Mol-Instructions fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LOG_DIR}/"

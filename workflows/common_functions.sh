@@ -155,3 +155,194 @@ auto_select_gpu() {
 
     return 0
 }
+
+# ---------------------------------------------------------------------------
+# Multi-GPU support — select multiple GPUs and launch training via torchrun
+# ---------------------------------------------------------------------------
+
+# Select top-N GPUs by free memory
+# Usage: select_multi_gpu [NUM_GPUS] [MIN_MEMORY_GB]
+# Sets CUDA_VISIBLE_DEVICES to comma-separated GPU IDs
+select_multi_gpu() {
+    local num_gpus=${1:-1}
+    local min_memory_gb=${2:-10}
+
+    # On AMD GPU nodes, defer to ROCR_VISIBLE_DEVICES
+    if [ "$(hostname -s 2>/dev/null)" = "gpu04" ] || [ "${SLURMD_NODENAME:-}" = "gpu04" ]; then
+        if [ -n "$ROCR_VISIBLE_DEVICES" ]; then
+            export CUDA_VISIBLE_DEVICES="$ROCR_VISIBLE_DEVICES"
+            echo "ROCm node detected: CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES (from ROCR_VISIBLE_DEVICES)"
+        else
+            export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
+            echo "ROCm node detected: CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES (fallback)"
+        fi
+        return 0
+    fi
+
+    # If CUDA_VISIBLE_DEVICES is already set by the user or SLURM, respect it
+    if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
+        echo "CUDA_VISIBLE_DEVICES is already set to: $CUDA_VISIBLE_DEVICES"
+        return 0
+    fi
+
+    if [ "$num_gpus" -le 1 ]; then
+        auto_select_gpu "$min_memory_gb"
+        return $?
+    fi
+
+    if ! command -v nvidia-smi &> /dev/null; then
+        echo "ERROR: nvidia-smi command not found. Cannot detect GPUs."
+        return 1
+    fi
+
+    echo "Auto-selecting top ${num_gpus} GPUs by free memory..."
+    local selected=$(nvidia-smi --query-gpu=index,memory.free --format=csv,noheader,nounits | \
+        awk -F', ' '{print $1, $2}' | \
+        sort -k2 -rn | \
+        head -"$num_gpus" | \
+        sort -k1 -n | \
+        awk '{print $1}' | \
+        paste -sd,)
+
+    if [ -z "$selected" ]; then
+        echo "ERROR: Could not select GPUs."
+        return 1
+    fi
+
+    local actual_count=$(echo "$selected" | tr ',' '\n' | wc -l)
+    if [ "$actual_count" -lt "$num_gpus" ]; then
+        echo "WARNING: Requested ${num_gpus} GPUs but only ${actual_count} available."
+    fi
+
+    export CUDA_VISIBLE_DEVICES="$selected"
+    echo "Selected GPUs: $CUDA_VISIBLE_DEVICES"
+
+    # Check memory on each selected GPU
+    for gpu_id in $(echo "$selected" | tr ',' ' '); do
+        check_gpu_memory "$gpu_id" "$min_memory_gb" || {
+            echo "WARNING: GPU $gpu_id may not have enough memory. Proceeding anyway."
+        }
+    done
+
+    return 0
+}
+
+# Count the number of GPUs in CUDA_VISIBLE_DEVICES
+# Usage: count_visible_gpus
+count_visible_gpus() {
+    if [ -z "$CUDA_VISIBLE_DEVICES" ]; then
+        echo "1"
+        return
+    fi
+    echo "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | wc -l | tr -d ' '
+}
+
+# Build torchrun command prefix for multi-GPU training
+# Usage: build_torchrun_cmd
+# Prints the torchrun prefix if multi-GPU, empty string if single-GPU
+build_torchrun_cmd() {
+    local ngpus
+    ngpus=$(count_visible_gpus)
+
+    if [ "$ngpus" -le 1 ]; then
+        echo ""
+        return
+    fi
+
+    # Resolve torchrun from the same directory as $PYTHON
+    local python_dir
+    python_dir="$(dirname "$PYTHON")"
+    local torchrun_bin="${python_dir}/torchrun"
+
+    if [ -x "$torchrun_bin" ]; then
+        echo "${torchrun_bin} --standalone --nproc_per_node=${ngpus}"
+    elif command -v torchrun &> /dev/null; then
+        echo "torchrun --standalone --nproc_per_node=${ngpus}"
+    else
+        # Fallback: use python -m torch.distributed.run
+        echo "${PYTHON} -m torch.distributed.run --standalone --nproc_per_node=${ngpus}"
+    fi
+}
+
+# Run a training script with automatic single/multi-GPU handling
+# Usage: run_training <python_script> [script_args...]
+#
+# Behavior:
+#   - If CUDA_VISIBLE_DEVICES lists multiple GPUs: launches via torchrun for DDP
+#   - Otherwise: launches directly with $PYTHON
+#
+# Examples:
+#   run_training molcrawl/gpt2/train.py gpt2/configs/compounds/train_gpt2_small_config.py
+#   run_training molcrawl/bert/main.py bert/configs/compounds.py
+run_training() {
+    local script="$1"
+    shift
+    local args="$@"
+
+    local ngpus
+    ngpus=$(count_visible_gpus)
+    local torchrun_cmd
+    torchrun_cmd=$(build_torchrun_cmd)
+
+    if [ -n "$torchrun_cmd" ]; then
+        echo "Multi-GPU training: ${ngpus} GPUs via torchrun"
+        echo "Command: CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} ${torchrun_cmd} ${script} ${args}"
+        CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} $torchrun_cmd $script $args
+    else
+        echo "Single-GPU training: GPU ${CUDA_VISIBLE_DEVICES}"
+        echo "Command: CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} ${PYTHON} ${script} ${args}"
+        CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} $PYTHON $script $args
+    fi
+}
+
+# Run a training script in background with automatic single/multi-GPU handling
+# Usage: run_training_background <log_file> <python_script> [script_args...]
+#
+# When running inside a SLURM job (SLURM_JOB_ID is set), runs in foreground
+# with output redirected to the log file. This prevents SLURM from killing
+# the training process when the job script exits.
+#
+# When running outside SLURM, runs in background with nohup as before.
+run_training_background() {
+    local log_file="$1"
+    shift
+    local script="$1"
+    shift
+    local args="$@"
+
+    local ngpus
+    ngpus=$(count_visible_gpus)
+    local torchrun_cmd
+    torchrun_cmd=$(build_torchrun_cmd)
+
+    # Inside SLURM: run foreground (SLURM manages the process lifecycle)
+    if [ -n "${SLURM_JOB_ID:-}" ]; then
+        if [ -n "$torchrun_cmd" ]; then
+            echo "Multi-GPU training: ${ngpus} GPUs via torchrun (SLURM foreground)"
+            echo "Log: ${log_file}"
+            CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} \
+                $torchrun_cmd $script $args > "$log_file" 2>&1
+        else
+            echo "Single-GPU training: GPU ${CUDA_VISIBLE_DEVICES} (SLURM foreground)"
+            echo "Log: ${log_file}"
+            CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} \
+                $PYTHON $script $args > "$log_file" 2>&1
+        fi
+        return
+    fi
+
+    # Outside SLURM: run in background with nohup
+    if [ -n "$torchrun_cmd" ]; then
+        echo "Multi-GPU training: ${ngpus} GPUs via torchrun (background)"
+        CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} \
+            nohup $torchrun_cmd $script $args > "$log_file" 2>&1 &
+    else
+        echo "Single-GPU training: GPU ${CUDA_VISIBLE_DEVICES} (background)"
+        CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} \
+            nohup $PYTHON $script $args > "$log_file" 2>&1 &
+    fi
+
+    local pid=$!
+    echo "Training started (PID: ${pid})"
+    echo "Log: ${log_file}"
+}
