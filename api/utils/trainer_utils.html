@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.utils API documentation</title>
-<meta name="description" content="Shared utility package.">
+<title>molcrawl.utils.trainer_utils API documentation</title>
+<meta name="description" content="Utilities for HuggingFace Trainer workarounds.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,57 +33,68 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.utils</code></h1>
+<h1 class="title">Module <code>molcrawl.utils.trainer_utils</code></h1>
 </header>
 <section id="section-intro">
-<p>Shared utility package.</p>
+<p>Utilities for HuggingFace Trainer workarounds.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.utils.base_visualization" href="base_visualization.html">molcrawl.utils.base_visualization</a></code></dt>
+<dt id="molcrawl.utils.trainer_utils.install_tie_weights_on_resume"><code class="name flex">
+<span>def <span class="ident">install_tie_weights_on_resume</span></span>(<span>trainer)</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Base Visualization Framework for Model Evaluation Results …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.cache_config" href="cache_config.html">molcrawl.utils.cache_config</a></code></dt>
-<dd>
-<div class="desc"><p>Cache configuration for Hugging Face libraries …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.environment_check" href="environment_check.html">molcrawl.utils.environment_check</a></code></dt>
-<dd>
-<div class="desc"><p>Environment variable check common module …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.evaluation_output" href="evaluation_output.html">molcrawl.utils.evaluation_output</a></code></dt>
-<dd>
-<div class="desc"><p>Output directory management utility for AI model evaluation scripts …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.get_image_path" href="get_image_path.html">molcrawl.utils.get_image_path</a></code></dt>
-<dd>
-<div class="desc"><p>Script to get image path for specified model type and file name
-Utility for obtaining image path called from Web API</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.get_model_images" href="get_model_images.html">molcrawl.utils.get_model_images</a></code></dt>
-<dd>
-<div class="desc"><p>Script to get a list of model type images
-Utility for obtaining a list of images called from Web API</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.image_manager" href="image_manager.html">molcrawl.utils.image_manager</a></code></dt>
-<dd>
-<div class="desc"><p>Image management utility …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.model_evaluator" href="model_evaluator.html">molcrawl.utils.model_evaluator</a></code></dt>
-<dd>
-<div class="desc"><p>Base evaluator class for all model evaluation classes …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils.trainer_utils" href="trainer_utils.html">molcrawl.utils.trainer_utils</a></code></dt>
-<dd>
-<div class="desc"><p>Utilities for HuggingFace Trainer workarounds.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def install_tie_weights_on_resume(trainer):
+    &#34;&#34;&#34;Patch trainer to re-tie embedding weights after checkpoint resume.
+
+    HuggingFace Trainer saves checkpoints using safetensors by default.
+    safetensors cannot represent tied tensors (shared storage), so only one
+    copy of the tied weight is written. When resuming, the decoder weight
+    (e.g. ``cls.predictions.decoder.weight`` for BERT or
+    ``lm_head.decoder.weight`` for ESM-2) is not restored from the checkpoint
+    and the model keeps its randomly initialised value unless
+    ``model.tie_weights()`` is called.
+
+    This helper wraps ``trainer._load_from_checkpoint`` so that
+    ``tie_weights()`` is invoked right after the state dict is loaded.
+    Existing checkpoints that were saved without the tied key are therefore
+    still usable: the decoder is restored from the embedding.
+    &#34;&#34;&#34;
+    original_load = trainer._load_from_checkpoint
+
+    def patched_load(resume_from_checkpoint, model=None):
+        original_load(resume_from_checkpoint, model)
+        target = model if model is not None else trainer.model
+        if hasattr(target, &#34;tie_weights&#34;):
+            target.tie_weights()
+            if getattr(trainer.args, &#34;local_rank&#34;, -1) in (-1, 0):
+                print(&#34;tie_weights() re-applied after checkpoint load&#34;)
+
+    trainer._load_from_checkpoint = patched_load</code></pre>
+</details>
+<div class="desc"><p>Patch trainer to re-tie embedding weights after checkpoint resume.</p>
+<p>HuggingFace Trainer saves checkpoints using safetensors by default.
+safetensors cannot represent tied tensors (shared storage), so only one
+copy of the tied weight is written. When resuming, the decoder weight
+(e.g. <code>cls.predictions.decoder.weight</code> for BERT or
+<code>lm_head.decoder.weight</code> for ESM-2) is not restored from the checkpoint
+and the model keeps its randomly initialised value unless
+<code>model.tie_weights()</code> is called.</p>
+<p>This helper wraps <code>trainer._load_from_checkpoint</code> so that
+<code>tie_weights()</code> is invoked right after the state dict is loaded.
+Existing checkpoints that were saved without the tied key are therefore
+still usable: the decoder is restored from the embedding.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -95,20 +106,12 @@ Utility for obtaining a list of images called from Web API</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl" href="../index.html">molcrawl</a></code></li>
+<li><code><a title="molcrawl.utils" href="index.html">molcrawl.utils</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.utils.base_visualization" href="base_visualization.html">molcrawl.utils.base_visualization</a></code></li>
-<li><code><a title="molcrawl.utils.cache_config" href="cache_config.html">molcrawl.utils.cache_config</a></code></li>
-<li><code><a title="molcrawl.utils.environment_check" href="environment_check.html">molcrawl.utils.environment_check</a></code></li>
-<li><code><a title="molcrawl.utils.evaluation_output" href="evaluation_output.html">molcrawl.utils.evaluation_output</a></code></li>
-<li><code><a title="molcrawl.utils.get_image_path" href="get_image_path.html">molcrawl.utils.get_image_path</a></code></li>
-<li><code><a title="molcrawl.utils.get_model_images" href="get_model_images.html">molcrawl.utils.get_model_images</a></code></li>
-<li><code><a title="molcrawl.utils.image_manager" href="image_manager.html">molcrawl.utils.image_manager</a></code></li>
-<li><code><a title="molcrawl.utils.model_evaluator" href="model_evaluator.html">molcrawl.utils.model_evaluator</a></code></li>
-<li><code><a title="molcrawl.utils.trainer_utils" href="trainer_utils.html">molcrawl.utils.trainer_utils</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.utils.trainer_utils.install_tie_weights_on_resume" href="#molcrawl.utils.trainer_utils.install_tie_weights_on_resume">install_tie_weights_on_resume</a></code></li>
 </ul>
 </li>
 </ul>
