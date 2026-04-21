@@ -328,6 +328,7 @@ if __name__ == "__main__":
         report_to="wandb" if use_wandb else "none",
         save_total_limit=3,
         load_best_model_at_end=False,
+        save_safetensors=False,  # Use pickle to preserve tied weights on resume
     )
 
     # Load datasets
@@ -413,6 +414,8 @@ if __name__ == "__main__":
 
     # Train
     print("🚀 Starting ESM-2 training...")
+    from molcrawl.utils.trainer_utils import install_tie_weights_on_resume
+    install_tie_weights_on_resume(trainer)
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)
         print("✅ Training completed successfully!")
