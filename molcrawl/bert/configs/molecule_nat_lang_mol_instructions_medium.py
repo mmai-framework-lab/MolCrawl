@@ -9,6 +9,7 @@
 
 from molcrawl.config.paths import MOL_INSTRUCTIONS_DATASET_DIR, get_bert_output_path
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
+from molcrawl.molecule_nat_lang.utils.vocab_guard import check_vocab_size
 
 # bert/main.py looks for a `tokenizer` variable in globals() to build the
 # DataCollatorForLanguageModeling.  MoleculeNatLangTokenizer wraps the actual
@@ -18,6 +19,7 @@ tokenizer = MoleculeNatLangTokenizer()
 # vocab_size is read dynamically from the tokenizer so that switching
 # tokenizers (e.g. GPT-2 via GPT2_TOKENIZER_DIR) is reflected automatically.
 meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8  # pad to multiple of 8 (must match pretrain)
+check_vocab_size(meta_vocab_size)
 
 model_size = "medium"
 # Fine-tuning checkpoint output — separate from pretraining output

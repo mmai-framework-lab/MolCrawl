@@ -12,6 +12,7 @@ from molcrawl.config.paths import (
     get_gpt2_output_path,
 )
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from molcrawl.molecule_nat_lang.utils.vocab_guard import EXPECTED_VOCAB_SIZE_GPT2, check_vocab_size
 
 n_layer = 36
 n_head = 20
@@ -71,6 +72,7 @@ dataset_params = {
     "dataset_dir": dataset_dir,
 }
 
+check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 print(f"Using vocab_size: {meta_vocab_size}")
 
 # --- MolCrawl HF token IDs (added by patch_configs.py) ---
