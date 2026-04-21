@@ -332,6 +332,7 @@ if __name__ == "__main__":
         metric_for_best_model="eval_loss",  # Use eval_loss to determine best model
         greater_is_better=False,  # Lower loss is better
         save_total_limit=5,  # Keep only the 5 most recent checkpoints
+        save_safetensors=False,  # Use pickle to preserve tied weights on resume
     )
 
     # Check if we should use custom dataset loading (for RNA data)
@@ -549,6 +550,8 @@ if __name__ == "__main__":
     # Train with or without checkpoint
     # If resume_checkpoint is None, training starts from scratch
     # If resume_checkpoint is provided, training resumes from that checkpoint
+    from molcrawl.utils.trainer_utils import install_tie_weights_on_resume
+    install_tie_weights_on_resume(trainer)
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)
     except Exception as e:

@@ -277,6 +277,7 @@ if __name__ == "__main__":
         metric_for_best_model="eval_loss",
         greater_is_better=False,
         remove_unused_columns=False,
+        save_safetensors=False,  # Use pickle to preserve tied weights on resume
     )
 
     # Initialize Trainer
@@ -307,6 +308,8 @@ if __name__ == "__main__":
 
     # Train
     logger.info("🚀 Starting RNAformer training...")
+    from molcrawl.utils.trainer_utils import install_tie_weights_on_resume
+    install_tie_weights_on_resume(trainer)
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)
         logger.info("✅ Training completed successfully!")
