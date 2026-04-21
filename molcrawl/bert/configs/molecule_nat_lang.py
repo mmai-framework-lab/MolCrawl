@@ -11,6 +11,7 @@ import os
 
 from molcrawl.config.paths import get_bert_output_path
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from molcrawl.molecule_nat_lang.utils.vocab_guard import check_vocab_size
 
 # Get LEARNING_SOURCE_DIR from environment variable directly
 LEARNING_SOURCE_DIR = os.environ.get("LEARNING_SOURCE_DIR", "./learning_source_20260105-molecule-nl")
@@ -19,26 +20,12 @@ MOLECULE_NAT_LANG_DATASET_DIR = MOLECULE_NAT_LANG_DIR + "/training_ready_hf_data
 
 tokenizer = Tokenizer()
 
-# Explicitly set vocab size for BERT
-# CodeLlama-7b-hf uses vocab_size of 32016
-# GPT-2 uses vocab_size of 50257
-# We'll use 32016 as default (CodeLlama)
-try:
-    # Try to get vocab size from tokenizer
-    if hasattr(tokenizer, "vocab_size"):
-        meta_vocab_size = tokenizer.vocab_size
-    elif hasattr(tokenizer, "tokenizer") and hasattr(tokenizer.tokenizer, "vocab_size"):
-        meta_vocab_size = tokenizer.tokenizer.vocab_size
-    elif hasattr(tokenizer, "tokenizer"):
-        vocab = tokenizer.tokenizer.get_vocab()
-        meta_vocab_size = len(vocab) if vocab else 32016
-    else:
-        meta_vocab_size = 32016  # Default to CodeLlama vocab size
-except Exception:
-    meta_vocab_size = 32016  # Fallback to CodeLlama vocab size
-
-# Round up to nearest multiple of 8 for efficiency
-meta_vocab_size = (meta_vocab_size // 8 + 1) * 8
+# molecule_nat_lang uses the GPT-2 tokenizer (vocab_size=50257). Pad up to
+# the next multiple of 8 for efficient embedding lookups. check_vocab_size()
+# verifies the result matches the value baked into existing checkpoints so
+# a tokenizer swap is caught at startup rather than silently trashing weights.
+meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8
+check_vocab_size(meta_vocab_size)
 
 max_steps = 60000
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
@@ -73,7 +60,3 @@ def preprocess_function(examples):
     return examples
 
 
-# Special Tokens
-start_instruction = 1
-end_instruction = [518, 29914, 25580, 29962]
-eos_token = 2  # eos

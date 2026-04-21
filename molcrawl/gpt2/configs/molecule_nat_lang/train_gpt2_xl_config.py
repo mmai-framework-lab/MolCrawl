@@ -5,6 +5,7 @@
 
 from molcrawl.config.paths import MOLECULE_NAT_LANG_DATASET_DIR, get_gpt2_output_path
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from molcrawl.molecule_nat_lang.utils.vocab_guard import EXPECTED_VOCAB_SIZE_GPT2, check_vocab_size
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48
@@ -18,6 +19,10 @@ tensorboard_dir = get_gpt2_output_path("molecule_nat_lang", "xl")
 out_dir = get_gpt2_output_path("molecule_nat_lang", "xl")
 
 tokenizer = Tokenizer()
+# GPT-2 tokenizer (vocab_size=50257) — nanoGPT configs use the raw size.
+# check_vocab_size() below fails fast if a different tokenizer is loaded.
+meta_vocab_size = tokenizer.vocab_size
+check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 
 # these make the total batch size be ~0.5M
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
@@ -56,28 +61,16 @@ weight_decay = 1e-1
 # dataset
 dataset = "molecule_nat_lang"
 
-# Special Tokens
-start_instruction = 1
-end_instruction = [518, 29914, 25580, 29962]
-eos_token = 2  # eos
-
 dataset_params = {
     "dataset_dir": dataset_dir  # Adjust the path as necessary for your generated dataset.
 }
 
-# Vocabulary size for the model
-try:
-    if hasattr(tokenizer.tokenizer, "vocab_size"):
-        meta_vocab_size = tokenizer.tokenizer.vocab_size
-    else:
-        meta_vocab_size = 32000  # CodeLlama default vocab size
-except AttributeError:
-    meta_vocab_size = 32000  # Fallback value
-
 print(f"Using vocab_size: {meta_vocab_size}")
 
-# --- MolCrawl HF token IDs (added by patch_configs.py) ---
-# MinimalTokenizer (internal hash-based, vocab=50002): <pad>=0, <eos>=2
-bos_token_id = 0
-eos_token_id = 2
-pad_token_id = 0
+# MolCrawl HF token IDs — derived from the active GPT-2 tokenizer so the
+# checkpoint config.json written by train.py always matches what the
+# tokenizer actually emits. GPT-2 has no dedicated BOS/PAD tokens; the
+# standard convention is to reuse <|endoftext|> (50256) for all three.
+bos_token_id = tokenizer.tokenizer.eos_token_id
+eos_token_id = tokenizer.tokenizer.eos_token_id
+pad_token_id = tokenizer.tokenizer.eos_token_id
