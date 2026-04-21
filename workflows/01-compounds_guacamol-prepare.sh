@@ -7,10 +7,11 @@
 
 set -e
 
-# Load common functions
+# Load common functions (sets $PYTHON)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common_functions.sh"
 
+# Check LEARNING_SOURCE_DIR
 check_learning_source_dir
 
 echo "Using LEARNING_SOURCE_DIR: $LEARNING_SOURCE_DIR"
