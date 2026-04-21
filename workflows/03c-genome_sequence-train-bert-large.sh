@@ -9,5 +9,10 @@ source "${SCRIPT_DIR}/common_functions.sh"
 # Check LEARNING_SOURCE_DIR
 check_learning_source_dir
 mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} nohup bash -c '$PYTHON molcrawl/bert/main.py bert/configs/genome_sequence_large.py' > \
-    ${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-bert-large-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 40
+
+LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-bert-large-$(date +%Y-%m-%d_%H-%M-%S).log"
+run_training_background "$LOG_FILE" \
+    molcrawl/bert/main.py \
+    bert/configs/genome_sequence_large.py

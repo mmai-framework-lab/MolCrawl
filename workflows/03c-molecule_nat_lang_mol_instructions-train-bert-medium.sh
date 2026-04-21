@@ -26,10 +26,12 @@ export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-$PROJECT_ROOT/assets/tokenizers
 LOG_DIR="${LEARNING_SOURCE_DIR}/molecule_nat_lang/mol_instructions/logs"
 mkdir -p "${LOG_DIR}"
 
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} \
-nohup bash -c '$PYTHON molcrawl/bert/main.py \
-    bert/configs/molecule_nat_lang_mol_instructions_medium.py' \
-    > "${LOG_DIR}/molecule_nat_lang_mol_instructions-train-bert-medium-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 20
+
+run_training_background "${LOG_DIR}/molecule_nat_lang_mol_instructions-train-bert-medium-$(date +%Y-%m-%d_%H-%M-%S).log" \
+    molcrawl/bert/main.py \
+    bert/configs/molecule_nat_lang_mol_instructions_medium.py
 
 echo "BERT fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES:-0})."
 echo "Logs: ${LOG_DIR}/"

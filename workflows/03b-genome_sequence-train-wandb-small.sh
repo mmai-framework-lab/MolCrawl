@@ -10,8 +10,11 @@ source "${SCRIPT_DIR}/common_functions.sh"
 check_learning_source_dir
 
 # Auto-select GPU if not manually specified (small model needs ~10GB)
-auto_select_gpu 10
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 10
 
 mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c "python molcrawl/gpt2/train.py ./gpt2/configs/genome_sequence/train_gpt2_small_config.py --use_wandb=True --wandb_project='genome-sequence' --wandb_entity='kaz-matsu-de-riken'" > \
-    ${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-small-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &
+LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-small-$(date +%Y-%m-%d_%H-%M-%S).log"
+run_training_background "$LOG_FILE" \
+    molcrawl/gpt2/train.py \
+    ./gpt2/configs/genome_sequence/train_gpt2_small_config.py --use_wandb=True --wandb_project='genome-sequence' --wandb_entity='kaz-matsu-de-riken'

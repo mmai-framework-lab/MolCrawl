@@ -29,8 +29,8 @@ check_learning_source_dir
 mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
 
 # Set default GPU if not specified
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
-
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 10
 # Set wandb settings from environment variables
 USE_WANDB=${USE_WANDB:-False}
 WANDB_PROJECT=${WANDB_PROJECT:-dnabert2-genome}
@@ -62,22 +62,8 @@ echo "  tail -f ${LOG_FILE}"
 echo ""
 
 # Run training in background
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c \
-    '$PYTHON molcrawl/dnabert2/main.py molcrawl/dnabert2/configs/genome_sequence.py' \
-    > "${LOG_FILE}" 2>&1 &
+run_training_background "${LOG_FILE}" \
+    molcrawl/dnabert2/main.py \
+    molcrawl/dnabert2/configs/genome_sequence.py
 
-# Get PID
-PID=$!
 
-echo "✅ Training started (PID: ${PID})"
-echo ""
-echo "Useful commands:"
-echo "  # Monitor log:"
-echo "  tail -f ${LOG_FILE}"
-echo ""
-echo "  # Check if training is running:"
-echo "  ps aux | grep ${PID}"
-echo ""
-echo "  # Stop training:"
-echo "  kill ${PID}"
-echo ""

@@ -18,15 +18,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common_functions.sh"
 
 check_learning_source_dir
-auto_select_gpu 25
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 25
 
 LOG_DIR="${LEARNING_SOURCE_DIR}/rna/celltype/logs"
 mkdir -p "${LOG_DIR}"
 
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} PYTHONUNBUFFERED=1 \
-nohup bash -c '$PYTHON molcrawl/gpt2/train.py \
-    gpt2/configs/rna/train_gpt2_celltype_large.py' \
-    > "${LOG_DIR}/rna_celltype-train-gpt2-large-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &
+run_training_background "${LOG_DIR}/rna_celltype-train-gpt2-large-$(date +%Y-%m-%d_%H-%M-%S).log" \
+    molcrawl/gpt2/train.py \
+    gpt2/configs/rna/train_gpt2_celltype_large.py
 
 echo "GPT-2 large fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LOG_DIR}/"

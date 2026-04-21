@@ -15,8 +15,11 @@ export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-$PROJECT_ROOT/assets/tokenizers
 
 
 # Auto-select GPU if not manually specified (small model needs ~10GB)
-auto_select_gpu 10
+NUM_GPUS=${NUM_GPUS:-1}
+select_multi_gpu "$NUM_GPUS" 10
 
 mkdir -p ${LEARNING_SOURCE_DIR}/molecule_nat_lang/logs
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} nohup bash -c '$PYTHON molcrawl/gpt2/train.py ./gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py' > \
-    ${LEARNING_SOURCE_DIR}/molecule_nat_lang/logs/molecule_nat_lang-train-small-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &
+LOG_FILE="${LEARNING_SOURCE_DIR}/molecule_nat_lang/logs/molecule_nat_lang-train-small-$(date +%Y-%m-%d_%H-%M-%S).log"
+run_training_background "$LOG_FILE" \
+    molcrawl/gpt2/train.py \
+    ./gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
