@@ -60,8 +60,15 @@ log_info "Download destination: $FULL_OUTPUT_DIR"
 # ディレクトリが既に存在するかチェック
 if [ -d "$FULL_OUTPUT_DIR" ] && [ "$(ls -A $FULL_OUTPUT_DIR)" ]; then
     log_warning "Directory $FULL_OUTPUT_DIR already exists and is not empty."
-    read -p "Do you want to remove it and re-download? (y/N): " -n 1 -r
-    echo
+    if [ -t 0 ]; then
+        # Interactive mode: ask the user
+        read -p "Do you want to remove it and re-download? (y/N): " -n 1 -r
+        echo
+    else
+        # Non-interactive mode (e.g. SLURM): keep existing data
+        log_info "Non-interactive mode: keeping existing data."
+        REPLY="n"
+    fi
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         log_info "Removing existing directory..."
         rm -rf "$FULL_OUTPUT_DIR"
