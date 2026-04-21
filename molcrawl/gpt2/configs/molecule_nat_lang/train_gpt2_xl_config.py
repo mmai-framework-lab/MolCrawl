@@ -61,21 +61,16 @@ weight_decay = 1e-1
 # dataset
 dataset = "molecule_nat_lang"
 
-# Special Tokens
-start_instruction = 1
-end_instruction = [518, 29914, 25580, 29962]
-eos_token = 2  # eos
-
 dataset_params = {
     "dataset_dir": dataset_dir  # Adjust the path as necessary for your generated dataset.
 }
 
 print(f"Using vocab_size: {meta_vocab_size}")
 
-# --- MolCrawl HF token IDs (added by patch_configs.py) ---
-# NOTE: these values predate the GPT-2 tokenizer migration and have not yet
-# been realigned with GPT-2 semantics (eos=50256, no dedicated pad). Do not
-# treat as authoritative without cross-checking the GPT-2 training loop.
-bos_token_id = 0
-eos_token_id = 2
-pad_token_id = 0
+# MolCrawl HF token IDs — derived from the active GPT-2 tokenizer so the
+# checkpoint config.json written by train.py always matches what the
+# tokenizer actually emits. GPT-2 has no dedicated BOS/PAD tokens; the
+# standard convention is to reuse <|endoftext|> (50256) for all three.
+bos_token_id = tokenizer.tokenizer.eos_token_id
+eos_token_id = tokenizer.tokenizer.eos_token_id
+pad_token_id = tokenizer.tokenizer.eos_token_id

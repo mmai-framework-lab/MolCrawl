@@ -60,7 +60,3 @@ def preprocess_function(examples):
     return examples
 
 
-# Special Tokens
-start_instruction = 1
-end_instruction = [518, 29914, 25580, 29962]
-eos_token = 2  # eos

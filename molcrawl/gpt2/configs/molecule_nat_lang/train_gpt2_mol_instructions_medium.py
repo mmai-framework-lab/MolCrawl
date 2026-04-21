@@ -78,11 +78,10 @@ dataset_params = {
 check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 print(f"Using vocab_size: {meta_vocab_size}")
 
-# --- MolCrawl HF token IDs (added by patch_configs.py) ---
-# WARNING: these values are stale leftovers from the MinimalTokenizer era
-# and are read by molcrawl/gpt2/train.py, overriding the GPT-2 values set
-# above (eos_token=50256). They need realignment with the current GPT-2
-# tokenizer but that is intentionally deferred (tracked separately).
-bos_token_id = 0
-eos_token_id = 2
-pad_token_id = 0
+# MolCrawl HF token IDs — derived from the active GPT-2 tokenizer so the
+# checkpoint config.json written by train.py always matches what the
+# tokenizer actually emits. GPT-2 has no dedicated BOS/PAD tokens; the
+# standard convention is to reuse <|endoftext|> (50256) for all three.
+bos_token_id = tokenizer.tokenizer.eos_token_id
+eos_token_id = tokenizer.tokenizer.eos_token_id
+pad_token_id = tokenizer.tokenizer.eos_token_id

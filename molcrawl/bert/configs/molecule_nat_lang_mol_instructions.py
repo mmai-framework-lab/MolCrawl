@@ -55,9 +55,3 @@ def preprocess_function(examples):
     return examples
 
 
-# Special Tokens — legacy LLaMA-2 IDs from when Mol-Instructions was
-# authored against CodeLlama. The active tokenizer is GPT-2; these values
-# need realigning before use in GPT-2 generation (tracked separately).
-start_instruction = 1
-end_instruction = [518, 29914, 25580, 29962]
-eos_token = 2  # eos
