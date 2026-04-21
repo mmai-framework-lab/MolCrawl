@@ -14,7 +14,9 @@ if [ "$_NODE_NAME" = "gpu04" ]; then
 fi
 
 if [ "$_IS_AMD_NODE" = "true" ]; then
-    _ROCM_PYTHON="/lustre/home/matsubara/miniforge3/envs/molcrawl_rocm/bin/python"
+    # Override with MOLCRAWL_ROCM_PYTHON if set; otherwise look for the
+    # standard conda layout under the user's home directory.
+    _ROCM_PYTHON="${MOLCRAWL_ROCM_PYTHON:-$HOME/miniforge3/envs/molcrawl_rocm/bin/python}"
     if [ -f "$_ROCM_PYTHON" ]; then
         PYTHON="$_ROCM_PYTHON"
         echo "Using molcrawl_rocm env for ROCm node: $PYTHON"
