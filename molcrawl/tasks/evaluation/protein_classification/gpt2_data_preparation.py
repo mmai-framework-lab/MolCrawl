@@ -10,16 +10,11 @@ import argparse
 import logging
 import os
 import sys
-from importlib import import_module
 
 import numpy as np
 import pandas as pd
 
-# Set project root and import common modules
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-check_learning_source_dir = import_module("utils.environment_check").check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 # Logging settings
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")

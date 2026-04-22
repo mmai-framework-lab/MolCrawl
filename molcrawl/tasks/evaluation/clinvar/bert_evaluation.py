@@ -18,7 +18,6 @@ import logging
 import os
 import sys
 from datetime import datetime
-from importlib import import_module
 from pathlib import Path
 
 import numpy as np
@@ -40,13 +39,8 @@ from molcrawl.core.utils.evaluation_output import (
     get_model_type_from_path,
     setup_evaluation_logging,
 )
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 from molcrawl.core.utils.model_evaluator import ModelEvaluator
-
-# add project root
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Add common environment check module
-check_learning_source_dir = import_module("utils.environment_check").check_learning_source_dir
 
 # Log settingslatersetup_evaluation_loggingdo it with
 logger = logging.getLogger(__name__)
