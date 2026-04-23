@@ -26,7 +26,9 @@ def generate_zinc_file_list():
     files = []
 
     # Read file list from filelist.txt
-    filelist_path = "src/compounds/dataset/organix13/zinc/zinc_complete/filelist.txt"
+    filelist_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "zinc_complete", "filelist.txt"
+    )
     if os.path.exists(filelist_path):
         with open(filelist_path, "r") as f:
             for line in f:
