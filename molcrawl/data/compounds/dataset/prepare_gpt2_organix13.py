@@ -38,7 +38,9 @@ def _concat_with_eos(examples, eos_token_id):
 
 def _create_chunks(examples, context_length):
     """Split a flat input_ids list into fixed-length chunks."""
-    concatenated_ids = examples["input_ids"]
+    # _concat_with_eos produces a single-row batch: {"input_ids": [flat_stream]}.
+    # With batched=True the column is that outer list, so unwrap to get the stream.
+    concatenated_ids = examples["input_ids"][0]
     total_length = len(concatenated_ids)
     num_chunks = total_length // context_length
     total_length = num_chunks * context_length
