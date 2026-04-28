@@ -372,6 +372,67 @@ body {
     margin-top: 0.5rem;
 }
 
+.models-loading {
+    text-align: center;
+    color: var(--text-light);
+    padding: 2.5rem 1rem;
+    font-style: italic;
+}
+
+.models-error {
+    color: #92400e;
+    background: #fef3c7;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+}
+
+.models-error a {
+    color: #92400e;
+    text-decoration: underline;
+}
+
+.models-meta {
+    text-align: right;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+}
+
+.models-meta a {
+    color: var(--text-light);
+}
+
+.models-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.models-list li {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-family: 'Fira Code', 'Monaco', monospace;
+    font-size: 0.88rem;
+}
+
+.models-list li:last-child {
+    border-bottom: none;
+}
+
+.models-list a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.models-list a:hover {
+    text-decoration: underline;
+}
+
 .model-table tbody tr:last-child td,
 .model-table tbody tr:last-child th {
     border-bottom: none;
