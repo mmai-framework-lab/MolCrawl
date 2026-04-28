@@ -17,6 +17,7 @@
             </div>
             <ul class="nav-links">
                 <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#models">Models</a></li>
                 <li><a href="api/">API Docs</a></li>
                 <li><a href="https://github.com/mmai-framework-lab/MolCrawl" target="_blank">
                         <i class="fab fa-github"></i> GitHub
@@ -50,6 +51,27 @@ conda activate molcrawl
 pip install -e .</code></pre>
                 </div>
                 <p>For detailed documentation, visit the <a href="api/">API Documentation</a>.</p>
+            </div>
+        </section>
+
+        <section id="models" class="section">
+            <div class="container">
+                <h2>Pre-trained Models</h2>
+                <p class="section-lead">
+                    <a href="https://huggingface.co/kojima-lab" target="_blank"
+                        rel="noopener">huggingface.co/kojima-lab</a>
+                </p>
+                <div id="models-matrix-container">
+                    <p class="models-loading">Loading models from Hugging Face&hellip;</p>
+                </div>
+                <noscript>
+                    <p class="models-error">
+                        JavaScript is required to render the live model matrix. See
+                        <a href="https://huggingface.co/kojima-lab" target="_blank"
+                            rel="noopener">huggingface.co/kojima-lab</a>
+                        for the complete list of <code>kojima-lab/molcrawl-*</code> repositories.
+                    </p>
+                </noscript>
             </div>
         </section>
 
@@ -89,6 +111,7 @@ pip install -e .</code></pre>
             </p>
         </div>
     </footer>
+    <script src="assets/js/models-matrix.js" defer></script>
 </body>
 
 </html>
