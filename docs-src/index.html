@@ -17,6 +17,7 @@
             </div>
             <ul class="nav-links">
                 <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#models">Models</a></li>
                 <li><a href="api/">API Docs</a></li>
                 <li><a href="https://github.com/mmai-framework-lab/MolCrawl" target="_blank">
                         <i class="fab fa-github"></i> GitHub
@@ -50,6 +51,244 @@ conda activate molcrawl
 pip install -e .</code></pre>
                 </div>
                 <p>For detailed documentation, visit the <a href="api/">API Documentation</a>.</p>
+            </div>
+        </section>
+
+        <section id="models" class="section">
+            <div class="container">
+                <h2>Pre-trained Models</h2>
+                <p class="section-lead">
+                    MolCrawl foundation models are progressively published in the Hugging Face collection
+                    <a href="https://huggingface.co/collections/kojima-lab/molcrawl" target="_blank"
+                        rel="noopener">kojima-lab / MolCrawl</a>.
+                    Rows list each model kind (modality &times; architecture); columns list size variants. Cells
+                    that are already public on Hugging Face link directly to the repository; cells marked
+                    <em>&mdash;</em> are still under construction.
+                </p>
+
+                <h3 class="subsection-title">Foundation Models</h3>
+                <div class="model-table-wrapper">
+                    <table class="model-table model-matrix">
+                        <thead>
+                            <tr>
+                                <th scope="col">Model Kind</th>
+                                <th scope="col">Small</th>
+                                <th scope="col">Medium</th>
+                                <th scope="col">Large</th>
+                                <th scope="col">XL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row">Genome Sequence &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Genome Sequence &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Genome Sequence &mdash; DNABERT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Protein Sequence &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Protein Sequence &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Protein Sequence &mdash; ESM-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds &mdash; ChemBERTa-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">RNA &mdash; GPT-2</th>
+                                <td><a href="https://huggingface.co/kojima-lab/molcrawl-rna-gpt2-small"
+                                        target="_blank" rel="noopener">molcrawl-rna-gpt2-small</a></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">RNA &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">RNA &mdash; RNAformer</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Molecule Natural Language &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Molecule Natural Language &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="subsection-title">Dataset-specific Fine-tuned Variants</h3>
+                <div class="model-table-wrapper">
+                    <table class="model-table model-matrix">
+                        <thead>
+                            <tr>
+                                <th scope="col">Model Kind</th>
+                                <th scope="col">Small</th>
+                                <th scope="col">Medium</th>
+                                <th scope="col">Large</th>
+                                <th scope="col">XL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row">RNA Cell-type &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><a href="https://huggingface.co/kojima-lab/molcrawl-rna-celltype-gpt2-xl"
+                                        target="_blank" rel="noopener">molcrawl-rna-celltype-gpt2-xl</a></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">RNA Cell-type &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds (ChEMBL) &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds (ChEMBL) &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds (GuacaMol) &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Compounds (GuacaMol) &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Genome (ClinVar) &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Genome (ClinVar) &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Protein (ProteinGym) &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Protein (ProteinGym) &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Molecule NL (Mol-Instructions) &mdash; GPT-2</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Molecule NL (Mol-Instructions) &mdash; BERT</th>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                                <td><span class="cell-empty">&mdash;</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="section-note">
+                    Empty cells (&mdash;) indicate repositories that are still private or have not been uploaded
+                    yet. For the latest status of every <code>kojima-lab/molcrawl-*</code> repository, see the
+                    <a href="https://huggingface.co/collections/kojima-lab/molcrawl" target="_blank"
+                        rel="noopener">Hugging Face collection</a>.
+                </p>
             </div>
         </section>
 
