@@ -17,16 +17,27 @@ import pandas as pd
 import requests
 
 
-# Log settings
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(f"logs/clinvar_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
-        logging.StreamHandler(),
-    ],
-)
 logger = logging.getLogger(__name__)
+
+
+def _configure_logging() -> None:
+    """Wire up the file + stream handlers for command-line use.
+
+    Kept out of the module body so that ``import`` does not have the side
+    effect of creating a ``logs/`` directory and a timestamped file —
+    importing this module (e.g. from pdoc or a test) used to fail with
+    ``FileNotFoundError`` because the relative ``logs/`` path may not
+    exist in the caller's cwd.
+    """
+    Path("logs").mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(f"logs/clinvar_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
+            logging.StreamHandler(),
+        ],
+    )
 
 
 class ClinVarProcessor:
@@ -369,6 +380,7 @@ class ClinVarProcessor:
 
 
 def main():
+    _configure_logging()
     parser = argparse.ArgumentParser(description="ClinVar data preprocessing for genome sequence evaluation")
     parser.add_argument(
         "--output_dir",
