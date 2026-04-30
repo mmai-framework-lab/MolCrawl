@@ -1,0 +1,6 @@
+task: chembl_scaffold_heldout
+modality: compounds
+arch: gpt2
+size: small
+smiles_column: smiles
+label_column: null

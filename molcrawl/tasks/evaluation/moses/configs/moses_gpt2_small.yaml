@@ -1,0 +1,9 @@
+task: moses
+modality: compounds
+arch: gpt2
+size: small
+num_samples: 30000
+temperature: 1.0
+top_k: null
+max_new_tokens: 128
+enable_extended_metrics: true

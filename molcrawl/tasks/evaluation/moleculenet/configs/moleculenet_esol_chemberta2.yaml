@@ -1,0 +1,8 @@
+task: moleculenet
+subtask: esol
+modality: compounds
+arch: chemberta2
+split: scaffold
+val_frac: 0.1
+test_frac: 0.1
+seed: 0
