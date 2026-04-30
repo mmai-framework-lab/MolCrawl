@@ -30,9 +30,6 @@ _SOCKET_TIMEOUT_SEC = 300  # 5 minutes
 _DOWNLOAD_TOTAL_TIMEOUT_SEC = 1200  # 20 minutes per attempt
 _DOWNLOAD_MAX_RETRY = 5
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-
 def retrieve_census(version: str, try_count: int = 0, max_try: int = 5) -> Any:
     import cellxgene_census
     import tiledbsoma
@@ -215,6 +212,7 @@ def download(output_dir, version, num_worker, size_workload):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()

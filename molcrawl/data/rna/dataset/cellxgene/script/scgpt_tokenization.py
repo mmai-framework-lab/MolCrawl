@@ -18,9 +18,6 @@ from argparse import ArgumentParser
 from molcrawl.data.rna.utils.config import RnaConfig
 
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-
 def preprocess(
     adata: Any,
     main_table_key: str = "counts",
@@ -155,6 +152,7 @@ def prepare_parquet(output_dir: str, version: str, num_worker: int, min_counts_g
 
 
 if "__main__" == __name__:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()

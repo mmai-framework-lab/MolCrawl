@@ -21,8 +21,10 @@ from tqdm import tqdm
 # Add common module
 from molcrawl.core.utils.environment_check import check_learning_source_dir
 
-# Log settings
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def _configure_logging() -> None:
+    """Module-level basicConfig moved here so import is side-effect free."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -660,6 +662,7 @@ class ProteinGymDataDownloader:
 
 
 def main():
+    _configure_logging()
     # Setting LEARNING_SOURCE_DIR
     learning_source_dir = check_learning_source_dir()
 

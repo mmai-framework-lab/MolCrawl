@@ -6,10 +6,20 @@ Define constants for path settings used throughout the project
 import os
 
 # import common module
-from molcrawl.core.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir  # noqa: F401  # re-exported for back-compat
 
-# datasetDefining constants for the destination directory
-LEARNING_SOURCE_DIR = check_learning_source_dir()
+# datasetDefining constants for the destination directory.
+#
+# Importing molcrawl.core.paths used to call check_learning_source_dir() at
+# module load, which sys.exit()s on a missing LEARNING_SOURCE_DIR. That made
+# the package un-importable from any tool (pdoc, pytest, IDE, library use)
+# that does not first export the env var. Fall back to an empty string here
+# so import is side-effect free; the actual hard check still fires when a
+# script entry point calls check_learning_source_dir() in its main(), and
+# downstream code that uses these path constants without a learning source
+# will still fail loudly at runtime (the constants degenerate to e.g.
+# "/rna").
+LEARNING_SOURCE_DIR = os.environ.get("LEARNING_SOURCE_DIR", "")
 
 # Get project root directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
