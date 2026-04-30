@@ -10,7 +10,7 @@
 #   - max_iters reduced to 10000 (fine-tuning, not pretraining from scratch)
 #   - learning_rate reduced to 1e-5
 
-from molcrawl.config.paths import (
+from molcrawl.core.paths import (
     RNA_CELLTYPE_DATASET_DIR,
     get_gpt2_output_path,
 )

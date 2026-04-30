@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
     # Train
     logger.info("🚀 Starting RNAformer training...")
-    from molcrawl.utils.trainer_utils import install_tie_weights_on_resume
+    from molcrawl.core.utils.trainer_utils import install_tie_weights_on_resume
     install_tie_weights_on_resume(trainer)
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)

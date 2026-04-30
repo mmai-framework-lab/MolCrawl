@@ -8,7 +8,7 @@
 #   torchrun --standalone --nproc_per_node=<N> train.py \
 #       molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_mol_instructions_small.py
 
-from molcrawl.config.paths import (
+from molcrawl.core.paths import (
     MOL_INSTRUCTIONS_DATASET_DIR,
     get_gpt2_output_path,
 )

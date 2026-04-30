@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from molcrawl.config.paths import GENOME_SEQUENCE_DIR
+from molcrawl.core.paths import GENOME_SEQUENCE_DIR
 from molcrawl.core.config import Config
 
 

@@ -5,7 +5,7 @@ import sys
 
 import torch
 
-from molcrawl.config.paths import COMPOUNDS_DATASET_DIR
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR
 
 # Basic settings
 domain = "compounds"

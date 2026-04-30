@@ -24,7 +24,7 @@ def run_statistics(series, column_name):
     plt.title("Distribution of tokenized {} lengths".format(column_name))
 
     # Save to unified image directory
-    from molcrawl.utils.image_manager import get_image_path
+    from molcrawl.core.utils.image_manager import get_image_path
 
     image_path = get_image_path("molecule_nat_lang", "molecule_nat_lang_tokenized_{}_lengths_dist.png".format(column_name))
     plt.savefig(image_path)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         from molcrawl.molecule_nat_lang.dataset.prepare_mol_instructions import (
             prepare_mol_instructions,
         )
-        from molcrawl.utils.environment_check import check_learning_source_dir as _check_dir
+        from molcrawl.core.utils.environment_check import check_learning_source_dir as _check_dir
 
         _lsd = _check_dir()
         _mi_source = Path(_lsd) / "molecule_nat_lang" / "mol_instructions" / "zjunlp_Mol-Instructions"
@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     # ── SMolInstruct pipeline ─────────────────────────────────────────────────
     # Use LEARNING_SOURCE_DIR environment variable for dataset storage
-    from molcrawl.utils.environment_check import check_learning_source_dir
+    from molcrawl.core.utils.environment_check import check_learning_source_dir
 
     learning_source_dir = check_learning_source_dir()
 

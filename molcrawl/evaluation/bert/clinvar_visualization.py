@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix, roc_auc_score
 
 # add project root
 
-from molcrawl.utils.base_visualization import BaseVisualizationGenerator
+from molcrawl.core.utils.base_visualization import BaseVisualizationGenerator
 
 # Log settings
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

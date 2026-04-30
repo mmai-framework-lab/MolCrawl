@@ -51,14 +51,14 @@ warnings.filterwarnings("ignore")
 
 try:
     from molcrawl.gpt2.model import GPT, GPTConfig
-    from molcrawl.config.paths import get_genome_tokenizer_path
-    from molcrawl.utils.evaluation_output import (
+    from molcrawl.core.paths import get_genome_tokenizer_path
+    from molcrawl.core.utils.evaluation_output import (
         get_evaluation_output_dir,
         get_model_name_from_path,
         get_model_type_from_path,
         setup_evaluation_logging,
     )
-    from molcrawl.utils.model_evaluator import ModelEvaluator
+    from molcrawl.core.utils.model_evaluator import ModelEvaluator
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure you're running from the project root directory")

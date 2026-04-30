@@ -44,7 +44,7 @@ from molcrawl.compounds.utils.general import (
     download_opv,
     download_zinc20,
 )
-from molcrawl.config.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR, COMPOUNDS_DIR
+from molcrawl.core.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR, COMPOUNDS_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.preparation.download_guacamol import download_guacamol
 

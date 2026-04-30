@@ -9,7 +9,7 @@
 #   - learning_rate reduced to 1e-5
 
 
-from molcrawl.config.paths import PROTEINGYM_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import PROTEINGYM_DATASET_DIR, get_gpt2_output_path
 from molcrawl.protein_sequence.dataset.tokenizer import (
     EsmSequenceTokenizer as Tokenizer,
 )

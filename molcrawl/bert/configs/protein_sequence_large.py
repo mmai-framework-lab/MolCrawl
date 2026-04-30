@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import torch
 from transformers import DataCollatorForLanguageModeling
 
-from molcrawl.config.paths import UNIPROT_DATASET_DIR, get_bert_output_path
+from molcrawl.core.paths import UNIPROT_DATASET_DIR, get_bert_output_path
 from molcrawl.protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 
 # Tokenizer instantiation - BERT compatible ESM tokenizer

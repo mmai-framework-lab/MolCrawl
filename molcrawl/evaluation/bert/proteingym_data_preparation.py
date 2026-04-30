@@ -21,7 +21,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 # Add common module
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 
 def get_log_dir() -> Path:

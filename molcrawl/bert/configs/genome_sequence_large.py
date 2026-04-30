@@ -3,7 +3,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from molcrawl.config.paths import REFSEQ_DATASET_DIR, get_bert_output_path, get_custom_tokenizer_path, get_refseq_tokenizer_path
+from molcrawl.core.paths import REFSEQ_DATASET_DIR, get_bert_output_path, get_custom_tokenizer_path, get_refseq_tokenizer_path
 
 model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("genome_sequence", model_size)

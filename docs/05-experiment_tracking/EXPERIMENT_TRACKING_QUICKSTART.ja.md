@@ -37,7 +37,7 @@ python misc/experiment_tracker_sample.py
 ## 5. Verify Installation
 
 ```bash
-python molcrawl/debug/test_experiment_system.py
+python tests/unit/test_experiment_system.py
 ```
 
 ## Troubleshooting

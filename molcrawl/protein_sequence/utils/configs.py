@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from molcrawl.config.paths import PROTEIN_SEQUENCE_DIR
+from molcrawl.core.paths import PROTEIN_SEQUENCE_DIR
 from molcrawl.core.config import Config
 
 

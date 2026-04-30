@@ -7,7 +7,7 @@
 # and model output directory differ.
 
 from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.config.paths import GUACAMOL_DATASET_DIR, get_bert_output_path
+from molcrawl.core.paths import GUACAMOL_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 

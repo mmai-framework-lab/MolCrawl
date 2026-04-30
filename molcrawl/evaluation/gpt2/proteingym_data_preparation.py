@@ -19,7 +19,7 @@ import requests
 from tqdm import tqdm
 
 # Add common module
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 # Log settings
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

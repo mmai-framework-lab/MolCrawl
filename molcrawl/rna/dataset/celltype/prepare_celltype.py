@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
-    from molcrawl.config.paths import RNA_CELLTYPE_DIR, RNA_CELLTYPE_SOURCE_DIR
+    from molcrawl.core.paths import RNA_CELLTYPE_DIR, RNA_CELLTYPE_SOURCE_DIR
 
     logger.info("=== Cell Type Dataset Preparation ===")
     src = download_celltype(RNA_CELLTYPE_SOURCE_DIR)

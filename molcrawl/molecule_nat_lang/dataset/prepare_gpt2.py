@@ -8,7 +8,7 @@ from pathlib import Path
 # datasetLoad cache settings (assets/configs/cache.yamlfrom)
 try:
     # Any cache settings. Learning can continue even in non-existent environments.
-    from molcrawl.utils.cache_config import setup_cache_env
+    from molcrawl.core.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     cfg = MoleculeNLConfig.from_file(args.config).data_preparation
 
     # convert relative path to absolute path
-    from molcrawl.config.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
+    from molcrawl.core.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
 
     save_path = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, cfg.save_path)
 

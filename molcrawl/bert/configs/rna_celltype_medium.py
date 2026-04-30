@@ -16,7 +16,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from molcrawl.config.paths import (
+from molcrawl.core.paths import (
     RNA_CELLTYPE_DATASET_DIR,
     get_bert_output_path,
     get_custom_tokenizer_path,

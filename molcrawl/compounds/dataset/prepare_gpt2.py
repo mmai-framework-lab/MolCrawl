@@ -7,7 +7,7 @@ from pathlib import Path
 # datasetLoad cache settings (assets/configs/cache.yamlfrom)
 try:
     # Any cache settings. Learning can continue even in non-existent environments.
-    from molcrawl.utils.cache_config import setup_cache_env
+    from molcrawl.core.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 

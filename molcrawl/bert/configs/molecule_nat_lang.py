@@ -9,7 +9,7 @@
 
 import os
 
-from molcrawl.config.paths import get_bert_output_path
+from molcrawl.core.paths import get_bert_output_path
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 from molcrawl.molecule_nat_lang.utils.vocab_guard import check_vocab_size
 

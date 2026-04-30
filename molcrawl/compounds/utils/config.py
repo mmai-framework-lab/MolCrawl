@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from molcrawl.config.paths import COMPOUNDS_DIR, get_dataset_path
+from molcrawl.core.paths import COMPOUNDS_DIR, get_dataset_path
 from molcrawl.core.config import Config
 
 

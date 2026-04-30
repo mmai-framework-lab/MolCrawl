@@ -21,7 +21,7 @@ import pandas as pd
 import scipy.sparse as sp
 
 from molcrawl.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
-from molcrawl.utils.evaluation_output import setup_evaluation_logging
+from molcrawl.core.utils.evaluation_output import setup_evaluation_logging
 
 
 @dataclass

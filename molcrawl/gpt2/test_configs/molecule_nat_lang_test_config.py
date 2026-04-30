@@ -5,7 +5,7 @@ import sys
 
 import torch
 
-from molcrawl.config.paths import MOLECULE_NAT_LANG_DATASET_DIR
+from molcrawl.core.paths import MOLECULE_NAT_LANG_DATASET_DIR
 
 # Basic settings
 domain = "molecule_nat_lang"

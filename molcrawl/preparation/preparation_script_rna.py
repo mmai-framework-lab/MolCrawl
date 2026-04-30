@@ -22,7 +22,7 @@ from datasets import load_dataset
 from datasets.utils.logging import enable_progress_bar
 
 # Add project root src directory to path
-from molcrawl.config.paths import RNA_CELLTYPE_DIR, RNA_CELLTYPE_SOURCE_DIR, RNA_DATASET_DIR
+from molcrawl.core.paths import RNA_CELLTYPE_DIR, RNA_CELLTYPE_SOURCE_DIR, RNA_DATASET_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.rna.dataset.cellxgene.script.build_list import build_list
 from molcrawl.rna.dataset.cellxgene.script.download_by_dataset import download
@@ -37,7 +37,7 @@ enable_progress_bar()
 
 def create_distribution_plot(data):
     """Save token length distribution as a histogram"""
-    from molcrawl.utils.image_manager import get_image_path
+    from molcrawl.core.utils.image_manager import get_image_path
 
     token_col = "token_count" if "token_count" in data.column_names else "num_tokens"
     plt.hist(data[token_col], bins=200)
@@ -304,7 +304,7 @@ if __name__ == "__main__":
         logger.info(f"Number of tokens: {sum(data['token_count'])}")
 
         # Distribution plot (regenerate if necessary)
-        from molcrawl.utils.image_manager import get_image_path
+        from molcrawl.core.utils.image_manager import get_image_path
 
         plot_file = Path(get_image_path("rna", "rna_tokenized_lengths_dist.png"))
         if args.force or not plot_file.exists():

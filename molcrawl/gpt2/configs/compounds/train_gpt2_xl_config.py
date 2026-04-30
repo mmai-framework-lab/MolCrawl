@@ -4,7 +4,7 @@
 
 
 from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.config.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48

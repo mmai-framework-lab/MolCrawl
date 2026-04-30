@@ -22,7 +22,7 @@ import os
 
 
 from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer
-from molcrawl.config.paths import COMPOUNDS_DATASET_DIR
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR
 
 # Model configuration
 model_size = "small"  # Choose between small, medium, large

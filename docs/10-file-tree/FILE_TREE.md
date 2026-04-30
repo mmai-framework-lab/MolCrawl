@@ -208,15 +208,33 @@ riken-dataset-fundational-model/
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── env.sh                            # Shell script to export common environment variables
-│   │   └── paths.py                          # Centralized path constants for the project
+│   │   └── paths.py                          # (shim) re-exports molcrawl.core.paths for backward compat
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── base.py                           # Abstract base classes shared across modalities
 │   │   ├── config.py                         # Core config dataclasses and validation
-│   │   └── dataset.py                        # Base dataset class for all modalities
+│   │   ├── dataset.py                        # Base dataset class for all modalities
+│   │   ├── paths.py                          # Centralized path constants for the project
+│   │   ├── tracking/
+│   │   │   ├── __init__.py
+│   │   │   ├── api.py                        # REST API interface for the experiment tracker
+│   │   │   ├── database.py                   # SQLite database layer for experiment records
+│   │   │   ├── helpers.py                    # Utility helpers for experiment tracker
+│   │   │   ├── models.py                     # Data models (dataclasses/ORM) for experiments
+│   │   │   └── tracker.py                    # Core experiment tracking logic
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── base_visualization.py         # Base class and utilities for result visualization
+│   │       ├── cache_config.py               # Configuration caching helpers
+│   │       ├── environment_check.py          # Checks that required environment variables are set
+│   │       ├── evaluation_output.py          # Handles formatting and saving of evaluation outputs
+│   │       ├── get_image_path.py             # Resolves paths for model/dataset image assets
+│   │       ├── get_model_images.py           # Retrieves model card images from disk
+│   │       ├── image_manager.py              # Manages image storage and retrieval for the web UI
+│   │       ├── model_evaluator.py            # Common evaluation loop used across modalities
+│   │       └── trainer_utils.py              # Trainer helpers shared across model training entrypoints
 │   ├── debug/
-│   │   ├── __init__.py
-│   │   └── test_experiment_system.py         # Debug test for the experiment tracking system
+│   │   └── __init__.py                       # (shim) placeholder; test script moved to tests/unit/
 │   ├── dnabert2/
 │   │   ├── __init__.py
 │   │   ├── configurator.py                   # Builds training configs for DNABERT-2
@@ -267,13 +285,13 @@ riken-dataset-fundational-model/
 │   │       ├── __init__.py
 │   │       ├── rna_benchmark_data_preparation.py  # Prepares RNA benchmark dataset for evaluation
 │   │       └── rna_benchmark_evaluation.py        # Evaluates model performance on RNA benchmarks
-│   ├── experiment_tracker/
+│   ├── experiment_tracker/                   # (shim) re-exports molcrawl.core.tracking.*
 │   │   ├── __init__.py
-│   │   ├── api.py                            # REST API interface for the experiment tracker
-│   │   ├── database.py                       # SQLite database layer for experiment records
-│   │   ├── helpers.py                        # Utility helpers for experiment tracker
-│   │   ├── models.py                         # Data models (dataclasses/ORM) for experiments
-│   │   └── tracker.py                        # Core experiment tracking logic
+│   │   ├── api.py
+│   │   ├── database.py
+│   │   ├── helpers.py
+│   │   ├── models.py
+│   │   └── tracker.py
 │   ├── genome_sequence/
 │   │   ├── __init__.py
 │   │   ├── dataset/
@@ -413,16 +431,17 @@ riken-dataset-fundational-model/
 │   │   └── configs/
 │   │       ├── __init__.py
 │   │       └── rna.py                        # RNAformer training config for RNA modality
-│   ├── utils/
+│   ├── utils/                                # (shim) re-exports molcrawl.core.utils.*
 │   │   ├── __init__.py
-│   │   ├── base_visualization.py             # Base class and utilities for result visualization
-│   │   ├── cache_config.py                   # Configuration caching helpers
-│   │   ├── environment_check.py              # Checks that required environment variables are set
-│   │   ├── evaluation_output.py              # Handles formatting and saving of evaluation outputs
-│   │   ├── get_image_path.py                 # Resolves paths for model/dataset image assets
-│   │   ├── get_model_images.py               # Retrieves model card images from disk
-│   │   ├── image_manager.py                  # Manages image storage and retrieval for the web UI
-│   │   └── model_evaluator.py                # Common evaluation loop used across modalities
+│   │   ├── base_visualization.py
+│   │   ├── cache_config.py
+│   │   ├── environment_check.py
+│   │   ├── evaluation_output.py
+│   │   ├── get_image_path.py
+│   │   ├── get_model_images.py
+│   │   ├── image_manager.py
+│   │   ├── model_evaluator.py
+│   │   └── trainer_utils.py
 
 │
 ├── molcrawl-web/                             # Web-based dataset browser (React + Express)

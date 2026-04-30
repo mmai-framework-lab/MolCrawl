@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from molcrawl.config.paths import RNA_DATASET_DIR
+from molcrawl.core.paths import RNA_DATASET_DIR
 from molcrawl.core.config import Config
 
 

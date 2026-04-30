@@ -550,7 +550,7 @@ if __name__ == "__main__":
     # Train with or without checkpoint
     # If resume_checkpoint is None, training starts from scratch
     # If resume_checkpoint is provided, training resumes from that checkpoint
-    from molcrawl.utils.trainer_utils import install_tie_weights_on_resume
+    from molcrawl.core.utils.trainer_utils import install_tie_weights_on_resume
     install_tie_weights_on_resume(trainer)
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)

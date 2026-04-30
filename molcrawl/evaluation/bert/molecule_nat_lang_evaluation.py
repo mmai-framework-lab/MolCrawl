@@ -26,16 +26,16 @@ import torch
 import torch.nn.functional as F
 from datasets import load_from_disk
 from transformers import BertConfig, BertForMaskedLM
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 # add project root
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-from molcrawl.utils.evaluation_output import (  # noqa: E402
+from molcrawl.core.utils.evaluation_output import (  # noqa: E402
     setup_evaluation_logging,
 )
-from molcrawl.utils.model_evaluator import ModelEvaluator  # noqa: E402
+from molcrawl.core.utils.model_evaluator import ModelEvaluator  # noqa: E402
 
 # Molecule NL tokenizer
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer  # noqa: E402

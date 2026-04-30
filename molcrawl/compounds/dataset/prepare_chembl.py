@@ -198,7 +198,7 @@ def prepare_chembl(
 
 
 if __name__ == "__main__":
-    from molcrawl.config.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR
+    from molcrawl.core.paths import CHEMBL_DIR, CHEMBL_SOURCE_DIR
     from molcrawl.core.base import setup_logging
 
     setup_logging(CHEMBL_DIR)

@@ -17,7 +17,7 @@ import seaborn as sns
 
 # add project root
 
-from molcrawl.utils.base_visualization import BaseVisualizationGenerator
+from molcrawl.core.utils.base_visualization import BaseVisualizationGenerator
 
 # Japanese font settings
 plt.rcParams["font.family"] = "DejaVu Sans"

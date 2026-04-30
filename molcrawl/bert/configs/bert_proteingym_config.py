@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # Add common environment check module
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 # Get project root
 PROJECT_ROOT = Path(__file__).parent.parent

@@ -5,7 +5,7 @@
 
 import sentencepiece as spm
 
-from molcrawl.config.paths import (
+from molcrawl.core.paths import (
     REFSEQ_DATASET_DIR,
     get_gpt2_output_path,
     get_refseq_tokenizer_path,

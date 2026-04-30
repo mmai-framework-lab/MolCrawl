@@ -7,7 +7,7 @@
 # path and model output directory differ.
 
 
-from molcrawl.config.paths import MOL_INSTRUCTIONS_DATASET_DIR, get_bert_output_path
+from molcrawl.core.paths import MOL_INSTRUCTIONS_DATASET_DIR, get_bert_output_path
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 from molcrawl.molecule_nat_lang.utils.vocab_guard import check_vocab_size
 

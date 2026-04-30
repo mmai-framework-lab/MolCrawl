@@ -27,7 +27,7 @@ An experiment tracking stack for this repository to unify:
 - `workflows/setup_experiment_system.sh`
 - `workflows/start_experiment_system.sh`
 - `workflows/start_api_server.py`
-- `molcrawl/debug/test_experiment_system.py`
+- `tests/unit/test_experiment_system.py`
 
 ### Example
 
@@ -50,7 +50,7 @@ An experiment tracking stack for this repository to unify:
 ## Validation Commands
 
 ```bash
-python molcrawl/debug/test_experiment_system.py
+python tests/unit/test_experiment_system.py
 python misc/experiment_tracker_sample.py
 ```
 

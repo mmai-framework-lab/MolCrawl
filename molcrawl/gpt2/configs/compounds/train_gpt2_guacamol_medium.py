@@ -9,7 +9,7 @@
 #       gpt2/configs/compounds/train_gpt2_guacamol_medium.py
 
 from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.config.paths import GUACAMOL_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import GUACAMOL_DATASET_DIR, get_gpt2_output_path
 
 # Medium-Sized GPT-2 Model
 n_layer = 24

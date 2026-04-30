@@ -20,7 +20,7 @@
 
 ```python
 #!/usr/bin/env python3
-from molcrawl.config.paths import UNIPROT_DATASET_DIR, REFSEQ_DATASET_DIR
+from molcrawl.core.paths import UNIPROT_DATASET_DIR, REFSEQ_DATASET_DIR
 
 # データセットを読み込む
 from datasets import load_from_disk

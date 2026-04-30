@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore")
 
 # add project root
 
-from molcrawl.utils.base_visualization import BaseVisualizationGenerator  # noqa: E402
+from molcrawl.core.utils.base_visualization import BaseVisualizationGenerator  # noqa: E402
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

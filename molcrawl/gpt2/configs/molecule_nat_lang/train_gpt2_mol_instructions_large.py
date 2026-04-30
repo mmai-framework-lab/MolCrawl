@@ -7,7 +7,7 @@
 #   - n_layer/n_head/n_embd match the large pretraining config
 #   - pretrain_dir loads weights from molecule_nat_lang-large pretraining
 
-from molcrawl.config.paths import (
+from molcrawl.core.paths import (
     MOL_INSTRUCTIONS_DATASET_DIR,
     get_gpt2_output_path,
 )

@@ -43,7 +43,7 @@ def get_domain_info():
     import os
     import sys
 
-    from molcrawl.config.paths import COMPOUNDS_DATASET_DIR, MOLECULE_NAT_LANG_DATASET_DIR
+    from molcrawl.core.paths import COMPOUNDS_DATASET_DIR, MOLECULE_NAT_LANG_DATASET_DIR
 
     return {
         "compounds": {

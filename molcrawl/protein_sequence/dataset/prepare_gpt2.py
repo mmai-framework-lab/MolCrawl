@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 # datasetLoad cache settings (assets/configs/cache.yamlfrom)
 try:
-    from molcrawl.utils.cache_config import setup_cache_env
+    from molcrawl.core.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 

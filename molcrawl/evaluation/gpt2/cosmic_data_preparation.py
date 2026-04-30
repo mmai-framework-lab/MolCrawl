@@ -20,7 +20,7 @@ import pandas as pd
 import requests
 
 
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 # Log settings
 learning_source_dir = check_learning_source_dir()

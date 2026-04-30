@@ -20,7 +20,7 @@ This document explains the configuration files used to centrally manage dataset 
 
 ```python
 #!/usr/bin/env python3
-from molcrawl.config.paths import UNIPROT_DATASET_DIR, REFSEQ_DATASET_DIR
+from molcrawl.core.paths import UNIPROT_DATASET_DIR, REFSEQ_DATASET_DIR
 
 # Load a dataset
 from datasets import load_from_disk

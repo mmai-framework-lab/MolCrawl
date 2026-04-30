@@ -251,7 +251,7 @@ def prepare_proteingym(
 if __name__ == "__main__":
     import logging
 
-    from molcrawl.config.paths import PROTEINGYM_DATASET_DIR, PROTEINGYM_SOURCE_DIR
+    from molcrawl.core.paths import PROTEINGYM_DATASET_DIR, PROTEINGYM_SOURCE_DIR
     from molcrawl.protein_sequence.utils.configs import ProteinSequenceConfig
 
     logging.basicConfig(

@@ -8,7 +8,7 @@
 #   - n_layer/n_head/n_embd match the xl pretraining config
 #   - pretrain_dir loads weights from rna-xl (ex-large) pretraining
 
-from molcrawl.config.paths import (
+from molcrawl.core.paths import (
     RNA_CELLTYPE_DATASET_DIR,
     get_gpt2_output_path,
 )

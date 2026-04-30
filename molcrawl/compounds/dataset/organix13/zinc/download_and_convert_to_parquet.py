@@ -13,7 +13,7 @@ if __name__ == "__main__":
     project_root = os.path.join(current_dir, "..", "..", "..", "..", "..")
     project_root = os.path.abspath(project_root)
 
-from molcrawl.config.paths import COMPOUNDS_DIR
+from molcrawl.core.paths import COMPOUNDS_DIR
 
 logger = logging.getLogger(__name__)
 

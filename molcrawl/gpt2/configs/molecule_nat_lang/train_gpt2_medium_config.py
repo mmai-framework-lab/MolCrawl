@@ -3,7 +3,7 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 
-from molcrawl.config.paths import MOLECULE_NAT_LANG_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import MOLECULE_NAT_LANG_DATASET_DIR, get_gpt2_output_path
 from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
 from molcrawl.molecule_nat_lang.utils.vocab_guard import EXPECTED_VOCAB_SIZE_GPT2, check_vocab_size
 

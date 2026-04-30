@@ -3,10 +3,10 @@ from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
-from molcrawl.config.paths import REFSEQ_DATASET_DIR, get_custom_tokenizer_path
+from molcrawl.core.paths import REFSEQ_DATASET_DIR, get_custom_tokenizer_path
 
 # Add common environment check module
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 # BERT settings for ClinVar evaluation
 model_path = "runs_train_bert_genome_sequence"

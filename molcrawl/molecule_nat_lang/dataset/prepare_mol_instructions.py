@@ -321,7 +321,7 @@ if __name__ == "__main__":
 
     from molcrawl.core.base import setup_logging
     from molcrawl.molecule_nat_lang.utils.config import MoleculeNLConfig
-    from molcrawl.utils.environment_check import check_learning_source_dir
+    from molcrawl.core.utils.environment_check import check_learning_source_dir
 
     parser = ArgumentParser(description="Prepare Mol-Instructions for GPT-2/BERT training")
     parser.add_argument("config", help="Path to molecule_nat_lang YAML config")

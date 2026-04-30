@@ -313,7 +313,7 @@ def prepare_clinvar(
     output_dir = Path(output_dir)
 
     if not source_file.exists():
-        from molcrawl.config.paths import GRCh38_REF_FASTA
+        from molcrawl.core.paths import GRCh38_REF_FASTA
 
         fasta_path = Path(ref_fasta) if ref_fasta is not None else Path(GRCh38_REF_FASTA)
         if not fasta_path.exists() and Path(str(fasta_path) + ".gz").exists():
@@ -448,7 +448,7 @@ def prepare_clinvar(
 if __name__ == "__main__":
     import logging
 
-    from molcrawl.config.paths import CLINVAR_DIR, CLINVAR_SOURCE_FILE, get_refseq_tokenizer_path
+    from molcrawl.core.paths import CLINVAR_DIR, CLINVAR_SOURCE_FILE, get_refseq_tokenizer_path
 
     logging.basicConfig(
         level=logging.INFO,

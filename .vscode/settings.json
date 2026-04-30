@@ -93,5 +93,6 @@
     "**/gpt2-output*/**": true,
     "**/__pycache__/**": true,
     "**/.ruff_cache/**": true
-  }
+  },
+  "liveServer.settings.port": 5501
 }

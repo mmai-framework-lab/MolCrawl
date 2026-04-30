@@ -34,13 +34,13 @@ from sklearn.metrics import (
 )
 from transformers import BertConfig, BertForMaskedLM
 
-from molcrawl.utils.evaluation_output import (
+from molcrawl.core.utils.evaluation_output import (
     get_evaluation_output_dir,
     get_model_name_from_path,
     get_model_type_from_path,
     setup_evaluation_logging,
 )
-from molcrawl.utils.model_evaluator import ModelEvaluator
+from molcrawl.core.utils.model_evaluator import ModelEvaluator
 
 # add project root
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

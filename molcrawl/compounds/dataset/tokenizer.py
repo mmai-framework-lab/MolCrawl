@@ -16,7 +16,7 @@ import pyarrow.parquet as pq
 from molcrawl.compounds.dataset.dataset_config import DatasetInfo, CompoundDatasetType
 from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer, ScaffoldsTokenizer
 from molcrawl.core.base import multiprocess_tokenization
-from molcrawl.utils.image_manager import get_image_path
+from molcrawl.core.utils.image_manager import get_image_path
 
 logger = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ from datasets import load_dataset
 
 # Add project root src directory to path
 
-from molcrawl.config.paths import PROTEIN_SEQUENCE_DIR, PROTEINGYM_DIR, PROTEINGYM_SOURCE_DIR
+from molcrawl.core.paths import PROTEIN_SEQUENCE_DIR, PROTEINGYM_DIR, PROTEINGYM_SOURCE_DIR
 from molcrawl.core.base import setup_logging
 from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer, tokenize_to_parquet
 from molcrawl.protein_sequence.dataset.uniprot.fasta_to_raw import fasta_to_raw_protein
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 def create_distribution_plot(data):
     """Create and save distribution plot for tokenized sequence lengths"""
     try:
-        from molcrawl.utils.image_manager import get_image_path
+        from molcrawl.core.utils.image_manager import get_image_path
 
         plt.hist(data["token_count"], bins=np.arange(0, 1000, 1))
         plt.xlabel("Length of tokenized dataset")
@@ -253,7 +253,7 @@ def process4_generate_statistics(base_dir, dataset, force=False):
         logger.info(f"Number of tokens: {sum(data['train']['token_count'])}")
 
         # Generate distribution plot (only if force option or no plot exists)
-        from molcrawl.utils.image_manager import get_image_path
+        from molcrawl.core.utils.image_manager import get_image_path
 
         plot_file = Path(get_image_path("protein_sequence", "protein_sequence_tokenized_lengths_dist.png"))
         if force or not plot_file.exists():

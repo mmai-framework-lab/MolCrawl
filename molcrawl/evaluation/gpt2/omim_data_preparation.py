@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 
 from molcrawl.evaluation.gpt2.omim_real_data_processor import process_omim_real_data
-from molcrawl.utils.environment_check import check_learning_source_dir
+from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 
 def setup_logging(output_dir: str) -> logging.Logger:

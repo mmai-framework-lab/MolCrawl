@@ -30,7 +30,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve
 
-from molcrawl.utils.base_visualization import BaseVisualizationGenerator
+from molcrawl.core.utils.base_visualization import BaseVisualizationGenerator
 
 warnings.filterwarnings("ignore")
 

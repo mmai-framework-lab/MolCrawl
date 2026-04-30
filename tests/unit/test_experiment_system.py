@@ -7,14 +7,16 @@ import time
 from pathlib import Path
 
 # add project root to path
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 
 def test_imports():
     """Module import test"""
     print("Testing imports...")
     try:
-        from molcrawl.experiment_tracker import (  # noqa: F401
+        from molcrawl.core.tracking import (  # noqa: F401
             DatasetType,
             ExperimentStatus,
             ExperimentTracker,
@@ -36,7 +38,7 @@ def test_database():
         import os
         import tempfile
 
-        from molcrawl.experiment_tracker.database import ExperimentDatabase
+        from molcrawl.core.tracking.database import ExperimentDatabase
 
         # use temporary files
         temp_dir = tempfile.mkdtemp()
@@ -70,7 +72,7 @@ def test_tracker():
         # Temporary database for testing
         import tempfile
 
-        from molcrawl.experiment_tracker import (
+        from molcrawl.core.tracking import (
             DatasetType,
             ExperimentTracker,
             ExperimentType,
@@ -134,12 +136,12 @@ def test_helpers():
     try:
         import tempfile
 
-        from molcrawl.experiment_tracker import (
+        from molcrawl.core.tracking import (
             DatasetType,
             ExperimentType,
             ModelType,
         )
-        from molcrawl.experiment_tracker.helpers import experiment_context
+        from molcrawl.core.tracking.helpers import experiment_context
 
         temp_dir = tempfile.mkdtemp()
 
