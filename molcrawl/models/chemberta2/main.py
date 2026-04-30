@@ -198,7 +198,9 @@ if __name__ == "__main__":
                 from pathlib import Path
                 from molcrawl.data.compounds.dataset.multi_loader import MultiDatasetLoader
 
-                compounds_dir = Path(self.dataset_dir).parent
+                # dataset_dir points at {compounds_root}/organix13/compounds/training_ready_hf_dataset
+                # MultiDatasetLoader needs {compounds_root}, where hf_datasets/ lives.
+                compounds_dir = Path(self.dataset_dir).parents[2]
                 loader = MultiDatasetLoader(compounds_dir)
 
                 # get available datasets
@@ -214,6 +216,24 @@ if __name__ == "__main__":
                     test_dataset = dataset_dict.get("valid") or dataset_dict.get("test")
 
                     if train_dataset and test_dataset:
+                        # Per-dataset HF files ship extra metadata columns (smiles, logp,
+                        # mol_weight, sascore, scaffold_tokens) alongside `tokens`. The
+                        # HF Trainer here runs with remove_unused_columns=False, so those
+                        # string/float columns propagate to the DataCollator and crash
+                        # tensor conversion. Keep only what the model consumes and rename
+                        # `tokens` → `input_ids` to match preprocess_function / collator.
+                        KEEP = {"tokens", "input_ids", "attention_mask"}
+
+                        def _strip_and_rename(ds):
+                            drop = [c for c in ds.column_names if c not in KEEP]
+                            if drop:
+                                ds = ds.remove_columns(drop)
+                            if "tokens" in ds.column_names and "input_ids" not in ds.column_names:
+                                ds = ds.rename_column("tokens", "input_ids")
+                            return ds
+
+                        train_dataset = _strip_and_rename(train_dataset)
+                        test_dataset = _strip_and_rename(test_dataset)
                         logger.info(f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}")
                         return train_dataset, test_dataset
                     else:
