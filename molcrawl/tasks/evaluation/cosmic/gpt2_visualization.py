@@ -24,8 +24,10 @@ plt.rcParams["font.family"] = "DejaVu Sans"
 sns.set_style("whitegrid")
 sns.set_palette("husl")
 
-# Log settings
-logging.basicConfig(level=logging.INFO)
+
+def _configure_logging() -> None:
+    """Module-level basicConfig moved here so import is side-effect free."""
+    logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -702,6 +704,7 @@ class COSMICVisualizationGenerator(BaseVisualizationGenerator):
 
 def main():
     """Main processing"""
+    _configure_logging()
     parser = argparse.ArgumentParser(description="Generate COSMIC evaluation visualizations")
     parser.add_argument(
         "--results_file",

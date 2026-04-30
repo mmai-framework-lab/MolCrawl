@@ -17,8 +17,10 @@ from sklearn.metrics import confusion_matrix, roc_auc_score
 
 from molcrawl.core.utils.base_visualization import BaseVisualizationGenerator
 
-# Log settings
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def _configure_logging() -> None:
+    """Module-level basicConfig moved here so import is side-effect free."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -486,6 +488,7 @@ class BERTClinVarVisualizationGenerator(BaseVisualizationGenerator):
 
 
 def main():
+    _configure_logging()
     import argparse
 
     parser = argparse.ArgumentParser(description="Visualize BERT ClinVar evaluation results")

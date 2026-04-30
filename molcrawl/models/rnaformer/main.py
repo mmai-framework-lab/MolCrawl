@@ -34,14 +34,15 @@ from molcrawl.core.torch_compat import enable_full_torch_load
 
 enable_full_torch_load()
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
 # Default config values
 
 if __name__ == "__main__":
+    # basicConfig kept inside the script-mode guard so importing this module
+    # (e.g. from pdoc / tests) does not reconfigure the root logger.
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     model_size = None
     model_path = None
     max_length = 1024
