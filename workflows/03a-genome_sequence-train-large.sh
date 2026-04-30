@@ -17,4 +17,4 @@ mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
 LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-large-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/models/gpt2/train.py \
-    ./gpt2/configs/genome_sequence/train_gpt2_large_config.py
+    ./molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_large.py

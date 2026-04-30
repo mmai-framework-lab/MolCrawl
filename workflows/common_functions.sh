@@ -274,8 +274,8 @@ build_torchrun_cmd() {
 #   - Otherwise: launches directly with $PYTHON
 #
 # Examples:
-#   run_training molcrawl/models/gpt2/train.py gpt2/configs/compounds/train_gpt2_small_config.py
-#   run_training molcrawl/models/bert/main.py bert/configs/compounds.py
+#   run_training molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/compounds/gpt2_small.py
+#   run_training molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py
 run_training() {
     local script="$1"
     shift

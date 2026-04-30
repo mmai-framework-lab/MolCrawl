@@ -168,7 +168,7 @@ echo "OMIMサンプルデータを作成中..."
 
 cd "$PROJECT_ROOT"
 
- "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_data_preparation.py" \
+ "$PROJECT_ROOT/molcrawl/tasks/evaluation/omim/gpt2_data_preparation.py" \
     --output_dir "$DATA_DIR" \
     --mode sample \
     --num_samples "$MAX_SAMPLES"
@@ -194,7 +194,7 @@ echo "データ: $DATA_PATH"
 
 # Pythonコマンド引数を準備
 EVAL_ARGS=(
-    "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_evaluation.py"
+    "$PROJECT_ROOT/molcrawl/tasks/evaluation/omim/gpt2_evaluation.py"
     --model_path "$MODEL_PATH"
     --data_path "$DATA_PATH"
     --output_dir "$OUTPUT_DIR"
@@ -222,7 +222,7 @@ echo "モデル評価完了"
 echo "=== 可視化フェーズ ==="
 echo "評価結果の可視化を実行中..."
 
- "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
+ "$PROJECT_ROOT/molcrawl/tasks/evaluation/omim/gpt2_visualization.py" \
     --results_dir "$OUTPUT_DIR"
 
 if [ $? -ne 0 ]; then

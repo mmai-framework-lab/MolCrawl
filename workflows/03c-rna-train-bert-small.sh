@@ -15,4 +15,4 @@ select_multi_gpu "$NUM_GPUS" 10
 LOG_FILE="${LEARNING_SOURCE_DIR}/rna/logs/rna-train-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/models/bert/main.py \
-    bert/configs/rna.py
+    molcrawl/tasks/pretrain/configs/rna/bert_small.py

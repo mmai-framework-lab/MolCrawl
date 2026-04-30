@@ -214,7 +214,7 @@ if [ "$SKIP_DATA_PREP" = false ]; then
 
         cd "$PROJECT_ROOT"
 
-        python scripts/evaluation/gpt2/protein_classification_data_preparation.py \
+        python molcrawl/tasks/evaluation/protein_classification/gpt2_data_preparation.py \
             --output_dir "$DATA_DIR" \
             --create_sample
 
@@ -253,7 +253,7 @@ if [ "$SKIP_EVALUATION" = false ]; then
 
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
-        "scripts/evaluation/gpt2/protein_classification_evaluation.py"
+        "molcrawl/tasks/evaluation/protein_classification/gpt2_evaluation.py"
         "--model_path" "$MODEL_PATH"
         "--output_dir" "$OUTPUT_DIR"
         "--threshold" "$THRESHOLD"
@@ -294,7 +294,7 @@ if [ "$SKIP_VISUALIZATION" = false ]; then
     RESULTS_FILE="$OUTPUT_DIR/protein_classification_results.json"
 
     if [[ -f "$RESULTS_FILE" ]]; then
-        python "$PROJECT_ROOT/scripts/evaluation/gpt2/protein_classification_visualization.py" \
+        python "$PROJECT_ROOT/molcrawl/tasks/evaluation/protein_classification/gpt2_visualization.py" \
             --results_file "$RESULTS_FILE" \
             --output_dir "$OUTPUT_DIR/visualizations"
 

@@ -23,4 +23,4 @@ LOG_FILE="${LOG_DIR}/rnaformer-train-${MODEL_SIZE}-$(date +%Y-%m-%d_%H-%M-%S).lo
 
 run_training_background "${LOG_FILE}" \
     molcrawl/models/rnaformer/main.py \
-    --config molcrawl/models/rnaformer/configs/rna.py --model_size ${MODEL_SIZE}
+    --config molcrawl/tasks/pretrain/configs/rna/rnaformer.py --model_size ${MODEL_SIZE}

@@ -25,7 +25,7 @@ mkdir -p "${LOG_DIR}"
 
 run_training_background "${LOG_DIR}/compounds_chembl-train-gpt2-xl-$(date +%Y-%m-%d_%H-%M-%S).log" \
     molcrawl/models/gpt2/train.py \
-    gpt2/configs/compounds/train_gpt2_chembl_xl.py
+    molcrawl/tasks/pretrain/configs/compounds/gpt2_chembl_xl.py
 
 echo "GPT-2 fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LOG_DIR}/"

@@ -15,4 +15,4 @@ select_multi_gpu "$NUM_GPUS" 10
 LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/clinvar/logs/genome_sequence_clinvar-train-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/models/bert/main.py \
-    bert/configs/genome_sequence_clinvar.py
+    molcrawl/tasks/pretrain/configs/genome_sequence/bert_clinvar_small.py

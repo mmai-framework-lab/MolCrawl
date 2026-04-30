@@ -23,4 +23,4 @@ LOG_FILE="${LOG_DIR}/chemberta2-train-${MODEL_SIZE}-$(date +%Y-%m-%d_%H-%M-%S).l
 
 run_training_background "${LOG_FILE}" \
     molcrawl/models/chemberta2/main.py \
-    --config molcrawl/models/chemberta2/configs/compounds.py --model_size ${MODEL_SIZE}
+    --config molcrawl/tasks/pretrain/configs/compounds/chemberta2.py --model_size ${MODEL_SIZE}

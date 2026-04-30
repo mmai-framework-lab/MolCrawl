@@ -27,7 +27,7 @@ select_multi_gpu "$NUM_GPUS" 10
 
 run_training_background "${LOG_DIR}/rna_celltype-train-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log" \
     molcrawl/models/bert/main.py \
-    bert/configs/rna_celltype.py
+    molcrawl/tasks/pretrain/configs/rna/bert_celltype_small.py
 
 echo "BERT fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES:-0})."
 echo "Logs: ${LOG_DIR}/"

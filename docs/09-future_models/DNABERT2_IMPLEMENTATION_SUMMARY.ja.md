@@ -8,7 +8,7 @@
 
 -  [dnabert2/main.py](../../molcrawl/models/dnabert2/main.py) - メイン学習スクリプト (433行)
 -  [dnabert2/configurator.py](../../molcrawl/models/dnabert2/configurator.py) - 設定ローダー
--  [dnabert2/configs/genome_sequence.py](../../molcrawl/models/dnabert2/configs/genome_sequence.py) - genome_sequence設定
+-  [dnabert2/configs/genome_sequence.py](../../molcrawl/tasks/pretrain/configs/genome_sequence/dnabert2.py) - genome_sequence設定
 
 ### 2. 実行スクリプト
 
@@ -96,7 +96,7 @@ python dnabert2/main.py dnabert2/configs/genome_sequence.py \
 
 ### 設定ファイル編集
 
-[dnabert2/configs/genome_sequence.py](../../molcrawl/models/dnabert2/configs/genome_sequence.py) を編集:
+[dnabert2/configs/genome_sequence.py](../../molcrawl/tasks/pretrain/configs/genome_sequence/dnabert2.py) を編集:
 
 ```python
 # 例: より長い配列に対応

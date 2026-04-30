@@ -51,6 +51,6 @@ echo ""
 # Run training in background with medium model size override
 run_training_background "${LOG_FILE}" \
     molcrawl/models/esm2/main.py \
-    molcrawl/models/esm2/configs/protein_sequence.py --model_size=medium
+    molcrawl/tasks/pretrain/configs/protein_sequence/esm2.py --model_size=medium
 
 

@@ -600,7 +600,7 @@ export LEARNING_SOURCE_DIR=/path/to/learning_source_202508
 export CUDA_VISIBLE_DEVICES=0  # For GPU usage
 
 # Load project configuration
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 ```
 
 ### Dependencies
@@ -1023,6 +1023,6 @@ These scripts have undergone the following changes:
    - Added environment variable checks
 
 4. **Unified script paths**
-   - All Python execution paths unified under `scripts/evaluation/{model_type}/`
+   - All Python execution paths unified under `molcrawl/tasks/evaluation/{task}/{arch}_*.py (organized by task)`
 
 All functionality is identical as long as scripts are run from the project root directory.

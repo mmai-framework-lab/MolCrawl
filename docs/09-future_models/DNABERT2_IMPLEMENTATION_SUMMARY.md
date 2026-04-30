@@ -8,7 +8,7 @@
 
 - [dnabert2/main.py](../../molcrawl/models/dnabert2/main.py) - Main training script (433 lines)
 - [dnabert2/configurator.py](../../molcrawl/models/dnabert2/configurator.py) - Configuration loader
-- [dnabert2/configs/genome_sequence.py](../../molcrawl/models/dnabert2/configs/genome_sequence.py) - Genome-sequence config
+- [dnabert2/configs/genome_sequence.py](../../molcrawl/tasks/pretrain/configs/genome_sequence/dnabert2.py) - Genome-sequence config
 
 ### 2. Workflow Scripts
 
@@ -77,7 +77,7 @@ python dnabert2/main.py dnabert2/configs/genome_sequence.py \
   --save_steps=10000
 ```
 
-Edit [dnabert2/configs/genome_sequence.py](../../molcrawl/models/dnabert2/configs/genome_sequence.py):
+Edit [dnabert2/configs/genome_sequence.py](../../molcrawl/tasks/pretrain/configs/genome_sequence/dnabert2.py):
 
 ```python
 max_length = 1024  # default: 512

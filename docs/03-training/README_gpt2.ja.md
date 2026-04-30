@@ -74,10 +74,10 @@
 一部データセットではこのパラメータが必要です。その場合、データ前処理で生成された tokenizer を指定してください。
 
 - Genome Sequence:
-  `scripts/preparation_script_genome_sequence.py` で生成される `spm_tokenizer.model` を使用
+  `molcrawl/data/genome_sequence/preparation.py` で生成される `spm_tokenizer.model` を使用
   （`assets/configs/genome_sequence.yaml` の `output_dir` 配下）
 - Compounds:
-  `scripts/preparation_script_compounds.py` で生成される `vocab.txt` を使用
+  `molcrawl/data/compounds/preparation.py` で生成される `vocab.txt` を使用
   （`assets/configs/compounds.yaml` の `vocab_path`）
 - Molecule Natural Language:
   設定不要（`MoleculeNatLangTokenizer` が config 内で初期化される）

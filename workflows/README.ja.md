@@ -600,7 +600,7 @@ export LEARNING_SOURCE_DIR=/path/to/learning_source_202508
 export CUDA_VISIBLE_DEVICES=0  # GPU使用時
 
 # プロジェクト設定の読み込み
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 ```
 
 ### 依存パッケージ
@@ -1023,6 +1023,6 @@ print(df['ClinicalSignificance'].value_counts())
    - 環境変数チェックを追加
 
 4. **スクリプトパスの統一**
-   - すべてのPython実行パスを`scripts/evaluation/{model_type}/`配下に統一
+   - すべてのPython実行パスを`molcrawl/tasks/evaluation/{task}/{arch}_*.py (organized by task)`配下に統一
 
 プロジェクトルートディレクトリから実行する限り、すべての機能は同一です。

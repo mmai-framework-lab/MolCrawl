@@ -26,7 +26,7 @@ select_multi_gpu "$NUM_GPUS" 20
 
 run_training_background "${LOG_DIR}/compounds_chembl-train-bert-medium-$(date +%Y-%m-%d_%H-%M-%S).log" \
     molcrawl/models/bert/main.py \
-    bert/configs/compounds_chembl_medium.py
+    molcrawl/tasks/pretrain/configs/compounds/bert_chembl_medium.py
 
 echo "BERT fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES:-0})."
 echo "Logs: ${LOG_DIR}/"

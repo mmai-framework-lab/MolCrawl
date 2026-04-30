@@ -21,7 +21,7 @@ echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.bashrc
 echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.zshrc
 ```
 
-**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. The cache location is determined by the `LEARNING_SOURCE_DIR` environment variable, so changing `LEARNING_SOURCE_DIR` will also change where the cache is stored. The detailed configuration can be found in `molcrawl/config/env.sh`.
+**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. The cache location is determined by the `LEARNING_SOURCE_DIR` environment variable, so changing `LEARNING_SOURCE_DIR` will also change where the cache is stored. The detailed configuration can be found in `molcrawl/core/env.sh`.
 
 Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage space (at least 100GB recommended).
 
@@ -437,9 +437,9 @@ The is 4 separate scripts for CELLxGENE downloading.
 
 2. Train the model by running:
 
-   `python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/<dataset>/train_gpt2_small_config.py`
+   `python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/<dataset>/train_gpt2_small_config.py`
 
-   Inside each `molcrawl/models/gpt2/configs/<dataset>/` folder there are config files for each model size. For example: `python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py` will train the large GPT-2 model on the molecule_nat_lang dataset.
+   Inside each `molcrawl/tasks/pretrain/configs/<dataset>/` folder there are config files for each model size. For example: `python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_large.py` will train the large GPT-2 model on the molecule_nat_lang dataset.
 
    Running this will launch a training job and output results in the path specified by `out_dir` in the config.
 
@@ -510,7 +510,7 @@ is filled without any padding.
 > [!IMPORTANT]
 > Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT-2 Readme](../03-training/README_gpt2.md).
 
-Then the training can be launch for the prepared datasets. In the path `molcrawl/models/gpt2/configs/<dataset-name>`, you will find a folder with 4 files:
+Then the training can be launch for the prepared datasets. In the path `molcrawl/tasks/pretrain/configs/<dataset-name>`, you will find a folder with 4 files:
 
 1. `train_gpt2_small_config.py`: Config for training the small-sized version of the model,
 2. `train_gpt2_medium_config.py`: Config for training the medium-sized version of the model,
@@ -522,31 +522,31 @@ Which file you pass to the training command will determine which version of the 
 For Protein Sequence, the small version training can be done by running the following:
 
 ```bash
-python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/protein_sequence/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/protein_sequence/gpt2_small.py
 ```
 
 For Molecule Related Natural Language, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_small.py
 ```
 
 For Genome Sequence, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/genome_sequence/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_small.py
 ```
 
 For Compounds, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/compounds/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/compounds/gpt2_small.py
 ```
 
 For RNA, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/rna/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/rna/gpt2_small.py
 ```
 
 This will train a model and save it in outputdir.
@@ -562,13 +562,13 @@ You can find the list of configs in `molcrawl/models/bert/configs`. Most paramet
 To run a training you can use the following command:
 
 ```bash
-python molcrawl/models/bert/main.py molcrawl/models/bert/configs/<dataset>.py
+python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/<dataset>.py
 ```
 
 If multiple GPUs are available, you can speed up training using `torchrun`. For example, to train on GPUs 0 and 2:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 molcrawl/models/bert/main.py molcrawl/models/bert/configs/compounds.py
+CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py
 ```
 
 Replace `CUDA_VISIBLE_DEVICES` with the indices of the GPUs you wish to use and set `--nproc_per_node` to the number of GPUs accordingly.

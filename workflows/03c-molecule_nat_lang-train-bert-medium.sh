@@ -15,4 +15,4 @@ select_multi_gpu "$NUM_GPUS" 20
 LOG_FILE="${LEARNING_SOURCE_DIR}/molecule_nat_lang/logs/molecule_nat_lang-train-bert-medium-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/models/bert/main.py \
-    bert/configs/molecule_nat_lang_medium.py
+    molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_medium.py

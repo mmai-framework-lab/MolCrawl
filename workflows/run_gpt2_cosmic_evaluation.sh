@@ -159,7 +159,7 @@ if [[ "$VISUALIZE_ONLY" == true ]]; then
         exit 1
     fi
 
-    python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
+    python "$PROJECT_ROOT/molcrawl/tasks/evaluation/cosmic/gpt2_visualization.py" \
         --result-dir "$OUTPUT_DIR" \
         --output_dir "$OUTPUT_DIR/visualizations"
 
@@ -172,7 +172,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
     echo "=== データ準備フェーズ ==="
 
     echo "COSMICサンプルデータを作成中..."
-    python "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_data_preparation.py" \
+    python "$PROJECT_ROOT/molcrawl/tasks/evaluation/cosmic/gpt2_data_preparation.py" \
         --output_dir "$DATA_DIR" \
         --max_samples "$MAX_SAMPLES" \
         --create_sample_data
@@ -208,7 +208,7 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
 
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
-        "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_evaluation.py"
+        "$PROJECT_ROOT/molcrawl/tasks/evaluation/cosmic/gpt2_evaluation.py"
         --model_path "$MODEL_PATH"
         --cosmic_data "$COSMIC_DATA"
         --output_dir "$OUTPUT_DIR"
@@ -237,7 +237,7 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
     exit 1
 fi
 
- "$PROJECT_ROOT/scripts/evaluation/gpt2/cosmic_visualization.py" \
+ "$PROJECT_ROOT/molcrawl/tasks/evaluation/cosmic/gpt2_visualization.py" \
     --results_file "$RESULTS_FILE" \
     --output_dir "$OUTPUT_DIR/visualizations"
 

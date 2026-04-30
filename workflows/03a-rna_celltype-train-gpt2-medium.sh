@@ -26,7 +26,7 @@ mkdir -p "${LOG_DIR}"
 
 run_training_background "${LOG_DIR}/rna_celltype-train-gpt2-medium-$(date +%Y-%m-%d_%H-%M-%S).log" \
     molcrawl/models/gpt2/train.py \
-    gpt2/configs/rna/train_gpt2_celltype_medium.py
+    molcrawl/tasks/pretrain/configs/rna/gpt2_celltype_medium.py
 
 echo "GPT-2 medium fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LOG_DIR}/"

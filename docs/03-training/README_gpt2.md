@@ -33,13 +33,13 @@ This step:
 
 Run:
 
-`python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/<dataset>/train_gpt2_small_config.py`
+`python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/<dataset>/train_gpt2_small_config.py`
 
 Each dataset has a corresponding config that defines training parameters.
 
 Example:
 
-`python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
+`python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_large.py`
 
 This starts training and writes checkpoints (for example, `out/ckpt.pt`).
 

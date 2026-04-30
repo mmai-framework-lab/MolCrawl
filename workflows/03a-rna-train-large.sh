@@ -17,4 +17,4 @@ mkdir -p ${LEARNING_SOURCE_DIR}/rna/logs
 LOG_FILE="${LEARNING_SOURCE_DIR}/rna/logs/rna-train-large-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/models/gpt2/train.py \
-    ./gpt2/configs/rna/train_gpt2_large_config.py
+    ./molcrawl/tasks/pretrain/configs/rna/gpt2_large.py

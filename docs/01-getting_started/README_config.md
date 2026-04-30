@@ -12,7 +12,7 @@ This document explains the configuration files used to centrally manage dataset 
 
 ### Shell Configuration
 
-- `molcrawl/config/env.sh`: environment variable settings for shell scripts
+- `molcrawl/core/env.sh`: environment variable settings for shell scripts
 
 ## Usage
 
@@ -33,7 +33,7 @@ dataset = load_from_disk(UNIPROT_DATASET_DIR)
 #!/bin/bash
 
 # Load configuration
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 
 # Build paths from LEARNING_SOURCE_DIR
 UNIPROT_DATASET_DIR="$LEARNING_SOURCE_DIR/protein_sequence/training_ready_hf_dataset"
@@ -48,13 +48,13 @@ echo "RefSeq dataset dir: $REFSEQ_DATASET_DIR"
 
 To change the dataset storage directory:
 
-1. Update `LEARNING_SOURCE_DIR` in `molcrawl/config/env.sh`.
+1. Update `LEARNING_SOURCE_DIR` in `molcrawl/core/env.sh`.
 2. If needed, override it in your current shell with `export LEARNING_SOURCE_DIR=...`.
 
 Example:
 
 ```bash
-# molcrawl/config/env.sh
+# molcrawl/core/env.sh
 export LEARNING_SOURCE_DIR="learning_source"
 ```
 

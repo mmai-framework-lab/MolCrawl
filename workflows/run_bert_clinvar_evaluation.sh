@@ -81,7 +81,7 @@ prepare_data() {
     if [[ -n "$REF_FASTA" ]]; then
         # 参照ゲノムがある場合: データセットから直接抽出して配列生成
         source miniconda/bin/activate conda
-        python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+        python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/extract_random_samples.py" \
             --ref_fasta "$REF_FASTA" \
             --output_csv "$DATASET_PATH" \
             --num_samples 2000 \
@@ -188,7 +188,7 @@ run_evaluation() {
 
     # BERT ClinVar評価の実行
     source miniconda/bin/activate conda
-    python scripts/evaluation/bert/clinvar_evaluation.py \
+    python molcrawl/tasks/evaluation/clinvar/bert_evaluation.py \
         --model_path "$MODEL_PATH" \
         --tokenizer_path "$TOKENIZER_PATH" \
         --dataset_path "$DATASET_PATH" \

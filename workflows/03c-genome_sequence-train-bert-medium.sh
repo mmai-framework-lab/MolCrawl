@@ -15,4 +15,4 @@ select_multi_gpu "$NUM_GPUS" 20
 LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-bert-medium-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
     molcrawl/models/bert/main.py \
-    bert/configs/genome_sequence_medium.py
+    molcrawl/tasks/pretrain/configs/genome_sequence/bert_medium.py

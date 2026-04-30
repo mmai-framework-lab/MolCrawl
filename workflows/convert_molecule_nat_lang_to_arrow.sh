@@ -40,7 +40,7 @@ echo ""
 source miniconda/bin/activate
 
 # Run conversion
- scripts/preparation/convert_parquet_to_arrow.py \
+ molcrawl/preparation/convert_parquet_to_arrow.py \
     "${PARQUET_FILE}" \
     "${OUTPUT_DIR}"
 

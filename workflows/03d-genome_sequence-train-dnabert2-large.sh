@@ -54,6 +54,6 @@ echo ""
 # Run training in background with large model size override
 run_training_background "${LOG_FILE}" \
     molcrawl/models/dnabert2/main.py \
-    molcrawl/models/dnabert2/configs/genome_sequence.py --model_size=large
+    molcrawl/tasks/pretrain/configs/genome_sequence/dnabert2.py --model_size=large
 
 

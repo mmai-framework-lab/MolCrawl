@@ -170,7 +170,7 @@ if [[ "$VISUALIZE_ONLY" == true ]]; then
         exit 1
     fi
 
-    python "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_visualization.py" \
+    python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/gpt2_visualization.py" \
         --results_file "$RESULTS_FILE" \
         --output_dir "$OUTPUT_DIR/visualizations" \
         --html_report
@@ -208,7 +208,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
         # extract_random_clinvar_samples.pyを使用してバランスサンプリング
         if [[ -n "$REF_FASTA" ]]; then
             # 参照ゲノムがある場合: データセットから直接抽出して配列生成
-            python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+            python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/extract_random_samples.py" \
                 --ref_fasta "$REF_FASTA" \
                 --output_csv "$DATA_DIR/clinvar_evaluation_dataset.csv" \
                 --num_samples 2000 \
@@ -217,7 +217,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
         else
             # 参照ゲノムがない場合: 既存の前処理スクリプトで取得後にサンプリング
             echo "従来の方法でデータ準備..."
-            python "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_data_preparation.py" \
+            python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/gpt2_data_preparation.py" \
                 --download \
                 --output_dir "$DATA_DIR" \
                 --max_samples "$MAX_SAMPLES" \
@@ -226,7 +226,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
             # 生成されたファイルからバランスサンプリング
             if [[ -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
                 echo "バランスサンプリングを適用中..."
-                python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+                python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/extract_random_samples.py" \
                     --input_csv "$DATA_DIR/clinvar_evaluation_dataset.csv" \
                     --output_csv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" \
                     --num_samples 2000 \
@@ -261,7 +261,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
             # extract_random_clinvar_samples.pyを使用してバランスサンプリング
             if [[ -n "$REF_FASTA" ]]; then
                 # 参照ゲノムがある場合: データセットから直接抽出して配列生成
-                python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+                python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/extract_random_samples.py" \
                     --ref_fasta "$REF_FASTA" \
                     --output_csv "$DATA_DIR/clinvar_evaluation_dataset.csv" \
                     --num_samples 2000 \
@@ -270,7 +270,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
             else
                 # 参照ゲノムがない場合: 既存の前処理スクリプトで取得後にサンプリング
                 echo "従来の方法でデータ準備..."
-                python "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_data_preparation.py" \
+                python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/gpt2_data_preparation.py" \
                     --download \
                     --output_dir "$DATA_DIR" \
                     --max_samples "$MAX_SAMPLES" \
@@ -279,7 +279,7 @@ if [[ "$EVAL_ONLY" != true ]]; then
                 # 生成されたファイルからバランスサンプリング
                 if [[ -f "$DATA_DIR/clinvar_evaluation_dataset.csv" ]]; then
                     echo "バランスサンプリングを適用中..."
-                    python "$PROJECT_ROOT/scripts/evaluation/gpt2/extract_random_clinvar_samples.py" \
+                    python "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/extract_random_samples.py" \
                         --input_csv "$DATA_DIR/clinvar_evaluation_dataset.csv" \
                         --output_csv "$DATA_DIR/clinvar_evaluation_dataset_balanced.csv" \
                         --num_samples 2000 \
@@ -347,7 +347,7 @@ if [[ "$VISUALIZE_ONLY" != true ]]; then
 
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
-        "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_evaluation.py"
+        "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/gpt2_evaluation.py"
         --model_path "$MODEL_PATH"
         --clinvar_data "$CLINVAR_DATA"
         --output_dir "$OUTPUT_DIR"
@@ -376,7 +376,7 @@ if [[ ! -f "$RESULTS_FILE" ]]; then
     exit 1
 fi
 
- "$PROJECT_ROOT/scripts/evaluation/gpt2/clinvar_visualization.py" \
+ "$PROJECT_ROOT/molcrawl/tasks/evaluation/clinvar/gpt2_visualization.py" \
     --results_file "$RESULTS_FILE" \
     --output_dir "$OUTPUT_DIR/visualizations" \
     --html_report
