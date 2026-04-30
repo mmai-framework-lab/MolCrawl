@@ -38,7 +38,7 @@ from molcrawl.core.utils.evaluation_output import (  # noqa: E402
 from molcrawl.core.utils.model_evaluator import ModelEvaluator  # noqa: E402
 
 # Molecule NL tokenizer
-from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer  # noqa: E402
+from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer  # noqa: E402
 
 # Log settingslatersetup_evaluation_loggingdo it with
 logger = logging.getLogger(__name__)

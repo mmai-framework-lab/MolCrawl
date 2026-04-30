@@ -32,7 +32,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from molcrawl.core.dataset import PreparedDataset
 from molcrawl.gpt2.model import GPT, GPTConfig
-from molcrawl.rna.dataset.rna_dataset import RNADataset
+from molcrawl.data.rna.dataset.rna_dataset import RNADataset
 
 dataset_params: dict[str, object] = {}
 # -----------------------------------------------------------------------------

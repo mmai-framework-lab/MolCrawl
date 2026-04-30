@@ -14,7 +14,7 @@ from transformers import AutoTokenizer, PreTrainedTokenizerFast
 from molcrawl.core.paths import CELLXGENE_DATASET_DIR, get_bert_output_path, get_custom_tokenizer_path
 
 # Build the tokenizer using the WordLevel model
-from molcrawl.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
+from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 original_tokenizer = TranscriptomeTokenizer()
 

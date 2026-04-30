@@ -4,8 +4,8 @@
 
 
 from molcrawl.core.paths import MOLECULE_NAT_LANG_DATASET_DIR, get_gpt2_output_path
-from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
-from molcrawl.molecule_nat_lang.utils.vocab_guard import EXPECTED_VOCAB_SIZE_GPT2, check_vocab_size
+from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from molcrawl.data.molecule_nat_lang.utils.vocab_guard import EXPECTED_VOCAB_SIZE_GPT2, check_vocab_size
 
 # Large-Sized GPT2 Model
 

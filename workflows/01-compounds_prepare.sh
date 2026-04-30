@@ -17,7 +17,7 @@ mkdir -p ${LEARNING_SOURCE_DIR}/compounds/logs/
 echo "🚀 Starting compounds dataset preparation..."
 echo "📁 Learning source: ${LEARNING_SOURCE_DIR}"
 
-nohup $PYTHON molcrawl/preparation/preparation_script_compounds.py \
+nohup $PYTHON molcrawl/data/compounds/preparation.py \
     assets/configs/compounds.yaml \
     --force \
     > ${LEARNING_SOURCE_DIR}/compounds/logs/compounds-preparation-$(date +%Y-%m-%d_%H-%M-%S).log 2>&1 &

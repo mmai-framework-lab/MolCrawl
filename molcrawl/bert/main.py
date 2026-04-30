@@ -366,7 +366,7 @@ if __name__ == "__main__":
         try:
             # Check if this is a compounds dataset by looking at the parent directory structure
             if "compounds" in str(dataset_path):
-                from molcrawl.compounds.dataset.multi_loader import MultiDatasetLoader
+                from molcrawl.data.compounds.dataset.multi_loader import MultiDatasetLoader
 
                 # Determine compounds directory
                 compounds_dir = dataset_path

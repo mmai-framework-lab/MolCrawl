@@ -15,7 +15,7 @@ import torch
 from transformers import DataCollatorForLanguageModeling
 
 from molcrawl.core.paths import PROTEINGYM_DATASET_DIR, get_bert_output_path
-from molcrawl.protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
+from molcrawl.data.protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
 
 # Tokenizer instantiation - BERT compatible ESM tokenizer
 tokenizer = create_bert_protein_tokenizer()

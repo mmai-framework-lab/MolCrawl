@@ -145,7 +145,7 @@ The configuration file is used for the data preprocessing
 ```yaml
 data_preparation:
   # Path to save the untokenized OrganiX13 dataset once is downloaded and processed by the script
-  organix13_dataset: "molcrawl/compounds/dataset/organix13"
+  organix13_dataset: "molcrawl/data/compounds/dataset/organix13"
 
   # Path to save the processed and tokenized dataset
   save_path: "{LEARNING_SOURCE_DIR}/compounds/organix13_tokenized.parquet"
@@ -162,19 +162,19 @@ data_preparation:
 You can run this script with the following command:
 
 ```bash
-python molcrawl/preparation/preparation_script_compounds.py assets/configs/compounds.yaml
+python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml
 ```
 
 To process specific datasets only:
 
 ```bash
-python molcrawl/preparation/preparation_script_compounds.py assets/configs/compounds.yaml --datasets zinc20
+python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml --datasets zinc20
 ```
 
 For more options:
 
 ```bash
-python molcrawl/preparation/preparation_script_compounds.py --help
+python molcrawl/data/compounds/preparation.py --help
 ```
 
 #### Loading a Processed Dataset (Compounds)
@@ -224,7 +224,7 @@ data_preparation:
 The processing of RefSeq is separate in 4 separate scripts. These scripts expect the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
-- `molcrawl/genome_sequence/dataset/RefSeq/download_refseq.py`
+- `molcrawl/data/genome_sequence/dataset/RefSeq/download_refseq.py`
 
   Uses `https://github.com/kblin/ncbi-genome-download` to download RefSeq data.
   `path_species` provide the directory containing one file per group and containing
@@ -234,20 +234,20 @@ of precedding directory to be present in the `output_dir` if that's not the case
   The full original species can be found in `assets/genome_species_list/species`
   And we used a filter set containing species with at least one sequence in RefSeq `assets/genome_species_list/filtered_species_refseq`
 
-- `molcrawl/genome_sequence/dataset/RefSeq/fasta_to_raw.py`
+- `molcrawl/data/genome_sequence/dataset/RefSeq/fasta_to_raw.py`
 
   Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file` (total of 1.6TB)
 
-- `molcrawl/genome_sequence/dataset/sentence_piece_tokenizer.py`
+- `molcrawl/data/genome_sequence/dataset/sentence_piece_tokenizer.py`
 
   As per specification we tried to train a BPE trainer from the raw files we generated. We provided an implementation with
   DNABERT_2, but in our experience the Hugging face implementation is too memory and time consuming.
   So our implementation uses the sentence piece library to train on a subset of the dataset.
   It's only one solution to use the pretrain Tokenizer trained by the DNABERT_2 authors.
-  We left commented code in `molcrawl/genome_sequence/dataset/tokenizer.py`. In that case
+  We left commented code in `molcrawl/data/genome_sequence/dataset/tokenizer.py`. In that case
   there is no need to train a new bpe tokenizer.
 
-- `molcrawl/genome_sequence/dataset/tokenizer.py`
+- `molcrawl/data/genome_sequence/dataset/tokenizer.py`
 
   Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer was used to confirm the usage. Here we used Hugging Face library to load the raw files, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
 
@@ -255,7 +255,7 @@ of precedding directory to be present in the `output_dir` if that's not the case
 
 ### Molecule Related Natural Language
 
-The script `molcrawl/preparation/preparation_script_molecule_related_nat_lang.py` preprocess and tokenizes a natural language molecule dataset. THe data is downloaded from [SMolInstruct](https://huggingface.co/datasets/osunlp/SMolInstruct). Then following the project's [GitHub repo](https://github.com/OSU-NLP-Group/LLM4Chem/tree/main), the data is preprocessed to have a "chat"-like format, following questions and answers. After this formatting of the data, the samples are tokenized and saved in a folder defined in the config file. This folder is a Hugging Face DatasetDict object which uses parquet.
+The script `molcrawl/data/molecule_nat_lang/preparation.py` preprocess and tokenizes a natural language molecule dataset. THe data is downloaded from [SMolInstruct](https://huggingface.co/datasets/osunlp/SMolInstruct). Then following the project's [GitHub repo](https://github.com/OSU-NLP-Group/LLM4Chem/tree/main), the data is preprocessed to have a "chat"-like format, following questions and answers. After this formatting of the data, the samples are tokenized and saved in a folder defined in the config file. This folder is a Hugging Face DatasetDict object which uses parquet.
 
 The resulting file is a dictionary for 3 dataset splits: "train", "valid", and "test". Each of them have the features: "sample_id", "input", "output", "raw_input", "raw_output", "split", "task", "input_core_tag_left", "input_core_tag_right", "output_core_tag_left", "output_core_tag_right", "target", "input_text", "real_input_text", "input_ids", "attention_mask", "labels", "output_ids". From these, the most relevant are:
 
@@ -268,7 +268,7 @@ The resulting file is a dictionary for 3 dataset splits: "train", "valid", and "
 
 ```yaml
 # Path to save the dataset once is downloaded (for example:)
-dataset: "molcrawl/molecule_nat_lang/assets/raw_data/osunlp/SMolInstruct"
+dataset: "molcrawl/data/molecule_nat_lang/assets/raw_data/osunlp/SMolInstruct"
 
 # Path to save the processed and tokenized dataset
 save_path: "{LEARNING_SOURCE_DIR}/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet"
@@ -283,7 +283,7 @@ Before running the script, ensure you have the following:
 First, download the SMolInstruct dataset:
 
 ```bash
-bash molcrawl/preparation/download_smolinstruct.sh
+bash molcrawl/data/molecule_nat_lang/download_smolinstruct.sh
 ```
 
 Then run the preparation script:
@@ -297,7 +297,7 @@ python -m molcrawl.preparation.preparation_script_molecule_related_nat_lang asse
 To load a dataset that was generated by this script, use:
 
 ```python
-from molcrawl.molecule_nat_lang.utils.general import read_dataset
+from molcrawl.data.molecule_nat_lang.utils.general import read_dataset
 from datasets import DatasetDict
 
 tokenized_dataset = DatasetDict(read_dataset("path/to/the/folder/created/by/script"))
@@ -347,15 +347,15 @@ The output will be the a subdir of the output_dir containing a dataset name dire
 The processing of UniProt is separate in 3 separate scripts. These scripts expect the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
-- `molcrawl/protein_sequence/dataset/UniProt/uniprot_download.py`
+- `molcrawl/data/protein_sequence/dataset/UniProt/uniprot_download.py`
 
   Will download all UniProt files and extract them to fasta files.
 
-- `molcrawl/protein_sequence/dataset/UniProt/fasta_to_raw.py`
+- `molcrawl/data/protein_sequence/dataset/UniProt/fasta_to_raw.py`
 
   Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file`
 
-- `molcrawl/protein_sequence/dataset/tokenizer.py`
+- `molcrawl/data/protein_sequence/dataset/tokenizer.py`
 
   Convert the raw files in parquet files of tokens in the `parquet_files` directory. The ESM Tokenizer is used.
   The `token_counts.pkl` is also generated.
@@ -406,23 +406,23 @@ There will be multiple directory generate in the output_dir provided in the conf
 
 The is 4 separate scripts for CELLxGENE downloading.
 
-- `molcrawl/rna/dataset/CELLxGENE/script/build_list.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/build_list.py`
 
   Generate `metadata_preparation` and `tissue_list.tsv` to prepare the download.
 
-- `molcrawl/rna/dataset/CELLxGENE/script/download.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/download.py`
 
   Actual downloading of the data in `download_dir` directory.
 
-- `molcrawl/rna/dataset/CELLxGENE/script/conv.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/conv.py`
 
   Extract h5ad files form the archived in `download_dir` and save them to the `extract` directory
 
-- `molcrawl/rna/dataset/CELLxGENE/script/h5ad_to_loom.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/h5ad_to_loom.py`
 
   Transfer the h5ad file to loom and delete some unnecessary entries.
 
-- `molcrawl/rna/dataset/CELLxGENE/tokenization.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/tokenization.py`
   Create the gene token vocabulary, based on geneformer code.
 
 ## Training of GPT-2 model
@@ -466,37 +466,37 @@ In order to train a GPT-2 model with one the dataset, you will need to run the `
 For Protein Sequence, run the following command:
 
 ```bash
-python molcrawl/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
+python molcrawl/data/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
 ```
 
 For Molecule Related Natural Language, run the following command:
 
 ```bash
-python molcrawl/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang_config.yaml
+python molcrawl/data/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang_config.yaml
 ```
 
 For Genome Sequence, run the following command:
 
 ```bash
-python molcrawl/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
+python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
 ```
 
 For Compounds, run the following command:
 
 ```bash
-python molcrawl/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
+python molcrawl/data/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
 ```
 
 To create the `training_ready_hf_dataset` for the OrganiX13 compounds dataset, also run:
 
 ```bash
-python molcrawl/compounds/dataset/prepare_gpt2_organix13.py assets/configs/compounds.yaml
+python molcrawl/data/compounds/dataset/prepare_gpt2_organix13.py assets/configs/compounds.yaml
 ```
 
 For RNA, run the following command:
 
 ```bash
-python molcrawl/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
+python molcrawl/data/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
 ```
 
 > [!IMPORTANT]

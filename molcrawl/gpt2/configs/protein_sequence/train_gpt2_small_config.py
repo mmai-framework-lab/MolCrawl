@@ -4,7 +4,7 @@
 
 
 from molcrawl.core.paths import UNIPROT_DATASET_DIR, get_gpt2_output_path
-from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
+from molcrawl.data.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer as Tokenizer
 
 dataset_dir = UNIPROT_DATASET_DIR
 

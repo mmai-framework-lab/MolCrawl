@@ -21,7 +21,7 @@ Improvements compared to the existing BERT base:
 import os
 
 
-from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer
+from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer
 from molcrawl.core.paths import COMPOUNDS_DATASET_DIR
 
 # Model configuration

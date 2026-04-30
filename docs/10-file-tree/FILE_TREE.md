@@ -178,33 +178,6 @@ riken-dataset-fundational-model/
 │   │   └── configs/
 │   │       ├── __init__.py
 │   │       └── compounds.py                  # ChemBERTa-2 training config for compounds modality
-│   ├── compounds/
-│   │   ├── __init__.py
-│   │   ├── dataset/
-│   │   │   ├── dataset_config.py             # Config dataclass for compound datasets
-│   │   │   ├── hf_converter.py               # Converts compound data to Hugging Face dataset format
-│   │   │   ├── multi_loader.py               # Loads multiple compound dataset files in parallel
-│   │   │   ├── prepare_gpt2.py               # Prepares compound dataset for GPT-2 training
-│   │   │   ├── prepare_gpt2_organix13.py     # Prepares OrganiX13 dataset specifically for GPT-2
-│   │   │   ├── processor.py                  # Core compound data processing logic
-│   │   │   ├── tokenizer.py                  # Compound (SMILES/scaffold) tokenizer
-│   │   │   └── organix13/
-│   │   │       ├── __init__.py
-│   │   │       ├── combine_all.py            # Combines all OrganiX13 sub-datasets into one
-│   │   │       ├── download.py               # Downloads the OrganiX13 compound dataset
-│   │   │       ├── opv/
-│   │   │       │   └── prepare_opv.py        # Prepares OPV (organic photovoltaics) subset
-│   │   │       └── zinc/
-│   │   │           ├── download_and_convert_to_parquet.py  # Downloads ZINC20 and converts to Parquet
-│   │   │           └── zinc_complete/
-│   │   │               └── filelist.txt      # List of ZINC20 chunk files to download
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── config.py                     # Utility config helpers for compound modality
-│   │       ├── datasets.py                   # Dataset loading helpers for compounds
-│   │       ├── general.py                    # General utility functions for compound processing
-│   │       ├── preprocessing.py              # Compound data preprocessing transformations
-│   │       └── tokenizer.py                  # Tokenizer utility wrappers for compounds
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── env.sh                            # Shell script to export common environment variables
@@ -233,8 +206,123 @@ riken-dataset-fundational-model/
 │   │       ├── image_manager.py              # Manages image storage and retrieval for the web UI
 │   │       ├── model_evaluator.py            # Common evaluation loop used across modalities
 │   │       └── trainer_utils.py              # Trainer helpers shared across model training entrypoints
+│   ├── data/                                 # Per-modality data preparation, tokenizers, and datasets
+│   │   ├── __init__.py
+│   │   ├── compounds/
+│   │   │   ├── __init__.py
+│   │   │   ├── download_guacamol.py          # Downloads the GuacaMol compound benchmark dataset
+│   │   │   ├── preparation.py                # Master preparation script for compounds modality
+│   │   │   ├── dataset/
+│   │   │   │   ├── dataset_config.py             # Config dataclass for compound datasets
+│   │   │   │   ├── hf_converter.py               # Converts compound data to Hugging Face dataset format
+│   │   │   │   ├── multi_loader.py               # Loads multiple compound dataset files in parallel
+│   │   │   │   ├── prepare_gpt2.py               # Prepares compound dataset for GPT-2 training
+│   │   │   │   ├── prepare_gpt2_organix13.py     # Prepares OrganiX13 dataset specifically for GPT-2
+│   │   │   │   ├── processor.py                  # Core compound data processing logic
+│   │   │   │   ├── tokenizer.py                  # Compound (SMILES/scaffold) tokenizer
+│   │   │   │   └── organix13/
+│   │   │   │       ├── __init__.py
+│   │   │   │       ├── combine_all.py            # Combines all OrganiX13 sub-datasets into one
+│   │   │   │       ├── download.py               # Downloads the OrganiX13 compound dataset
+│   │   │   │       ├── opv/
+│   │   │   │       │   └── prepare_opv.py        # Prepares OPV (organic photovoltaics) subset
+│   │   │   │       └── zinc/
+│   │   │   │           ├── download_and_convert_to_parquet.py  # Downloads ZINC20 and converts to Parquet
+│   │   │   │           └── zinc_complete/
+│   │   │   │               └── filelist.txt      # List of ZINC20 chunk files to download
+│   │   │   └── utils/
+│   │   │       ├── __init__.py
+│   │   │       ├── config.py                     # Utility config helpers for compound modality
+│   │   │       ├── datasets.py                   # Dataset loading helpers for compounds
+│   │   │       ├── general.py                    # General utility functions for compound processing
+│   │   │       ├── preprocessing.py              # Compound data preprocessing transformations
+│   │   │       └── tokenizer.py                  # Tokenizer utility wrappers for compounds
+│   │   ├── genome_sequence/
+│   │   │   ├── __init__.py
+│   │   │   ├── preparation.py                # Master preparation script for genome sequences
+│   │   │   ├── dataset/
+│   │   │   │   ├── prepare_gpt2.py               # Prepares genome sequence dataset for GPT-2 training
+│   │   │   │   ├── sentence_piece_tokenizer.py   # SentencePiece tokenizer adapter for genome sequences
+│   │   │   │   ├── tokenizer.py                  # Custom tokenizer for genome sequences
+│   │   │   │   ├── train_tokenizer.py            # Script to train SentencePiece tokenizer on genome data
+│   │   │   │   ├── clinvar/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── prepare_clinvar.py        # Prepares ClinVar variant data for genome models
+│   │   │   │   └── refseq/
+│   │   │   │       ├── __init__.py
+│   │   │   │       ├── download_full_refseq.py   # Downloads the full RefSeq assembly collection
+│   │   │   │       ├── download_refseq.py        # Downloads selected RefSeq assemblies
+│   │   │   │       └── fasta_to_raw.py           # Converts FASTA genome files to raw text format
+│   │   │   └── utils/
+│   │   │       ├── __init__.py
+│   │   │       └── config.py                     # Utility config helpers for genome sequence modality
+│   │   ├── molecule_nat_lang/
+│   │   │   ├── __init__.py
+│   │   │   ├── download_smolinstruct.sh      # Shell script to download SMolInstruct dataset
+│   │   │   ├── preparation.py                # Master preparation script for molecule NL
+│   │   │   ├── dataset/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── download.py                   # Downloads the SMolInstruct molecule NL dataset
+│   │   │   │   ├── prepare_gpt2.py               # Prepares molecule NL dataset for GPT-2 training
+│   │   │   │   └── prepare_mol_instructions.py   # Prepares Mol-Instructions dataset for molecule NL
+│   │   │   └── utils/
+│   │   │       ├── __init__.py
+│   │   │       ├── bert_tokenizer.py             # BERT-compatible tokenizer for molecule NL
+│   │   │       ├── config.py                     # Utility config helpers for molecule NL modality
+│   │   │       ├── general.py                    # General utility functions for molecule NL
+│   │   │       ├── tokenizer.py                  # Custom tokenizer for molecule NL text
+│   │   │       └── vocab_guard.py                # Vocabulary consistency guard for molecule NL
+│   │   ├── protein_sequence/
+│   │   │   ├── __init__.py
+│   │   │   ├── launch_data_preparation.sh    # Shell script to launch protein sequence data preparation
+│   │   │   ├── preparation.py                # Master preparation script for protein sequences
+│   │   │   ├── dataset/
+│   │   │   │   ├── download_proteingym.py        # Downloads ProteinGym benchmark data
+│   │   │   │   ├── prepare_gpt2.py               # Prepares protein sequence dataset for GPT-2 training
+│   │   │   │   ├── prepare_proteingym.py         # Prepares ProteinGym dataset for protein models
+│   │   │   │   ├── tokenizer.py                  # Custom tokenizer for protein sequences
+│   │   │   │   └── uniprot/
+│   │   │   │       ├── __init__.py
+│   │   │   │       ├── fasta_to_raw.py           # Converts UniProt FASTA files to raw text format
+│   │   │   │       └── uniprot_download.py       # Downloads protein sequences from UniProt
+│   │   │   └── utils/
+│   │   │       ├── __init__.py
+│   │   │       ├── bert_tokenizer.py             # BERT-compatible tokenizer for protein sequences
+│   │   │       └── configs.py                    # Utility config helpers for protein sequence modality
+│   │   └── rna/
+│   │       ├── __init__.py
+│   │       ├── requirements.txt                  # Additional Python dependencies for RNA modality
+│   │       ├── preparation.py                    # Master preparation script for RNA modality
+│   │       ├── dataset/
+│   │       │   ├── prepare_gpt2.py               # Prepares RNA dataset for GPT-2 training
+│   │       │   ├── rna_dataset.py                # RNA dataset class (loading + iteration)
+│   │       │   ├── tokenization.py               # RNA-specific tokenization logic
+│   │       │   ├── celltype/
+│   │       │   │   ├── __init__.py
+│   │       │   │   └── prepare_celltype.py       # Prepares cell-type-labeled RNA dataset
+│   │       │   ├── cellxgene/
+│   │       │   │   ├── __init__.py
+│   │       │   │   ├── prepare_cellxgene.py      # Orchestrates CellxGene RNA dataset preparation
+│   │       │   │   └── script/
+│   │       │   │       ├── __init__.py
+│   │       │   │       ├── build_list.py         # Builds file list for CellxGene download
+│   │       │   │       ├── conv.py               # Format conversion utilities for CellxGene data
+│   │       │   │       ├── download.py           # Downloads CellxGene H5AD files
+│   │       │   │       ├── h5ad_to_loom.py       # Converts H5AD files to Loom format
+│   │       │   │       └── scgpt_tokenization.py # Tokenizes single-cell data in scGPT style
+│   │       │   └── geneformer/
+│   │       │       ├── gene_median_dictionary.pkl  # Pre-computed median gene expression dictionary
+│   │       │       ├── token_dictionary.pkl         # Gene-to-token mapping for Geneformer tokenizer
+│   │       │       └── tokenizer.py                 # Geneformer-style RNA tokenizer
+│   │       └── utils/
+│   │           ├── __init__.py
+│   │           ├── bert_tokenizer.py             # BERT-compatible tokenizer for RNA data
+│   │           ├── compute_stats.py              # Computes dataset statistics for RNA modality
+│   │           ├── config.py                     # Utility config helpers for RNA modality
+│   │           └── preprocess.py                 # RNA data preprocessing transformations
 │   ├── debug/
 │   │   └── __init__.py                       # (shim) placeholder; test script moved to tests/unit/
+│   ├── _legacy_aliases.py                    # (shim) meta-path aliases for legacy molcrawl.<modality>.* imports
 │   ├── dnabert2/
 │   │   ├── __init__.py
 │   │   ├── configurator.py                   # Builds training configs for DNABERT-2
@@ -292,21 +380,6 @@ riken-dataset-fundational-model/
 │   │   ├── helpers.py
 │   │   ├── models.py
 │   │   └── tracker.py
-│   ├── genome_sequence/
-│   │   ├── __init__.py
-│   │   ├── dataset/
-│   │   │   ├── prepare_gpt2.py               # Prepares genome sequence dataset for GPT-2 training
-│   │   │   ├── sentence_piece_tokenizer.py   # SentencePiece tokenizer adapter for genome sequences
-│   │   │   ├── tokenizer.py                  # Custom tokenizer for genome sequences
-│   │   │   ├── train_tokenizer.py            # Script to train SentencePiece tokenizer on genome data
-│   │   │   └── refseq/
-│   │   │       ├── __init__.py
-│   │   │       ├── download_full_refseq.py   # Downloads the full RefSeq assembly collection
-│   │   │       ├── download_refseq.py        # Downloads selected RefSeq assemblies
-│   │   │       └── fasta_to_raw.py           # Converts FASTA genome files to raw text format
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       └── config.py                     # Utility config helpers for genome sequence modality
 │   ├── gpt2/
 │   │   ├── __init__.py
 │   │   ├── configurator.py                   # Builds training configs for GPT-2 models
@@ -360,70 +433,16 @@ riken-dataset-fundational-model/
 │   │       ├── molecule_nat_lang_test_config.py  # GPT-2 test config for molecule NL modality
 │   │       ├── protein_sequence_test_config.py   # GPT-2 test config for protein sequence modality
 │   │       └── rna_test_config.py                # GPT-2 test config for RNA modality
-│   ├── molecule_nat_lang/
-│   │   ├── __init__.py
-│   │   ├── dataset/
-│   │   │   ├── __init__.py
-│   │   │   ├── download.py                   # Downloads the SMolInstruct molecule NL dataset
-│   │   │   └── prepare_gpt2.py               # Prepares molecule NL dataset for GPT-2 training
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── bert_tokenizer.py             # BERT-compatible tokenizer for molecule NL
-│   │       ├── config.py                     # Utility config helpers for molecule NL modality
-│   │       ├── general.py                    # General utility functions for molecule NL
-│   │       └── tokenizer.py                  # Custom tokenizer for molecule NL text
-│   ├── preparation/
+│   ├── preparation/                          # Shared / generic data-preparation utilities
 │   │   ├── __init__.py
 │   │   ├── convert_parquet_to_arrow.py       # Converts Parquet files to Arrow format
-│   │   ├── download_guacamol.py              # Downloads the GuacaMol compound benchmark dataset
-│   │   ├── download_smolinstruct.sh          # Shell script to download SMolInstruct dataset
-│   │   ├── preparation_script_compounds.py   # Master preparation script for compounds modality
-│   │   ├── preparation_script_genome_sequence.py     # Master preparation script for genome sequences
-│   │   ├── preparation_script_molecule_related_nat_lang.py  # Master preparation script for molecule NL
-│   │   ├── preparation_script_protein_sequence.py    # Master preparation script for protein sequences
-│   │   ├── preparation_script_rna.py         # Master preparation script for RNA modality
+│   │   ├── download_guacamol.py              # (shim) re-exports molcrawl.data.compounds.download_guacamol
+│   │   ├── preparation_script_compounds.py   # (shim) re-exports molcrawl.data.compounds.preparation
+│   │   ├── preparation_script_genome_sequence.py     # (shim) re-exports molcrawl.data.genome_sequence.preparation
+│   │   ├── preparation_script_molecule_related_nat_lang.py  # (shim) re-exports molcrawl.data.molecule_nat_lang.preparation
+│   │   ├── preparation_script_protein_sequence.py    # (shim) re-exports molcrawl.data.protein_sequence.preparation
+│   │   ├── preparation_script_rna.py         # (shim) re-exports molcrawl.data.rna.preparation
 │   │   └── test_molecule_nat_lang_compatibility.py   # Tests compatibility of molecule NL processed data
-│   ├── protein_sequence/
-│   │   ├── __init__.py
-│   │   ├── launch_data_preparation.sh        # Shell script to launch protein sequence data preparation
-│   │   ├── dataset/
-│   │   │   ├── prepare_gpt2.py               # Prepares protein sequence dataset for GPT-2 training
-│   │   │   ├── tokenizer.py                  # Custom tokenizer for protein sequences
-│   │   │   └── uniprot/
-│   │   │       ├── __init__.py
-│   │   │       ├── fasta_to_raw.py           # Converts UniProt FASTA files to raw text format
-│   │   │       └── uniprot_download.py       # Downloads protein sequences from UniProt
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── bert_tokenizer.py             # BERT-compatible tokenizer for protein sequences
-│   │       └── configs.py                    # Utility config helpers for protein sequence modality
-│   ├── rna/
-│   │   ├── __init__.py
-│   │   ├── requirements.txt                  # Additional Python dependencies for RNA modality
-│   │   ├── dataset/
-│   │   │   ├── prepare_gpt2.py               # Prepares RNA dataset for GPT-2 training
-│   │   │   ├── rna_dataset.py                # RNA dataset class (loading + iteration)
-│   │   │   ├── tokenization.py               # RNA-specific tokenization logic
-│   │   │   ├── cellxgene/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── prepare_cellxgene.py      # Orchestrates CellxGene RNA dataset preparation
-│   │   │   │   └── script/
-│   │   │   │       ├── __init__.py
-│   │   │   │       ├── build_list.py         # Builds file list for CellxGene download
-│   │   │   │       ├── conv.py               # Format conversion utilities for CellxGene data
-│   │   │   │       ├── download.py           # Downloads CellxGene H5AD files
-│   │   │   │       ├── h5ad_to_loom.py       # Converts H5AD files to Loom format
-│   │   │   │       └── scgpt_tokenization.py # Tokenizes single-cell data in scGPT style
-│   │   │   └── geneformer/
-│   │   │       ├── gene_median_dictionary.pkl  # Pre-computed median gene expression dictionary
-│   │   │       ├── token_dictionary.pkl         # Gene-to-token mapping for Geneformer tokenizer
-│   │   │       └── tokenizer.py                 # Geneformer-style RNA tokenizer
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── bert_tokenizer.py             # BERT-compatible tokenizer for RNA data
-│   │       ├── compute_stats.py              # Computes dataset statistics for RNA modality
-│   │       ├── config.py                     # Utility config helpers for RNA modality
-│   │       └── preprocess.py                 # RNA data preprocessing transformations
 │   ├── rnaformer/
 │   │   ├── __init__.py
 │   │   ├── configurator.py                   # Builds training configs for RNAformer

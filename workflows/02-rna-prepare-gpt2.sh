@@ -9,5 +9,5 @@ source "${SCRIPT_DIR}/common_functions.sh"
 # Check LEARNING_SOURCE_DIR
 check_learning_source_dir
 mkdir -p ${LEARNING_SOURCE_DIR}/rna/logs
-nohup bash -c '$PYTHON molcrawl/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml' > \
+nohup bash -c '$PYTHON molcrawl/data/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml' > \
     ${LEARNING_SOURCE_DIR}/rna/logs/rna-prepare-gpt2-`date +%Y-%m-%d_%H-%M-%S`.log 2>&1 &

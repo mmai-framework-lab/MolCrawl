@@ -27,7 +27,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
     """Load domain-specific tokenizer"""
     try:
         if domain == "compounds":
-            from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer
+            from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer
 
             vocab_file = vocab_path or "assets/molecules/vocab.txt"
             if not os.path.exists(vocab_file):
@@ -37,7 +37,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "molecule_nat_lang":
             # BERT-compatible tokenizer for molecular-related natural languages
-            from molcrawl.molecule_nat_lang.utils.bert_tokenizer import (
+            from molcrawl.data.molecule_nat_lang.utils.bert_tokenizer import (
                 create_bert_molecule_nat_lang_tokenizer,
             )
 
@@ -45,14 +45,14 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "genome_sequence":
             # SentencePiece tokenizer for genome sequences
-            from molcrawl.genome_sequence.utils.tokenizer import create_genome_tokenizer
+            from molcrawl.data.genome_sequence.utils.tokenizer import create_genome_tokenizer
 
             model_path = vocab_path  # SentencePiece model file path
             return create_genome_tokenizer(model_path)
 
         elif domain == "protein_sequence":
             # BERT compatible ESM tokenizer for protein sequences
-            from molcrawl.protein_sequence.utils.bert_tokenizer import (
+            from molcrawl.data.protein_sequence.utils.bert_tokenizer import (
                 create_bert_protein_tokenizer,
             )
 
@@ -60,7 +60,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
 
         elif domain == "rna":
             # BERT compatible tokenizer for RNA sequences
-            from molcrawl.rna.utils.bert_tokenizer import create_bert_rna_tokenizer
+            from molcrawl.data.rna.utils.bert_tokenizer import create_bert_rna_tokenizer
 
             return create_bert_rna_tokenizer()
 

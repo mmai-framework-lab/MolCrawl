@@ -6,7 +6,7 @@
 # Based on molcrawl/bert/configs/compounds.py — only the dataset path,
 # model output directory, learning rate and max_steps differ.
 
-from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import CHEMBL_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)

@@ -27,7 +27,7 @@ LOG_DIR="${LEARNING_SOURCE_DIR}/rna/celltype/logs"
 mkdir -p "${LOG_DIR}"
 
 echo "[1/1] Preparing RNA CellType dataset (download + split + chunk)..."
-nohup $PYTHON molcrawl/preparation/preparation_script_rna.py \
+nohup $PYTHON molcrawl/data/rna/preparation.py \
     assets/configs/rna.yaml \
     --datasets celltype \
     > "${LOG_DIR}/rna_celltype-prepare-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &

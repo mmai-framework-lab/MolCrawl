@@ -27,7 +27,7 @@ from molcrawl.core.utils.environment_check import check_learning_source_dir
 
 from molcrawl.gpt2.model import GPT, GPTConfig
 
-from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
+from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 from molcrawl.core.utils.evaluation_output import (
     get_evaluation_output_dir,
     get_model_name_from_path,

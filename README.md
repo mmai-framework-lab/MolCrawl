@@ -96,11 +96,11 @@ python -m molcrawl.preparation.preparation_script_molecule_nat_lang assets/confi
 ### 5. Build GPT-2/BERT Training Dataset
 
 ```bash
-python molcrawl/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
-python molcrawl/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
-python molcrawl/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
-python molcrawl/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
-python molcrawl/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang.yaml
+python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
+python molcrawl/data/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
+python molcrawl/data/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
+python molcrawl/data/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
+python molcrawl/data/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang.yaml
 ```
 
 ---

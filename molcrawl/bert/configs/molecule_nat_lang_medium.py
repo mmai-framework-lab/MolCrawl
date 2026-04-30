@@ -10,8 +10,8 @@
 import os
 
 from molcrawl.core.paths import get_bert_output_path
-from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
-from molcrawl.molecule_nat_lang.utils.vocab_guard import check_vocab_size
+from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer as Tokenizer
+from molcrawl.data.molecule_nat_lang.utils.vocab_guard import check_vocab_size
 
 # Get LEARNING_SOURCE_DIR from environment variable directly
 LEARNING_SOURCE_DIR = os.environ.get("LEARNING_SOURCE_DIR", "./learning_source_20260105-molecule-nl")

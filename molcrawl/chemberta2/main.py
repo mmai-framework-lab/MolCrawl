@@ -196,7 +196,7 @@ if __name__ == "__main__":
             # Try the new multi-dataset loader
             try:
                 from pathlib import Path
-                from molcrawl.compounds.dataset.multi_loader import MultiDatasetLoader
+                from molcrawl.data.compounds.dataset.multi_loader import MultiDatasetLoader
 
                 compounds_dir = Path(self.dataset_dir).parent
                 loader = MultiDatasetLoader(compounds_dir)

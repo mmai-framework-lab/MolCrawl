@@ -105,14 +105,14 @@ LEARNING_SOURCE_DIR/
 ```text
 Directory                                        Program                                                           Function
 -----------------------------------------------  ----------------------------------------------------------------  -----------------------------------------------
-compounds/                                       molcrawl/preparation/preparation_script_compounds.py              main()
-compounds/data/                                  molcrawl/preparation/preparation_script_compounds.py              download_datasets_individually()
-compounds/data/zinc20/                           molcrawl/compounds/dataset/organix13/zinc/download_and_conve...   download_zinc_files()
-compounds/data/opv/                              molcrawl/compounds/utils/general.py                               download_opv()
-compounds/data/Fraunhofer-SCAI-llamol/           molcrawl/compounds/utils/general.py                               download_llamol_datasets()
-compounds/benchmark/GuacaMol/                    molcrawl/preparation/download_guacamol.py                         download_guacamol()
+compounds/                                       molcrawl/data/compounds/preparation.py              main()
+compounds/data/                                  molcrawl/data/compounds/preparation.py              download_datasets_individually()
+compounds/data/zinc20/                           molcrawl/data/compounds/dataset/organix13/zinc/download_and_conve...   download_zinc_files()
+compounds/data/opv/                              molcrawl/data/compounds/utils/general.py                               download_opv()
+compounds/data/Fraunhofer-SCAI-llamol/           molcrawl/data/compounds/utils/general.py                               download_llamol_datasets()
+compounds/benchmark/GuacaMol/                    molcrawl/data/compounds/download_guacamol.py                         download_guacamol()
 compounds/compounds_logs/                        molcrawl/core/base.py                                             setup_logging() (called from preparation_script_compounds.py)
-compounds/organix13/.../training_ready_hf_data...  molcrawl/compounds/dataset/prepare_gpt2_organix13.py            prepare_gpt2_dataset()
+compounds/organix13/.../training_ready_hf_data...  molcrawl/data/compounds/dataset/prepare_gpt2_organix13.py            prepare_gpt2_dataset()
 compounds/gpt2-output/...                        molcrawl/gpt2/train.py                                            training entry (out_dir)
 compounds/bert-output/...                        molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
 compounds/chemberta2-output/...                  molcrawl/chemberta2/main.py                                       TrainingArguments(output_dir=model_path)
@@ -124,13 +124,13 @@ compounds/logs/                                  workflows/*.sh                 
 ```text
 Directory                                        Program                                                           Function
 -----------------------------------------------  ----------------------------------------------------------------  -----------------------------------------------
-genome_sequence/download_dir/                    molcrawl/genome_sequence/dataset/refseq/download_refseq.py        download_species_refseq()
-genome_sequence/extracted_files/                 molcrawl/genome_sequence/dataset/refseq/download_refseq.py        extract_file()
-genome_sequence/raw_files/                       molcrawl/genome_sequence/dataset/refseq/fasta_to_raw.py           fasta_to_raw_genome()
-genome_sequence/parquet_files/                   molcrawl/preparation/preparation_script_genome_sequence.py        process4_raw_to_parquet()
-genome_sequence/hf_cache/                        molcrawl/preparation/preparation_script_genome_sequence.py        process5_generate_statistics() (load_dataset cache_dir)
-genome_sequence/training_ready_hf_dataset/       molcrawl/genome_sequence/dataset/prepare_gpt2.py                  tokenize_batch_dataset()
-genome_sequence/spm_tokenizer.*                  molcrawl/genome_sequence/dataset/sentence_piece_tokenizer.py      train_tokenizer()
+genome_sequence/download_dir/                    molcrawl/data/genome_sequence/dataset/refseq/download_refseq.py        download_species_refseq()
+genome_sequence/extracted_files/                 molcrawl/data/genome_sequence/dataset/refseq/download_refseq.py        extract_file()
+genome_sequence/raw_files/                       molcrawl/data/genome_sequence/dataset/refseq/fasta_to_raw.py           fasta_to_raw_genome()
+genome_sequence/parquet_files/                   molcrawl/data/genome_sequence/preparation.py        process4_raw_to_parquet()
+genome_sequence/hf_cache/                        molcrawl/data/genome_sequence/preparation.py        process5_generate_statistics() (load_dataset cache_dir)
+genome_sequence/training_ready_hf_dataset/       molcrawl/data/genome_sequence/dataset/prepare_gpt2.py                  tokenize_batch_dataset()
+genome_sequence/spm_tokenizer.*                  molcrawl/data/genome_sequence/dataset/sentence_piece_tokenizer.py      train_tokenizer()
 genome_sequence/data/cosmic/                     molcrawl/evaluation/gpt2/cosmic_data_preparation.py               COSMICDataPreparation.__init__()
 genome_sequence/data/omim/                       molcrawl/evaluation/gpt2/omim_data_preparation.py                 prepare_omim_data()
 genome_sequence/report/...                       molcrawl/utils/evaluation_output.py                               get_evaluation_output_dir()
@@ -145,10 +145,10 @@ genome_sequence/logs/                            workflows/*.sh                 
 ```text
 Directory                                        Program                                                           Function
 -----------------------------------------------  ----------------------------------------------------------------  -----------------------------------------------
-protein_sequence/<dataset_name>/                 molcrawl/protein_sequence/dataset/uniprot/uniprot_download.py     process_dataset()
-protein_sequence/raw_files/                      molcrawl/preparation/preparation_script_protein_sequence.py       process2_fasta_to_raw()
-protein_sequence/parquet_files/                  molcrawl/protein_sequence/dataset/tokenizer.py                    get_parquet_paths() / tokenize_to_parquet()
-protein_sequence/training_ready_hf_dataset/      molcrawl/protein_sequence/dataset/prepare_gpt2.py                 tokenize_batch_dataset()
+protein_sequence/<dataset_name>/                 molcrawl/data/protein_sequence/dataset/uniprot/uniprot_download.py     process_dataset()
+protein_sequence/raw_files/                      molcrawl/data/protein_sequence/preparation.py       process2_fasta_to_raw()
+protein_sequence/parquet_files/                  molcrawl/data/protein_sequence/dataset/tokenizer.py                    get_parquet_paths() / tokenize_to_parquet()
+protein_sequence/training_ready_hf_dataset/      molcrawl/data/protein_sequence/dataset/prepare_gpt2.py                 tokenize_batch_dataset()
 protein_sequence/report/...                      molcrawl/utils/evaluation_output.py                               get_evaluation_output_dir()
 protein_sequence/gpt2-output/...                 molcrawl/gpt2/train.py                                            training entry (out_dir)
 protein_sequence/bert-output/...                 molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
@@ -161,12 +161,12 @@ protein_sequence/logs/                           workflows/*.sh                 
 ```text
 Directory                                        Program                                                           Function
 -----------------------------------------------  ----------------------------------------------------------------  -----------------------------------------------
-rna/metadata_preparation_dir/                    molcrawl/rna/dataset/cellxgene/script/build_list.py               build_list()
-rna/download_dir/                                molcrawl/rna/dataset/cellxgene/script/download.py                 download()
-rna/loom_dir/                                    molcrawl/rna/dataset/cellxgene/script/h5ad_to_loom.py             h5ad_to_loom()
-rna/parquet_files/                               molcrawl/rna/dataset/tokenization.py                              tokenize()
-rna/hf_cache/                                    molcrawl/preparation/preparation_script_rna.py                    final statistics step (load_dataset cache_dir)
-rna/training_ready_hf_dataset/                   molcrawl/rna/dataset/prepare_gpt2.py                              tokenize_batch_dataset()
+rna/metadata_preparation_dir/                    molcrawl/data/rna/dataset/cellxgene/script/build_list.py               build_list()
+rna/download_dir/                                molcrawl/data/rna/dataset/cellxgene/script/download.py                 download()
+rna/loom_dir/                                    molcrawl/data/rna/dataset/cellxgene/script/h5ad_to_loom.py             h5ad_to_loom()
+rna/parquet_files/                               molcrawl/data/rna/dataset/tokenization.py                              tokenize()
+rna/hf_cache/                                    molcrawl/data/rna/preparation.py                    final statistics step (load_dataset cache_dir)
+rna/training_ready_hf_dataset/                   molcrawl/data/rna/dataset/prepare_gpt2.py                              tokenize_batch_dataset()
 rna/gpt2-output/...                              molcrawl/gpt2/train.py                                            training entry (out_dir)
 rna/bert-output/...                              molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
 rna/rnaformer-output/...                         molcrawl/rnaformer/main.py                                        TrainingArguments(output_dir=model_path)
@@ -178,7 +178,7 @@ rna/logs/                                        workflows/*.sh                 
 ```text
 Directory                                        Program                                                           Function
 -----------------------------------------------  ----------------------------------------------------------------  -----------------------------------------------
-molecule_nat_lang/osunlp/SMolInstruct/                 molcrawl/preparation/download_smolinstruct.sh                     shell entry (snapshot_download)
+molecule_nat_lang/osunlp/SMolInstruct/                 molcrawl/data/molecule_nat_lang/download_smolinstruct.sh                     shell entry (snapshot_download)
 molecule_nat_lang/logs/                                molcrawl/preparation/preparation_script_molecule_related_nat_...  main(os.makedirs(logging_dir)) + workflows mkdir -p
 molecule_nat_lang/arrow_splits/                        molcrawl/preparation/preparation_script_molecule_related_nat_...  main (Arrow save block)
 molecule_nat_lang/gpt2_format/                         molcrawl/preparation/preparation_script_molecule_related_nat_...  main (GPT-2 format save block)

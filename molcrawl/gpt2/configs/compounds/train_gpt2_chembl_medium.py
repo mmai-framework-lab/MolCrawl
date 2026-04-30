@@ -8,7 +8,7 @@
 #   torchrun --standalone --nproc_per_node=<N> molcrawl/gpt2/train.py \
 #       gpt2/configs/compounds/train_gpt2_chembl_medium.py
 
-from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import CHEMBL_DATASET_DIR, get_gpt2_output_path
 
 # Medium-Sized GPT-2 Model

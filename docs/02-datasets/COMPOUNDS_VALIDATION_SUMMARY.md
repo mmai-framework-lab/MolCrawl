@@ -147,7 +147,7 @@ tests/unit/test_compounds.py::TestSmilesValidation::test_invalid_smiles_statisti
 
 ```bash
 # Change Compounds-related files
-git add molcrawl/compounds/
+git add molcrawl/data/compounds/
 git commit -m "feat: improve SMILES validation"
 git push
 
@@ -270,7 +270,7 @@ print(f'Invalid SMILES: {invalid_count}/{total_count} ({invalid_rate:.2f}%)')
 
 ```bash
 # 1. Change code
-vim molcrawl/compounds/utils/preprocessing.py
+vim molcrawl/data/compounds/utils/preprocessing.py
 
 # 2. Local test
 pytest tests/unit/test_compounds.py::TestSmilesValidation -v
@@ -297,7 +297,7 @@ pytest tests/unit/test_compounds.py::test_stereochemistry_tokenization -v
 #  FAILED
 
 # 3. Implement feature
-vim molcrawl/compounds/utils/tokenizer.py
+vim molcrawl/data/compounds/utils/tokenizer.py
 # add @ to SMI_REGEX_PATTERN
 
 # 4. Test (should pass)

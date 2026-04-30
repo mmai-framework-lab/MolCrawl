@@ -17,7 +17,7 @@ check_learning_source_dir
 echo "Using LEARNING_SOURCE_DIR: $LEARNING_SOURCE_DIR"
 
 # Run the download script
-$PYTHON molcrawl/preparation/download_guacamol.py
+$PYTHON molcrawl/data/compounds/download_guacamol.py
 
 echo ""
 echo "GuacaMol download complete!"

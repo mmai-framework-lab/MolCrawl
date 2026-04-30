@@ -19,7 +19,7 @@ import torch
 from torch import Tensor
 from transformers import BertForMaskedLM
 
-from molcrawl.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
+from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 from molcrawl.core.utils.evaluation_output import setup_evaluation_logging
 
 

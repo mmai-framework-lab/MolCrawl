@@ -2,7 +2,7 @@ import os
 
 
 from molcrawl.core.paths import CELLXGENE_DATASET_DIR, RNA_DATASET_DIR, get_gpt2_output_path
-from molcrawl.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
+from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 tokenizer = TranscriptomeTokenizer()
 meta_vocab_size = len(tokenizer)  # TranscriptomeTokenizer uses __len__ instead of vocab_size

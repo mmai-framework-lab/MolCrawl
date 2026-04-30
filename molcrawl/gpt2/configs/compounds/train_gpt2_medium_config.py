@@ -3,7 +3,7 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 
-from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
 
 n_layer = 24

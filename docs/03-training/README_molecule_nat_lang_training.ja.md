@@ -20,7 +20,7 @@ export LEARNING_SOURCE_DIR="learning_source"
 bash workflows/01-molecule_nat_lang-prepare.sh
 ```
 
-このステップでは `molcrawl/preparation/preparation_script_molecule_related_nat_lang.py` を実行し、以下を作成します。
+このステップでは `molcrawl/data/molecule_nat_lang/preparation.py` を実行し、以下を作成します。
 
 - `${LEARNING_SOURCE_DIR}/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet`
 - `${LEARNING_SOURCE_DIR}/molecule_nat_lang/arrow_splits/`（分割済みデータセット）

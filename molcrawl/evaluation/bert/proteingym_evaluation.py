@@ -60,7 +60,7 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         """Initialize tokenizer for protein_sequence (implementation of abstract method)"""
         try:
             # Use EsmSequenceTokenizer for protein_sequence
-            from molcrawl.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+            from molcrawl.data.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
 
             logger.info("Initializing EsmSequenceTokenizer for protein_sequence")
             tokenizer = EsmSequenceTokenizer()

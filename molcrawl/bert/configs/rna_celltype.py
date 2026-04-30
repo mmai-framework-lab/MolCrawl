@@ -21,7 +21,7 @@ from molcrawl.core.paths import (
     get_bert_output_path,
     get_custom_tokenizer_path,
 )
-from molcrawl.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
+from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 # Reconstruct the same WordLevel tokenizer used during RNA pretraining
 original_tokenizer = TranscriptomeTokenizer()

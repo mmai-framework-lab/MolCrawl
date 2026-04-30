@@ -160,7 +160,7 @@ def load_domain_tokenizer(domain, vocab_path=None):
     """Load domain-specific tokenizer"""
     try:
         if domain == "compounds":
-            from molcrawl.compounds.utils.tokenizer import CompoundsTokenizer
+            from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer
 
             vocab_file = vocab_path or "assets/molecules/vocab.txt"
             if not os.path.exists(vocab_file):
@@ -169,25 +169,25 @@ def load_domain_tokenizer(domain, vocab_path=None):
             return CompoundsTokenizer(vocab_file, 256)
 
         elif domain == "molecule_nat_lang":
-            from molcrawl.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
+            from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 
             return MoleculeNatLangTokenizer()
 
         elif domain == "genome_sequence":
-            from molcrawl.genome_sequence.utils.tokenizer import create_genome_tokenizer
+            from molcrawl.data.genome_sequence.utils.tokenizer import create_genome_tokenizer
 
             model_path = vocab_path
             return create_genome_tokenizer(model_path)
 
         elif domain == "protein_sequence":
-            from molcrawl.protein_sequence.utils.bert_tokenizer import (
+            from molcrawl.data.protein_sequence.utils.bert_tokenizer import (
                 create_bert_protein_tokenizer,
             )
 
             return create_bert_protein_tokenizer()
 
         elif domain == "rna":
-            from molcrawl.rna.utils.bert_tokenizer import create_bert_rna_tokenizer
+            from molcrawl.data.rna.utils.bert_tokenizer import create_bert_rna_tokenizer
 
             return create_bert_rna_tokenizer()
 

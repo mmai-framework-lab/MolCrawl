@@ -14,7 +14,7 @@ class TestCompoundsEndToEnd:
 
     def test_smiles_to_scaffold_pipeline(self):
         """Test the complete SMILES → Scaffold pipeline."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         # Actual compound examples
         test_cases = [
@@ -54,7 +54,7 @@ class TestCompoundsEndToEnd:
 
     def test_batch_smiles_processing(self):
         """Verify that a large number of SMILES can be batch processed."""
-        from molcrawl.compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
 
         # Simulate a large volume of SMILES data
         test_smiles = [
@@ -113,7 +113,7 @@ class TestCompoundsBERTIntegration:
 
     def test_bert_tokenizer_loading(self, bert_model_path):
         """Verify that the BERT tokenizer can be loaded correctly."""
-        from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
+        from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
 
         vocab_path = os.path.join(bert_model_path, "vocab.txt")
         if not os.path.exists(vocab_path):
@@ -132,7 +132,7 @@ class TestCompoundsBERTIntegration:
         import torch
         from transformers import BertForMaskedLM
 
-        from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
+        from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
 
         vocab_path = os.path.join(bert_model_path, "vocab.txt")
         if not os.path.exists(vocab_path):
@@ -303,7 +303,7 @@ class TestCompoundsDatasetIntegration:
         """Test the dataset preprocessing pipeline."""
         import pandas as pd
 
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         df = pd.read_csv(mock_compounds_dataset)
 

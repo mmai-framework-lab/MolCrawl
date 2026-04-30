@@ -37,11 +37,11 @@ pytest tests/unit/test_compounds.py --cov=molcrawl.compounds --cov-report=html
 
 #### Automatic trigger (on push)
 
-If you change files under `molcrawl/compounds/` and push, the workflow runs automatically:
+If you change files under `molcrawl/data/compounds/` and push, the workflow runs automatically:
 
 ```bash
 # Modify Compounds-related code
-git add molcrawl/compounds/utils/preprocessing.py
+git add molcrawl/data/compounds/utils/preprocessing.py
 git commit -m "fix: improve SMILES validation"
 git push
 
