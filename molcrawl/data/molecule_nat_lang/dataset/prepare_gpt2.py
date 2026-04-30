@@ -3,20 +3,15 @@ from argparse import ArgumentParser
 import os
 from pathlib import Path
 
-# Add project root src directory to path
-
-# datasetLoad cache settings (assets/configs/cache.yamlfrom)
+# dataset cache settings — kept as a deferred import so this module is
+# import-safe (setup_cache_env() reads LEARNING_SOURCE_DIR and sys.exit()s
+# if it is not set; running it at top level breaks pdoc, pytest, and any
+# code that imports this module without first exporting the env var).
 try:
-    # Any cache settings. Learning can continue even in non-existent environments.
     from molcrawl.core.utils.cache_config import setup_cache_env
 except ModuleNotFoundError:
     setup_cache_env = None
 
-if setup_cache_env is not None:
-    setup_cache_env()
-else:
-    # Can operate even in an environment without cache_config
-    print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 from molcrawl.data.molecule_nat_lang.utils.config import MoleculeNLConfig
 from molcrawl.data.molecule_nat_lang.utils.general import read_dataset
 
@@ -91,6 +86,11 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
 
 
 if __name__ == "__main__":
+    if setup_cache_env is not None:
+        setup_cache_env()
+    else:
+        print("WARNING: utils.cache_config not found. Continuing without cache setup.")
+
     number_sample = 50000
     context_length = 1024
 
