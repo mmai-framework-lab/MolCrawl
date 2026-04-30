@@ -152,7 +152,7 @@ python esm2/main.py esm2/configs/protein_sequence.py \
 
 ### 設定ファイルの編集
 
-[esm2/configs/protein_sequence.py](../../molcrawl/esm2/configs/protein_sequence.py) を編集:
+[esm2/configs/protein_sequence.py](../../molcrawl/models/esm2/configs/protein_sequence.py) を編集:
 
 ```python
 # 学習ステップ数を増やす

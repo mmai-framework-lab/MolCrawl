@@ -29,7 +29,7 @@ from sklearn.metrics import (
 
 # add project root
 
-from molcrawl.gpt2.model import GPT, GPTConfig
+from molcrawl.models.gpt2.model import GPT, GPTConfig
 
 from molcrawl.core.paths import get_genome_tokenizer_path
 from molcrawl.core.utils.evaluation_output import (

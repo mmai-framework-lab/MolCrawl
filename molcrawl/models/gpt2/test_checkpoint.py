@@ -23,7 +23,7 @@ from tqdm import tqdm
 from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
 
 from molcrawl.core.dataset import PreparedDataset
-from molcrawl.gpt2.model import GPT, GPTConfig
+from molcrawl.models.gpt2.model import GPT, GPTConfig
 
 # Add the project's src directory to the path
 # import GPT2 model class

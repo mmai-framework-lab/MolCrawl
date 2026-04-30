@@ -3,7 +3,7 @@
 # Continues from the molecule_nat_lang BERT pretraining checkpoint using the
 # Mol-Instructions fine-tuning dataset.
 #
-# Based on molcrawl/bert/configs/molecule_nat_lang.py — only the dataset
+# Based on molcrawl/models/bert/configs/molecule_nat_lang.py — only the dataset
 # path and model output directory differ.
 
 

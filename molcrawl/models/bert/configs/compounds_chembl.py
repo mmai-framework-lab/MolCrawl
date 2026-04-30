@@ -3,7 +3,7 @@
 # Continues from the compounds BERT pretraining checkpoint using the ChEMBL
 # fine-tuning dataset (canonical SMILES from ChEMBL 36).
 #
-# Based on molcrawl/bert/configs/compounds.py — only the dataset path,
+# Based on molcrawl/models/bert/configs/compounds.py — only the dataset path,
 # model output directory, learning rate and max_steps differ.
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer

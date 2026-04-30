@@ -31,7 +31,7 @@ from torch.distributed import destroy_process_group, init_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from molcrawl.core.dataset import PreparedDataset
-from molcrawl.gpt2.model import GPT, GPTConfig
+from molcrawl.models.gpt2.model import GPT, GPTConfig
 from molcrawl.data.rna.dataset.rna_dataset import RNADataset
 
 dataset_params: dict[str, object] = {}

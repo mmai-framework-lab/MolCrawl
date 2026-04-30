@@ -46,7 +46,7 @@ bash workflows/02-molecule_nat_lang-prepare-gpt2.sh
 直接実行:
 
 ```bash
-python molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
+python molcrawl/models/bert/main.py molcrawl/models/bert/configs/molecule_nat_lang.py
 ```
 
 ワークフロースクリプト:
@@ -60,7 +60,7 @@ bash workflows/03c-molecule_nat_lang-train-bert-small.sh
 直接実行:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_config.py
 ```
 
 ワークフロースクリプト:
@@ -128,7 +128,7 @@ bash workflows/02-molecule_nat_lang-prepare-gpt2.sh
 
 ## 関連ファイル
 
-- BERT config: `molcrawl/bert/configs/molecule_nat_lang.py`
-- GPT-2 config: `molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py`
+- BERT config: `molcrawl/models/bert/configs/molecule_nat_lang.py`
+- GPT-2 config: `molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_config.py`
 - 互換性テスト: `molcrawl/preparation/test_molecule_nat_lang_compatibility.py`
 - データセット比較レポート: `docs/07-reports/molecule_nat_lang_dataset_comparison_report.md`

@@ -63,7 +63,7 @@ echo ""
 
 # Run training in background
 run_training_background "${LOG_FILE}" \
-    molcrawl/dnabert2/main.py \
-    molcrawl/dnabert2/configs/genome_sequence.py
+    molcrawl/models/dnabert2/main.py \
+    molcrawl/models/dnabert2/configs/genome_sequence.py
 
 

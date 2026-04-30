@@ -1,12 +1,12 @@
 # GPT-2 (small) fine-tuning config for Mol-Instructions
 #
 # Continues from a previously trained molecule_nat_lang GPT-2 checkpoint
-# (see molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py)
+# (see molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py)
 # using the Mol-Instructions fine-tuning dataset.
 #
 # Recommended launch command (single node, multiple GPUs):
 #   torchrun --standalone --nproc_per_node=<N> train.py \
-#       molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_mol_instructions_small.py
+#       molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_mol_instructions_small.py
 
 from molcrawl.core.paths import (
     MOL_INSTRUCTIONS_DATASET_DIR,

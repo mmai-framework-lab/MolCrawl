@@ -1,9 +1,9 @@
-# BERT (large) fine-tuning config for ChEMBL
+# BERT (medium) fine-tuning config for ChEMBL
 #
 # Continues from the compounds BERT pretraining checkpoint using the ChEMBL
 # fine-tuning dataset (canonical SMILES from ChEMBL 36).
 #
-# Based on molcrawl/bert/configs/compounds.py — only the dataset path,
+# Based on molcrawl/models/bert/configs/compounds.py — only the dataset path,
 # model output directory, learning rate and max_steps differ.
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
@@ -11,7 +11,7 @@ from molcrawl.core.paths import CHEMBL_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
-model_size = "large"
+model_size = "medium"
 # Fine-tuning checkpoint output — separate from pretraining output
 model_path = get_bert_output_path("compounds_chembl", model_size)
 # Pretraining checkpoint to initialise weights from when no fine-tune checkpoint exists.

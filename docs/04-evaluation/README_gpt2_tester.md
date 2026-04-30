@@ -4,14 +4,14 @@ This document explains how to test GPT-2 checkpoints, including loading, HF conv
 
 ## Target Scripts
 
-- `molcrawl/gpt2/test_checkpoint.py` (main)
-- `molcrawl/gpt2/test_helper.py` (checkpoint discovery helper)
+- `molcrawl/models/gpt2/test_checkpoint.py` (main)
+- `molcrawl/models/gpt2/test_helper.py` (checkpoint discovery helper)
 - `workflows/batch_test_gpt2.sh` (batch test runner)
 
 ## Single Checkpoint Test
 
 ```bash
-python molcrawl/gpt2/test_checkpoint.py \
+python molcrawl/models/gpt2/test_checkpoint.py \
   --checkpoint_path "<LEARNING_SOURCE_DIR>/compounds/gpt2-output/compounds-small/ckpt.pt" \
   --domain compounds \
   --vocab_path assets/molecules/vocab.txt \
@@ -35,7 +35,7 @@ python molcrawl/gpt2/test_checkpoint.py \
 ### Molecule NL
 
 ```bash
-python molcrawl/gpt2/test_checkpoint.py \
+python molcrawl/models/gpt2/test_checkpoint.py \
   --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nat_lang/gpt2-output/molecule_nat_lang-small/ckpt.pt" \
   --domain molecule_nat_lang \
   --test_dataset_params '{"dataset_dir":"<LEARNING_SOURCE_DIR>/molecule_nat_lang/training_ready_hf_dataset"}' \
@@ -45,7 +45,7 @@ python molcrawl/gpt2/test_checkpoint.py \
 ### Protein Sequence
 
 ```bash
-python molcrawl/gpt2/test_checkpoint.py \
+python molcrawl/models/gpt2/test_checkpoint.py \
   --checkpoint_path "<LEARNING_SOURCE_DIR>/protein_sequence/gpt2-output/protein_sequence-small/ckpt.pt" \
   --domain protein_sequence \
   --test_dataset_params '{"dataset_dir":"<LEARNING_SOURCE_DIR>/protein_sequence/training_ready_hf_dataset"}'
@@ -55,10 +55,10 @@ python molcrawl/gpt2/test_checkpoint.py \
 
 ```bash
 # list only
-python molcrawl/gpt2/test_helper.py --search_dir . --list_only
+python molcrawl/models/gpt2/test_helper.py --search_dir . --list_only
 
 # auto-run
-python molcrawl/gpt2/test_helper.py --search_dir . --auto_run
+python molcrawl/models/gpt2/test_helper.py --search_dir . --auto_run
 
 # batch run
 bash workflows/batch_test_gpt2.sh

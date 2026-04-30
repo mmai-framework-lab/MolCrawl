@@ -200,7 +200,7 @@ def _evaluate_bert(
 
 def _load_gpt2_from_checkpoint(model_path: Path):
     """Load GPT-2 (own) checkpoint"""
-    from molcrawl.gpt2.model import GPT, GPTConfig
+    from molcrawl.models.gpt2.model import GPT, GPTConfig
 
     training_args_path = model_path / "training_args.json"
     if not training_args_path.exists():

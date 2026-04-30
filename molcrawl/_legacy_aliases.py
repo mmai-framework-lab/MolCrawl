@@ -30,6 +30,12 @@ _ALIASES = {
     "molcrawl.genome_sequence": "molcrawl.data.genome_sequence",
     "molcrawl.rna": "molcrawl.data.rna",
     "molcrawl.molecule_nat_lang": "molcrawl.data.molecule_nat_lang",
+    "molcrawl.gpt2": "molcrawl.models.gpt2",
+    "molcrawl.bert": "molcrawl.models.bert",
+    "molcrawl.chemberta2": "molcrawl.models.chemberta2",
+    "molcrawl.esm2": "molcrawl.models.esm2",
+    "molcrawl.dnabert2": "molcrawl.models.dnabert2",
+    "molcrawl.rnaformer": "molcrawl.models.rnaformer",
 }
 
 

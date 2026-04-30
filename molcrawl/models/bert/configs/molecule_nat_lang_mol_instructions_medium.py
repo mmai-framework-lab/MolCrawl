@@ -1,9 +1,9 @@
-# BERT (large) fine-tuning config for Mol-Instructions
+# BERT (medium) fine-tuning config for Mol-Instructions
 #
 # Continues from the molecule_nat_lang BERT pretraining checkpoint using the
 # Mol-Instructions fine-tuning dataset.
 #
-# Based on molcrawl/bert/configs/molecule_nat_lang.py — only the dataset
+# Based on molcrawl/models/bert/configs/molecule_nat_lang.py — only the dataset
 # path and model output directory differ.
 
 
@@ -21,7 +21,7 @@ tokenizer = MoleculeNatLangTokenizer()
 meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8  # pad to multiple of 8 (must match pretrain)
 check_vocab_size(meta_vocab_size)
 
-model_size = "large"
+model_size = "medium"
 # Fine-tuning checkpoint output — separate from pretraining output
 model_path = get_bert_output_path("molecule_nat_lang_mol_instructions", model_size)
 # Pretraining checkpoint to initialise weights from when no fine-tune checkpoint exists.

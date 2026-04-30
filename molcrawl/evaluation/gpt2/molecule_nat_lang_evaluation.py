@@ -25,7 +25,7 @@ from datasets import load_from_disk
 
 from molcrawl.core.utils.environment_check import check_learning_source_dir
 
-from molcrawl.gpt2.model import GPT, GPTConfig
+from molcrawl.models.gpt2.model import GPT, GPTConfig
 
 from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 from molcrawl.core.utils.evaluation_output import (

@@ -1,26 +1,26 @@
-# GPT-2 (large) fine-tuning config for ChEMBL
+# GPT-2 (xl) fine-tuning config for ChEMBL
 #
 # Continues from the compounds GPT-2 pretraining checkpoint
-# (see molcrawl/gpt2/configs/compounds/train_gpt2_large_config.py)
+# (see molcrawl/models/gpt2/configs/compounds/train_gpt2_xl_config.py)
 # using the ChEMBL fine-tuning dataset.
 #
 # Recommended launch command:
-#   torchrun --standalone --nproc_per_node=<N> molcrawl/gpt2/train.py \
-#       gpt2/configs/compounds/train_gpt2_chembl_large.py
+#   torchrun --standalone --nproc_per_node=<N> molcrawl/models/gpt2/train.py \
+#       gpt2/configs/compounds/train_gpt2_chembl_xl.py
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import CHEMBL_DATASET_DIR, get_gpt2_output_path
 
-# Large-Sized GPT-2 Model
-n_layer = 36
-n_head = 20
-n_embd = 1280
+# EX-Large-Sized GPT-2 Model
+n_layer = 48
+n_head = 25
+n_embd = 1600
 
 tensorboard = True
-tensorboard_dir = get_gpt2_output_path("compounds_chembl", "large")
-out_dir = get_gpt2_output_path("compounds_chembl", "large")
+tensorboard_dir = get_gpt2_output_path("compounds_chembl", "xl")
+out_dir = get_gpt2_output_path("compounds_chembl", "xl")
 # Pretraining checkpoint to load weights from when out_dir has no checkpoint.
-pretrain_dir = get_gpt2_output_path("compounds", "large")
+pretrain_dir = get_gpt2_output_path("compounds", "xl")
 
 tokenizer_path = "assets/molecules/vocab.txt"
 tokenizer = Tokenizer(tokenizer_path, 256)

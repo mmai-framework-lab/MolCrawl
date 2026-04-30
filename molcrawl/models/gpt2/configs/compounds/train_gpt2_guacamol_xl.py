@@ -1,15 +1,15 @@
-# GPT-2 (xl) fine-tuning config for ChEMBL
+# GPT-2 (xl) fine-tuning config for GuacaMol benchmark
 #
 # Continues from the compounds GPT-2 pretraining checkpoint
-# (see molcrawl/gpt2/configs/compounds/train_gpt2_xl_config.py)
-# using the ChEMBL fine-tuning dataset.
+# (see molcrawl/models/gpt2/configs/compounds/train_gpt2_xl_config.py)
+# using the GuacaMol benchmark SMILES dataset.
 #
 # Recommended launch command:
-#   torchrun --standalone --nproc_per_node=<N> molcrawl/gpt2/train.py \
-#       gpt2/configs/compounds/train_gpt2_chembl_xl.py
+#   torchrun --standalone --nproc_per_node=<N> molcrawl/models/gpt2/train.py \
+#       gpt2/configs/compounds/train_gpt2_guacamol_xl.py
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.core.paths import CHEMBL_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import GUACAMOL_DATASET_DIR, get_gpt2_output_path
 
 # EX-Large-Sized GPT-2 Model
 n_layer = 48
@@ -17,27 +17,26 @@ n_head = 25
 n_embd = 1600
 
 tensorboard = True
-tensorboard_dir = get_gpt2_output_path("compounds_chembl", "xl")
-out_dir = get_gpt2_output_path("compounds_chembl", "xl")
+tensorboard_dir = get_gpt2_output_path("compounds_guacamol", "xl")
+out_dir = get_gpt2_output_path("compounds_guacamol", "xl")
 # Pretraining checkpoint to load weights from when out_dir has no checkpoint.
 pretrain_dir = get_gpt2_output_path("compounds", "xl")
 
-tokenizer_path = "assets/molecules/vocab.txt"
-tokenizer = Tokenizer(tokenizer_path, 256)
+tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 meta_vocab_size = tokenizer.vocab_size
 eos_token_id = tokenizer.eos_token_id  # 13 ([SEP])
 
-dataset_dir = CHEMBL_DATASET_DIR
+dataset_dir = GUACAMOL_DATASET_DIR
 
 # Batch / block settings — same as pretraining
-batch_size = 2
+batch_size = 2  # max size in koala
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
 # Fine-tuning schedule: fewer iterations and a lower LR than pretraining
 # (pretraining: max_iters=30000, lr=6e-7)
-max_iters = 5000
-lr_decay_iters = 5000
+max_iters = 2000
+lr_decay_iters = 2000
 warmup_iters = 100
 learning_rate = 1e-5
 min_lr = learning_rate / 10
@@ -63,11 +62,11 @@ early_stopping_patience = 5
 weight_decay = 1e-1
 
 # Dataset identifier used by the data-loader
-dataset = "compounds_chembl"
+dataset = "compounds"
 
-# Special Tokens (SMILES tokenizer: [CLS]=2, [SEP]=3)
-start_instruction = 2
-eos_token = 2
+# Special Tokens
+start_instruction = 12
+eos_token = 12
 
 dataset_params = {
     "dataset_dir": dataset_dir,

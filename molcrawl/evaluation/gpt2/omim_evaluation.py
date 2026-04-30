@@ -50,7 +50,7 @@ warnings.filterwarnings("ignore")
 # add project root
 
 try:
-    from molcrawl.gpt2.model import GPT, GPTConfig
+    from molcrawl.models.gpt2.model import GPT, GPTConfig
     from molcrawl.core.paths import get_genome_tokenizer_path
     from molcrawl.core.utils.evaluation_output import (
         get_evaluation_output_dir,

@@ -43,7 +43,7 @@ jobs:
           DOMAIN: ${{ matrix.domain }}
         run: |
           echo "Running BERT verification for $DOMAIN"
-          python molcrawl/bert/test_checkpoint.py --domain "$DOMAIN" --quick-test
+          python molcrawl/models/bert/test_checkpoint.py --domain "$DOMAIN" --quick-test
         continue-on-error: true
       - name: Generate verification report
         env:
@@ -83,7 +83,7 @@ jobs:
           DOMAIN: ${{ matrix.domain }}
         run: |
           echo "Running GPT2 verification for $DOMAIN"
-          python molcrawl/gpt2/test_checkpoint.py --domain "$DOMAIN" --quick-test
+          python molcrawl/models/gpt2/test_checkpoint.py --domain "$DOMAIN" --quick-test
         continue-on-error: true
       - name: Generate verification report
         env:

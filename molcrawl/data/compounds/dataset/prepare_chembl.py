@@ -9,7 +9,7 @@ the result in HuggingFace Dataset format to *output_dir*.
 
 The output directory layout is compatible with ``molcrawl/core/dataset.py``
 (``PreparedDataset``) and with the HuggingFace ``Trainer`` used in
-``molcrawl/bert/main.py``:
+``molcrawl/models/bert/main.py``:
 
     training_ready_hf_dataset/
         dataset_info.json

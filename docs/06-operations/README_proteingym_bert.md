@@ -21,7 +21,7 @@ molcrawl/evaluation/bert/
 ├── proteingym_evaluation.py        # Main evaluation script
 └── proteingym_data_preparation.py  # Dataset download and preprocessing
 
-molcrawl/bert/configs/
+molcrawl/models/bert/configs/
 └── bert_proteingym_config.py       # Configuration
 
 workflows/

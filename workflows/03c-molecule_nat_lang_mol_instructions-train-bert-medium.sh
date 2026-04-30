@@ -34,7 +34,7 @@ NUM_GPUS=${NUM_GPUS:-1}
 select_multi_gpu "$NUM_GPUS" 20
 
 run_training_background "${LOG_DIR}/molecule_nat_lang_mol_instructions-train-bert-medium-$(date +%Y-%m-%d_%H-%M-%S).log" \
-    molcrawl/bert/main.py \
+    molcrawl/models/bert/main.py \
     bert/configs/molecule_nat_lang_mol_instructions_medium.py
 
 echo "BERT fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES:-0})."

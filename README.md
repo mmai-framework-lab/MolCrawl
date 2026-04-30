@@ -112,41 +112,41 @@ python molcrawl/data/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/mo
 Small:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_small_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_small_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_small_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/genome_sequence/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/protein_sequence/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/rna/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/compounds/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
 ```
 
 Medium:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_medium_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_medium_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_medium_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_medium_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_medium_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/genome_sequence/train_gpt2_medium_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/protein_sequence/train_gpt2_medium_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/rna/train_gpt2_medium_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/compounds/train_gpt2_medium_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_medium_config.py
 ```
 
 Large:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_large_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_large_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_large_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_large_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/genome_sequence/train_gpt2_large_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/protein_sequence/train_gpt2_large_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/rna/train_gpt2_large_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/compounds/train_gpt2_large_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py
 ```
 
 Extra-Large (XL):
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_xl_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_xl_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_xl_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_xl_config.py
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_xl_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/genome_sequence/train_gpt2_xl_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/protein_sequence/train_gpt2_xl_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/rna/train_gpt2_xl_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/compounds/train_gpt2_xl_config.py
+python molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_xl_config.py
 ```
 
 ---
@@ -154,11 +154,11 @@ python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2
 #### BERT (Encoder)
 
 ```bash
-python molcrawl/bert/main.py molcrawl/bert/configs/genome_sequence.py
-python molcrawl/bert/main.py molcrawl/bert/configs/protein_sequence.py
-python molcrawl/bert/main.py molcrawl/bert/configs/rna.py
-python molcrawl/bert/main.py molcrawl/bert/configs/compounds.py
-python molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
+python molcrawl/models/bert/main.py molcrawl/models/bert/configs/genome_sequence.py
+python molcrawl/models/bert/main.py molcrawl/models/bert/configs/protein_sequence.py
+python molcrawl/models/bert/main.py molcrawl/models/bert/configs/rna.py
+python molcrawl/models/bert/main.py molcrawl/models/bert/configs/compounds.py
+python molcrawl/models/bert/main.py molcrawl/models/bert/configs/molecule_nat_lang.py
 ```
 
 Make sure the GPT-2 dataset preparation step (`prepare_gpt2.py`) has been completed before BERT training, since BERT uses the same prepared dataset format.
@@ -173,44 +173,44 @@ Both GPT-2 and BERT support Distributed Data Parallel (DDP) via `torchrun` (use 
 # GPT2
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_small_config.py
+molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/genome_sequence/train_gpt2_small_config.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_small_config.py
+molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/protein_sequence/train_gpt2_small_config.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_small_config.py
+molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/rna/train_gpt2_small_config.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py
+molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/compounds/train_gpt2_small_config.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
+molcrawl/models/gpt2/train.py molcrawl/models/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
 
 # BERT
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/bert/main.py molcrawl/bert/configs/genome_sequence.py
+molcrawl/models/bert/main.py molcrawl/models/bert/configs/genome_sequence.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/bert/main.py molcrawl/bert/configs/protein_sequence.py
+molcrawl/models/bert/main.py molcrawl/models/bert/configs/protein_sequence.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/bert/main.py molcrawl/bert/configs/rna.py
+molcrawl/models/bert/main.py molcrawl/models/bert/configs/rna.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/bert/main.py molcrawl/bert/configs/compounds.py
+molcrawl/models/bert/main.py molcrawl/models/bert/configs/compounds.py
 
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
-molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
+molcrawl/models/bert/main.py molcrawl/models/bert/configs/molecule_nat_lang.py
 ```
 
 Effective batch size:
@@ -244,7 +244,7 @@ Adjust `batch_size` or `gradient_accumulation_steps` accordingly to maintain rep
 Runs automatic evaluation on the test split, including language modeling metrics such as perplexity and token-level accuracy. It can also generate sample outputs and optionally convert the checkpoint to Hugging Face format.
 
 ```bash
-python molcrawl/gpt2/test_checkpoint.py \
+python molcrawl/models/gpt2/test_checkpoint.py \
   --checkpoint_path <path_to_checkpoint> \
   --domain <dataset>
 ```
@@ -264,7 +264,7 @@ Optional arguments:
 Runs evaluation on the test split using masked language modeling (MLM) metrics. It also supports prediction inspection and embedding extraction depending on configuration.
 
 ```bash
-python molcrawl/bert/test_checkpoint.py \
+python molcrawl/models/bert/test_checkpoint.py \
   --checkpoint_path <path_to_checkpoint> \
   --domain <dataset>
 ```

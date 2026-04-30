@@ -113,9 +113,9 @@ compounds/data/Fraunhofer-SCAI-llamol/           molcrawl/data/compounds/utils/g
 compounds/benchmark/GuacaMol/                    molcrawl/data/compounds/download_guacamol.py                         download_guacamol()
 compounds/compounds_logs/                        molcrawl/core/base.py                                             setup_logging() (called from preparation_script_compounds.py)
 compounds/organix13/.../training_ready_hf_data...  molcrawl/data/compounds/dataset/prepare_gpt2_organix13.py            prepare_gpt2_dataset()
-compounds/gpt2-output/...                        molcrawl/gpt2/train.py                                            training entry (out_dir)
-compounds/bert-output/...                        molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
-compounds/chemberta2-output/...                  molcrawl/chemberta2/main.py                                       TrainingArguments(output_dir=model_path)
+compounds/gpt2-output/...                        molcrawl/models/gpt2/train.py                                            training entry (out_dir)
+compounds/bert-output/...                        molcrawl/models/bert/main.py                                             TrainingArguments(output_dir=model_path)
+compounds/chemberta2-output/...                  molcrawl/models/chemberta2/main.py                                       TrainingArguments(output_dir=model_path)
 compounds/logs/                                  workflows/*.sh                                                    mkdir -p ${LEARNING_SOURCE_DIR}/compounds/logs
 ```
 
@@ -134,9 +134,9 @@ genome_sequence/spm_tokenizer.*                  molcrawl/data/genome_sequence/d
 genome_sequence/data/cosmic/                     molcrawl/evaluation/gpt2/cosmic_data_preparation.py               COSMICDataPreparation.__init__()
 genome_sequence/data/omim/                       molcrawl/evaluation/gpt2/omim_data_preparation.py                 prepare_omim_data()
 genome_sequence/report/...                       molcrawl/utils/evaluation_output.py                               get_evaluation_output_dir()
-genome_sequence/gpt2-output/...                  molcrawl/gpt2/train.py                                            training entry (out_dir)
-genome_sequence/bert-output/...                  molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
-genome_sequence/dnabert2-output/...              molcrawl/dnabert2/main.py                                         TrainingArguments(output_dir=model_path)
+genome_sequence/gpt2-output/...                  molcrawl/models/gpt2/train.py                                            training entry (out_dir)
+genome_sequence/bert-output/...                  molcrawl/models/bert/main.py                                             TrainingArguments(output_dir=model_path)
+genome_sequence/dnabert2-output/...              molcrawl/models/dnabert2/main.py                                         TrainingArguments(output_dir=model_path)
 genome_sequence/logs/                            workflows/*.sh                                                    mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
 ```
 
@@ -150,9 +150,9 @@ protein_sequence/raw_files/                      molcrawl/data/protein_sequence/
 protein_sequence/parquet_files/                  molcrawl/data/protein_sequence/dataset/tokenizer.py                    get_parquet_paths() / tokenize_to_parquet()
 protein_sequence/training_ready_hf_dataset/      molcrawl/data/protein_sequence/dataset/prepare_gpt2.py                 tokenize_batch_dataset()
 protein_sequence/report/...                      molcrawl/utils/evaluation_output.py                               get_evaluation_output_dir()
-protein_sequence/gpt2-output/...                 molcrawl/gpt2/train.py                                            training entry (out_dir)
-protein_sequence/bert-output/...                 molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
-protein_sequence/esm2-output/...                 molcrawl/esm2/main.py                                             TrainingArguments(output_dir=model_path)
+protein_sequence/gpt2-output/...                 molcrawl/models/gpt2/train.py                                            training entry (out_dir)
+protein_sequence/bert-output/...                 molcrawl/models/bert/main.py                                             TrainingArguments(output_dir=model_path)
+protein_sequence/esm2-output/...                 molcrawl/models/esm2/main.py                                             TrainingArguments(output_dir=model_path)
 protein_sequence/logs/                           workflows/*.sh                                                    mkdir -p ${LEARNING_SOURCE_DIR}/protein_sequence/logs
 ```
 
@@ -167,9 +167,9 @@ rna/loom_dir/                                    molcrawl/data/rna/dataset/cellx
 rna/parquet_files/                               molcrawl/data/rna/dataset/tokenization.py                              tokenize()
 rna/hf_cache/                                    molcrawl/data/rna/preparation.py                    final statistics step (load_dataset cache_dir)
 rna/training_ready_hf_dataset/                   molcrawl/data/rna/dataset/prepare_gpt2.py                              tokenize_batch_dataset()
-rna/gpt2-output/...                              molcrawl/gpt2/train.py                                            training entry (out_dir)
-rna/bert-output/...                              molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
-rna/rnaformer-output/...                         molcrawl/rnaformer/main.py                                        TrainingArguments(output_dir=model_path)
+rna/gpt2-output/...                              molcrawl/models/gpt2/train.py                                            training entry (out_dir)
+rna/bert-output/...                              molcrawl/models/bert/main.py                                             TrainingArguments(output_dir=model_path)
+rna/rnaformer-output/...                         molcrawl/models/rnaformer/main.py                                        TrainingArguments(output_dir=model_path)
 rna/logs/                                        workflows/*.sh                                                    mkdir -p ${LEARNING_SOURCE_DIR}/rna/logs
 ```
 
@@ -183,8 +183,8 @@ molecule_nat_lang/logs/                                molcrawl/preparation/prep
 molecule_nat_lang/arrow_splits/                        molcrawl/preparation/preparation_script_molecule_related_nat_...  main (Arrow save block)
 molecule_nat_lang/gpt2_format/                         molcrawl/preparation/preparation_script_molecule_related_nat_...  main (GPT-2 format save block)
 molecule_nat_lang/training_ready_hf_dataset/           molcrawl/molecule_related_nl/dataset/prepare_gpt2.py              tokenize_batch_dataset()
-molecule_nat_lang/bert-output/...                      molcrawl/bert/main.py                                             TrainingArguments(output_dir=model_path)
-molecule_nat_lang/gpt2-output/...                      molcrawl/gpt2/train.py                                            training entry (out_dir)
+molecule_nat_lang/bert-output/...                      molcrawl/models/bert/main.py                                             TrainingArguments(output_dir=model_path)
+molecule_nat_lang/gpt2-output/...                      molcrawl/models/gpt2/train.py                                            training entry (out_dir)
 ```
 
 ### Notes

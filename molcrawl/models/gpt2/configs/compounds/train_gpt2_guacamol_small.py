@@ -1,26 +1,21 @@
-# GPT-2 (xl) fine-tuning config for GuacaMol benchmark
+# GPT-2 (small) fine-tuning config for GuacaMol benchmark
 #
 # Continues from the compounds GPT-2 pretraining checkpoint
-# (see molcrawl/gpt2/configs/compounds/train_gpt2_xl_config.py)
+# (see molcrawl/models/gpt2/configs/compounds/train_gpt2_small_config.py)
 # using the GuacaMol benchmark SMILES dataset.
 #
 # Recommended launch command:
-#   torchrun --standalone --nproc_per_node=<N> molcrawl/gpt2/train.py \
-#       gpt2/configs/compounds/train_gpt2_guacamol_xl.py
+#   torchrun --standalone --nproc_per_node=<N> molcrawl/models/gpt2/train.py \
+#       gpt2/configs/compounds/train_gpt2_guacamol_small.py
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import GUACAMOL_DATASET_DIR, get_gpt2_output_path
 
-# EX-Large-Sized GPT-2 Model
-n_layer = 48
-n_head = 25
-n_embd = 1600
-
 tensorboard = True
-tensorboard_dir = get_gpt2_output_path("compounds_guacamol", "xl")
-out_dir = get_gpt2_output_path("compounds_guacamol", "xl")
+tensorboard_dir = get_gpt2_output_path("compounds_guacamol", "small")
+out_dir = get_gpt2_output_path("compounds_guacamol", "small")
 # Pretraining checkpoint to load weights from when out_dir has no checkpoint.
-pretrain_dir = get_gpt2_output_path("compounds", "xl")
+pretrain_dir = get_gpt2_output_path("compounds", "small")
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 meta_vocab_size = tokenizer.vocab_size
@@ -29,12 +24,12 @@ eos_token_id = tokenizer.eos_token_id  # 13 ([SEP])
 dataset_dir = GUACAMOL_DATASET_DIR
 
 # Batch / block settings — same as pretraining
-batch_size = 2  # max size in koala
+batch_size = 8  # max size in koala
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
 # Fine-tuning schedule: fewer iterations and a lower LR than pretraining
-# (pretraining: max_iters=30000, lr=6e-7)
+# (pretraining: max_iters=6000, lr=6e-6)
 max_iters = 2000
 lr_decay_iters = 2000
 warmup_iters = 100
@@ -53,10 +48,6 @@ init_from = "resume"
 always_save_checkpoint = True
 save_checkpoint_steps = None
 max_checkpoints = 5
-
-# early stopping
-early_stopping = True
-early_stopping_patience = 5
 
 # Regularisation
 weight_decay = 1e-1

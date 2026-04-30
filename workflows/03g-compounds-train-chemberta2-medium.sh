@@ -22,5 +22,5 @@ mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/chemberta2-train-${MODEL_SIZE}-$(date +%Y-%m-%d_%H-%M-%S).log"
 
 run_training_background "${LOG_FILE}" \
-    molcrawl/chemberta2/main.py \
-    --config molcrawl/chemberta2/configs/compounds.py --model_size ${MODEL_SIZE}
+    molcrawl/models/chemberta2/main.py \
+    --config molcrawl/models/chemberta2/configs/compounds.py --model_size ${MODEL_SIZE}

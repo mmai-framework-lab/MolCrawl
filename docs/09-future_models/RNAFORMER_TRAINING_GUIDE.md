@@ -77,7 +77,7 @@ WANDB_PROJECT=rnaformer-transcriptome \
 ## Directory Structure
 
 ```text
-molcrawl/rnaformer/
+molcrawl/models/rnaformer/
 ├── main.py                      # Main training script
 ├── configurator.py              # Config loader
 └── configs/

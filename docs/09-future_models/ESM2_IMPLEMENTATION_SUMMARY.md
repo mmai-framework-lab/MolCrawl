@@ -6,9 +6,9 @@
 
 ### 1. Core Files
 
-- [esm2/main.py](../../molcrawl/esm2/main.py) - Main training script (465 lines)
-- [esm2/configurator.py](../../molcrawl/esm2/configurator.py) - Configuration loader
-- [esm2/configs/protein_sequence.py](../../molcrawl/esm2/configs/protein_sequence.py) - Protein-sequence config
+- [esm2/main.py](../../molcrawl/models/esm2/main.py) - Main training script (465 lines)
+- [esm2/configurator.py](../../molcrawl/models/esm2/configurator.py) - Configuration loader
+- [esm2/configs/protein_sequence.py](../../molcrawl/models/esm2/configs/protein_sequence.py) - Protein-sequence config
 
 ### 2. Workflow Scripts
 
@@ -77,7 +77,7 @@ python esm2/main.py esm2/configs/protein_sequence.py \
   --save_steps=10000
 ```
 
-Edit [esm2/configs/protein_sequence.py](../../molcrawl/esm2/configs/protein_sequence.py):
+Edit [esm2/configs/protein_sequence.py](../../molcrawl/models/esm2/configs/protein_sequence.py):
 
 ```python
 batch_size = 8                   # default: 4

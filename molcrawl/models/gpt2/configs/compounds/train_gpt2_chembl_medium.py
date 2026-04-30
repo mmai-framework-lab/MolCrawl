@@ -1,11 +1,11 @@
 # GPT-2 (medium) fine-tuning config for ChEMBL
 #
 # Continues from the compounds GPT-2 pretraining checkpoint
-# (see molcrawl/gpt2/configs/compounds/train_gpt2_medium_config.py)
+# (see molcrawl/models/gpt2/configs/compounds/train_gpt2_medium_config.py)
 # using the ChEMBL fine-tuning dataset.
 #
 # Recommended launch command:
-#   torchrun --standalone --nproc_per_node=<N> molcrawl/gpt2/train.py \
+#   torchrun --standalone --nproc_per_node=<N> molcrawl/models/gpt2/train.py \
 #       gpt2/configs/compounds/train_gpt2_chembl_medium.py
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer

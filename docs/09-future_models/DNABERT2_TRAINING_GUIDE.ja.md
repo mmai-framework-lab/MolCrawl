@@ -143,7 +143,7 @@ python dnabert2/main.py dnabert2/configs/genome_sequence.py \
 
 ### 設定ファイルの編集
 
-[dnabert2/configs/genome_sequence.py](../../molcrawl/dnabert2/configs/genome_sequence.py) を編集:
+[dnabert2/configs/genome_sequence.py](../../molcrawl/models/dnabert2/configs/genome_sequence.py) を編集:
 
 ```python
 # 学習ステップ数を増やす

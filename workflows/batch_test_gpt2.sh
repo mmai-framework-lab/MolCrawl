@@ -25,7 +25,7 @@ echo ""
 
 # チェックポイント検索
 echo "チェックポイントを検索中..."
-$PYTHON molcrawl/gpt2/test_helper.py --search_dir="$SEARCH_DIR" --list_only
+$PYTHON molcrawl/models/gpt2/test_helper.py --search_dir="$SEARCH_DIR" --list_only
 
 echo ""
 echo "テストを開始しますか? (y/N): "
@@ -68,7 +68,7 @@ for domain in "${DOMAINS[@]}"; do
             TEST_OUTPUT_DIR="${OUTPUT_BASE_DIR}_${TIMESTAMP}/${domain}_${CHECKPOINT_NAME}"
 
             # テスト実行
-            if $PYTHON molcrawl/gpt2/test_checkpoint.py \
+            if $PYTHON molcrawl/models/gpt2/test_checkpoint.py \
                 --checkpoint_path="$checkpoint" \
                 --domain="$domain" \
                 --output_dir="$TEST_OUTPUT_DIR" \

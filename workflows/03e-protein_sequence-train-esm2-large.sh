@@ -53,7 +53,7 @@ echo ""
 
 # Run training in background with large model size override
 run_training_background "${LOG_FILE}" \
-    molcrawl/esm2/main.py \
-    molcrawl/esm2/configs/protein_sequence.py --model_size=large
+    molcrawl/models/esm2/main.py \
+    molcrawl/models/esm2/configs/protein_sequence.py --model_size=large
 
 

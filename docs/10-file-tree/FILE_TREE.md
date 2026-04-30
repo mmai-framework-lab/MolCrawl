@@ -154,30 +154,7 @@ riken-dataset-fundational-model/
 │   └── experiment_tracker_sample.py          # Sample script demonstrating experiment tracker usage
 │
 ├── molcrawl/                                 # Main Python package
-│   ├── __init__.py                           # Package initializer
-│   ├── bert/
-│   │   ├── __init__.py
-│   │   ├── configurator.py                   # Builds training configs for BERT models
-│   │   ├── main.py                           # BERT pre-training entry point
-│   │   ├── test_checkpoint.py                # Python script to verify a BERT checkpoint loads correctly
-│   │   ├── test_molecule_nat_lang_20251125_config.py  # Experiment config for mol-NL BERT test (2025-11-25)
-│   │   └── configs/
-│   │       ├── __init__.py
-│   │       ├── bert_proteingym_config.py     # BERT config for ProteinGym evaluation
-│   │       ├── clinvar_evaluation_config.py  # BERT config for ClinVar evaluation
-│   │       ├── compounds.py                  # BERT training config for compounds modality
-│   │       ├── genome_sequence.py            # BERT training config for genome sequence modality
-│   │       ├── molecule_nat_lang.py          # BERT training config for molecule NL modality
-│   │       ├── protein_sequence.py           # BERT training config for protein sequence modality
-│   │       ├── rna.py                        # BERT training config for RNA modality
-│   │       └── rna_yigarashi_small.py        # BERT small config for RNA (Yigarashi variant)
-│   ├── chemberta2/
-│   │   ├── __init__.py
-│   │   ├── configurator.py                   # Builds training configs for ChemBERTa-2
-│   │   ├── main.py                           # ChemBERTa-2 training entry point
-│   │   └── configs/
-│   │       ├── __init__.py
-│   │       └── compounds.py                  # ChemBERTa-2 training config for compounds modality
+│   ├── __init__.py                           # Package initializer (installs legacy import aliases)
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── env.sh                            # Shell script to export common environment variables
@@ -322,21 +299,7 @@ riken-dataset-fundational-model/
 │   │           └── preprocess.py                 # RNA data preprocessing transformations
 │   ├── debug/
 │   │   └── __init__.py                       # (shim) placeholder; test script moved to tests/unit/
-│   ├── _legacy_aliases.py                    # (shim) meta-path aliases for legacy molcrawl.<modality>.* imports
-│   ├── dnabert2/
-│   │   ├── __init__.py
-│   │   ├── configurator.py                   # Builds training configs for DNABERT-2
-│   │   ├── main.py                           # DNABERT-2 training entry point
-│   │   └── configs/
-│   │       ├── __init__.py
-│   │       └── genome_sequence.py            # DNABERT-2 training config for genome sequence modality
-│   ├── esm2/
-│   │   ├── __init__.py
-│   │   ├── configurator.py                   # Builds training configs for ESM-2
-│   │   ├── main.py                           # ESM-2 protein model training entry point
-│   │   └── configs/
-│   │       ├── __init__.py
-│   │       └── protein_sequence.py           # ESM-2 training config for protein sequence modality
+│   ├── _legacy_aliases.py                    # (shim) meta-path aliases for legacy molcrawl.<modality>.* and molcrawl.<arch>.* imports
 │   ├── evaluation/
 │   │   ├── __init__.py
 │   │   ├── bert/
@@ -380,59 +343,105 @@ riken-dataset-fundational-model/
 │   │   ├── helpers.py
 │   │   ├── models.py
 │   │   └── tracker.py
-│   ├── gpt2/
+│   ├── models/                               # Model architecture implementations (decoder / encoder)
 │   │   ├── __init__.py
-│   │   ├── configurator.py                   # Builds training configs for GPT-2 models
-│   │   ├── model.py                          # GPT-2 model definition and customizations
-│   │   ├── test_checkpoint.py                # Verifies a GPT-2 checkpoint loads and runs correctly
-│   │   ├── test_helper.py                    # Common helpers shared across GPT-2 test scripts
-│   │   ├── test_molecule_nat_lang_20251125_config.py  # Experiment config for mol-NL GPT-2 test (2025-11-25)
-│   │   ├── train.py                          # GPT-2 pre-training main loop
-│   │   ├── configs/
+│   │   ├── bert/
 │   │   │   ├── __init__.py
-│   │   │   ├── compounds/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for compounds
-│   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for compounds
-│   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for compounds
-│   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for compounds
-│   │   │   ├── genome_sequence/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for genome sequences
-│   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for genome sequences
-│   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for genome sequences
-│   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for genome sequences
-│   │   │   ├── molecule_nat_lang/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for molecule NL
-│   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for molecule NL
-│   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for molecule NL
-│   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for molecule NL
-│   │   │   ├── protein_sequence/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for protein sequences
-│   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for protein sequences
-│   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for protein sequences
-│   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for protein sequences
-│   │   │   └── rna/
+│   │   │   ├── configurator.py                   # Builds training configs for BERT models
+│   │   │   ├── main.py                           # BERT pre-training entry point
+│   │   │   ├── test_checkpoint.py                # Python script to verify a BERT checkpoint loads correctly
+│   │   │   ├── test_molecule_nat_lang_20251125_config.py  # Experiment config for mol-NL BERT test (2025-11-25)
+│   │   │   └── configs/
 │   │   │       ├── __init__.py
-│   │   │       ├── delete_me-train_gpt2_config_yigarashi_small.py  # Deprecated config (to be removed)
-│   │   │       ├── train_gpt2_config_small_yigarashi_bak.py        # Backup of small RNA config (Yigarashi)
-│   │   │       ├── train_gpt2_config_yigarashi_large.py            # GPT-2 Large config for RNA (Yigarashi)
-│   │   │       ├── train_gpt2_config_yigarashi_medium.py           # GPT-2 Medium config for RNA (Yigarashi)
-│   │   │       ├── train_gpt2_config_yigarashi_small.py            # GPT-2 Small config for RNA (Yigarashi)
-│   │   │       ├── train_gpt2_config_yigarashi_xl.py               # GPT-2 XL config for RNA (Yigarashi)
-│   │   │       ├── train_gpt2_large_config.py                      # GPT-2 Large config for RNA (standard)
-│   │   │       ├── train_gpt2_medium_config.py                     # GPT-2 Medium config for RNA (standard)
-│   │   │       ├── train_gpt2_small_config.py                      # GPT-2 Small config for RNA (standard)
-│   │   │       └── train_gpt2_xl_config.py                         # GPT-2 XL config for RNA (standard)
-│   │   └── test_configs/
+│   │   │       ├── bert_proteingym_config.py     # BERT config for ProteinGym evaluation
+│   │   │       ├── clinvar_evaluation_config.py  # BERT config for ClinVar evaluation
+│   │   │       ├── compounds.py                  # BERT training config for compounds modality
+│   │   │       ├── genome_sequence.py            # BERT training config for genome sequence modality
+│   │   │       ├── molecule_nat_lang.py          # BERT training config for molecule NL modality
+│   │   │       ├── protein_sequence.py           # BERT training config for protein sequence modality
+│   │   │       ├── rna.py                        # BERT training config for RNA modality
+│   │   │       └── rna_yigarashi_small.py        # BERT small config for RNA (Yigarashi variant)
+│   │   ├── chemberta2/
+│   │   │   ├── __init__.py
+│   │   │   ├── configurator.py                   # Builds training configs for ChemBERTa-2
+│   │   │   ├── main.py                           # ChemBERTa-2 training entry point
+│   │   │   └── configs/
+│   │   │       ├── __init__.py
+│   │   │       └── compounds.py                  # ChemBERTa-2 training config for compounds modality
+│   │   ├── dnabert2/
+│   │   │   ├── __init__.py
+│   │   │   ├── configurator.py                   # Builds training configs for DNABERT-2
+│   │   │   ├── main.py                           # DNABERT-2 training entry point
+│   │   │   └── configs/
+│   │   │       ├── __init__.py
+│   │   │       └── genome_sequence.py            # DNABERT-2 training config for genome sequence modality
+│   │   ├── esm2/
+│   │   │   ├── __init__.py
+│   │   │   ├── configurator.py                   # Builds training configs for ESM-2
+│   │   │   ├── main.py                           # ESM-2 protein model training entry point
+│   │   │   └── configs/
+│   │   │       ├── __init__.py
+│   │   │       └── protein_sequence.py           # ESM-2 training config for protein sequence modality
+│   │   ├── gpt2/
+│   │   │   ├── __init__.py
+│   │   │   ├── configurator.py                   # Builds training configs for GPT-2 models
+│   │   │   ├── model.py                          # GPT-2 model definition and customizations
+│   │   │   ├── test_checkpoint.py                # Verifies a GPT-2 checkpoint loads and runs correctly
+│   │   │   ├── test_helper.py                    # Common helpers shared across GPT-2 test scripts
+│   │   │   ├── test_molecule_nat_lang_20251125_config.py  # Experiment config for mol-NL GPT-2 test (2025-11-25)
+│   │   │   ├── train.py                          # GPT-2 pre-training main loop
+│   │   │   ├── configs/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── compounds/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for compounds
+│   │   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for compounds
+│   │   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for compounds
+│   │   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for compounds
+│   │   │   │   ├── genome_sequence/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for genome sequences
+│   │   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for genome sequences
+│   │   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for genome sequences
+│   │   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for genome sequences
+│   │   │   │   ├── molecule_nat_lang/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for molecule NL
+│   │   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for molecule NL
+│   │   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for molecule NL
+│   │   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for molecule NL
+│   │   │   │   ├── protein_sequence/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── train_gpt2_large_config.py   # GPT-2 Large config for protein sequences
+│   │   │   │   │   ├── train_gpt2_medium_config.py  # GPT-2 Medium config for protein sequences
+│   │   │   │   │   ├── train_gpt2_small_config.py   # GPT-2 Small config for protein sequences
+│   │   │   │   │   └── train_gpt2_xl_config.py      # GPT-2 XL config for protein sequences
+│   │   │   │   └── rna/
+│   │   │   │       ├── __init__.py
+│   │   │   │       ├── delete_me-train_gpt2_config_yigarashi_small.py  # Deprecated config (to be removed)
+│   │   │   │       ├── train_gpt2_config_small_yigarashi_bak.py        # Backup of small RNA config (Yigarashi)
+│   │   │   │       ├── train_gpt2_config_yigarashi_large.py            # GPT-2 Large config for RNA (Yigarashi)
+│   │   │   │       ├── train_gpt2_config_yigarashi_medium.py           # GPT-2 Medium config for RNA (Yigarashi)
+│   │   │   │       ├── train_gpt2_config_yigarashi_small.py            # GPT-2 Small config for RNA (Yigarashi)
+│   │   │   │       ├── train_gpt2_config_yigarashi_xl.py               # GPT-2 XL config for RNA (Yigarashi)
+│   │   │   │       ├── train_gpt2_large_config.py                      # GPT-2 Large config for RNA (standard)
+│   │   │   │       ├── train_gpt2_medium_config.py                     # GPT-2 Medium config for RNA (standard)
+│   │   │   │       ├── train_gpt2_small_config.py                      # GPT-2 Small config for RNA (standard)
+│   │   │   │       └── train_gpt2_xl_config.py                         # GPT-2 XL config for RNA (standard)
+│   │   │   └── test_configs/
+│   │   │       ├── __init__.py
+│   │   │       ├── compounds_test_config.py          # GPT-2 test config for compounds modality
+│   │   │       ├── genome_test_config.py             # GPT-2 test config for genome sequence modality
+│   │   │       ├── molecule_nat_lang_test_config.py  # GPT-2 test config for molecule NL modality
+│   │   │       ├── protein_sequence_test_config.py   # GPT-2 test config for protein sequence modality
+│   │   │       └── rna_test_config.py                # GPT-2 test config for RNA modality
+│   │   └── rnaformer/
 │   │       ├── __init__.py
-│   │       ├── compounds_test_config.py          # GPT-2 test config for compounds modality
-│   │       ├── genome_test_config.py             # GPT-2 test config for genome sequence modality
-│   │       ├── molecule_nat_lang_test_config.py  # GPT-2 test config for molecule NL modality
-│   │       ├── protein_sequence_test_config.py   # GPT-2 test config for protein sequence modality
-│   │       └── rna_test_config.py                # GPT-2 test config for RNA modality
+│   │       ├── configurator.py                   # Builds training configs for RNAformer
+│   │       ├── main.py                           # RNAformer training entry point
+│   │       └── configs/
+│   │           ├── __init__.py
+│   │           └── rna.py                        # RNAformer training config for RNA modality
 │   ├── preparation/                          # Shared / generic data-preparation utilities
 │   │   ├── __init__.py
 │   │   ├── convert_parquet_to_arrow.py       # Converts Parquet files to Arrow format
@@ -443,13 +452,6 @@ riken-dataset-fundational-model/
 │   │   ├── preparation_script_protein_sequence.py    # (shim) re-exports molcrawl.data.protein_sequence.preparation
 │   │   ├── preparation_script_rna.py         # (shim) re-exports molcrawl.data.rna.preparation
 │   │   └── test_molecule_nat_lang_compatibility.py   # Tests compatibility of molecule NL processed data
-│   ├── rnaformer/
-│   │   ├── __init__.py
-│   │   ├── configurator.py                   # Builds training configs for RNAformer
-│   │   ├── main.py                           # RNAformer training entry point
-│   │   └── configs/
-│   │       ├── __init__.py
-│   │       └── rna.py                        # RNAformer training config for RNA modality
 │   ├── utils/                                # (shim) re-exports molcrawl.core.utils.*
 │   │   ├── __init__.py
 │   │   ├── base_visualization.py

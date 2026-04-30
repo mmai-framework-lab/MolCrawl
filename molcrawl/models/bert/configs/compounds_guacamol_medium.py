@@ -1,9 +1,9 @@
-# BERT (large) fine-tuning config for GuacaMol
+# BERT (medium) fine-tuning config for GuacaMol
 #
 # Continues from the compounds BERT pretraining checkpoint using the GuacaMol
 # benchmark fine-tuning dataset.
 #
-# Based on molcrawl/bert/configs/compounds_chembl.py — only the dataset path
+# Based on molcrawl/models/bert/configs/compounds_chembl.py — only the dataset path
 # and model output directory differ.
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
@@ -11,7 +11,7 @@ from molcrawl.core.paths import GUACAMOL_DATASET_DIR, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
-model_size = "large"
+model_size = "medium"
 # Fine-tuning checkpoint output — separate from pretraining output
 model_path = get_bert_output_path("compounds_guacamol", model_size)
 # Pretraining checkpoint to initialise weights from when no fine-tune checkpoint exists.

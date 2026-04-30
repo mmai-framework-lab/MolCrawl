@@ -33,7 +33,7 @@ LOG_DIR="${LEARNING_SOURCE_DIR}/molecule_nat_lang/mol_instructions/logs"
 mkdir -p "${LOG_DIR}"
 
 run_training_background "${LOG_DIR}/molecule_nat_lang_mol_instructions-train-small-$(date +%Y-%m-%d_%H-%M-%S).log" \
-    molcrawl/gpt2/train.py \
+    molcrawl/models/gpt2/train.py \
     gpt2/configs/molecule_nat_lang/train_gpt2_mol_instructions_small.py
 
 echo "GPT-2 fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."

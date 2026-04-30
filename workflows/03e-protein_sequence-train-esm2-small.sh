@@ -63,7 +63,7 @@ echo ""
 
 # Run training in background
 run_training_background "${LOG_FILE}" \
-    molcrawl/esm2/main.py \
-    molcrawl/esm2/configs/protein_sequence.py
+    molcrawl/models/esm2/main.py \
+    molcrawl/models/esm2/configs/protein_sequence.py
 
 

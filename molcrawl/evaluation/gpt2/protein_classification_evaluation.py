@@ -86,7 +86,7 @@ class ProteinClassificationEvaluator(ModelEvaluator):
                 config = None
 
             # Import GPT2 model architecture
-            from molcrawl.gpt2.model import GPT, GPTConfig
+            from molcrawl.models.gpt2.model import GPT, GPTConfig
 
             # Create model with appropriate config
             if config:

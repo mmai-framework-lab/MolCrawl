@@ -19,7 +19,7 @@ import torch.nn.functional as F
 
 # add project root
 
-from molcrawl.gpt2.model import GPT, GPTConfig
+from molcrawl.models.gpt2.model import GPT, GPTConfig
 
 from molcrawl.core.utils.evaluation_output import (
     get_evaluation_output_dir,

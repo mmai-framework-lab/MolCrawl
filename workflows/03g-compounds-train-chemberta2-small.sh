@@ -20,7 +20,7 @@ export WANDB_PROJECT=${WANDB_PROJECT:-chemberta2-compounds}
 
 # Training parameters
 MODEL_SIZE="small"
-CONFIG_FILE="molcrawl/molcrawl/chemberta2/configs/compounds.py"
+CONFIG_FILE="molcrawl/molcrawl/models/chemberta2/configs/compounds.py"
 
 # Create log directory
 LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/logs"
@@ -41,7 +41,7 @@ echo "========================================"
 echo ""
 
 # Run training (torchrun auto-detected for multi-GPU)
-run_training molcrawl/chemberta2/main.py \
+run_training molcrawl/models/chemberta2/main.py \
     --config "${CONFIG_FILE}" \
     --model_size "${MODEL_SIZE}" \
     2>&1 | tee "${LOG_FILE}"

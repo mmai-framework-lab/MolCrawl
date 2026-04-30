@@ -1,26 +1,26 @@
-# GPT-2 (medium) fine-tuning config for GuacaMol benchmark
+# GPT-2 (large) fine-tuning config for GuacaMol benchmark
 #
 # Continues from the compounds GPT-2 pretraining checkpoint
-# (see molcrawl/gpt2/configs/compounds/train_gpt2_medium_config.py)
+# (see molcrawl/models/gpt2/configs/compounds/train_gpt2_large_config.py)
 # using the GuacaMol benchmark SMILES dataset.
 #
 # Recommended launch command:
-#   torchrun --standalone --nproc_per_node=<N> molcrawl/gpt2/train.py \
-#       gpt2/configs/compounds/train_gpt2_guacamol_medium.py
+#   torchrun --standalone --nproc_per_node=<N> molcrawl/models/gpt2/train.py \
+#       gpt2/configs/compounds/train_gpt2_guacamol_large.py
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import GUACAMOL_DATASET_DIR, get_gpt2_output_path
 
-# Medium-Sized GPT-2 Model
-n_layer = 24
-n_head = 16
-n_embd = 1024
+# Large-Sized GPT-2 Model
+n_layer = 36
+n_head = 20
+n_embd = 1280
 
 tensorboard = True
-tensorboard_dir = get_gpt2_output_path("compounds_guacamol", "medium")
-out_dir = get_gpt2_output_path("compounds_guacamol", "medium")
+tensorboard_dir = get_gpt2_output_path("compounds_guacamol", "large")
+out_dir = get_gpt2_output_path("compounds_guacamol", "large")
 # Pretraining checkpoint to load weights from when out_dir has no checkpoint.
-pretrain_dir = get_gpt2_output_path("compounds", "medium")
+pretrain_dir = get_gpt2_output_path("compounds", "large")
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 meta_vocab_size = tokenizer.vocab_size

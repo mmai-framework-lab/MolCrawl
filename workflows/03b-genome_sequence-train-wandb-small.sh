@@ -20,5 +20,5 @@ WANDB_ENTITY=${WANDB_ENTITY:-}
 mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/logs
 LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/logs/genome_sequence-train-small-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
-    molcrawl/gpt2/train.py \
+    molcrawl/models/gpt2/train.py \
     ./gpt2/configs/genome_sequence/train_gpt2_small_config.py --use_wandb=True --wandb_project="${WANDB_PROJECT}" --wandb_entity="${WANDB_ENTITY}"
