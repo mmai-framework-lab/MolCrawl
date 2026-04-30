@@ -76,7 +76,7 @@ or
 
 ```bash
 LEARNING_SOURCE_DIR="learning_source" \
-python molcrawl/genome_sequence/dataset/prepare_gpt2.py \
+python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
 

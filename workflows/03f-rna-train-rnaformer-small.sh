@@ -18,7 +18,7 @@ export WANDB_PROJECT=${WANDB_PROJECT:-rnaformer-transcriptome}
 
 # Training parameters
 MODEL_SIZE="small"
-CONFIG_FILE="molcrawl/molcrawl/rnaformer/configs/rna.py"
+CONFIG_FILE="molcrawl/tasks/pretrain/configs/rna/rnaformer.py"
 
 # Create log directory
 LOG_DIR="${LEARNING_SOURCE_DIR}/rna/logs"
@@ -35,7 +35,7 @@ echo "📝 Log file: ${LOG_FILE}"
 echo ""
 
 # Run training
-run_training molcrawl/rnaformer/main.py \
+run_training molcrawl/models/rnaformer/main.py \
     --config "${CONFIG_FILE}" \
     --model_size "${MODEL_SIZE}" \
     2>&1 | tee "${LOG_FILE}"

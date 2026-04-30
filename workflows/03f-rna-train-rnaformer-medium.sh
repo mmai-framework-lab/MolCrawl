@@ -22,5 +22,5 @@ mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/rnaformer-train-${MODEL_SIZE}-$(date +%Y-%m-%d_%H-%M-%S).log"
 
 run_training_background "${LOG_FILE}" \
-    molcrawl/rnaformer/main.py \
-    --config molcrawl/rnaformer/configs/rna.py --model_size ${MODEL_SIZE}
+    molcrawl/models/rnaformer/main.py \
+    --config molcrawl/tasks/pretrain/configs/rna/rnaformer.py --model_size ${MODEL_SIZE}

@@ -23,8 +23,8 @@ select_multi_gpu "$NUM_GPUS" 35
 mkdir -p ${LEARNING_SOURCE_DIR}/genome_sequence/clinvar/logs
 LOG_FILE="${LEARNING_SOURCE_DIR}/genome_sequence/clinvar/logs/genome_sequence_clinvar-train-gpt2-xl-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
-    molcrawl/gpt2/train.py \
-    ./gpt2/configs/genome_sequence/train_gpt2_clinvar_xl.py
+    molcrawl/models/gpt2/train.py \
+    ./molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_clinvar_xl.py
 
 echo "GPT-2 xl ClinVar fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LEARNING_SOURCE_DIR}/genome_sequence/clinvar/logs/"

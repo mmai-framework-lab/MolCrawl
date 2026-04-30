@@ -25,5 +25,5 @@ select_multi_gpu "$NUM_GPUS" 10
 mkdir -p ${LEARNING_SOURCE_DIR}/molecule_nat_lang/logs
 LOG_FILE="${LEARNING_SOURCE_DIR}/molecule_nat_lang/logs/molecule_nat_lang-train-small-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
-    molcrawl/gpt2/train.py \
-    ./gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
+    molcrawl/models/gpt2/train.py \
+    ./molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_small.py

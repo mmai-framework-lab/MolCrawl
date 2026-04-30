@@ -87,14 +87,14 @@ jobs:
       - name: Test BERT initialization
         run: |
           python - <<'PY'
-          import molcrawl.bert.test_checkpoint as bert_test
+          import molcrawl.models.bert.test_checkpoint as bert_test
 
           print("✓ BERT test module import ok", bert_test.__name__)
           PY
       - name: Test GPT2 initialization
         run: |
           python - <<'PY'
-          import molcrawl.gpt2.test_checkpoint as gpt2_test
+          import molcrawl.models.gpt2.test_checkpoint as gpt2_test
 
           print("✓ GPT2 test module import ok", gpt2_test.__name__)
           PY

@@ -85,12 +85,12 @@ Typical outputs include confusion matrix, ROC, PR curve, metric bars, score hist
 
 ```bash
 # Genome data preparation
-python molcrawl/preparation/preparation_script_genome_sequence.py \
+python molcrawl/data/genome_sequence/preparation.py \
     assets/configs/genome_config.yaml
 
 # Molecule NL preparation
-bash molcrawl/preparation/download_smolinstruct.sh
-python molcrawl/preparation/preparation_script_molecule_related_nat_lang.py \
+bash molcrawl/data/molecule_nat_lang/download_smolinstruct.sh
+python molcrawl/data/molecule_nat_lang/preparation.py \
     assets/configs/molecule_nat_lang_config.yaml
 ```
 

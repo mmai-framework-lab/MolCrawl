@@ -1,0 +1,107 @@
+from functools import partial
+from argparse import ArgumentParser
+import os
+from pathlib import Path
+
+# dataset cache settings — kept as a deferred import so this module is
+# import-safe (setup_cache_env() reads LEARNING_SOURCE_DIR and sys.exit()s
+# if it is not set; running it at top level breaks pdoc, pytest, and any
+# code that imports this module without first exporting the env var).
+try:
+    from molcrawl.core.utils.cache_config import setup_cache_env
+except ModuleNotFoundError:
+    setup_cache_env = None
+
+from molcrawl.data.molecule_nat_lang.utils.config import MoleculeNLConfig
+from molcrawl.data.molecule_nat_lang.utils.general import read_dataset
+
+
+def concatenate_texts(examples, eos_token_id):
+    concatenated_ids = []
+    for input_ids, output_ids in zip(examples["input_ids"], examples["output_ids"]):
+        concatenated_ids.extend(input_ids + output_ids)
+    return {"input_ids": concatenated_ids}
+
+
+def create_chunks(examples, context_length):
+    concatenated_ids = examples["input_ids"]
+
+    # Calculate the total number of chunks
+    total_length = len(concatenated_ids)
+    num_chunks = total_length // context_length
+
+    # Truncate the concatenated_ids to a multiple of context_length
+    total_length = num_chunks * context_length
+    concatenated_ids = concatenated_ids[:total_length]
+
+    # Split into chunks
+    input_ids = [concatenated_ids[i : i + context_length] for i in range(0, total_length, context_length)]
+
+    return {"input_ids": input_ids}
+
+
+def tokenize_batch_dataset(parquet_path, context_length, number_sample):
+    from datasets import DatasetDict
+    import numpy as np
+
+    from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
+
+    tokenize_dataset = DatasetDict(read_dataset(parquet_path))
+
+    # Handle validation/valid split naming
+    if "validation" in tokenize_dataset and "valid" not in tokenize_dataset:
+        tokenize_dataset["valid"] = tokenize_dataset["validation"]
+        del tokenize_dataset["validation"]
+    elif "valid" not in tokenize_dataset and "validation" not in tokenize_dataset:
+        raise KeyError("Neither 'valid' nor 'validation' split found in dataset")
+
+    tokenize_dataset["train"] = tokenize_dataset["train"].select(
+        np.random.choice(len(tokenize_dataset["train"]), int(number_sample * 0.8), replace=False)
+    )
+    tokenize_dataset["valid"] = tokenize_dataset["valid"].select(
+        np.random.choice(len(tokenize_dataset["valid"]), int(number_sample * 0.1), replace=False)
+    )
+    tokenize_dataset["test"] = tokenize_dataset["test"].select(
+        np.random.choice(len(tokenize_dataset["test"]), int(number_sample * 0.1), replace=False)
+    )
+
+    tokenizer = MoleculeNatLangTokenizer()
+
+    concatenated_dataset = tokenize_dataset.map(
+        partial(concatenate_texts, eos_token_id=tokenizer.tokenizer.eos_token_id),
+        batched=True,
+        batch_size=-1,
+        remove_columns=tokenize_dataset["train"].column_names,
+    )
+
+    chunked_dataset = concatenated_dataset.map(
+        partial(create_chunks, context_length=context_length),
+        batched=True,
+        batch_size=-1,
+    )
+
+    path_dataset = str(Path(parquet_path).parent / "training_ready_hf_dataset")
+    print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
+    chunked_dataset.save_to_disk(path_dataset)
+
+
+if __name__ == "__main__":
+    if setup_cache_env is not None:
+        setup_cache_env()
+    else:
+        print("WARNING: utils.cache_config not found. Continuing without cache setup.")
+
+    number_sample = 50000
+    context_length = 1024
+
+    parser = ArgumentParser()
+    parser.add_argument("config")
+    args = parser.parse_args()
+    cfg = MoleculeNLConfig.from_file(args.config).data_preparation
+
+    # convert relative path to absolute path
+    from molcrawl.core.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
+
+    save_path = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR, cfg.save_path)
+
+    tokenize_batch_dataset(save_path, context_length, number_sample)

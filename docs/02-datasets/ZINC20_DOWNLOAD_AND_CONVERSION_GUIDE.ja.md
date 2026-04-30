@@ -23,29 +23,29 @@ export LEARNING_SOURCE_DIR="learning_source"
 ### 2. Check Download Status
 
 ```bash
-python molcrawl/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --status
+python molcrawl/data/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --status
 ```
 
 ### 3. Download ZINC Files
 
 ```bash
 # Download with default 1 second delay between downloads
-python molcrawl/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --download
+python molcrawl/data/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --download
 
 # Download with custom delay to avoid server overload
-python molcrawl/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --download --delay 2.0
+python molcrawl/data/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --download --delay 2.0
 ```
 
 ### 4. Convert to Parquet
 
 ```bash
-python molcrawl/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --convert /path/to/output/directory
+python molcrawl/data/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --convert /path/to/output/directory
 ```
 
 ## Module Usage
 
 ```python
-from molcrawl.compounds.dataset.organix13.zinc.download_and_convert_to_parquet import (
+from molcrawl.data.compounds.dataset.organix13.zinc.download_and_convert_to_parquet import (
     download_zinc_files,
     convert_zinc_to_parquet,
     check_download_status
@@ -176,8 +176,8 @@ Run the test suite to verify functionality:
 
 ```bash
 # Download status check
-python molcrawl/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --status
+python molcrawl/data/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --status
 
 # Dry run equivalent: run with a larger delay and monitor logs
-python molcrawl/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --download --delay 2.0
+python molcrawl/data/compounds/dataset/organix13/zinc/download_and_convert_to_parquet.py --download --delay 2.0
 ```

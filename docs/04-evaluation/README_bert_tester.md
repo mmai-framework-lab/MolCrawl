@@ -4,12 +4,12 @@ This document explains how to use the BERT checkpoint tester for loading, infere
 
 ## Target Scripts
 
-- `molcrawl/bert/test_checkpoint.py`
+- `molcrawl/models/bert/test_checkpoint.py`
 
 ## Basic Run
 
 ```bash
-python molcrawl/bert/test_checkpoint.py \
+python molcrawl/models/bert/test_checkpoint.py \
   --checkpoint_path "<LEARNING_SOURCE_DIR>/compounds/bert-output/compounds-small/checkpoint-1000" \
   --domain compounds \
   --vocab_path assets/molecules/vocab.txt
@@ -30,7 +30,7 @@ python molcrawl/bert/test_checkpoint.py \
 ### Molecule NL
 
 ```bash
-python molcrawl/bert/test_checkpoint.py \
+python molcrawl/models/bert/test_checkpoint.py \
   --checkpoint_path "<LEARNING_SOURCE_DIR>/molecule_nat_lang/bert-output/molecule_nat_lang-small/checkpoint-1000" \
   --domain molecule_nat_lang
 ```
@@ -38,7 +38,7 @@ python molcrawl/bert/test_checkpoint.py \
 ### Genome
 
 ```bash
-python molcrawl/bert/test_checkpoint.py \
+python molcrawl/models/bert/test_checkpoint.py \
   --checkpoint_path "<LEARNING_SOURCE_DIR>/genome_sequence/bert-output/genome_sequence-small/checkpoint-1000" \
   --domain genome \
   --vocab_path "<LEARNING_SOURCE_DIR>/genome_sequence/spm_tokenizer.model"

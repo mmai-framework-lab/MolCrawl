@@ -46,7 +46,7 @@ No extra package is required beyond the current environment.
 ### 2. Directory Layout
 
 ```text
-molcrawl/esm2/
+molcrawl/models/esm2/
 ├── main.py                     # Main training script
 ├── configurator.py             # Config loader
 └── configs/

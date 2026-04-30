@@ -26,7 +26,7 @@ LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/chembl/logs"
 mkdir -p "${LOG_DIR}"
 
 echo "[1/1] Preparing ChEMBL fine-tuning dataset (download + tokenise if needed)..."
-nohup $PYTHON molcrawl/preparation/preparation_script_compounds.py \
+nohup $PYTHON molcrawl/data/compounds/preparation.py \
     assets/configs/compounds.yaml \
     --datasets chembl_finetune \
     > "${LOG_DIR}/chembl-prepare-$(date +%Y-%m-%d_%H-%M-%S).log" 2>&1 &

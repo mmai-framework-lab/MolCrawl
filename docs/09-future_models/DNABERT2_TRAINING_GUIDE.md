@@ -43,7 +43,7 @@ No additional packages are required beyond the current environment.
 ### 2. Directory Layout
 
 ```text
-molcrawl/dnabert2/
+molcrawl/models/dnabert2/
 ├── main.py                     # Main training script
 ├── configurator.py             # Config loader
 └── configs/

@@ -37,11 +37,11 @@ pytest tests/unit/test_compounds.py --cov=molcrawl.compounds --cov-report=html
 
 #### 自動実行（push時）
 
-`molcrawl/compounds/` 配下のファイルを変更してpushすると自動実行されます：
+`molcrawl/data/compounds/` 配下のファイルを変更してpushすると自動実行されます：
 
 ```bash
 # Compounds関連のコードを変更
-git add molcrawl/compounds/utils/preprocessing.py
+git add molcrawl/data/compounds/utils/preprocessing.py
 git commit -m "fix: improve SMILES validation"
 git push
 

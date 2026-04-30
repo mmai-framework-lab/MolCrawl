@@ -6,9 +6,9 @@
 
 ### 1. コアファイル
 
--  [esm2/main.py](../../molcrawl/esm2/main.py) - メイン学習スクリプト (465行)
--  [esm2/configurator.py](../../molcrawl/esm2/configurator.py) - 設定ローダー
--  [esm2/configs/protein_sequence.py](../../molcrawl/esm2/configs/protein_sequence.py) - protein_sequence設定
+-  [esm2/main.py](../../molcrawl/models/esm2/main.py) - メイン学習スクリプト (465行)
+-  [esm2/configurator.py](../../molcrawl/models/esm2/configurator.py) - 設定ローダー
+-  [esm2/configs/protein_sequence.py](../../molcrawl/tasks/pretrain/configs/protein_sequence/esm2.py) - protein_sequence設定
 
 ### 2. 実行スクリプト
 
@@ -96,7 +96,7 @@ python esm2/main.py esm2/configs/protein_sequence.py \
 
 ### 設定ファイル編集
 
-[esm2/configs/protein_sequence.py](../../molcrawl/esm2/configs/protein_sequence.py) を編集:
+[esm2/configs/protein_sequence.py](../../molcrawl/tasks/pretrain/configs/protein_sequence/esm2.py) を編集:
 
 ```python
 # 例: より大きいバッチサイズ（GPU メモリに余裕がある場合）

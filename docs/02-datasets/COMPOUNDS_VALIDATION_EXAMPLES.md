@@ -8,7 +8,7 @@ This document provides concrete, step-by-step examples for validating Compounds 
 
 ### Situation (Scenario 1)
 
-You want to improve the SMILES validation logic in `molcrawl/compounds/utils/preprocessing.py`.
+You want to improve the SMILES validation logic in `molcrawl/data/compounds/utils/preprocessing.py`.
 
 ### Steps (Scenario 1)
 
@@ -27,7 +27,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 #### 2. Update the code
 
 ```python
-# molcrawl/compounds/utils/preprocessing.py
+# molcrawl/data/compounds/utils/preprocessing.py
 def prepare_scaffolds(smiles: str):
     # Add improved logic
     if not smiles or smiles.strip() == "":
@@ -50,7 +50,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 #### 4. Push to GitHub
 
 ```bash
-git add molcrawl/compounds/utils/preprocessing.py
+git add molcrawl/data/compounds/utils/preprocessing.py
 git commit -m "feat(compounds): add length validation for SMILES"
 git push origin feature/improve-smiles-validation
 ```
@@ -82,7 +82,7 @@ You want to extend the tokenizer to support special chemical structures (for exa
 @pytest.mark.compound
 def test_stereochemistry_tokenization(self, sample_vocab_file):
     """Verify stereochemical notation is tokenized correctly"""
-    from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
+    from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
 
     # SMILES including stereochemistry such as `C[C@H](O)C`
     smiles = "C[C@H](O)C"
@@ -104,7 +104,7 @@ pytest tests/unit/test_compounds.py::test_stereochemistry_tokenization -v
 #### 3. Implement the feature
 
 ```python
-# molcrawl/compounds/utils/tokenizer.py
+# molcrawl/data/compounds/utils/tokenizer.py
 SMI_REGEX_PATTERN = r"""(
     \[[^\]]+]|        # Inside square brackets
     Br?|Cl?|N|O|S|P|F|I|  # Atoms
@@ -133,7 +133,7 @@ pytest tests/unit/test_compounds.py -v
 #### 6. Validate on GitHub
 
 ```bash
-git add molcrawl/compounds/utils/tokenizer.py tests/unit/test_compounds.py
+git add molcrawl/data/compounds/utils/tokenizer.py tests/unit/test_compounds.py
 git commit -m "feat(compounds): support stereochemistry in tokenizer"
 git push
 
@@ -266,7 +266,7 @@ A team member created a PR that changes Compounds-related code.
 ```bash
 # Create a feature branch
 git checkout -b feature/add-new-smiles-feature
-git add molcrawl/compounds/
+git add molcrawl/data/compounds/
 git commit -m "feat: add new SMILES feature"
 git push origin feature/add-new-smiles-feature
 
@@ -341,7 +341,7 @@ PR can be merged
 git pull origin develop
 
 # Add features
-vim molcrawl/compounds/utils/preprocessing.py
+vim molcrawl/data/compounds/utils/preprocessing.py
 
 # Add tests
 vim tests/unit/test_compounds.py

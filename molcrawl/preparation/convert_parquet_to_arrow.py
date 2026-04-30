@@ -15,7 +15,6 @@ import pyarrow.parquet as pq
 from datasets import Dataset
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def convert_parquet_to_arrow(parquet_path: str, output_dir: str):
@@ -82,6 +81,7 @@ def convert_parquet_to_arrow(parquet_path: str, output_dir: str):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     parser = argparse.ArgumentParser(description="Convert parquet file with split column to separate arrow files")
     parser.add_argument("parquet_file", type=str, help="Path to the input parquet file")
     parser.add_argument("output_dir", type=str, help="Directory to save the arrow files")

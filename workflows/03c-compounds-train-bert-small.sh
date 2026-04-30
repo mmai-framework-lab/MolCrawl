@@ -14,5 +14,5 @@ select_multi_gpu "$NUM_GPUS" 10
 
 LOG_FILE="${LEARNING_SOURCE_DIR}/compounds/logs/compounds-train-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log"
 run_training_background "$LOG_FILE" \
-    molcrawl/bert/main.py \
-    bert/configs/compounds.py
+    molcrawl/models/bert/main.py \
+    molcrawl/tasks/pretrain/configs/compounds/bert_small.py

@@ -308,7 +308,7 @@ if [ "$SKIP_DATA_PREP" = false ]; then
 
     # Pythonコマンド引数を準備
     DATA_PREP_ARGS=(
-        "scripts/evaluation/gpt2/omim_data_preparation.py"
+        "molcrawl/tasks/evaluation/omim/gpt2_data_preparation.py"
         "--mode" "real"
         "--output_dir" "$DATA_DIR"
         "--config" "$CONFIG_FILE"
@@ -356,7 +356,7 @@ if [ "$SKIP_EVALUATION" = false ]; then
 
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
-        "scripts/evaluation/gpt2/omim_evaluation.py"
+        "molcrawl/tasks/evaluation/omim/gpt2_evaluation.py"
         --model_path "$MODEL_PATH"
         --data_path "$DATA_PATH"
         --output_dir "$OUTPUT_DIR"
@@ -390,7 +390,7 @@ if [ "$SKIP_VISUALIZATION" = false ]; then
     echo "=== 可視化フェーズ ==="
     echo "評価結果の可視化を実行中..."
 
-    python "$PROJECT_ROOT/scripts/evaluation/gpt2/omim_visualization.py" \
+    python "$PROJECT_ROOT/molcrawl/tasks/evaluation/omim/gpt2_visualization.py" \
         --results_dir "$OUTPUT_DIR"
 
     if [[ $? -ne 0 ]]; then

@@ -210,7 +210,7 @@ if [ "$SKIP_DATA_PREP" = false ]; then
 
     # Pythonコマンド引数を準備
     DATA_PREP_ARGS=(
-        "scripts/evaluation/bert/proteingym_data_preparation.py"
+        "molcrawl/tasks/evaluation/proteingym/bert_data_preparation.py"
         "--output_dir" "$DATA_DIR"
         "--max_variants_per_assay" "$MAX_VARIANTS"
     )
@@ -266,7 +266,7 @@ if [ "$SKIP_EVALUATION" = false ]; then
 
     # Pythonコマンド引数を準備
     EVAL_ARGS=(
-        "scripts/evaluation/bert/proteingym_evaluation.py"
+        "molcrawl/tasks/evaluation/proteingym/bert_evaluation.py"
         "--model_path" "$MODEL_PATH"
         "--proteingym_data" "$DATASET_PATH"
         "--output_dir" "$OUTPUT_DIR"
@@ -316,7 +316,7 @@ if [ "$SKIP_VISUALIZATION" = false ]; then
         exit 1
     fi
 
-    python "$PROJECT_ROOT/scripts/evaluation/bert/proteingym_visualization.py" \
+    python "$PROJECT_ROOT/molcrawl/tasks/evaluation/proteingym/bert_visualization.py" \
         --results_dir "$LATEST_RESULT_DIR" \
         --output_dir "$LATEST_RESULT_DIR/visualizations"
 

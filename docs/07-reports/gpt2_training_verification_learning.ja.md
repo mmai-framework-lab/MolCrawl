@@ -275,7 +275,7 @@ meta_vocab_size = 32008  # Llama-2-7b-hfの語彙サイズ
 **解決策**: convert_parquet_to_arrow.pyで作成
 
 ```bash
-python scripts/preparation/convert_parquet_to_arrow.py \
+python molcrawl/preparation/convert_parquet_to_arrow.py \
     learning_20251125/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet \
     learning_20251125/molecule_nat_lang/arrow_splits
 ```

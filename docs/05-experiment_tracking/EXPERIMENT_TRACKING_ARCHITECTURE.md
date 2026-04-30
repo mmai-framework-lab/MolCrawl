@@ -76,13 +76,13 @@ Evaluation scripts use a structured output policy under `LEARNING_SOURCE_DIR`, a
 - `molcrawl/utils/evaluation_output.py`
 
 Related scripts include:
-- `molcrawl/evaluation/gpt2/proteingym_evaluation.py`
-- `molcrawl/evaluation/gpt2/clinvar_evaluation.py`
-- `molcrawl/evaluation/gpt2/cosmic_evaluation.py`
-- `molcrawl/evaluation/gpt2/omim_evaluation.py`
-- `molcrawl/evaluation/gpt2/protein_classification_evaluation.py`
-- `molcrawl/evaluation/bert/proteingym_evaluation.py`
-- `molcrawl/evaluation/bert/clinvar_evaluation.py`
+- `molcrawl/tasks/evaluation/proteingym/gpt2_evaluation.py`
+- `molcrawl/tasks/evaluation/clinvar/gpt2_evaluation.py`
+- `molcrawl/tasks/evaluation/cosmic/gpt2_evaluation.py`
+- `molcrawl/tasks/evaluation/omim/gpt2_evaluation.py`
+- `molcrawl/tasks/evaluation/protein_classification/gpt2_evaluation.py`
+- `molcrawl/tasks/evaluation/proteingym/bert_evaluation.py`
+- `molcrawl/tasks/evaluation/clinvar/bert_evaluation.py`
 
 ## Extension Points
 

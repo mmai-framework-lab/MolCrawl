@@ -3,14 +3,14 @@ on:
   push:
     branches: [main, develop, "feature/**", "phase/**"]
     paths:
-      - "molcrawl/compounds/**"
+      - "molcrawl/data/compounds/**"
       - "tests/unit/test_compounds.py"
       - "tests/integration/test_compounds_pipeline.py"
       - ".github/workflows/compounds-validation.yml"
   pull_request:
     branches: [main, develop]
     paths:
-      - "molcrawl/compounds/**"
+      - "molcrawl/data/compounds/**"
   workflow_dispatch:
     inputs:
       test_level:
@@ -114,7 +114,7 @@ jobs:
       - name: Check invalid SMILES rate
         run: |
           python -c "
-          from molcrawl.compounds.utils.preprocessing import prepare_scaffolds, get_invalid_smiles_stats
+          from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds, get_invalid_smiles_stats
 
           # テストデータでSMILES処理
           test_smiles = ['CCO', 'c1ccccc1', 'INVALID', 'CC(=O)O', '.', 'CC(C)C']
@@ -152,7 +152,7 @@ jobs:
       - name: Verify tokenizer components
         run: |
           python -c "
-          from molcrawl.compounds.utils.tokenizer import SMI_REGEX_PATTERN, SmilesTokenizer
+          from molcrawl.data.compounds.utils.tokenizer import SMI_REGEX_PATTERN, SmilesTokenizer
 
           print('✓ SMI_REGEX_PATTERN loaded successfully')
           print('✓ SmilesTokenizer class imported successfully')

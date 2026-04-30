@@ -24,8 +24,8 @@ LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/logs"
 mkdir -p "${LOG_DIR}"
 
 run_training_background "${LOG_DIR}/compounds-train-gpt2-medium-$(date +%Y-%m-%d_%H-%M-%S).log" \
-    molcrawl/gpt2/train.py \
-    gpt2/configs/compounds/train_gpt2_medium_config.py
+    molcrawl/models/gpt2/train.py \
+    molcrawl/tasks/pretrain/configs/compounds/gpt2_medium.py
 
 echo "GPT-2 pretraining running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LOG_DIR}/"

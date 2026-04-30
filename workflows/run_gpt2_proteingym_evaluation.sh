@@ -215,7 +215,7 @@ if [[ "$DOWNLOAD_DATA" == true ]]; then
 
     cd "$PROJECT_ROOT"
 
-    python scripts/evaluation/gpt2/proteingym_data_preparation.py \
+    python molcrawl/tasks/evaluation/proteingym/gpt2_data_preparation.py \
         --download recommended \
         --data_dir "$DATA_DIR"
 
@@ -246,7 +246,7 @@ if [[ "$CREATE_SAMPLE" == true ]]; then
     cd "$PROJECT_ROOT"
 
     # まず、推奨データセットをダウンロード
-    python scripts/evaluation/gpt2/proteingym_data_preparation.py \
+    python molcrawl/tasks/evaluation/proteingym/gpt2_data_preparation.py \
         --data_dir "$DATA_DIR" \
         --download recommended
 
@@ -298,7 +298,7 @@ echo "データファイル: $DATA_PATH"
 cd "$PROJECT_ROOT"
 
 EVAL_ARGS=(
-    "scripts/evaluation/gpt2/proteingym_evaluation.py"
+    "molcrawl/tasks/evaluation/proteingym/gpt2_evaluation.py"
     "--model_path" "$MODEL_PATH"
     "--proteingym_data" "$DATA_PATH"
     "--output_dir" "$OUTPUT_DIR"
@@ -341,7 +341,7 @@ if [[ "$VISUALIZE" == true ]]; then
     fi
 
     if [[ -f "$RESULTS_FILE" ]]; then
-        python "$PROJECT_ROOT/scripts/evaluation/gpt2/proteingym_visualization.py" \
+        python "$PROJECT_ROOT/molcrawl/tasks/evaluation/proteingym/gpt2_visualization.py" \
             --results_file "$RESULTS_FILE" \
             --output_dir "$VIS_DIR"
 

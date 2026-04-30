@@ -25,8 +25,8 @@ LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/guacamol/logs"
 mkdir -p "${LOG_DIR}"
 
 run_training_background "${LOG_DIR}/compounds_guacamol-train-small-$(date +%Y-%m-%d_%H-%M-%S).log" \
-    molcrawl/gpt2/train.py \
-    gpt2/configs/compounds/train_gpt2_guacamol_small.py
+    molcrawl/models/gpt2/train.py \
+    molcrawl/tasks/pretrain/configs/compounds/gpt2_guacamol_small.py
 
 echo "GPT-2 fine-tuning running in background (GPU ${CUDA_VISIBLE_DEVICES})."
 echo "Logs: ${LOG_DIR}/"

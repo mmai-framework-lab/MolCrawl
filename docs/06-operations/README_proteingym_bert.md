@@ -17,11 +17,11 @@ The BERT ProteinGym evaluation system uses a trained BERT model to predict fitne
 ## File Structure
 
 ```text
-molcrawl/evaluation/bert/
+molcrawl/tasks/evaluation/
 ├── proteingym_evaluation.py        # Main evaluation script
 └── proteingym_data_preparation.py  # Dataset download and preprocessing
 
-molcrawl/bert/configs/
+molcrawl/tasks/pretrain/configs/
 └── bert_proteingym_config.py       # Configuration
 
 workflows/

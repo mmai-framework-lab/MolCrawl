@@ -6,7 +6,7 @@
 echo "=== Protein Sequence BERT学習 デバッグ ==="
 
 # 設定ファイルを読み込み
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 
 # 1. データセットの確認
 DATASET_DIR="$UNIPROT_DATASET_DIR"
@@ -114,7 +114,7 @@ EOF
 echo ""
 echo "=== 設定ファイルの確認 ==="
 
-CONFIG_FILE="bert/configs/protein_sequence.py"
+CONFIG_FILE="molcrawl/tasks/pretrain/configs/protein_sequence/bert_small.py"
 if [ -f "$CONFIG_FILE" ]; then
     echo "✓ 設定ファイルが見つかりました: $CONFIG_FILE"
     echo "設定ファイル内容の抜粋:"

@@ -18,13 +18,13 @@ class TestSmilesTokenization:
 
     def test_smiles_tokenizer_import(self):
         """Verify that SmilesTokenizer can be imported correctly."""
-        from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
+        from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
 
         assert SmilesTokenizer is not None
 
     def test_smiles_regex_pattern(self):
         """Verify that the SMILES regex pattern is correctly defined."""
-        from molcrawl.compounds.utils.tokenizer import SMI_REGEX_PATTERN
+        from molcrawl.data.compounds.utils.tokenizer import SMI_REGEX_PATTERN
 
         assert SMI_REGEX_PATTERN is not None
         assert isinstance(SMI_REGEX_PATTERN, str)
@@ -56,7 +56,7 @@ class TestSmilesValidation:
 
     def test_valid_smiles(self):
         """Verify that valid SMILES structures are correctly processed."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         # Valid SMILES examples (those with scaffolds)
         valid_smiles = [
@@ -72,7 +72,7 @@ class TestSmilesValidation:
 
     def test_valid_smiles_without_scaffold(self):
         """Verify handling of valid SMILES without scaffolds (acyclic compounds)."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         # Acyclic compounds (scaffold will be empty)
         acyclic_smiles = [
@@ -88,7 +88,7 @@ class TestSmilesValidation:
 
     def test_invalid_smiles(self):
         """Verify that invalid SMILES structures are handled appropriately."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         # Invalid SMILES examples
         invalid_smiles = [
@@ -105,7 +105,7 @@ class TestSmilesValidation:
 
     def test_complex_valid_smiles(self):
         """Verify processing of complex but valid SMILES structures."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         complex_smiles = [
             "C1=CC=C(C=C1)C(=O)O",  # Benzoic acid
@@ -120,7 +120,7 @@ class TestSmilesValidation:
 
     def test_invalid_smiles_statistics(self):
         """Verify that invalid SMILES statistics are correctly tracked."""
-        from molcrawl.compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import get_invalid_smiles_stats, prepare_scaffolds
 
         # Reset statistics (for testing)
         # Note: In actual tests, a mechanism to reset state between tests is needed
@@ -146,13 +146,13 @@ class TestCompoundsDataPipeline:
 
     def test_dataset_download_function(self):
         """Verify that the dataset download function exists and is callable."""
-        from molcrawl.compounds.utils.datasets import download
+        from molcrawl.data.compounds.utils.datasets import download
 
         assert callable(download)
 
     def test_smiles_preprocessing_pipeline(self):
         """Verify that the entire SMILES preprocessing pipeline functions correctly."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         # Simulate actual compound data
         sample_smiles = ["CCO", "c1ccccc1", "CC(=O)O", "INVALID", "CC(C)C"]
@@ -219,7 +219,7 @@ class TestCompoundsPerformance:
 
     def test_scaffold_generation_speed(self, benchmark):
         """Measure the speed of Scaffold generation."""
-        from molcrawl.compounds.utils.preprocessing import prepare_scaffolds
+        from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
         # Benchmark with a large number of SMILES
         sample_smiles = ["CCO", "c1ccccc1", "CC(=O)O"] * 100

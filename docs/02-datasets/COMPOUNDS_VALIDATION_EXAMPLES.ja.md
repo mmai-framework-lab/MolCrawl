@@ -8,7 +8,7 @@
 
 ### 状況 (シナリオ1)
 
-`molcrawl/compounds/utils/preprocessing.py` のSMILES検証ロジックを改善したい。
+`molcrawl/data/compounds/utils/preprocessing.py` のSMILES検証ロジックを改善したい。
 
 ### 手順 (シナリオ1)
 
@@ -27,7 +27,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 #### 2. コードを変更
 
 ```python
-# molcrawl/compounds/utils/preprocessing.py
+# molcrawl/data/compounds/utils/preprocessing.py
 def prepare_scaffolds(smiles: str):
     # 改善されたロジックを追加
     if not smiles or smiles.strip() == "":
@@ -50,7 +50,7 @@ pytest tests/unit/test_compounds.py::TestSmilesValidation -v
 #### 4. GitHubにプッシュ
 
 ```bash
-git add molcrawl/compounds/utils/preprocessing.py
+git add molcrawl/data/compounds/utils/preprocessing.py
 git commit -m "feat(compounds): add length validation for SMILES"
 git push origin feature/improve-smiles-validation
 ```
@@ -82,7 +82,7 @@ GitHub → Actions タブ → "Compounds Validation" ワークフロー
 @pytest.mark.compound
 def test_stereochemistry_tokenization(self, sample_vocab_file):
     """立体化学表記が正しくトークン化されることを確認"""
-    from molcrawl.compounds.utils.tokenizer import SmilesTokenizer
+    from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
 
     # `C[C@H](O)C` のような立体化学を含むSMILES
     smiles = "C[C@H](O)C"
@@ -104,7 +104,7 @@ pytest tests/unit/test_compounds.py::test_stereochemistry_tokenization -v
 #### 3. 機能を実装
 
 ```python
-# molcrawl/compounds/utils/tokenizer.py
+# molcrawl/data/compounds/utils/tokenizer.py
 SMI_REGEX_PATTERN = r"""(
     \[[^\]]+]|        # 角括弧内
     Br?|Cl?|N|O|S|P|F|I|  # 原子
@@ -133,7 +133,7 @@ pytest tests/unit/test_compounds.py -v
 #### 6. GitHubで検証
 
 ```bash
-git add molcrawl/compounds/utils/tokenizer.py tests/unit/test_compounds.py
+git add molcrawl/data/compounds/utils/tokenizer.py tests/unit/test_compounds.py
 git commit -m "feat(compounds): support stereochemistry in tokenizer"
 git push
 
@@ -266,7 +266,7 @@ pytest tests/integration/test_compounds_pipeline.py::TestCompoundsGPT2Integratio
 ```bash
 # フィーチャーブランチを作成
 git checkout -b feature/add-new-smiles-feature
-git add molcrawl/compounds/
+git add molcrawl/data/compounds/
 git commit -m "feat: add new SMILES feature"
 git push origin feature/add-new-smiles-feature
 
@@ -341,7 +341,7 @@ PRマージ可能
 git pull origin develop
 
 # 機能追加
-vim molcrawl/compounds/utils/preprocessing.py
+vim molcrawl/data/compounds/utils/preprocessing.py
 
 # テスト追加
 vim tests/unit/test_compounds.py

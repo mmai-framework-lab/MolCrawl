@@ -21,7 +21,7 @@ echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.bashrc
 echo 'export LEARNING_SOURCE_DIR="learning_source"' >> ~/.zshrc
 ```
 
-**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. The cache location is determined by the `LEARNING_SOURCE_DIR` environment variable, so changing `LEARNING_SOURCE_DIR` will also change where the cache is stored. The detailed configuration can be found in `molcrawl/config/env.sh`.
+**Cache Configuration**: Hugging Face cache directories are automatically configured within `{LEARNING_SOURCE_DIR}/.cache/huggingface/` to avoid filling up the root partition. For example, if `LEARNING_SOURCE_DIR` is set to `learning_source`, the default cache directory will be `learning_source/.cache/huggingface/`. The cache location is determined by the `LEARNING_SOURCE_DIR` environment variable, so changing `LEARNING_SOURCE_DIR` will also change where the cache is stored. The detailed configuration can be found in `molcrawl/core/env.sh`.
 
 Ensure your `LEARNING_SOURCE_DIR` points to a location with sufficient storage space (at least 100GB recommended).
 
@@ -145,7 +145,7 @@ The configuration file is used for the data preprocessing
 ```yaml
 data_preparation:
   # Path to save the untokenized OrganiX13 dataset once is downloaded and processed by the script
-  organix13_dataset: "molcrawl/compounds/dataset/organix13"
+  organix13_dataset: "molcrawl/data/compounds/dataset/organix13"
 
   # Path to save the processed and tokenized dataset
   save_path: "{LEARNING_SOURCE_DIR}/compounds/organix13_tokenized.parquet"
@@ -162,19 +162,19 @@ data_preparation:
 You can run this script with the following command:
 
 ```bash
-python molcrawl/preparation/preparation_script_compounds.py assets/configs/compounds.yaml
+python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml
 ```
 
 To process specific datasets only:
 
 ```bash
-python molcrawl/preparation/preparation_script_compounds.py assets/configs/compounds.yaml --datasets zinc20
+python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml --datasets zinc20
 ```
 
 For more options:
 
 ```bash
-python molcrawl/preparation/preparation_script_compounds.py --help
+python molcrawl/data/compounds/preparation.py --help
 ```
 
 #### Loading a Processed Dataset (Compounds)
@@ -224,7 +224,7 @@ data_preparation:
 The processing of RefSeq is separate in 4 separate scripts. These scripts expect the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
-- `molcrawl/genome_sequence/dataset/RefSeq/download_refseq.py`
+- `molcrawl/data/genome_sequence/dataset/RefSeq/download_refseq.py`
 
   Uses `https://github.com/kblin/ncbi-genome-download` to download RefSeq data.
   `path_species` provide the directory containing one file per group and containing
@@ -234,20 +234,20 @@ of precedding directory to be present in the `output_dir` if that's not the case
   The full original species can be found in `assets/genome_species_list/species`
   And we used a filter set containing species with at least one sequence in RefSeq `assets/genome_species_list/filtered_species_refseq`
 
-- `molcrawl/genome_sequence/dataset/RefSeq/fasta_to_raw.py`
+- `molcrawl/data/genome_sequence/dataset/RefSeq/fasta_to_raw.py`
 
   Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file` (total of 1.6TB)
 
-- `molcrawl/genome_sequence/dataset/sentence_piece_tokenizer.py`
+- `molcrawl/data/genome_sequence/dataset/sentence_piece_tokenizer.py`
 
   As per specification we tried to train a BPE trainer from the raw files we generated. We provided an implementation with
   DNABERT_2, but in our experience the Hugging face implementation is too memory and time consuming.
   So our implementation uses the sentence piece library to train on a subset of the dataset.
   It's only one solution to use the pretrain Tokenizer trained by the DNABERT_2 authors.
-  We left commented code in `molcrawl/genome_sequence/dataset/tokenizer.py`. In that case
+  We left commented code in `molcrawl/data/genome_sequence/dataset/tokenizer.py`. In that case
   there is no need to train a new bpe tokenizer.
 
-- `molcrawl/genome_sequence/dataset/tokenizer.py`
+- `molcrawl/data/genome_sequence/dataset/tokenizer.py`
 
   Convert the raw files in parquet files of tokens in the `parquet_files` directory. The trained BPE Tokenizer was used to confirm the usage. Here we used Hugging Face library to load the raw files, but it is also possible to use a script similar to the one in the protein sequence version (not implemented here).
 
@@ -255,7 +255,7 @@ of precedding directory to be present in the `output_dir` if that's not the case
 
 ### Molecule Related Natural Language
 
-The script `molcrawl/preparation/preparation_script_molecule_related_nat_lang.py` preprocess and tokenizes a natural language molecule dataset. THe data is downloaded from [SMolInstruct](https://huggingface.co/datasets/osunlp/SMolInstruct). Then following the project's [GitHub repo](https://github.com/OSU-NLP-Group/LLM4Chem/tree/main), the data is preprocessed to have a "chat"-like format, following questions and answers. After this formatting of the data, the samples are tokenized and saved in a folder defined in the config file. This folder is a Hugging Face DatasetDict object which uses parquet.
+The script `molcrawl/data/molecule_nat_lang/preparation.py` preprocess and tokenizes a natural language molecule dataset. THe data is downloaded from [SMolInstruct](https://huggingface.co/datasets/osunlp/SMolInstruct). Then following the project's [GitHub repo](https://github.com/OSU-NLP-Group/LLM4Chem/tree/main), the data is preprocessed to have a "chat"-like format, following questions and answers. After this formatting of the data, the samples are tokenized and saved in a folder defined in the config file. This folder is a Hugging Face DatasetDict object which uses parquet.
 
 The resulting file is a dictionary for 3 dataset splits: "train", "valid", and "test". Each of them have the features: "sample_id", "input", "output", "raw_input", "raw_output", "split", "task", "input_core_tag_left", "input_core_tag_right", "output_core_tag_left", "output_core_tag_right", "target", "input_text", "real_input_text", "input_ids", "attention_mask", "labels", "output_ids". From these, the most relevant are:
 
@@ -268,7 +268,7 @@ The resulting file is a dictionary for 3 dataset splits: "train", "valid", and "
 
 ```yaml
 # Path to save the dataset once is downloaded (for example:)
-dataset: "molcrawl/molecule_nat_lang/assets/raw_data/osunlp/SMolInstruct"
+dataset: "molcrawl/data/molecule_nat_lang/assets/raw_data/osunlp/SMolInstruct"
 
 # Path to save the processed and tokenized dataset
 save_path: "{LEARNING_SOURCE_DIR}/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet"
@@ -283,7 +283,7 @@ Before running the script, ensure you have the following:
 First, download the SMolInstruct dataset:
 
 ```bash
-bash molcrawl/preparation/download_smolinstruct.sh
+bash molcrawl/data/molecule_nat_lang/download_smolinstruct.sh
 ```
 
 Then run the preparation script:
@@ -297,7 +297,7 @@ python -m molcrawl.preparation.preparation_script_molecule_related_nat_lang asse
 To load a dataset that was generated by this script, use:
 
 ```python
-from molcrawl.molecule_nat_lang.utils.general import read_dataset
+from molcrawl.data.molecule_nat_lang.utils.general import read_dataset
 from datasets import DatasetDict
 
 tokenized_dataset = DatasetDict(read_dataset("path/to/the/folder/created/by/script"))
@@ -347,15 +347,15 @@ The output will be the a subdir of the output_dir containing a dataset name dire
 The processing of UniProt is separate in 3 separate scripts. These scripts expect the result
 of precedding directory to be present in the `output_dir` if that's not the case the scripts won't work.
 
-- `molcrawl/protein_sequence/dataset/UniProt/uniprot_download.py`
+- `molcrawl/data/protein_sequence/dataset/UniProt/uniprot_download.py`
 
   Will download all UniProt files and extract them to fasta files.
 
-- `molcrawl/protein_sequence/dataset/UniProt/fasta_to_raw.py`
+- `molcrawl/data/protein_sequence/dataset/UniProt/fasta_to_raw.py`
 
   Generate the `raw_files` directory containing smaller raw file of size `max_lines_per_file`
 
-- `molcrawl/protein_sequence/dataset/tokenizer.py`
+- `molcrawl/data/protein_sequence/dataset/tokenizer.py`
 
   Convert the raw files in parquet files of tokens in the `parquet_files` directory. The ESM Tokenizer is used.
   The `token_counts.pkl` is also generated.
@@ -406,23 +406,23 @@ There will be multiple directory generate in the output_dir provided in the conf
 
 The is 4 separate scripts for CELLxGENE downloading.
 
-- `molcrawl/rna/dataset/CELLxGENE/script/build_list.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/build_list.py`
 
   Generate `metadata_preparation` and `tissue_list.tsv` to prepare the download.
 
-- `molcrawl/rna/dataset/CELLxGENE/script/download.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/download.py`
 
   Actual downloading of the data in `download_dir` directory.
 
-- `molcrawl/rna/dataset/CELLxGENE/script/conv.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/conv.py`
 
   Extract h5ad files form the archived in `download_dir` and save them to the `extract` directory
 
-- `molcrawl/rna/dataset/CELLxGENE/script/h5ad_to_loom.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/script/h5ad_to_loom.py`
 
   Transfer the h5ad file to loom and delete some unnecessary entries.
 
-- `molcrawl/rna/dataset/CELLxGENE/tokenization.py`
+- `molcrawl/data/rna/dataset/CELLxGENE/tokenization.py`
   Create the gene token vocabulary, based on geneformer code.
 
 ## Training of GPT-2 model
@@ -437,9 +437,9 @@ The is 4 separate scripts for CELLxGENE downloading.
 
 2. Train the model by running:
 
-   `python molcrawl/gpt2/train.py molcrawl/gpt2/configs/<dataset>/train_gpt2_small_config.py`
+   `python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/<dataset>/train_gpt2_small_config.py`
 
-   Inside each `molcrawl/gpt2/configs/<dataset>/` folder there are config files for each model size. For example: `python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py` will train the large GPT-2 model on the molecule_nat_lang dataset.
+   Inside each `molcrawl/tasks/pretrain/configs/<dataset>/` folder there are config files for each model size. For example: `python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_large.py` will train the large GPT-2 model on the molecule_nat_lang dataset.
 
    Running this will launch a training job and output results in the path specified by `out_dir` in the config.
 
@@ -466,37 +466,37 @@ In order to train a GPT-2 model with one the dataset, you will need to run the `
 For Protein Sequence, run the following command:
 
 ```bash
-python molcrawl/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
+python molcrawl/data/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
 ```
 
 For Molecule Related Natural Language, run the following command:
 
 ```bash
-python molcrawl/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang_config.yaml
+python molcrawl/data/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang_config.yaml
 ```
 
 For Genome Sequence, run the following command:
 
 ```bash
-python molcrawl/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
+python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
 ```
 
 For Compounds, run the following command:
 
 ```bash
-python molcrawl/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
+python molcrawl/data/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
 ```
 
 To create the `training_ready_hf_dataset` for the OrganiX13 compounds dataset, also run:
 
 ```bash
-python molcrawl/compounds/dataset/prepare_gpt2_organix13.py assets/configs/compounds.yaml
+python molcrawl/data/compounds/dataset/prepare_gpt2_organix13.py assets/configs/compounds.yaml
 ```
 
 For RNA, run the following command:
 
 ```bash
-python molcrawl/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
+python molcrawl/data/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
 ```
 
 > [!IMPORTANT]
@@ -510,7 +510,7 @@ is filled without any padding.
 > [!IMPORTANT]
 > Users need to adjust the config.py (e.g., dataset_dir, tokenizer_path, out_dir, tensorboard_dir, batch_size, etc.) before running train.py . A detailed list of additional parameters is provided in the [GPT-2 Readme](../03-training/README_gpt2.md).
 
-Then the training can be launch for the prepared datasets. In the path `molcrawl/gpt2/configs/<dataset-name>`, you will find a folder with 4 files:
+Then the training can be launch for the prepared datasets. In the path `molcrawl/tasks/pretrain/configs/<dataset-name>`, you will find a folder with 4 files:
 
 1. `train_gpt2_small_config.py`: Config for training the small-sized version of the model,
 2. `train_gpt2_medium_config.py`: Config for training the medium-sized version of the model,
@@ -522,31 +522,31 @@ Which file you pass to the training command will determine which version of the 
 For Protein Sequence, the small version training can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/protein_sequence/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/protein_sequence/gpt2_small.py
 ```
 
 For Molecule Related Natural Language, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_small.py
 ```
 
 For Genome Sequence, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/genome_sequence/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_small.py
 ```
 
 For Compounds, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/compounds/gpt2_small.py
 ```
 
 For RNA, the small version training can can be done by running the following:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/rna/train_gpt2_small_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/rna/gpt2_small.py
 ```
 
 This will train a model and save it in outputdir.
@@ -557,18 +557,18 @@ FOR MORE INFORMATION REGARDING THE CONFIG FILES, PLEASE REFER TO THE [GPT-2 READ
 
 For the BERT model training we are using a custom script based on the Hugging Face Transformers library. The datasets used are the same as the ones for GPT-2, since we already tokenize them we just need to randomly mask part of the tokens. So make sure to follow the section "Data Preparation" in [Training of GPT-2 model](#Training of GPT-2 model) before proceeding.
 
-You can find the list of configs in `molcrawl/bert/configs`. Most parameter are similar to the ones in the gpt configuration. However, there is a `model_size` parameter that let you choose between small medium and large models. Note that medium correspond to BERT-large size, but we call it medium since the size in terms of parameter is close to GPT-2-medium. The large model is a custom size bert model witch matches the GPT-2 large size.
+You can find the list of configs in `molcrawl/models/bert/configs`. Most parameter are similar to the ones in the gpt configuration. However, there is a `model_size` parameter that let you choose between small medium and large models. Note that medium correspond to BERT-large size, but we call it medium since the size in terms of parameter is close to GPT-2-medium. The large model is a custom size bert model witch matches the GPT-2 large size.
 
 To run a training you can use the following command:
 
 ```bash
-python molcrawl/bert/main.py molcrawl/bert/configs/<dataset>.py
+python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/<dataset>.py
 ```
 
 If multiple GPUs are available, you can speed up training using `torchrun`. For example, to train on GPUs 0 and 2:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 molcrawl/bert/main.py molcrawl/bert/configs/compounds.py
+CUDA_VISIBLE_DEVICES=0,2 torchrun --standalone --nproc_per_node=2 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py
 ```
 
 Replace `CUDA_VISIBLE_DEVICES` with the indices of the GPUs you wish to use and set `--nproc_per_node` to the number of GPUs accordingly.

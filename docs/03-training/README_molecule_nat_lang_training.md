@@ -20,7 +20,7 @@ export LEARNING_SOURCE_DIR="learning_source"
 bash workflows/01-molecule_nat_lang-prepare.sh
 ```
 
-This step runs `molcrawl/preparation/preparation_script_molecule_related_nat_lang.py` and creates:
+This step runs `molcrawl/data/molecule_nat_lang/preparation.py` and creates:
 
 - `${LEARNING_SOURCE_DIR}/molecule_nat_lang/molecule_related_natural_language_tokenized.parquet`
 - `${LEARNING_SOURCE_DIR}/molecule_nat_lang/arrow_splits/` (split datasets)
@@ -46,7 +46,7 @@ Both current BERT and GPT-2 Molecule NL configs use this `training_ready_hf_data
 Direct run:
 
 ```bash
-python molcrawl/bert/main.py molcrawl/bert/configs/molecule_nat_lang.py
+python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small.py
 ```
 
 Workflow script:
@@ -60,7 +60,7 @@ bash workflows/03c-molecule_nat_lang-train-bert-small.sh
 Direct run:
 
 ```bash
-python molcrawl/gpt2/train.py molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/train_gpt2_config.py
 ```
 
 Workflow script:
@@ -128,7 +128,7 @@ bash workflows/02-molecule_nat_lang-prepare-gpt2.sh
 
 ## Related Files
 
-- BERT config: `molcrawl/bert/configs/molecule_nat_lang.py`
-- GPT-2 config: `molcrawl/gpt2/configs/molecule_nat_lang/train_gpt2_config.py`
+- BERT config: `molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small.py`
+- GPT-2 config: `molcrawl/tasks/pretrain/configs/molecule_nat_lang/train_gpt2_config.py`
 - Compatibility test: `molcrawl/preparation/test_molecule_nat_lang_compatibility.py`
 - Dataset comparison report: `docs/07-reports/molecule_nat_lang_dataset_comparison_report.md`

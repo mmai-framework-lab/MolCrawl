@@ -166,7 +166,7 @@ bash workflows/02-genome_sequence-prepare-gpt2.sh
 ```bash
 # 直接実行
 LEARNING_SOURCE_DIR="learning_source" \
-python molcrawl/genome_sequence/dataset/prepare_gpt2.py \
+python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
 
@@ -267,7 +267,7 @@ export LEARNING_SOURCE_DIR="learning_source"
 bash workflows/02-genome_sequence-prepare-gpt2.sh
 
 # または直接実行
-python molcrawl/genome_sequence/dataset/prepare_gpt2.py \
+python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py \
     assets/configs/genome_sequence.yaml
 ```
 
@@ -357,7 +357,7 @@ ls -lh learning_20251104/genome_sequence/spm_tokenizer.model
 
 **データ準備:**
 
-- `molcrawl/genome_sequence/dataset/prepare_gpt2.py` - データ準備スクリプト
+- `molcrawl/data/genome_sequence/dataset/prepare_gpt2.py` - データ準備スクリプト
 - `workflows/02-genome_sequence-prepare-gpt2.sh` - 実行用シェルスクリプト
 
 **Bootstrap スクリプト:**

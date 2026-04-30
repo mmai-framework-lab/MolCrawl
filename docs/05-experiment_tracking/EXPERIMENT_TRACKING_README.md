@@ -30,7 +30,7 @@ riken-dataset-fundational-model/
 │   ├── start_api_server.py
 │   ├── start_experiment_system.sh
 │   └── setup_experiment_system.sh
-├── molcrawl/debug/test_experiment_system.py
+├── tests/unit/test_experiment_system.py
 ├── misc/experiment_tracker_sample.py
 └── experiment_data/
     └── experiments.db
@@ -74,8 +74,8 @@ npm run dev
 ### Pattern 1: Context manager (recommended)
 
 ```python
-from molcrawl.experiment_tracker.helpers import experiment_context
-from molcrawl.experiment_tracker import ExperimentType, ModelType, DatasetType
+from molcrawl.core.tracking.helpers import experiment_context
+from molcrawl.core.tracking import ExperimentType, ModelType, DatasetType
 
 with experiment_context(
     name="GPT2 ProteinGym Training",
@@ -99,8 +99,8 @@ with experiment_context(
 ### Pattern 2: Decorator
 
 ```python
-from molcrawl.experiment_tracker.helpers import track_experiment
-from molcrawl.experiment_tracker import ExperimentType, ModelType, DatasetType
+from molcrawl.core.tracking.helpers import track_experiment
+from molcrawl.core.tracking import ExperimentType, ModelType, DatasetType
 
 @track_experiment(
     name="BERT ClinVar Evaluation",
@@ -115,7 +115,7 @@ def run_evaluation(config):
 ### Pattern 3: Manual tracking API
 
 ```python
-from molcrawl.experiment_tracker import ExperimentTracker, ExperimentType, ModelType, DatasetType
+from molcrawl.core.tracking import ExperimentTracker, ExperimentType, ModelType, DatasetType
 
 tracker = ExperimentTracker()
 exp_id = tracker.start_experiment(
@@ -134,7 +134,7 @@ tracker.complete_experiment(exp_id, metrics={"num_samples": 100000})
 ## Basic Validation
 
 ```bash
-python molcrawl/debug/test_experiment_system.py
+python tests/unit/test_experiment_system.py
 python misc/experiment_tracker_sample.py
 ```
 

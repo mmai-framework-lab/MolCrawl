@@ -202,12 +202,12 @@ HuggingFace Hub Download → ZIP展開 → トークン化 → 統計処理
 
 ```bash
 # Genome Sequenceデータの準備
-python scripts/preparation/preparation_script_genome_sequence.py \
+python molcrawl/data/genome_sequence/preparation.py \
     assets/configs/genome_config.yaml
 
 # Molecule NLデータのダウンロード
-bash scripts/preparation/download_smolinstruct.sh
-python scripts/preparation/preparation_script_molecule_related_nat_lang.py \
+bash molcrawl/data/molecule_nat_lang/download_smolinstruct.sh
+python molcrawl/data/molecule_nat_lang/preparation.py \
     assets/configs/molecule_nat_lang_config.yaml
 ```
 

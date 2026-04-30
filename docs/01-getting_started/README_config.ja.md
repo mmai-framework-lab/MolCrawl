@@ -12,7 +12,7 @@
 
 ### Shell 設定
 
-- `molcrawl/config/env.sh`: Shell スクリプト向けの環境変数設定
+- `molcrawl/core/env.sh`: Shell スクリプト向けの環境変数設定
 
 ## 使い方
 
@@ -20,7 +20,7 @@
 
 ```python
 #!/usr/bin/env python3
-from molcrawl.config.paths import UNIPROT_DATASET_DIR, REFSEQ_DATASET_DIR
+from molcrawl.core.paths import UNIPROT_DATASET_DIR, REFSEQ_DATASET_DIR
 
 # データセットを読み込む
 from datasets import load_from_disk
@@ -33,7 +33,7 @@ dataset = load_from_disk(UNIPROT_DATASET_DIR)
 #!/bin/bash
 
 # 設定を読み込む
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 
 # LEARNING_SOURCE_DIR からパスを組み立てる
 UNIPROT_DATASET_DIR="$LEARNING_SOURCE_DIR/protein_sequence/training_ready_hf_dataset"
@@ -48,13 +48,13 @@ echo "RefSeq dataset dir: $REFSEQ_DATASET_DIR"
 
 データセット保存先ディレクトリを変更するには:
 
-1. `molcrawl/config/env.sh` 内の `LEARNING_SOURCE_DIR` を更新します。
+1. `molcrawl/core/env.sh` 内の `LEARNING_SOURCE_DIR` を更新します。
 2. 必要に応じて、現在のシェルで `export LEARNING_SOURCE_DIR=...` として上書きします。
 
 例:
 
 ```bash
-# molcrawl/config/env.sh
+# molcrawl/core/env.sh
 export LEARNING_SOURCE_DIR="learning_source"
 ```
 
