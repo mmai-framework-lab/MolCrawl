@@ -22,21 +22,30 @@ import requests
 
 from molcrawl.core.utils.environment_check import check_learning_source_dir
 
-# Log settings
-learning_source_dir = check_learning_source_dir()
-log_dir = os.path.join(learning_source_dir, "genome_sequence", "logs")
-os.makedirs(log_dir, exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(f"{log_dir}/cosmic_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
-        logging.StreamHandler(),
-    ],
-)
 logger = logging.getLogger(__name__)
-logger.info(f"LEARNING_SOURCE_DIR: {learning_source_dir}")
+
+
+def _configure_logging() -> None:
+    """Wire up file + stream handlers for command-line use.
+
+    Kept out of the module body so that ``import`` does not have the side
+    effect of calling ``check_learning_source_dir()`` (which raises when
+    ``LEARNING_SOURCE_DIR`` is unset) and writing a timestamped file under
+    the learning-source tree.
+    """
+    learning_source_dir = check_learning_source_dir()
+    log_dir = os.path.join(learning_source_dir, "genome_sequence", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(f"{log_dir}/cosmic_preprocessing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
+            logging.StreamHandler(),
+        ],
+    )
+    logger.info(f"LEARNING_SOURCE_DIR: {learning_source_dir}")
 
 
 class COSMICProcessor:
@@ -316,6 +325,7 @@ class COSMICProcessor:
 
 def main():
     """Main processing"""
+    _configure_logging()
     parser = argparse.ArgumentParser(
         description="COSMIC data preparation for genome sequence evaluation",
         epilog="Note: LEARNING_SOURCE_DIR environment variable must be set.",
