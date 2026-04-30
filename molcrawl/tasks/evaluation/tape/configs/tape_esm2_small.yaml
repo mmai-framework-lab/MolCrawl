@@ -1,0 +1,4 @@
+task: tape
+modality: protein_sequence
+arch: esm2
+size: small

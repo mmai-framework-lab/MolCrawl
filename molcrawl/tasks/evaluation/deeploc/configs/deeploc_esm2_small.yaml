@@ -1,0 +1,6 @@
+task: deeploc
+modality: protein_sequence
+arch: esm2
+size: small
+test_fraction: 0.2
+seed: 0
