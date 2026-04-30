@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.core.utils.base_visualization API documentation</title>
+<meta name="description" content="Base Visualization Framework for Model Evaluation Results …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.core.utils.base_visualization</code></h1>
+</header>
+<section id="section-intro">
+<p>Base Visualization Framework for Model Evaluation Results</p>
+<p>This module provides a common interface and shared functionality for all
+evaluation result visualization classes.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator"><code class="flex name class">
+<span>class <span class="ident">BaseVisualizationGenerator</span></span>
+<span>(</span><span>results_source: Union[str, Dict[str, Any]],<br>output_dir: str = './visualization_results',<br>logger: Optional[logging.Logger] = None,<br>model_type: Optional[str] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BaseVisualizationGenerator(ABC):
+    &#34;&#34;&#34;
+    Abstract base class for visualization of evaluation results
+
+    Provides common interfaces and functionality that all visualization classes should inherit.
+
+    Common features:
+    - Manage output directory
+    - Unification of plot settings
+    - Common utility methods
+    - Foundation for HTML report generation
+    &#34;&#34;&#34;
+
+    def __init__(
+        self,
+        results_source: Union[str, Dict[str, Any]],
+        output_dir: str = &#34;./visualization_results&#34;,
+        logger: Optional[logging.Logger] = None,
+        model_type: Optional[str] = None,
+    ):
+        &#34;&#34;&#34;
+        Base class initialization
+
+        Args:
+            results_source: Evaluation results (file path or dictionary data)
+            output_dir: Output directory of visualization results
+            logger: logger for log output
+            model_type: Model type(For determining image storage directory)
+        &#34;&#34;&#34;
+        # Use unified image directory if model type is specified
+        if model_type:
+            try:
+                self.image_dir = Path(get_image_output_dir(model_type))
+                self.output_dir = Path(output_dir)
+                self.output_dir.mkdir(parents=True, exist_ok=True)
+                self.model_type = model_type
+            except Exception:
+                # Fallback in case of environment variable setting error etc.
+                self.output_dir = Path(output_dir)
+                self.output_dir.mkdir(parents=True, exist_ok=True)
+                self.image_dir = self.output_dir
+                self.model_type = None
+        else:
+            self.output_dir = Path(output_dir)
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            self.image_dir = self.output_dir
+            self.model_type = self._detect_model_type_from_output_dir(output_dir)
+
+        self.logger = logger or self._setup_logger()
+
+        # Load result data
+        self.results = self._load_results(results_source)
+
+        # Initializing visualization settings
+        self._setup_plot_style()
+
+        # generatelist of files
+        self.generated_files: List[Path] = []
+
+        self.logger.info(f&#34;Visualization generator initialized. Output directory: {self.output_dir}&#34;)
+
+    def _setup_logger(self) -&gt; logging.Logger:
+        &#34;&#34;&#34;Set default logger&#34;&#34;&#34;
+        logging.basicConfig(
+            level=logging.INFO,
+            format=&#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#34;,
+        )
+        return logging.getLogger(self.__class__.__name__)
+
+    def _detect_model_type_from_output_dir(self, output_dir: str) -&gt; Optional[str]:
+        &#34;&#34;&#34;Infer model type from output directory path&#34;&#34;&#34;
+        output_path = str(output_dir).lower()
+
+        model_keywords = {
+            &#34;protein_sequence&#34;: [&#34;protein&#34;, &#34;proteingym&#34;],
+            &#34;genome_sequence&#34;: [&#34;genome&#34;, &#34;clinvar&#34;, &#34;cosmic&#34;, &#34;omim&#34;],
+            &#34;compounds&#34;: [&#34;compound&#34;, &#34;smiles&#34;, &#34;scaffold&#34;],
+            &#34;rna&#34;: [&#34;rna&#34;],
+            &#34;molecule_nat_lang&#34;: [&#34;molecule_nat_lang&#34;, &#34;molecule-nl&#34;, &#34;moleculenl&#34;],
+        }
+
+        for model_type, keywords in model_keywords.items():
+            if any(keyword in output_path for keyword in keywords):
+                return model_type
+
+        return None
+
+    def _load_results(self, results_source: Union[str, Dict[str, Any]]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Loading evaluation result data
+
+        Args:
+            results_source: file path or dictionary data
+
+        Returns:
+            Evaluation result dictionary
+        &#34;&#34;&#34;
+        if isinstance(results_source, dict):
+            self.logger.info(&#34;Using provided results dictionary&#34;)
+            return results_source
+        elif isinstance(results_source, str):
+            results_file = Path(results_source)
+            if not results_file.exists():
+                raise FileNotFoundError(f&#34;Results file not found: {results_file}&#34;)
+
+            self.logger.info(f&#34;Loading results from {results_file}&#34;)
+            with open(results_file, &#34;r&#34;, encoding=&#34;utf-8&#34;) as f:
+                return json.load(f)
+        else:
+            raise ValueError(&#34;results_source must be a file path or dictionary&#34;)
+
+    def _setup_plot_style(self):
+        &#34;&#34;&#34;Unified plotting style settings&#34;&#34;&#34;
+        if plt is None or sns is None:
+            raise RuntimeError(&#34;matplotlib and seaborn are required for visualization&#34;)
+
+        # Basic style settings
+        plt.style.use(&#34;default&#34;)
+        sns.set_palette(&#34;husl&#34;)
+
+        # Supports Japanese fonts
+        plt.rcParams[&#34;font.family&#34;] = [
+            &#34;DejaVu Sans&#34;,
+            &#34;Hiragino Sans&#34;,
+            &#34;Yu Gothic&#34;,
+            &#34;Meiryo&#34;,
+            &#34;Takao&#34;,
+            &#34;IPAexGothic&#34;,
+            &#34;IPAPGothic&#34;,
+            &#34;VL PGothic&#34;,
+            &#34;Noto Sans CJK JP&#34;,
+        ]
+
+        # Default settings for diagrams
+        plt.rcParams[&#34;figure.figsize&#34;] = (10, 6)
+        plt.rcParams[&#34;figure.dpi&#34;] = 100
+        plt.rcParams[&#34;savefig.dpi&#34;] = 300
+        plt.rcParams[&#34;savefig.bbox&#34;] = &#34;tight&#34;
+
+        sns.set_style(&#34;whitegrid&#34;)
+
+        self.logger.debug(&#34;Plot style configured&#34;)
+
+    def _save_plot(self, filename: str, formats: List[str] = None, dpi: int = 300) -&gt; List[Path]:
+        &#34;&#34;&#34;
+        Save plot in specified format
+
+        Args:
+            filename: file name (without extension)
+            formats: list of formats to save (default: [&#39;png&#39;])
+            dpi: resolution (default: 300)
+
+        Returns:
+            List of saved file paths
+        &#34;&#34;&#34;
+        if formats is None:
+            formats = [&#34;png&#34;]  # Unified with PNG priority
+
+        saved_files = []
+        for fmt in formats:
+            # Save image files (png, jpg, etc.) in the unified image directory
+            if fmt.lower() in [&#34;png&#34;, &#34;jpg&#34;, &#34;jpeg&#34;, &#34;gif&#34;, &#34;bmp&#34;, &#34;svg&#34;]:
+                filepath = self.image_dir / f&#34;{filename}.{fmt}&#34;
+            else:
+                # Save PDF etc. in output_dir as usual
+                filepath = self.output_dir / f&#34;{filename}.{fmt}&#34;
+
+            plt.savefig(filepath, format=fmt, bbox_inches=&#34;tight&#34;, dpi=dpi)
+            saved_files.append(filepath)
+            self.generated_files.append(filepath)
+
+        plt.close()
+        self.logger.debug(f&#34;Plot saved: {filename} in {formats} (image_dir: {self.image_dir})&#34;)
+        return saved_files
+
+    def _create_comprehensive_dashboard(
+        self,
+        results_df: pd.DataFrame,
+        prediction_score_col: str = &#34;score&#34;,
+        true_label_col: str = &#34;label&#34;,
+        confidence_col: str = None,
+        similarity_col: str = None,
+        custom_title: str = &#34;Model Evaluation Dashboard&#34;,
+    ):
+        &#34;&#34;&#34;
+        Create a generic comprehensive dashboard (based on BERT format)
+
+        Args:
+            results_df: results data frame
+            prediction_score_col: Prediction score column name
+            true_label_col: True correct label column name
+            confidence_col: confidence column name (optional)
+            similarity_col: similarity column name (optional)
+            custom_title: Dashboard title
+        &#34;&#34;&#34;
+        self.logger.info(&#34;Creating comprehensive evaluation dashboard&#34;)
+
+        # Validate data
+        required_cols = [prediction_score_col, true_label_col]
+        missing_cols = [col for col in required_cols if col not in results_df.columns]
+        if missing_cols:
+            self.logger.warning(f&#34;Missing required columns: {missing_cols}&#34;)
+            return
+
+        plt.style.use(&#34;default&#34;)
+        fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+
+        # Distribution of prediction scores (by label)
+        self._plot_score_distribution(axes[0, 0], results_df, prediction_score_col, true_label_col)
+
+        # Similarity distribution (if available)
+        if similarity_col and similarity_col in results_df.columns:
+            self._plot_similarity_distribution(axes[0, 1], results_df, similarity_col, true_label_col)
+        else:
+            axes[0, 1].text(
+                0.5,
+                0.5,
+                &#34;Similarity data\nnot available&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=axes[0, 1].transAxes,
+            )
+            axes[0, 1].set_title(&#34;Similarity Distribution (N/A)&#34;)
+
+        # Scatterplot: Score vs Similarity
+        if similarity_col and similarity_col in results_df.columns:
+            self._plot_score_vs_similarity_scatter(
+                axes[0, 2],
+                results_df,
+                prediction_score_col,
+                similarity_col,
+                true_label_col,
+            )
+        else:
+            axes[0, 2].text(
+                0.5,
+                0.5,
+                &#34;Scatter plot\nnot available&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=axes[0, 2].transAxes,
+            )
+            axes[0, 2].set_title(&#34;Score vs Similarity (N/A)&#34;)
+
+        # ROCcurve
+        self._plot_roc_curve(axes[1, 0], results_df, prediction_score_col, true_label_col)
+
+        # Mix rows
+        self._plot_confusion_matrix_subplot(axes[1, 1], results_df, prediction_score_col, true_label_col)
+
+        # Confidence distribution
+        if confidence_col and confidence_col in results_df.columns:
+            self._plot_confidence_distribution(axes[1, 2], results_df, confidence_col)
+        else:
+            # Use as an alternative to prediction score
+            self._plot_confidence_distribution(axes[1, 2], results_df, prediction_score_col)
+
+        plt.suptitle(custom_title, fontsize=16, y=0.98)
+        plt.tight_layout()
+        self._save_plot(&#34;comprehensive_dashboard&#34;)
+
+    def _plot_score_distribution(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
+        &#34;&#34;&#34;Plot the distribution of predicted scores&#34;&#34;&#34;
+        try:
+            positive_scores = results_df[results_df[label_col] == 1][score_col]
+            negative_scores = results_df[results_df[label_col] == 0][score_col]
+
+            ax.hist(positive_scores, alpha=0.7, label=&#34;Positive&#34;, bins=30, color=&#34;red&#34;)
+            ax.hist(negative_scores, alpha=0.7, label=&#34;Negative&#34;, bins=30, color=&#34;blue&#34;)
+            ax.set_xlabel(&#34;Prediction Score&#34;)
+            ax.set_ylabel(&#34;Count&#34;)
+            ax.set_title(&#34;Score Distribution&#34;)
+            ax.legend()
+        except Exception as e:
+            ax.text(
+                0.5,
+                0.5,
+                f&#34;Score distribution\nerror: {str(e)}&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=ax.transAxes,
+            )
+            ax.set_title(&#34;Score Distribution (Error)&#34;)
+
+    def _plot_similarity_distribution(self, ax, results_df: pd.DataFrame, sim_col: str, label_col: str):
+        &#34;&#34;&#34;Plot similarity distribution&#34;&#34;&#34;
+        try:
+            positive_sim = results_df[results_df[label_col] == 1][sim_col]
+            negative_sim = results_df[results_df[label_col] == 0][sim_col]
+
+            ax.hist(positive_sim, alpha=0.7, label=&#34;Positive&#34;, bins=30, color=&#34;red&#34;)
+            ax.hist(negative_sim, alpha=0.7, label=&#34;Negative&#34;, bins=30, color=&#34;blue&#34;)
+            ax.set_xlabel(&#34;Similarity Score&#34;)
+            ax.set_ylabel(&#34;Count&#34;)
+            ax.set_title(&#34;Similarity Distribution&#34;)
+            ax.legend()
+        except Exception as e:
+            ax.text(
+                0.5,
+                0.5,
+                f&#34;Similarity distribution\nerror: {str(e)}&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=ax.transAxes,
+            )
+            ax.set_title(&#34;Similarity Distribution (Error)&#34;)
+
+    def _plot_score_vs_similarity_scatter(self, ax, results_df: pd.DataFrame, score_col: str, sim_col: str, label_col: str):
+        &#34;&#34;&#34;Score vs Similarity Scatter Plot&#34;&#34;&#34;
+        try:
+            positive_data = results_df[results_df[label_col] == 1]
+            negative_data = results_df[results_df[label_col] == 0]
+
+            ax.scatter(
+                positive_data[score_col],
+                positive_data[sim_col],
+                alpha=0.6,
+                c=&#34;red&#34;,
+                label=&#34;Positive&#34;,
+                s=20,
+            )
+            ax.scatter(
+                negative_data[score_col],
+                negative_data[sim_col],
+                alpha=0.6,
+                c=&#34;blue&#34;,
+                label=&#34;Negative&#34;,
+                s=20,
+            )
+            ax.set_xlabel(&#34;Prediction Score&#34;)
+            ax.set_ylabel(&#34;Similarity Score&#34;)
+            ax.set_title(&#34;Score vs Similarity&#34;)
+            ax.legend()
+        except Exception as e:
+            ax.text(
+                0.5,
+                0.5,
+                f&#34;Scatter plot\nerror: {str(e)}&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=ax.transAxes,
+            )
+            ax.set_title(&#34;Score vs Similarity (Error)&#34;)
+
+    def _plot_roc_curve(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
+        &#34;&#34;&#34;Plot ROC curve&#34;&#34;&#34;
+        try:
+            from sklearn.metrics import roc_auc_score, roc_curve
+
+            fpr, tpr, _ = roc_curve(results_df[label_col], results_df[score_col])
+            auc = roc_auc_score(results_df[label_col], results_df[score_col])
+
+            ax.plot(fpr, tpr, label=f&#34;ROC Curve (AUC = {auc:.3f})&#34;, linewidth=2)
+            ax.plot([0, 1], [0, 1], &#34;k--&#34;, label=&#34;Random&#34;)
+            ax.set_xlabel(&#34;False Positive Rate&#34;)
+            ax.set_ylabel(&#34;True Positive Rate&#34;)
+            ax.set_title(&#34;ROC Curve&#34;)
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+        except Exception as e:
+            ax.text(
+                0.5,
+                0.5,
+                f&#34;ROC curve\nerror: {str(e)}&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=ax.transAxes,
+            )
+            ax.set_title(&#34;ROC Curve (Error)&#34;)
+
+    def _plot_confusion_matrix_subplot(self, ax, results_df: pd.DataFrame, score_col: str, label_col: str):
+        &#34;&#34;&#34;Plot the confusion matrix as a subplot&#34;&#34;&#34;
+        try:
+            from sklearn.metrics import confusion_matrix
+
+            # Generate predicted value (threshold 0.5 or 0)
+            threshold = 0.5 if results_df[score_col].max() &gt; 1 else 0
+            predictions = (results_df[score_col] &gt; threshold).astype(int)
+            cm = confusion_matrix(results_df[label_col], predictions)
+
+            sns.heatmap(
+                cm,
+                annot=True,
+                fmt=&#34;d&#34;,
+                ax=ax,
+                cmap=&#34;Blues&#34;,
+                xticklabels=[&#34;Predicted Negative&#34;, &#34;Predicted Positive&#34;],
+                yticklabels=[&#34;Actual Negative&#34;, &#34;Actual Positive&#34;],
+            )
+            ax.set_title(&#34;Confusion Matrix&#34;)
+            ax.set_xlabel(&#34;Predicted&#34;)
+            ax.set_ylabel(&#34;Actual&#34;)
+        except Exception as e:
+            ax.text(
+                0.5,
+                0.5,
+                f&#34;Confusion matrix\nerror: {str(e)}&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=ax.transAxes,
+            )
+            ax.set_title(&#34;Confusion Matrix (Error)&#34;)
+
+    def _plot_confidence_distribution(self, ax, results_df: pd.DataFrame, conf_col: str):
+        &#34;&#34;&#34;Plot confidence distribution&#34;&#34;&#34;
+        try:
+            ax.hist(results_df[conf_col], bins=30, alpha=0.7, color=&#34;green&#34;)
+            ax.set_xlabel(&#34;Confidence Score&#34;)
+            ax.set_ylabel(&#34;Count&#34;)
+            ax.set_title(&#34;Confidence Distribution&#34;)
+        except Exception as e:
+            ax.text(
+                0.5,
+                0.5,
+                f&#34;Confidence distribution\nerror: {str(e)}&#34;,
+                ha=&#34;center&#34;,
+                va=&#34;center&#34;,
+                transform=ax.transAxes,
+            )
+            ax.set_title(&#34;Confidence Distribution (Error)&#34;)
+
+    def _create_figure_grid(self, nrows: int, ncols: int, figsize: tuple = None) -&gt; tuple:
+        &#34;&#34;&#34;
+        Create a diagram in grid format
+
+        Args:
+            nrows: number of rows
+            ncols: number of columns
+            figsize: figure size
+
+        Returns:
+            tuple of (figure, axes)
+        &#34;&#34;&#34;
+        if figsize is None:
+            figsize = (ncols * 5, nrows * 4)
+
+        fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+        if nrows * ncols == 1:
+            axes = [axes]
+        elif nrows == 1 or ncols == 1:
+            axes = axes.flatten()
+
+        return fig, axes
+
+    def _validate_results(self, required_keys: List[str]):
+        &#34;&#34;&#34;
+        Verify that the required key exists in the result data
+
+        Args:
+            required_keys: list of required keys
+
+        Raises:
+            KeyError: If the required key does not exist
+        &#34;&#34;&#34;
+        missing_keys = [key for key in required_keys if key not in self.results]
+        if missing_keys:
+            raise KeyError(f&#34;Missing required keys in results: {missing_keys}&#34;)
+
+    def _get_timestamp(self) -&gt; str:
+        &#34;&#34;&#34;Get current timestamp&#34;&#34;&#34;
+        return datetime.now().strftime(&#34;%Y-%m-%d %H:%M:%S&#34;)
+
+    def _create_html_header(self, title: str) -&gt; str:
+        &#34;&#34;&#34;Generate header part of HTML report&#34;&#34;&#34;
+        return f&#34;&#34;&#34;
+        &lt;!DOCTYPE html&gt;
+        &lt;html&gt;
+        &lt;head&gt;
+            &lt;title&gt;{title}&lt;/title&gt;
+            &lt;style&gt;
+                body {{
+                    font-family: Arial, sans-serif;
+                    margin: 40px;
+                    background-color: #fafafa;
+                }}
+                .header {{
+                    background-color: #f0f0f0;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }}
+                .metric-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin: 20px 0;
+                }}
+                .metric-card {{
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    border-left: 4px solid #2196F3;
+                }}
+                .metric-value {{
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #2196F3;
+                    margin-bottom: 5px;
+                }}
+                .metric-label {{
+                    color: #666;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }}
+                .image-container {{
+                    text-align: center;
+                    margin: 30px 0;
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }}
+                .image-container img {{
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 4px;
+                }}
+                .section-title {{
+                    color: #333;
+                    border-bottom: 2px solid #2196F3;
+                    padding-bottom: 10px;
+                    margin-top: 40px;
+                    margin-bottom: 20px;
+                }}
+                .footer {{
+                    margin-top: 50px;
+                    padding: 20px;
+                    background-color: #f0f0f0;
+                    border-radius: 8px;
+                    text-align: center;
+                    color: #666;
+                }}
+            &lt;/style&gt;
+        &lt;/head&gt;
+        &lt;body&gt;
+            &lt;div class=&#34;header&#34;&gt;
+                &lt;h1&gt;{title}&lt;/h1&gt;
+                &lt;p&gt;Generated on: {self._get_timestamp()}&lt;/p&gt;
+            &lt;/div&gt;
+        &#34;&#34;&#34;
+
+    def _create_html_footer(self) -&gt; str:
+        &#34;&#34;&#34;Generate footer part of HTML report&#34;&#34;&#34;
+        return f&#34;&#34;&#34;
+            &lt;div class=&#34;footer&#34;&gt;
+                &lt;p&gt;Report generated by {self.__class__.__name__}&lt;/p&gt;
+                &lt;p&gt;Files created: {len(self.generated_files)} visualizations&lt;/p&gt;
+            &lt;/div&gt;
+        &lt;/body&gt;
+        &lt;/html&gt;
+        &#34;&#34;&#34;
+
+    def get_generated_files(self) -&gt; List[Path]:
+        &#34;&#34;&#34;Get list of generated files&#34;&#34;&#34;
+        return self.generated_files.copy()
+
+    # Abstract methods - Must be implemented in subclasses
+
+    @abstractmethod
+    def plot_confusion_matrix(self):
+        &#34;&#34;&#34;Generation of confusion matrix plot (required to implement)&#34;&#34;&#34;
+        pass
+
+    @abstractmethod
+    def plot_performance_metrics(self):
+        &#34;&#34;&#34;Generation of performance index plot (required to implement)&#34;&#34;&#34;
+        pass
+
+    @abstractmethod
+    def create_summary_dashboard(self):
+        &#34;&#34;&#34;Generate summary dashboard (required to implement)&#34;&#34;&#34;
+        pass
+
+    @abstractmethod
+    def generate_all_visualizations(self):
+        &#34;&#34;&#34;Generation of all visualizations (required to implement)&#34;&#34;&#34;
+        pass
+
+    @abstractmethod
+    def create_html_report(self):
+        &#34;&#34;&#34;Generate HTML report (required to implement)&#34;&#34;&#34;
+        pass
+
+    # Optional abstract method (implemented by subclass as needed)
+
+    def plot_auc_comparison(self):
+        &#34;&#34;&#34;Comparison plot of AUC metrics (optional)&#34;&#34;&#34;
+        self.logger.info(&#34;AUC comparison plot not implemented in this visualizer&#34;)
+
+    def create_performance_radar_chart(self):
+        &#34;&#34;&#34;Performance indicator radar chart (optional)&#34;&#34;&#34;
+        self.logger.info(&#34;Performance radar chart not implemented in this visualizer&#34;)
+
+    def plot_score_distribution(self):
+        &#34;&#34;&#34;Score distribution plot (optional)&#34;&#34;&#34;
+        self.logger.info(&#34;Score distribution plot not implemented in this visualizer&#34;)</code></pre>
+</details>
+<div class="desc"><p>Abstract base class for visualization of evaluation results</p>
+<p>Provides common interfaces and functionality that all visualization classes should inherit.</p>
+<p>Common features:
+- Manage output directory
+- Unification of plot settings
+- Common utility methods
+- Foundation for HTML report generation</p>
+<p>Base class initialization</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>results_source</code></strong></dt>
+<dd>Evaluation results (file path or dictionary data)</dd>
+<dt><strong><code>output_dir</code></strong></dt>
+<dd>Output directory of visualization results</dd>
+<dt><strong><code>logger</code></strong></dt>
+<dd>logger for log output</dd>
+<dt><strong><code>model_type</code></strong></dt>
+<dd>Model type(For determining image storage directory)</dd>
+</dl></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_html_report"><code class="name flex">
+<span>def <span class="ident">create_html_report</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def create_html_report(self):
+    &#34;&#34;&#34;Generate HTML report (required to implement)&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Generate HTML report (required to implement)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_performance_radar_chart"><code class="name flex">
+<span>def <span class="ident">create_performance_radar_chart</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_performance_radar_chart(self):
+    &#34;&#34;&#34;Performance indicator radar chart (optional)&#34;&#34;&#34;
+    self.logger.info(&#34;Performance radar chart not implemented in this visualizer&#34;)</code></pre>
+</details>
+<div class="desc"><p>Performance indicator radar chart (optional)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_summary_dashboard"><code class="name flex">
+<span>def <span class="ident">create_summary_dashboard</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def create_summary_dashboard(self):
+    &#34;&#34;&#34;Generate summary dashboard (required to implement)&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Generate summary dashboard (required to implement)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.generate_all_visualizations"><code class="name flex">
+<span>def <span class="ident">generate_all_visualizations</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def generate_all_visualizations(self):
+    &#34;&#34;&#34;Generation of all visualizations (required to implement)&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Generation of all visualizations (required to implement)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.get_generated_files"><code class="name flex">
+<span>def <span class="ident">get_generated_files</span></span>(<span>self) ‑> List[pathlib.Path]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_generated_files(self) -&gt; List[Path]:
+    &#34;&#34;&#34;Get list of generated files&#34;&#34;&#34;
+    return self.generated_files.copy()</code></pre>
+</details>
+<div class="desc"><p>Get list of generated files</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_auc_comparison"><code class="name flex">
+<span>def <span class="ident">plot_auc_comparison</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_auc_comparison(self):
+    &#34;&#34;&#34;Comparison plot of AUC metrics (optional)&#34;&#34;&#34;
+    self.logger.info(&#34;AUC comparison plot not implemented in this visualizer&#34;)</code></pre>
+</details>
+<div class="desc"><p>Comparison plot of AUC metrics (optional)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_confusion_matrix"><code class="name flex">
+<span>def <span class="ident">plot_confusion_matrix</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def plot_confusion_matrix(self):
+    &#34;&#34;&#34;Generation of confusion matrix plot (required to implement)&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Generation of confusion matrix plot (required to implement)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_performance_metrics"><code class="name flex">
+<span>def <span class="ident">plot_performance_metrics</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def plot_performance_metrics(self):
+    &#34;&#34;&#34;Generation of performance index plot (required to implement)&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Generation of performance index plot (required to implement)</p></div>
+</dd>
+<dt id="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_score_distribution"><code class="name flex">
+<span>def <span class="ident">plot_score_distribution</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_score_distribution(self):
+    &#34;&#34;&#34;Score distribution plot (optional)&#34;&#34;&#34;
+    self.logger.info(&#34;Score distribution plot not implemented in this visualizer&#34;)</code></pre>
+</details>
+<div class="desc"><p>Score distribution plot (optional)</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.core.utils" href="index.html">molcrawl.core.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator">BaseVisualizationGenerator</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_html_report" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_html_report">create_html_report</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_performance_radar_chart" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_performance_radar_chart">create_performance_radar_chart</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_summary_dashboard" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.create_summary_dashboard">create_summary_dashboard</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.generate_all_visualizations" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.generate_all_visualizations">generate_all_visualizations</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.get_generated_files" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.get_generated_files">get_generated_files</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_auc_comparison" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_auc_comparison">plot_auc_comparison</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_confusion_matrix" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_confusion_matrix">plot_confusion_matrix</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_performance_metrics" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_performance_metrics">plot_performance_metrics</a></code></li>
+<li><code><a title="molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_score_distribution" href="#molcrawl.core.utils.base_visualization.BaseVisualizationGenerator.plot_score_distribution">plot_score_distribution</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

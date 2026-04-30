@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.data.compounds.dataset.multi_loader API documentation</title>
+<meta name="description" content="Multi dataset loader …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.data.compounds.dataset.multi_loader</code></h1>
+</header>
+<section id="section-intro">
+<p>Multi dataset loader</p>
+<p>Provides utilities for dynamically loading and combining multiple datasets for use in training.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.multi_loader.load_compounds_datasets"><code class="name flex">
+<span>def <span class="ident">load_compounds_datasets</span></span>(<span>compounds_dir: pathlib.Path,<br>dataset_types: List[str | <a title="molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType" href="dataset_config.html#molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>] | None = None,<br>splits: List[str] | None = None,<br>combine: bool = True) ‑> datasets.dataset_dict.DatasetDict | dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_compounds_datasets(
+    compounds_dir: Path,
+    dataset_types: Optional[List[Union[str, CompoundDatasetType]]] = None,
+    splits: Optional[List[str]] = None,
+    combine: bool = True,
+) -&gt; Union[DatasetDict, dict]:
+    &#34;&#34;&#34;
+    Helper function to load compound dataset
+
+        Args:
+    compounds_dir: compounds directorypath of
+    dataset_types: List of dataset types to load (all available if None)
+    splits: read splits
+    combine: whether to combine datasets
+
+        Returns:
+    Loaded dataset
+    &#34;&#34;&#34;
+    if splits is None:
+        splits = [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]
+
+    loader = MultiDatasetLoader(compounds_dir)
+    return loader.load_datasets(dataset_types, splits, combine)</code></pre>
+</details>
+<div class="desc"><p>Helper function to load compound dataset</p>
+<pre><code>Args:
+</code></pre>
+<p>compounds_dir: compounds directorypath of
+dataset_types: List of dataset types to load (all available if None)
+splits: read splits
+combine: whether to combine datasets</p>
+<pre><code>Returns:
+</code></pre>
+<p>Loaded dataset</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader"><code class="flex name class">
+<span>class <span class="ident">MultiDatasetLoader</span></span>
+<span>(</span><span>compounds_dir: pathlib.Path)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MultiDatasetLoader:
+    &#34;&#34;&#34;
+    Multi dataset loader
+
+    Dynamically load and combine multiple datasets.
+    &#34;&#34;&#34;
+
+    def __init__(self, compounds_dir: Path):
+        &#34;&#34;&#34;
+                Args:
+        compounds_dir: Path to the compounds directory
+        &#34;&#34;&#34;
+        self.compounds_dir = Path(compounds_dir)
+
+    def get_available_datasets(self) -&gt; List[CompoundDatasetType]:
+        &#34;&#34;&#34;
+        Get available HuggingFace Dataset format datasets
+
+                Returns:
+        List of available dataset types
+        &#34;&#34;&#34;
+        available = []
+        for dataset_type, info in DATASET_DEFINITIONS.items():
+            hf_path = info.get_hf_dataset_path(self.compounds_dir)
+            train_path = hf_path / &#34;train&#34;
+
+            if train_path.exists():
+                available.append(dataset_type)
+
+        return available
+
+    def load_datasets(
+        self,
+        dataset_types: Optional[List[Union[str, CompoundDatasetType]]] = None,
+        splits: Optional[List[str]] = None,
+        combine: bool = True,
+    ) -&gt; Union[DatasetDict, dict]:
+        &#34;&#34;&#34;
+        Load dataset
+
+                Args:
+        dataset_types: List of dataset types to load (all available if None)
+        splits: read split(train, valid, test)
+        combine: If True, combine all datasets; if False, keep them separate
+
+                Returns:
+        If combine=True: DatasetDict {split_name: combined_dataset}
+        If combine=False: dict {dataset_type: DatasetDict}
+        &#34;&#34;&#34;
+        if splits is None:
+            splits = [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]
+
+        # Decide which dataset to load
+        enum_types: List[CompoundDatasetType]
+        if dataset_types is None:
+            enum_types = self.get_available_datasets()
+            if not enum_types:
+                raise ValueError(
+                    f&#34;No HuggingFace datasets found in {self.compounds_dir}/hf_datasets/\n&#34;
+                    &#34;Please run the preparation pipeline first.&#34;
+                )
+        else:
+            # If it is a string, convert it to Enum
+            enum_types = [CompoundDatasetType(dt) if isinstance(dt, str) else dt for dt in dataset_types]  # type: ignore[misc]
+
+        logger.info(f&#34;Loading {len(enum_types)} datasets: {[dt.value for dt in enum_types]}&#34;)
+
+        # load each dataset
+        loaded_datasets = {}
+        for dataset_type in enum_types:
+            info = get_dataset_info(dataset_type)
+            hf_path = info.get_hf_dataset_path(self.compounds_dir)
+
+            try:
+                dataset_dict = {}
+                for split in splits:
+                    split_path = hf_path / split
+                    if split_path.exists():
+                        dataset_dict[split] = load_from_disk(str(split_path))
+                        logger.info(f&#34;  Loaded {dataset_type.value}/{split}: {len(dataset_dict[split])} samples&#34;)
+                    else:
+                        logger.warning(f&#34;  {dataset_type.value}/{split} not found, skipping&#34;)
+
+                if dataset_dict:
+                    loaded_datasets[dataset_type] = DatasetDict(dataset_dict)
+
+            except Exception as e:
+                logger.error(f&#34;  Failed to load {dataset_type.value}: {e}&#34;)
+                continue
+
+        if not loaded_datasets:
+            raise ValueError(&#34;No datasets could be loaded&#34;)
+
+        # Combine mode
+        if combine:
+            return self._combine_datasets(loaded_datasets, splits)
+        else:
+            return loaded_datasets
+
+    def _combine_datasets(self, loaded_datasets: dict, splits: List[str]) -&gt; DatasetDict:
+        &#34;&#34;&#34;
+        Combine multiple datasets
+
+                Args:
+        loaded_datasets: Dictionary of {dataset_type: DatasetDict}
+        splits: splits to combine
+
+                Returns:
+        Combined DatasetDict
+        &#34;&#34;&#34;
+        logger.info(&#34;Combining datasets...&#34;)
+
+        combined = {}
+        for split in splits:
+            # Collect the same split of each dataset
+            split_datasets = []
+            for _dataset_type, dataset_dict in loaded_datasets.items():
+                if split in dataset_dict:
+                    split_datasets.append(dataset_dict[split])
+
+            if split_datasets:
+                # join
+                combined[split] = concatenate_datasets(split_datasets)
+                logger.info(f&#34;  Combined {split}: {len(combined[split])} samples from {len(split_datasets)} datasets&#34;)
+
+        return DatasetDict(combined)
+
+    def load_single_dataset(self, dataset_type: Union[str, CompoundDatasetType]) -&gt; DatasetDict:
+        &#34;&#34;&#34;
+        Load a single dataset
+
+                Args:
+        dataset_type: Dataset type
+
+                Returns:
+                    DatasetDict
+        &#34;&#34;&#34;
+        if isinstance(dataset_type, str):
+            dataset_type = CompoundDatasetType(dataset_type)
+
+        info = get_dataset_info(dataset_type)
+        hf_path = info.get_hf_dataset_path(self.compounds_dir)
+
+        if not hf_path.exists():
+            raise ValueError(f&#34;Dataset not found: {dataset_type.value} at {hf_path}&#34;)
+
+        logger.info(f&#34;Loading {dataset_type.value}...&#34;)
+
+        dataset_dict = {}
+        for split in [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]:
+            split_path = hf_path / split
+            if split_path.exists():
+                dataset_dict[split] = load_from_disk(str(split_path))
+                logger.info(f&#34;  Loaded {split}: {len(dataset_dict[split])} samples&#34;)
+
+        return DatasetDict(dataset_dict)</code></pre>
+</details>
+<div class="desc"><p>Multi dataset loader</p>
+<p>Dynamically load and combine multiple datasets.</p>
+<pre><code>    Args:
+</code></pre>
+<p>compounds_dir: Path to the compounds directory</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.get_available_datasets"><code class="name flex">
+<span>def <span class="ident">get_available_datasets</span></span>(<span>self) ‑> List[<a title="molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType" href="dataset_config.html#molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_available_datasets(self) -&gt; List[CompoundDatasetType]:
+    &#34;&#34;&#34;
+    Get available HuggingFace Dataset format datasets
+
+            Returns:
+    List of available dataset types
+    &#34;&#34;&#34;
+    available = []
+    for dataset_type, info in DATASET_DEFINITIONS.items():
+        hf_path = info.get_hf_dataset_path(self.compounds_dir)
+        train_path = hf_path / &#34;train&#34;
+
+        if train_path.exists():
+            available.append(dataset_type)
+
+    return available</code></pre>
+</details>
+<div class="desc"><p>Get available HuggingFace Dataset format datasets</p>
+<pre><code>    Returns:
+</code></pre>
+<p>List of available dataset types</p></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.load_datasets"><code class="name flex">
+<span>def <span class="ident">load_datasets</span></span>(<span>self,<br>dataset_types: List[str | <a title="molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType" href="dataset_config.html#molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>] | None = None,<br>splits: List[str] | None = None,<br>combine: bool = True) ‑> datasets.dataset_dict.DatasetDict | dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_datasets(
+    self,
+    dataset_types: Optional[List[Union[str, CompoundDatasetType]]] = None,
+    splits: Optional[List[str]] = None,
+    combine: bool = True,
+) -&gt; Union[DatasetDict, dict]:
+    &#34;&#34;&#34;
+    Load dataset
+
+            Args:
+    dataset_types: List of dataset types to load (all available if None)
+    splits: read split(train, valid, test)
+    combine: If True, combine all datasets; if False, keep them separate
+
+            Returns:
+    If combine=True: DatasetDict {split_name: combined_dataset}
+    If combine=False: dict {dataset_type: DatasetDict}
+    &#34;&#34;&#34;
+    if splits is None:
+        splits = [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]
+
+    # Decide which dataset to load
+    enum_types: List[CompoundDatasetType]
+    if dataset_types is None:
+        enum_types = self.get_available_datasets()
+        if not enum_types:
+            raise ValueError(
+                f&#34;No HuggingFace datasets found in {self.compounds_dir}/hf_datasets/\n&#34;
+                &#34;Please run the preparation pipeline first.&#34;
+            )
+    else:
+        # If it is a string, convert it to Enum
+        enum_types = [CompoundDatasetType(dt) if isinstance(dt, str) else dt for dt in dataset_types]  # type: ignore[misc]
+
+    logger.info(f&#34;Loading {len(enum_types)} datasets: {[dt.value for dt in enum_types]}&#34;)
+
+    # load each dataset
+    loaded_datasets = {}
+    for dataset_type in enum_types:
+        info = get_dataset_info(dataset_type)
+        hf_path = info.get_hf_dataset_path(self.compounds_dir)
+
+        try:
+            dataset_dict = {}
+            for split in splits:
+                split_path = hf_path / split
+                if split_path.exists():
+                    dataset_dict[split] = load_from_disk(str(split_path))
+                    logger.info(f&#34;  Loaded {dataset_type.value}/{split}: {len(dataset_dict[split])} samples&#34;)
+                else:
+                    logger.warning(f&#34;  {dataset_type.value}/{split} not found, skipping&#34;)
+
+            if dataset_dict:
+                loaded_datasets[dataset_type] = DatasetDict(dataset_dict)
+
+        except Exception as e:
+            logger.error(f&#34;  Failed to load {dataset_type.value}: {e}&#34;)
+            continue
+
+    if not loaded_datasets:
+        raise ValueError(&#34;No datasets could be loaded&#34;)
+
+    # Combine mode
+    if combine:
+        return self._combine_datasets(loaded_datasets, splits)
+    else:
+        return loaded_datasets</code></pre>
+</details>
+<div class="desc"><p>Load dataset</p>
+<pre><code>    Args:
+</code></pre>
+<p>dataset_types: List of dataset types to load (all available if None)
+splits: read split(train, valid, test)
+combine: If True, combine all datasets; if False, keep them separate</p>
+<pre><code>    Returns:
+</code></pre>
+<p>If combine=True: DatasetDict {split_name: combined_dataset}
+If combine=False: dict {dataset_type: DatasetDict}</p></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.load_single_dataset"><code class="name flex">
+<span>def <span class="ident">load_single_dataset</span></span>(<span>self,<br>dataset_type: str | <a title="molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType" href="dataset_config.html#molcrawl.data.compounds.dataset.dataset_config.CompoundDatasetType">CompoundDatasetType</a>) ‑> datasets.dataset_dict.DatasetDict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_single_dataset(self, dataset_type: Union[str, CompoundDatasetType]) -&gt; DatasetDict:
+    &#34;&#34;&#34;
+    Load a single dataset
+
+            Args:
+    dataset_type: Dataset type
+
+            Returns:
+                DatasetDict
+    &#34;&#34;&#34;
+    if isinstance(dataset_type, str):
+        dataset_type = CompoundDatasetType(dataset_type)
+
+    info = get_dataset_info(dataset_type)
+    hf_path = info.get_hf_dataset_path(self.compounds_dir)
+
+    if not hf_path.exists():
+        raise ValueError(f&#34;Dataset not found: {dataset_type.value} at {hf_path}&#34;)
+
+    logger.info(f&#34;Loading {dataset_type.value}...&#34;)
+
+    dataset_dict = {}
+    for split in [&#34;train&#34;, &#34;valid&#34;, &#34;test&#34;]:
+        split_path = hf_path / split
+        if split_path.exists():
+            dataset_dict[split] = load_from_disk(str(split_path))
+            logger.info(f&#34;  Loaded {split}: {len(dataset_dict[split])} samples&#34;)
+
+    return DatasetDict(dataset_dict)</code></pre>
+</details>
+<div class="desc"><p>Load a single dataset</p>
+<pre><code>    Args:
+</code></pre>
+<p>dataset_type: Dataset type</p>
+<pre><code>    Returns:
+        DatasetDict
+</code></pre></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.data.compounds.dataset" href="index.html">molcrawl.data.compounds.dataset</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.compounds.dataset.multi_loader.load_compounds_datasets" href="#molcrawl.data.compounds.dataset.multi_loader.load_compounds_datasets">load_compounds_datasets</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader" href="#molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader">MultiDatasetLoader</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.get_available_datasets" href="#molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.get_available_datasets">get_available_datasets</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.load_datasets" href="#molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.load_datasets">load_datasets</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.load_single_dataset" href="#molcrawl.data.compounds.dataset.multi_loader.MultiDatasetLoader.load_single_dataset">load_single_dataset</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

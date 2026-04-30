@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.data.compounds.dataset.organix13.opv.prepare_opv API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.data.compounds.dataset.organix13.opv.prepare_opv</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.compute_md5"><code class="name flex">
+<span>def <span class="ident">compute_md5</span></span>(<span>file_name, chunk_size=65536)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_md5(file_name, chunk_size=65536):
+    &#34;&#34;&#34;
+    Compute MD5 of the file.
+
+    Parameters:
+        file_name (str): file name
+        chunk_size (int, optional): chunk size for reading large files
+    &#34;&#34;&#34;
+    import hashlib
+
+    md5 = hashlib.md5()
+    with open(file_name, &#34;rb&#34;) as fin:
+        chunk = fin.read(chunk_size)
+        while chunk:
+            md5.update(chunk)
+            chunk = fin.read(chunk_size)
+    return md5.hexdigest()</code></pre>
+</details>
+<div class="desc"><p>Compute MD5 of the file.</p>
+<h2 id="parameters">Parameters</h2>
+<p>file_name (str): file name
+chunk_size (int, optional): chunk size for reading large files</p></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.download"><code class="name flex">
+<span>def <span class="ident">download</span></span>(<span>url, path, save_file=None, md5=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download(url, path, save_file=None, md5=None):
+    &#34;&#34;&#34;
+    Download a file from the specified url.
+    Skip the downloading step if there exists a file satisfying the given MD5.
+
+    Parameters:
+        url (str): URL to download
+        path (str): path to store the downloaded file
+        save_file (str, optional): name of save file. If not specified, infer the file name from the URL.
+        md5 (str, optional): MD5 of the file
+    &#34;&#34;&#34;
+    from six.moves.urllib.request import urlretrieve
+
+    if save_file is None:
+        save_file = os.path.basename(url)
+        if &#34;?&#34; in save_file:
+            save_file = save_file[: save_file.find(&#34;?&#34;)]
+    save_file = os.path.join(path, save_file)
+
+    if not os.path.exists(save_file) or compute_md5(save_file) != md5:
+        logger.info(&#34;Downloading %s to %s&#34; % (url, save_file))
+        urlretrieve(url, save_file)
+    return save_file</code></pre>
+</details>
+<div class="desc"><p>Download a file from the specified url.
+Skip the downloading step if there exists a file satisfying the given MD5.</p>
+<h2 id="parameters">Parameters</h2>
+<p>url (str): URL to download
+path (str): path to store the downloaded file
+save_file (str, optional): name of save file. If not specified, infer the file name from the URL.
+md5 (str, optional): MD5 of the file</p></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.extract"><code class="name flex">
+<span>def <span class="ident">extract</span></span>(<span>zip_file, member=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract(zip_file, member=None):
+    &#34;&#34;&#34;
+    Extract files from a zip file. Currently, ``zip``, ``gz``, ``tar.gz``, ``tar`` file types are supported.
+
+    Parameters:
+        zip_file (str): file name
+        member (str, optional): extract specific member from the zip file.
+            If not specified, extract all members.
+    &#34;&#34;&#34;
+    import gzip
+    import shutil
+    import zipfile
+    import tarfile
+
+    zip_name, extension = os.path.splitext(zip_file)
+    if zip_name.endswith(&#34;.tar&#34;):
+        extension = &#34;.tar&#34; + extension
+        zip_name = zip_name[:-4]
+    save_path = os.path.dirname(zip_file)
+
+    if extension == &#34;.gz&#34;:
+        member = os.path.basename(zip_name)
+        members = [member]
+        save_files = [os.path.join(save_path, member)]
+        for _member, save_file in zip(members, save_files):
+            with open(zip_file, &#34;rb&#34;) as fin:
+                fin.seek(-4, 2)
+                file_size = struct.unpack(&#34;&lt;I&#34;, fin.read())[0]
+            with gzip.open(zip_file, &#34;rb&#34;) as fin:
+                if not os.path.exists(save_file) or file_size != os.path.getsize(save_file):
+                    logger.info(&#34;Extracting %s to %s&#34; % (zip_file, save_file))
+                    with open(save_file, &#34;wb&#34;) as fout:
+                        shutil.copyfileobj(fin, fout)
+    elif extension in [&#34;.tar.gz&#34;, &#34;.tgz&#34;, &#34;.tar&#34;]:
+        tar = tarfile.open(zip_file, &#34;r&#34;)
+        if member is not None:
+            members = [member]
+            save_files = [os.path.join(save_path, os.path.basename(member))]
+            logger.info(&#34;Extracting %s from %s to %s&#34; % (member, zip_file, save_files[0]))
+        else:
+            members = tar.getnames()
+            save_files = [os.path.join(save_path, _member) for _member in members]
+            logger.info(&#34;Extracting %s to %s&#34; % (zip_file, save_path))
+        for _member, save_file in zip(members, save_files):
+            if tar.getmember(_member).isdir():
+                os.makedirs(save_file, exist_ok=True)
+                continue
+            os.makedirs(os.path.dirname(save_file), exist_ok=True)
+            if not os.path.exists(save_file) or tar.getmember(_member).size != os.path.getsize(save_file):
+                with tar.extractfile(_member) as fin, open(save_file, &#34;wb&#34;) as fout:
+                    shutil.copyfileobj(fin, fout)
+    elif extension == &#34;.zip&#34;:
+        zipped = zipfile.ZipFile(zip_file)
+        if member is not None:
+            members = [member]
+            save_files = [os.path.join(save_path, os.path.basename(member))]
+            logger.info(&#34;Extracting %s from %s to %s&#34; % (member, zip_file, save_files[0]))
+        else:
+            members = zipped.namelist()
+            save_files = [os.path.join(save_path, _member) for _member in members]
+            logger.info(&#34;Extracting %s to %s&#34; % (zip_file, save_path))
+        for _member, save_file in zip(members, save_files):
+            if zipped.getinfo(_member).is_dir():
+                os.makedirs(save_file, exist_ok=True)
+                continue
+            os.makedirs(os.path.dirname(save_file), exist_ok=True)
+            if not os.path.exists(save_file) or zipped.getinfo(_member).file_size != os.path.getsize(save_file):
+                with zipped.open(_member, &#34;r&#34;) as fin, open(save_file, &#34;wb&#34;) as fout:
+                    shutil.copyfileobj(fin, fout)
+    else:
+        raise ValueError(&#34;Unknown file extension `%s`&#34; % extension)
+
+    if len(save_files) == 1:
+        return save_files[0]
+    else:
+        return save_path</code></pre>
+</details>
+<div class="desc"><p>Extract files from a zip file. Currently, <code>zip</code>, <code>gz</code>, <code>tar.gz</code>, <code>tar</code> file types are supported.</p>
+<h2 id="parameters">Parameters</h2>
+<p>zip_file (str): file name
+member (str, optional): extract specific member from the zip file.
+If not specified, extract all members.</p></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.get_line_count"><code class="name flex">
+<span>def <span class="ident">get_line_count</span></span>(<span>file_name, chunk_size=8388608)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_line_count(file_name, chunk_size=8192 * 1024):
+    &#34;&#34;&#34;
+    Get the number of lines in a file.
+
+    Parameters:
+        file_name (str): file name
+        chunk_size (int, optional): chunk size for reading large files
+    &#34;&#34;&#34;
+    count = 0
+    with open(file_name, &#34;rb&#34;) as fin:
+        chunk = fin.read(chunk_size)
+        while chunk:
+            count += chunk.count(b&#34;\n&#34;)
+            chunk = fin.read(chunk_size)
+    return count</code></pre>
+</details>
+<div class="desc"><p>Get the number of lines in a file.</p>
+<h2 id="parameters">Parameters</h2>
+<p>file_name (str): file name
+chunk_size (int, optional): chunk size for reading large files</p></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.smart_open"><code class="name flex">
+<span>def <span class="ident">smart_open</span></span>(<span>file_name, mode='rb')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def smart_open(file_name, mode=&#34;rb&#34;):
+    &#34;&#34;&#34;
+    Open a regular file or a zipped file.
+
+    This function can be used as drop-in replacement of the builtin function `open()`.
+
+    Parameters:
+        file_name (str): file name
+        mode (str, optional): open mode for the file stream
+    &#34;&#34;&#34;
+    import bz2
+    import gzip
+
+    extension = os.path.splitext(file_name)[1]
+    if extension == &#34;.bz2&#34;:
+        return bz2.BZ2File(file_name, mode)
+    elif extension == &#34;.gz&#34;:
+        return gzip.GzipFile(file_name, mode)
+    else:
+        return open(file_name, mode)</code></pre>
+</details>
+<div class="desc"><p>Open a regular file or a zipped file.</p>
+<p>This function can be used as drop-in replacement of the builtin function <code>open()</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<p>file_name (str): file name
+mode (str, optional): open mode for the file stream</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV"><code class="flex name class">
+<span>class <span class="ident">OPV</span></span>
+<span>(</span><span>path, verbose=1, **kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class OPV:
+    &#34;&#34;&#34;
+    Quantum mechanical calculations on organic photovoltaic candidate molecules.
+
+    Statistics:
+        - #Molecule: 94,576
+        - #Regression task: 8
+
+    Parameters:
+        path (str): path to store the dataset
+        verbose (int, optional): output verbose level
+        **kwargs
+    &#34;&#34;&#34;
+
+    train_url = &#34;https://data.nrel.gov/system/files/236/1712697052-mol_train.csv.gz&#34;
+    valid_url = &#34;https://data.nrel.gov/system/files/236/1712697052-mol_valid.csv.gz&#34;
+    test_url = &#34;https://data.nrel.gov/system/files/236/1712697052-mol_test.csv.gz&#34;
+    train_md5 = &#34;16e439b7411ea0a8d3a56ba4802b61b1&#34;
+    valid_md5 = &#34;3aa2ac62015932ca84661feb5d29adda&#34;
+    test_md5 = &#34;bad072224f0755478f0729476ca99a33&#34;
+    target_fields = [
+        &#34;gap&#34;,
+        &#34;homo&#34;,
+        &#34;lumo&#34;,
+        &#34;spectral_overlap&#34;,
+        &#34;gap_extrapolated&#34;,
+        &#34;homo_extrapolated&#34;,
+        &#34;lumo_extrapolated&#34;,
+        &#34;optical_lumo_extrapolated&#34;,
+    ]
+
+    def read_csv(self, csv_file, smiles_field=&#34;smiles&#34;, target_fields=None, verbose=0):
+        if target_fields is not None:
+            target_fields = set(target_fields)
+
+        with open(csv_file, &#34;r&#34;) as fin:
+            reader = csv.reader(fin)
+            if verbose:
+                reader = iter(tqdm(reader, &#34;Loading %s&#34; % csv_file, get_line_count(csv_file)))
+            fields = next(reader)
+            smiles = []
+            targets = defaultdict(list)
+            for values in reader:
+                if not any(values):
+                    continue
+                if smiles_field is None:
+                    smiles.append(&#34;&#34;)
+                for field, value in zip(fields, values):
+                    if field == smiles_field:
+                        smiles.append(value)
+                    elif target_fields is None or field in target_fields:
+                        pass
+                        # value = eval(value)
+                        # if value == &#34;&#34;:
+                        #     value = math.nan
+                        # targets[field].append(value)
+
+        return smiles, targets
+
+    def __init__(self, path, verbose=1, **kwargs):
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        self.path = path
+
+        train_zip_file = download(self.train_url, path, save_file=&#34;mol_train.csv.gz&#34;, md5=self.train_md5)
+        valid_zip_file = download(self.valid_url, path, save_file=&#34;mol_valid.csv.gz&#34;, md5=self.valid_md5)
+        test_zip_file = download(self.test_url, path, save_file=&#34;mol_test.csv.gz&#34;, md5=self.test_md5)
+        train_file = extract(train_zip_file)
+        valid_file = extract(valid_zip_file)
+        test_file = extract(test_zip_file)
+
+        train_smiles, train_targets = self.read_csv(train_file, smiles_field=&#34;smile&#34;, target_fields=self.target_fields)
+        valid_smiles, valid_targets = self.read_csv(valid_file, smiles_field=&#34;smile&#34;, target_fields=self.target_fields)
+        test_smiles, test_targets = self.read_csv(test_file, smiles_field=&#34;smile&#34;, target_fields=self.target_fields)
+        self.num_train = len(train_smiles)
+        self.num_valid = len(valid_smiles)
+        self.num_test = len(test_smiles)
+
+        smiles = train_smiles + valid_smiles + test_smiles
+        # targets = {k: train_targets[k] + valid_targets[k] + test_targets[k] for k in train_targets}
+
+        # self.load_smiles(smiles, targets, verbose=verbose, **kwargs)
+        print(smiles[:10])
+        df_out = pd.DataFrame({&#34;smiles&#34;: smiles})
+        df_out.to_parquet(os.path.join(self.path, &#34;opv.parquet&#34;))</code></pre>
+</details>
+<div class="desc"><p>Quantum mechanical calculations on organic photovoltaic candidate molecules.</p>
+<h2 id="statistics">Statistics</h2>
+<ul>
+<li>
+<h1 id="molecule-94576">Molecule: 94,576</h1>
+</li>
+<li>
+<h1 id="regression-task-8">Regression task: 8</h1>
+</li>
+</ul>
+<h2 id="parameters">Parameters</h2>
+<p>path (str): path to store the dataset
+verbose (int, optional): output verbose level
+**kwargs</p></div>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.target_fields"><code class="name">var <span class="ident">target_fields</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.test_md5"><code class="name">var <span class="ident">test_md5</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.test_url"><code class="name">var <span class="ident">test_url</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.train_md5"><code class="name">var <span class="ident">train_md5</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.train_url"><code class="name">var <span class="ident">train_url</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.valid_md5"><code class="name">var <span class="ident">valid_md5</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.valid_url"><code class="name">var <span class="ident">valid_url</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.read_csv"><code class="name flex">
+<span>def <span class="ident">read_csv</span></span>(<span>self, csv_file, smiles_field='smiles', target_fields=None, verbose=0)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_csv(self, csv_file, smiles_field=&#34;smiles&#34;, target_fields=None, verbose=0):
+    if target_fields is not None:
+        target_fields = set(target_fields)
+
+    with open(csv_file, &#34;r&#34;) as fin:
+        reader = csv.reader(fin)
+        if verbose:
+            reader = iter(tqdm(reader, &#34;Loading %s&#34; % csv_file, get_line_count(csv_file)))
+        fields = next(reader)
+        smiles = []
+        targets = defaultdict(list)
+        for values in reader:
+            if not any(values):
+                continue
+            if smiles_field is None:
+                smiles.append(&#34;&#34;)
+            for field, value in zip(fields, values):
+                if field == smiles_field:
+                    smiles.append(value)
+                elif target_fields is None or field in target_fields:
+                    pass
+                    # value = eval(value)
+                    # if value == &#34;&#34;:
+                    #     value = math.nan
+                    # targets[field].append(value)
+
+    return smiles, targets</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv" href="index.html">molcrawl.data.compounds.dataset.organix13.opv</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.compute_md5" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.compute_md5">compute_md5</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.download" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.download">download</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.extract" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.extract">extract</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.get_line_count" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.get_line_count">get_line_count</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.smart_open" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.smart_open">smart_open</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV">OPV</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.read_csv" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.read_csv">read_csv</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.target_fields" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.target_fields">target_fields</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.test_md5" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.test_md5">test_md5</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.test_url" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.test_url">test_url</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.train_md5" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.train_md5">train_md5</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.train_url" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.train_url">train_url</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.valid_md5" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.valid_md5">valid_md5</a></code></li>
+<li><code><a title="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.valid_url" href="#molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.OPV.valid_url">valid_url</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

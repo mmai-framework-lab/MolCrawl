@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.omim.gpt2_data_preparation API documentation</title>
+<meta name="description" content="OMIM Data Preparation Script
+…">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.omim.gpt2_data_preparation</code></h1>
+</header>
+<section id="section-intro">
+<h1 id="omim-data-preparation-script">OMIM Data Preparation Script</h1>
+<p>Genetic disease information from the OMIM (Online Mendelian Inheritance in Man) database
+Script to preprocess genome sequence models for evaluation</p>
+<p>Main features:
+- Generation of OMIM sample data
+- Processing of actual OMIM data (authenticated access)
+- Classification of genetic disease-related mutations and Benin mutations
+- Creation of dataset for model evaluation
+- Data quality check</p>
+<p>Notice:
+- License required for actual OMIM data usage
+- Setting the LEARNING_SOURCE_DIR environment variable is mandatory</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    &#34;&#34;&#34;Main function&#34;&#34;&#34;
+    parser = argparse.ArgumentParser(
+        description=&#34;OMIM Data Preparation for Genome Sequence Evaluation&#34;,
+        epilog=&#34;Note: LEARNING_SOURCE_DIR environment variable must be set.&#34;,
+    )
+    parser.add_argument(
+        &#34;--output_dir&#34;,
+        type=str,
+        default=None,
+        help=&#34;Output directory for prepared data (default: $LEARNING_SOURCE_DIR/genome_sequence/data/omim)&#34;,
+    )
+    parser.add_argument(
+        &#34;--mode&#34;,
+        type=str,
+        choices=[&#34;sample&#34;, &#34;real&#34;],
+        default=&#34;sample&#34;,
+        help=&#34;Data mode: sample (generated data) or real (actual OMIM data)&#34;,
+    )
+    parser.add_argument(
+        &#34;--config&#34;,
+        type=str,
+        help=&#34;Path to real data config file (required for real mode)&#34;,
+    )
+    parser.add_argument(
+        &#34;--num_samples&#34;,
+        type=int,
+        default=1000,
+        help=&#34;Number of samples to generate for sample mode (default: 1000)&#34;,
+    )
+    parser.add_argument(
+        &#34;--sequence_length&#34;,
+        type=int,
+        default=100,
+        help=&#34;Length of genome sequences (default: 100)&#34;,
+    )
+    parser.add_argument(
+        &#34;--seed&#34;,
+        type=int,
+        default=42,
+        help=&#34;Random seed for reproducibility (default: 42)&#34;,
+    )
+    parser.add_argument(
+        &#34;--existing_omim_dir&#34;,
+        type=str,
+        default=None,
+        help=&#34;Existing OMIM data directory to use (skip download)&#34;,
+    )
+    parser.add_argument(
+        &#34;--force_download&#34;,
+        action=&#34;store_true&#34;,
+        help=&#34;Force download for real mode even if files exist&#34;,
+    )
+
+    args = parser.parse_args()
+
+    # Default setting for output_dir
+    if args.output_dir is None:
+        learning_source = check_learning_source_dir()
+        args.output_dir = os.path.join(learning_source, &#34;genome_sequence&#34;, &#34;data&#34;, &#34;omim&#34;)
+
+    try:
+        if args.mode == &#34;real&#34;:
+            # real data mode
+            if not args.config:
+                raise ValueError(&#34;Real data mode requires --config parameter&#34;)
+
+            print(&#34;Processing real OMIM data...&#34;)
+            output_file = process_omim_real_data(
+                config_path=args.config,
+                output_dir=args.output_dir,
+                existing_omim_dir=args.existing_omim_dir,
+                force_download=args.force_download,
+            )
+            print(&#34;Real OMIM data processing completed!&#34;)
+
+        else:
+            # sample data mode
+            print(&#34;Generating sample OMIM data...&#34;)
+            output_file = prepare_omim_data(
+                output_dir=args.output_dir,
+                num_samples=args.num_samples,
+                sequence_length=args.sequence_length,
+                seed=args.seed,
+            )
+            print(&#34;Sample OMIM data preparation completed!&#34;)
+
+        print(f&#34;Output file: {output_file}&#34;)
+
+    except Exception as e:
+        print(f&#34;Error during OMIM data preparation: {e}&#34;)
+        sys.exit(1)</code></pre>
+</details>
+<div class="desc"><p>Main function</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.prepare_omim_data"><code class="name flex">
+<span>def <span class="ident">prepare_omim_data</span></span>(<span>output_dir: str,<br>num_samples: int = 1000,<br>sequence_length: int = 100,<br>seed: int = 42) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_omim_data(output_dir: str, num_samples: int = 1000, sequence_length: int = 100, seed: int = 42) -&gt; str:
+    &#34;&#34;&#34;Prepare OMIM evaluation data&#34;&#34;&#34;
+
+    # create output directory
+    os.makedirs(output_dir, exist_ok=True)
+    data_dir = os.path.join(output_dir, &#34;data&#34;)
+    os.makedirs(data_dir, exist_ok=True)
+
+    # Log settings
+    logger = setup_logging(output_dir)
+    logger.info(&#34;Starting OMIM data preparation&#34;)
+
+    # Seed settings
+    random.seed(seed)
+    np.random.seed(seed)
+
+    # data generation
+    generator = OMIMDataGenerator(sequence_length=sequence_length, logger=logger)
+    df = generator.generate_dataset(num_samples)
+
+    # Save data
+    output_file = os.path.join(data_dir, &#34;omim_evaluation_dataset.csv&#34;)
+    df.to_csv(output_file, index=False)
+
+    logger.info(f&#34;Sample OMIM data saved to {output_file}&#34;)
+    logger.info(f&#34;Data distribution: {df[&#39;is_disease_causing&#39;].value_counts().to_dict()}&#34;)
+
+    # metadatakeep
+    metadata = {
+        &#34;total_samples&#34;: len(df),
+        &#34;disease_causing&#34;: int(df[&#34;is_disease_causing&#34;].sum()),
+        &#34;benign&#34;: int((df[&#34;is_disease_causing&#34;] == 0).sum()),
+        &#34;sequence_length&#34;: sequence_length,
+        &#34;generation_date&#34;: datetime.now().isoformat(),
+        &#34;inheritance_patterns&#34;: df[&#34;inheritance_pattern&#34;].value_counts().to_dict(),
+        &#34;pathogenicity_distribution&#34;: df[&#34;pathogenicity&#34;].value_counts().to_dict(),
+    }
+
+    metadata_file = os.path.join(data_dir, &#34;omim_metadata.json&#34;)
+    import json
+
+    with open(metadata_file, &#34;w&#34;) as f:
+        json.dump(metadata, f, indent=2)
+
+    logger.info(&#34;OMIM data preparation completed&#34;)
+    return output_file</code></pre>
+</details>
+<div class="desc"><p>Prepare OMIM evaluation data</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.setup_logging"><code class="name flex">
+<span>def <span class="ident">setup_logging</span></span>(<span>output_dir: str) ‑> logging.Logger</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setup_logging(output_dir: str) -&gt; logging.Logger:
+    &#34;&#34;&#34;Set up log settings&#34;&#34;&#34;
+    log_dir = os.path.join(output_dir, &#34;logs&#34;)
+    os.makedirs(log_dir, exist_ok=True)
+
+    log_file = os.path.join(log_dir, f&#34;omim_preparation_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}.log&#34;)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format=&#34;%(asctime)s - %(levelname)s - %(message)s&#34;,
+        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+    )
+
+    logger = logging.getLogger(__name__)
+    learning_source_dir = check_learning_source_dir()
+    logger.info(f&#34;LEARNING_SOURCE_DIR: {learning_source_dir}&#34;)
+    logger.info(f&#34;Output directory: {output_dir}&#34;)
+    return logger</code></pre>
+</details>
+<div class="desc"><p>Set up log settings</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator"><code class="flex name class">
+<span>class <span class="ident">OMIMDataGenerator</span></span>
+<span>(</span><span>sequence_length: int = 100, logger: logging.Logger | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class OMIMDataGenerator:
+    &#34;&#34;&#34;Sample data generation class for OMIM evaluation&#34;&#34;&#34;
+
+    def __init__(self, sequence_length: int = 100, logger: Optional[logging.Logger] = None):
+        self.sequence_length = sequence_length
+        self.logger = logger or logging.getLogger(__name__)
+
+        # Examples of OMIM-related genes (representative genes obtained from actual OMIM)
+        self.disease_genes = [
+            &#34;BRCA1&#34;,
+            &#34;BRCA2&#34;,
+            &#34;TP53&#34;,
+            &#34;APC&#34;,
+            &#34;MLH1&#34;,
+            &#34;MSH2&#34;,
+            &#34;MSH6&#34;,
+            &#34;PMS2&#34;,
+            &#34;PALB2&#34;,
+            &#34;CHEK2&#34;,
+            &#34;ATM&#34;,
+            &#34;BARD1&#34;,
+            &#34;BRIP1&#34;,
+            &#34;RAD51C&#34;,
+            &#34;RAD51D&#34;,
+            &#34;CDH1&#34;,
+            &#34;PTEN&#34;,
+            &#34;STK11&#34;,
+            &#34;NF1&#34;,
+            &#34;NF2&#34;,
+            &#34;VHL&#34;,
+            &#34;RB1&#34;,
+            &#34;WT1&#34;,
+            &#34;CDKN2A&#34;,
+            &#34;CDK4&#34;,
+            &#34;BAP1&#34;,
+            &#34;MITF&#34;,
+            &#34;POT1&#34;,
+            &#34;ACD&#34;,
+            &#34;TERF2IP&#34;,
+            &#34;TERT&#34;,
+            &#34;DCC&#34;,
+            &#34;SMAD4&#34;,
+            &#34;BMPR1A&#34;,
+            &#34;MUTYH&#34;,
+            &#34;NTHL1&#34;,
+            &#34;POLE&#34;,
+            &#34;POLD1&#34;,
+            &#34;EPCAM&#34;,
+            &#34;PMS1&#34;,
+            &#34;AXIN2&#34;,
+            &#34;GREM1&#34;,
+            &#34;SCG5&#34;,
+            &#34;RNF43&#34;,
+        ]
+
+        # OMIMPhenotype classification
+        self.phenotype_categories = {
+            &#34;autosomal_dominant&#34;: 0.3,
+            &#34;autosomal_recessive&#34;: 0.25,
+            &#34;x_linked&#34;: 0.15,
+            &#34;mitochondrial&#34;: 0.05,
+            &#34;complex&#34;: 0.25,
+        }
+
+        # Pathogenicity level
+        self.pathogenicity_levels = {
+            &#34;pathogenic&#34;: 1,
+            &#34;likely_pathogenic&#34;: 1,
+            &#34;uncertain_significance&#34;: 0,
+            &#34;likely_benign&#34;: 0,
+            &#34;benign&#34;: 0,
+        }
+
+    def generate_sequence(self, is_pathogenic: bool = True) -&gt; str:
+        &#34;&#34;&#34;Generate genome sequence&#34;&#34;&#34;
+        nucleotides = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+
+        if is_pathogenic:
+            # Pathogenic mutations: Contains more mutations
+            sequence = &#34;&#34;.join(random.choices(nucleotides, k=self.sequence_length))
+            # Insert pathogenic mutation pattern at specific position
+            mutation_positions = random.sample(range(self.sequence_length), min(5, self.sequence_length // 20))
+            sequence_list = list(sequence)
+            for pos in mutation_positions:
+                # Mimic frameshifts and stop codons
+                sequence_list[pos] = random.choice([&#34;T&#34;, &#34;A&#34;])  # More pathogenic mutations
+            sequence = &#34;&#34;.join(sequence_list)
+        else:
+            # Benin mutation: more conservative sequence
+            sequence = &#34;&#34;.join(random.choices(nucleotides, weights=[0.3, 0.3, 0.2, 0.2], k=self.sequence_length))
+
+        return sequence
+
+    def generate_omim_entry(self, entry_id: int) -&gt; Dict:
+        &#34;&#34;&#34;Generate a single OMIM entry&#34;&#34;&#34;
+        is_pathogenic = random.random() &lt; 0.7  # 70% pathogenic
+
+        gene = random.choice(self.disease_genes)
+        phenotype_type = random.choices(
+            list(self.phenotype_categories.keys()),
+            weights=list(self.phenotype_categories.values()),
+        )[0]
+
+        if is_pathogenic:
+            pathogenicity = random.choices([&#34;pathogenic&#34;, &#34;likely_pathogenic&#34;], weights=[0.7, 0.3])[0]
+        else:
+            pathogenicity = random.choices(
+                [&#34;benign&#34;, &#34;likely_benign&#34;, &#34;uncertain_significance&#34;],
+                weights=[0.5, 0.3, 0.2],
+            )[0]
+
+        # OMIM ID format (6 digit number)
+        omim_id = f&#34;{entry_id + 100000:06d}&#34;
+
+        return {
+            &#34;omim_id&#34;: omim_id,
+            &#34;gene_symbol&#34;: gene,
+            &#34;sequence&#34;: self.generate_sequence(is_pathogenic),
+            &#34;phenotype_type&#34;: phenotype_type,
+            &#34;pathogenicity&#34;: pathogenicity,
+            &#34;is_disease_causing&#34;: self.pathogenicity_levels[pathogenicity],
+            &#34;chromosome&#34;: random.choice([str(i) for i in range(1, 23)] + [&#34;X&#34;, &#34;Y&#34;]),
+            &#34;position&#34;: random.randint(1000000, 200000000),
+            &#34;inheritance_pattern&#34;: phenotype_type,
+            &#34;clinical_significance&#34;: pathogenicity,
+            &#34;mim_number&#34;: omim_id,
+            &#34;disease_name&#34;: f&#34;Hereditary {gene.lower()} disorder&#34;,
+            &#34;molecular_basis&#34;: &#34;Point mutation&#34; if random.random() &lt; 0.6 else &#34;Deletion/Duplication&#34;,
+        }
+
+    def generate_dataset(self, num_samples: int) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;Generate OMIM dataset&#34;&#34;&#34;
+        self.logger.info(f&#34;Creating sample OMIM data with {num_samples} samples&#34;)
+
+        data = []
+        for i in range(num_samples):
+            entry = self.generate_omim_entry(i)
+            data.append(entry)
+
+            if (i + 1) % 100 == 0:
+                self.logger.info(f&#34;Generated {i + 1}/{num_samples} OMIM entries&#34;)
+
+        df = pd.DataFrame(data)
+
+        # Adjust data balance
+        pathogenic_count = df[&#34;is_disease_causing&#34;].sum()
+        benign_count = len(df) - pathogenic_count
+
+        self.logger.info(&#34;Generated dataset statistics:&#34;)
+        self.logger.info(f&#34;  Disease-causing variants: {pathogenic_count}&#34;)
+        self.logger.info(f&#34;  Benign variants: {benign_count}&#34;)
+        self.logger.info(f&#34;  Total samples: {len(df)}&#34;)
+
+        return df</code></pre>
+</details>
+<div class="desc"><p>Sample data generation class for OMIM evaluation</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_dataset"><code class="name flex">
+<span>def <span class="ident">generate_dataset</span></span>(<span>self, num_samples: int) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_dataset(self, num_samples: int) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Generate OMIM dataset&#34;&#34;&#34;
+    self.logger.info(f&#34;Creating sample OMIM data with {num_samples} samples&#34;)
+
+    data = []
+    for i in range(num_samples):
+        entry = self.generate_omim_entry(i)
+        data.append(entry)
+
+        if (i + 1) % 100 == 0:
+            self.logger.info(f&#34;Generated {i + 1}/{num_samples} OMIM entries&#34;)
+
+    df = pd.DataFrame(data)
+
+    # Adjust data balance
+    pathogenic_count = df[&#34;is_disease_causing&#34;].sum()
+    benign_count = len(df) - pathogenic_count
+
+    self.logger.info(&#34;Generated dataset statistics:&#34;)
+    self.logger.info(f&#34;  Disease-causing variants: {pathogenic_count}&#34;)
+    self.logger.info(f&#34;  Benign variants: {benign_count}&#34;)
+    self.logger.info(f&#34;  Total samples: {len(df)}&#34;)
+
+    return df</code></pre>
+</details>
+<div class="desc"><p>Generate OMIM dataset</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_omim_entry"><code class="name flex">
+<span>def <span class="ident">generate_omim_entry</span></span>(<span>self, entry_id: int) ‑> Dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_omim_entry(self, entry_id: int) -&gt; Dict:
+    &#34;&#34;&#34;Generate a single OMIM entry&#34;&#34;&#34;
+    is_pathogenic = random.random() &lt; 0.7  # 70% pathogenic
+
+    gene = random.choice(self.disease_genes)
+    phenotype_type = random.choices(
+        list(self.phenotype_categories.keys()),
+        weights=list(self.phenotype_categories.values()),
+    )[0]
+
+    if is_pathogenic:
+        pathogenicity = random.choices([&#34;pathogenic&#34;, &#34;likely_pathogenic&#34;], weights=[0.7, 0.3])[0]
+    else:
+        pathogenicity = random.choices(
+            [&#34;benign&#34;, &#34;likely_benign&#34;, &#34;uncertain_significance&#34;],
+            weights=[0.5, 0.3, 0.2],
+        )[0]
+
+    # OMIM ID format (6 digit number)
+    omim_id = f&#34;{entry_id + 100000:06d}&#34;
+
+    return {
+        &#34;omim_id&#34;: omim_id,
+        &#34;gene_symbol&#34;: gene,
+        &#34;sequence&#34;: self.generate_sequence(is_pathogenic),
+        &#34;phenotype_type&#34;: phenotype_type,
+        &#34;pathogenicity&#34;: pathogenicity,
+        &#34;is_disease_causing&#34;: self.pathogenicity_levels[pathogenicity],
+        &#34;chromosome&#34;: random.choice([str(i) for i in range(1, 23)] + [&#34;X&#34;, &#34;Y&#34;]),
+        &#34;position&#34;: random.randint(1000000, 200000000),
+        &#34;inheritance_pattern&#34;: phenotype_type,
+        &#34;clinical_significance&#34;: pathogenicity,
+        &#34;mim_number&#34;: omim_id,
+        &#34;disease_name&#34;: f&#34;Hereditary {gene.lower()} disorder&#34;,
+        &#34;molecular_basis&#34;: &#34;Point mutation&#34; if random.random() &lt; 0.6 else &#34;Deletion/Duplication&#34;,
+    }</code></pre>
+</details>
+<div class="desc"><p>Generate a single OMIM entry</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_sequence"><code class="name flex">
+<span>def <span class="ident">generate_sequence</span></span>(<span>self, is_pathogenic: bool = True) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_sequence(self, is_pathogenic: bool = True) -&gt; str:
+    &#34;&#34;&#34;Generate genome sequence&#34;&#34;&#34;
+    nucleotides = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+
+    if is_pathogenic:
+        # Pathogenic mutations: Contains more mutations
+        sequence = &#34;&#34;.join(random.choices(nucleotides, k=self.sequence_length))
+        # Insert pathogenic mutation pattern at specific position
+        mutation_positions = random.sample(range(self.sequence_length), min(5, self.sequence_length // 20))
+        sequence_list = list(sequence)
+        for pos in mutation_positions:
+            # Mimic frameshifts and stop codons
+            sequence_list[pos] = random.choice([&#34;T&#34;, &#34;A&#34;])  # More pathogenic mutations
+        sequence = &#34;&#34;.join(sequence_list)
+    else:
+        # Benin mutation: more conservative sequence
+        sequence = &#34;&#34;.join(random.choices(nucleotides, weights=[0.3, 0.3, 0.2, 0.2], k=self.sequence_length))
+
+    return sequence</code></pre>
+</details>
+<div class="desc"><p>Generate genome sequence</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul>
+<li><a href="#omim-data-preparation-script">OMIM Data Preparation Script</a></li>
+</ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.omim" href="index.html">molcrawl.tasks.evaluation.omim</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.main" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.prepare_omim_data" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.prepare_omim_data">prepare_omim_data</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.setup_logging" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.setup_logging">setup_logging</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator">OMIMDataGenerator</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_dataset" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_dataset">generate_dataset</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_omim_entry" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_omim_entry">generate_omim_entry</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_sequence" href="#molcrawl.tasks.evaluation.omim.gpt2_data_preparation.OMIMDataGenerator.generate_sequence">generate_sequence</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

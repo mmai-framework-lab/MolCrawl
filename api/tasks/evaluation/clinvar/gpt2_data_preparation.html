@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation API documentation</title>
+<meta name="description" content="ClinVar data download/preprocessing script …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation</code></h1>
+</header>
+<section id="section-intro">
+<p>ClinVar data download/preprocessing script</p>
+<p>Download pathogenic variant data from the ClinVar database,
+Preprocess the genome sequence model into a format suitable for evaluation.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    _configure_logging()
+    parser = argparse.ArgumentParser(description=&#34;ClinVar data preprocessing for genome sequence evaluation&#34;)
+    parser.add_argument(
+        &#34;--output_dir&#34;,
+        type=str,
+        default=&#34;./clinvar_data&#34;,
+        help=&#34;Output directory for processed data&#34;,
+    )
+    parser.add_argument(&#34;--download&#34;, action=&#34;store_true&#34;, help=&#34;Download ClinVar data from NCBI&#34;)
+    parser.add_argument(&#34;--max_samples&#34;, type=int, default=1000, help=&#34;Maximum samples per class&#34;)
+    parser.add_argument(
+        &#34;--sequence_length&#34;,
+        type=int,
+        default=100,
+        help=&#34;Length of reference sequences to generate&#34;,
+    )
+    parser.add_argument(&#34;--input_file&#34;, type=str, help=&#34;Input ClinVar file (if not downloading)&#34;)
+
+    args = parser.parse_args()
+
+    # create log directory
+    os.makedirs(&#34;logs&#34;, exist_ok=True)
+
+    processor = ClinVarProcessor(args.output_dir)
+
+    try:
+        if args.download:
+            logger.info(&#34;Downloading ClinVar data&#34;)
+            gzip_file = processor.download_clinvar_data(&#34;variant_summary&#34;)
+            df = processor.extract_and_load_data(gzip_file)
+        elif args.input_file:
+            logger.info(f&#34;Loading data from {args.input_file}&#34;)
+            if args.input_file.endswith(&#34;.gz&#34;):
+                df = processor.extract_and_load_data(args.input_file)
+            else:
+                df = pd.read_csv(args.input_file, sep=&#34;\t&#34;, low_memory=False)
+        else:
+            raise ValueError(&#34;Either --download or --input_file must be specified&#34;)
+
+        logger.info(f&#34;Initial dataset size: {len(df)}&#34;)
+
+        logger.info(&#34;Starting data preprocessing&#34;)
+
+        # Filtering for single nucleotide variations
+        df_snv = processor.filter_single_nucleotide_variants(df)
+
+        # Filter by clinical significance
+        df_filtered = processor.filter_by_clinical_significance(df_snv)
+
+        # Get reference array (mock implementation)
+        df_with_sequences = processor.get_reference_sequences(df_filtered, sequence_length=args.sequence_length)
+
+        # Prepare dataset for evaluation
+        df_eval = processor.prepare_evaluation_dataset(df_with_sequences, max_samples_per_class=args.max_samples)
+
+        # Save dataset
+        processor.save_dataset(df_eval, &#34;clinvar_evaluation_dataset.csv&#34;)
+
+        # Create statistics report
+        processor.create_statistics_report(df_eval)
+
+        logger.info(&#34;Data preprocessing completed successfully&#34;)
+        logger.info(f&#34;Final dataset saved with {len(df_eval)} variants&#34;)
+
+    except Exception as e:
+        logger.error(f&#34;Data preprocessing failed: {e}&#34;)
+        raise</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor"><code class="flex name class">
+<span>class <span class="ident">ClinVarProcessor</span></span>
+<span>(</span><span>output_dir='./clinvar_data')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ClinVarProcessor:
+    &#34;&#34;&#34;ClinVar data acquisition/preprocessing class&#34;&#34;&#34;
+
+    def __init__(self, output_dir=&#34;./clinvar_data&#34;):
+        &#34;&#34;&#34;
+        initialization
+
+        Args:
+            output_dir (str): Output directory
+        &#34;&#34;&#34;
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # ClinVar download URL
+        self.clinvar_urls = {
+            &#34;variant_summary&#34;: &#34;https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz&#34;,
+            &#34;submission_summary&#34;: &#34;https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/submission_summary.txt.gz&#34;,
+        }
+
+    def download_clinvar_data(self, data_type=&#34;variant_summary&#34;):
+        &#34;&#34;&#34;
+        Download ClinVar data
+
+        Args:
+            data_type (str): Data type to download
+
+        Returns:
+            str: path of the downloaded file
+        &#34;&#34;&#34;
+        if data_type not in self.clinvar_urls:
+            raise ValueError(f&#34;Unknown data type: {data_type}&#34;)
+
+        url = self.clinvar_urls[data_type]
+        filename = self.output_dir / f&#34;{data_type}.txt.gz&#34;
+
+        logger.info(f&#34;Downloading {data_type} from {url}&#34;)
+
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        with open(filename, &#34;wb&#34;) as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        logger.info(f&#34;Downloaded to {filename}&#34;)
+        return str(filename)
+
+    def extract_and_load_data(self, gzip_file):
+        &#34;&#34;&#34;
+        Unzip the compressed file and read it as a DataFrame
+
+        Args:
+            gzip_file (str): gzip file path
+
+        Returns:
+            pd.DataFrame: Loaded data
+        &#34;&#34;&#34;
+        logger.info(f&#34;Extracting and loading {gzip_file}&#34;)
+
+        with gzip.open(gzip_file, &#34;rt&#34;, encoding=&#34;utf-8&#34;) as f:
+            df = pd.read_csv(f, sep=&#34;\t&#34;, low_memory=False)
+
+        logger.info(f&#34;Loaded {len(df)} records&#34;)
+        return df
+
+    def filter_single_nucleotide_variants(self, df):
+        &#34;&#34;&#34;
+        Filter only single nucleotide variations (SNVs)
+
+        Args:
+            df (pd.DataFrame): ClinVar data
+
+        Returns:
+            pd.DataFrame: Filtered data
+        &#34;&#34;&#34;
+        logger.info(f&#34;Starting with {len(df)} total variants&#34;)
+
+        # Check available mutation types
+        logger.info(f&#34;Available variant types: {df[&#39;Type&#39;].value_counts().head(10)}&#34;)
+
+        # Filter by mutation type
+        snv_types = [&#34;single nucleotide variant&#34;, &#34;SNV&#34;]
+        df_snv = df[df[&#34;Type&#34;].isin(snv_types)].copy()
+        logger.info(f&#34;After type filtering: {len(df_snv)} variants&#34;)
+
+        if len(df_snv) &gt; 0:
+            logger.info(f&#34;Available columns: {df_snv.columns.tolist()}&#34;)
+
+            # Use ReferenceAlleleVCF and AlternateAlleleVCF fields
+            if &#34;ReferenceAlleleVCF&#34; in df_snv.columns and &#34;AlternateAlleleVCF&#34; in df_snv.columns:
+                logger.info(&#34;Using VCF allele fields (ReferenceAlleleVCF, AlternateAlleleVCF)&#34;)
+                # copy VCF field to standard field
+                df_snv[&#34;ReferenceAllele&#34;] = df_snv[&#34;ReferenceAlleleVCF&#34;]
+                df_snv[&#34;AlternateAllele&#34;] = df_snv[&#34;AlternateAlleleVCF&#34;]
+
+            logger.info(f&#34;First few ReferenceAllele values: {df_snv[&#39;ReferenceAllele&#39;].head(10).tolist()}&#34;)
+            logger.info(f&#34;First few AlternateAllele values: {df_snv[&#39;AlternateAllele&#39;].head(10).tolist()}&#34;)
+
+        # Filter only valid allele information by excluding &#34;na&#34; value
+        valid_alleles = (
+            (df_snv[&#34;ReferenceAllele&#34;].notna())
+            &amp; (df_snv[&#34;AlternateAllele&#34;].notna())
+            &amp; (df_snv[&#34;ReferenceAllele&#34;].astype(str).str.len() &gt; 0)
+            &amp; (df_snv[&#34;AlternateAllele&#34;].astype(str).str.len() &gt; 0)
+            &amp; (df_snv[&#34;ReferenceAllele&#34;].astype(str).str.lower() != &#34;na&#34;)
+            &amp; (df_snv[&#34;AlternateAllele&#34;].astype(str).str.lower() != &#34;na&#34;)
+        )
+
+        df_snv = df_snv[valid_alleles].copy()
+        logger.info(f&#34;After removing null/na alleles: {len(df_snv)} variants&#34;)
+
+        # Filter only single bases
+        if len(df_snv) &gt; 0:
+            # Convert to uppercase and process
+            df_snv[&#34;ReferenceAllele&#34;] = df_snv[&#34;ReferenceAllele&#34;].astype(str).str.upper()
+            df_snv[&#34;AlternateAllele&#34;] = df_snv[&#34;AlternateAllele&#34;].astype(str).str.upper()
+
+            valid_ref_len = df_snv[&#34;ReferenceAllele&#34;].str.len() == 1
+            valid_alt_len = df_snv[&#34;AlternateAllele&#34;].str.len() == 1
+            valid_ref_base = df_snv[&#34;ReferenceAllele&#34;].isin([&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;])
+            valid_alt_base = df_snv[&#34;AlternateAllele&#34;].isin([&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;])
+
+            logger.info(f&#34;Valid reference length: {valid_ref_len.sum()}&#34;)
+            logger.info(f&#34;Valid alternate length: {valid_alt_len.sum()}&#34;)
+            logger.info(f&#34;Valid reference bases: {valid_ref_base.sum()}&#34;)
+            logger.info(f&#34;Valid alternate bases: {valid_alt_base.sum()}&#34;)
+
+            df_snv = df_snv[valid_ref_len &amp; valid_alt_len &amp; valid_ref_base &amp; valid_alt_base].copy()
+            logger.info(f&#34;After allele filtering: {len(df_snv)} variants&#34;)
+
+            # Check the sample value after filtering
+            if len(df_snv) &gt; 0:
+                logger.info(f&#34;Final dataset: {len(df_snv)} variants&#34;)
+                logger.info(f&#34;Final ReferenceAllele sample: {df_snv[&#39;ReferenceAllele&#39;].value_counts().head()}&#34;)
+                logger.info(f&#34;Final AlternateAllele sample: {df_snv[&#39;AlternateAllele&#39;].value_counts().head()}&#34;)
+
+        return df_snv
+
+    def filter_by_clinical_significance(self, df):
+        &#34;&#34;&#34;
+        Filter by clinical significance
+
+        Args:
+            df (pd.DataFrame): ClinVar data
+
+        Returns:
+            pd.DataFrame: Filtered data
+        &#34;&#34;&#34;
+        logger.info(f&#34;Starting clinical significance filtering with {len(df)} variants&#34;)
+
+        # Check the actual ClinicalSignificance value
+        logger.info(&#34;Available clinical significance values:&#34;)
+        for value, count in df[&#34;ClinicalSignificance&#34;].value_counts().head(20).items():
+            logger.info(f&#34;  {value}: {count}&#34;)
+
+        clear_classifications = [
+            &#34;Pathogenic&#34;,
+            &#34;Likely pathogenic&#34;,
+            &#34;Benign&#34;,
+            &#34;Likely benign&#34;,
+        ]
+
+        df_filtered = df[df[&#34;ClinicalSignificance&#34;].isin(clear_classifications)].copy()
+        logger.info(f&#34;After clinical significance filtering: {len(df_filtered)} variants&#34;)
+
+        return df_filtered
+
+    def get_reference_sequences(self, df, sequence_length=50):
+        &#34;&#34;&#34;
+        Get reference array (simplified version - actual implementation uses external API)
+
+        Args:
+            df (pd.DataFrame): ClinVar data
+            sequence_length (int): array length to obtain
+
+        Returns:
+            pd.DataFrame: Data with reference array added
+        &#34;&#34;&#34;
+        logger.info(&#34;Generating reference sequences (mock implementation)&#34;)
+
+        # In actual implementation, use Ensembl REST API or NCBI API
+        # you need to get the actual reference array
+        # Here we will generate a random array as a sample implementation
+
+        import random
+
+        def generate_mock_sequence(length):
+            &#34;&#34;&#34;Generate DNA sequence for mock&#34;&#34;&#34;
+            bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+            return &#34;&#34;.join(random.choices(bases, k=length))
+
+        def create_variant_sequence(ref_seq, position, ref_allele, alt_allele):
+            &#34;&#34;&#34;Create mutant array&#34;&#34;&#34;
+            # Place mutation near the center of the array
+            mid_pos = len(ref_seq) // 2
+            variant_seq = ref_seq[:mid_pos] + alt_allele + ref_seq[mid_pos + 1 :]
+            return variant_seq
+
+        reference_sequences = []
+        variant_sequences = []
+
+        for _, row in df.iterrows():
+            # Generate mock reference array
+            ref_seq = generate_mock_sequence(sequence_length)
+
+            # create mutant array
+            var_seq = create_variant_sequence(
+                ref_seq,
+                sequence_length // 2,  # central position
+                row[&#34;ReferenceAllele&#34;],
+                row[&#34;AlternateAllele&#34;],
+            )
+
+            reference_sequences.append(ref_seq)
+            variant_sequences.append(var_seq)
+
+        df_with_sequences = df.copy()
+        df_with_sequences[&#34;reference_sequence&#34;] = reference_sequences
+        df_with_sequences[&#34;variant_sequence&#34;] = variant_sequences
+
+        logger.info(&#34;Reference sequences generated (mock)&#34;)
+        return df_with_sequences
+
+    def prepare_evaluation_dataset(self, df, max_samples_per_class=1000):
+        &#34;&#34;&#34;
+        Prepare dataset for evaluation
+
+        Args:
+            df (pd.DataFrame): Preprocessed ClinVar data
+            max_samples_per_class (int): Maximum number of samples per class
+
+        Returns:
+            pd.DataFrame: Evaluation dataset
+        &#34;&#34;&#34;
+        logger.info(&#34;Preparing evaluation dataset&#34;)
+
+        # Convert to binary classification of pathogenic/non-pathogenic
+        pathogenic_terms = [&#34;Pathogenic&#34;, &#34;Likely pathogenic&#34;]
+        benign_terms = [&#34;Benign&#34;, &#34;Likely benign&#34;]
+
+        df_pathogenic = df[df[&#34;ClinicalSignificance&#34;].isin(pathogenic_terms)].copy()
+        df_benign = df[df[&#34;ClinicalSignificance&#34;].isin(benign_terms)].copy()
+
+        # Number of sampleslimit
+        if len(df_pathogenic) &gt; max_samples_per_class:
+            df_pathogenic = df_pathogenic.sample(n=max_samples_per_class, random_state=42)
+
+        if len(df_benign) &gt; max_samples_per_class:
+            df_benign = df_benign.sample(n=max_samples_per_class, random_state=42)
+
+        # join
+        df_eval = pd.concat([df_pathogenic, df_benign], ignore_index=True)
+
+        # add standardized labels
+        df_eval[&#34;pathogenic&#34;] = df_eval[&#34;ClinicalSignificance&#34;].apply(lambda x: 1 if x in pathogenic_terms else 0)
+
+        # keep only necessary columns
+        columns_to_keep = [
+            &#34;VariationID&#34;,
+            &#34;GeneSymbol&#34;,
+            &#34;ClinicalSignificance&#34;,
+            &#34;pathogenic&#34;,
+            &#34;Chromosome&#34;,
+            &#34;Start&#34;,
+            &#34;ReferenceAllele&#34;,
+            &#34;AlternateAllele&#34;,
+            &#34;reference_sequence&#34;,
+            &#34;variant_sequence&#34;,
+        ]
+
+        df_eval = df_eval[columns_to_keep].copy()
+
+        # shuffle data
+        df_eval = df_eval.sample(frac=1, random_state=42).reset_index(drop=True)
+
+        logger.info(f&#34;Prepared evaluation dataset with {len(df_eval)} variants&#34;)
+        logger.info(f&#34;Pathogenic: {len(df_pathogenic)}, Benign: {len(df_benign)}&#34;)
+
+        return df_eval
+
+    def save_dataset(self, df, filename):
+        &#34;&#34;&#34;
+        Save dataset
+
+        Args:
+            df (pd.DataFrame): Data set to save
+            filename (str): file name
+        &#34;&#34;&#34;
+        filepath = self.output_dir / filename
+
+        # Save in multiple formats
+        df.to_csv(str(filepath).replace(&#34;.csv&#34;, &#34;.csv&#34;), index=False)
+        df.to_json(str(filepath).replace(&#34;.csv&#34;, &#34;.json&#34;), orient=&#34;records&#34;, indent=2)
+
+        logger.info(f&#34;Dataset saved to {filepath} (CSV and JSON formats)&#34;)
+
+    def create_statistics_report(self, df):
+        &#34;&#34;&#34;
+        Create statistical reports for datasets
+
+        Args:
+            df (pd.DataFrame): Evaluation dataset
+        &#34;&#34;&#34;
+        report_file = self.output_dir / &#34;dataset_statistics.txt&#34;
+
+        with open(report_file, &#34;w&#34;) as f:
+            f.write(&#34;ClinVar Dataset Statistics Report\n&#34;)
+            f.write(&#34;=&#34; * 50 + &#34;\n\n&#34;)
+
+            f.write(f&#34;Total variants: {len(df)}\n&#34;)
+            f.write(f&#34;Pathogenic variants: {len(df[df[&#39;pathogenic&#39;] == 1])}\n&#34;)
+            f.write(f&#34;Benign variants: {len(df[df[&#39;pathogenic&#39;] == 0])}\n\n&#34;)
+
+            f.write(&#34;Clinical Significance Distribution:\n&#34;)
+            for sig, count in df[&#34;ClinicalSignificance&#34;].value_counts().items():
+                f.write(f&#34;  {sig}: {count}\n&#34;)
+            f.write(&#34;\n&#34;)
+
+            f.write(&#34;Chromosome Distribution (top 10):\n&#34;)
+            for chrom, count in df[&#34;Chromosome&#34;].value_counts().head(10).items():
+                f.write(f&#34;  {chrom}: {count}\n&#34;)
+            f.write(&#34;\n&#34;)
+
+            f.write(&#34;Gene Distribution (top 10):\n&#34;)
+            for gene, count in df[&#34;GeneSymbol&#34;].value_counts().head(10).items():
+                f.write(f&#34;  {gene}: {count}\n&#34;)
+            f.write(&#34;\n&#34;)
+
+            f.write(&#34;Reference/Alternate Allele Distribution:\n&#34;)
+            f.write(&#34;Reference Alleles:\n&#34;)
+            for allele, count in df[&#34;ReferenceAllele&#34;].value_counts().items():
+                f.write(f&#34;  {allele}: {count}\n&#34;)
+            f.write(&#34;Alternate Alleles:\n&#34;)
+            for allele, count in df[&#34;AlternateAllele&#34;].value_counts().items():
+                f.write(f&#34;  {allele}: {count}\n&#34;)
+
+        logger.info(f&#34;Statistics report saved to {report_file}&#34;)</code></pre>
+</details>
+<div class="desc"><p>ClinVar data acquisition/preprocessing class</p>
+<p>initialization</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_dir</code></strong> :&ensp;<code>str</code></dt>
+<dd>Output directory</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.create_statistics_report"><code class="name flex">
+<span>def <span class="ident">create_statistics_report</span></span>(<span>self, df)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_statistics_report(self, df):
+    &#34;&#34;&#34;
+    Create statistical reports for datasets
+
+    Args:
+        df (pd.DataFrame): Evaluation dataset
+    &#34;&#34;&#34;
+    report_file = self.output_dir / &#34;dataset_statistics.txt&#34;
+
+    with open(report_file, &#34;w&#34;) as f:
+        f.write(&#34;ClinVar Dataset Statistics Report\n&#34;)
+        f.write(&#34;=&#34; * 50 + &#34;\n\n&#34;)
+
+        f.write(f&#34;Total variants: {len(df)}\n&#34;)
+        f.write(f&#34;Pathogenic variants: {len(df[df[&#39;pathogenic&#39;] == 1])}\n&#34;)
+        f.write(f&#34;Benign variants: {len(df[df[&#39;pathogenic&#39;] == 0])}\n\n&#34;)
+
+        f.write(&#34;Clinical Significance Distribution:\n&#34;)
+        for sig, count in df[&#34;ClinicalSignificance&#34;].value_counts().items():
+            f.write(f&#34;  {sig}: {count}\n&#34;)
+        f.write(&#34;\n&#34;)
+
+        f.write(&#34;Chromosome Distribution (top 10):\n&#34;)
+        for chrom, count in df[&#34;Chromosome&#34;].value_counts().head(10).items():
+            f.write(f&#34;  {chrom}: {count}\n&#34;)
+        f.write(&#34;\n&#34;)
+
+        f.write(&#34;Gene Distribution (top 10):\n&#34;)
+        for gene, count in df[&#34;GeneSymbol&#34;].value_counts().head(10).items():
+            f.write(f&#34;  {gene}: {count}\n&#34;)
+        f.write(&#34;\n&#34;)
+
+        f.write(&#34;Reference/Alternate Allele Distribution:\n&#34;)
+        f.write(&#34;Reference Alleles:\n&#34;)
+        for allele, count in df[&#34;ReferenceAllele&#34;].value_counts().items():
+            f.write(f&#34;  {allele}: {count}\n&#34;)
+        f.write(&#34;Alternate Alleles:\n&#34;)
+        for allele, count in df[&#34;AlternateAllele&#34;].value_counts().items():
+            f.write(f&#34;  {allele}: {count}\n&#34;)
+
+    logger.info(f&#34;Statistics report saved to {report_file}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Create statistical reports for datasets</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Evaluation dataset</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.download_clinvar_data"><code class="name flex">
+<span>def <span class="ident">download_clinvar_data</span></span>(<span>self, data_type='variant_summary')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_clinvar_data(self, data_type=&#34;variant_summary&#34;):
+    &#34;&#34;&#34;
+    Download ClinVar data
+
+    Args:
+        data_type (str): Data type to download
+
+    Returns:
+        str: path of the downloaded file
+    &#34;&#34;&#34;
+    if data_type not in self.clinvar_urls:
+        raise ValueError(f&#34;Unknown data type: {data_type}&#34;)
+
+    url = self.clinvar_urls[data_type]
+    filename = self.output_dir / f&#34;{data_type}.txt.gz&#34;
+
+    logger.info(f&#34;Downloading {data_type} from {url}&#34;)
+
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    with open(filename, &#34;wb&#34;) as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+    logger.info(f&#34;Downloaded to {filename}&#34;)
+    return str(filename)</code></pre>
+</details>
+<div class="desc"><p>Download ClinVar data</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>Data type to download</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>path of the downloaded file</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.extract_and_load_data"><code class="name flex">
+<span>def <span class="ident">extract_and_load_data</span></span>(<span>self, gzip_file)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_and_load_data(self, gzip_file):
+    &#34;&#34;&#34;
+    Unzip the compressed file and read it as a DataFrame
+
+    Args:
+        gzip_file (str): gzip file path
+
+    Returns:
+        pd.DataFrame: Loaded data
+    &#34;&#34;&#34;
+    logger.info(f&#34;Extracting and loading {gzip_file}&#34;)
+
+    with gzip.open(gzip_file, &#34;rt&#34;, encoding=&#34;utf-8&#34;) as f:
+        df = pd.read_csv(f, sep=&#34;\t&#34;, low_memory=False)
+
+    logger.info(f&#34;Loaded {len(df)} records&#34;)
+    return df</code></pre>
+</details>
+<div class="desc"><p>Unzip the compressed file and read it as a DataFrame</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gzip_file</code></strong> :&ensp;<code>str</code></dt>
+<dd>gzip file path</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Loaded data</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.filter_by_clinical_significance"><code class="name flex">
+<span>def <span class="ident">filter_by_clinical_significance</span></span>(<span>self, df)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def filter_by_clinical_significance(self, df):
+    &#34;&#34;&#34;
+    Filter by clinical significance
+
+    Args:
+        df (pd.DataFrame): ClinVar data
+
+    Returns:
+        pd.DataFrame: Filtered data
+    &#34;&#34;&#34;
+    logger.info(f&#34;Starting clinical significance filtering with {len(df)} variants&#34;)
+
+    # Check the actual ClinicalSignificance value
+    logger.info(&#34;Available clinical significance values:&#34;)
+    for value, count in df[&#34;ClinicalSignificance&#34;].value_counts().head(20).items():
+        logger.info(f&#34;  {value}: {count}&#34;)
+
+    clear_classifications = [
+        &#34;Pathogenic&#34;,
+        &#34;Likely pathogenic&#34;,
+        &#34;Benign&#34;,
+        &#34;Likely benign&#34;,
+    ]
+
+    df_filtered = df[df[&#34;ClinicalSignificance&#34;].isin(clear_classifications)].copy()
+    logger.info(f&#34;After clinical significance filtering: {len(df_filtered)} variants&#34;)
+
+    return df_filtered</code></pre>
+</details>
+<div class="desc"><p>Filter by clinical significance</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>ClinVar data</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Filtered data</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.filter_single_nucleotide_variants"><code class="name flex">
+<span>def <span class="ident">filter_single_nucleotide_variants</span></span>(<span>self, df)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def filter_single_nucleotide_variants(self, df):
+    &#34;&#34;&#34;
+    Filter only single nucleotide variations (SNVs)
+
+    Args:
+        df (pd.DataFrame): ClinVar data
+
+    Returns:
+        pd.DataFrame: Filtered data
+    &#34;&#34;&#34;
+    logger.info(f&#34;Starting with {len(df)} total variants&#34;)
+
+    # Check available mutation types
+    logger.info(f&#34;Available variant types: {df[&#39;Type&#39;].value_counts().head(10)}&#34;)
+
+    # Filter by mutation type
+    snv_types = [&#34;single nucleotide variant&#34;, &#34;SNV&#34;]
+    df_snv = df[df[&#34;Type&#34;].isin(snv_types)].copy()
+    logger.info(f&#34;After type filtering: {len(df_snv)} variants&#34;)
+
+    if len(df_snv) &gt; 0:
+        logger.info(f&#34;Available columns: {df_snv.columns.tolist()}&#34;)
+
+        # Use ReferenceAlleleVCF and AlternateAlleleVCF fields
+        if &#34;ReferenceAlleleVCF&#34; in df_snv.columns and &#34;AlternateAlleleVCF&#34; in df_snv.columns:
+            logger.info(&#34;Using VCF allele fields (ReferenceAlleleVCF, AlternateAlleleVCF)&#34;)
+            # copy VCF field to standard field
+            df_snv[&#34;ReferenceAllele&#34;] = df_snv[&#34;ReferenceAlleleVCF&#34;]
+            df_snv[&#34;AlternateAllele&#34;] = df_snv[&#34;AlternateAlleleVCF&#34;]
+
+        logger.info(f&#34;First few ReferenceAllele values: {df_snv[&#39;ReferenceAllele&#39;].head(10).tolist()}&#34;)
+        logger.info(f&#34;First few AlternateAllele values: {df_snv[&#39;AlternateAllele&#39;].head(10).tolist()}&#34;)
+
+    # Filter only valid allele information by excluding &#34;na&#34; value
+    valid_alleles = (
+        (df_snv[&#34;ReferenceAllele&#34;].notna())
+        &amp; (df_snv[&#34;AlternateAllele&#34;].notna())
+        &amp; (df_snv[&#34;ReferenceAllele&#34;].astype(str).str.len() &gt; 0)
+        &amp; (df_snv[&#34;AlternateAllele&#34;].astype(str).str.len() &gt; 0)
+        &amp; (df_snv[&#34;ReferenceAllele&#34;].astype(str).str.lower() != &#34;na&#34;)
+        &amp; (df_snv[&#34;AlternateAllele&#34;].astype(str).str.lower() != &#34;na&#34;)
+    )
+
+    df_snv = df_snv[valid_alleles].copy()
+    logger.info(f&#34;After removing null/na alleles: {len(df_snv)} variants&#34;)
+
+    # Filter only single bases
+    if len(df_snv) &gt; 0:
+        # Convert to uppercase and process
+        df_snv[&#34;ReferenceAllele&#34;] = df_snv[&#34;ReferenceAllele&#34;].astype(str).str.upper()
+        df_snv[&#34;AlternateAllele&#34;] = df_snv[&#34;AlternateAllele&#34;].astype(str).str.upper()
+
+        valid_ref_len = df_snv[&#34;ReferenceAllele&#34;].str.len() == 1
+        valid_alt_len = df_snv[&#34;AlternateAllele&#34;].str.len() == 1
+        valid_ref_base = df_snv[&#34;ReferenceAllele&#34;].isin([&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;])
+        valid_alt_base = df_snv[&#34;AlternateAllele&#34;].isin([&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;])
+
+        logger.info(f&#34;Valid reference length: {valid_ref_len.sum()}&#34;)
+        logger.info(f&#34;Valid alternate length: {valid_alt_len.sum()}&#34;)
+        logger.info(f&#34;Valid reference bases: {valid_ref_base.sum()}&#34;)
+        logger.info(f&#34;Valid alternate bases: {valid_alt_base.sum()}&#34;)
+
+        df_snv = df_snv[valid_ref_len &amp; valid_alt_len &amp; valid_ref_base &amp; valid_alt_base].copy()
+        logger.info(f&#34;After allele filtering: {len(df_snv)} variants&#34;)
+
+        # Check the sample value after filtering
+        if len(df_snv) &gt; 0:
+            logger.info(f&#34;Final dataset: {len(df_snv)} variants&#34;)
+            logger.info(f&#34;Final ReferenceAllele sample: {df_snv[&#39;ReferenceAllele&#39;].value_counts().head()}&#34;)
+            logger.info(f&#34;Final AlternateAllele sample: {df_snv[&#39;AlternateAllele&#39;].value_counts().head()}&#34;)
+
+    return df_snv</code></pre>
+</details>
+<div class="desc"><p>Filter only single nucleotide variations (SNVs)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>ClinVar data</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Filtered data</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.get_reference_sequences"><code class="name flex">
+<span>def <span class="ident">get_reference_sequences</span></span>(<span>self, df, sequence_length=50)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_reference_sequences(self, df, sequence_length=50):
+    &#34;&#34;&#34;
+    Get reference array (simplified version - actual implementation uses external API)
+
+    Args:
+        df (pd.DataFrame): ClinVar data
+        sequence_length (int): array length to obtain
+
+    Returns:
+        pd.DataFrame: Data with reference array added
+    &#34;&#34;&#34;
+    logger.info(&#34;Generating reference sequences (mock implementation)&#34;)
+
+    # In actual implementation, use Ensembl REST API or NCBI API
+    # you need to get the actual reference array
+    # Here we will generate a random array as a sample implementation
+
+    import random
+
+    def generate_mock_sequence(length):
+        &#34;&#34;&#34;Generate DNA sequence for mock&#34;&#34;&#34;
+        bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+        return &#34;&#34;.join(random.choices(bases, k=length))
+
+    def create_variant_sequence(ref_seq, position, ref_allele, alt_allele):
+        &#34;&#34;&#34;Create mutant array&#34;&#34;&#34;
+        # Place mutation near the center of the array
+        mid_pos = len(ref_seq) // 2
+        variant_seq = ref_seq[:mid_pos] + alt_allele + ref_seq[mid_pos + 1 :]
+        return variant_seq
+
+    reference_sequences = []
+    variant_sequences = []
+
+    for _, row in df.iterrows():
+        # Generate mock reference array
+        ref_seq = generate_mock_sequence(sequence_length)
+
+        # create mutant array
+        var_seq = create_variant_sequence(
+            ref_seq,
+            sequence_length // 2,  # central position
+            row[&#34;ReferenceAllele&#34;],
+            row[&#34;AlternateAllele&#34;],
+        )
+
+        reference_sequences.append(ref_seq)
+        variant_sequences.append(var_seq)
+
+    df_with_sequences = df.copy()
+    df_with_sequences[&#34;reference_sequence&#34;] = reference_sequences
+    df_with_sequences[&#34;variant_sequence&#34;] = variant_sequences
+
+    logger.info(&#34;Reference sequences generated (mock)&#34;)
+    return df_with_sequences</code></pre>
+</details>
+<div class="desc"><p>Get reference array (simplified version - actual implementation uses external API)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>ClinVar data</dd>
+<dt><strong><code>sequence_length</code></strong> :&ensp;<code>int</code></dt>
+<dd>array length to obtain</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Data with reference array added</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.prepare_evaluation_dataset"><code class="name flex">
+<span>def <span class="ident">prepare_evaluation_dataset</span></span>(<span>self, df, max_samples_per_class=1000)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_evaluation_dataset(self, df, max_samples_per_class=1000):
+    &#34;&#34;&#34;
+    Prepare dataset for evaluation
+
+    Args:
+        df (pd.DataFrame): Preprocessed ClinVar data
+        max_samples_per_class (int): Maximum number of samples per class
+
+    Returns:
+        pd.DataFrame: Evaluation dataset
+    &#34;&#34;&#34;
+    logger.info(&#34;Preparing evaluation dataset&#34;)
+
+    # Convert to binary classification of pathogenic/non-pathogenic
+    pathogenic_terms = [&#34;Pathogenic&#34;, &#34;Likely pathogenic&#34;]
+    benign_terms = [&#34;Benign&#34;, &#34;Likely benign&#34;]
+
+    df_pathogenic = df[df[&#34;ClinicalSignificance&#34;].isin(pathogenic_terms)].copy()
+    df_benign = df[df[&#34;ClinicalSignificance&#34;].isin(benign_terms)].copy()
+
+    # Number of sampleslimit
+    if len(df_pathogenic) &gt; max_samples_per_class:
+        df_pathogenic = df_pathogenic.sample(n=max_samples_per_class, random_state=42)
+
+    if len(df_benign) &gt; max_samples_per_class:
+        df_benign = df_benign.sample(n=max_samples_per_class, random_state=42)
+
+    # join
+    df_eval = pd.concat([df_pathogenic, df_benign], ignore_index=True)
+
+    # add standardized labels
+    df_eval[&#34;pathogenic&#34;] = df_eval[&#34;ClinicalSignificance&#34;].apply(lambda x: 1 if x in pathogenic_terms else 0)
+
+    # keep only necessary columns
+    columns_to_keep = [
+        &#34;VariationID&#34;,
+        &#34;GeneSymbol&#34;,
+        &#34;ClinicalSignificance&#34;,
+        &#34;pathogenic&#34;,
+        &#34;Chromosome&#34;,
+        &#34;Start&#34;,
+        &#34;ReferenceAllele&#34;,
+        &#34;AlternateAllele&#34;,
+        &#34;reference_sequence&#34;,
+        &#34;variant_sequence&#34;,
+    ]
+
+    df_eval = df_eval[columns_to_keep].copy()
+
+    # shuffle data
+    df_eval = df_eval.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    logger.info(f&#34;Prepared evaluation dataset with {len(df_eval)} variants&#34;)
+    logger.info(f&#34;Pathogenic: {len(df_pathogenic)}, Benign: {len(df_benign)}&#34;)
+
+    return df_eval</code></pre>
+</details>
+<div class="desc"><p>Prepare dataset for evaluation</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Preprocessed ClinVar data</dd>
+<dt><strong><code>max_samples_per_class</code></strong> :&ensp;<code>int</code></dt>
+<dd>Maximum number of samples per class</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Evaluation dataset</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.save_dataset"><code class="name flex">
+<span>def <span class="ident">save_dataset</span></span>(<span>self, df, filename)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_dataset(self, df, filename):
+    &#34;&#34;&#34;
+    Save dataset
+
+    Args:
+        df (pd.DataFrame): Data set to save
+        filename (str): file name
+    &#34;&#34;&#34;
+    filepath = self.output_dir / filename
+
+    # Save in multiple formats
+    df.to_csv(str(filepath).replace(&#34;.csv&#34;, &#34;.csv&#34;), index=False)
+    df.to_json(str(filepath).replace(&#34;.csv&#34;, &#34;.json&#34;), orient=&#34;records&#34;, indent=2)
+
+    logger.info(f&#34;Dataset saved to {filepath} (CSV and JSON formats)&#34;)</code></pre>
+</details>
+<div class="desc"><p>Save dataset</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Data set to save</dd>
+<dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
+<dd>file name</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar" href="index.html">molcrawl.tasks.evaluation.clinvar</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.main" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.main">main</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor">ClinVarProcessor</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.create_statistics_report" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.create_statistics_report">create_statistics_report</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.download_clinvar_data" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.download_clinvar_data">download_clinvar_data</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.extract_and_load_data" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.extract_and_load_data">extract_and_load_data</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.filter_by_clinical_significance" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.filter_by_clinical_significance">filter_by_clinical_significance</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.filter_single_nucleotide_variants" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.filter_single_nucleotide_variants">filter_single_nucleotide_variants</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.get_reference_sequences" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.get_reference_sequences">get_reference_sequences</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.prepare_evaluation_dataset" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.prepare_evaluation_dataset">prepare_evaluation_dataset</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.save_dataset" href="#molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation.ClinVarProcessor.save_dataset">save_dataset</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

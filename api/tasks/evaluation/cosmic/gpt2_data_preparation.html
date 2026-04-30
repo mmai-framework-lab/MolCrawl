@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation API documentation</title>
+<meta name="description" content="COSMIC data download/preprocessing script …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation</code></h1>
+</header>
+<section id="section-intro">
+<p>COSMIC data download/preprocessing script</p>
+<p>Download cancer-related mutation data from the COSMIC database,
+Preprocess the genome sequence model into a format suitable for evaluation.</p>
+<p>Notice: LEARNING_SOURCE_DIRSetting environment variables is required.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    &#34;&#34;&#34;Main processing&#34;&#34;&#34;
+    _configure_logging()
+    parser = argparse.ArgumentParser(
+        description=&#34;COSMIC data preparation for genome sequence evaluation&#34;,
+        epilog=&#34;Note: LEARNING_SOURCE_DIR environment variable must be set.&#34;,
+    )
+    parser.add_argument(
+        &#34;--output_dir&#34;,
+        default=None,
+        help=&#34;Output directory (default: $LEARNING_SOURCE_DIR/genome_sequence/data/cosmic)&#34;,
+    )
+    parser.add_argument(&#34;--download&#34;, action=&#34;store_true&#34;, help=&#34;Download COSMIC data&#34;)
+    parser.add_argument(&#34;--max_samples&#34;, type=int, default=1000, help=&#34;Maximum samples per class&#34;)
+    parser.add_argument(&#34;--sequence_length&#34;, type=int, default=100, help=&#34;Sequence length&#34;)
+    parser.add_argument(
+        &#34;--create_sample_data&#34;,
+        action=&#34;store_true&#34;,
+        help=&#34;Create sample data instead of downloading&#34;,
+    )
+
+    args = parser.parse_args()
+
+    processor = COSMICProcessor(args.output_dir)
+
+    if args.create_sample_data:
+        logger.info(&#34;Creating sample COSMIC data&#34;)
+        processor.create_sample_cosmic_data(args.max_samples)
+    else:
+        logger.info(&#34;Sample COSMIC data creation completed&#34;)
+        logger.info(&#34;Note: For real COSMIC data, registration and authentication are required&#34;)
+        logger.info(&#34;Creating sample data for demonstration...&#34;)
+        processor.create_sample_cosmic_data(args.max_samples)
+
+    logger.info(&#34;COSMIC data preparation completed&#34;)</code></pre>
+</details>
+<div class="desc"><p>Main processing</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor"><code class="flex name class">
+<span>class <span class="ident">COSMICProcessor</span></span>
+<span>(</span><span>output_dir=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class COSMICProcessor:
+    &#34;&#34;&#34;COSMIC data acquisition/preprocessing class&#34;&#34;&#34;
+
+    def __init__(self, output_dir=None):
+        &#34;&#34;&#34;
+        initialization
+
+        Args:
+            output_dir (str): Output directory（NoneIn the case of$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）
+        &#34;&#34;&#34;
+        if output_dir is None:
+            learning_source = check_learning_source_dir()
+            output_dir = os.path.join(learning_source, &#34;genome_sequence&#34;, &#34;data&#34;, &#34;cosmic&#34;)
+
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(f&#34;Output directory: {self.output_dir}&#34;)
+
+        # COSMIC public data URL (dataset that does not require authentication)
+        self.cosmic_urls = {
+            &#34;census&#34;: &#34;https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v97/Cancer_Gene_Census.csv&#34;,
+            &#34;mutations&#34;: &#34;https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v97/CosmicMutantExport.tsv.gz&#34;,
+        }
+
+        # Cancer severity classification
+        self.cancer_significance_map = {
+            &#34;pathogenic&#34;: [&#34;pathogenic&#34;, &#34;likely_pathogenic&#34;, &#34;oncogenic&#34;],
+            &#34;benign&#34;: [&#34;benign&#34;, &#34;likely_benign&#34;, &#34;neutral&#34;],
+            &#34;uncertain&#34;: [&#34;uncertain_significance&#34;, &#34;conflicting&#34;, &#34;unknown&#34;],
+        }
+
+    def download_cosmic_data(self, dataset_type=&#34;census&#34;):
+        &#34;&#34;&#34;
+        Download COSMIC data
+
+        Args:
+            dataset_type (str): dataset type (&#39;census&#39;, &#39;mutations&#39;)
+        &#34;&#34;&#34;
+        if dataset_type not in self.cosmic_urls:
+            raise ValueError(f&#34;Unknown dataset type: {dataset_type}&#34;)
+
+        url = self.cosmic_urls[dataset_type]
+        output_file = self.output_dir / f&#34;cosmic_{dataset_type}.{&#39;csv&#39; if dataset_type == &#39;census&#39; else &#39;tsv.gz&#39;}&#34;
+
+        logger.info(f&#34;Downloading COSMIC {dataset_type} data from {url}&#34;)
+
+        try:
+            response = requests.get(url, stream=True, timeout=30)
+            response.raise_for_status()
+
+            with open(output_file, &#34;wb&#34;) as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            logger.info(f&#34;Downloaded {output_file}&#34;)
+            return output_file
+
+        except Exception as e:
+            logger.error(f&#34;Failed to download {dataset_type}: {e}&#34;)
+            return None
+
+    def create_sample_cosmic_data(self, num_samples=20):
+        &#34;&#34;&#34;
+        Create sample COSMIC data (for testing)
+
+        Args:
+            num_samples (int): Number of samples to create
+        &#34;&#34;&#34;
+        logger.info(f&#34;Creating sample COSMIC data with {num_samples} samples&#34;)
+
+        # Sample data based on actual COSMIC mutation patterns
+        sample_data = []
+
+        # Known cancer-related genes and mutation patterns
+        cancer_genes = [
+            &#34;TP53&#34;,
+            &#34;KRAS&#34;,
+            &#34;PIK3CA&#34;,
+            &#34;APC&#34;,
+            &#34;BRCA1&#34;,
+            &#34;BRCA2&#34;,
+            &#34;EGFR&#34;,
+            &#34;MYC&#34;,
+        ]
+        mutation_types = [
+            &#34;Substitution - Missense&#34;,
+            &#34;Substitution - Nonsense&#34;,
+            &#34;Deletion - Frameshift&#34;,
+            &#34;Insertion - Frameshift&#34;,
+        ]
+
+        for i in range(num_samples):
+            gene = np.random.choice(cancer_genes)
+            mutation_type = np.random.choice(mutation_types)
+
+            # Generate DNA sequence (100bp)
+            bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+            ref_sequence = &#34;&#34;.join(np.random.choice(bases, 100))
+
+            # Introducing mutations
+            var_sequence = list(ref_sequence)
+            mutation_pos = np.random.randint(45, 55)  # Mutation near the center
+
+            if &#34;Missense&#34; in mutation_type or &#34;Nonsense&#34; in mutation_type:
+                # point mutation
+                original_base = var_sequence[mutation_pos]
+                possible_bases = [b for b in bases if b != original_base]
+                var_sequence[mutation_pos] = np.random.choice(possible_bases)
+            elif &#34;Deletion&#34; in mutation_type:
+                # deletion
+                del_length = np.random.randint(1, 4)
+                del var_sequence[mutation_pos : mutation_pos + del_length]
+            elif &#34;Insertion&#34; in mutation_type:
+                # insert
+                ins_length = np.random.randint(1, 4)
+                insert_bases = &#34;&#34;.join(np.random.choice(bases, ins_length))
+                var_sequence.insert(mutation_pos, insert_bases)
+
+            var_sequence = &#34;&#34;.join(var_sequence)
+
+            # Determination of cancer relevance (based on gene and mutation type)
+            if gene in [&#34;TP53&#34;, &#34;BRCA1&#34;, &#34;BRCA2&#34;] and &#34;Nonsense&#34; in mutation_type:
+                significance = &#34;pathogenic&#34;
+                oncogenic = 1
+            elif gene in [&#34;KRAS&#34;, &#34;PIK3CA&#34;] and &#34;Missense&#34; in mutation_type:
+                significance = &#34;likely_pathogenic&#34; if np.random.random() &gt; 0.3 else &#34;pathogenic&#34;
+                oncogenic = 1
+            elif &#34;Frameshift&#34; in mutation_type:
+                significance = &#34;pathogenic&#34; if np.random.random() &gt; 0.2 else &#34;likely_pathogenic&#34;
+                oncogenic = 1
+            else:
+                significance = np.random.choice([&#34;benign&#34;, &#34;likely_benign&#34;, &#34;uncertain_significance&#34;])
+                oncogenic = 0
+
+            sample_data.append(
+                {
+                    &#34;COSMIC_ID&#34;: f&#34;COSV{1000000 + i}&#34;,
+                    &#34;Gene_name&#34;: gene,
+                    &#34;Mutation_Type&#34;: mutation_type,
+                    &#34;Cancer_significance&#34;: significance,
+                    &#34;oncogenic&#34;: oncogenic,
+                    &#34;Chromosome&#34;: f&#34;chr{np.random.randint(1, 23)}&#34;,
+                    &#34;Position&#34;: np.random.randint(1000000, 200000000),
+                    &#34;Reference_sequence&#34;: ref_sequence,
+                    &#34;Variant_sequence&#34;: var_sequence,
+                    &#34;Primary_site&#34;: np.random.choice([&#34;lung&#34;, &#34;breast&#34;, &#34;colon&#34;, &#34;prostate&#34;, &#34;liver&#34;]),
+                    &#34;Sample_count&#34;: np.random.randint(1, 50),
+                    &#34;Mutation_somatic_status&#34;: &#34;Confirmed somatic&#34;,
+                }
+            )
+
+        # convert to DataFrame
+        df = pd.DataFrame(sample_data)
+
+        # Save as CSV file
+        output_file = self.output_dir / &#34;cosmic_evaluation_dataset.csv&#34;
+        df.to_csv(output_file, index=False)
+
+        logger.info(f&#34;Sample COSMIC data saved to {output_file}&#34;)
+        logger.info(f&#34;Data distribution: {df[&#39;oncogenic&#39;].value_counts().to_dict()}&#34;)
+
+        return output_file
+
+    def parse_cosmic_vcf(self, vcf_file):
+        &#34;&#34;&#34;
+        Analyze COSMIC VCF files
+
+        Args:
+            vcf_file (str): VCF file path
+
+        Returns:
+            pd.DataFrame: parsed data
+        &#34;&#34;&#34;
+        logger.info(f&#34;Parsing COSMIC VCF file: {vcf_file}&#34;)
+
+        mutations = []
+
+        try:
+            opener = gzip.open if str(vcf_file).endswith(&#34;.gz&#34;) else open
+            with opener(vcf_file, &#34;rt&#34;) as f:
+                for line_num, line in enumerate(f):
+                    if line.startswith(&#34;#&#34;):
+                        continue
+
+                    parts = line.strip().split(&#34;\t&#34;)
+                    if len(parts) &lt; 8:
+                        continue
+
+                    chrom = parts[0]
+                    pos = int(parts[1])
+                    ref = parts[3]
+                    alt = parts[4]
+                    info = parts[7]
+
+                    # extract information from INFO field
+                    info_dict = {}
+                    for item in info.split(&#34;;&#34;):
+                        if &#34;=&#34; in item:
+                            key, value = item.split(&#34;=&#34;, 1)
+                            info_dict[key] = value
+
+                    mutations.append(
+                        {
+                            &#34;chromosome&#34;: chrom,
+                            &#34;position&#34;: pos,
+                            &#34;reference_allele&#34;: ref,
+                            &#34;alternate_allele&#34;: alt,
+                            &#34;gene&#34;: info_dict.get(&#34;GENE&#34;, &#34;&#34;),
+                            &#34;cosmic_id&#34;: info_dict.get(&#34;COSMIC_ID&#34;, &#34;&#34;),
+                            &#34;mutation_type&#34;: info_dict.get(&#34;VARIANT_CLASS&#34;, &#34;&#34;),
+                            &#34;cancer_type&#34;: info_dict.get(&#34;CANCER_TYPE&#34;, &#34;&#34;),
+                            &#34;sample_count&#34;: int(info_dict.get(&#34;CNT&#34;, 1)),
+                        }
+                    )
+
+                    # Memory usage limit
+                    if line_num &gt; 100000:  # Process only the first 100,000 lines
+                        logger.info(&#34;Limiting to first 100k variants for memory efficiency&#34;)
+                        break
+
+        except Exception as e:
+            logger.error(f&#34;Error parsing VCF file: {e}&#34;)
+            return pd.DataFrame()
+
+        return pd.DataFrame(mutations)
+
+    def generate_sequences_from_variants(self, df, sequence_length=100):
+        &#34;&#34;&#34;
+        Generate reference and mutant sequences from mutation information
+
+        Args:
+            df (pd.DataFrame): variant data
+            sequence_length (int): length of the sequence to generate
+
+        Returns:
+            pd.DataFrame: Data with array information added
+        &#34;&#34;&#34;
+        logger.info(f&#34;Generating sequences of length {sequence_length}&#34;)
+
+        sequences = []
+        bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+
+        for _, row in df.iterrows():
+            # Generate random context array
+            half_len = sequence_length // 2
+
+            # Generate reference array
+            prefix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
+            suffix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
+            ref_sequence = prefix + row[&#34;reference_allele&#34;] + suffix
+
+            # Generate mutant array
+            var_sequence = prefix + row[&#34;alternate_allele&#34;] + suffix
+
+            # Adjust length
+            if len(ref_sequence) &lt; sequence_length:
+                ref_sequence += &#34;&#34;.join(np.random.choice(bases, sequence_length - len(ref_sequence)))
+            elif len(ref_sequence) &gt; sequence_length:
+                ref_sequence = ref_sequence[:sequence_length]
+
+            if len(var_sequence) &lt; sequence_length:
+                var_sequence += &#34;&#34;.join(np.random.choice(bases, sequence_length - len(var_sequence)))
+            elif len(var_sequence) &gt; sequence_length:
+                var_sequence = var_sequence[:sequence_length]
+
+            sequences.append({&#34;reference_sequence&#34;: ref_sequence, &#34;variant_sequence&#34;: var_sequence})
+
+        # Add array information to the original DataFrame
+        sequence_df = pd.DataFrame(sequences)
+        result_df = pd.concat([df.reset_index(drop=True), sequence_df], axis=1)
+
+        return result_df</code></pre>
+</details>
+<div class="desc"><p>COSMIC data acquisition/preprocessing class</p>
+<p>initialization</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_dir</code></strong> :&ensp;<code>str</code></dt>
+<dd>Output directory（NoneIn the case of$LEARNING_SOURCE_DIR/genome_sequence/data/cosmic）</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.create_sample_cosmic_data"><code class="name flex">
+<span>def <span class="ident">create_sample_cosmic_data</span></span>(<span>self, num_samples=20)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_sample_cosmic_data(self, num_samples=20):
+    &#34;&#34;&#34;
+    Create sample COSMIC data (for testing)
+
+    Args:
+        num_samples (int): Number of samples to create
+    &#34;&#34;&#34;
+    logger.info(f&#34;Creating sample COSMIC data with {num_samples} samples&#34;)
+
+    # Sample data based on actual COSMIC mutation patterns
+    sample_data = []
+
+    # Known cancer-related genes and mutation patterns
+    cancer_genes = [
+        &#34;TP53&#34;,
+        &#34;KRAS&#34;,
+        &#34;PIK3CA&#34;,
+        &#34;APC&#34;,
+        &#34;BRCA1&#34;,
+        &#34;BRCA2&#34;,
+        &#34;EGFR&#34;,
+        &#34;MYC&#34;,
+    ]
+    mutation_types = [
+        &#34;Substitution - Missense&#34;,
+        &#34;Substitution - Nonsense&#34;,
+        &#34;Deletion - Frameshift&#34;,
+        &#34;Insertion - Frameshift&#34;,
+    ]
+
+    for i in range(num_samples):
+        gene = np.random.choice(cancer_genes)
+        mutation_type = np.random.choice(mutation_types)
+
+        # Generate DNA sequence (100bp)
+        bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+        ref_sequence = &#34;&#34;.join(np.random.choice(bases, 100))
+
+        # Introducing mutations
+        var_sequence = list(ref_sequence)
+        mutation_pos = np.random.randint(45, 55)  # Mutation near the center
+
+        if &#34;Missense&#34; in mutation_type or &#34;Nonsense&#34; in mutation_type:
+            # point mutation
+            original_base = var_sequence[mutation_pos]
+            possible_bases = [b for b in bases if b != original_base]
+            var_sequence[mutation_pos] = np.random.choice(possible_bases)
+        elif &#34;Deletion&#34; in mutation_type:
+            # deletion
+            del_length = np.random.randint(1, 4)
+            del var_sequence[mutation_pos : mutation_pos + del_length]
+        elif &#34;Insertion&#34; in mutation_type:
+            # insert
+            ins_length = np.random.randint(1, 4)
+            insert_bases = &#34;&#34;.join(np.random.choice(bases, ins_length))
+            var_sequence.insert(mutation_pos, insert_bases)
+
+        var_sequence = &#34;&#34;.join(var_sequence)
+
+        # Determination of cancer relevance (based on gene and mutation type)
+        if gene in [&#34;TP53&#34;, &#34;BRCA1&#34;, &#34;BRCA2&#34;] and &#34;Nonsense&#34; in mutation_type:
+            significance = &#34;pathogenic&#34;
+            oncogenic = 1
+        elif gene in [&#34;KRAS&#34;, &#34;PIK3CA&#34;] and &#34;Missense&#34; in mutation_type:
+            significance = &#34;likely_pathogenic&#34; if np.random.random() &gt; 0.3 else &#34;pathogenic&#34;
+            oncogenic = 1
+        elif &#34;Frameshift&#34; in mutation_type:
+            significance = &#34;pathogenic&#34; if np.random.random() &gt; 0.2 else &#34;likely_pathogenic&#34;
+            oncogenic = 1
+        else:
+            significance = np.random.choice([&#34;benign&#34;, &#34;likely_benign&#34;, &#34;uncertain_significance&#34;])
+            oncogenic = 0
+
+        sample_data.append(
+            {
+                &#34;COSMIC_ID&#34;: f&#34;COSV{1000000 + i}&#34;,
+                &#34;Gene_name&#34;: gene,
+                &#34;Mutation_Type&#34;: mutation_type,
+                &#34;Cancer_significance&#34;: significance,
+                &#34;oncogenic&#34;: oncogenic,
+                &#34;Chromosome&#34;: f&#34;chr{np.random.randint(1, 23)}&#34;,
+                &#34;Position&#34;: np.random.randint(1000000, 200000000),
+                &#34;Reference_sequence&#34;: ref_sequence,
+                &#34;Variant_sequence&#34;: var_sequence,
+                &#34;Primary_site&#34;: np.random.choice([&#34;lung&#34;, &#34;breast&#34;, &#34;colon&#34;, &#34;prostate&#34;, &#34;liver&#34;]),
+                &#34;Sample_count&#34;: np.random.randint(1, 50),
+                &#34;Mutation_somatic_status&#34;: &#34;Confirmed somatic&#34;,
+            }
+        )
+
+    # convert to DataFrame
+    df = pd.DataFrame(sample_data)
+
+    # Save as CSV file
+    output_file = self.output_dir / &#34;cosmic_evaluation_dataset.csv&#34;
+    df.to_csv(output_file, index=False)
+
+    logger.info(f&#34;Sample COSMIC data saved to {output_file}&#34;)
+    logger.info(f&#34;Data distribution: {df[&#39;oncogenic&#39;].value_counts().to_dict()}&#34;)
+
+    return output_file</code></pre>
+</details>
+<div class="desc"><p>Create sample COSMIC data (for testing)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>num_samples</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of samples to create</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.download_cosmic_data"><code class="name flex">
+<span>def <span class="ident">download_cosmic_data</span></span>(<span>self, dataset_type='census')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_cosmic_data(self, dataset_type=&#34;census&#34;):
+    &#34;&#34;&#34;
+    Download COSMIC data
+
+    Args:
+        dataset_type (str): dataset type (&#39;census&#39;, &#39;mutations&#39;)
+    &#34;&#34;&#34;
+    if dataset_type not in self.cosmic_urls:
+        raise ValueError(f&#34;Unknown dataset type: {dataset_type}&#34;)
+
+    url = self.cosmic_urls[dataset_type]
+    output_file = self.output_dir / f&#34;cosmic_{dataset_type}.{&#39;csv&#39; if dataset_type == &#39;census&#39; else &#39;tsv.gz&#39;}&#34;
+
+    logger.info(f&#34;Downloading COSMIC {dataset_type} data from {url}&#34;)
+
+    try:
+        response = requests.get(url, stream=True, timeout=30)
+        response.raise_for_status()
+
+        with open(output_file, &#34;wb&#34;) as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        logger.info(f&#34;Downloaded {output_file}&#34;)
+        return output_file
+
+    except Exception as e:
+        logger.error(f&#34;Failed to download {dataset_type}: {e}&#34;)
+        return None</code></pre>
+</details>
+<div class="desc"><p>Download COSMIC data</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>dataset type ('census', 'mutations')</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.generate_sequences_from_variants"><code class="name flex">
+<span>def <span class="ident">generate_sequences_from_variants</span></span>(<span>self, df, sequence_length=100)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_sequences_from_variants(self, df, sequence_length=100):
+    &#34;&#34;&#34;
+    Generate reference and mutant sequences from mutation information
+
+    Args:
+        df (pd.DataFrame): variant data
+        sequence_length (int): length of the sequence to generate
+
+    Returns:
+        pd.DataFrame: Data with array information added
+    &#34;&#34;&#34;
+    logger.info(f&#34;Generating sequences of length {sequence_length}&#34;)
+
+    sequences = []
+    bases = [&#34;A&#34;, &#34;T&#34;, &#34;G&#34;, &#34;C&#34;]
+
+    for _, row in df.iterrows():
+        # Generate random context array
+        half_len = sequence_length // 2
+
+        # Generate reference array
+        prefix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
+        suffix = &#34;&#34;.join(np.random.choice(bases, half_len - len(row[&#34;reference_allele&#34;]) // 2))
+        ref_sequence = prefix + row[&#34;reference_allele&#34;] + suffix
+
+        # Generate mutant array
+        var_sequence = prefix + row[&#34;alternate_allele&#34;] + suffix
+
+        # Adjust length
+        if len(ref_sequence) &lt; sequence_length:
+            ref_sequence += &#34;&#34;.join(np.random.choice(bases, sequence_length - len(ref_sequence)))
+        elif len(ref_sequence) &gt; sequence_length:
+            ref_sequence = ref_sequence[:sequence_length]
+
+        if len(var_sequence) &lt; sequence_length:
+            var_sequence += &#34;&#34;.join(np.random.choice(bases, sequence_length - len(var_sequence)))
+        elif len(var_sequence) &gt; sequence_length:
+            var_sequence = var_sequence[:sequence_length]
+
+        sequences.append({&#34;reference_sequence&#34;: ref_sequence, &#34;variant_sequence&#34;: var_sequence})
+
+    # Add array information to the original DataFrame
+    sequence_df = pd.DataFrame(sequences)
+    result_df = pd.concat([df.reset_index(drop=True), sequence_df], axis=1)
+
+    return result_df</code></pre>
+</details>
+<div class="desc"><p>Generate reference and mutant sequences from mutation information</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>variant data</dd>
+<dt><strong><code>sequence_length</code></strong> :&ensp;<code>int</code></dt>
+<dd>length of the sequence to generate</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Data with array information added</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.parse_cosmic_vcf"><code class="name flex">
+<span>def <span class="ident">parse_cosmic_vcf</span></span>(<span>self, vcf_file)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_cosmic_vcf(self, vcf_file):
+    &#34;&#34;&#34;
+    Analyze COSMIC VCF files
+
+    Args:
+        vcf_file (str): VCF file path
+
+    Returns:
+        pd.DataFrame: parsed data
+    &#34;&#34;&#34;
+    logger.info(f&#34;Parsing COSMIC VCF file: {vcf_file}&#34;)
+
+    mutations = []
+
+    try:
+        opener = gzip.open if str(vcf_file).endswith(&#34;.gz&#34;) else open
+        with opener(vcf_file, &#34;rt&#34;) as f:
+            for line_num, line in enumerate(f):
+                if line.startswith(&#34;#&#34;):
+                    continue
+
+                parts = line.strip().split(&#34;\t&#34;)
+                if len(parts) &lt; 8:
+                    continue
+
+                chrom = parts[0]
+                pos = int(parts[1])
+                ref = parts[3]
+                alt = parts[4]
+                info = parts[7]
+
+                # extract information from INFO field
+                info_dict = {}
+                for item in info.split(&#34;;&#34;):
+                    if &#34;=&#34; in item:
+                        key, value = item.split(&#34;=&#34;, 1)
+                        info_dict[key] = value
+
+                mutations.append(
+                    {
+                        &#34;chromosome&#34;: chrom,
+                        &#34;position&#34;: pos,
+                        &#34;reference_allele&#34;: ref,
+                        &#34;alternate_allele&#34;: alt,
+                        &#34;gene&#34;: info_dict.get(&#34;GENE&#34;, &#34;&#34;),
+                        &#34;cosmic_id&#34;: info_dict.get(&#34;COSMIC_ID&#34;, &#34;&#34;),
+                        &#34;mutation_type&#34;: info_dict.get(&#34;VARIANT_CLASS&#34;, &#34;&#34;),
+                        &#34;cancer_type&#34;: info_dict.get(&#34;CANCER_TYPE&#34;, &#34;&#34;),
+                        &#34;sample_count&#34;: int(info_dict.get(&#34;CNT&#34;, 1)),
+                    }
+                )
+
+                # Memory usage limit
+                if line_num &gt; 100000:  # Process only the first 100,000 lines
+                    logger.info(&#34;Limiting to first 100k variants for memory efficiency&#34;)
+                    break
+
+    except Exception as e:
+        logger.error(f&#34;Error parsing VCF file: {e}&#34;)
+        return pd.DataFrame()
+
+    return pd.DataFrame(mutations)</code></pre>
+</details>
+<div class="desc"><p>Analyze COSMIC VCF files</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>vcf_file</code></strong> :&ensp;<code>str</code></dt>
+<dd>VCF file path</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>parsed data</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.cosmic" href="index.html">molcrawl.tasks.evaluation.cosmic</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.main" href="#molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.main">main</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor" href="#molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor">COSMICProcessor</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.create_sample_cosmic_data" href="#molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.create_sample_cosmic_data">create_sample_cosmic_data</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.download_cosmic_data" href="#molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.download_cosmic_data">download_cosmic_data</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.generate_sequences_from_variants" href="#molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.generate_sequences_from_variants">generate_sequences_from_variants</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.parse_cosmic_vcf" href="#molcrawl.tasks.evaluation.cosmic.gpt2_data_preparation.COSMICProcessor.parse_cosmic_vcf">parse_cosmic_vcf</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.data.molecule_nat_lang.utils.general API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.data.molecule_nat_lang.utils.general</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.molecule_nat_lang.utils.general.compute_resource_aware_params"><code class="name flex">
+<span>def <span class="ident">compute_resource_aware_params</span></span>(<span>num_rows: int = 3300000,<br>bytes_per_row_estimate: int = 2048,<br>safety_factor: float = 0.5,<br>max_workers: int = 8,<br>target_batch_bytes: int = 268435456) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_resource_aware_params(
+    num_rows: int = 3_300_000,
+    bytes_per_row_estimate: int = 2_048,
+    safety_factor: float = 0.5,
+    max_workers: int = 8,
+    target_batch_bytes: int = 256 * 1024 * 1024,  # 256 MB
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Inspect available system memory and CPU count, then compute safe values for:
+    - ``num_workers``  — parallelism for ``Dataset.map()``
+    - ``batch_size``   — rows per batch for streaming parquet writes
+
+    Parameters
+    ----------
+    num_rows:
+        Estimated total number of rows across all splits.
+    bytes_per_row_estimate:
+        Estimated bytes per row in memory (input_ids + masks, etc.).
+    safety_factor:
+        Fraction of available memory that this process may consume.
+    max_workers:
+        Hard upper bound on the returned ``num_workers``.
+    target_batch_bytes:
+        Target memory footprint per parquet write batch.
+
+    Returns
+    -------
+    dict with keys ``num_workers``, ``batch_size``, ``available_gb``, ``total_gb``.
+    &#34;&#34;&#34;
+    available_bytes, total_bytes = get_available_memory_bytes()
+    available_gb = available_bytes / 1024**3
+    total_gb = total_bytes / 1024**3
+    cpu_count = os.cpu_count() or 1
+
+    budget_bytes = available_bytes * safety_factor
+    dataset_bytes = max(num_rows * bytes_per_row_estimate, 1)
+
+    # Each worker needs ~1 partition of the dataset; pick largest safe count
+    workers_by_mem = max(1, int(budget_bytes / dataset_bytes))
+    num_workers = min(workers_by_mem, cpu_count, max_workers)
+
+    # Parquet batch: aim for target_batch_bytes per batch, clamp to [1 000, 200 000]
+    batch_size = max(1_000, min(int(target_batch_bytes / bytes_per_row_estimate), 200_000))
+
+    logger.info(
+        &#34;[ResourceAware] memory: available=%.1f GB / total=%.1f GB | &#34;
+        &#34;CPUs=%d | estimated dataset=%.1f GB | &#34;
+        &#34;→ num_workers=%d  batch_size=%d&#34;,
+        available_gb,
+        total_gb,
+        cpu_count,
+        dataset_bytes / 1024**3,
+        num_workers,
+        batch_size,
+    )
+    return {
+        &#34;num_workers&#34;: num_workers,
+        &#34;batch_size&#34;: batch_size,
+        &#34;available_gb&#34;: available_gb,
+        &#34;total_gb&#34;: total_gb,
+    }</code></pre>
+</details>
+<div class="desc"><p>Inspect available system memory and CPU count, then compute safe values for:
+- <code>num_workers</code>
+— parallelism for <code>Dataset.map()</code>
+- <code>batch_size</code>
+— rows per batch for streaming parquet writes</p>
+<h2 id="parameters">Parameters</h2>
+<p>num_rows:
+Estimated total number of rows across all splits.
+bytes_per_row_estimate:
+Estimated bytes per row in memory (input_ids + masks, etc.).
+safety_factor:
+Fraction of available memory that this process may consume.
+max_workers:
+Hard upper bound on the returned <code>num_workers</code>.
+target_batch_bytes:
+Target memory footprint per parquet write batch.</p>
+<h2 id="returns">Returns</h2>
+<p>dict with keys <code>num_workers</code>, <code>batch_size</code>, <code>available_gb</code>, <code>total_gb</code>.</p></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.general.get_available_memory_bytes"><code class="name flex">
+<span>def <span class="ident">get_available_memory_bytes</span></span>(<span>) ‑> tuple[int, int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_available_memory_bytes() -&gt; tuple[int, int]:
+    &#34;&#34;&#34;
+    Return (available_bytes, total_bytes) from /proc/meminfo.
+    Falls back to psutil if /proc/meminfo is absent (non-Linux).
+    &#34;&#34;&#34;
+    proc_meminfo = Path(&#34;/proc/meminfo&#34;)
+    if proc_meminfo.exists():
+        mem: dict[str, int] = {}
+        with open(proc_meminfo) as fh:
+            for line in fh:
+                parts = line.split()
+                if len(parts) &gt;= 2:
+                    mem[parts[0].rstrip(&#34;:&#34;)] = int(parts[1]) * 1024  # kB → bytes
+        available = mem.get(&#34;MemAvailable&#34;, mem.get(&#34;MemFree&#34;, 8 * 1024**3))
+        total = mem.get(&#34;MemTotal&#34;, available)
+        return available, total
+
+    try:
+        import psutil  # type: ignore[import]
+
+        vm = psutil.virtual_memory()
+        return vm.available, vm.total
+    except ImportError:
+        fallback = 8 * 1024**3  # assume 8 GB when nothing else is available
+        return fallback, fallback</code></pre>
+</details>
+<div class="desc"><p>Return (available_bytes, total_bytes) from /proc/meminfo.
+Falls back to psutil if /proc/meminfo is absent (non-Linux).</p></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.general.load_jsonl_dataset"><code class="name flex">
+<span>def <span class="ident">load_jsonl_dataset</span></span>(<span>dataset_path: Union[str, Path])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_jsonl_dataset(dataset_path: Union[str, Path]):
+    &#34;&#34;&#34;
+    Load SMolInstruct dataset from JSONL files in raw/ directory
+
+    Args:
+        dataset_path: Path to SMolInstruct directory (contains raw/ subdirectory)
+
+    Returns:
+        DatasetDict with train/dev/test splits
+    &#34;&#34;&#34;
+    dataset_path_obj = Path(dataset_path)
+    raw_dir = dataset_path_obj / &#34;raw&#34;
+
+    if not raw_dir.exists():
+        raise FileNotFoundError(f&#34;Raw directory not found: {raw_dir}&#34;)
+
+    splits = {}
+    for split_name in [&#34;train&#34;, &#34;dev&#34;, &#34;test&#34;]:
+        split_dir = raw_dir / split_name
+        if not split_dir.exists():
+            logger.warning(f&#34;Split directory not found: {split_dir}&#34;)
+            continue
+
+        logger.info(f&#34;Loading {split_name} split from {split_dir}&#34;)
+
+        # Load all JSONL files in the split directory
+        all_data = []
+        jsonl_files = list(split_dir.glob(&#34;*.jsonl&#34;))
+        logger.info(f&#34;Found {len(jsonl_files)} JSONL files in {split_name}&#34;)
+
+        for jsonl_file in jsonl_files:
+            with open(jsonl_file, &#34;r&#34;, encoding=&#34;utf-8&#34;) as f:
+                for line in f:
+                    if line.strip():
+                        data = json.loads(line)
+                        all_data.append(data)
+
+        logger.info(f&#34;Loaded {len(all_data)} samples for {split_name}&#34;)
+
+        # Create Dataset from list of dicts
+        # Explicitly define features to ensure proper serialization
+        if all_data:
+            # Infer features from first sample, all fields as string
+            from datasets import Dataset, Features, Value
+
+            features = Features({key: Value(&#34;string&#34;) for key in all_data[0].keys()})
+            splits[split_name] = Dataset.from_list(all_data, features=features)
+        else:
+            from datasets import Dataset
+
+            splits[split_name] = Dataset.from_list(all_data)
+
+    # Rename &#39;dev&#39; to &#39;valid&#39; for consistency
+    if &#34;dev&#34; in splits:
+        splits[&#34;valid&#34;] = splits.pop(&#34;dev&#34;)
+
+    from datasets import DatasetDict
+
+    return DatasetDict(splits)</code></pre>
+</details>
+<div class="desc"><p>Load SMolInstruct dataset from JSONL files in raw/ directory</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset_path</code></strong></dt>
+<dd>Path to SMolInstruct directory (contains raw/ subdirectory)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>DatasetDict with train/dev/test splits</p></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.general.read_dataset"><code class="name flex">
+<span>def <span class="ident">read_dataset</span></span>(<span>dataset_path: Union[str, Path])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_dataset(dataset_path: Union[str, Path]):
+    &#34;&#34;&#34;
+    Read dataset from disk, supporting JSONL, split directories, and DatasetDict format
+
+    Args:
+        dataset_path: Path to the dataset directory
+
+    Returns:
+        dict or DatasetDict: Dictionary of splits with Dataset objects
+    &#34;&#34;&#34;
+    dataset_path_obj = Path(dataset_path)
+
+    if not dataset_path_obj.exists():
+        raise FileNotFoundError(f&#34;Dataset path does not exist: {dataset_path_obj}&#34;)
+
+    ## TODO: duplication check.
+    # Check if this is a parquet file
+    if dataset_path_obj.is_file() and dataset_path_obj.suffix == &#34;.parquet&#34;:
+        logger.info(f&#34;Loading parquet file: {dataset_path_obj}&#34;)
+        from datasets import Dataset
+
+        dataset = Dataset.from_parquet(str(dataset_path_obj))
+
+        # If the dataset has a &#39;split&#39; column, split it accordingly
+        if &#34;split&#34; in dataset.column_names:
+            logger.info(&#34;Found &#39;split&#39; column, splitting dataset by split values&#34;)
+            split_values = dataset.unique(&#34;split&#34;)
+            splits = {}
+            for split_name in split_values:
+                split_dataset = dataset.filter(lambda x, split_name=split_name: x[&#34;split&#34;] == split_name)
+                # Remove the split column as it&#39;s no longer needed
+                split_dataset = split_dataset.remove_columns([&#34;split&#34;])
+                splits[split_name] = split_dataset
+                logger.info(f&#34;Created {split_name} split with {len(split_dataset)} samples&#34;)
+            from datasets import DatasetDict
+
+            return DatasetDict(splits)
+        else:
+            # Return as DatasetDict with train split
+            from datasets import DatasetDict
+
+            return DatasetDict({&#34;train&#34;: dataset})
+
+    # Check if this is a SMolInstruct-style directory with raw/ subdirectory
+    raw_dir = dataset_path_obj / &#34;raw&#34;
+    if raw_dir.exists() and raw_dir.is_dir():
+        logger.info(f&#34;Detected JSONL format dataset at {dataset_path_obj}&#34;)
+        return load_jsonl_dataset(dataset_path_obj)
+
+    # Try to load as DatasetDict first (if it was saved with save_to_disk)
+    try:
+        logger.info(f&#34;Attempting to load dataset as DatasetDict from {dataset_path_obj}&#34;)
+        from datasets import DatasetDict
+
+        dataset_dict = DatasetDict.load_from_disk(str(dataset_path_obj))
+        logger.info(f&#34;Successfully loaded DatasetDict with splits: {list(dataset_dict.keys())}&#34;)
+        return dataset_dict
+    except Exception as e:
+        logger.debug(f&#34;Not a DatasetDict format: {e}&#34;)
+
+    # Fall back to loading individual split directories
+    splits = {}
+    try:
+        for folder in os.listdir(dataset_path_obj):
+            folder_path = dataset_path_obj / folder
+            if folder_path.is_dir():
+                # Skip cache and metadata directories
+                if folder.startswith(&#34;.&#34;) or folder == &#34;hf_cache&#34;:
+                    continue
+                try:
+                    logger.info(f&#34;Loading split: {folder}&#34;)
+                    from datasets import Dataset
+
+                    splits[folder] = Dataset.load_from_disk(str(folder_path))
+                    logger.info(f&#34;Loaded {folder} with {len(splits[folder])} samples&#34;)
+                except Exception as split_error:
+                    logger.warning(f&#34;Failed to load split {folder}: {split_error}&#34;)
+
+        if not splits:
+            raise ValueError(f&#34;No valid dataset splits found in {dataset_path_obj}&#34;)
+
+        return splits
+    except Exception as e:
+        logger.error(f&#34;Failed to read dataset from {dataset_path_obj}: {e}&#34;)
+        raise</code></pre>
+</details>
+<div class="desc"><p>Read dataset from disk, supporting JSONL, split directories, and DatasetDict format</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset_path</code></strong></dt>
+<dd>Path to the dataset directory</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code> or <code>DatasetDict</code></dt>
+<dd>Dictionary of splits with Dataset objects</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.general.save_dataset"><code class="name flex">
+<span>def <span class="ident">save_dataset</span></span>(<span>dataset, dataset_path: Union[str, Path], batch_size: int = 50000)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_dataset(dataset, dataset_path: Union[str, Path], batch_size: int = 50000):
+    &#34;&#34;&#34;
+    Save dataset to disk or as parquet file
+
+    Args:
+        dataset: Dictionary of Dataset objects or DatasetDict
+        dataset_path: Path to save the dataset (directory or .parquet file)
+        batch_size: Number of rows per batch when writing parquet (avoids OOM)
+    &#34;&#34;&#34;
+    dataset_path_obj = Path(dataset_path)
+
+    # Check if saving as parquet file
+    if dataset_path_obj.suffix == &#34;.parquet&#34;:
+        logger.info(f&#34;Saving dataset as parquet to {dataset_path_obj}&#34;)
+        os.makedirs(dataset_path_obj.parent, exist_ok=True)
+
+        # Convert to DatasetDict if it&#39;s a dict
+        from datasets import DatasetDict
+
+        if not isinstance(dataset, DatasetDict):
+            dataset = DatasetDict(dataset)
+
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        writer = None
+        total_saved = 0
+        try:
+            for split_name, split_dataset in dataset.items():
+                logger.info(f&#34;Writing split &#39;{split_name}&#39; ({len(split_dataset)} samples) to parquet...&#34;)
+                num_rows = len(split_dataset)
+                # .data returns a huggingface InMemoryTable wrapper; .table is the
+                # actual pyarrow.lib.Table that ParquetWriter.write_table() requires.
+                # .slice() on a pyarrow Table is zero-copy — no extra memory allocated.
+                pa_table = split_dataset.data.table
+                for start in range(0, num_rows, batch_size):
+                    length = min(batch_size, num_rows - start)
+                    batch_pa = pa_table.slice(start, length)
+                    split_col = pa.array([split_name] * length, type=pa.string())
+                    batch_pa = batch_pa.append_column(&#34;split&#34;, split_col)
+                    if writer is None:
+                        writer = pq.ParquetWriter(str(dataset_path_obj), batch_pa.schema)
+                    writer.write_table(batch_pa)
+                    total_saved += length
+                    logger.info(f&#34;  ... written {start + length}/{num_rows} rows for &#39;{split_name}&#39;&#34;)
+        finally:
+            if writer is not None:
+                writer.close()
+
+        logger.info(f&#34;Saved {total_saved} samples to parquet file&#34;)
+        return
+
+    # Otherwise save as directory structure
+    os.makedirs(dataset_path_obj, exist_ok=True)
+    logger.info(f&#34;Saving dataset to {dataset_path_obj}&#34;)
+
+    # If it&#39;s a DatasetDict, we can save it directly
+    from datasets import DatasetDict
+
+    if isinstance(dataset, DatasetDict):
+        dataset.save_to_disk(str(dataset_path_obj))
+        logger.info(f&#34;Saved DatasetDict with {len(dataset)} splits&#34;)
+        return
+
+    # Otherwise, save each split separately
+    for split in dataset.keys():
+        split_path = dataset_path_obj / split
+        logger.info(f&#34;Saving {split} split to {split_path}&#34;)
+        dataset[split].save_to_disk(str(split_path))
+        logger.info(f&#34;Saved {split} with {len(dataset[split])} samples&#34;)</code></pre>
+</details>
+<div class="desc"><p>Save dataset to disk or as parquet file</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset</code></strong></dt>
+<dd>Dictionary of Dataset objects or DatasetDict</dd>
+<dt><strong><code>dataset_path</code></strong></dt>
+<dd>Path to save the dataset (directory or .parquet file)</dd>
+<dt><strong><code>batch_size</code></strong></dt>
+<dd>Number of rows per batch when writing parquet (avoids OOM)</dd>
+</dl></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils" href="index.html">molcrawl.data.molecule_nat_lang.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.general.compute_resource_aware_params" href="#molcrawl.data.molecule_nat_lang.utils.general.compute_resource_aware_params">compute_resource_aware_params</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.general.get_available_memory_bytes" href="#molcrawl.data.molecule_nat_lang.utils.general.get_available_memory_bytes">get_available_memory_bytes</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.general.load_jsonl_dataset" href="#molcrawl.data.molecule_nat_lang.utils.general.load_jsonl_dataset">load_jsonl_dataset</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.general.read_dataset" href="#molcrawl.data.molecule_nat_lang.utils.general.read_dataset">read_dataset</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.general.save_dataset" href="#molcrawl.data.molecule_nat_lang.utils.general.save_dataset">save_dataset</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

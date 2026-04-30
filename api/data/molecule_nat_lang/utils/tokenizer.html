@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.data.molecule_nat_lang.utils.tokenizer API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.data.molecule_nat_lang.utils.tokenizer</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.canonicalize"><code class="name flex">
+<span>def <span class="ident">canonicalize</span></span>(<span>smiles, isomeric=False, canonical=True, kekulize=False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def canonicalize(smiles, isomeric=False, canonical=True, kekulize=False):
+    Chem, AssignStereochemistry, copy_chirality = _require_rdkit()
+
+    # When canonicalizing a SMILES string, we typically want to
+    # run Chem.RemoveHs(mol), but this will try to kekulize the mol
+    # which is not required for canonical SMILES.  Instead, we make a
+    # copy of the mol retaining only the information we desire (not explicit Hs)
+    # Then, we sanitize the mol without kekulization.  copy_atom and copy_edit_mol
+    # Are used to create this clean copy of the mol.
+    def copy_atom(atom):
+        new_atom = Chem.Atom(atom.GetSymbol())
+        new_atom.SetFormalCharge(atom.GetFormalCharge())
+        if atom.GetIsAromatic() and atom.GetNoImplicit():
+            new_atom.SetNumExplicitHs(atom.GetNumExplicitHs())
+            # elif atom.GetSymbol() == &#39;N&#39;:
+            #    print(atom.GetSymbol())
+            #    print(atom.GetImplicitValence())
+            #    new_atom.SetNumExplicitHs(-atom.GetImplicitValence())
+            # elif atom.GetSymbol() == &#39;S&#39;:
+            #    print(atom.GetSymbol())
+            #    print(atom.GetImplicitValence())
+        return new_atom
+
+    def copy_edit_mol(mol):
+        new_mol = Chem.RWMol(Chem.MolFromSmiles(&#34;&#34;))
+        for atom in mol.GetAtoms():
+            new_atom = copy_atom(atom)
+            new_mol.AddAtom(new_atom)
+        for bond in mol.GetBonds():
+            a1 = bond.GetBeginAtom().GetIdx()
+            a2 = bond.GetEndAtom().GetIdx()
+            bt = bond.GetBondType()
+            new_mol.AddBond(a1, a2, bt)
+            new_bond = new_mol.GetBondBetweenAtoms(a1, a2)
+            new_bond.SetBondDir(bond.GetBondDir())
+            new_bond.SetStereo(bond.GetStereo())
+        for new_atom in new_mol.GetAtoms():
+            atom = mol.GetAtomWithIdx(new_atom.GetIdx())
+            copy_chirality(atom, new_atom)
+        return new_mol
+
+    smiles = smiles.replace(&#34; &#34;, &#34;&#34;)
+    tmp = Chem.MolFromSmiles(smiles, sanitize=False)
+    tmp.UpdatePropertyCache()
+    new_mol = copy_edit_mol(tmp)
+    # Chem.SanitizeMol(new_mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL)
+    if not kekulize:
+        Chem.SanitizeMol(
+            new_mol,
+            sanitizeOps=Chem.SanitizeFlags.SANITIZE_SETAROMATICITY
+            | Chem.SanitizeFlags.SANITIZE_PROPERTIES
+            | Chem.SanitizeFlags.SANITIZE_ADJUSTHS,
+            catchErrors=True,
+        )
+    else:
+        Chem.SanitizeMol(
+            new_mol,
+            sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE
+            | Chem.SanitizeFlags.SANITIZE_PROPERTIES
+            | Chem.SanitizeFlags.SANITIZE_ADJUSTHS,
+            catchErrors=True,
+        )
+
+    AssignStereochemistry(new_mol, cleanIt=False, force=True, flagPossibleStereoCenters=True)
+
+    new_smiles = Chem.MolToSmiles(new_mol, isomericSmiles=isomeric, canonical=canonical)
+    return new_smiles</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.canonicalize_molecule_smiles"><code class="name flex">
+<span>def <span class="ident">canonicalize_molecule_smiles</span></span>(<span>smiles,<br>return_none_for_error=True,<br>skip_mol=False,<br>sort_things=True,<br>isomeric=True,<br>kekulization=True,<br>allow_empty_part=False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def canonicalize_molecule_smiles(
+    smiles,
+    return_none_for_error=True,
+    skip_mol=False,
+    sort_things=True,
+    isomeric=True,
+    kekulization=True,
+    allow_empty_part=False,
+):
+    Chem, _, _ = _require_rdkit()
+    things = smiles.split(&#34;.&#34;)
+    if skip_mol:
+        new_things = things
+    else:
+        new_things = []
+        for thing in things:
+            try:
+                if thing == &#34;&#34; and not allow_empty_part:
+                    raise ValueError(&#34;SMILES contains empty part.&#34;)
+
+                mol = Chem.MolFromSmiles(thing)
+                if mol is None:
+                    return None
+                for atom in mol.GetAtoms():
+                    atom.SetAtomMapNum(0)
+                thing_smiles = Chem.MolToSmiles(mol, kekuleSmiles=False, isomericSmiles=isomeric)
+                thing_smiles = Chem.MolFromSmiles(thing_smiles)
+                thing_smiles = Chem.MolToSmiles(thing_smiles, kekuleSmiles=False, isomericSmiles=isomeric)
+                thing_smiles = Chem.MolFromSmiles(thing_smiles)
+                thing_smiles = Chem.MolToSmiles(thing_smiles, kekuleSmiles=False, isomericSmiles=isomeric)
+                assert thing_smiles is not None
+                can_in = thing_smiles
+                can_out = canonicalize(thing_smiles, isomeric=isomeric)
+                assert can_out is not None, can_in
+                thing_smiles = can_out
+                if kekulization:
+                    thing_smiles = keku_mid = Chem.MolFromSmiles(thing_smiles)
+                    assert keku_mid is not None, &#34;Before can: %s\nAfter can: %s&#34; % (
+                        can_in,
+                        can_out,
+                    )
+                    thing_smiles = Chem.MolToSmiles(thing_smiles, kekuleSmiles=True, isomericSmiles=isomeric)
+            except KeyboardInterrupt:
+                raise
+            except Exception:
+                if return_none_for_error:
+                    return None
+                else:
+                    raise
+            new_things.append(thing_smiles)
+    if sort_things:
+        new_things = sorted(new_things)
+    new_things = &#34;.&#34;.join(new_things)
+    return new_things</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.generate_chat"><code class="name flex">
+<span>def <span class="ident">generate_chat</span></span>(<span>input_text, output_text=None, prefix_chat=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_chat(input_text, output_text=None, prefix_chat=None):
+    chat = [
+        {&#34;role&#34;: &#34;user&#34;, &#34;content&#34;: input_text},
+    ]
+    if output_text is not None:
+        chat.append({&#34;role&#34;: &#34;assistant&#34;, &#34;content&#34;: output_text})
+    if prefix_chat is not None:
+        chat = prefix_chat + chat
+    return chat</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.get_chat_content"><code class="name flex">
+<span>def <span class="ident">get_chat_content</span></span>(<span>conversation, tokenize=False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_chat_content(conversation, tokenize=False):
+    if tokenize:
+        raise NotImplementedError
+    available_roles = (&#34;user&#34;, &#34;assistant&#34;)
+    content = &#34;&#34;
+    for idx, item in enumerate(conversation):
+        role = item[&#34;role&#34;]
+        assert role in available_roles, role
+        if idx % 2 == 0:
+            assert role == &#34;user&#34;
+            content += &#34;&lt;s&gt;&#34;
+            item_content = &#34;[INST] %s [/INST]&#34; % item[&#34;content&#34;]
+            content += item_content
+        else:
+            assert role == &#34;assistant&#34;
+            item_content = &#34; %s&lt;/s&gt;&#34; % item[&#34;content&#34;]
+            content += item_content
+    return content</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter"><code class="flex name class">
+<span>class <span class="ident">GeneralPrompter</span></span>
+<span>(</span><span>apply_chat_template_func, response_split='[/INST]')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GeneralPrompter(object):
+    def __init__(self, apply_chat_template_func, response_split=&#34;[/INST]&#34;):
+        self.apply_chat_template_func = apply_chat_template_func
+        self.response_split = response_split
+
+    def generate_prompt(self, chat, tokenize=False, *args, **kargs) -&gt; str:
+        res = self.apply_chat_template_func(chat, *args, tokenize=tokenize, **kargs)
+        return res
+
+    def get_response(self, output: str) -&gt; str:
+        return output.split(self.response_split)[-1].strip()</code></pre>
+</details>
+<div class="desc"></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter.generate_prompt"><code class="name flex">
+<span>def <span class="ident">generate_prompt</span></span>(<span>self, chat, tokenize=False, *args, **kargs) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_prompt(self, chat, tokenize=False, *args, **kargs) -&gt; str:
+    res = self.apply_chat_template_func(chat, *args, tokenize=tokenize, **kargs)
+    return res</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter.get_response"><code class="name flex">
+<span>def <span class="ident">get_response</span></span>(<span>self, output: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_response(self, output: str) -&gt; str:
+    return output.split(self.response_split)[-1].strip()</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer"><code class="flex name class">
+<span>class <span class="ident">MoleculeNatLangTokenizer</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MoleculeNatLangTokenizer(TrainableTokenizer):
+    def __init__(
+        self,
+    ):
+        if AutoTokenizer is None:
+            raise ModuleNotFoundError(&#34;transformers is required to use MoleculeNatLangTokenizer&#34;)
+
+        TrainableTokenizer.__init__(self)
+        self.tokenizer = _load_molecule_nat_lang_tokenizer()
+
+        # Set padding side
+        if hasattr(self.tokenizer, &#34;padding_side&#34;):
+            self.tokenizer.padding_side = &#34;left&#34;
+
+        # Set special tokens with fallback for real tokenizers
+        if hasattr(self.tokenizer, &#34;pad_token&#34;) and hasattr(self.tokenizer, &#34;eos_token&#34;):
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = getattr(self.tokenizer, &#34;eos_token&#34;, &#34;&lt;eos&gt;&#34;)
+
+            # Add custom special tokens if possible
+            if (
+                hasattr(self.tokenizer, &#34;add_special_tokens&#34;)
+                and callable(getattr(self.tokenizer, &#34;add_special_tokens&#34;, None))
+                and hasattr(self.tokenizer, &#34;get_vocab&#34;)
+            ):
+                special_tokens = [&#34;&lt;pad&gt;&#34;, &#34;&lt;unk&gt;&#34;]
+                vocab = self.tokenizer.get_vocab()
+                new_tokens = [token for token in special_tokens if token not in vocab]
+                if new_tokens:
+                    try:
+                        self.tokenizer.add_special_tokens({&#34;additional_special_tokens&#34;: new_tokens})
+                    except (ValueError, AttributeError):
+                        pass  # Ignore if we can&#39;t add special tokens
+
+            # Set other special tokens
+            if hasattr(self.tokenizer, &#34;get_vocab&#34;):
+                vocab = self.tokenizer.get_vocab()
+                eos_token = getattr(self.tokenizer, &#34;eos_token&#34;, &#34;&lt;eos&gt;&#34;)
+
+                self.tokenizer.sep_token = &#34;&lt;unk&gt;&#34; if &#34;&lt;unk&gt;&#34; in vocab else eos_token
+                self.tokenizer.cls_token = &#34;&lt;unk&gt;&#34; if &#34;&lt;unk&gt;&#34; in vocab else eos_token
+                self.tokenizer.mask_token = &#34;&lt;unk&gt;&#34; if &#34;&lt;unk&gt;&#34; in vocab else eos_token
+
+        self.prompter = GeneralPrompter(get_chat_content)
+
+    def __getattr__(self, name):
+        &#34;&#34;&#34;
+        If an attribute is not found in this class, try to get it from self.tokenizer.
+        &#34;&#34;&#34;
+        if hasattr(self.tokenizer, name):
+            return getattr(self.tokenizer, name)
+        raise AttributeError(f&#34;&#39;{self.__class__.__name__}&#39; object has no attribute &#39;{name}&#39;&#34;)
+
+    def _tokenize(self, text: str, add_eos_token: bool = True):
+        # there&#39;s probably a way to do this with the tokenizer settings
+        result = self.tokenizer(
+            text,
+            truncation=False,
+            padding=False,
+            return_tensors=None,
+            add_special_tokens=False,
+        )
+
+        # Handle case where input_ids might be empty or None
+        if &#34;input_ids&#34; not in result or result[&#34;input_ids&#34;] is None:
+            result[&#34;input_ids&#34;] = []
+        if &#34;attention_mask&#34; not in result or result[&#34;attention_mask&#34;] is None:
+            result[&#34;attention_mask&#34;] = []
+
+        # Ensure input_ids and attention_mask are lists
+        if not isinstance(result[&#34;input_ids&#34;], list):
+            result[&#34;input_ids&#34;] = list(result[&#34;input_ids&#34;])
+        if not isinstance(result[&#34;attention_mask&#34;], list):
+            result[&#34;attention_mask&#34;] = list(result[&#34;attention_mask&#34;])
+
+        # Add EOS token if needed and if tokenizer has eos_token_id
+        if add_eos_token and hasattr(self.tokenizer, &#34;eos_token_id&#34;) and self.tokenizer.eos_token_id is not None:
+            if len(result[&#34;input_ids&#34;]) == 0 or result[&#34;input_ids&#34;][-1] != self.tokenizer.eos_token_id:
+                result[&#34;input_ids&#34;].append(self.tokenizer.eos_token_id)
+                result[&#34;attention_mask&#34;].append(1)
+
+        result[&#34;labels&#34;] = result[&#34;input_ids&#34;].copy()
+
+        return result
+
+    def tokenize_dict(self, text: dict[str, str], canonicalize_smiles: bool = True, max_input_tokens: bool = None):
+        tokenized_output = self.tokenizer(
+            text[&#34;output&#34;],
+            truncation=False,
+            padding=False,
+            return_tensors=None,
+            add_special_tokens=False,
+        )[&#34;input_ids&#34;]
+
+        # Ensure tokenized_output is a list
+        if not isinstance(tokenized_output, list):
+            tokenized_output = list(tokenized_output)
+
+        # Add EOS token if available
+        if hasattr(self.tokenizer, &#34;eos_token_id&#34;) and self.tokenizer.eos_token_id is not None:
+            tokenized_output.append(self.tokenizer.eos_token_id)
+
+        sample = self.tokenize_text(
+            text[&#34;input&#34;],
+            canonicalize_smiles=canonicalize_smiles,
+            max_input_tokens=max_input_tokens,
+        )
+
+        sample[&#34;output_ids&#34;] = tokenized_output
+
+        return sample
+
+    def tokenize_text(self, text: str, canonicalize_smiles: bool = True, max_input_tokens: bool = None):
+        if canonicalize_smiles:
+            real_text = self.canonicalize_smiles_in_text(text)
+        else:
+            real_text = text
+
+        sample: dict[str, object] = {&#34;input_text&#34;: text}
+        chat = generate_chat(real_text, output_text=None)
+        full_prompt = self.prompter.generate_prompt(chat)
+        sample[&#34;real_input_text&#34;] = full_prompt
+        tokenized_full_prompt = self._tokenize(full_prompt, add_eos_token=False)
+        sample.update(tokenized_full_prompt)
+
+        # Always include input_too_long field for consistency
+        if max_input_tokens is not None and len(tokenized_full_prompt[&#34;input_ids&#34;]) &gt; max_input_tokens:
+            sample[&#34;input_too_long&#34;] = True
+        else:
+            sample[&#34;input_too_long&#34;] = False
+
+        return sample
+
+    @staticmethod
+    def canonicalize_smiles_in_text(
+        text,
+        tags=(&#34;&lt;SMILES&gt;&#34;, &#34;&lt;/SMILES&gt;&#34;),
+        keep_text_unchanged_if_no_tags=True,
+        keep_text_unchanged_if_error=False,
+    ):
+        try:
+            left_tag, right_tag = tags
+            assert left_tag is not None
+            assert right_tag is not None
+
+            left_tag_pos = text.find(left_tag)
+            right_tag_pos = None
+            if left_tag_pos == -1:
+                assert right_tag not in text, &#39;The input text &#34;%s&#34; only contains the right tag &#34;%s&#34; but no left tag&#34;%s&#34;&#39; % (
+                    text,
+                    right_tag,
+                    left_tag,
+                )
+                return text
+            else:
+                right_tag_pos = text.find(right_tag)
+                assert right_tag_pos is not None, &#39;The input text &#34;%s&#34; only contains the left tag &#34;%s&#34; but no right tag&#34;%s&#34;&#39; % (
+                    text,
+                    left_tag,
+                    right_tag,
+                )
+        except AssertionError:
+            if keep_text_unchanged_if_no_tags:
+                return text
+            raise
+
+        smiles = text[left_tag_pos + len(left_tag) : right_tag_pos].strip()
+        try:
+            smiles = canonicalize_molecule_smiles(smiles, return_none_for_error=False)
+        except KeyboardInterrupt:
+            raise
+        except Exception:
+            if keep_text_unchanged_if_error:
+                return text
+
+        if smiles is None:
+            return &#34;&#34;
+
+        new_text = (
+            text[:left_tag_pos]
+            + (&#34;&#34; if (left_tag_pos == 0 or text[left_tag_pos - 1] == &#34; &#34;) else &#34; &#34;)
+            + left_tag
+            + &#34; &#34;
+            + smiles
+            + &#34; &#34;
+            + right_tag
+            + &#34; &#34;
+            + text[right_tag_pos + len(right_tag) :].lstrip()
+        )
+        return new_text
+
+    def train(self):
+        pass</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="molcrawl.core.base.TrainableTokenizer" href="../../../core/base.html#molcrawl.core.base.TrainableTokenizer">TrainableTokenizer</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text"><code class="name flex">
+<span>def <span class="ident">canonicalize_smiles_in_text</span></span>(<span>text,<br>tags=(&#x27;&lt;SMILES&gt;&#x27;, &#x27;&lt;/SMILES&gt;&#x27;),<br>keep_text_unchanged_if_no_tags=True,<br>keep_text_unchanged_if_error=False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def canonicalize_smiles_in_text(
+    text,
+    tags=(&#34;&lt;SMILES&gt;&#34;, &#34;&lt;/SMILES&gt;&#34;),
+    keep_text_unchanged_if_no_tags=True,
+    keep_text_unchanged_if_error=False,
+):
+    try:
+        left_tag, right_tag = tags
+        assert left_tag is not None
+        assert right_tag is not None
+
+        left_tag_pos = text.find(left_tag)
+        right_tag_pos = None
+        if left_tag_pos == -1:
+            assert right_tag not in text, &#39;The input text &#34;%s&#34; only contains the right tag &#34;%s&#34; but no left tag&#34;%s&#34;&#39; % (
+                text,
+                right_tag,
+                left_tag,
+            )
+            return text
+        else:
+            right_tag_pos = text.find(right_tag)
+            assert right_tag_pos is not None, &#39;The input text &#34;%s&#34; only contains the left tag &#34;%s&#34; but no right tag&#34;%s&#34;&#39; % (
+                text,
+                left_tag,
+                right_tag,
+            )
+    except AssertionError:
+        if keep_text_unchanged_if_no_tags:
+            return text
+        raise
+
+    smiles = text[left_tag_pos + len(left_tag) : right_tag_pos].strip()
+    try:
+        smiles = canonicalize_molecule_smiles(smiles, return_none_for_error=False)
+    except KeyboardInterrupt:
+        raise
+    except Exception:
+        if keep_text_unchanged_if_error:
+            return text
+
+    if smiles is None:
+        return &#34;&#34;
+
+    new_text = (
+        text[:left_tag_pos]
+        + (&#34;&#34; if (left_tag_pos == 0 or text[left_tag_pos - 1] == &#34; &#34;) else &#34; &#34;)
+        + left_tag
+        + &#34; &#34;
+        + smiles
+        + &#34; &#34;
+        + right_tag
+        + &#34; &#34;
+        + text[right_tag_pos + len(right_tag) :].lstrip()
+    )
+    return new_text</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict"><code class="name flex">
+<span>def <span class="ident">tokenize_dict</span></span>(<span>self,<br>text: dict[str, str],<br>canonicalize_smiles: bool = True,<br>max_input_tokens: bool = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_dict(self, text: dict[str, str], canonicalize_smiles: bool = True, max_input_tokens: bool = None):
+    tokenized_output = self.tokenizer(
+        text[&#34;output&#34;],
+        truncation=False,
+        padding=False,
+        return_tensors=None,
+        add_special_tokens=False,
+    )[&#34;input_ids&#34;]
+
+    # Ensure tokenized_output is a list
+    if not isinstance(tokenized_output, list):
+        tokenized_output = list(tokenized_output)
+
+    # Add EOS token if available
+    if hasattr(self.tokenizer, &#34;eos_token_id&#34;) and self.tokenizer.eos_token_id is not None:
+        tokenized_output.append(self.tokenizer.eos_token_id)
+
+    sample = self.tokenize_text(
+        text[&#34;input&#34;],
+        canonicalize_smiles=canonicalize_smiles,
+        max_input_tokens=max_input_tokens,
+    )
+
+    sample[&#34;output_ids&#34;] = tokenized_output
+
+    return sample</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text"><code class="name flex">
+<span>def <span class="ident">tokenize_text</span></span>(<span>self, text: str, canonicalize_smiles: bool = True, max_input_tokens: bool = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tokenize_text(self, text: str, canonicalize_smiles: bool = True, max_input_tokens: bool = None):
+    if canonicalize_smiles:
+        real_text = self.canonicalize_smiles_in_text(text)
+    else:
+        real_text = text
+
+    sample: dict[str, object] = {&#34;input_text&#34;: text}
+    chat = generate_chat(real_text, output_text=None)
+    full_prompt = self.prompter.generate_prompt(chat)
+    sample[&#34;real_input_text&#34;] = full_prompt
+    tokenized_full_prompt = self._tokenize(full_prompt, add_eos_token=False)
+    sample.update(tokenized_full_prompt)
+
+    # Always include input_too_long field for consistency
+    if max_input_tokens is not None and len(tokenized_full_prompt[&#34;input_ids&#34;]) &gt; max_input_tokens:
+        sample[&#34;input_too_long&#34;] = True
+    else:
+        sample[&#34;input_too_long&#34;] = False
+
+    return sample</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.train"><code class="name flex">
+<span>def <span class="ident">train</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def train(self):
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils" href="index.html">molcrawl.data.molecule_nat_lang.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.canonicalize" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.canonicalize">canonicalize</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.canonicalize_molecule_smiles" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.canonicalize_molecule_smiles">canonicalize_molecule_smiles</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.generate_chat" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.generate_chat">generate_chat</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.get_chat_content" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.get_chat_content">get_chat_content</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter">GeneralPrompter</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter.generate_prompt" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter.generate_prompt">generate_prompt</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter.get_response" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.GeneralPrompter.get_response">get_response</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer">MoleculeNatLangTokenizer</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.canonicalize_smiles_in_text">canonicalize_smiles_in_text</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_dict">tokenize_dict</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.tokenize_text">tokenize_text</a></code></li>
+<li><code><a title="molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.train" href="#molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer.train">train</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

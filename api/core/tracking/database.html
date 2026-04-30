@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.core.tracking.database API documentation</title>
+<meta name="description" content="Experiment management database - SQLite based">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.core.tracking.database</code></h1>
+</header>
+<section id="section-intro">
+<p>Experiment management database - SQLite based</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase"><code class="flex name class">
+<span>class <span class="ident">ExperimentDatabase</span></span>
+<span>(</span><span>db_path: str = 'experiments.db')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExperimentDatabase:
+    &#34;&#34;&#34;Experiment management database&#34;&#34;&#34;
+
+    def __init__(self, db_path: str = &#34;experiments.db&#34;):
+        &#34;&#34;&#34;
+        Args:
+            db_path: Database file path
+        &#34;&#34;&#34;
+        self.db_path = Path(db_path)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._initialize_database()
+
+    @contextmanager
+    def get_connection(self):
+        &#34;&#34;&#34;Context manager for database connections&#34;&#34;&#34;
+        conn = sqlite3.connect(str(self.db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
+
+    def _initialize_database(self):
+        &#34;&#34;&#34;Initialize the database&#34;&#34;&#34;
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Experiment table
+            cursor.execute(
+                &#34;&#34;&#34;
+                CREATE TABLE IF NOT EXISTS experiments (
+                    experiment_id TEXT PRIMARY KEY,
+                    experiment_name TEXT NOT NULL,
+                    experiment_type TEXT NOT NULL,
+                    model_type TEXT NOT NULL,
+                    dataset_type TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    started_at TEXT,
+                    completed_at TEXT,
+                    total_duration_seconds REAL,
+                    config_path TEXT,
+                    config TEXT,
+                    results_dir TEXT,
+                    results TEXT,
+                    metrics TEXT,
+                    tags TEXT,
+                    notes TEXT,
+                    environment TEXT
+                )
+            &#34;&#34;&#34;
+            )
+
+            # step table
+            cursor.execute(
+                &#34;&#34;&#34;
+                CREATE TABLE IF NOT EXISTS experiment_steps (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    experiment_id TEXT NOT NULL,
+                    step_id TEXT NOT NULL,
+                    step_name TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    start_time TEXT,
+                    end_time TEXT,
+                    duration_seconds REAL,
+                    command TEXT,
+                    output_path TEXT,
+                    error_message TEXT,
+                    metadata TEXT,
+                    FOREIGN KEY (experiment_id) REFERENCES experiments(experiment_id)
+                )
+            &#34;&#34;&#34;
+            )
+
+            # log table
+            cursor.execute(
+                &#34;&#34;&#34;
+                CREATE TABLE IF NOT EXISTS experiment_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    experiment_id TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    level TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    source TEXT,
+                    FOREIGN KEY (experiment_id) REFERENCES experiments(experiment_id)
+                )
+            &#34;&#34;&#34;
+            )
+
+            # create index
+            cursor.execute(
+                &#34;&#34;&#34;
+                CREATE INDEX IF NOT EXISTS idx_experiments_status
+                ON experiments(status)
+            &#34;&#34;&#34;
+            )
+            cursor.execute(
+                &#34;&#34;&#34;
+                CREATE INDEX IF NOT EXISTS idx_experiments_type
+                ON experiments(experiment_type)
+            &#34;&#34;&#34;
+            )
+            cursor.execute(
+                &#34;&#34;&#34;
+                CREATE INDEX IF NOT EXISTS idx_experiments_created
+                ON experiments(created_at)
+            &#34;&#34;&#34;
+            )
+
+    def save_experiment(self, experiment: Experiment) -&gt; None:
+        &#34;&#34;&#34;Save experiment&#34;&#34;&#34;
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute(
+                &#34;&#34;&#34;
+                INSERT OR REPLACE INTO experiments (
+                    experiment_id, experiment_name, experiment_type,
+                    model_type, dataset_type, status,
+                    created_at, started_at, completed_at,
+                    total_duration_seconds, config_path, config,
+                    results_dir, results, metrics,
+                    tags, notes, environment
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            &#34;&#34;&#34;,
+                (
+                    experiment.experiment_id,
+                    experiment.experiment_name,
+                    experiment.experiment_type.value,
+                    experiment.model_type.value,
+                    experiment.dataset_type.value,
+                    experiment.status.value,
+                    experiment.created_at.isoformat(),
+                    experiment.started_at.isoformat() if experiment.started_at else None,
+                    experiment.completed_at.isoformat() if experiment.completed_at else None,
+                    experiment.total_duration_seconds,
+                    experiment.config_path,
+                    json.dumps(experiment.config),
+                    experiment.results_dir,
+                    json.dumps(experiment.results),
+                    json.dumps(experiment.metrics),
+                    json.dumps(experiment.tags),
+                    experiment.notes,
+                    json.dumps(experiment.environment),
+                ),
+            )
+
+            # save step
+            cursor.execute(
+                &#34;DELETE FROM experiment_steps WHERE experiment_id = ?&#34;,
+                (experiment.experiment_id,),
+            )
+            for step in experiment.steps:
+                cursor.execute(
+                    &#34;&#34;&#34;
+                    INSERT INTO experiment_steps (
+                        experiment_id, step_id, step_name, status,
+                        start_time, end_time, duration_seconds,
+                        command, output_path, error_message, metadata
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                &#34;&#34;&#34;,
+                    (
+                        experiment.experiment_id,
+                        step.step_id,
+                        step.step_name,
+                        step.status.value,
+                        step.start_time.isoformat() if step.start_time else None,
+                        step.end_time.isoformat() if step.end_time else None,
+                        step.duration_seconds,
+                        step.command,
+                        step.output_path,
+                        step.error_message,
+                        json.dumps(step.metadata),
+                    ),
+                )
+
+    def add_log(self, experiment_id: str, log: ExperimentLog) -&gt; None:
+        &#34;&#34;&#34;Add log&#34;&#34;&#34;
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                &#34;&#34;&#34;
+                INSERT INTO experiment_logs (
+                    experiment_id, timestamp, level, message, source
+                ) VALUES (?, ?, ?, ?, ?)
+            &#34;&#34;&#34;,
+                (
+                    experiment_id,
+                    log.timestamp.isoformat(),
+                    log.level,
+                    log.message,
+                    log.source,
+                ),
+            )
+
+    def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
+        &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Get experiment information
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT * FROM experiments WHERE experiment_id = ?
+            &#34;&#34;&#34;,
+                (experiment_id,),
+            )
+            row = cursor.fetchone()
+
+            if not row:
+                return None
+
+            # get step
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT * FROM experiment_steps WHERE experiment_id = ?
+                ORDER BY id
+            &#34;&#34;&#34;,
+                (experiment_id,),
+            )
+            steps_rows = cursor.fetchall()
+
+            # get log
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT * FROM experiment_logs WHERE experiment_id = ?
+                ORDER BY timestamp
+            &#34;&#34;&#34;,
+                (experiment_id,),
+            )
+            logs_rows = cursor.fetchall()
+
+            # Build the Experiment object
+            experiment_data = dict(row)
+            experiment_data[&#34;experiment_type&#34;] = ExperimentType(experiment_data[&#34;experiment_type&#34;])
+            experiment_data[&#34;model_type&#34;] = ModelType(experiment_data[&#34;model_type&#34;])
+            experiment_data[&#34;dataset_type&#34;] = DatasetType(experiment_data[&#34;dataset_type&#34;])
+            experiment_data[&#34;status&#34;] = ExperimentStatus(experiment_data[&#34;status&#34;])
+            experiment_data[&#34;created_at&#34;] = datetime.fromisoformat(experiment_data[&#34;created_at&#34;])
+
+            if experiment_data.get(&#34;started_at&#34;):
+                experiment_data[&#34;started_at&#34;] = datetime.fromisoformat(experiment_data[&#34;started_at&#34;])
+            if experiment_data.get(&#34;completed_at&#34;):
+                experiment_data[&#34;completed_at&#34;] = datetime.fromisoformat(experiment_data[&#34;completed_at&#34;])
+
+            experiment_data[&#34;config&#34;] = json.loads(experiment_data[&#34;config&#34;]) if experiment_data[&#34;config&#34;] else {}
+            experiment_data[&#34;results&#34;] = json.loads(experiment_data[&#34;results&#34;]) if experiment_data[&#34;results&#34;] else {}
+            experiment_data[&#34;metrics&#34;] = json.loads(experiment_data[&#34;metrics&#34;]) if experiment_data[&#34;metrics&#34;] else {}
+            experiment_data[&#34;tags&#34;] = json.loads(experiment_data[&#34;tags&#34;]) if experiment_data[&#34;tags&#34;] else []
+            experiment_data[&#34;environment&#34;] = (
+                json.loads(experiment_data[&#34;environment&#34;]) if experiment_data[&#34;environment&#34;] else {}
+            )
+
+            # build step
+            steps = []
+            for step_row in steps_rows:
+                step_data = dict(step_row)
+                step_data[&#34;status&#34;] = ExperimentStatus(step_data[&#34;status&#34;])
+                if step_data.get(&#34;start_time&#34;):
+                    step_data[&#34;start_time&#34;] = datetime.fromisoformat(step_data[&#34;start_time&#34;])
+                if step_data.get(&#34;end_time&#34;):
+                    step_data[&#34;end_time&#34;] = datetime.fromisoformat(step_data[&#34;end_time&#34;])
+                step_data[&#34;metadata&#34;] = json.loads(step_data[&#34;metadata&#34;]) if step_data[&#34;metadata&#34;] else {}
+                # remove unnecessary fields
+                del step_data[&#34;id&#34;]
+                del step_data[&#34;experiment_id&#34;]
+                steps.append(ExperimentStep(**step_data))
+
+            # build log
+            logs = []
+            for log_row in logs_rows:
+                log_data = dict(log_row)
+                log_data[&#34;timestamp&#34;] = datetime.fromisoformat(log_data[&#34;timestamp&#34;])
+                # remove unnecessary fields
+                del log_data[&#34;id&#34;]
+                del log_data[&#34;experiment_id&#34;]
+                logs.append(ExperimentLog(**log_data))
+
+            experiment_data[&#34;steps&#34;] = steps
+            experiment_data[&#34;logs&#34;] = logs
+
+            return Experiment(**experiment_data)
+
+    def list_experiments(
+        self,
+        status: Optional[ExperimentStatus] = None,
+        experiment_type: Optional[ExperimentType] = None,
+        model_type: Optional[ModelType] = None,
+        dataset_type: Optional[DatasetType] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -&gt; List[Experiment]:
+        &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            query = &#34;SELECT experiment_id FROM experiments WHERE 1=1&#34;
+            params: list[object] = []
+
+            if status:
+                query += &#34; AND status = ?&#34;
+                params.append(status.value)
+            if experiment_type:
+                query += &#34; AND experiment_type = ?&#34;
+                params.append(experiment_type.value)
+            if model_type:
+                query += &#34; AND model_type = ?&#34;
+                params.append(model_type.value)
+            if dataset_type:
+                query += &#34; AND dataset_type = ?&#34;
+                params.append(dataset_type.value)
+
+            query += &#34; ORDER BY created_at DESC LIMIT ? OFFSET ?&#34;
+            params.extend([limit, offset])
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+            experiments = []
+            for row in rows:
+                exp = self.get_experiment(row[&#34;experiment_id&#34;])
+                if exp:
+                    experiments.append(exp)
+
+            return experiments
+
+    def get_statistics(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            stats = {}
+
+            # Total number of experiments
+            cursor.execute(&#34;SELECT COUNT(*) as count FROM experiments&#34;)
+            stats[&#34;total_experiments&#34;] = cursor.fetchone()[&#34;count&#34;]
+
+            # By status
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT status, COUNT(*) as count
+                FROM experiments
+                GROUP BY status
+            &#34;&#34;&#34;
+            )
+            stats[&#34;by_status&#34;] = {row[&#34;status&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+            # By type
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT experiment_type, COUNT(*) as count
+                FROM experiments
+                GROUP BY experiment_type
+            &#34;&#34;&#34;
+            )
+            stats[&#34;by_type&#34;] = {row[&#34;experiment_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+            # By model
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT model_type, COUNT(*) as count
+                FROM experiments
+                GROUP BY model_type
+            &#34;&#34;&#34;
+            )
+            stats[&#34;by_model&#34;] = {row[&#34;model_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+            # By dataset
+            cursor.execute(
+                &#34;&#34;&#34;
+                SELECT dataset_type, COUNT(*) as count
+                FROM experiments
+                GROUP BY dataset_type
+            &#34;&#34;&#34;
+            )
+            stats[&#34;by_dataset&#34;] = {row[&#34;dataset_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+            return stats</code></pre>
+</details>
+<div class="desc"><p>Experiment management database</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_path</code></strong></dt>
+<dd>Database file path</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase.add_log"><code class="name flex">
+<span>def <span class="ident">add_log</span></span>(<span>self,<br>experiment_id: str,<br>log: <a title="molcrawl.core.tracking.models.ExperimentLog" href="models.html#molcrawl.core.tracking.models.ExperimentLog">ExperimentLog</a>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_log(self, experiment_id: str, log: ExperimentLog) -&gt; None:
+    &#34;&#34;&#34;Add log&#34;&#34;&#34;
+    with self.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            &#34;&#34;&#34;
+            INSERT INTO experiment_logs (
+                experiment_id, timestamp, level, message, source
+            ) VALUES (?, ?, ?, ?, ?)
+        &#34;&#34;&#34;,
+            (
+                experiment_id,
+                log.timestamp.isoformat(),
+                log.level,
+                log.message,
+                log.source,
+            ),
+        )</code></pre>
+</details>
+<div class="desc"><p>Add log</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase.get_connection"><code class="name flex">
+<span>def <span class="ident">get_connection</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@contextmanager
+def get_connection(self):
+    &#34;&#34;&#34;Context manager for database connections&#34;&#34;&#34;
+    conn = sqlite3.connect(str(self.db_path))
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()</code></pre>
+</details>
+<div class="desc"><p>Context manager for database connections</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase.get_experiment"><code class="name flex">
+<span>def <span class="ident">get_experiment</span></span>(<span>self, experiment_id: str) ‑> <a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
+    &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
+    with self.get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Get experiment information
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT * FROM experiments WHERE experiment_id = ?
+        &#34;&#34;&#34;,
+            (experiment_id,),
+        )
+        row = cursor.fetchone()
+
+        if not row:
+            return None
+
+        # get step
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT * FROM experiment_steps WHERE experiment_id = ?
+            ORDER BY id
+        &#34;&#34;&#34;,
+            (experiment_id,),
+        )
+        steps_rows = cursor.fetchall()
+
+        # get log
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT * FROM experiment_logs WHERE experiment_id = ?
+            ORDER BY timestamp
+        &#34;&#34;&#34;,
+            (experiment_id,),
+        )
+        logs_rows = cursor.fetchall()
+
+        # Build the Experiment object
+        experiment_data = dict(row)
+        experiment_data[&#34;experiment_type&#34;] = ExperimentType(experiment_data[&#34;experiment_type&#34;])
+        experiment_data[&#34;model_type&#34;] = ModelType(experiment_data[&#34;model_type&#34;])
+        experiment_data[&#34;dataset_type&#34;] = DatasetType(experiment_data[&#34;dataset_type&#34;])
+        experiment_data[&#34;status&#34;] = ExperimentStatus(experiment_data[&#34;status&#34;])
+        experiment_data[&#34;created_at&#34;] = datetime.fromisoformat(experiment_data[&#34;created_at&#34;])
+
+        if experiment_data.get(&#34;started_at&#34;):
+            experiment_data[&#34;started_at&#34;] = datetime.fromisoformat(experiment_data[&#34;started_at&#34;])
+        if experiment_data.get(&#34;completed_at&#34;):
+            experiment_data[&#34;completed_at&#34;] = datetime.fromisoformat(experiment_data[&#34;completed_at&#34;])
+
+        experiment_data[&#34;config&#34;] = json.loads(experiment_data[&#34;config&#34;]) if experiment_data[&#34;config&#34;] else {}
+        experiment_data[&#34;results&#34;] = json.loads(experiment_data[&#34;results&#34;]) if experiment_data[&#34;results&#34;] else {}
+        experiment_data[&#34;metrics&#34;] = json.loads(experiment_data[&#34;metrics&#34;]) if experiment_data[&#34;metrics&#34;] else {}
+        experiment_data[&#34;tags&#34;] = json.loads(experiment_data[&#34;tags&#34;]) if experiment_data[&#34;tags&#34;] else []
+        experiment_data[&#34;environment&#34;] = (
+            json.loads(experiment_data[&#34;environment&#34;]) if experiment_data[&#34;environment&#34;] else {}
+        )
+
+        # build step
+        steps = []
+        for step_row in steps_rows:
+            step_data = dict(step_row)
+            step_data[&#34;status&#34;] = ExperimentStatus(step_data[&#34;status&#34;])
+            if step_data.get(&#34;start_time&#34;):
+                step_data[&#34;start_time&#34;] = datetime.fromisoformat(step_data[&#34;start_time&#34;])
+            if step_data.get(&#34;end_time&#34;):
+                step_data[&#34;end_time&#34;] = datetime.fromisoformat(step_data[&#34;end_time&#34;])
+            step_data[&#34;metadata&#34;] = json.loads(step_data[&#34;metadata&#34;]) if step_data[&#34;metadata&#34;] else {}
+            # remove unnecessary fields
+            del step_data[&#34;id&#34;]
+            del step_data[&#34;experiment_id&#34;]
+            steps.append(ExperimentStep(**step_data))
+
+        # build log
+        logs = []
+        for log_row in logs_rows:
+            log_data = dict(log_row)
+            log_data[&#34;timestamp&#34;] = datetime.fromisoformat(log_data[&#34;timestamp&#34;])
+            # remove unnecessary fields
+            del log_data[&#34;id&#34;]
+            del log_data[&#34;experiment_id&#34;]
+            logs.append(ExperimentLog(**log_data))
+
+        experiment_data[&#34;steps&#34;] = steps
+        experiment_data[&#34;logs&#34;] = logs
+
+        return Experiment(**experiment_data)</code></pre>
+</details>
+<div class="desc"><p>Get the experiment</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase.get_statistics"><code class="name flex">
+<span>def <span class="ident">get_statistics</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_statistics(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
+    with self.get_connection() as conn:
+        cursor = conn.cursor()
+
+        stats = {}
+
+        # Total number of experiments
+        cursor.execute(&#34;SELECT COUNT(*) as count FROM experiments&#34;)
+        stats[&#34;total_experiments&#34;] = cursor.fetchone()[&#34;count&#34;]
+
+        # By status
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT status, COUNT(*) as count
+            FROM experiments
+            GROUP BY status
+        &#34;&#34;&#34;
+        )
+        stats[&#34;by_status&#34;] = {row[&#34;status&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+        # By type
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT experiment_type, COUNT(*) as count
+            FROM experiments
+            GROUP BY experiment_type
+        &#34;&#34;&#34;
+        )
+        stats[&#34;by_type&#34;] = {row[&#34;experiment_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+        # By model
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT model_type, COUNT(*) as count
+            FROM experiments
+            GROUP BY model_type
+        &#34;&#34;&#34;
+        )
+        stats[&#34;by_model&#34;] = {row[&#34;model_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+        # By dataset
+        cursor.execute(
+            &#34;&#34;&#34;
+            SELECT dataset_type, COUNT(*) as count
+            FROM experiments
+            GROUP BY dataset_type
+        &#34;&#34;&#34;
+        )
+        stats[&#34;by_dataset&#34;] = {row[&#34;dataset_type&#34;]: row[&#34;count&#34;] for row in cursor.fetchall()}
+
+        return stats</code></pre>
+</details>
+<div class="desc"><p>Get statistics</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase.list_experiments"><code class="name flex">
+<span>def <span class="ident">list_experiments</span></span>(<span>self,<br>status: <a title="molcrawl.core.tracking.models.ExperimentStatus" href="models.html#molcrawl.core.tracking.models.ExperimentStatus">ExperimentStatus</a> | None = None,<br>experiment_type: <a title="molcrawl.core.tracking.models.ExperimentType" href="models.html#molcrawl.core.tracking.models.ExperimentType">ExperimentType</a> | None = None,<br>model_type: <a title="molcrawl.core.tracking.models.ModelType" href="models.html#molcrawl.core.tracking.models.ModelType">ModelType</a> | None = None,<br>dataset_type: <a title="molcrawl.core.tracking.models.DatasetType" href="models.html#molcrawl.core.tracking.models.DatasetType">DatasetType</a> | None = None,<br>limit: int = 100,<br>offset: int = 0) ‑> List[<a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list_experiments(
+    self,
+    status: Optional[ExperimentStatus] = None,
+    experiment_type: Optional[ExperimentType] = None,
+    model_type: Optional[ModelType] = None,
+    dataset_type: Optional[DatasetType] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -&gt; List[Experiment]:
+    &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
+    with self.get_connection() as conn:
+        cursor = conn.cursor()
+
+        query = &#34;SELECT experiment_id FROM experiments WHERE 1=1&#34;
+        params: list[object] = []
+
+        if status:
+            query += &#34; AND status = ?&#34;
+            params.append(status.value)
+        if experiment_type:
+            query += &#34; AND experiment_type = ?&#34;
+            params.append(experiment_type.value)
+        if model_type:
+            query += &#34; AND model_type = ?&#34;
+            params.append(model_type.value)
+        if dataset_type:
+            query += &#34; AND dataset_type = ?&#34;
+            params.append(dataset_type.value)
+
+        query += &#34; ORDER BY created_at DESC LIMIT ? OFFSET ?&#34;
+        params.extend([limit, offset])
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        experiments = []
+        for row in rows:
+            exp = self.get_experiment(row[&#34;experiment_id&#34;])
+            if exp:
+                experiments.append(exp)
+
+        return experiments</code></pre>
+</details>
+<div class="desc"><p>Get experiment list</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.database.ExperimentDatabase.save_experiment"><code class="name flex">
+<span>def <span class="ident">save_experiment</span></span>(<span>self,<br>experiment: <a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_experiment(self, experiment: Experiment) -&gt; None:
+    &#34;&#34;&#34;Save experiment&#34;&#34;&#34;
+    with self.get_connection() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            &#34;&#34;&#34;
+            INSERT OR REPLACE INTO experiments (
+                experiment_id, experiment_name, experiment_type,
+                model_type, dataset_type, status,
+                created_at, started_at, completed_at,
+                total_duration_seconds, config_path, config,
+                results_dir, results, metrics,
+                tags, notes, environment
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        &#34;&#34;&#34;,
+            (
+                experiment.experiment_id,
+                experiment.experiment_name,
+                experiment.experiment_type.value,
+                experiment.model_type.value,
+                experiment.dataset_type.value,
+                experiment.status.value,
+                experiment.created_at.isoformat(),
+                experiment.started_at.isoformat() if experiment.started_at else None,
+                experiment.completed_at.isoformat() if experiment.completed_at else None,
+                experiment.total_duration_seconds,
+                experiment.config_path,
+                json.dumps(experiment.config),
+                experiment.results_dir,
+                json.dumps(experiment.results),
+                json.dumps(experiment.metrics),
+                json.dumps(experiment.tags),
+                experiment.notes,
+                json.dumps(experiment.environment),
+            ),
+        )
+
+        # save step
+        cursor.execute(
+            &#34;DELETE FROM experiment_steps WHERE experiment_id = ?&#34;,
+            (experiment.experiment_id,),
+        )
+        for step in experiment.steps:
+            cursor.execute(
+                &#34;&#34;&#34;
+                INSERT INTO experiment_steps (
+                    experiment_id, step_id, step_name, status,
+                    start_time, end_time, duration_seconds,
+                    command, output_path, error_message, metadata
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            &#34;&#34;&#34;,
+                (
+                    experiment.experiment_id,
+                    step.step_id,
+                    step.step_name,
+                    step.status.value,
+                    step.start_time.isoformat() if step.start_time else None,
+                    step.end_time.isoformat() if step.end_time else None,
+                    step.duration_seconds,
+                    step.command,
+                    step.output_path,
+                    step.error_message,
+                    json.dumps(step.metadata),
+                ),
+            )</code></pre>
+</details>
+<div class="desc"><p>Save experiment</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.core.tracking" href="index.html">molcrawl.core.tracking</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.core.tracking.database.ExperimentDatabase" href="#molcrawl.core.tracking.database.ExperimentDatabase">ExperimentDatabase</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.core.tracking.database.ExperimentDatabase.add_log" href="#molcrawl.core.tracking.database.ExperimentDatabase.add_log">add_log</a></code></li>
+<li><code><a title="molcrawl.core.tracking.database.ExperimentDatabase.get_connection" href="#molcrawl.core.tracking.database.ExperimentDatabase.get_connection">get_connection</a></code></li>
+<li><code><a title="molcrawl.core.tracking.database.ExperimentDatabase.get_experiment" href="#molcrawl.core.tracking.database.ExperimentDatabase.get_experiment">get_experiment</a></code></li>
+<li><code><a title="molcrawl.core.tracking.database.ExperimentDatabase.get_statistics" href="#molcrawl.core.tracking.database.ExperimentDatabase.get_statistics">get_statistics</a></code></li>
+<li><code><a title="molcrawl.core.tracking.database.ExperimentDatabase.list_experiments" href="#molcrawl.core.tracking.database.ExperimentDatabase.list_experiments">list_experiments</a></code></li>
+<li><code><a title="molcrawl.core.tracking.database.ExperimentDatabase.save_experiment" href="#molcrawl.core.tracking.database.ExperimentDatabase.save_experiment">save_experiment</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

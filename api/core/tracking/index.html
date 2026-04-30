@@ -1,0 +1,1682 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.core.tracking API documentation</title>
+<meta name="description" content="Experiment Tracking System
+A module that centrally manages the execution status, results, and logs of each process">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.core.tracking</code></h1>
+</header>
+<section id="section-intro">
+<p>Experiment Tracking System
+A module that centrally manages the execution status, results, and logs of each process</p>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="molcrawl.core.tracking.api" href="api.html">molcrawl.core.tracking.api</a></code></dt>
+<dd>
+<div class="desc"><p>FastAPI-based experiment management API
+Works as a backend for molcrawl-web</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.core.tracking.database" href="database.html">molcrawl.core.tracking.database</a></code></dt>
+<dd>
+<div class="desc"><p>Experiment management database - SQLite based</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.core.tracking.helpers" href="helpers.html">molcrawl.core.tracking.helpers</a></code></dt>
+<dd>
+<div class="desc"><p>Experiment tracking helper functions
+Decorators and context managers that can be easily integrated into existing scripts</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.core.tracking.models" href="models.html">molcrawl.core.tracking.models</a></code></dt>
+<dd>
+<div class="desc"><p>Experiment management data model definition</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.core.tracking.tracker" href="tracker.html">molcrawl.core.tracking.tracker</a></code></dt>
+<dd>
+<div class="desc"><p>Experiment Tracker - Main Interface
+Simple API to manage experiments from each script</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.core.tracking.DatasetType"><code class="flex name class">
+<span>class <span class="ident">DatasetType</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DatasetType(str, Enum):
+    &#34;&#34;&#34;Dataset type&#34;&#34;&#34;
+
+    COMPOUNDS = &#34;compounds&#34;
+    GENOME_SEQUENCE = &#34;genome_sequence&#34;
+    MOLECULE_NAT_LANG = &#34;molecule_related_natural_language&#34;
+    PROTEIN_SEQUENCE = &#34;protein_sequence&#34;
+    RNA = &#34;rna&#34;
+    PROTEINGYM = &#34;proteingym&#34;
+    CLINVAR = &#34;clinvar&#34;
+    OMIM = &#34;omim&#34;
+    COSMIC = &#34;cosmic&#34;
+    OTHER = &#34;other&#34;</code></pre>
+</details>
+<div class="desc"><p>Dataset type</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.str</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.DatasetType.CLINVAR"><code class="name">var <span class="ident">CLINVAR</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.COMPOUNDS"><code class="name">var <span class="ident">COMPOUNDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.COSMIC"><code class="name">var <span class="ident">COSMIC</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.GENOME_SEQUENCE"><code class="name">var <span class="ident">GENOME_SEQUENCE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.MOLECULE_NAT_LANG"><code class="name">var <span class="ident">MOLECULE_NAT_LANG</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.OMIM"><code class="name">var <span class="ident">OMIM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.OTHER"><code class="name">var <span class="ident">OTHER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.PROTEINGYM"><code class="name">var <span class="ident">PROTEINGYM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.PROTEIN_SEQUENCE"><code class="name">var <span class="ident">PROTEIN_SEQUENCE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.DatasetType.RNA"><code class="name">var <span class="ident">RNA</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment"><code class="flex name class">
+<span>class <span class="ident">Experiment</span></span>
+<span>(</span><span>experiment_id: str,<br>experiment_name: str,<br>experiment_type: <a title="molcrawl.core.tracking.models.ExperimentType" href="models.html#molcrawl.core.tracking.models.ExperimentType">ExperimentType</a>,<br>model_type: <a title="molcrawl.core.tracking.models.ModelType" href="models.html#molcrawl.core.tracking.models.ModelType">ModelType</a>,<br>dataset_type: <a title="molcrawl.core.tracking.models.DatasetType" href="models.html#molcrawl.core.tracking.models.DatasetType">DatasetType</a>,<br>status: <a title="molcrawl.core.tracking.models.ExperimentStatus" href="models.html#molcrawl.core.tracking.models.ExperimentStatus">ExperimentStatus</a>,<br>created_at: datetime.datetime,<br>started_at: datetime.datetime | None = None,<br>completed_at: datetime.datetime | None = None,<br>total_duration_seconds: float | None = None,<br>config_path: str | None = None,<br>config: Dict[str, Any] = &lt;factory&gt;,<br>results_dir: str | None = None,<br>results: Dict[str, Any] = &lt;factory&gt;,<br>metrics: Dict[str, float] = &lt;factory&gt;,<br>steps: List[<a title="molcrawl.core.tracking.models.ExperimentStep" href="models.html#molcrawl.core.tracking.models.ExperimentStep">ExperimentStep</a>] = &lt;factory&gt;,<br>logs: List[<a title="molcrawl.core.tracking.models.ExperimentLog" href="models.html#molcrawl.core.tracking.models.ExperimentLog">ExperimentLog</a>] = &lt;factory&gt;,<br>tags: List[str] = &lt;factory&gt;,<br>notes: str = '',<br>environment: Dict[str, Any] = &lt;factory&gt;)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class Experiment:
+    &#34;&#34;&#34;Overall information about the experiment&#34;&#34;&#34;
+
+    experiment_id: str
+    experiment_name: str
+    experiment_type: ExperimentType
+    model_type: ModelType
+    dataset_type: DatasetType
+    status: ExperimentStatus
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    total_duration_seconds: Optional[float] = None
+
+    # Setting information
+    config_path: Optional[str] = None
+    config: Dict[str, Any] = field(default_factory=dict)
+
+    # Results information
+    results_dir: Optional[str] = None
+    results: Dict[str, Any] = field(default_factory=dict)
+    metrics: Dict[str, float] = field(default_factory=dict)
+
+    # steps and logs
+    steps: List[ExperimentStep] = field(default_factory=list)
+    logs: List[ExperimentLog] = field(default_factory=list)
+
+    # metadata
+    tags: List[str] = field(default_factory=list)
+    notes: str = &#34;&#34;
+    environment: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        return {
+            &#34;experiment_id&#34;: self.experiment_id,
+            &#34;experiment_name&#34;: self.experiment_name,
+            &#34;experiment_type&#34;: self.experiment_type.value,
+            &#34;model_type&#34;: self.model_type.value,
+            &#34;dataset_type&#34;: self.dataset_type.value,
+            &#34;status&#34;: self.status.value,
+            &#34;created_at&#34;: self.created_at.isoformat(),
+            &#34;started_at&#34;: self.started_at.isoformat() if self.started_at else None,
+            &#34;completed_at&#34;: self.completed_at.isoformat() if self.completed_at else None,
+            &#34;total_duration_seconds&#34;: self.total_duration_seconds,
+            &#34;config_path&#34;: self.config_path,
+            &#34;config&#34;: self.config,
+            &#34;results_dir&#34;: self.results_dir,
+            &#34;results&#34;: self.results,
+            &#34;metrics&#34;: self.metrics,
+            &#34;steps&#34;: [step.to_dict() for step in self.steps],
+            &#34;logs&#34;: [log.to_dict() for log in self.logs],
+            &#34;tags&#34;: self.tags,
+            &#34;notes&#34;: self.notes,
+            &#34;environment&#34;: self.environment,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -&gt; &#34;Experiment&#34;:
+        data[&#34;experiment_type&#34;] = ExperimentType(data[&#34;experiment_type&#34;])
+        data[&#34;model_type&#34;] = ModelType(data[&#34;model_type&#34;])
+        data[&#34;dataset_type&#34;] = DatasetType(data[&#34;dataset_type&#34;])
+        data[&#34;status&#34;] = ExperimentStatus(data[&#34;status&#34;])
+        data[&#34;created_at&#34;] = datetime.fromisoformat(data[&#34;created_at&#34;])
+        if data.get(&#34;started_at&#34;):
+            data[&#34;started_at&#34;] = datetime.fromisoformat(data[&#34;started_at&#34;])
+        if data.get(&#34;completed_at&#34;):
+            data[&#34;completed_at&#34;] = datetime.fromisoformat(data[&#34;completed_at&#34;])
+        data[&#34;steps&#34;] = [ExperimentStep.from_dict(step) for step in data.get(&#34;steps&#34;, [])]
+        data[&#34;logs&#34;] = [ExperimentLog.from_dict(log) for log in data.get(&#34;logs&#34;, [])]
+        return cls(**data)
+
+    def to_json(self) -&gt; str:
+        &#34;&#34;&#34;Convert to JSON string&#34;&#34;&#34;
+        return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
+
+    @classmethod
+    def from_json(cls, json_str: str) -&gt; &#34;Experiment&#34;:
+        &#34;&#34;&#34;Restore from JSON string&#34;&#34;&#34;
+        return cls.from_dict(json.loads(json_str))</code></pre>
+</details>
+<div class="desc"><p>Overall information about the experiment</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.Experiment.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>data: Dict[str, Any]) ‑> <a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.from_json"><code class="name flex">
+<span>def <span class="ident">from_json</span></span>(<span>json_str: str) ‑> <a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Restore from JSON string</p></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.Experiment.completed_at"><code class="name">var <span class="ident">completed_at</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.config"><code class="name">var <span class="ident">config</span> : Dict[str, Any]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.config_path"><code class="name">var <span class="ident">config_path</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.created_at"><code class="name">var <span class="ident">created_at</span> : datetime.datetime</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.dataset_type"><code class="name">var <span class="ident">dataset_type</span> : <a title="molcrawl.core.tracking.models.DatasetType" href="models.html#molcrawl.core.tracking.models.DatasetType">DatasetType</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.environment"><code class="name">var <span class="ident">environment</span> : Dict[str, Any]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.experiment_id"><code class="name">var <span class="ident">experiment_id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.experiment_name"><code class="name">var <span class="ident">experiment_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.experiment_type"><code class="name">var <span class="ident">experiment_type</span> : <a title="molcrawl.core.tracking.models.ExperimentType" href="models.html#molcrawl.core.tracking.models.ExperimentType">ExperimentType</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.logs"><code class="name">var <span class="ident">logs</span> : List[<a title="molcrawl.core.tracking.models.ExperimentLog" href="models.html#molcrawl.core.tracking.models.ExperimentLog">ExperimentLog</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.metrics"><code class="name">var <span class="ident">metrics</span> : Dict[str, float]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.model_type"><code class="name">var <span class="ident">model_type</span> : <a title="molcrawl.core.tracking.models.ModelType" href="models.html#molcrawl.core.tracking.models.ModelType">ModelType</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.notes"><code class="name">var <span class="ident">notes</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.results"><code class="name">var <span class="ident">results</span> : Dict[str, Any]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.results_dir"><code class="name">var <span class="ident">results_dir</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.started_at"><code class="name">var <span class="ident">started_at</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.status"><code class="name">var <span class="ident">status</span> : <a title="molcrawl.core.tracking.models.ExperimentStatus" href="models.html#molcrawl.core.tracking.models.ExperimentStatus">ExperimentStatus</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.steps"><code class="name">var <span class="ident">steps</span> : List[<a title="molcrawl.core.tracking.models.ExperimentStep" href="models.html#molcrawl.core.tracking.models.ExperimentStep">ExperimentStep</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.tags"><code class="name">var <span class="ident">tags</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.total_duration_seconds"><code class="name">var <span class="ident">total_duration_seconds</span> : float | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.Experiment.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    return {
+        &#34;experiment_id&#34;: self.experiment_id,
+        &#34;experiment_name&#34;: self.experiment_name,
+        &#34;experiment_type&#34;: self.experiment_type.value,
+        &#34;model_type&#34;: self.model_type.value,
+        &#34;dataset_type&#34;: self.dataset_type.value,
+        &#34;status&#34;: self.status.value,
+        &#34;created_at&#34;: self.created_at.isoformat(),
+        &#34;started_at&#34;: self.started_at.isoformat() if self.started_at else None,
+        &#34;completed_at&#34;: self.completed_at.isoformat() if self.completed_at else None,
+        &#34;total_duration_seconds&#34;: self.total_duration_seconds,
+        &#34;config_path&#34;: self.config_path,
+        &#34;config&#34;: self.config,
+        &#34;results_dir&#34;: self.results_dir,
+        &#34;results&#34;: self.results,
+        &#34;metrics&#34;: self.metrics,
+        &#34;steps&#34;: [step.to_dict() for step in self.steps],
+        &#34;logs&#34;: [log.to_dict() for log in self.logs],
+        &#34;tags&#34;: self.tags,
+        &#34;notes&#34;: self.notes,
+        &#34;environment&#34;: self.environment,
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.Experiment.to_json"><code class="name flex">
+<span>def <span class="ident">to_json</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_json(self) -&gt; str:
+    &#34;&#34;&#34;Convert to JSON string&#34;&#34;&#34;
+    return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)</code></pre>
+</details>
+<div class="desc"><p>Convert to JSON string</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentLog"><code class="flex name class">
+<span>class <span class="ident">ExperimentLog</span></span>
+<span>(</span><span>timestamp: datetime.datetime, level: str, message: str, source: str | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class ExperimentLog:
+    &#34;&#34;&#34;Experiment Log Entry&#34;&#34;&#34;
+
+    timestamp: datetime
+    level: str  # INFO, WARNING, ERROR, DEBUG
+    message: str
+    source: Optional[str] = None  # Log source (file name, function name, etc.)
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        return {
+            &#34;timestamp&#34;: self.timestamp.isoformat(),
+            &#34;level&#34;: self.level,
+            &#34;message&#34;: self.message,
+            &#34;source&#34;: self.source,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -&gt; &#34;ExperimentLog&#34;:
+        data[&#34;timestamp&#34;] = datetime.fromisoformat(data[&#34;timestamp&#34;])
+        return cls(**data)</code></pre>
+</details>
+<div class="desc"><p>Experiment Log Entry</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentLog.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>data: Dict[str, Any]) ‑> <a title="molcrawl.core.tracking.models.ExperimentLog" href="models.html#molcrawl.core.tracking.models.ExperimentLog">ExperimentLog</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentLog.level"><code class="name">var <span class="ident">level</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentLog.message"><code class="name">var <span class="ident">message</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentLog.source"><code class="name">var <span class="ident">source</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentLog.timestamp"><code class="name">var <span class="ident">timestamp</span> : datetime.datetime</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentLog.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    return {
+        &#34;timestamp&#34;: self.timestamp.isoformat(),
+        &#34;level&#34;: self.level,
+        &#34;message&#34;: self.message,
+        &#34;source&#34;: self.source,
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStatus"><code class="flex name class">
+<span>class <span class="ident">ExperimentStatus</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExperimentStatus(str, Enum):
+    &#34;&#34;&#34;Experiment Status&#34;&#34;&#34;
+
+    PENDING = &#34;pending&#34;  # Not executed
+    RUNNING = &#34;running&#34;  # Running
+    COMPLETED = &#34;completed&#34;  # Completed
+    FAILED = &#34;failed&#34;  # failed
+    CANCELLED = &#34;cancelled&#34;  # cancel
+    SKIPPED = &#34;skipped&#34;  # skipped</code></pre>
+</details>
+<div class="desc"><p>Experiment Status</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.str</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentStatus.CANCELLED"><code class="name">var <span class="ident">CANCELLED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStatus.COMPLETED"><code class="name">var <span class="ident">COMPLETED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStatus.FAILED"><code class="name">var <span class="ident">FAILED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStatus.PENDING"><code class="name">var <span class="ident">PENDING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStatus.RUNNING"><code class="name">var <span class="ident">RUNNING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStatus.SKIPPED"><code class="name">var <span class="ident">SKIPPED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep"><code class="flex name class">
+<span>class <span class="ident">ExperimentStep</span></span>
+<span>(</span><span>step_id: str,<br>step_name: str,<br>status: <a title="molcrawl.core.tracking.models.ExperimentStatus" href="models.html#molcrawl.core.tracking.models.ExperimentStatus">ExperimentStatus</a>,<br>start_time: datetime.datetime | None = None,<br>end_time: datetime.datetime | None = None,<br>duration_seconds: float | None = None,<br>command: str | None = None,<br>output_path: str | None = None,<br>error_message: str | None = None,<br>metadata: Dict[str, Any] = &lt;factory&gt;)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class ExperimentStep:
+    &#34;&#34;&#34;Each step of the experiment&#34;&#34;&#34;
+
+    step_id: str
+    step_name: str
+    status: ExperimentStatus
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    duration_seconds: Optional[float] = None
+    command: Optional[str] = None
+    output_path: Optional[str] = None
+    error_message: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        data = asdict(self)
+        data[&#34;status&#34;] = self.status.value
+        data[&#34;start_time&#34;] = self.start_time.isoformat() if self.start_time else None
+        data[&#34;end_time&#34;] = self.end_time.isoformat() if self.end_time else None
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -&gt; &#34;ExperimentStep&#34;:
+        data[&#34;status&#34;] = ExperimentStatus(data[&#34;status&#34;])
+        if data.get(&#34;start_time&#34;):
+            data[&#34;start_time&#34;] = datetime.fromisoformat(data[&#34;start_time&#34;])
+        if data.get(&#34;end_time&#34;):
+            data[&#34;end_time&#34;] = datetime.fromisoformat(data[&#34;end_time&#34;])
+        return cls(**data)</code></pre>
+</details>
+<div class="desc"><p>Each step of the experiment</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentStep.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>data: Dict[str, Any]) ‑> <a title="molcrawl.core.tracking.models.ExperimentStep" href="models.html#molcrawl.core.tracking.models.ExperimentStep">ExperimentStep</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentStep.command"><code class="name">var <span class="ident">command</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.duration_seconds"><code class="name">var <span class="ident">duration_seconds</span> : float | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.end_time"><code class="name">var <span class="ident">end_time</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.error_message"><code class="name">var <span class="ident">error_message</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.metadata"><code class="name">var <span class="ident">metadata</span> : Dict[str, Any]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.output_path"><code class="name">var <span class="ident">output_path</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.start_time"><code class="name">var <span class="ident">start_time</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.status"><code class="name">var <span class="ident">status</span> : <a title="molcrawl.core.tracking.models.ExperimentStatus" href="models.html#molcrawl.core.tracking.models.ExperimentStatus">ExperimentStatus</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.step_id"><code class="name">var <span class="ident">step_id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentStep.step_name"><code class="name">var <span class="ident">step_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentStep.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    data = asdict(self)
+    data[&#34;status&#34;] = self.status.value
+    data[&#34;start_time&#34;] = self.start_time.isoformat() if self.start_time else None
+    data[&#34;end_time&#34;] = self.end_time.isoformat() if self.end_time else None
+    return data</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker"><code class="flex name class">
+<span>class <span class="ident">ExperimentTracker</span></span>
+<span>(</span><span>db_path: str | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExperimentTracker:
+    &#34;&#34;&#34;
+    experiment tracker
+
+    Usage:
+        tracker = ExperimentTracker()
+        exp_id = tracker.start_experiment(
+            name=&#34;GPT2 ProteinGym Training&#34;,
+            experiment_type=ExperimentType.TRAINING,
+            model_type=ModelType.GPT2,
+            dataset_type=DatasetType.PROTEINGYM
+        )
+
+        step_id = tracker.start_step(exp_id, &#34;data_loading&#34;, &#34;Load dataset&#34;)
+        # ... process ...
+        tracker.complete_step(exp_id, step_id)
+
+        tracker.complete_experiment(exp_id, results={&#34;accuracy&#34;: 0.95})
+    &#34;&#34;&#34;
+
+    def __init__(self, db_path: Optional[str] = None):
+        &#34;&#34;&#34;
+        Args:
+            db_path: Database file path. If not specified, get from environment variable
+        &#34;&#34;&#34;
+        if db_path is None:
+            # defaultdatabase path of
+            project_root = Path(__file__).parent.parent.parent
+            db_dir = project_root / &#34;experiment_data&#34;
+            db_dir.mkdir(exist_ok=True)
+            db_path = str(db_dir / &#34;experiments.db&#34;)
+
+        self.db = ExperimentDatabase(db_path)
+        self.current_experiment_id: Optional[str] = None
+
+    def start_experiment(
+        self,
+        name: str,
+        experiment_type: ExperimentType,
+        model_type: ModelType,
+        dataset_type: DatasetType,
+        config: Optional[Dict[str, Any]] = None,
+        config_path: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        notes: str = &#34;&#34;,
+    ) -&gt; str:
+        &#34;&#34;&#34;
+        Start experiment
+
+        Args:
+            name: Experiment name
+            experiment_type: Experiment type
+            model_type: Model type
+            dataset_type: Dataset type
+            config: configuration information
+            config_path: configuration file path
+            tags: tag list
+            notes: notes
+
+        Returns:
+            Experiment ID
+        &#34;&#34;&#34;
+        experiment_id = (
+            f&#34;{model_type.value}_{dataset_type.value}_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}_{uuid.uuid4().hex[:8]}&#34;
+        )
+
+        # Get environment information
+        environment = {
+            &#34;hostname&#34;: os.environ.get(&#34;HOSTNAME&#34;, &#34;unknown&#34;),
+            &#34;user&#34;: os.environ.get(&#34;USER&#34;, &#34;unknown&#34;),
+            &#34;python_version&#34;: os.environ.get(&#34;CONDA_PYTHON_EXE&#34;, &#34;unknown&#34;),
+            &#34;conda_env&#34;: os.environ.get(&#34;CONDA_DEFAULT_ENV&#34;, &#34;unknown&#34;),
+            &#34;learning_source_dir&#34;: os.environ.get(&#34;LEARNING_SOURCE_DIR&#34;, &#34;unknown&#34;),
+            &#34;pwd&#34;: os.getcwd(),
+        }
+
+        experiment = Experiment(
+            experiment_id=experiment_id,
+            experiment_name=name,
+            experiment_type=experiment_type,
+            model_type=model_type,
+            dataset_type=dataset_type,
+            status=ExperimentStatus.RUNNING,
+            created_at=datetime.now(),
+            started_at=datetime.now(),
+            config=config or {},
+            config_path=config_path,
+            tags=tags or [],
+            notes=notes,
+            environment=environment,
+        )
+
+        self.db.save_experiment(experiment)
+        self.current_experiment_id = experiment_id
+
+        self.log(experiment_id, &#34;INFO&#34;, f&#34;Experiment started: {name}&#34;)
+
+        return experiment_id
+
+    def start_step(
+        self,
+        experiment_id: str,
+        step_id: str,
+        step_name: str,
+        command: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -&gt; str:
+        &#34;&#34;&#34;
+        start step
+
+        Args:
+            experiment_id: Experiment ID
+            step_id: Step ID
+            step_name: Step name
+            command: execution command
+            metadata: metadata
+
+        Returns:
+            Step ID
+        &#34;&#34;&#34;
+        experiment = self.db.get_experiment(experiment_id)
+        if not experiment:
+            raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+        step = ExperimentStep(
+            step_id=step_id,
+            step_name=step_name,
+            status=ExperimentStatus.RUNNING,
+            start_time=datetime.now(),
+            command=command,
+            metadata=metadata or {},
+        )
+
+        experiment.steps.append(step)
+        self.db.save_experiment(experiment)
+
+        self.log(experiment_id, &#34;INFO&#34;, f&#34;Step started: {step_name}&#34;)
+
+        return step_id
+
+    def complete_step(
+        self,
+        experiment_id: str,
+        step_id: str,
+        output_path: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        complete the step
+
+        Args:
+            experiment_id: Experiment ID
+            step_id: Step ID
+            output_path: output path
+            metadata: additional metadata
+        &#34;&#34;&#34;
+        experiment = self.db.get_experiment(experiment_id)
+        if not experiment:
+            raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+        for step in experiment.steps:
+            if step.step_id == step_id:
+                step.status = ExperimentStatus.COMPLETED
+                step.end_time = datetime.now()
+                if step.start_time:
+                    step.duration_seconds = (step.end_time - step.start_time).total_seconds()
+                step.output_path = output_path
+                if metadata:
+                    step.metadata.update(metadata)
+                break
+
+        self.db.save_experiment(experiment)
+        self.log(experiment_id, &#34;INFO&#34;, f&#34;Step completed: {step_id}&#34;)
+
+    def fail_step(self, experiment_id: str, step_id: str, error_message: str) -&gt; None:
+        &#34;&#34;&#34;
+        put a step in a failed state
+
+        Args:
+            experiment_id: Experiment ID
+            step_id: Step ID
+            error_message: Error message
+        &#34;&#34;&#34;
+        experiment = self.db.get_experiment(experiment_id)
+        if not experiment:
+            raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+        for step in experiment.steps:
+            if step.step_id == step_id:
+                step.status = ExperimentStatus.FAILED
+                step.end_time = datetime.now()
+                if step.start_time:
+                    step.duration_seconds = (step.end_time - step.start_time).total_seconds()
+                step.error_message = error_message
+                break
+
+        self.db.save_experiment(experiment)
+        self.log(experiment_id, &#34;ERROR&#34;, f&#34;Step failed: {step_id} - {error_message}&#34;)
+
+    def complete_experiment(
+        self,
+        experiment_id: str,
+        results: Optional[Dict[str, Any]] = None,
+        metrics: Optional[Dict[str, float]] = None,
+        results_dir: Optional[str] = None,
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        Complete the experiment
+
+        Args:
+            experiment_id: Experiment ID
+            results: Results information
+            metrics: metrics
+            results_dir: results directory
+        &#34;&#34;&#34;
+        experiment = self.db.get_experiment(experiment_id)
+        if not experiment:
+            raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+        experiment.status = ExperimentStatus.COMPLETED
+        experiment.completed_at = datetime.now()
+        if experiment.started_at:
+            experiment.total_duration_seconds = (experiment.completed_at - experiment.started_at).total_seconds()
+
+        if results:
+            experiment.results = results
+        if metrics:
+            experiment.metrics = metrics
+        if results_dir:
+            experiment.results_dir = results_dir
+
+        self.db.save_experiment(experiment)
+        self.log(experiment_id, &#34;INFO&#34;, &#34;Experiment completed successfully&#34;)
+
+    def fail_experiment(self, experiment_id: str, error_message: str) -&gt; None:
+        &#34;&#34;&#34;
+        put the experiment into a failed state
+
+        Args:
+            experiment_id: Experiment ID
+            error_message: Error message
+        &#34;&#34;&#34;
+        experiment = self.db.get_experiment(experiment_id)
+        if not experiment:
+            raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+        experiment.status = ExperimentStatus.FAILED
+        experiment.completed_at = datetime.now()
+        if experiment.started_at:
+            experiment.total_duration_seconds = (experiment.completed_at - experiment.started_at).total_seconds()
+
+        self.db.save_experiment(experiment)
+        self.log(experiment_id, &#34;ERROR&#34;, f&#34;Experiment failed: {error_message}&#34;)
+
+    def log(self, experiment_id: str, level: str, message: str, source: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;
+        add log
+
+        Args:
+            experiment_id: Experiment ID
+            level: Log level (INFO, WARNING, ERROR, DEBUG)
+            message: message
+            source: source
+        &#34;&#34;&#34;
+        log = ExperimentLog(timestamp=datetime.now(), level=level, message=message, source=source)
+        self.db.add_log(experiment_id, log)
+
+    def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
+        &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
+        return self.db.get_experiment(experiment_id)
+
+    def list_experiments(
+        self,
+        status: Optional[ExperimentStatus] = None,
+        experiment_type: Optional[ExperimentType] = None,
+        model_type: Optional[ModelType] = None,
+        dataset_type: Optional[DatasetType] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -&gt; List[Experiment]:
+        &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
+        return self.db.list_experiments(
+            status=status,
+            experiment_type=experiment_type,
+            model_type=model_type,
+            dataset_type=dataset_type,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_statistics(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
+        return self.db.get_statistics()
+
+    def export_experiment_json(self, experiment_id: str, output_path: str) -&gt; None:
+        &#34;&#34;&#34;Export experiment in JSON format&#34;&#34;&#34;
+        experiment = self.db.get_experiment(experiment_id)
+        if not experiment:
+            raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(experiment.to_json(), encoding=&#34;utf-8&#34;)</code></pre>
+</details>
+<div class="desc"><p>experiment tracker</p>
+<h2 id="usage">Usage</h2>
+<p>tracker = ExperimentTracker()
+exp_id = tracker.start_experiment(
+name="GPT2 ProteinGym Training",
+experiment_type=ExperimentType.TRAINING,
+model_type=ModelType.GPT2,
+dataset_type=DatasetType.PROTEINGYM
+)</p>
+<p>step_id = tracker.start_step(exp_id, "data_loading", "Load dataset")</p>
+<h1 id="process">&hellip; process &hellip;</h1>
+<p>tracker.complete_step(exp_id, step_id)</p>
+<p>tracker.complete_experiment(exp_id, results={"accuracy": 0.95})</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_path</code></strong></dt>
+<dd>Database file path. If not specified, get from environment variable</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentTracker.complete_experiment"><code class="name flex">
+<span>def <span class="ident">complete_experiment</span></span>(<span>self,<br>experiment_id: str,<br>results: Dict[str, Any] | None = None,<br>metrics: Dict[str, float] | None = None,<br>results_dir: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def complete_experiment(
+    self,
+    experiment_id: str,
+    results: Optional[Dict[str, Any]] = None,
+    metrics: Optional[Dict[str, float]] = None,
+    results_dir: Optional[str] = None,
+) -&gt; None:
+    &#34;&#34;&#34;
+    Complete the experiment
+
+    Args:
+        experiment_id: Experiment ID
+        results: Results information
+        metrics: metrics
+        results_dir: results directory
+    &#34;&#34;&#34;
+    experiment = self.db.get_experiment(experiment_id)
+    if not experiment:
+        raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+    experiment.status = ExperimentStatus.COMPLETED
+    experiment.completed_at = datetime.now()
+    if experiment.started_at:
+        experiment.total_duration_seconds = (experiment.completed_at - experiment.started_at).total_seconds()
+
+    if results:
+        experiment.results = results
+    if metrics:
+        experiment.metrics = metrics
+    if results_dir:
+        experiment.results_dir = results_dir
+
+    self.db.save_experiment(experiment)
+    self.log(experiment_id, &#34;INFO&#34;, &#34;Experiment completed successfully&#34;)</code></pre>
+</details>
+<div class="desc"><p>Complete the experiment</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_id</code></strong></dt>
+<dd>Experiment ID</dd>
+<dt><strong><code>results</code></strong></dt>
+<dd>Results information</dd>
+<dt><strong><code>metrics</code></strong></dt>
+<dd>metrics</dd>
+<dt><strong><code>results_dir</code></strong></dt>
+<dd>results directory</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.complete_step"><code class="name flex">
+<span>def <span class="ident">complete_step</span></span>(<span>self,<br>experiment_id: str,<br>step_id: str,<br>output_path: str | None = None,<br>metadata: Dict[str, Any] | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def complete_step(
+    self,
+    experiment_id: str,
+    step_id: str,
+    output_path: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -&gt; None:
+    &#34;&#34;&#34;
+    complete the step
+
+    Args:
+        experiment_id: Experiment ID
+        step_id: Step ID
+        output_path: output path
+        metadata: additional metadata
+    &#34;&#34;&#34;
+    experiment = self.db.get_experiment(experiment_id)
+    if not experiment:
+        raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+    for step in experiment.steps:
+        if step.step_id == step_id:
+            step.status = ExperimentStatus.COMPLETED
+            step.end_time = datetime.now()
+            if step.start_time:
+                step.duration_seconds = (step.end_time - step.start_time).total_seconds()
+            step.output_path = output_path
+            if metadata:
+                step.metadata.update(metadata)
+            break
+
+    self.db.save_experiment(experiment)
+    self.log(experiment_id, &#34;INFO&#34;, f&#34;Step completed: {step_id}&#34;)</code></pre>
+</details>
+<div class="desc"><p>complete the step</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_id</code></strong></dt>
+<dd>Experiment ID</dd>
+<dt><strong><code>step_id</code></strong></dt>
+<dd>Step ID</dd>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>output path</dd>
+<dt><strong><code>metadata</code></strong></dt>
+<dd>additional metadata</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.export_experiment_json"><code class="name flex">
+<span>def <span class="ident">export_experiment_json</span></span>(<span>self, experiment_id: str, output_path: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_experiment_json(self, experiment_id: str, output_path: str) -&gt; None:
+    &#34;&#34;&#34;Export experiment in JSON format&#34;&#34;&#34;
+    experiment = self.db.get_experiment(experiment_id)
+    if not experiment:
+        raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(experiment.to_json(), encoding=&#34;utf-8&#34;)</code></pre>
+</details>
+<div class="desc"><p>Export experiment in JSON format</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.fail_experiment"><code class="name flex">
+<span>def <span class="ident">fail_experiment</span></span>(<span>self, experiment_id: str, error_message: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fail_experiment(self, experiment_id: str, error_message: str) -&gt; None:
+    &#34;&#34;&#34;
+    put the experiment into a failed state
+
+    Args:
+        experiment_id: Experiment ID
+        error_message: Error message
+    &#34;&#34;&#34;
+    experiment = self.db.get_experiment(experiment_id)
+    if not experiment:
+        raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+    experiment.status = ExperimentStatus.FAILED
+    experiment.completed_at = datetime.now()
+    if experiment.started_at:
+        experiment.total_duration_seconds = (experiment.completed_at - experiment.started_at).total_seconds()
+
+    self.db.save_experiment(experiment)
+    self.log(experiment_id, &#34;ERROR&#34;, f&#34;Experiment failed: {error_message}&#34;)</code></pre>
+</details>
+<div class="desc"><p>put the experiment into a failed state</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_id</code></strong></dt>
+<dd>Experiment ID</dd>
+<dt><strong><code>error_message</code></strong></dt>
+<dd>Error message</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.fail_step"><code class="name flex">
+<span>def <span class="ident">fail_step</span></span>(<span>self, experiment_id: str, step_id: str, error_message: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fail_step(self, experiment_id: str, step_id: str, error_message: str) -&gt; None:
+    &#34;&#34;&#34;
+    put a step in a failed state
+
+    Args:
+        experiment_id: Experiment ID
+        step_id: Step ID
+        error_message: Error message
+    &#34;&#34;&#34;
+    experiment = self.db.get_experiment(experiment_id)
+    if not experiment:
+        raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+    for step in experiment.steps:
+        if step.step_id == step_id:
+            step.status = ExperimentStatus.FAILED
+            step.end_time = datetime.now()
+            if step.start_time:
+                step.duration_seconds = (step.end_time - step.start_time).total_seconds()
+            step.error_message = error_message
+            break
+
+    self.db.save_experiment(experiment)
+    self.log(experiment_id, &#34;ERROR&#34;, f&#34;Step failed: {step_id} - {error_message}&#34;)</code></pre>
+</details>
+<div class="desc"><p>put a step in a failed state</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_id</code></strong></dt>
+<dd>Experiment ID</dd>
+<dt><strong><code>step_id</code></strong></dt>
+<dd>Step ID</dd>
+<dt><strong><code>error_message</code></strong></dt>
+<dd>Error message</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.get_experiment"><code class="name flex">
+<span>def <span class="ident">get_experiment</span></span>(<span>self, experiment_id: str) ‑> <a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_experiment(self, experiment_id: str) -&gt; Optional[Experiment]:
+    &#34;&#34;&#34;Get the experiment&#34;&#34;&#34;
+    return self.db.get_experiment(experiment_id)</code></pre>
+</details>
+<div class="desc"><p>Get the experiment</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.get_statistics"><code class="name flex">
+<span>def <span class="ident">get_statistics</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_statistics(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Get statistics&#34;&#34;&#34;
+    return self.db.get_statistics()</code></pre>
+</details>
+<div class="desc"><p>Get statistics</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.list_experiments"><code class="name flex">
+<span>def <span class="ident">list_experiments</span></span>(<span>self,<br>status: <a title="molcrawl.core.tracking.models.ExperimentStatus" href="models.html#molcrawl.core.tracking.models.ExperimentStatus">ExperimentStatus</a> | None = None,<br>experiment_type: <a title="molcrawl.core.tracking.models.ExperimentType" href="models.html#molcrawl.core.tracking.models.ExperimentType">ExperimentType</a> | None = None,<br>model_type: <a title="molcrawl.core.tracking.models.ModelType" href="models.html#molcrawl.core.tracking.models.ModelType">ModelType</a> | None = None,<br>dataset_type: <a title="molcrawl.core.tracking.models.DatasetType" href="models.html#molcrawl.core.tracking.models.DatasetType">DatasetType</a> | None = None,<br>limit: int = 100,<br>offset: int = 0) ‑> List[<a title="molcrawl.core.tracking.models.Experiment" href="models.html#molcrawl.core.tracking.models.Experiment">Experiment</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list_experiments(
+    self,
+    status: Optional[ExperimentStatus] = None,
+    experiment_type: Optional[ExperimentType] = None,
+    model_type: Optional[ModelType] = None,
+    dataset_type: Optional[DatasetType] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -&gt; List[Experiment]:
+    &#34;&#34;&#34;Get experiment list&#34;&#34;&#34;
+    return self.db.list_experiments(
+        status=status,
+        experiment_type=experiment_type,
+        model_type=model_type,
+        dataset_type=dataset_type,
+        limit=limit,
+        offset=offset,
+    )</code></pre>
+</details>
+<div class="desc"><p>Get experiment list</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.log"><code class="name flex">
+<span>def <span class="ident">log</span></span>(<span>self, experiment_id: str, level: str, message: str, source: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log(self, experiment_id: str, level: str, message: str, source: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;
+    add log
+
+    Args:
+        experiment_id: Experiment ID
+        level: Log level (INFO, WARNING, ERROR, DEBUG)
+        message: message
+        source: source
+    &#34;&#34;&#34;
+    log = ExperimentLog(timestamp=datetime.now(), level=level, message=message, source=source)
+    self.db.add_log(experiment_id, log)</code></pre>
+</details>
+<div class="desc"><p>add log</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_id</code></strong></dt>
+<dd>Experiment ID</dd>
+<dt><strong><code>level</code></strong></dt>
+<dd>Log level (INFO, WARNING, ERROR, DEBUG)</dd>
+<dt><strong><code>message</code></strong></dt>
+<dd>message</dd>
+<dt><strong><code>source</code></strong></dt>
+<dd>source</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.start_experiment"><code class="name flex">
+<span>def <span class="ident">start_experiment</span></span>(<span>self,<br>name: str,<br>experiment_type: <a title="molcrawl.core.tracking.models.ExperimentType" href="models.html#molcrawl.core.tracking.models.ExperimentType">ExperimentType</a>,<br>model_type: <a title="molcrawl.core.tracking.models.ModelType" href="models.html#molcrawl.core.tracking.models.ModelType">ModelType</a>,<br>dataset_type: <a title="molcrawl.core.tracking.models.DatasetType" href="models.html#molcrawl.core.tracking.models.DatasetType">DatasetType</a>,<br>config: Dict[str, Any] | None = None,<br>config_path: str | None = None,<br>tags: List[str] | None = None,<br>notes: str = '') ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_experiment(
+    self,
+    name: str,
+    experiment_type: ExperimentType,
+    model_type: ModelType,
+    dataset_type: DatasetType,
+    config: Optional[Dict[str, Any]] = None,
+    config_path: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    notes: str = &#34;&#34;,
+) -&gt; str:
+    &#34;&#34;&#34;
+    Start experiment
+
+    Args:
+        name: Experiment name
+        experiment_type: Experiment type
+        model_type: Model type
+        dataset_type: Dataset type
+        config: configuration information
+        config_path: configuration file path
+        tags: tag list
+        notes: notes
+
+    Returns:
+        Experiment ID
+    &#34;&#34;&#34;
+    experiment_id = (
+        f&#34;{model_type.value}_{dataset_type.value}_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}_{uuid.uuid4().hex[:8]}&#34;
+    )
+
+    # Get environment information
+    environment = {
+        &#34;hostname&#34;: os.environ.get(&#34;HOSTNAME&#34;, &#34;unknown&#34;),
+        &#34;user&#34;: os.environ.get(&#34;USER&#34;, &#34;unknown&#34;),
+        &#34;python_version&#34;: os.environ.get(&#34;CONDA_PYTHON_EXE&#34;, &#34;unknown&#34;),
+        &#34;conda_env&#34;: os.environ.get(&#34;CONDA_DEFAULT_ENV&#34;, &#34;unknown&#34;),
+        &#34;learning_source_dir&#34;: os.environ.get(&#34;LEARNING_SOURCE_DIR&#34;, &#34;unknown&#34;),
+        &#34;pwd&#34;: os.getcwd(),
+    }
+
+    experiment = Experiment(
+        experiment_id=experiment_id,
+        experiment_name=name,
+        experiment_type=experiment_type,
+        model_type=model_type,
+        dataset_type=dataset_type,
+        status=ExperimentStatus.RUNNING,
+        created_at=datetime.now(),
+        started_at=datetime.now(),
+        config=config or {},
+        config_path=config_path,
+        tags=tags or [],
+        notes=notes,
+        environment=environment,
+    )
+
+    self.db.save_experiment(experiment)
+    self.current_experiment_id = experiment_id
+
+    self.log(experiment_id, &#34;INFO&#34;, f&#34;Experiment started: {name}&#34;)
+
+    return experiment_id</code></pre>
+</details>
+<div class="desc"><p>Start experiment</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Experiment name</dd>
+<dt><strong><code>experiment_type</code></strong></dt>
+<dd>Experiment type</dd>
+<dt><strong><code>model_type</code></strong></dt>
+<dd>Model type</dd>
+<dt><strong><code>dataset_type</code></strong></dt>
+<dd>Dataset type</dd>
+<dt><strong><code>config</code></strong></dt>
+<dd>configuration information</dd>
+<dt><strong><code>config_path</code></strong></dt>
+<dd>configuration file path</dd>
+<dt><strong><code>tags</code></strong></dt>
+<dd>tag list</dd>
+<dt><strong><code>notes</code></strong></dt>
+<dd>notes</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Experiment ID</p></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentTracker.start_step"><code class="name flex">
+<span>def <span class="ident">start_step</span></span>(<span>self,<br>experiment_id: str,<br>step_id: str,<br>step_name: str,<br>command: str | None = None,<br>metadata: Dict[str, Any] | None = None) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_step(
+    self,
+    experiment_id: str,
+    step_id: str,
+    step_name: str,
+    command: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -&gt; str:
+    &#34;&#34;&#34;
+    start step
+
+    Args:
+        experiment_id: Experiment ID
+        step_id: Step ID
+        step_name: Step name
+        command: execution command
+        metadata: metadata
+
+    Returns:
+        Step ID
+    &#34;&#34;&#34;
+    experiment = self.db.get_experiment(experiment_id)
+    if not experiment:
+        raise ValueError(f&#34;Experiment {experiment_id} not found&#34;)
+
+    step = ExperimentStep(
+        step_id=step_id,
+        step_name=step_name,
+        status=ExperimentStatus.RUNNING,
+        start_time=datetime.now(),
+        command=command,
+        metadata=metadata or {},
+    )
+
+    experiment.steps.append(step)
+    self.db.save_experiment(experiment)
+
+    self.log(experiment_id, &#34;INFO&#34;, f&#34;Step started: {step_name}&#34;)
+
+    return step_id</code></pre>
+</details>
+<div class="desc"><p>start step</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_id</code></strong></dt>
+<dd>Experiment ID</dd>
+<dt><strong><code>step_id</code></strong></dt>
+<dd>Step ID</dd>
+<dt><strong><code>step_name</code></strong></dt>
+<dd>Step name</dd>
+<dt><strong><code>command</code></strong></dt>
+<dd>execution command</dd>
+<dt><strong><code>metadata</code></strong></dt>
+<dd>metadata</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Step ID</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentType"><code class="flex name class">
+<span>class <span class="ident">ExperimentType</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExperimentType(str, Enum):
+    &#34;&#34;&#34;Experiment type&#34;&#34;&#34;
+
+    DATA_PREPARATION = &#34;data_preparation&#34;  # Data preparation
+    TRAINING = &#34;training&#34;  # model training
+    EVALUATION = &#34;evaluation&#34;  # Evaluation
+    VISUALIZATION = &#34;visualization&#34;  # visualization
+    INFERENCE = &#34;inference&#34;  # inference</code></pre>
+</details>
+<div class="desc"><p>Experiment type</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.str</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ExperimentType.DATA_PREPARATION"><code class="name">var <span class="ident">DATA_PREPARATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentType.EVALUATION"><code class="name">var <span class="ident">EVALUATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentType.INFERENCE"><code class="name">var <span class="ident">INFERENCE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentType.TRAINING"><code class="name">var <span class="ident">TRAINING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ExperimentType.VISUALIZATION"><code class="name">var <span class="ident">VISUALIZATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="molcrawl.core.tracking.ModelType"><code class="flex name class">
+<span>class <span class="ident">ModelType</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ModelType(str, Enum):
+    &#34;&#34;&#34;Model type&#34;&#34;&#34;
+
+    GPT2 = &#34;gpt2&#34;
+    BERT = &#34;bert&#34;
+    GPN = &#34;gpn&#34;
+    OTHER = &#34;other&#34;</code></pre>
+</details>
+<div class="desc"><p>Model type</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.str</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.ModelType.BERT"><code class="name">var <span class="ident">BERT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ModelType.GPN"><code class="name">var <span class="ident">GPN</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ModelType.GPT2"><code class="name">var <span class="ident">GPT2</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.ModelType.OTHER"><code class="name">var <span class="ident">OTHER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.core" href="../index.html">molcrawl.core</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="molcrawl.core.tracking.api" href="api.html">molcrawl.core.tracking.api</a></code></li>
+<li><code><a title="molcrawl.core.tracking.database" href="database.html">molcrawl.core.tracking.database</a></code></li>
+<li><code><a title="molcrawl.core.tracking.helpers" href="helpers.html">molcrawl.core.tracking.helpers</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models" href="models.html">molcrawl.core.tracking.models</a></code></li>
+<li><code><a title="molcrawl.core.tracking.tracker" href="tracker.html">molcrawl.core.tracking.tracker</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.core.tracking.DatasetType" href="#molcrawl.core.tracking.DatasetType">DatasetType</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.core.tracking.DatasetType.CLINVAR" href="#molcrawl.core.tracking.DatasetType.CLINVAR">CLINVAR</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.COMPOUNDS" href="#molcrawl.core.tracking.DatasetType.COMPOUNDS">COMPOUNDS</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.COSMIC" href="#molcrawl.core.tracking.DatasetType.COSMIC">COSMIC</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.GENOME_SEQUENCE" href="#molcrawl.core.tracking.DatasetType.GENOME_SEQUENCE">GENOME_SEQUENCE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.MOLECULE_NAT_LANG" href="#molcrawl.core.tracking.DatasetType.MOLECULE_NAT_LANG">MOLECULE_NAT_LANG</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.OMIM" href="#molcrawl.core.tracking.DatasetType.OMIM">OMIM</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.OTHER" href="#molcrawl.core.tracking.DatasetType.OTHER">OTHER</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.PROTEINGYM" href="#molcrawl.core.tracking.DatasetType.PROTEINGYM">PROTEINGYM</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.PROTEIN_SEQUENCE" href="#molcrawl.core.tracking.DatasetType.PROTEIN_SEQUENCE">PROTEIN_SEQUENCE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.DatasetType.RNA" href="#molcrawl.core.tracking.DatasetType.RNA">RNA</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.Experiment" href="#molcrawl.core.tracking.Experiment">Experiment</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.core.tracking.Experiment.completed_at" href="#molcrawl.core.tracking.Experiment.completed_at">completed_at</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.config" href="#molcrawl.core.tracking.Experiment.config">config</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.config_path" href="#molcrawl.core.tracking.Experiment.config_path">config_path</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.created_at" href="#molcrawl.core.tracking.Experiment.created_at">created_at</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.dataset_type" href="#molcrawl.core.tracking.Experiment.dataset_type">dataset_type</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.environment" href="#molcrawl.core.tracking.Experiment.environment">environment</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.experiment_id" href="#molcrawl.core.tracking.Experiment.experiment_id">experiment_id</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.experiment_name" href="#molcrawl.core.tracking.Experiment.experiment_name">experiment_name</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.experiment_type" href="#molcrawl.core.tracking.Experiment.experiment_type">experiment_type</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.from_dict" href="#molcrawl.core.tracking.Experiment.from_dict">from_dict</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.from_json" href="#molcrawl.core.tracking.Experiment.from_json">from_json</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.logs" href="#molcrawl.core.tracking.Experiment.logs">logs</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.metrics" href="#molcrawl.core.tracking.Experiment.metrics">metrics</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.model_type" href="#molcrawl.core.tracking.Experiment.model_type">model_type</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.notes" href="#molcrawl.core.tracking.Experiment.notes">notes</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.results" href="#molcrawl.core.tracking.Experiment.results">results</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.results_dir" href="#molcrawl.core.tracking.Experiment.results_dir">results_dir</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.started_at" href="#molcrawl.core.tracking.Experiment.started_at">started_at</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.status" href="#molcrawl.core.tracking.Experiment.status">status</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.steps" href="#molcrawl.core.tracking.Experiment.steps">steps</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.tags" href="#molcrawl.core.tracking.Experiment.tags">tags</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.to_dict" href="#molcrawl.core.tracking.Experiment.to_dict">to_dict</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.to_json" href="#molcrawl.core.tracking.Experiment.to_json">to_json</a></code></li>
+<li><code><a title="molcrawl.core.tracking.Experiment.total_duration_seconds" href="#molcrawl.core.tracking.Experiment.total_duration_seconds">total_duration_seconds</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.ExperimentLog" href="#molcrawl.core.tracking.ExperimentLog">ExperimentLog</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.core.tracking.ExperimentLog.from_dict" href="#molcrawl.core.tracking.ExperimentLog.from_dict">from_dict</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentLog.level" href="#molcrawl.core.tracking.ExperimentLog.level">level</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentLog.message" href="#molcrawl.core.tracking.ExperimentLog.message">message</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentLog.source" href="#molcrawl.core.tracking.ExperimentLog.source">source</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentLog.timestamp" href="#molcrawl.core.tracking.ExperimentLog.timestamp">timestamp</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentLog.to_dict" href="#molcrawl.core.tracking.ExperimentLog.to_dict">to_dict</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.ExperimentStatus" href="#molcrawl.core.tracking.ExperimentStatus">ExperimentStatus</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.core.tracking.ExperimentStatus.CANCELLED" href="#molcrawl.core.tracking.ExperimentStatus.CANCELLED">CANCELLED</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStatus.COMPLETED" href="#molcrawl.core.tracking.ExperimentStatus.COMPLETED">COMPLETED</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStatus.FAILED" href="#molcrawl.core.tracking.ExperimentStatus.FAILED">FAILED</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStatus.PENDING" href="#molcrawl.core.tracking.ExperimentStatus.PENDING">PENDING</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStatus.RUNNING" href="#molcrawl.core.tracking.ExperimentStatus.RUNNING">RUNNING</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStatus.SKIPPED" href="#molcrawl.core.tracking.ExperimentStatus.SKIPPED">SKIPPED</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.ExperimentStep" href="#molcrawl.core.tracking.ExperimentStep">ExperimentStep</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.command" href="#molcrawl.core.tracking.ExperimentStep.command">command</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.duration_seconds" href="#molcrawl.core.tracking.ExperimentStep.duration_seconds">duration_seconds</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.end_time" href="#molcrawl.core.tracking.ExperimentStep.end_time">end_time</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.error_message" href="#molcrawl.core.tracking.ExperimentStep.error_message">error_message</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.from_dict" href="#molcrawl.core.tracking.ExperimentStep.from_dict">from_dict</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.metadata" href="#molcrawl.core.tracking.ExperimentStep.metadata">metadata</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.output_path" href="#molcrawl.core.tracking.ExperimentStep.output_path">output_path</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.start_time" href="#molcrawl.core.tracking.ExperimentStep.start_time">start_time</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.status" href="#molcrawl.core.tracking.ExperimentStep.status">status</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.step_id" href="#molcrawl.core.tracking.ExperimentStep.step_id">step_id</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.step_name" href="#molcrawl.core.tracking.ExperimentStep.step_name">step_name</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentStep.to_dict" href="#molcrawl.core.tracking.ExperimentStep.to_dict">to_dict</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.ExperimentTracker" href="#molcrawl.core.tracking.ExperimentTracker">ExperimentTracker</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.complete_experiment" href="#molcrawl.core.tracking.ExperimentTracker.complete_experiment">complete_experiment</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.complete_step" href="#molcrawl.core.tracking.ExperimentTracker.complete_step">complete_step</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.export_experiment_json" href="#molcrawl.core.tracking.ExperimentTracker.export_experiment_json">export_experiment_json</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.fail_experiment" href="#molcrawl.core.tracking.ExperimentTracker.fail_experiment">fail_experiment</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.fail_step" href="#molcrawl.core.tracking.ExperimentTracker.fail_step">fail_step</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.get_experiment" href="#molcrawl.core.tracking.ExperimentTracker.get_experiment">get_experiment</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.get_statistics" href="#molcrawl.core.tracking.ExperimentTracker.get_statistics">get_statistics</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.list_experiments" href="#molcrawl.core.tracking.ExperimentTracker.list_experiments">list_experiments</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.log" href="#molcrawl.core.tracking.ExperimentTracker.log">log</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.start_experiment" href="#molcrawl.core.tracking.ExperimentTracker.start_experiment">start_experiment</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentTracker.start_step" href="#molcrawl.core.tracking.ExperimentTracker.start_step">start_step</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.ExperimentType" href="#molcrawl.core.tracking.ExperimentType">ExperimentType</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.core.tracking.ExperimentType.DATA_PREPARATION" href="#molcrawl.core.tracking.ExperimentType.DATA_PREPARATION">DATA_PREPARATION</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentType.EVALUATION" href="#molcrawl.core.tracking.ExperimentType.EVALUATION">EVALUATION</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentType.INFERENCE" href="#molcrawl.core.tracking.ExperimentType.INFERENCE">INFERENCE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentType.TRAINING" href="#molcrawl.core.tracking.ExperimentType.TRAINING">TRAINING</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ExperimentType.VISUALIZATION" href="#molcrawl.core.tracking.ExperimentType.VISUALIZATION">VISUALIZATION</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.ModelType" href="#molcrawl.core.tracking.ModelType">ModelType</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.core.tracking.ModelType.BERT" href="#molcrawl.core.tracking.ModelType.BERT">BERT</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ModelType.GPN" href="#molcrawl.core.tracking.ModelType.GPN">GPN</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ModelType.GPT2" href="#molcrawl.core.tracking.ModelType.GPT2">GPT2</a></code></li>
+<li><code><a title="molcrawl.core.tracking.ModelType.OTHER" href="#molcrawl.core.tracking.ModelType.OTHER">OTHER</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

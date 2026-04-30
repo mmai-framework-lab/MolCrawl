@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl API documentation</title>
-<meta name="description" content="Scripts module for data preparation, evaluation, and utilities …">
+<meta name="description" content="MolCrawl: unified foundation-model pipeline for molecular modalities …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,88 +36,44 @@ el.replaceWith(d);
 <h1 class="title">Package <code>molcrawl</code></h1>
 </header>
 <section id="section-intro">
-<p>Scripts module for data preparation, evaluation, and utilities.</p>
-<p>This module contains various scripts for:
-- Data preparation (preparation/)
-- Model evaluation (evaluation/)
-- Debugging and testing (debug/)
-- Verification utilities (verification/)</p>
+<p>MolCrawl: unified foundation-model pipeline for molecular modalities.</p>
+<p>The package is organized in four layers:</p>
+<ul>
+<li>:mod:<code><a title="molcrawl.core" href="core/index.html">molcrawl.core</a></code> — horizontal infrastructure (paths, experiment
+tracking, shared utilities) that every other layer may depend on.</li>
+<li>:mod:<code><a title="molcrawl.data" href="data/index.html">molcrawl.data</a></code> — per-modality data preparation, tokenizers,
+and datasets. Architecture-agnostic.</li>
+<li>:mod:<code><a title="molcrawl.models" href="models/index.html">molcrawl.models</a></code> — model architecture implementations
+(decoder / encoder) by family. Modality-agnostic.</li>
+<li>:mod:<code><a title="molcrawl.tasks" href="tasks/index.html">molcrawl.tasks</a></code> — training and evaluation entrypoints grouped
+by purpose: <code>pretrain</code> (foundation-model pre-training),
+<code>evaluation</code> (benchmarks by task), <code>downstream</code> (multimodal
+downstream tasks such as <code>compound_protein</code>).</li>
+</ul>
+<p>See :doc:<code>docs/10-file-tree/FILE_TREE.md</code> for the full layout.</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.bert" href="bert/index.html">molcrawl.bert</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.chemberta2" href="chemberta2/index.html">molcrawl.chemberta2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.compounds" href="compounds/index.html">molcrawl.compounds</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.config" href="config/index.html">molcrawl.config</a></code></dt>
-<dd>
-<div class="desc"><p>Shared configuration package.</p></div>
-</dd>
 <dt><code class="name"><a title="molcrawl.core" href="core/index.html">molcrawl.core</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.debug" href="debug/index.html">molcrawl.debug</a></code></dt>
+<dt><code class="name"><a title="molcrawl.data" href="data/index.html">molcrawl.data</a></code></dt>
 <dd>
-<div class="desc"><p>Debug utilities and test scripts.</p></div>
+<div class="desc"><p>Data preparation, tokenizers, and datasets for each modality …</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.dnabert2" href="dnabert2/index.html">molcrawl.dnabert2</a></code></dt>
+<dt><code class="name"><a title="molcrawl.models" href="models/index.html">molcrawl.models</a></code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.esm2" href="esm2/index.html">molcrawl.esm2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.evaluation" href="evaluation/index.html">molcrawl.evaluation</a></code></dt>
-<dd>
-<div class="desc"><p>Model evaluation scripts for various tasks and models.</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.experiment_tracker" href="experiment_tracker/index.html">molcrawl.experiment_tracker</a></code></dt>
-<dd>
-<div class="desc"><p>Experiment Tracking System
-A module that centrally manages the execution status, results, and logs of each process</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.genome_sequence" href="genome_sequence/index.html">molcrawl.genome_sequence</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.gpt2" href="gpt2/index.html">molcrawl.gpt2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.molecule_nat_lang" href="molecule_nat_lang/index.html">molcrawl.molecule_nat_lang</a></code></dt>
-<dd>
-<div class="desc"><p>Molecule-related natural language package.</p></div>
+<div class="desc"><p>Model architecture implementations (decoder / encoder) by family …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.preparation" href="preparation/index.html">molcrawl.preparation</a></code></dt>
 <dd>
 <div class="desc"><p>Data preparation scripts for various datasets.</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.protein_sequence" href="protein_sequence/index.html">molcrawl.protein_sequence</a></code></dt>
+<dt><code class="name"><a title="molcrawl.tasks" href="tasks/index.html">molcrawl.tasks</a></code></dt>
 <dd>
-<div class="desc"><p>Protein sequence package.</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rna" href="rna/index.html">molcrawl.rna</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.rnaformer" href="rnaformer/index.html">molcrawl.rnaformer</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.utils" href="utils/index.html">molcrawl.utils</a></code></dt>
-<dd>
-<div class="desc"><p>Shared utility package.</p></div>
+<div class="desc"><p>Training and evaluation tasks …</p></div>
 </dd>
 </dl>
 </section>
@@ -135,24 +91,11 @@ A module that centrally manages the execution status, results, and logs of each 
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
-<li><code><a title="molcrawl.bert" href="bert/index.html">molcrawl.bert</a></code></li>
-<li><code><a title="molcrawl.chemberta2" href="chemberta2/index.html">molcrawl.chemberta2</a></code></li>
-<li><code><a title="molcrawl.compounds" href="compounds/index.html">molcrawl.compounds</a></code></li>
-<li><code><a title="molcrawl.config" href="config/index.html">molcrawl.config</a></code></li>
 <li><code><a title="molcrawl.core" href="core/index.html">molcrawl.core</a></code></li>
-<li><code><a title="molcrawl.debug" href="debug/index.html">molcrawl.debug</a></code></li>
-<li><code><a title="molcrawl.dnabert2" href="dnabert2/index.html">molcrawl.dnabert2</a></code></li>
-<li><code><a title="molcrawl.esm2" href="esm2/index.html">molcrawl.esm2</a></code></li>
-<li><code><a title="molcrawl.evaluation" href="evaluation/index.html">molcrawl.evaluation</a></code></li>
-<li><code><a title="molcrawl.experiment_tracker" href="experiment_tracker/index.html">molcrawl.experiment_tracker</a></code></li>
-<li><code><a title="molcrawl.genome_sequence" href="genome_sequence/index.html">molcrawl.genome_sequence</a></code></li>
-<li><code><a title="molcrawl.gpt2" href="gpt2/index.html">molcrawl.gpt2</a></code></li>
-<li><code><a title="molcrawl.molecule_nat_lang" href="molecule_nat_lang/index.html">molcrawl.molecule_nat_lang</a></code></li>
+<li><code><a title="molcrawl.data" href="data/index.html">molcrawl.data</a></code></li>
+<li><code><a title="molcrawl.models" href="models/index.html">molcrawl.models</a></code></li>
 <li><code><a title="molcrawl.preparation" href="preparation/index.html">molcrawl.preparation</a></code></li>
-<li><code><a title="molcrawl.protein_sequence" href="protein_sequence/index.html">molcrawl.protein_sequence</a></code></li>
-<li><code><a title="molcrawl.rna" href="rna/index.html">molcrawl.rna</a></code></li>
-<li><code><a title="molcrawl.rnaformer" href="rnaformer/index.html">molcrawl.rnaformer</a></code></li>
-<li><code><a title="molcrawl.utils" href="utils/index.html">molcrawl.utils</a></code></li>
+<li><code><a title="molcrawl.tasks" href="tasks/index.html">molcrawl.tasks</a></code></li>
 </ul>
 </li>
 </ul>
