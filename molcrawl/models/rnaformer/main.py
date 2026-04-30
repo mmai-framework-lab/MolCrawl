@@ -236,14 +236,20 @@ if __name__ == "__main__":
     # Apply preprocessing if defined
     if preprocess_function is not None:
         logger.info("🔄 Applying preprocessing function...")
+        # Match the bert/main.py contract: parallelise via `preprocess_num_proc`
+        # exposed by the config (default 1). On the 40M-row RNA dataset the
+        # single-process default takes ~3.5 hours per split.
+        preprocess_num_proc = int(globals().get("preprocess_num_proc", 1))
         train_dataset = train_dataset.map(
             preprocess_function,
             batched=True,
+            num_proc=preprocess_num_proc,
             desc="Preprocessing train dataset",
         )
         test_dataset = test_dataset.map(
             preprocess_function,
             batched=True,
+            num_proc=preprocess_num_proc,
             desc="Preprocessing test dataset",
         )
 
