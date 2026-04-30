@@ -20,7 +20,7 @@ export WANDB_PROJECT=${WANDB_PROJECT:-chemberta2-compounds}
 
 # Training parameters
 MODEL_SIZE="small"
-CONFIG_FILE="molcrawl/molcrawl/tasks/pretrain/configs/compounds/chemberta2.py"
+CONFIG_FILE="molcrawl/tasks/pretrain/configs/compounds/chemberta2.py"
 
 # Create log directory
 LOG_DIR="${LEARNING_SOURCE_DIR}/compounds/logs"
