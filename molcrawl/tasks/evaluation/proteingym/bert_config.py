@@ -17,8 +17,15 @@ class BERTProteinGymConfig:
 
     # Model settings
     MODEL_PATH = "runs_train_bert_protein_sequence/checkpoint-5000"
-    learning_source_dir = check_learning_source_dir()
-    TOKENIZER_PATH = f"{learning_source_dir}/protein_sequence/spm_tokenizer.model"
+    # ``TOKENIZER_PATH`` used to be computed at class-definition time via
+    # ``check_learning_source_dir()``, which made *importing* this module
+    # require the env var to be set. Use a property (resolved at access
+    # time) so the module is import-safe; the env-var check still fires
+    # the first time a script reads ``cfg.TOKENIZER_PATH``.
+    @property
+    def TOKENIZER_PATH(self) -> str:  # noqa: N802 — preserve legacy attr name
+        learning_source_dir = check_learning_source_dir()
+        return f"{learning_source_dir}/protein_sequence/spm_tokenizer.model"
 
     # Evaluation settings
     DEVICE = "cuda"
