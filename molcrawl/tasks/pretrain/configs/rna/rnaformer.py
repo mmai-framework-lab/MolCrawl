@@ -45,6 +45,11 @@ warmup_steps = 10000  # warmup steps
 log_interval = 100
 save_steps = 1000  # Checkpoint save interval
 
+# Number of worker processes for the preprocessing .map() pass over the
+# training_ready_hf_dataset (40M rows). Single-process preprocessing
+# takes ~3.5 hours; 18 workers brings it under 5 minutes on this host.
+preprocess_num_proc: int = 18
+
 # Batch size settings
 # Smaller batch size as RNA transcriptome uses large memory
 batch_size = 8
