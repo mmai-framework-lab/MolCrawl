@@ -28,6 +28,12 @@ try:
 except ImportError:
     pass  # Not available in documentation-only environments (e.g. pdoc)
 
+# Allow numpy globals embedded in HF Trainer rng_state.pth to deserialize
+# under torch >= 2.6 (default weights_only=True). See molcrawl/core/torch_compat.
+from molcrawl.core.torch_compat import enable_full_torch_load
+
+enable_full_torch_load()
+
 
 class DNADatasetLoader:
     """
