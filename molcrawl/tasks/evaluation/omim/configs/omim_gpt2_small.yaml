@@ -1,0 +1,6 @@
+task: omim
+modality: genome_sequence
+arch: gpt2
+size: small
+category_column: disease_category
+context_length: 512
