@@ -11,6 +11,7 @@ from .models import (
     ExperimentStep,
     ExperimentType,
     ModelType,
+    TaskCategory,
 )
 from .tracker import ExperimentTracker
 
@@ -20,6 +21,7 @@ __all__ = [
     "ExperimentType",
     "ModelType",
     "DatasetType",
+    "TaskCategory",
     "Experiment",
     "ExperimentStep",
     "ExperimentLog",
