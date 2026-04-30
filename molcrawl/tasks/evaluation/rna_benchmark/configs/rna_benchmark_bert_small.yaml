@@ -1,0 +1,4 @@
+task: rna_benchmark
+modality: rna
+arch: bert
+size: small
