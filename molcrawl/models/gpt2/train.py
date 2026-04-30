@@ -101,119 +101,120 @@ dtype = (
 compile = False  # use PyTorch 2.0 to compile the model to be faster
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
-# Handle configurator path (support repo-root invocation and direct invocation)
-_this_dir = os.path.dirname(os.path.abspath(__file__))
-if os.path.exists(os.path.join(_this_dir, "configurator.py")):
-    configurator_path = os.path.join(_this_dir, "configurator.py")
-elif os.path.exists("src/gpt2/configurator.py"):
-    configurator_path = "src/gpt2/configurator.py"
-elif os.path.exists("gpt2/configurator.py"):
-    configurator_path = "gpt2/configurator.py"
-else:
-    configurator_path = "configurator.py"
-exec(open(configurator_path).read())  # overrides from command line or config file
-config = {k: globals()[k] for k in config_keys}  # will be useful for logging
-# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    # Handle configurator path (support repo-root invocation and direct invocation)
+    _this_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.exists(os.path.join(_this_dir, "configurator.py")):
+        configurator_path = os.path.join(_this_dir, "configurator.py")
+    elif os.path.exists("src/gpt2/configurator.py"):
+        configurator_path = "src/gpt2/configurator.py"
+    elif os.path.exists("gpt2/configurator.py"):
+        configurator_path = "gpt2/configurator.py"
+    else:
+        configurator_path = "configurator.py"
+    exec(open(configurator_path).read())  # overrides from command line or config file
+    config = {k: globals()[k] for k in config_keys}  # will be useful for logging
+    # -----------------------------------------------------------------------------
 
-# create folder if it doesn't exist
-os.makedirs(out_dir, exist_ok=True)
-
-# create empty csv file for logging with timestamp
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-logging_file = os.path.join(out_dir, f"logging_{timestamp}.csv")
-
-with open(logging_file, "w") as f:
-    f.write("iter, train_loss, val_loss\n")
-
-writer = None
-if tensorboard:
-    from tensorboardX import SummaryWriter
-
-    writer = SummaryWriter(tensorboard_dir)
-
-# various inits, derived attributes, I/O setup
-ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?
-if ddp:
-    init_process_group(backend=backend)
-    ddp_rank = int(os.environ["RANK"])
-    ddp_local_rank = int(os.environ["LOCAL_RANK"])
-    ddp_world_size = int(os.environ["WORLD_SIZE"])
-    device = f"cuda:{ddp_local_rank}"
-    torch.cuda.set_device(device)
-    master_process = ddp_rank == 0  # this process will do logging, checkpointing etc.
-    seed_offset = ddp_rank  # each process gets a different seed
-    # world_size number of processes will be training simultaneously, so we can scale
-    # down the desired gradient accumulation iterations per process proportionally
-    assert gradient_accumulation_steps % ddp_world_size == 0
-    gradient_accumulation_steps //= ddp_world_size
-else:
-    # if not ddp, we are running on a single gpu, and one process
-    master_process = True
-    seed_offset = 0
-    ddp_world_size = 1
-tokens_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size * block_size
-print(f"tokens per iteration will be: {tokens_per_iter:,}")
-
-if master_process:
+    # create folder if it doesn't exist
     os.makedirs(out_dir, exist_ok=True)
 
-# Initialize wandb if enabled
-wandb_run = None
-if use_wandb and master_process:
-    import wandb
+    # create empty csv file for logging with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    logging_file = os.path.join(out_dir, f"logging_{timestamp}.csv")
 
-    # Generate run name if not provided
-    if wandb_run_name is None:
-        wandb_run_name = f"{dataset}-{timestamp}"
+    with open(logging_file, "w") as f:
+        f.write("iter, train_loss, val_loss\n")
 
-    # Add metadata tags for experiment management
-    tags = ["gpt2", "training", dataset]
+    writer = None
+    if tensorboard:
+        from tensorboardX import SummaryWriter
 
-    # Add experiment metadata to config
-    experiment_config = {
-        **config,
-        "experiment_type": "training",
-        "model_type": "gpt2",
-        "dataset_type": dataset,
-    }
+        writer = SummaryWriter(tensorboard_dir)
 
-    # Initialize wandb
-    wandb_run = wandb.init(  # type: ignore[attr-defined]
-        project=wandb_project,
-        entity=wandb_entity,
-        name=wandb_run_name,
-        config=experiment_config,
-        tags=tags,
-        resume="allow",  # Allow resuming if run exists
-    )
-    print(f"Wandb initialized: {wandb_run.url}")
+    # various inits, derived attributes, I/O setup
+    ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?
+    if ddp:
+        init_process_group(backend=backend)
+        ddp_rank = int(os.environ["RANK"])
+        ddp_local_rank = int(os.environ["LOCAL_RANK"])
+        ddp_world_size = int(os.environ["WORLD_SIZE"])
+        device = f"cuda:{ddp_local_rank}"
+        torch.cuda.set_device(device)
+        master_process = ddp_rank == 0  # this process will do logging, checkpointing etc.
+        seed_offset = ddp_rank  # each process gets a different seed
+        # world_size number of processes will be training simultaneously, so we can scale
+        # down the desired gradient accumulation iterations per process proportionally
+        assert gradient_accumulation_steps % ddp_world_size == 0
+        gradient_accumulation_steps //= ddp_world_size
+    else:
+        # if not ddp, we are running on a single gpu, and one process
+        master_process = True
+        seed_offset = 0
+        ddp_world_size = 1
+    tokens_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size * block_size
+    print(f"tokens per iteration will be: {tokens_per_iter:,}")
 
-torch.manual_seed(1337 + seed_offset)
-torch.backends.cuda.matmul.allow_tf32 = True  # allow tf32 on matmul
-torch.backends.cudnn.allow_tf32 = True  # allow tf32 on cudnn
-device_type = "cuda" if "cuda" in device else "cpu"  # for later use in torch.autocast
-# note: float16 data type will automatically use a GradScaler
-ptdtype = {
-    "float32": torch.float32,
-    "bfloat16": torch.bfloat16,
-    "float16": torch.float16,
-}[dtype]
-ctx = nullcontext() if device_type == "cpu" else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
+    if master_process:
+        os.makedirs(out_dir, exist_ok=True)
 
-# RNA data loader - get paths from config if available
-rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
-rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
+    # Initialize wandb if enabled
+    wandb_run = None
+    if use_wandb and master_process:
+        import wandb
 
-# Use RNADataset if dataset is "rna", otherwise use PreparedDataset
-if dataset == "rna":
-    training_data = RNADataset(rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1)
-    test_data = RNADataset(rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1)
-    # Set vocab size from the RNA dataset
-    meta_vocab_size = training_data.vocab_size
-else:
-    print(f"Loading dataset: {dataset_params}")
-    training_data = PreparedDataset(**dataset_params, split="train")  # type: ignore[assignment]
-    test_data = PreparedDataset(**dataset_params, split="valid")  # type: ignore[assignment]
+        # Generate run name if not provided
+        if wandb_run_name is None:
+            wandb_run_name = f"{dataset}-{timestamp}"
+
+        # Add metadata tags for experiment management
+        tags = ["gpt2", "training", dataset]
+
+        # Add experiment metadata to config
+        experiment_config = {
+            **config,
+            "experiment_type": "training",
+            "model_type": "gpt2",
+            "dataset_type": dataset,
+        }
+
+        # Initialize wandb
+        wandb_run = wandb.init(  # type: ignore[attr-defined]
+            project=wandb_project,
+            entity=wandb_entity,
+            name=wandb_run_name,
+            config=experiment_config,
+            tags=tags,
+            resume="allow",  # Allow resuming if run exists
+        )
+        print(f"Wandb initialized: {wandb_run.url}")
+
+    torch.manual_seed(1337 + seed_offset)
+    torch.backends.cuda.matmul.allow_tf32 = True  # allow tf32 on matmul
+    torch.backends.cudnn.allow_tf32 = True  # allow tf32 on cudnn
+    device_type = "cuda" if "cuda" in device else "cpu"  # for later use in torch.autocast
+    # note: float16 data type will automatically use a GradScaler
+    ptdtype = {
+        "float32": torch.float32,
+        "bfloat16": torch.bfloat16,
+        "float16": torch.float16,
+    }[dtype]
+    ctx = nullcontext() if device_type == "cpu" else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
+
+    # RNA data loader - get paths from config if available
+    rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
+    rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
+
+    # Use RNADataset if dataset is "rna", otherwise use PreparedDataset
+    if dataset == "rna":
+        training_data = RNADataset(rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1)
+        test_data = RNADataset(rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1)
+        # Set vocab size from the RNA dataset
+        meta_vocab_size = training_data.vocab_size
+    else:
+        print(f"Loading dataset: {dataset_params}")
+        training_data = PreparedDataset(**dataset_params, split="train")  # type: ignore[assignment]
+        test_data = PreparedDataset(**dataset_params, split="valid")  # type: ignore[assignment]
 
 # training_data = torch.load(os.path.join(data_dir, "train.pt"))
 # test_data = torch.load(
@@ -264,200 +265,201 @@ def get_batch(split):
 
 
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
-iter_num = 0
-best_val_loss = 1e9
-early_stopping_counter = 0  # count eval intervals without improvement
+if __name__ == "__main__":
+    iter_num = 0
+    best_val_loss = 1e9
+    early_stopping_counter = 0  # count eval intervals without improvement
 
-if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
-    if dataset == "rna":
-        # meta_vocab_size already set from RNADataset
-        pass
-    else:
-        # For non-RNA datasets, meta_vocab_size should be set in config
-        if "meta_vocab_size" not in globals():
-            raise ImportError(
-                "Please initialize the variable meta_vocab_size in the *_config.py file with the size of your vocabulary."
-            )
-
-# model init
-model_args = dict(
-    n_layer=n_layer,
-    n_head=n_head,
-    n_embd=n_embd,
-    block_size=block_size,
-    bias=bias,
-    vocab_size=None,
-    dropout=dropout,
-)  # start with model_args from command line
-
-checkpoint = None  # Initialize checkpoint variable
-
-if init_from == "scratch":
-    # init a new model from scratch
-    print("Initializing a new model from scratch")
-    # determine the vocab size we'll use for from-scratch training
-    if meta_vocab_size is None:
-        print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
-    model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
-    gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
-    model = GPT(gptconf)
-elif init_from == "resume":
-    print(f"Resuming training from {out_dir}")
-    # resume training from a checkpoint.
-    # Try new HuggingFace format first (checkpoint-{step}/training_state.bin)
-    # Fall back to legacy format (ckpt.pt)
-    checkpoint_loaded = False
-
-    # Find the latest checkpoint directory
-    checkpoint_dirs = glob.glob(os.path.join(out_dir, "checkpoint-*"))
-    if checkpoint_dirs:
-        # Sort by step number to find the latest
-        checkpoint_steps = []
-        for ckpt_dir in checkpoint_dirs:
-            try:
-                step = int(os.path.basename(ckpt_dir).split("-")[1])
-                training_state_path = os.path.join(ckpt_dir, "training_state.bin")
-                if os.path.exists(training_state_path):
-                    checkpoint_steps.append((step, training_state_path))
-            except (ValueError, IndexError):
-                continue
-
-        if checkpoint_steps:
-            checkpoint_steps.sort(reverse=True)
-            latest_step, latest_ckpt_path = checkpoint_steps[0]
-            print(f"Found HuggingFace format checkpoint at step {latest_step}")
-            checkpoint = torch.load(latest_ckpt_path, map_location=device)
-            checkpoint_loaded = True
-
-    # Fall back to legacy ckpt.pt
-    if not checkpoint_loaded:
-        ckpt_path = os.path.join(out_dir, "ckpt.pt")
-        if os.path.exists(ckpt_path):
-            print(f"Loading legacy checkpoint from {ckpt_path}")
-            checkpoint = torch.load(ckpt_path, map_location=device)
-            checkpoint_loaded = True
-
-    if not checkpoint_loaded:
-        print(f"No checkpoint found in {out_dir}")
-        # Try to load from pretrain_dir if specified
-        if pretrain_dir and os.path.exists(pretrain_dir):
-            print(f"Attempting to load pretraining checkpoint from {pretrain_dir}")
-            _pretrain_checkpoint_loaded = False
-            # Try HuggingFace format first
-            _pretrain_ckpt_dirs = glob.glob(os.path.join(pretrain_dir, "checkpoint-*"))
-            if _pretrain_ckpt_dirs:
-                _pretrain_steps = []
-                for _d in _pretrain_ckpt_dirs:
-                    try:
-                        _s = int(os.path.basename(_d).split("-")[1])
-                        _ts = os.path.join(_d, "training_state.bin")
-                        if os.path.exists(_ts):
-                            _pretrain_steps.append((_s, _ts))
-                    except (ValueError, IndexError):
-                        continue
-                if _pretrain_steps:
-                    _pretrain_steps.sort(reverse=True)
-                    _, _pretrain_ckpt_path = _pretrain_steps[0]
-                    print(f"Loading pretraining checkpoint from {_pretrain_ckpt_path}")
-                    checkpoint = torch.load(_pretrain_ckpt_path, map_location=device)
-                    _pretrain_checkpoint_loaded = True
-            # Fall back to legacy ckpt.pt
-            if not _pretrain_checkpoint_loaded:
-                _legacy = os.path.join(pretrain_dir, "ckpt.pt")
-                if os.path.exists(_legacy):
-                    print(f"Loading pretraining legacy checkpoint from {_legacy}")
-                    checkpoint = torch.load(_legacy, map_location=device)
-                    _pretrain_checkpoint_loaded = True
-            if not _pretrain_checkpoint_loaded:
-                raise ValueError(
-                    f"pretrain_dir={pretrain_dir!r} is set but no checkpoint was found inside it.\n"
-                    "Run pretraining first, or unset pretrain_dir to train from scratch."
-                )
+    if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
+        if dataset == "rna":
+            # meta_vocab_size already set from RNADataset
+            pass
         else:
-            if pretrain_dir:
-                raise ValueError(
-                    f"pretrain_dir={pretrain_dir!r} is set but does not exist.\n"
-                    "Run pretraining first, or unset pretrain_dir to train from scratch."
+            # For non-RNA datasets, meta_vocab_size should be set in config
+            if "meta_vocab_size" not in globals():
+                raise ImportError(
+                    "Please initialize the variable meta_vocab_size in the *_config.py file with the size of your vocabulary."
                 )
-        if checkpoint is None:
-            print("No checkpoint found and pretrain_dir not set — starting training from scratch.")
-            # Initialize from scratch if checkpoint doesn't exist
-            if meta_vocab_size is None:
-                print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
-            model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
-            gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
-            model = GPT(gptconf)
+
+    # model init
+    model_args = dict(
+        n_layer=n_layer,
+        n_head=n_head,
+        n_embd=n_embd,
+        block_size=block_size,
+        bias=bias,
+        vocab_size=None,
+        dropout=dropout,
+    )  # start with model_args from command line
+
+    checkpoint = None  # Initialize checkpoint variable
+
+    if init_from == "scratch":
+        # init a new model from scratch
+        print("Initializing a new model from scratch")
+        # determine the vocab size we'll use for from-scratch training
+        if meta_vocab_size is None:
+            print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
+        model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
+        gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
+        model = GPT(gptconf)
+    elif init_from == "resume":
+        print(f"Resuming training from {out_dir}")
+        # resume training from a checkpoint.
+        # Try new HuggingFace format first (checkpoint-{step}/training_state.bin)
+        # Fall back to legacy format (ckpt.pt)
+        checkpoint_loaded = False
+
+        # Find the latest checkpoint directory
+        checkpoint_dirs = glob.glob(os.path.join(out_dir, "checkpoint-*"))
+        if checkpoint_dirs:
+            # Sort by step number to find the latest
+            checkpoint_steps = []
+            for ckpt_dir in checkpoint_dirs:
+                try:
+                    step = int(os.path.basename(ckpt_dir).split("-")[1])
+                    training_state_path = os.path.join(ckpt_dir, "training_state.bin")
+                    if os.path.exists(training_state_path):
+                        checkpoint_steps.append((step, training_state_path))
+                except (ValueError, IndexError):
+                    continue
+
+            if checkpoint_steps:
+                checkpoint_steps.sort(reverse=True)
+                latest_step, latest_ckpt_path = checkpoint_steps[0]
+                print(f"Found HuggingFace format checkpoint at step {latest_step}")
+                checkpoint = torch.load(latest_ckpt_path, map_location=device)
+                checkpoint_loaded = True
+
+        # Fall back to legacy ckpt.pt
+        if not checkpoint_loaded:
+            ckpt_path = os.path.join(out_dir, "ckpt.pt")
+            if os.path.exists(ckpt_path):
+                print(f"Loading legacy checkpoint from {ckpt_path}")
+                checkpoint = torch.load(ckpt_path, map_location=device)
+                checkpoint_loaded = True
+
+        if not checkpoint_loaded:
+            print(f"No checkpoint found in {out_dir}")
+            # Try to load from pretrain_dir if specified
+            if pretrain_dir and os.path.exists(pretrain_dir):
+                print(f"Attempting to load pretraining checkpoint from {pretrain_dir}")
+                _pretrain_checkpoint_loaded = False
+                # Try HuggingFace format first
+                _pretrain_ckpt_dirs = glob.glob(os.path.join(pretrain_dir, "checkpoint-*"))
+                if _pretrain_ckpt_dirs:
+                    _pretrain_steps = []
+                    for _d in _pretrain_ckpt_dirs:
+                        try:
+                            _s = int(os.path.basename(_d).split("-")[1])
+                            _ts = os.path.join(_d, "training_state.bin")
+                            if os.path.exists(_ts):
+                                _pretrain_steps.append((_s, _ts))
+                        except (ValueError, IndexError):
+                            continue
+                    if _pretrain_steps:
+                        _pretrain_steps.sort(reverse=True)
+                        _, _pretrain_ckpt_path = _pretrain_steps[0]
+                        print(f"Loading pretraining checkpoint from {_pretrain_ckpt_path}")
+                        checkpoint = torch.load(_pretrain_ckpt_path, map_location=device)
+                        _pretrain_checkpoint_loaded = True
+                # Fall back to legacy ckpt.pt
+                if not _pretrain_checkpoint_loaded:
+                    _legacy = os.path.join(pretrain_dir, "ckpt.pt")
+                    if os.path.exists(_legacy):
+                        print(f"Loading pretraining legacy checkpoint from {_legacy}")
+                        checkpoint = torch.load(_legacy, map_location=device)
+                        _pretrain_checkpoint_loaded = True
+                if not _pretrain_checkpoint_loaded:
+                    raise ValueError(
+                        f"pretrain_dir={pretrain_dir!r} is set but no checkpoint was found inside it.\n"
+                        "Run pretraining first, or unset pretrain_dir to train from scratch."
+                    )
+            else:
+                if pretrain_dir:
+                    raise ValueError(
+                        f"pretrain_dir={pretrain_dir!r} is set but does not exist.\n"
+                        "Run pretraining first, or unset pretrain_dir to train from scratch."
+                    )
+            if checkpoint is None:
+                print("No checkpoint found and pretrain_dir not set — starting training from scratch.")
+                # Initialize from scratch if checkpoint doesn't exist
+                if meta_vocab_size is None:
+                    print("defaulting to vocab_size of GPT-2 to 50304 (50257 rounded up for efficiency)")
+                model_args["vocab_size"] = meta_vocab_size if meta_vocab_size is not None else 50304
+                gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
+                model = GPT(gptconf)
+            else:
+                # Pretrain checkpoint loaded via pretrain_dir — use same loading path
+                # as the out_dir resume branch below.
+                checkpoint_model_args = checkpoint["model_args"]
+                for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
+                    model_args[k] = checkpoint_model_args[k]
+                gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
+                model = GPT(gptconf)
+                state_dict = checkpoint["model"]
+                unwanted_prefix = "_orig_mod."
+                for k, _v in list(state_dict.items()):
+                    if k.startswith(unwanted_prefix):
+                        state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
+                model.load_state_dict(state_dict)
+                # Reset training counters — we are fine-tuning, not resuming
+                iter_num = 0
+                best_val_loss = 1e9
+                early_stopping_counter = 0
+                print("Pretraining weights loaded. Starting fine-tuning from iter 0.")
         else:
-            # Pretrain checkpoint loaded via pretrain_dir — use same loading path
-            # as the out_dir resume branch below.
             checkpoint_model_args = checkpoint["model_args"]
+            # force these config attributes to be equal otherwise we can't even resume training
+            # the rest of the attributes (e.g. dropout) can stay as desired from command line
             for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
                 model_args[k] = checkpoint_model_args[k]
+            # create the model
             gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
             model = GPT(gptconf)
             state_dict = checkpoint["model"]
+            # fix the keys of the state dictionary :(
+            # honestly no idea how checkpoints sometimes get this prefix, have to debug more
             unwanted_prefix = "_orig_mod."
             for k, _v in list(state_dict.items()):
                 if k.startswith(unwanted_prefix):
                     state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
             model.load_state_dict(state_dict)
-            # Reset training counters — we are fine-tuning, not resuming
-            iter_num = 0
-            best_val_loss = 1e9
-            early_stopping_counter = 0
-            print("Pretraining weights loaded. Starting fine-tuning from iter 0.")
-    else:
-        checkpoint_model_args = checkpoint["model_args"]
-        # force these config attributes to be equal otherwise we can't even resume training
-        # the rest of the attributes (e.g. dropout) can stay as desired from command line
+            iter_num = checkpoint["iter_num"]
+            best_val_loss = checkpoint["best_val_loss"]
+            early_stopping_counter = checkpoint.get("early_stopping_counter", 0)
+    elif init_from.startswith("gpt2"):
+        print(f"Initializing from OpenAI GPT-2 weights: {init_from}")
+        # initialize from OpenAI GPT-2 weights
+        override_args = dict(dropout=dropout)
+        model = GPT.from_pretrained(init_from, override_args)
+        # read off the created config params, so we can store them into checkpoint correctly
         for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
-            model_args[k] = checkpoint_model_args[k]
-        # create the model
-        gptconf = GPTConfig(**model_args)  # type: ignore[arg-type]
-        model = GPT(gptconf)
-        state_dict = checkpoint["model"]
-        # fix the keys of the state dictionary :(
-        # honestly no idea how checkpoints sometimes get this prefix, have to debug more
-        unwanted_prefix = "_orig_mod."
-        for k, _v in list(state_dict.items()):
-            if k.startswith(unwanted_prefix):
-                state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
-        model.load_state_dict(state_dict)
-        iter_num = checkpoint["iter_num"]
-        best_val_loss = checkpoint["best_val_loss"]
-        early_stopping_counter = checkpoint.get("early_stopping_counter", 0)
-elif init_from.startswith("gpt2"):
-    print(f"Initializing from OpenAI GPT-2 weights: {init_from}")
-    # initialize from OpenAI GPT-2 weights
-    override_args = dict(dropout=dropout)
-    model = GPT.from_pretrained(init_from, override_args)
-    # read off the created config params, so we can store them into checkpoint correctly
-    for k in ["n_layer", "n_head", "n_embd", "block_size", "bias", "vocab_size"]:
-        model_args[k] = getattr(model.config, k)
-# crop down the model block size if desired, using model surgery
-if block_size < model.config.block_size:
-    model.crop_block_size(block_size)
-    model_args["block_size"] = block_size  # so that the checkpoint will have the right value
-model.to(device)
+            model_args[k] = getattr(model.config, k)
+    # crop down the model block size if desired, using model surgery
+    if block_size < model.config.block_size:
+        model.crop_block_size(block_size)
+        model_args["block_size"] = block_size  # so that the checkpoint will have the right value
+    model.to(device)
 
-# initialize a GradScaler. If enabled=False scaler is a no-op
-scaler = torch.amp.GradScaler("cuda", enabled=(dtype == "float16"))
+    # initialize a GradScaler. If enabled=False scaler is a no-op
+    scaler = torch.amp.GradScaler("cuda", enabled=(dtype == "float16"))
 
-# optimizer
-optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
-if init_from == "resume" and checkpoint is not None:
-    optimizer.load_state_dict(checkpoint["optimizer"])
-checkpoint = None  # free up memory
+    # optimizer
+    optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
+    if init_from == "resume" and checkpoint is not None:
+        optimizer.load_state_dict(checkpoint["optimizer"])
+    checkpoint = None  # free up memory
 
-# compile the model
-if compile:
-    print("compiling the model... (takes a ~minute)")
-    unoptimized_model = model
-    model = torch.compile(model)  # requires PyTorch 2.0
+    # compile the model
+    if compile:
+        print("compiling the model... (takes a ~minute)")
+        unoptimized_model = model
+        model = torch.compile(model)  # requires PyTorch 2.0
 
-# wrap model into DDP container
-if ddp:
-    model = DDP(model, device_ids=[ddp_local_rank])
+    # wrap model into DDP container
+    if ddp:
+        model = DDP(model, device_ids=[ddp_local_rank])
 
 
 # helps estimate an arbitrarily accurate loss over either split using many batches
@@ -629,189 +631,190 @@ def cleanup_old_checkpoints(base_dir, max_checkpoints):
         shutil.rmtree(ckpt_dir, ignore_errors=True)
 
 
-# training loop
-X, Y = get_batch("train")  # fetch the very first batch
-t0 = time.time()
-local_iter_num = 0  # number of iterations in the lifetime of this process
-raw_model = model.module if ddp else model  # unwrap DDP container if needed
-running_mfu = -1.0
-while True:
-    # determine and set the learning rate for this iteration
-    lr = get_lr(iter_num) if decay_lr else learning_rate
-    for param_group in optimizer.param_groups:
-        param_group["lr"] = lr
+if __name__ == "__main__":
+    # training loop
+    X, Y = get_batch("train")  # fetch the very first batch
+    t0 = time.time()
+    local_iter_num = 0  # number of iterations in the lifetime of this process
+    raw_model = model.module if ddp else model  # unwrap DDP container if needed
+    running_mfu = -1.0
+    while True:
+        # determine and set the learning rate for this iteration
+        lr = get_lr(iter_num) if decay_lr else learning_rate
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr
 
-    # evaluate the loss on train/val sets and write checkpoints
-    if iter_num % eval_interval == 0 and master_process:
-        losses = estimate_loss()
-        print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        # evaluate the loss on train/val sets and write checkpoints
+        if iter_num % eval_interval == 0 and master_process:
+            losses = estimate_loss()
+            print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
-        with open(logging_file, "a") as f:
-            f.write(f"{iter_num}, {losses['train']:.4f}, {losses['val']:.4f}\n")
+            with open(logging_file, "a") as f:
+                f.write(f"{iter_num}, {losses['train']:.4f}, {losses['val']:.4f}\n")
 
-        if writer is not None:
-            writer.add_scalar("Val Loss", losses["val"], iter_num)
-            writer.flush()
+            if writer is not None:
+                writer.add_scalar("Val Loss", losses["val"], iter_num)
+                writer.flush()
 
-        # Log to wandb
-        if wandb_run is not None:
-            wandb_run.log(
-                {
-                    "eval/train_loss": losses["train"],
-                    "eval/val_loss": losses["val"],
-                    "eval/iter": iter_num,
-                    "eval/best_val_loss": best_val_loss,
-                },
-                step=iter_num,
-            )
-
-        # Track best validation loss for early stopping
-        is_best_model = False
-        if losses["val"] < best_val_loss:
-            # Validation loss improved
-            best_val_loss = losses["val"]
-            early_stopping_counter = 0
-            is_best_model = True
-        else:
-            # Validation loss did not improve
-            early_stopping_counter += 1
-            if early_stopping and early_stopping_counter >= early_stopping_patience:
-                print(f"\nEarly stopping triggered after {early_stopping_counter} evaluations without improvement.")
-                print(f"Best validation loss: {best_val_loss:.4f}")
-                if ddp:
-                    destroy_process_group()
-                break
-
-        # Checkpoint saving logic (independent of best model tracking)
-        should_save_checkpoint = False
-
-        # Determine if we should save based on configured strategy
-        if always_save_checkpoint:
-            # Save at every eval_interval
-            should_save_checkpoint = True
-        elif save_checkpoint_steps is not None:
-            # Save at specific step intervals
-            should_save_checkpoint = iter_num % save_checkpoint_steps == 0
-        elif is_best_model:
-            # Default: only save when validation improves
-            should_save_checkpoint = True
-
-        if should_save_checkpoint and iter_num > 0:
-            checkpoint = {
-                "model": raw_model.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "model_args": model_args,
-                "iter_num": iter_num,
-                "best_val_loss": best_val_loss,
-                "early_stopping_counter": early_stopping_counter,
-                "config": config,
-            }
-
-            # Save in Hugging Face format
-            if save_hf_checkpoints:
-                checkpoint_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
-                save_checkpoint_hf(
-                    raw_model.state_dict(),
-                    optimizer.state_dict(),
-                    model_args,
-                    iter_num,
-                    best_val_loss,
-                    config,
-                    checkpoint_dir,
-                    early_stopping_counter,
+            # Log to wandb
+            if wandb_run is not None:
+                wandb_run.log(
+                    {
+                        "eval/train_loss": losses["train"],
+                        "eval/val_loss": losses["val"],
+                        "eval/iter": iter_num,
+                        "eval/best_val_loss": best_val_loss,
+                    },
+                    step=iter_num,
                 )
 
-                # Log checkpoint to wandb as artifact BEFORE cleanup
-                if wandb_run is not None and wandb_log_model:
-                    artifact = wandb.Artifact(  # type: ignore[attr-defined]
-                        name=f"model-{wandb_run.id}",
-                        type="model",
-                        description=f"Model checkpoint at step {iter_num}",
-                        metadata={
-                            "iter": iter_num,
-                            "train_loss": float(losses["train"]),
-                            "val_loss": float(losses["val"]),
-                            "best_val_loss": float(best_val_loss),
-                        },
+            # Track best validation loss for early stopping
+            is_best_model = False
+            if losses["val"] < best_val_loss:
+                # Validation loss improved
+                best_val_loss = losses["val"]
+                early_stopping_counter = 0
+                is_best_model = True
+            else:
+                # Validation loss did not improve
+                early_stopping_counter += 1
+                if early_stopping and early_stopping_counter >= early_stopping_patience:
+                    print(f"\nEarly stopping triggered after {early_stopping_counter} evaluations without improvement.")
+                    print(f"Best validation loss: {best_val_loss:.4f}")
+                    if ddp:
+                        destroy_process_group()
+                    break
+
+            # Checkpoint saving logic (independent of best model tracking)
+            should_save_checkpoint = False
+
+            # Determine if we should save based on configured strategy
+            if always_save_checkpoint:
+                # Save at every eval_interval
+                should_save_checkpoint = True
+            elif save_checkpoint_steps is not None:
+                # Save at specific step intervals
+                should_save_checkpoint = iter_num % save_checkpoint_steps == 0
+            elif is_best_model:
+                # Default: only save when validation improves
+                should_save_checkpoint = True
+
+            if should_save_checkpoint and iter_num > 0:
+                checkpoint = {
+                    "model": raw_model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "model_args": model_args,
+                    "iter_num": iter_num,
+                    "best_val_loss": best_val_loss,
+                    "early_stopping_counter": early_stopping_counter,
+                    "config": config,
+                }
+
+                # Save in Hugging Face format
+                if save_hf_checkpoints:
+                    checkpoint_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
+                    save_checkpoint_hf(
+                        raw_model.state_dict(),
+                        optimizer.state_dict(),
+                        model_args,
+                        iter_num,
+                        best_val_loss,
+                        config,
+                        checkpoint_dir,
+                        early_stopping_counter,
                     )
-                    artifact.add_dir(checkpoint_dir)
-                    wandb_run.log_artifact(artifact)
 
-                # Cleanup old checkpoints AFTER wandb upload
-                cleanup_old_checkpoints(out_dir, max_checkpoints)
+                    # Log checkpoint to wandb as artifact BEFORE cleanup
+                    if wandb_run is not None and wandb_log_model:
+                        artifact = wandb.Artifact(  # type: ignore[attr-defined]
+                            name=f"model-{wandb_run.id}",
+                            type="model",
+                            description=f"Model checkpoint at step {iter_num}",
+                            metadata={
+                                "iter": iter_num,
+                                "train_loss": float(losses["train"]),
+                                "val_loss": float(losses["val"]),
+                                "best_val_loss": float(best_val_loss),
+                            },
+                        )
+                        artifact.add_dir(checkpoint_dir)
+                        wandb_run.log_artifact(artifact)
 
-            # Also save legacy ckpt.pt for backward compatibility (or best model)
-            if keep_legacy_ckpt or is_best_model:
-                print(f"saving checkpoint to {out_dir}")
-                torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
-    if iter_num == 0 and eval_only:
-        break
+                    # Cleanup old checkpoints AFTER wandb upload
+                    cleanup_old_checkpoints(out_dir, max_checkpoints)
 
-    # forward backward update, with optional gradient accumulation to simulate larger batch size
-    # and using the GradScaler if data type is float16
-    for micro_step in range(gradient_accumulation_steps):
-        if ddp:
-            # in DDP training we only need to sync gradients at the last micro step.
-            # the official way to do this is with model.no_sync() context manager, but
-            # I really dislike that this bloats the code and forces us to repeat code
-            # looking at the source of that context manager, it just toggles this variable
-            model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1
-        with ctx:
-            logits, loss = model(X, Y)
-            loss = loss / gradient_accumulation_steps  # scale the loss to account for gradient accumulation
-        # immediately async prefetch next batch while model is doing the forward pass on the GPU
-        X, Y = get_batch("train")
-        # backward pass, with gradient scaling if training in fp16
-        scaler.scale(loss).backward()
-    # clip the gradient
-    if grad_clip != 0.0:
-        scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-    # step the optimizer and scaler if training in fp16
-    scaler.step(optimizer)
-    scaler.update()
-    # flush the gradients as soon as we can, no need for this memory anymore
-    optimizer.zero_grad(set_to_none=True)
+                # Also save legacy ckpt.pt for backward compatibility (or best model)
+                if keep_legacy_ckpt or is_best_model:
+                    print(f"saving checkpoint to {out_dir}")
+                    torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
+        if iter_num == 0 and eval_only:
+            break
 
-    # timing and logging
-    t1 = time.time()
-    dt = t1 - t0
-    t0 = t1
-    if iter_num % log_interval == 0 and master_process:
-        # get loss as float. note: this is a CPU-GPU sync point
-        # scale up to undo the division above, approximating the true total loss (exact would have been a sum)
-        lossf = loss.item() * gradient_accumulation_steps
-        if local_iter_num >= 5:  # let the training loop settle a bit
-            mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
-            running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
-        print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
-        if writer is not None:
-            writer.add_scalar("Loss", lossf, iter_num)
-            writer.add_scalar("Learning Rate", lr, iter_num)
-            writer.flush()
+        # forward backward update, with optional gradient accumulation to simulate larger batch size
+        # and using the GradScaler if data type is float16
+        for micro_step in range(gradient_accumulation_steps):
+            if ddp:
+                # in DDP training we only need to sync gradients at the last micro step.
+                # the official way to do this is with model.no_sync() context manager, but
+                # I really dislike that this bloats the code and forces us to repeat code
+                # looking at the source of that context manager, it just toggles this variable
+                model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1
+            with ctx:
+                logits, loss = model(X, Y)
+                loss = loss / gradient_accumulation_steps  # scale the loss to account for gradient accumulation
+            # immediately async prefetch next batch while model is doing the forward pass on the GPU
+            X, Y = get_batch("train")
+            # backward pass, with gradient scaling if training in fp16
+            scaler.scale(loss).backward()
+        # clip the gradient
+        if grad_clip != 0.0:
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+        # step the optimizer and scaler if training in fp16
+        scaler.step(optimizer)
+        scaler.update()
+        # flush the gradients as soon as we can, no need for this memory anymore
+        optimizer.zero_grad(set_to_none=True)
 
-        # Log training metrics to wandb
-        if wandb_run is not None:
-            wandb_run.log(
-                {
-                    "train/loss": lossf,
-                    "train/lr": lr,
-                    "train/mfu": running_mfu,
-                    "train/iter": iter_num,
-                    "train/dt_ms": dt * 1000,
-                },
-                step=iter_num,
-            )
-    iter_num += 1
-    local_iter_num += 1
+        # timing and logging
+        t1 = time.time()
+        dt = t1 - t0
+        t0 = t1
+        if iter_num % log_interval == 0 and master_process:
+            # get loss as float. note: this is a CPU-GPU sync point
+            # scale up to undo the division above, approximating the true total loss (exact would have been a sum)
+            lossf = loss.item() * gradient_accumulation_steps
+            if local_iter_num >= 5:  # let the training loop settle a bit
+                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
+                running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
+            print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
+            if writer is not None:
+                writer.add_scalar("Loss", lossf, iter_num)
+                writer.add_scalar("Learning Rate", lr, iter_num)
+                writer.flush()
 
-    # termination conditions
-    if iter_num > max_iters:
-        break
+            # Log training metrics to wandb
+            if wandb_run is not None:
+                wandb_run.log(
+                    {
+                        "train/loss": lossf,
+                        "train/lr": lr,
+                        "train/mfu": running_mfu,
+                        "train/iter": iter_num,
+                        "train/dt_ms": dt * 1000,
+                    },
+                    step=iter_num,
+                )
+        iter_num += 1
+        local_iter_num += 1
 
-# Finish wandb run
-if wandb_run is not None:
-    wandb_run.finish()
+        # termination conditions
+        if iter_num > max_iters:
+            break
 
-if ddp:
-    destroy_process_group()
+    # Finish wandb run
+    if wandb_run is not None:
+        wandb_run.finish()
+
+    if ddp:
+        destroy_process_group()
