@@ -2,7 +2,7 @@ import collections
 import logging
 import os
 import re
-from typing import List
+from typing import List, Optional
 
 try:
     from transformers import BertTokenizer
@@ -207,7 +207,7 @@ class SmilesTokenizer(BertTokenizer):
         else:
             return padding + token_ids
 
-    def save_vocabulary(self, vocab_path: str):  # -> tuple[str]: doctest issue raised with this return type annotation
+    def save_vocabulary(self, vocab_path: str, filename_prefix: Optional[str] = None):  # -> tuple[str]: doctest issue raised with this return type annotation
         """
         Save the tokenizer vocabulary to a file.
 
@@ -216,6 +216,9 @@ class SmilesTokenizer(BertTokenizer):
         vocab_path: obj: str
             The directory in which to save the SMILES character per line vocabulary file.
             Default vocab file is found in deepchem/feat/tests/data/vocab.txt
+        filename_prefix: optional str
+            Prefix prepended to the vocabulary filename. Required by the
+            ``transformers`` ``PreTrainedTokenizer.save_pretrained`` contract.
 
         Returns
         ----------
@@ -226,8 +229,9 @@ class SmilesTokenizer(BertTokenizer):
 
         """
         index = 0
+        prefix = f"{filename_prefix}-" if filename_prefix else ""
         if os.path.isdir(vocab_path):
-            vocab_file = os.path.join(vocab_path, "vocab.txt")
+            vocab_file = os.path.join(vocab_path, f"{prefix}vocab.txt")
         else:
             vocab_file = vocab_path
         with open(vocab_file, "w", encoding="utf-8") as writer:
