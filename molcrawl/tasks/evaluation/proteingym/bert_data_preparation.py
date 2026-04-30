@@ -32,18 +32,27 @@ def get_log_dir() -> Path:
     return log_dir
 
 
-# Log settings
-log_dir: Path = get_log_dir()
-log_file: Path = log_dir / f"bert_proteingym_prep_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(str(log_file)),
-        logging.StreamHandler(),
-    ],
-)
 logger = logging.getLogger(__name__)
+
+
+def _configure_logging() -> None:
+    """Wire up file + stream handlers for command-line use.
+
+    Kept out of the module body so that ``import`` does not have the side
+    effect of calling ``check_learning_source_dir()`` (which raises if
+    ``LEARNING_SOURCE_DIR`` is unset) and writing a timestamped file
+    under the learning-source tree.
+    """
+    log_dir: Path = get_log_dir()
+    log_file: Path = log_dir / f"bert_proteingym_prep_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(str(log_file)),
+            logging.StreamHandler(),
+        ],
+    )
 
 
 class BERTProteinGymDataProcessor:
@@ -412,6 +421,7 @@ class BERTProteinGymDataProcessor:
 
 
 def main() -> None:
+    _configure_logging()
     parser = argparse.ArgumentParser(description="BERT ProteinGym data preprocessing")
     parser.add_argument("--output_dir", type=str, default="./bert_proteingym_data", help="Output directory for processed data")
     parser.add_argument("--download", action="store_true", help="Download ProteinGym data")
