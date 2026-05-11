@@ -233,7 +233,7 @@ def _internal_diversity(generated: Sequence[str]) -> float:
     if len(mols) < 2:
         return 0.0
 
-    fps = [AllChem.GetMorganFingerprintAsBitVect(m, 2, nBits=2048) for m in mols]
+    fps = [AllChem.GetMorganFingerprintAsBitVect(m, 2, nBits=2048) for m in mols]  # type: ignore[attr-defined]
     n = len(fps)
     total = 0.0
     pairs = 0

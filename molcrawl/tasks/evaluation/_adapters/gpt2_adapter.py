@@ -27,9 +27,9 @@ class GPT2Adapter(ModelAdapter):
 
     def __init__(self, handle: ModelHandle):
         super().__init__(handle)
-        self.model = None
-        self.tokenizer = None
-        self._torch = None
+        self.model: Any = None
+        self.tokenizer: Any = None
+        self._torch: Any = None
 
     def load(self) -> None:
         import sentencepiece as spm
@@ -138,7 +138,7 @@ class GPT2Adapter(ModelAdapter):
         sequences: List[str] = []
         with torch.no_grad():
             for prompt in prompt_list:
-                for _ in range(num_samples):
+                for _i in range(num_samples):
                     prompt_ids = self.tokenizer.encode(prompt) or [0]
                     idx = torch.tensor(prompt_ids, dtype=torch.long, device=self.device).unsqueeze(0)
                     out = self.model.generate(

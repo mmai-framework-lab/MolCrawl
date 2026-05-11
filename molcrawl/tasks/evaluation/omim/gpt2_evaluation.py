@@ -298,9 +298,9 @@ class OMIMEvaluator(ModelEvaluator):
         try:
             fpr, tpr, thresholds = roc_curve(true_labels, scores)
             optimal_idx = np.argmax(tpr - fpr)
-            return thresholds[optimal_idx]
+            return float(thresholds[optimal_idx])
         except (ValueError, IndexError):
-            return np.median(scores)
+            return float(np.median(scores))
 
     def calculate_metrics(
         self,

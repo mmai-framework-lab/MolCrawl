@@ -320,13 +320,13 @@ class BERTProteinGymEvaluator(ModelEvaluator):
             # Compute the likelihood of each token（CLSandSEP)
             token_log_probs: List[float] = []
             for i in range(1, len(tokens) - 1):  # exclude CLS(0) and SEP(last)
-                token_id = tokens[i].item()
+                token_id = int(tokens[i].item())
                 token_log_prob = log_probs[0, i, token_id]
                 token_log_probs.append(token_log_prob.item())
 
             # Average log-likelihoodreturn
             if token_log_probs:
-                return np.mean(token_log_probs)
+                return float(np.mean(token_log_probs))
             else:
                 return 0.0
 
@@ -598,10 +598,10 @@ class BERTProteinGymEvaluator(ModelEvaluator):
         logger.info(f"   - Processing errors: {errors}")
 
         # Calculate evaluation metrics
-        predictions = np.array(predictions)
-        true_scores = np.array(true_scores)
+        predictions_arr = np.array(predictions)
+        true_scores_arr = np.array(true_scores)
 
-        results = self._calculate_metrics(true_scores, predictions)
+        results = self._calculate_metrics(true_scores_arr, predictions_arr)
         results["detailed_results"] = detailed_results
         results["processed_variants"] = processed
         results["errors"] = errors
