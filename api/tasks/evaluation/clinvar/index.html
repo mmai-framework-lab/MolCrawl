@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.clinvar API documentation</title>
-<meta name="description" content="Evaluation harness for the clinvar benchmark.">
+<meta name="description" content="ClinVar pathogenicity evaluation (pilot migration from ``evaluation.gpt2``) …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,13 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.clinvar</code></h1>
 </header>
 <section id="section-intro">
-<p>Evaluation harness for the clinvar benchmark.</p>
+<p>ClinVar pathogenicity evaluation (pilot migration from <code>evaluation.gpt2</code>).</p>
+<p>This package is the first task migrated to the new
+<code><a title="molcrawl.tasks.evaluation" href="../index.html">molcrawl.tasks.evaluation</a></code> layout described in
+<code>docs/_tmp/20260422-evaluator-implementation-plan.md</code>.
+Architecture
+differences (GPT-2 / BERT) are handled by :mod:<code>model_adapter</code>, not by
+forking the evaluator.</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
@@ -52,6 +58,14 @@ el.replaceWith(d);
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.bert_visualization" href="bert_visualization.html">molcrawl.tasks.evaluation.clinvar.bert_visualization</a></code></dt>
 <dd>
 <div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.clinvar.data_preparation</a></code></dt>
+<dd>
+<div class="desc"><p>ClinVar data loading utilities …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.clinvar.evaluator</a></code></dt>
+<dd>
+<div class="desc"><p>Architecture-agnostic ClinVar evaluator …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.extract_random_samples" href="extract_random_samples.html">molcrawl.tasks.evaluation.clinvar.extract_random_samples</a></code></dt>
 <dd>
@@ -69,9 +83,21 @@ el.replaceWith(d);
 <dd>
 <div class="desc"></div>
 </dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.metrics" href="metrics.html">molcrawl.tasks.evaluation.clinvar.metrics</a></code></dt>
+<dd>
+<div class="desc"><p>ClinVar-specific metric helpers …</p></div>
+</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.prepare_sequences" href="prepare_sequences.html">molcrawl.tasks.evaluation.clinvar.prepare_sequences</a></code></dt>
 <dd>
 <div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.splits" href="splits.html">molcrawl.tasks.evaluation.clinvar.splits</a></code></dt>
+<dd>
+<div class="desc"><p>Holdout splits for ClinVar …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar.visualization" href="visualization.html">molcrawl.tasks.evaluation.clinvar.visualization</a></code></dt>
+<dd>
+<div class="desc"><p>Lightweight plots for the ClinVar evaluator …</p></div>
 </dd>
 </dl>
 </section>
@@ -80,6 +106,277 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator"><code class="flex name class">
+<span>class <span class="ident">ClinVarEvaluator</span></span>
+<span>(</span><span>handle: ModelHandle,<br>output_dir: Path,<br>clinvar_path: str,<br>config: Optional[Dict[str, Any]] = None,<br>tracker: Optional[Any] = None,<br>experiment_id: Optional[str] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ClinVarEvaluator(BaseEvaluator):
+    &#34;&#34;&#34;Binary pathogenicity evaluator for ClinVar variants.&#34;&#34;&#34;
+
+    task_name = &#34;clinvar&#34;
+
+    def __init__(
+        self,
+        handle: ModelHandle,
+        output_dir: Path,
+        clinvar_path: str,
+        config: Optional[Dict[str, Any]] = None,
+        tracker: Optional[Any] = None,
+        experiment_id: Optional[str] = None,
+    ) -&gt; None:
+        super().__init__(
+            handle=handle,
+            output_dir=output_dir,
+            config=config,
+            tracker=tracker,
+            experiment_id=experiment_id,
+        )
+        self.clinvar_path = clinvar_path
+        self.context_length: int = int(self.config.get(&#34;context_length&#34;, 512))
+
+    def category(self) -&gt; str:
+        return &#34;variant_effect&#34;
+
+    def load_dataset(self) -&gt; pd.DataFrame:
+        df = load_clinvar(self.clinvar_path)
+        max_examples = self.config.get(&#34;max_examples&#34;)
+        if max_examples is not None:
+            df = df.head(int(max_examples)).reset_index(drop=True)
+        return df
+
+    def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
+        adapter = self.adapter
+        if not adapter.supports(&#34;likelihood&#34;):
+            raise RuntimeError(
+                f&#34;Adapter {type(adapter).__name__} does not support likelihood scoring, &#34;
+                &#34;which ClinVar requires.&#34;
+            )
+
+        ref_sequences = dataset[&#34;reference_sequence&#34;].astype(str).tolist()
+        var_sequences = dataset[&#34;variant_sequence&#34;].astype(str).tolist()
+
+        ref_out = adapter.score_likelihood(
+            ref_sequences, context_length=self.context_length
+        )
+        var_out = adapter.score_likelihood(
+            var_sequences, context_length=self.context_length
+        )
+
+        ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)
+        var_ll = np.asarray(var_out.log_likelihood, dtype=float)
+        # Pathogenicity score: reference is more likely than variant.
+        scores = ref_ll - var_ll
+        return {
+            &#34;scores&#34;: scores,
+            &#34;reference_log_likelihood&#34;: ref_ll,
+            &#34;variant_log_likelihood&#34;: var_ll,
+        }
+
+    def compute_metrics(
+        self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]
+    ) -&gt; Dict[str, float]:
+        scores = predictions[&#34;scores&#34;]
+        labels = dataset[&#34;pathogenic&#34;].to_numpy(dtype=int)
+        threshold = find_optimal_f1_threshold(scores, labels)
+        preds = (scores &gt; threshold).astype(int)
+
+        metrics: Dict[str, float] = {
+            &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, labels, preds),
+            &#34;f1_binary&#34;: default_registry.compute(&#34;f1_binary&#34;, labels, preds),
+        }
+        if len(np.unique(labels)) &gt;= 2:
+            metrics[&#34;auroc&#34;] = default_registry.compute(&#34;auroc&#34;, labels, scores)
+            metrics[&#34;auprc&#34;] = default_registry.compute(&#34;auprc&#34;, labels, scores)
+
+        sensitivity, specificity = sensitivity_specificity(labels, preds)
+        metrics[&#34;sensitivity&#34;] = sensitivity
+        metrics[&#34;specificity&#34;] = specificity
+
+        self._last_threshold = float(threshold)
+        self._last_confusion = confusion_summary(labels, preds)
+        return metrics
+
+    def build_report(
+        self,
+        metrics: Dict[str, float],
+        dataset: pd.DataFrame,
+        predictions: Dict[str, np.ndarray],
+    ) -&gt; Dict[str, Any]:
+        report = super().build_report(metrics, dataset, predictions)
+        report.update(
+            {
+                &#34;num_examples&#34;: int(len(dataset)),
+                &#34;class_distribution&#34;: {
+                    &#34;pathogenic&#34;: int((dataset[&#34;pathogenic&#34;] == 1).sum()),
+                    &#34;benign&#34;: int((dataset[&#34;pathogenic&#34;] == 0).sum()),
+                },
+                &#34;optimal_threshold&#34;: getattr(self, &#34;_last_threshold&#34;, None),
+                &#34;confusion_matrix&#34;: getattr(self, &#34;_last_confusion&#34;, None),
+            }
+        )
+        return report</code></pre>
+</details>
+<div class="desc"><p>Binary pathogenicity evaluator for ClinVar variants.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>molcrawl.tasks.evaluation._base.base_evaluator.BaseEvaluator</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.task_name"><code class="name">var <span class="ident">task_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.build_report"><code class="name flex">
+<span>def <span class="ident">build_report</span></span>(<span>self,<br>metrics: Dict[str, float],<br>dataset: pd.DataFrame,<br>predictions: Dict[str, np.ndarray]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_report(
+    self,
+    metrics: Dict[str, float],
+    dataset: pd.DataFrame,
+    predictions: Dict[str, np.ndarray],
+) -&gt; Dict[str, Any]:
+    report = super().build_report(metrics, dataset, predictions)
+    report.update(
+        {
+            &#34;num_examples&#34;: int(len(dataset)),
+            &#34;class_distribution&#34;: {
+                &#34;pathogenic&#34;: int((dataset[&#34;pathogenic&#34;] == 1).sum()),
+                &#34;benign&#34;: int((dataset[&#34;pathogenic&#34;] == 0).sum()),
+            },
+            &#34;optimal_threshold&#34;: getattr(self, &#34;_last_threshold&#34;, None),
+            &#34;confusion_matrix&#34;: getattr(self, &#34;_last_confusion&#34;, None),
+        }
+    )
+    return report</code></pre>
+</details>
+<div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
+<p>Default implementation returns just <code><a title="molcrawl.tasks.evaluation.clinvar.metrics" href="metrics.html">molcrawl.tasks.evaluation.clinvar.metrics</a></code> and the evaluator
+config.
+Tasks can override this to include confusion matrices,
+distribution summaries, etc.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.category"><code class="name flex">
+<span>def <span class="ident">category</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def category(self) -&gt; str:
+    return &#34;variant_effect&#34;</code></pre>
+</details>
+<div class="desc"><p>Return the high-level task category.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.compute_metrics"><code class="name flex">
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_metrics(
+    self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]
+) -&gt; Dict[str, float]:
+    scores = predictions[&#34;scores&#34;]
+    labels = dataset[&#34;pathogenic&#34;].to_numpy(dtype=int)
+    threshold = find_optimal_f1_threshold(scores, labels)
+    preds = (scores &gt; threshold).astype(int)
+
+    metrics: Dict[str, float] = {
+        &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, labels, preds),
+        &#34;f1_binary&#34;: default_registry.compute(&#34;f1_binary&#34;, labels, preds),
+    }
+    if len(np.unique(labels)) &gt;= 2:
+        metrics[&#34;auroc&#34;] = default_registry.compute(&#34;auroc&#34;, labels, scores)
+        metrics[&#34;auprc&#34;] = default_registry.compute(&#34;auprc&#34;, labels, scores)
+
+    sensitivity, specificity = sensitivity_specificity(labels, preds)
+    metrics[&#34;sensitivity&#34;] = sensitivity
+    metrics[&#34;specificity&#34;] = specificity
+
+    self._last_threshold = float(threshold)
+    self._last_confusion = confusion_summary(labels, preds)
+    return metrics</code></pre>
+</details>
+<div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.load_dataset"><code class="name flex">
+<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
+    df = load_clinvar(self.clinvar_path)
+    max_examples = self.config.get(&#34;max_examples&#34;)
+    if max_examples is not None:
+        df = df.head(int(max_examples)).reset_index(drop=True)
+    return df</code></pre>
+</details>
+<div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.run_predictions"><code class="name flex">
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame) ‑> Dict[str, numpy.ndarray]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
+    adapter = self.adapter
+    if not adapter.supports(&#34;likelihood&#34;):
+        raise RuntimeError(
+            f&#34;Adapter {type(adapter).__name__} does not support likelihood scoring, &#34;
+            &#34;which ClinVar requires.&#34;
+        )
+
+    ref_sequences = dataset[&#34;reference_sequence&#34;].astype(str).tolist()
+    var_sequences = dataset[&#34;variant_sequence&#34;].astype(str).tolist()
+
+    ref_out = adapter.score_likelihood(
+        ref_sequences, context_length=self.context_length
+    )
+    var_out = adapter.score_likelihood(
+        var_sequences, context_length=self.context_length
+    )
+
+    ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)
+    var_ll = np.asarray(var_out.log_likelihood, dtype=float)
+    # Pathogenicity score: reference is more likely than variant.
+    scores = ref_ll - var_ll
+    return {
+        &#34;scores&#34;: scores,
+        &#34;reference_log_likelihood&#34;: ref_ll,
+        &#34;variant_log_likelihood&#34;: var_ll,
+    }</code></pre>
+</details>
+<div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -97,11 +394,31 @@ el.replaceWith(d);
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.bert_config" href="bert_config.html">molcrawl.tasks.evaluation.clinvar.bert_config</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.bert_evaluation" href="bert_evaluation.html">molcrawl.tasks.evaluation.clinvar.bert_evaluation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.bert_visualization" href="bert_visualization.html">molcrawl.tasks.evaluation.clinvar.bert_visualization</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.clinvar.data_preparation</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.clinvar.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.extract_random_samples" href="extract_random_samples.html">molcrawl.tasks.evaluation.clinvar.extract_random_samples</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.clinvar.gpt2_data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_evaluation" href="gpt2_evaluation.html">molcrawl.tasks.evaluation.clinvar.gpt2_evaluation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.gpt2_visualization" href="gpt2_visualization.html">molcrawl.tasks.evaluation.clinvar.gpt2_visualization</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.metrics" href="metrics.html">molcrawl.tasks.evaluation.clinvar.metrics</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.prepare_sequences" href="prepare_sequences.html">molcrawl.tasks.evaluation.clinvar.prepare_sequences</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.splits" href="splits.html">molcrawl.tasks.evaluation.clinvar.splits</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.visualization" href="visualization.html">molcrawl.tasks.evaluation.clinvar.visualization</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator">ClinVarEvaluator</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.build_report" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.build_report">build_report</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.category" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.category">category</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.compute_metrics" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.compute_metrics">compute_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.load_dataset" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.load_dataset">load_dataset</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.run_predictions" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.run_predictions">run_predictions</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.task_name" href="#molcrawl.tasks.evaluation.clinvar.ClinVarEvaluator.task_name">task_name</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.proteingym API documentation</title>
-<meta name="description" content="Evaluation harness for the proteingym benchmark.">
+<meta name="description" content="ProteinGym zero-shot mutation-effect evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,12 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.proteingym</code></h1>
 </header>
 <section id="section-intro">
-<p>Evaluation harness for the proteingym benchmark.</p>
+<p>ProteinGym zero-shot mutation-effect evaluator.</p>
+<p>Migrated from <code>molcrawl.evaluation.{bert,gpt2}.proteingym_*</code> into the
+new task-centric layout.
+The heavy-weight preparation logic in
+<code>proteingym_data_preparation.py</code> will be moved in a follow-up PR; this
+package provides the arch-agnostic evaluator and a minimal loader.</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
@@ -57,6 +62,14 @@ el.replaceWith(d);
 <dd>
 <div class="desc"></div>
 </dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.proteingym.data_preparation</a></code></dt>
+<dd>
+<div class="desc"><p>ProteinGym table loader …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.proteingym.evaluator</a></code></dt>
+<dd>
+<div class="desc"><p>Arch-agnostic ProteinGym evaluator.</p></div>
+</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation</a></code></dt>
 <dd>
 <div class="desc"><p>ProteinGym dataset download and preprocessing utility …</p></div>
@@ -69,6 +82,18 @@ el.replaceWith(d);
 <dd>
 <div class="desc"></div>
 </dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.metrics" href="metrics.html">molcrawl.tasks.evaluation.proteingym.metrics</a></code></dt>
+<dd>
+<div class="desc"><p>Metric helpers for ProteinGym …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.splits" href="splits.html">molcrawl.tasks.evaluation.proteingym.splits</a></code></dt>
+<dd>
+<div class="desc"><p>Family-aware splits for ProteinGym …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.visualization" href="visualization.html">molcrawl.tasks.evaluation.proteingym.visualization</a></code></dt>
+<dd>
+<div class="desc"><p>ProteinGym visualisation helpers.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -76,6 +101,223 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator"><code class="flex name class">
+<span>class <span class="ident">ProteinGymEvaluator</span></span>
+<span>(</span><span>handle: ModelHandle,<br>output_dir: Path,<br>proteingym_path: Path,<br>config: Optional[Dict[str, Any]] = None,<br>tracker: Optional[Any] = None,<br>experiment_id: Optional[str] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ProteinGymEvaluator(BaseEvaluator):
+    &#34;&#34;&#34;Zero-shot variant fitness prediction via likelihood differences.&#34;&#34;&#34;
+
+    task_name = &#34;proteingym&#34;
+
+    def __init__(
+        self,
+        handle: ModelHandle,
+        output_dir: Path,
+        proteingym_path: Path,
+        config: Optional[Dict[str, Any]] = None,
+        tracker: Optional[Any] = None,
+        experiment_id: Optional[str] = None,
+    ) -&gt; None:
+        super().__init__(
+            handle=handle,
+            output_dir=output_dir,
+            config=config,
+            tracker=tracker,
+            experiment_id=experiment_id,
+        )
+        self.proteingym_path = Path(proteingym_path)
+        self.context_length: int = int(self.config.get(&#34;context_length&#34;, 1024))
+
+    def category(self) -&gt; str:
+        return &#34;variant_effect&#34;
+
+    def load_dataset(self) -&gt; pd.DataFrame:
+        df = load_proteingym(self.proteingym_path)
+        max_examples = self.config.get(&#34;max_examples&#34;)
+        if max_examples is not None:
+            df = df.head(int(max_examples)).reset_index(drop=True)
+        return df
+
+    def run_predictions(self, dataset: pd.DataFrame):
+        adapter = self.adapter
+        if not adapter.supports(&#34;likelihood&#34;):
+            raise RuntimeError(
+                f&#34;Adapter {type(adapter).__name__} cannot score likelihoods, &#34;
+                &#34;which ProteinGym requires.&#34;
+            )
+        ref_out = adapter.score_likelihood(
+            dataset[&#34;wildtype_sequence&#34;].astype(str).tolist(),
+            context_length=self.context_length,
+        )
+        mut_out = adapter.score_likelihood(
+            dataset[&#34;mutated_sequence&#34;].astype(str).tolist(),
+            context_length=self.context_length,
+        )
+        ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)
+        mut_ll = np.asarray(mut_out.log_likelihood, dtype=float)
+        return {
+            &#34;scores&#34;: mut_ll - ref_ll,
+            &#34;reference_ll&#34;: ref_ll,
+            &#34;mutated_ll&#34;: mut_ll,
+        }
+
+    def compute_metrics(
+        self, dataset: pd.DataFrame, predictions
+    ) -&gt; Dict[str, float]:
+        scores = predictions[&#34;scores&#34;]
+        dms = dataset[&#34;DMS_score&#34;].to_numpy(dtype=float)
+        metrics = correlation_metrics(dms, scores)
+        if &#34;DMS_bin_score&#34; in dataset.columns:
+            y_bin = dataset[&#34;DMS_bin_score&#34;].to_numpy()
+            extra = optional_binary_metrics(y_bin.astype(int), scores)
+            metrics.update(extra)
+        return metrics
+
+    def build_report(self, metrics, dataset, predictions):
+        report = super().build_report(metrics, dataset, predictions)
+        report.update(
+            {
+                &#34;num_variants&#34;: int(len(dataset)),
+                &#34;context_length&#34;: self.context_length,
+            }
+        )
+        return report</code></pre>
+</details>
+<div class="desc"><p>Zero-shot variant fitness prediction via likelihood differences.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>molcrawl.tasks.evaluation._base.base_evaluator.BaseEvaluator</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.task_name"><code class="name">var <span class="ident">task_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.build_report"><code class="name flex">
+<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+    report = super().build_report(metrics, dataset, predictions)
+    report.update(
+        {
+            &#34;num_variants&#34;: int(len(dataset)),
+            &#34;context_length&#34;: self.context_length,
+        }
+    )
+    return report</code></pre>
+</details>
+<div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
+<p>Default implementation returns just <code><a title="molcrawl.tasks.evaluation.proteingym.metrics" href="metrics.html">molcrawl.tasks.evaluation.proteingym.metrics</a></code> and the evaluator
+config.
+Tasks can override this to include confusion matrices,
+distribution summaries, etc.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.category"><code class="name flex">
+<span>def <span class="ident">category</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def category(self) -&gt; str:
+    return &#34;variant_effect&#34;</code></pre>
+</details>
+<div class="desc"><p>Return the high-level task category.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.compute_metrics"><code class="name flex">
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_metrics(
+    self, dataset: pd.DataFrame, predictions
+) -&gt; Dict[str, float]:
+    scores = predictions[&#34;scores&#34;]
+    dms = dataset[&#34;DMS_score&#34;].to_numpy(dtype=float)
+    metrics = correlation_metrics(dms, scores)
+    if &#34;DMS_bin_score&#34; in dataset.columns:
+        y_bin = dataset[&#34;DMS_bin_score&#34;].to_numpy()
+        extra = optional_binary_metrics(y_bin.astype(int), scores)
+        metrics.update(extra)
+    return metrics</code></pre>
+</details>
+<div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.load_dataset"><code class="name flex">
+<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
+    df = load_proteingym(self.proteingym_path)
+    max_examples = self.config.get(&#34;max_examples&#34;)
+    if max_examples is not None:
+        df = df.head(int(max_examples)).reset_index(drop=True)
+    return df</code></pre>
+</details>
+<div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.run_predictions"><code class="name flex">
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame):
+    adapter = self.adapter
+    if not adapter.supports(&#34;likelihood&#34;):
+        raise RuntimeError(
+            f&#34;Adapter {type(adapter).__name__} cannot score likelihoods, &#34;
+            &#34;which ProteinGym requires.&#34;
+        )
+    ref_out = adapter.score_likelihood(
+        dataset[&#34;wildtype_sequence&#34;].astype(str).tolist(),
+        context_length=self.context_length,
+    )
+    mut_out = adapter.score_likelihood(
+        dataset[&#34;mutated_sequence&#34;].astype(str).tolist(),
+        context_length=self.context_length,
+    )
+    ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)
+    mut_ll = np.asarray(mut_out.log_likelihood, dtype=float)
+    return {
+        &#34;scores&#34;: mut_ll - ref_ll,
+        &#34;reference_ll&#34;: ref_ll,
+        &#34;mutated_ll&#34;: mut_ll,
+    }</code></pre>
+</details>
+<div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -94,9 +336,29 @@ el.replaceWith(d);
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_data_preparation" href="bert_data_preparation.html">molcrawl.tasks.evaluation.proteingym.bert_data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_evaluation" href="bert_evaluation.html">molcrawl.tasks.evaluation.proteingym.bert_evaluation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_visualization" href="bert_visualization.html">molcrawl.tasks.evaluation.proteingym.bert_visualization</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.proteingym.data_preparation</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.proteingym.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.gpt2_evaluation" href="gpt2_evaluation.html">molcrawl.tasks.evaluation.proteingym.gpt2_evaluation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.gpt2_visualization" href="gpt2_visualization.html">molcrawl.tasks.evaluation.proteingym.gpt2_visualization</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.metrics" href="metrics.html">molcrawl.tasks.evaluation.proteingym.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.splits" href="splits.html">molcrawl.tasks.evaluation.proteingym.splits</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.visualization" href="visualization.html">molcrawl.tasks.evaluation.proteingym.visualization</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator">ProteinGymEvaluator</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.build_report" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.build_report">build_report</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.category" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.category">category</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.compute_metrics" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.compute_metrics">compute_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.load_dataset" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.load_dataset">load_dataset</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.run_predictions" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.run_predictions">run_predictions</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.task_name" href="#molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.task_name">task_name</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

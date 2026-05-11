@@ -37,42 +37,103 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Evaluation benchmarks organized by task.</p>
-<p>Each task directory groups all architecture-specific evaluation
-entrypoints for that benchmark (<code>bert_evaluation.py</code>,
-<code>gpt2_evaluation.py</code>, &hellip;). Architecture differences are absorbed at
-the module / CLI level so the axis of organization is the benchmark,
-not the model family.</p>
+<p>Each concrete task lives in <code>molcrawl/tasks/evaluation/&lt;task_name&gt;/</code> and
+follows the standard layout described in
+<code>docs/_tmp/20260422-evaluator-implementation-plan.md</code>::</p>
+<pre><code>&lt;task_name&gt;/
+    __init__.py
+    data_preparation.py
+    splits.py
+    metrics.py
+    evaluator.py
+    visualization.py
+    configs/
+    README.md
+</code></pre>
+<p>The cross-cutting abstractions (base evaluator, model adapters, metric
+registry, report writer) live under <code>molcrawl.tasks.evaluation._base</code>.
+Architecture differences (GPT-2 / BERT / ESM-2 / DNABERT-2 / RNAformer /
+ChemBERTa-2) are absorbed at the model-adapter / CLI level rather than
+by forking each evaluator per architecture.</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.chebi20" href="chebi20/index.html">molcrawl.tasks.evaluation.chebi20</a></code></dt>
+<dd>
+<div class="desc"><p>ChEBI-20 caption generation and SMILES generation …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout" href="chembl_scaffold_heldout/index.html">molcrawl.tasks.evaluation.chembl_scaffold_heldout</a></code></dt>
+<dd>
+<div class="desc"><p>ChEMBL scaffold-held-out evaluation (Phase 1) …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.chemllmbench" href="chemllmbench/index.html">molcrawl.tasks.evaluation.chemllmbench</a></code></dt>
+<dd>
+<div class="desc"><p>ChemLLMBench evaluation …</p></div>
+</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.clinvar" href="clinvar/index.html">molcrawl.tasks.evaluation.clinvar</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluation harness for the clinvar benchmark.</p></div>
+<div class="desc"><p>ClinVar pathogenicity evaluation (pilot migration from <code>evaluation.gpt2</code>) …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.cosmic" href="cosmic/index.html">molcrawl.tasks.evaluation.cosmic</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluation harness for the cosmic benchmark.</p></div>
+<div class="desc"><p>COSMIC somatic-variant evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.deeploc" href="deeploc/index.html">molcrawl.tasks.evaluation.deeploc</a></code></dt>
+<dd>
+<div class="desc"><p>DeepLoc 2.0 subcellular localisation evaluation.</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.gnomad_af_correlation" href="gnomad_af_correlation/index.html">molcrawl.tasks.evaluation.gnomad_af_correlation</a></code></dt>
+<dd>
+<div class="desc"><p>gnomAD allele-frequency correlation evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.gue" href="gue/index.html">molcrawl.tasks.evaluation.gue</a></code></dt>
+<dd>
+<div class="desc"><p>GUE (Genome Understanding Evaluation) benchmark …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.molecule_nat_lang" href="molecule_nat_lang/index.html">molcrawl.tasks.evaluation.molecule_nat_lang</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluation harness for the molecule_nat_lang benchmark.</p></div>
+<div class="desc"><p>Migration of the legacy molecule_nat_lang evaluators …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.moleculenet" href="moleculenet/index.html">molcrawl.tasks.evaluation.moleculenet</a></code></dt>
+<dd>
+<div class="desc"><p>MoleculeNet evaluation task (Phase 1) …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.moses" href="moses/index.html">molcrawl.tasks.evaluation.moses</a></code></dt>
+<dd>
+<div class="desc"><p>MOSES generation-quality evaluation (Phase 1) …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.omim" href="omim/index.html">molcrawl.tasks.evaluation.omim</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluation harness for the omim benchmark.</p></div>
+<div class="desc"><p>OMIM gene-disease association evaluator …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_classification" href="protein_classification/index.html">molcrawl.tasks.evaluation.protein_classification</a></code></dt>
 <dd>
 <div class="desc"><p>Evaluation harness for the protein_classification benchmark.</p></div>
 </dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_foldability" href="protein_foldability/index.html">molcrawl.tasks.evaluation.protein_foldability</a></code></dt>
+<dd>
+<div class="desc"><p>Generation-side foldability evaluation for protein decoders …</p></div>
+</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym" href="proteingym/index.html">molcrawl.tasks.evaluation.proteingym</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluation harness for the proteingym benchmark.</p></div>
+<div class="desc"><p>ProteinGym zero-shot mutation-effect evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.replogle_perturb_seq" href="replogle_perturb_seq/index.html">molcrawl.tasks.evaluation.replogle_perturb_seq</a></code></dt>
+<dd>
+<div class="desc"><p>Replogle Perturb-seq perturbation response evaluator …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark" href="rna_benchmark/index.html">molcrawl.tasks.evaluation.rna_benchmark</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluation harness for the rna_benchmark benchmark.</p></div>
+<div class="desc"><p>Migration of the legacy RNA benchmark evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.tabula_sapiens" href="tabula_sapiens/index.html">molcrawl.tasks.evaluation.tabula_sapiens</a></code></dt>
+<dd>
+<div class="desc"><p>Tabula Sapiens cell-type annotation evaluator.</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.tape" href="tape/index.html">molcrawl.tasks.evaluation.tape</a></code></dt>
+<dd>
+<div class="desc"><p>TAPE (Tasks Assessing Protein Embeddings) evaluation …</p></div>
 </dd>
 </dl>
 </section>
@@ -95,13 +156,25 @@ not the model family.</p>
 </li>
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
+<li><code><a title="molcrawl.tasks.evaluation.chebi20" href="chebi20/index.html">molcrawl.tasks.evaluation.chebi20</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout" href="chembl_scaffold_heldout/index.html">molcrawl.tasks.evaluation.chembl_scaffold_heldout</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chemllmbench" href="chemllmbench/index.html">molcrawl.tasks.evaluation.chemllmbench</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.clinvar" href="clinvar/index.html">molcrawl.tasks.evaluation.clinvar</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.cosmic" href="cosmic/index.html">molcrawl.tasks.evaluation.cosmic</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.deeploc" href="deeploc/index.html">molcrawl.tasks.evaluation.deeploc</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation" href="gnomad_af_correlation/index.html">molcrawl.tasks.evaluation.gnomad_af_correlation</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue" href="gue/index.html">molcrawl.tasks.evaluation.gue</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang" href="molecule_nat_lang/index.html">molcrawl.tasks.evaluation.molecule_nat_lang</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moleculenet" href="moleculenet/index.html">molcrawl.tasks.evaluation.moleculenet</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses" href="moses/index.html">molcrawl.tasks.evaluation.moses</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.omim" href="omim/index.html">molcrawl.tasks.evaluation.omim</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_classification" href="protein_classification/index.html">molcrawl.tasks.evaluation.protein_classification</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability" href="protein_foldability/index.html">molcrawl.tasks.evaluation.protein_foldability</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym" href="proteingym/index.html">molcrawl.tasks.evaluation.proteingym</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.replogle_perturb_seq" href="replogle_perturb_seq/index.html">molcrawl.tasks.evaluation.replogle_perturb_seq</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark" href="rna_benchmark/index.html">molcrawl.tasks.evaluation.rna_benchmark</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens" href="tabula_sapiens/index.html">molcrawl.tasks.evaluation.tabula_sapiens</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape" href="tape/index.html">molcrawl.tasks.evaluation.tape</a></code></li>
 </ul>
 </li>
 </ul>

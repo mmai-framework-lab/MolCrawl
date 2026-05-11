@@ -63,7 +63,7 @@ el.replaceWith(d);
 
     if row.max() == 0:
         logging.warning(&#34;The input data contains row of zeros. Please make sure this is expected.&#34;)
-        return np.zeros_like(row, dtype=dtype) if return_np else torch.zeros_like(row, dtype=dtype)
+        return np.zeros_like(row, dtype=dtype) if return_np else torch.zeros_like(row, dtype=dtype)  # type: ignore[arg-type]
 
     if row.min() &lt;= 0:
         non_zero_ids = row.nonzero()
@@ -75,7 +75,7 @@ el.replaceWith(d);
     else:
         bins = np.quantile(row, np.linspace(0, 1, n_bins - 1))
         binned_row = _digitize(row, bins)
-    return torch.from_numpy(binned_row) if not return_np else binned_row.astype(dtype)</code></pre>
+    return torch.from_numpy(binned_row) if not return_np else binned_row.astype(dtype)  # type: ignore[arg-type]</code></pre>
 </details>
 <div class="desc"><p>Binning the row into n_bins.</p></div>
 </dd>

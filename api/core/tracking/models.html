@@ -68,6 +68,19 @@ el.replaceWith(d);
     CLINVAR = &#34;clinvar&#34;
     OMIM = &#34;omim&#34;
     COSMIC = &#34;cosmic&#34;
+    MOLECULENET = &#34;moleculenet&#34;
+    MOSES = &#34;moses&#34;
+    CHEMBL_SCAFFOLD = &#34;chembl_scaffold_heldout&#34;
+    TAPE = &#34;tape&#34;
+    DEEPLOC = &#34;deeploc&#34;
+    PROTEIN_FOLDABILITY = &#34;protein_foldability&#34;
+    GUE = &#34;gue&#34;
+    GNOMAD = &#34;gnomad_af_correlation&#34;
+    TABULA_SAPIENS = &#34;tabula_sapiens&#34;
+    PBMC10X = &#34;pbmc10x&#34;
+    REPLOGLE_PERTURB_SEQ = &#34;replogle_perturb_seq&#34;
+    CHEBI20 = &#34;chebi20&#34;
+    CHEMLLMBENCH = &#34;chemllmbench&#34;
     OTHER = &#34;other&#34;</code></pre>
 </details>
 <div class="desc"><p>Dataset type</p></div>
@@ -78,6 +91,18 @@ el.replaceWith(d);
 </ul>
 <h3>Class variables</h3>
 <dl>
+<dt id="molcrawl.core.tracking.models.DatasetType.CHEBI20"><code class="name">var <span class="ident">CHEBI20</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.CHEMBL_SCAFFOLD"><code class="name">var <span class="ident">CHEMBL_SCAFFOLD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.CHEMLLMBENCH"><code class="name">var <span class="ident">CHEMLLMBENCH</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.core.tracking.models.DatasetType.CLINVAR"><code class="name">var <span class="ident">CLINVAR</span></code></dt>
 <dd>
 <div class="desc"></div>
@@ -90,11 +115,31 @@ el.replaceWith(d);
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.DEEPLOC"><code class="name">var <span class="ident">DEEPLOC</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.core.tracking.models.DatasetType.GENOME_SEQUENCE"><code class="name">var <span class="ident">GENOME_SEQUENCE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.GNOMAD"><code class="name">var <span class="ident">GNOMAD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.GUE"><code class="name">var <span class="ident">GUE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.MOLECULENET"><code class="name">var <span class="ident">MOLECULENET</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.core.tracking.models.DatasetType.MOLECULE_NAT_LANG"><code class="name">var <span class="ident">MOLECULE_NAT_LANG</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.MOSES"><code class="name">var <span class="ident">MOSES</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -106,7 +151,15 @@ el.replaceWith(d);
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.PBMC10X"><code class="name">var <span class="ident">PBMC10X</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.core.tracking.models.DatasetType.PROTEINGYM"><code class="name">var <span class="ident">PROTEINGYM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.PROTEIN_FOLDABILITY"><code class="name">var <span class="ident">PROTEIN_FOLDABILITY</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -114,7 +167,19 @@ el.replaceWith(d);
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.REPLOGLE_PERTURB_SEQ"><code class="name">var <span class="ident">REPLOGLE_PERTURB_SEQ</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.core.tracking.models.DatasetType.RNA"><code class="name">var <span class="ident">RNA</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.TABULA_SAPIENS"><code class="name">var <span class="ident">TABULA_SAPIENS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.DatasetType.TAPE"><code class="name">var <span class="ident">TAPE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -701,6 +766,90 @@ class ExperimentStep:
 </dd>
 </dl>
 </dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory"><code class="flex name class">
+<span>class <span class="ident">TaskCategory</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TaskCategory(str, Enum):
+    &#34;&#34;&#34;High-level evaluation task categories.
+
+    These map 1:1 to the 3-axis report layout used by the weekly snapshot
+    generator (modality x arch x task_category).
+    &#34;&#34;&#34;
+
+    VARIANT_EFFECT = &#34;variant_effect&#34;
+    PROPERTY_PREDICTION = &#34;property_prediction&#34;
+    GENERATION_QUALITY = &#34;generation_quality&#34;
+    CELL_TYPE_ANNOTATION = &#34;cell_type_annotation&#34;
+    TEXT_ALIGNMENT = &#34;text_alignment&#34;
+    STRUCTURAL_PROBING = &#34;structural_probing&#34;
+    SEQUENCE_ANNOTATION = &#34;sequence_annotation&#34;
+    RETRIEVAL = &#34;retrieval&#34;
+    FOLDABILITY = &#34;foldability&#34;
+    PERTURBATION_RESPONSE = &#34;perturbation_response&#34;
+    OTHER = &#34;other&#34;</code></pre>
+</details>
+<div class="desc"><p>High-level evaluation task categories.</p>
+<p>These map 1:1 to the 3-axis report layout used by the weekly snapshot
+generator (modality x arch x task_category).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.str</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.core.tracking.models.TaskCategory.CELL_TYPE_ANNOTATION"><code class="name">var <span class="ident">CELL_TYPE_ANNOTATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.FOLDABILITY"><code class="name">var <span class="ident">FOLDABILITY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.GENERATION_QUALITY"><code class="name">var <span class="ident">GENERATION_QUALITY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.OTHER"><code class="name">var <span class="ident">OTHER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.PERTURBATION_RESPONSE"><code class="name">var <span class="ident">PERTURBATION_RESPONSE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.PROPERTY_PREDICTION"><code class="name">var <span class="ident">PROPERTY_PREDICTION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.RETRIEVAL"><code class="name">var <span class="ident">RETRIEVAL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.SEQUENCE_ANNOTATION"><code class="name">var <span class="ident">SEQUENCE_ANNOTATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.STRUCTURAL_PROBING"><code class="name">var <span class="ident">STRUCTURAL_PROBING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.TEXT_ALIGNMENT"><code class="name">var <span class="ident">TEXT_ALIGNMENT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.tracking.models.TaskCategory.VARIANT_EFFECT"><code class="name">var <span class="ident">VARIANT_EFFECT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
 </dl>
 </section>
 </article>
@@ -718,17 +867,30 @@ class ExperimentStep:
 <ul>
 <li>
 <h4><code><a title="molcrawl.core.tracking.models.DatasetType" href="#molcrawl.core.tracking.models.DatasetType">DatasetType</a></code></h4>
-<ul class="two-column">
+<ul class="">
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.CHEBI20" href="#molcrawl.core.tracking.models.DatasetType.CHEBI20">CHEBI20</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.CHEMBL_SCAFFOLD" href="#molcrawl.core.tracking.models.DatasetType.CHEMBL_SCAFFOLD">CHEMBL_SCAFFOLD</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.CHEMLLMBENCH" href="#molcrawl.core.tracking.models.DatasetType.CHEMLLMBENCH">CHEMLLMBENCH</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.CLINVAR" href="#molcrawl.core.tracking.models.DatasetType.CLINVAR">CLINVAR</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.COMPOUNDS" href="#molcrawl.core.tracking.models.DatasetType.COMPOUNDS">COMPOUNDS</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.COSMIC" href="#molcrawl.core.tracking.models.DatasetType.COSMIC">COSMIC</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.DEEPLOC" href="#molcrawl.core.tracking.models.DatasetType.DEEPLOC">DEEPLOC</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.GENOME_SEQUENCE" href="#molcrawl.core.tracking.models.DatasetType.GENOME_SEQUENCE">GENOME_SEQUENCE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.GNOMAD" href="#molcrawl.core.tracking.models.DatasetType.GNOMAD">GNOMAD</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.GUE" href="#molcrawl.core.tracking.models.DatasetType.GUE">GUE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.MOLECULENET" href="#molcrawl.core.tracking.models.DatasetType.MOLECULENET">MOLECULENET</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.MOLECULE_NAT_LANG" href="#molcrawl.core.tracking.models.DatasetType.MOLECULE_NAT_LANG">MOLECULE_NAT_LANG</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.MOSES" href="#molcrawl.core.tracking.models.DatasetType.MOSES">MOSES</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.OMIM" href="#molcrawl.core.tracking.models.DatasetType.OMIM">OMIM</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.OTHER" href="#molcrawl.core.tracking.models.DatasetType.OTHER">OTHER</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.PBMC10X" href="#molcrawl.core.tracking.models.DatasetType.PBMC10X">PBMC10X</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.PROTEINGYM" href="#molcrawl.core.tracking.models.DatasetType.PROTEINGYM">PROTEINGYM</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.PROTEIN_FOLDABILITY" href="#molcrawl.core.tracking.models.DatasetType.PROTEIN_FOLDABILITY">PROTEIN_FOLDABILITY</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.PROTEIN_SEQUENCE" href="#molcrawl.core.tracking.models.DatasetType.PROTEIN_SEQUENCE">PROTEIN_SEQUENCE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.REPLOGLE_PERTURB_SEQ" href="#molcrawl.core.tracking.models.DatasetType.REPLOGLE_PERTURB_SEQ">REPLOGLE_PERTURB_SEQ</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.DatasetType.RNA" href="#molcrawl.core.tracking.models.DatasetType.RNA">RNA</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.TABULA_SAPIENS" href="#molcrawl.core.tracking.models.DatasetType.TABULA_SAPIENS">TABULA_SAPIENS</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.DatasetType.TAPE" href="#molcrawl.core.tracking.models.DatasetType.TAPE">TAPE</a></code></li>
 </ul>
 </li>
 <li>
@@ -816,6 +978,22 @@ class ExperimentStep:
 <li><code><a title="molcrawl.core.tracking.models.ModelType.GPN" href="#molcrawl.core.tracking.models.ModelType.GPN">GPN</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.ModelType.GPT2" href="#molcrawl.core.tracking.models.ModelType.GPT2">GPT2</a></code></li>
 <li><code><a title="molcrawl.core.tracking.models.ModelType.OTHER" href="#molcrawl.core.tracking.models.ModelType.OTHER">OTHER</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="molcrawl.core.tracking.models.TaskCategory" href="#molcrawl.core.tracking.models.TaskCategory">TaskCategory</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.CELL_TYPE_ANNOTATION" href="#molcrawl.core.tracking.models.TaskCategory.CELL_TYPE_ANNOTATION">CELL_TYPE_ANNOTATION</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.FOLDABILITY" href="#molcrawl.core.tracking.models.TaskCategory.FOLDABILITY">FOLDABILITY</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.GENERATION_QUALITY" href="#molcrawl.core.tracking.models.TaskCategory.GENERATION_QUALITY">GENERATION_QUALITY</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.OTHER" href="#molcrawl.core.tracking.models.TaskCategory.OTHER">OTHER</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.PERTURBATION_RESPONSE" href="#molcrawl.core.tracking.models.TaskCategory.PERTURBATION_RESPONSE">PERTURBATION_RESPONSE</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.PROPERTY_PREDICTION" href="#molcrawl.core.tracking.models.TaskCategory.PROPERTY_PREDICTION">PROPERTY_PREDICTION</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.RETRIEVAL" href="#molcrawl.core.tracking.models.TaskCategory.RETRIEVAL">RETRIEVAL</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.SEQUENCE_ANNOTATION" href="#molcrawl.core.tracking.models.TaskCategory.SEQUENCE_ANNOTATION">SEQUENCE_ANNOTATION</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.STRUCTURAL_PROBING" href="#molcrawl.core.tracking.models.TaskCategory.STRUCTURAL_PROBING">STRUCTURAL_PROBING</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.TEXT_ALIGNMENT" href="#molcrawl.core.tracking.models.TaskCategory.TEXT_ALIGNMENT">TEXT_ALIGNMENT</a></code></li>
+<li><code><a title="molcrawl.core.tracking.models.TaskCategory.VARIANT_EFFECT" href="#molcrawl.core.tracking.models.TaskCategory.VARIANT_EFFECT">VARIANT_EFFECT</a></code></li>
 </ul>
 </li>
 </ul>

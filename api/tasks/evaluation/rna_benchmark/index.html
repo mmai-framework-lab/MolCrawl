@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.rna_benchmark API documentation</title>
-<meta name="description" content="Evaluation harness for the rna_benchmark benchmark.">
+<meta name="description" content="Migration of the legacy RNA benchmark evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,18 +36,44 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.rna_benchmark</code></h1>
 </header>
 <section id="section-intro">
-<p>Evaluation harness for the rna_benchmark benchmark.</p>
+<p>Migration of the legacy RNA benchmark evaluator.</p>
+<p>The upstream script (<code>molcrawl.evaluation.rna.rna_benchmark_evaluation</code>)
+reads a JSONL of tokenised scRNA-seq cells and reports MLM accuracy and
+perplexity.
+The new layout keeps that contract but exposes the logic
+through the adapter API so decoder and encoder architectures can share
+the same pipeline.</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.rna_benchmark.data_preparation</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>JSONL loader for the legacy rna_benchmark evaluator …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.evaluation" href="evaluation.html">molcrawl.tasks.evaluation.rna_benchmark.evaluation</a></code></dt>
 <dd>
 <div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.rna_benchmark.evaluator</a></code></dt>
+<dd>
+<div class="desc"><p>Arch-agnostic rna_benchmark evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.metrics" href="metrics.html">molcrawl.tasks.evaluation.rna_benchmark.metrics</a></code></dt>
+<dd>
+<div class="desc"><p>Aggregate per-group perplexity + accuracy.</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.prepare_h5ad_legacy" href="prepare_h5ad_legacy.html">molcrawl.tasks.evaluation.rna_benchmark.prepare_h5ad_legacy</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.splits" href="splits.html">molcrawl.tasks.evaluation.rna_benchmark.splits</a></code></dt>
+<dd>
+<div class="desc"><p>rna_benchmark groups are the split; no additional partitioning needed.</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.rna_benchmark.visualization" href="visualization.html">molcrawl.tasks.evaluation.rna_benchmark.visualization</a></code></dt>
+<dd>
+<div class="desc"><p>Per-group perplexity bar chart.</p></div>
 </dd>
 </dl>
 </section>
@@ -56,6 +82,199 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator"><code class="flex name class">
+<span>class <span class="ident">RNABenchmarkEvaluator</span></span>
+<span>(</span><span>handle: ModelHandle,<br>output_dir: Path,<br>rna_jsonl: Path,<br>config: Optional[Dict[str, Any]] = None,<br>tracker: Optional[Any] = None,<br>experiment_id: Optional[str] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RNABenchmarkEvaluator(BaseEvaluator):
+    task_name = &#34;rna_benchmark&#34;
+
+    def __init__(
+        self,
+        handle: ModelHandle,
+        output_dir: Path,
+        rna_jsonl: Path,
+        config: Optional[Dict[str, Any]] = None,
+        tracker: Optional[Any] = None,
+        experiment_id: Optional[str] = None,
+    ) -&gt; None:
+        super().__init__(
+            handle=handle,
+            output_dir=output_dir,
+            config=config,
+            tracker=tracker,
+            experiment_id=experiment_id,
+        )
+        self.rna_jsonl = Path(rna_jsonl)
+        self.datasets: Optional[List[str]] = self.config.get(&#34;datasets&#34;)
+        self.max_cells_per_group: Optional[int] = self.config.get(&#34;max_cells_per_group&#34;)
+
+    def category(self) -&gt; str:
+        return &#34;cell_type_annotation&#34;
+
+    def load_dataset(self) -&gt; Dict[str, CellGroup]:
+        groups = load_jsonl(self.rna_jsonl, datasets=self.datasets)
+        if self.max_cells_per_group is not None:
+            limit = int(self.max_cells_per_group)
+            for group in groups.values():
+                group.tokens = group.tokens[:limit]
+                group.labels = group.labels[:limit]
+        return groups
+
+    def run_predictions(self, dataset):
+        adapter = self.adapter
+        if not adapter.supports(&#34;likelihood&#34;):
+            raise RuntimeError(
+                f&#34;Adapter {type(adapter).__name__} cannot score likelihoods.&#34;
+            )
+        per_group: Dict[str, np.ndarray] = {}
+        for name, group in dataset.items():
+            strings = tokens_to_strings(group.tokens)
+            out = adapter.score_likelihood(strings)
+            per_group[name] = np.asarray(out.log_likelihood, dtype=float)
+        return {&#34;log_likelihoods&#34;: per_group}
+
+    def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
+        metrics: Dict[str, float] = {}
+        for name, ll in predictions[&#34;log_likelihoods&#34;].items():
+            summary = summarise_group(ll.tolist())
+            for key, value in summary.items():
+                metrics[f&#34;{name}.{key}&#34;] = float(value)
+        if metrics:
+            perplexities = [v for k, v in metrics.items() if k.endswith(&#34;.perplexity&#34;)]
+            if perplexities:
+                metrics[&#34;mean.perplexity&#34;] = float(np.nanmean(perplexities))
+        return metrics
+
+    def build_report(self, metrics, dataset, predictions):
+        report = super().build_report(metrics, dataset, predictions)
+        report.update({&#34;groups&#34;: {name: len(group.tokens) for name, group in dataset.items()}})
+        return report</code></pre>
+</details>
+<div class="desc"><p>Common scaffolding for evaluation tasks.</p>
+<p>Subclasses are expected to declare <code>task_name</code> as a class attribute,
+returning a short identifier that matches the task directory (for
+example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>molcrawl.tasks.evaluation._base.base_evaluator.BaseEvaluator</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.task_name"><code class="name">var <span class="ident">task_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.build_report"><code class="name flex">
+<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+    report = super().build_report(metrics, dataset, predictions)
+    report.update({&#34;groups&#34;: {name: len(group.tokens) for name, group in dataset.items()}})
+    return report</code></pre>
+</details>
+<div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
+<p>Default implementation returns just <code><a title="molcrawl.tasks.evaluation.rna_benchmark.metrics" href="metrics.html">molcrawl.tasks.evaluation.rna_benchmark.metrics</a></code> and the evaluator
+config.
+Tasks can override this to include confusion matrices,
+distribution summaries, etc.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.category"><code class="name flex">
+<span>def <span class="ident">category</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def category(self) -&gt; str:
+    return &#34;cell_type_annotation&#34;</code></pre>
+</details>
+<div class="desc"><p>Return the high-level task category.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.compute_metrics"><code class="name flex">
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset, predictions) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
+    metrics: Dict[str, float] = {}
+    for name, ll in predictions[&#34;log_likelihoods&#34;].items():
+        summary = summarise_group(ll.tolist())
+        for key, value in summary.items():
+            metrics[f&#34;{name}.{key}&#34;] = float(value)
+    if metrics:
+        perplexities = [v for k, v in metrics.items() if k.endswith(&#34;.perplexity&#34;)]
+        if perplexities:
+            metrics[&#34;mean.perplexity&#34;] = float(np.nanmean(perplexities))
+    return metrics</code></pre>
+</details>
+<div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.load_dataset"><code class="name flex">
+<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> Dict[str, <a title="molcrawl.tasks.evaluation.rna_benchmark.data_preparation.CellGroup" href="data_preparation.html#molcrawl.tasks.evaluation.rna_benchmark.data_preparation.CellGroup">CellGroup</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_dataset(self) -&gt; Dict[str, CellGroup]:
+    groups = load_jsonl(self.rna_jsonl, datasets=self.datasets)
+    if self.max_cells_per_group is not None:
+        limit = int(self.max_cells_per_group)
+        for group in groups.values():
+            group.tokens = group.tokens[:limit]
+            group.labels = group.labels[:limit]
+    return groups</code></pre>
+</details>
+<div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.run_predictions"><code class="name flex">
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_predictions(self, dataset):
+    adapter = self.adapter
+    if not adapter.supports(&#34;likelihood&#34;):
+        raise RuntimeError(
+            f&#34;Adapter {type(adapter).__name__} cannot score likelihoods.&#34;
+        )
+    per_group: Dict[str, np.ndarray] = {}
+    for name, group in dataset.items():
+        strings = tokens_to_strings(group.tokens)
+        out = adapter.score_likelihood(strings)
+        per_group[name] = np.asarray(out.log_likelihood, dtype=float)
+    return {&#34;log_likelihoods&#34;: per_group}</code></pre>
+</details>
+<div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -72,6 +291,26 @@ el.replaceWith(d);
 <ul>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.rna_benchmark.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.evaluation" href="evaluation.html">molcrawl.tasks.evaluation.rna_benchmark.evaluation</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.rna_benchmark.evaluator</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.metrics" href="metrics.html">molcrawl.tasks.evaluation.rna_benchmark.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.prepare_h5ad_legacy" href="prepare_h5ad_legacy.html">molcrawl.tasks.evaluation.rna_benchmark.prepare_h5ad_legacy</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.splits" href="splits.html">molcrawl.tasks.evaluation.rna_benchmark.splits</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.visualization" href="visualization.html">molcrawl.tasks.evaluation.rna_benchmark.visualization</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator">RNABenchmarkEvaluator</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.build_report" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.build_report">build_report</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.category" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.category">category</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.compute_metrics" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.compute_metrics">compute_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.load_dataset" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.load_dataset">load_dataset</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.run_predictions" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.run_predictions">run_predictions</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.task_name" href="#molcrawl.tasks.evaluation.rna_benchmark.RNABenchmarkEvaluator.task_name">task_name</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

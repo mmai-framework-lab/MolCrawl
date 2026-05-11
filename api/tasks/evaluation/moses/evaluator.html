@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.moses.evaluator API documentation</title>
+<meta name="description" content="Generation-quality evaluator for compound decoders.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.moses.evaluator</code></h1>
+</header>
+<section id="section-intro">
+<p>Generation-quality evaluator for compound decoders.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator"><code class="flex name class">
+<span>class <span class="ident">MOSESEvaluator</span></span>
+<span>(</span><span>handle: ModelHandle,<br>output_dir: Path,<br>reference_dir: Path,<br>config: Optional[Dict[str, Any]] = None,<br>tracker: Optional[Any] = None,<br>experiment_id: Optional[str] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MOSESEvaluator(BaseEvaluator):
+    &#34;&#34;&#34;Evaluate SMILES generation quality on the MOSES benchmark.&#34;&#34;&#34;
+
+    task_name = &#34;moses&#34;
+
+    def __init__(
+        self,
+        handle: ModelHandle,
+        output_dir: Path,
+        reference_dir: Path,
+        config: Optional[Dict[str, Any]] = None,
+        tracker: Optional[Any] = None,
+        experiment_id: Optional[str] = None,
+    ) -&gt; None:
+        super().__init__(
+            handle=handle,
+            output_dir=output_dir,
+            config=config,
+            tracker=tracker,
+            experiment_id=experiment_id,
+        )
+        self.reference_dir = Path(reference_dir)
+        self.num_samples: int = int(self.config.get(&#34;num_samples&#34;, 30000))
+        self.temperature: float = float(self.config.get(&#34;temperature&#34;, 1.0))
+        self.top_k: Optional[int] = self.config.get(&#34;top_k&#34;)
+        self.max_new_tokens: int = int(self.config.get(&#34;max_new_tokens&#34;, 128))
+        self.reference_limit: Optional[int] = self.config.get(&#34;reference_limit&#34;)
+        self.enable_extended: bool = bool(self.config.get(&#34;enable_extended_metrics&#34;, True))
+
+    def category(self) -&gt; str:
+        return &#34;generation_quality&#34;
+
+    def load_dataset(self) -&gt; Dict[str, List[str]]:
+        ensure_reference_files(self.reference_dir)
+        train_smiles = load_reference_smiles(
+            self.reference_dir / &#34;train.csv&#34;, limit=self.reference_limit
+        )
+        return {&#34;reference&#34;: train_smiles}
+
+    def run_predictions(self, dataset: Dict[str, List[str]]):
+        adapter = self.adapter
+        if not adapter.supports(&#34;generation&#34;):
+            raise RuntimeError(
+                f&#34;Adapter {type(adapter).__name__} does not support generation; &#34;
+                &#34;cannot evaluate MOSES.&#34;
+            )
+        logger.info(&#34;Sampling %d molecules (T=%.2f, top_k=%s)&#34;, self.num_samples, self.temperature, self.top_k)
+        gen_out = adapter.generate(
+            num_samples=self.num_samples,
+            temperature=self.temperature,
+            top_k=self.top_k,
+            max_new_tokens=self.max_new_tokens,
+        )
+        return {
+            &#34;generated&#34;: list(gen_out.sequences),
+            &#34;sampling_params&#34;: gen_out.sampling_params,
+        }
+
+    def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
+        generated = predictions[&#34;generated&#34;]
+        reference = dataset[&#34;reference&#34;]
+        metrics = distribution_metrics(generated, reference)
+        if self.enable_extended:
+            extra = optional_extended_metrics(generated, reference)
+            if extra:
+                metrics.update(extra)
+        return metrics
+
+    def build_report(self, metrics, dataset, predictions):
+        report = super().build_report(metrics, dataset, predictions)
+        report.update(
+            {
+                &#34;num_reference&#34;: len(dataset[&#34;reference&#34;]),
+                &#34;num_generated&#34;: len(predictions[&#34;generated&#34;]),
+                &#34;sampling_params&#34;: predictions[&#34;sampling_params&#34;],
+            }
+        )
+        return report</code></pre>
+</details>
+<div class="desc"><p>Evaluate SMILES generation quality on the MOSES benchmark.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>molcrawl.tasks.evaluation._base.base_evaluator.BaseEvaluator</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.task_name"><code class="name">var <span class="ident">task_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.build_report"><code class="name flex">
+<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+    report = super().build_report(metrics, dataset, predictions)
+    report.update(
+        {
+            &#34;num_reference&#34;: len(dataset[&#34;reference&#34;]),
+            &#34;num_generated&#34;: len(predictions[&#34;generated&#34;]),
+            &#34;sampling_params&#34;: predictions[&#34;sampling_params&#34;],
+        }
+    )
+    return report</code></pre>
+</details>
+<div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
+<p>Default implementation returns just <code>metrics</code> and the evaluator
+config.
+Tasks can override this to include confusion matrices,
+distribution summaries, etc.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.category"><code class="name flex">
+<span>def <span class="ident">category</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def category(self) -&gt; str:
+    return &#34;generation_quality&#34;</code></pre>
+</details>
+<div class="desc"><p>Return the high-level task category.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.compute_metrics"><code class="name flex">
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset, predictions) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
+    generated = predictions[&#34;generated&#34;]
+    reference = dataset[&#34;reference&#34;]
+    metrics = distribution_metrics(generated, reference)
+    if self.enable_extended:
+        extra = optional_extended_metrics(generated, reference)
+        if extra:
+            metrics.update(extra)
+    return metrics</code></pre>
+</details>
+<div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.load_dataset"><code class="name flex">
+<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> Dict[str, List[str]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_dataset(self) -&gt; Dict[str, List[str]]:
+    ensure_reference_files(self.reference_dir)
+    train_smiles = load_reference_smiles(
+        self.reference_dir / &#34;train.csv&#34;, limit=self.reference_limit
+    )
+    return {&#34;reference&#34;: train_smiles}</code></pre>
+</details>
+<div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.run_predictions"><code class="name flex">
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: Dict[str, List[str]])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_predictions(self, dataset: Dict[str, List[str]]):
+    adapter = self.adapter
+    if not adapter.supports(&#34;generation&#34;):
+        raise RuntimeError(
+            f&#34;Adapter {type(adapter).__name__} does not support generation; &#34;
+            &#34;cannot evaluate MOSES.&#34;
+        )
+    logger.info(&#34;Sampling %d molecules (T=%.2f, top_k=%s)&#34;, self.num_samples, self.temperature, self.top_k)
+    gen_out = adapter.generate(
+        num_samples=self.num_samples,
+        temperature=self.temperature,
+        top_k=self.top_k,
+        max_new_tokens=self.max_new_tokens,
+    )
+    return {
+        &#34;generated&#34;: list(gen_out.sequences),
+        &#34;sampling_params&#34;: gen_out.sampling_params,
+    }</code></pre>
+</details>
+<div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.moses" href="index.html">molcrawl.tasks.evaluation.moses</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator">MOSESEvaluator</a></code></h4>
+<ul class="two-column">
+<li><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.build_report" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.build_report">build_report</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.category" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.category">category</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.compute_metrics" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.compute_metrics">compute_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.load_dataset" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.load_dataset">load_dataset</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.run_predictions" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.run_predictions">run_predictions</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.task_name" href="#molcrawl.tasks.evaluation.moses.evaluator.MOSESEvaluator.task_name">task_name</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
