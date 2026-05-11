@@ -1,0 +1,6 @@
+task: replogle_perturb_seq
+modality: rna
+arch: rnaformer
+size: small
+test_fraction: 0.2
+seed: 0

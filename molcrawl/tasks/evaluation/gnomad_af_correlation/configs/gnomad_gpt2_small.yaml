@@ -1,0 +1,5 @@
+task: gnomad_af_correlation
+modality: genome_sequence
+arch: gpt2
+size: small
+context_length: 512

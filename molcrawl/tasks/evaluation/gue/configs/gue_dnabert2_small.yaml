@@ -1,0 +1,4 @@
+task: gue
+modality: genome_sequence
+arch: dnabert2
+size: small

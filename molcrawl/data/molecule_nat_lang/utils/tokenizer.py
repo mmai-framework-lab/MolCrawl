@@ -11,7 +11,7 @@ except ModuleNotFoundError:
 try:
     from rdchiral.chiral import copy_chirality
     from rdkit import Chem, RDLogger
-    from rdkit.Chem.AllChem import AssignStereochemistry
+    from rdkit.Chem.AllChem import AssignStereochemistry  # type: ignore[attr-defined]
 except ModuleNotFoundError:
     copy_chirality = None
     Chem = None
@@ -26,7 +26,7 @@ except ModuleNotFoundError:
 from molcrawl.core.base import TrainableTokenizer
 
 if RDLogger is not None:
-    RDLogger.DisableLog("rdApp.*")
+    RDLogger.DisableLog("rdApp.*")  # type: ignore[attr-defined]
 logger = logging.getLogger(__name__)
 
 

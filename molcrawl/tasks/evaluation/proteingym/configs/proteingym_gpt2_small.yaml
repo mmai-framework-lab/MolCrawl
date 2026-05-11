@@ -1,0 +1,5 @@
+task: proteingym
+modality: protein_sequence
+arch: gpt2
+size: small
+context_length: 1024

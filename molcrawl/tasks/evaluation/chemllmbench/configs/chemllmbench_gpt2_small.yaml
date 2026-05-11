@@ -1,0 +1,6 @@
+task: chemllmbench
+modality: molecule_nat_lang
+arch: gpt2
+size: small
+max_new_tokens: 128
+temperature: 0.0

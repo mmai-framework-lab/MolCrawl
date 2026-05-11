@@ -1,0 +1,6 @@
+task: clinvar
+modality: genome_sequence
+arch: gpt2
+size: small
+context_length: 512
+max_examples: null

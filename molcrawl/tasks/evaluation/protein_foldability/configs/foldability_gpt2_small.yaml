@@ -1,0 +1,7 @@
+task: protein_foldability
+modality: protein_sequence
+arch: gpt2
+size: small
+num_samples: 100
+temperature: 1.0
+max_new_tokens: 256

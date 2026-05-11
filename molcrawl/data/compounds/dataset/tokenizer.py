@@ -224,7 +224,7 @@ def compute_tokenization_statistics(
 
                 # Generate histogram
                 plt.figure()
-                plt.hist(series_length, bins=np.arange(0, 200, 1))
+                plt.hist(series_length, bins=np.arange(0, 200, 1).tolist())
                 plt.xlabel(f"Length of tokenized {display_name}")
                 plt.title(f"[{info.name}] Distribution of tokenized {display_name} lengths")
 

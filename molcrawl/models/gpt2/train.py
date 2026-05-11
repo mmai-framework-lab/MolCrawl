@@ -455,11 +455,11 @@ if __name__ == "__main__":
     if compile:
         print("compiling the model... (takes a ~minute)")
         unoptimized_model = model
-        model = torch.compile(model)  # requires PyTorch 2.0
+        model = torch.compile(model)  # type: ignore[assignment] # requires PyTorch 2.0
 
     # wrap model into DDP container
     if ddp:
-        model = DDP(model, device_ids=[ddp_local_rank])
+        model = DDP(model, device_ids=[ddp_local_rank])  # type: ignore[assignment]
 
 
 # helps estimate an arbitrarily accurate loss over either split using many batches
@@ -701,7 +701,7 @@ if __name__ == "__main__":
 
             if should_save_checkpoint and iter_num > 0:
                 checkpoint = {
-                    "model": raw_model.state_dict(),
+                    "model": raw_model.state_dict(),  # type: ignore[union-attr]
                     "optimizer": optimizer.state_dict(),
                     "model_args": model_args,
                     "iter_num": iter_num,
@@ -714,7 +714,7 @@ if __name__ == "__main__":
                 if save_hf_checkpoints:
                     checkpoint_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
                     save_checkpoint_hf(
-                        raw_model.state_dict(),
+                        raw_model.state_dict(),  # type: ignore[union-attr]
                         optimizer.state_dict(),
                         model_args,
                         iter_num,
@@ -758,7 +758,7 @@ if __name__ == "__main__":
                 # the official way to do this is with model.no_sync() context manager, but
                 # I really dislike that this bloats the code and forces us to repeat code
                 # looking at the source of that context manager, it just toggles this variable
-                model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1
+                model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1  # type: ignore[assignment]
             with ctx:
                 logits, loss = model(X, Y)
                 loss = loss / gradient_accumulation_steps  # scale the loss to account for gradient accumulation
@@ -785,7 +785,7 @@ if __name__ == "__main__":
             # scale up to undo the division above, approximating the true total loss (exact would have been a sum)
             lossf = loss.item() * gradient_accumulation_steps
             if local_iter_num >= 5:  # let the training loop settle a bit
-                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
+                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)  # type: ignore[union-attr,operator]
                 running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
             print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
             if writer is not None:

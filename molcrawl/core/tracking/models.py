@@ -51,6 +51,39 @@ class DatasetType(str, Enum):
     CLINVAR = "clinvar"
     OMIM = "omim"
     COSMIC = "cosmic"
+    MOLECULENET = "moleculenet"
+    MOSES = "moses"
+    CHEMBL_SCAFFOLD = "chembl_scaffold_heldout"
+    TAPE = "tape"
+    DEEPLOC = "deeploc"
+    PROTEIN_FOLDABILITY = "protein_foldability"
+    GUE = "gue"
+    GNOMAD = "gnomad_af_correlation"
+    TABULA_SAPIENS = "tabula_sapiens"
+    PBMC10X = "pbmc10x"
+    REPLOGLE_PERTURB_SEQ = "replogle_perturb_seq"
+    CHEBI20 = "chebi20"
+    CHEMLLMBENCH = "chemllmbench"
+    OTHER = "other"
+
+
+class TaskCategory(str, Enum):
+    """High-level evaluation task categories.
+
+    These map 1:1 to the 3-axis report layout used by the weekly snapshot
+    generator (modality x arch x task_category).
+    """
+
+    VARIANT_EFFECT = "variant_effect"
+    PROPERTY_PREDICTION = "property_prediction"
+    GENERATION_QUALITY = "generation_quality"
+    CELL_TYPE_ANNOTATION = "cell_type_annotation"
+    TEXT_ALIGNMENT = "text_alignment"
+    STRUCTURAL_PROBING = "structural_probing"
+    SEQUENCE_ANNOTATION = "sequence_annotation"
+    RETRIEVAL = "retrieval"
+    FOLDABILITY = "foldability"
+    PERTURBATION_RESPONSE = "perturbation_response"
     OTHER = "other"
 
 

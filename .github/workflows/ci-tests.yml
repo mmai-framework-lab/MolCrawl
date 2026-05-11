@@ -32,7 +32,7 @@ jobs:
           pip install pytest pytest-benchmark pytest-cov pytest-xdist
           pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           pip install transformers==4.45.1 accelerate==0.34.2
-          pip install pyarrow
+          pip install pyarrow pandas scikit-learn scipy
           pip install rdkit-pypi
           pip install -e .
       - name: Run unit tests

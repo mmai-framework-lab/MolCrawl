@@ -55,7 +55,7 @@ def binning(row: Union[np.ndarray, torch.Tensor], n_bins: int) -> Union[np.ndarr
 
     if row.max() == 0:
         logging.warning("The input data contains row of zeros. Please make sure this is expected.")
-        return np.zeros_like(row, dtype=dtype) if return_np else torch.zeros_like(row, dtype=dtype)
+        return np.zeros_like(row, dtype=dtype) if return_np else torch.zeros_like(row, dtype=dtype)  # type: ignore[arg-type]
 
     if row.min() <= 0:
         non_zero_ids = row.nonzero()
@@ -67,4 +67,4 @@ def binning(row: Union[np.ndarray, torch.Tensor], n_bins: int) -> Union[np.ndarr
     else:
         bins = np.quantile(row, np.linspace(0, 1, n_bins - 1))
         binned_row = _digitize(row, bins)
-    return torch.from_numpy(binned_row) if not return_np else binned_row.astype(dtype)
+    return torch.from_numpy(binned_row) if not return_np else binned_row.astype(dtype)  # type: ignore[arg-type]
