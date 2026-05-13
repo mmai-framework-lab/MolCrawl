@@ -290,7 +290,12 @@ if __name__ == "__main__":
         metric_for_best_model="eval_loss",
         greater_is_better=False,
         remove_unused_columns=False,
-        save_safetensors=False,  # Use pickle to preserve tied weights on resume
+        # save_safetensors=True is the HF default; tied weights are restored
+        # at resume time by molcrawl.core.utils.trainer_utils.install_tie_weights_on_resume.
+        # Setting this to False would break resume from existing safetensors-only
+        # checkpoints (HF Trainer 4.45 _load_from_checkpoint requires args.save_safetensors=True
+        # to enter the safetensors load branch).
+        save_safetensors=True,
     )
 
     # Initialize Trainer

@@ -338,7 +338,12 @@ if __name__ == "__main__":
         metric_for_best_model="eval_loss",  # Use eval_loss to determine best model
         greater_is_better=False,  # Lower loss is better
         save_total_limit=5,  # Keep only the 5 most recent checkpoints
-        save_safetensors=False,  # Use pickle to preserve tied weights on resume
+        # save_safetensors=True is the HF default; tied weights are restored
+        # at resume time by molcrawl.core.utils.trainer_utils.install_tie_weights_on_resume.
+        # Setting this to False would break resume from existing safetensors-only
+        # checkpoints (HF Trainer 4.45 _load_from_checkpoint requires args.save_safetensors=True
+        # to enter the safetensors load branch).
+        save_safetensors=True,
     )
 
     # Check if we should use custom dataset loading (for RNA data)
