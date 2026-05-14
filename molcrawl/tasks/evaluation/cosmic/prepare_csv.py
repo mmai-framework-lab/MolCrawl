@@ -29,7 +29,6 @@ larger run, a local FASTA path is straightforward to bolt on.
 from __future__ import annotations
 
 import argparse
-import csv
 import gzip
 import logging
 import random
@@ -37,7 +36,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import pandas as pd
 
@@ -102,7 +101,7 @@ def _fetch_flank(chrom: str, pos: int, flank: int, session: "requests.Session") 
 def _stratified_subsample(df: pd.DataFrame, per_class: int, seed: int) -> pd.DataFrame:
     rng = random.Random(seed)
     parts: List[pd.DataFrame] = []
-    for tier_label, sub in df.groupby("MUTATION_SIGNIFICANCE_TIER"):
+    for _tier_label, sub in df.groupby("MUTATION_SIGNIFICANCE_TIER"):
         if len(sub) <= per_class:
             parts.append(sub)
         else:

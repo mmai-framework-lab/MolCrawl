@@ -210,7 +210,7 @@ class TAPEEvaluator(BaseEvaluator):
         # leading cls/bos token(s) and we drop them.
         X_train_parts: List[Any] = []
         y_train_parts: List[int] = []
-        for i, (seq, hidden, labels, mask) in enumerate(
+        for _i, (seq, hidden, labels, mask) in enumerate(
             zip(train_seqs, train_per_res, train_labels, train_masks)
         ):
             X_p, y_p, _ = _align_and_mask(hidden, labels, mask, seq_len=len(seq))

@@ -402,7 +402,6 @@ class HfMlmAdapter(ModelAdapter):
         """
         if self.model is None:
             raise RuntimeError("HfMlmAdapter.load() must be called first")
-        import numpy as np
         import torch
 
         encoder = getattr(self.model, "base_model", self.model)

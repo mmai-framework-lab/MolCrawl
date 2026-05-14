@@ -45,7 +45,6 @@ def prepare_pairs_csv(
         raise RuntimeError(
             "datasets is required; install via `pip install datasets`."
         ) from exc
-    import pandas as pd
 
     source_dir = Path(source_dir)
     if not source_dir.exists():
