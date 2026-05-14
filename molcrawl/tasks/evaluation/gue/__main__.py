@@ -24,7 +24,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--task", required=True, choices=all_task_names())
     parser.add_argument("--task-dir", required=True)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help="Class-balanced subsample size applied to every split.",
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for accuracy/f1_macro/mcc/f1_binary 95%% CIs (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=16,
+        help="Per-class correct + wrong rows shown in predictions.txt.",
+    )
     return parser
 
 
@@ -44,7 +62,12 @@ def main(argv: Optional[list[str]] = None) -> None:
         output_dir=Path(args.output_dir),
         task_dir=Path(args.task_dir),
         task_spec=get_spec(args.task),
-        config={"max_examples": args.max_examples},
+        config={
+            "max_examples": args.max_examples,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
+        },
     )
     result = evaluator.run()
     print(f"metrics: {result.metrics}")

@@ -23,7 +23,42 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gnomad-data", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--context-length", type=int, default=512)
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--n-per-bin",
+        type=int,
+        default=None,
+        help=(
+            "AF-log-bin stratified sample size per bin. Omit to evaluate on "
+            "the full dataset."
+        ),
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for reproducibility"
+    )
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=200,
+        help="Bootstrap resamples for the 95 %% CI (0 disables).",
+    )
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help=(
+            "[deprecated] Legacy total-row cap; re-interpreted as "
+            "n_per_bin = max_examples // 6."
+        ),
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=20,
+        help=(
+            "Number of variants rendered in the predictions.txt narrative. "
+            "Set 0 to skip the preview; predictions.jsonl is always produced."
+        ),
+    )
     return parser
 
 
@@ -42,7 +77,14 @@ def main(argv: Optional[list[str]] = None) -> None:
         handle=handle,
         output_dir=Path(args.output_dir),
         gnomad_path=Path(args.gnomad_data),
-        config={"context_length": args.context_length, "max_examples": args.max_examples},
+        config={
+            "context_length": args.context_length,
+            "n_per_bin": args.n_per_bin,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "max_examples": args.max_examples,
+            "predictions_preview_count": args.predictions_preview_count,
+        },
     )
     result = evaluator.run()
     print(f"metrics: {result.metrics}")

@@ -1,16 +1,29 @@
-"""ChemLLMBench evaluator - one sub-task per run."""
+"""ChemLLMBench evaluator - one sub-task per run.
+
+足固め upgrade adds:
+
+- reproducible random subsample (replaces ``examples[:max_examples]``)
+- per-prompt predictions log (jsonl + correct/wrong narrative TXT)
+- ``num_examples`` and ``seed`` surfaced in the report
+- (NB: bootstrap CIs are NOT applied here because three of the four
+  metric types — exact match on small N, BLEU/ROUGE — already collapse
+  to either 0 or 1 on small samples; bootstrap on N=20 produces
+  uninterpretable CIs.)
+"""
 
 from __future__ import annotations
 
 import logging
+import random
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from molcrawl.tasks.evaluation import _adapters  # noqa: F401 - registers adapters
 from molcrawl.tasks.evaluation._base import BaseEvaluator, ModelHandle
 
-from .data_preparation import TASK_TYPE, TASKS, load_jsonl
+from .data_preparation import TASK_TYPE, TASKS, ChemLLMBenchExample, load_jsonl
 from .metrics import exact_match, regression_metric, smiles_pack, text_pack
+from .predictions_log import write_predictions
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +54,26 @@ class ChemLLMBenchEvaluator(BaseEvaluator):
         self.jsonl_path = Path(jsonl_path)
         self.max_new_tokens: int = int(self.config.get("max_new_tokens", 128))
         self.temperature: float = float(self.config.get("temperature", 0.0))
+        self.max_examples: Optional[int] = self.config.get("max_examples")
+        self.seed: int = int(self.config.get("seed", 42))
+        self.predictions_preview_count: int = int(
+            self.config.get("predictions_preview_count", 20)
+        )
 
     def category(self) -> str:
         return "text_alignment"
 
-    def load_dataset(self):
+    def load_dataset(self) -> List[ChemLLMBenchExample]:
         examples = load_jsonl(self.jsonl_path)
-        max_examples = self.config.get("max_examples")
-        if max_examples is not None:
-            examples = examples[: int(max_examples)]
+        if self.max_examples is not None and self.max_examples < len(examples):
+            rng = random.Random(self.seed)
+            indices = sorted(rng.sample(range(len(examples)), int(self.max_examples)))
+            examples = [examples[i] for i in indices]
+            logger.info(
+                "Random subsample to %d examples (seed=%d)",
+                len(examples),
+                self.seed,
+            )
         return examples
 
     def run_predictions(self, dataset):
@@ -84,7 +108,24 @@ class ChemLLMBenchEvaluator(BaseEvaluator):
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
-        report.update({"subtask": self.task, "task_type": TASK_TYPE[self.task], "num_examples": int(len(dataset))})
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            examples=dataset,
+            predictions=predictions["predictions"],
+            task=self.task,
+            task_type=TASK_TYPE[self.task],
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report.update(
+            {
+                "subtask": self.task,
+                "task_type": TASK_TYPE[self.task],
+                "num_examples": int(len(dataset)),
+                "seed": self.seed,
+                "artefacts": artefacts,
+            }
+        )
         return report
 
 

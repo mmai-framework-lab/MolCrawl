@@ -23,7 +23,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rna-jsonl", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--datasets", nargs="*", default=None)
-    parser.add_argument("--max-cells-per-group", type=int, default=None)
+    parser.add_argument(
+        "--cells-per-group",
+        type=int,
+        default=None,
+        help="Reproducibly subsample each tissue group to this many cells.",
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for per-group perplexity 95%% CI (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=6,
+        help="Per-tissue best/worst-fit cells shown in predictions.txt.",
+    )
     return parser
 
 
@@ -44,7 +62,10 @@ def main(argv: Optional[list[str]] = None) -> None:
         rna_jsonl=Path(args.rna_jsonl),
         config={
             "datasets": args.datasets,
-            "max_cells_per_group": args.max_cells_per_group,
+            "cells_per_group": args.cells_per_group,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

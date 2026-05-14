@@ -25,7 +25,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--smiles-column", default="smiles")
     parser.add_argument("--caption-column", default="caption")
     parser.add_argument("--template", default="{caption}\n{smiles}")
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help="Combined-length-stratified subsample (replaces df.head slicing).",
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for perplexity 95%% CI (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=20,
+        help="Per-evaluation best/worst-fit pairs shown in predictions.txt.",
+    )
     return parser
 
 
@@ -49,6 +67,9 @@ def main(argv: Optional[list[str]] = None) -> None:
             "caption_column": args.caption_column,
             "template": args.template,
             "max_examples": args.max_examples,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

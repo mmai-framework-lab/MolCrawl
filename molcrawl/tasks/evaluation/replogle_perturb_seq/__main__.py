@@ -24,7 +24,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--test-fraction", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help="Delta-strength-aware subsample (replaces df.head() slicing).",
+    )
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for per-perturbation Spearman/Pearson 95%% CIs (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=16,
+        help="Per-evaluation best/worst-fit perturbations shown in predictions.txt.",
+    )
     return parser
 
 
@@ -43,7 +60,13 @@ def main(argv: Optional[list[str]] = None) -> None:
         handle=handle,
         output_dir=Path(args.output_dir),
         replogle_path=Path(args.replogle_data),
-        config={"test_fraction": args.test_fraction, "seed": args.seed, "max_examples": args.max_examples},
+        config={
+            "test_fraction": args.test_fraction,
+            "seed": args.seed,
+            "max_examples": args.max_examples,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
+        },
     )
     result = evaluator.run()
     print(f"metrics: {result.metrics}")
