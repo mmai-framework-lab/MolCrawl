@@ -183,57 +183,50 @@ cd /path/to/riken-dataset-fundational-model
 
 ## 🚀 AIモデル評価スクリプト
 
-### BERTモデル評価
+評価ハーネスはアーキ非依存の単一レイアウト
+（`molcrawl/tasks/evaluation/<task>/`）に移行しました。各タスクは
+`__main__.py` CLI と薄い `workflows/eval-<task>.sh` ドライバを持ち、
+データ取得は `workflows/data/eval-data-<task>.sh` 配下にあります。
+認証必須のダウンロード（COSMIC / OMIM / ゲートされた HuggingFace 等）
+はリポジトリ直下の `.env` から読み込まれます。テンプレートは
+[`.env.example`](../.env.example) を参照。
 
-| スクリプト                          | 目的                                     | データセット | データセットサイズ           | 出力先                                                           |
-| ----------------------------------- | ---------------------------------------- | ------------ | ---------------------------- | ---------------------------------------------------------------- |
-| `run_bert_proteingym_evaluation.sh` | BERTタンパク質適応度予測（統合版）       | ProteinGym   | 可変                         | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_*` |
-| `run_bert_clinvar_evaluation.sh`    | BERTバリアント病原性予測                 | ClinVar      | 2000件（陽性1000+陰性1000）  | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_*`     |
+| ワークフロー                              | タスクパッケージ                                        | モダリティ        | 備考                                       |
+| ---------------------------------------- | ------------------------------------------------------- | ----------------- | ------------------------------------------- |
+| `eval-clinvar.sh`                        | `molcrawl.tasks.evaluation.clinvar`                     | genome_sequence   | 陽性/陰性バランスサンプリング + bootstrap CI |
+| `eval-gnomad.sh`                         | `molcrawl.tasks.evaluation.gnomad_af_correlation`       | genome_sequence   | AF-bin 層化サンプリング                      |
+| `eval-gue.sh`                            | `molcrawl.tasks.evaluation.gue`                         | genome_sequence   | 28 sub-task                                  |
+| `eval-proteingym.sh`                     | `molcrawl.tasks.evaluation.proteingym`                  | protein_sequence  | 参照 vs 変異の尤度差                         |
+| `eval-deeploc.sh`                        | `molcrawl.tasks.evaluation.deeploc`                     | protein_sequence  | 細胞内局在 10 クラス分類                     |
+| `eval-tape.sh`                           | `molcrawl.tasks.evaluation.tape`                        | protein_sequence  | fluorescence / stability / remote_homology / SS3 / SS8 |
+| `eval-protein-foldability.sh`            | `molcrawl.tasks.evaluation.protein_foldability`         | protein_sequence  | 構造非依存の foldability 代理指標             |
+| `eval-moleculenet.sh`                    | `molcrawl.tasks.evaluation.moleculenet`                 | compounds         | 12 標準サブセット（property prediction）     |
+| `eval-moses.sh`                          | `molcrawl.tasks.evaluation.moses`                       | compounds         | validity / uniqueness / novelty / int. div. |
+| `eval-chembl-heldout.sh`                 | `molcrawl.tasks.evaluation.chembl_scaffold_heldout`     | compounds         | scaffold-disjoint perplexity                |
+| `eval-rna-benchmark.sh`                  | `molcrawl.tasks.evaluation.rna_benchmark`               | rna               | 組織ごとの PLL                               |
+| `eval-tabula-sapiens.sh`                 | `molcrawl.tasks.evaluation.tabula_sapiens`              | rna               | cell-type annotation                        |
+| `eval-replogle-perturb-seq.sh`           | `molcrawl.tasks.evaluation.replogle_perturb_seq`        | rna               | perturbation response                       |
+| `eval-molecule-nat-lang.sh`              | `molcrawl.tasks.evaluation.molecule_nat_lang`           | molecule_nat_lang | molecule / caption ペア尤度                  |
+| `eval-chemllmbench.sh`                   | `molcrawl.tasks.evaluation.chemllmbench`                | molecule_nat_lang | 9 sub-task（うち 3 配線済み）                |
+| `eval-chebi20.sh`                        | `molcrawl.tasks.evaluation.chebi20`                     | molecule_nat_lang | 双方向生成評価                               |
+| (認証必須) `eval-data-cosmic.sh`          | `molcrawl.tasks.evaluation.cosmic`                     | genome_sequence   | COSMIC_EMAIL / COSMIC_PASSWORD              |
+| (認証必須) `eval-data-omim.sh`            | `molcrawl.tasks.evaluation.omim`                       | genome_sequence   | OMIM_API_KEY                                |
 
-**注意**：
+**共通機能**：
 
-- BERT ProteinGymスクリプトは、データ準備・評価・可視化の3フェーズを統合した単一スクリプト
-- **ClinVarバランスサンプリング**：病原性（pathogenic）1000件と良性（benign）1000件をランダム抽出してバランスの取れた評価を実現
+- **Bootstrap 95 % CI** をリサンプリング可能なメトリクスに対し点推定とともに表示
+- **予測ログ**：すべての評価器が `predictions.jsonl`（per-row）と
+  `predictions.txt`（best/worst-fit narrative）を `metrics.json` /
+  `REPORT.md` の隣に出力
+- **冪等な matrix runner**：`workflows/eval-matrix-bench.sh` は
+  (評価器 × アーキ × サイズ) sweep を駆動し、REPORT.md が既存の combo は skip
+- **ダッシュボード**：`python -m molcrawl.tasks.evaluation._dashboard`
+  で REPORT.md を巡回し `docs-src/assets/data/evaluations.json` を再生成
 
-### GPT-2モデル評価
-
-#### ゲノム配列
-
-| スクリプト                          | 目的                       | データセット | データセットサイズ           | デフォルトデバイス | 出力先                                                             |
-| ----------------------------------- | -------------------------- | ------------ | ---------------------------- | -------------- | ------------------------------------------------------------------ |
-| `run_gpt2_clinvar_evaluation.sh`    | 病原性バリアント予測       | ClinVar      | 2000件（陽性1000+陰性1000） | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*`            |
-| `run_gpt2_cosmic_evaluation.sh`     | がん関連バリアント分析     | COSMIC       | サンプル                    | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*`             |
-| `run_gpt2_omim_evaluation_dummy.sh` | 遺伝性疾患予測（テスト用） | OMIM         | サンプル                    | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation`      |
-| `run_gpt2_omim_evaluation_real.sh`  | 遺伝性疾患予測（本番用）   | OMIM         | 実データ                    | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
-
-**注意**：
-
-- `_dummy.sh`：開発・テスト用サンプルデータで素早く動作確認
-- `_real.sh`：本番評価用。OMIM公式データベースから実データを取得（認証必要）
-- **GPU最適化**：すべてのスクリプトはデフォルトでGPU (cuda)を使用（CPUより約4倍高速）
-- **既存データ再利用**：`run_gpt2_omim_evaluation_real.sh`は`--existing_omim_dir`オプションでダウンロード済みデータを再利用可能
-- **ClinVarバランスサンプリング**：病原性（pathogenic）1000件と良性（benign）1000件をランダム抽出してバランスの取れた評価を実現
-
-#### タンパク質配列
-
-| スクリプト                           | 目的                           | データセット | デフォルトモデル       | デフォルトデバイス | 出力先                                                                     |
-| ------------------------------------ | ------------------------------ | ------------ | ---------------------- | -------------- | -------------------------------------------------------------------------- |
-| `run_gpt2_proteingym_evaluation.sh`  | タンパク質適応度予測（統合版） | ProteinGym   | 指定必須               | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym`             |
-| `run_gpt2_protein_classification.sh` | タンパク質配列分類（統合版）   | Custom       | protein_sequence-small | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
-
-**注意**：
-
-- **統合スクリプト**：データ準備・評価・可視化の3フェーズを統合した単一スクリプト
-- **デフォルトモデル**：`run_gpt2_protein_classification.sh`はモデル指定なしで実行可能（`gpt2-output/protein_sequence-small/ckpt.pt`使用）
-- **サンプルデータ作成**：`run_gpt2_proteingym_evaluation.sh --create-sample`で推奨データセットを自動ダウンロード
-- **GPU最適化**：デフォルトでGPU使用、`--device cpu`でCPU実行に切り替え可能
-- **可視化充実**：10種類以上のグラフとHTML形式の詳細レポートを自動生成
-
-#### RNA配列
-
-| スクリプト                        | 目的                     | データセット  | デフォルトデバイス | 出力先                                                    |
-| --------------------------------- | ------------------------ | ------------- | -------------- | --------------------------------------------------------- |
-| `run_rna_benchmark_evaluation.sh` | RNAベンチマーク評価      | RNA Benchmark | GPU (cuda)     | `$LEARNING_SOURCE_DIR/rna/report/rna_benchmark_*`         |
+リファクタ前のアーキ別ラッパー（`run_bert_*`、`run_gpt2_*`）はこのレイアウト
+に置き換わって廃止されました。`protein_classification` タスクも削除済み —
+その用途は `proteingym`（変異効果）、`deeploc`（局在）、
+`tape.remote_homology`（フォールド分類）でカバーされます。
 
 ## 🔧 開発・テスト
 
@@ -306,16 +299,17 @@ export LEARNING_SOURCE_DIR=/data/learning_source
 ./workflows/03a-compounds-guacamol-train-small.sh
 # ... 対応する訓練スクリプト
 
-# 評価（標準的な使用方法）
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
+# 評価（アーキ非依存ハーネス）
+bash workflows/data/eval-data-clinvar.sh   # データ取得
+bash workflows/eval-clinvar.sh             # 評価実行
 
 # Webインターフェース
 ./workflows/web.sh
 
 # 入力と出力を分離する場合
 export LEARNING_SOURCE_DIR=/readonly/learning_source  # 入力（読み取り専用）
-export EVALUATION_OUTPUT_DIR=/writable/outputs        # 出力（書き込み可能）
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
+export OUTPUT_DIR=/writable/outputs/clinvar           # 評価出力（書き込み可能）
+bash workflows/eval-clinvar.sh
 ```
 
 ### ディレクトリ構造
@@ -362,32 +356,23 @@ logs/                                   # スクリプト実行ログ
 
 ### 出力ディレクトリのカスタマイズ
 
-すべての評価スクリプトは`-o`または`--output_dir`オプションで出力先を指定可能です：
+すべての評価ラッパーは `OUTPUT_DIR=...` 環境変数で出力先を指定可能
+（デフォルトはリポジトリ直下の `experiment_data/eval/<task>/`）：
 
 ```bash
-# BERT ProteinGym評価 - カスタム出力先
-./workflows/run_bert_proteingym_evaluation.sh \
-  --output_dir /custom/path/bert_proteingym_results
+# ClinVar
+OUTPUT_DIR=/custom/path/clinvar_results bash workflows/eval-clinvar.sh
 
-# GPT-2 ClinVar評価 - カスタム出力先
-./workflows/run_gpt2_clinvar_evaluation.sh \
-  --output_dir /custom/path/clinvar_results
-
-# GPT-2 ProteinGym評価 - カスタム出力先
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv \
-  -o /custom/path/proteingym_results
-
-# GPT-2 OMIM実データ評価 - カスタム出力先
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --output_dir /custom/path/omim_real_results
+# ProteinGym
+OUTPUT_DIR=/custom/path/proteingym_results bash workflows/eval-proteingym.sh
 ```
 
 **注意**：
 
-- 出力先を指定しない場合は、デフォルトで`$LEARNING_SOURCE_DIR/{model_type}/report/{evaluation_type}`に保存されます
-- データ準備フェーズ（`--data_dir`）とレポート/可視化フェーズ（`--output_dir`）は別々に指定可能
-- 可視化結果は`{output_dir}/visualizations/`サブディレクトリに保存されます
+- デフォルトはリポジトリ直下の `experiment_data/eval/<task>/`
+- すべての評価器が `metrics.json`、`REPORT.md`、`predictions.jsonl`、
+  `predictions.txt` を `OUTPUT_DIR` に出力
+- Bootstrap CI は適用可能な metric に対し点推定とともに表示
 
 ### 各評価ディレクトリの内容
 
@@ -396,633 +381,3 @@ logs/                                   # スクリプト実行ログ
 - `*_detailed_results.csv` - サンプルごとの予測結果
 - `visualizations/` - 可視化フェーズで生成されたグラフ・チャート
 
-## 🎯 クイックスタート例
-
-### 標準評価
-
-#### BERTモデル評価
-
-```bash
-# BERT ProteinGym評価（統合版：データ準備→評価→可視化）
-./workflows/run_bert_proteingym_evaluation.sh --max_variants 2000 --batch_size 32
-
-# サンプルデータのみ作成
-./workflows/run_bert_proteingym_evaluation.sh --sample_only
-
-# 評価のみ実行（データ準備をスキップ）
-./workflows/run_bert_proteingym_evaluation.sh --skip_data_prep
-
-# BERT ClinVar評価（バランスサンプリング：陽性1000件+陰性1000件）
-# 初回実行：データ準備から実行
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-
-# データ準備済みの場合：評価のみ実行
-./workflows/run_bert_clinvar_evaluation.sh
-
-# データ再ダウンロード（強制）
-./workflows/run_bert_clinvar_evaluation.sh --force-download
-```
-
-#### GPT-2ゲノム配列評価
-
-```bash
-# ClinVar評価（バランスサンプリング：陽性1000件+陰性1000件）
-# 初回実行：データダウンロード＆バランスサンプリング
-./workflows/run_gpt2_clinvar_evaluation.sh --download --model-size medium
-
-# データ準備済みの場合：評価のみ実行
-./workflows/run_gpt2_clinvar_evaluation.sh --model-size small
-
-# 評価のみ（データ準備スキップ）
-./workflows/run_gpt2_clinvar_evaluation.sh --eval-only --model-size medium
-
-# 可視化のみ実行
-./workflows/run_gpt2_clinvar_evaluation.sh --visualize-only
-
-# COSMIC評価
-./workflows/run_gpt2_cosmic_evaluation.sh --model_size small --batch_size 32
-
-# OMIM評価（サンプルデータ・開発用）
-./workflows/run_gpt2_omim_evaluation_dummy.sh --max_samples 50
-
-# OMIM評価（実データ・本番用、認証必要）
-./workflows/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
-
-# OMIM評価（既存データを再利用）
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --existing_omim_dir /path/to/downloaded/omim_data \
-  --model_size medium
-```
-
-#### GPT-2タンパク質配列評価
-
-```bash
-# ProteinGym評価（統合版）
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m gpt2-output/protein_sequence-small/ckpt.pt \
-  -d proteingym_data/sample.csv
-
-# サンプルデータ自動作成と評価（推奨データセットをダウンロード）
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m gpt2-output/protein_sequence-small/ckpt.pt \
-  --create-sample
-
-# Protein Classification評価（デフォルトモデル使用）
-./workflows/run_gpt2_protein_classification.sh -s
-
-# Protein Classification評価（カスタムモデル指定）
-./workflows/run_gpt2_protein_classification.sh \
-  -m gpt2-output/protein_sequence-medium/ckpt.pt \
-  -s
-
-# 可視化のみ実行（評価済みの場合）
-./workflows/run_gpt2_protein_classification.sh \
-  -s --skip_data_prep --skip_evaluation
-```
-
-### 高度なオプション
-
-#### フェーズ別実行（GPT-2スクリプト）
-
-```bash
-# データ準備のみ
-./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_evaluation --skip_visualization
-
-# 評価のみ（データ準備済みの場合）
-./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_visualization
-
-# 可視化のみ（評価結果がある場合）
-./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
-```
-
-#### デバイスとパフォーマンスの調整
-
-```bash
-# CPU使用（GPU非搭載環境向け）
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv --device cpu
-
-# バッチサイズとサンプル数の調整（メモリ節約）
-./workflows/run_gpt2_clinvar_evaluation.sh \
-  --max_samples 200 --batch_size 8
-
-# ProteinGym高速テスト（最大サンプル数制限）
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv --max_samples 100
-```
-
-#### データ管理オプション
-
-```bash
-# カスタム出力ディレクトリ指定（すべての評価スクリプト共通）
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv -o /custom/output/path
-
-./workflows/run_bert_clinvar_evaluation.sh \
-  --output_dir /custom/clinvar/results
-
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --output_dir /custom/omim/results
-
-# データ準備先とレポート出力先を別々に指定
-# （一部のスクリプトで --data_dir と --output_dir を個別指定可能）
-
-# OMIM既存データの再利用（ダウンロードスキップ）
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --existing_omim_dir /path/to/omim_data
-
-# ProteinGymサンプルデータの自動作成
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt --create-sample
-```
-
-### 実験システム
-
-```bash
-# システム完全セットアップ
-./workflows/setup_experiment_system.sh
-
-# 全サービスの起動
-./workflows/start_experiment_system.sh
-
-# システムデモ
-./workflows/demo_experiment_system.sh
-```
-
-### 開発ワークフロー
-
-```bash
-# 全GPT-2チェックポイントの一括テスト
-./workflows/batch_test_gpt2.sh gpt2-output/
-
-# 特定GPT-2チェックポイントのテスト
-./workflows/gpt2_test_checkpoint.sh
-
-# BERT学習のデバッグ
-./workflows/debug_protein_bert.sh
-
-# 開発用語彙ファイルの作成
-./workflows/create_sample_vocab.sh
-```
-
-## 🔧 前提条件
-
-### 共通関数ライブラリ
-
-`common_functions.sh`は複数のブートストラップスクリプトで使用される共有ユーティリティ関数を提供します：
-
-**主な機能**：
-
-- `check_learning_source_dir()` - LEARNING_SOURCE_DIR環境変数の検証
-- `select_best_gpu()` - 最も空きメモリが多いGPUを自動選択
-- `check_gpu_memory(gpu_id, min_memory_gb)` - GPU空きメモリの確認
-- その他のエラーハンドリングとログ機能
-
-**使用例**：
-
-```bash
-# 他のスクリプトから読み込み
-source "$(dirname "$0")/common_functions.sh"
-
-# 環境変数チェック
-check_learning_source_dir
-
-# 最適なGPUを選択
-BEST_GPU=$(select_best_gpu)
-export CUDA_VISIBLE_DEVICES=$BEST_GPU
-```
-
-### 環境セットアップ
-
-```bash
-# 必須環境変数
-export LEARNING_SOURCE_DIR=/path/to/learning_source_202508
-export CUDA_VISIBLE_DEVICES=0  # GPU使用時
-
-# プロジェクト設定の読み込み
-source molcrawl/core/env.sh
-```
-
-### 依存パッケージ
-
-- Python 3.8+（transformers、torch、pandas、numpy）
-- モデル学習・評価用のCUDA対応GPU
-- データセットと結果ファイル用の十分なディスク容量
-- 適切なディレクトリ内のモデルチェックポイントへのアクセス
-
-## 📝 スクリプトカテゴリ
-
-このディレクトリには91個のスクリプト（Shell: 89、Python: 2）が含まれています：
-
-### 🔍 **評価スクリプト** (9スクリプト)
-
-自動化されたモデル評価スクリプト（データ準備・評価・可視化の3フェーズ統合）
-
-**BERTモデル：**
-
-- `run_bert_proteingym_evaluation.sh` - BERT ProteinGym評価
-- `run_bert_clinvar_evaluation.sh` - BERT ClinVar評価
-
-**GPT-2ゲノム配列：**
-
-- `run_gpt2_clinvar_evaluation.sh` - GPT-2 ClinVar評価
-- `run_gpt2_cosmic_evaluation.sh` - GPT-2 COSMIC評価
-- `run_gpt2_omim_evaluation_dummy.sh` - GPT-2 OMIM評価（サンプル）
-- `run_gpt2_omim_evaluation_real.sh` - GPT-2 OMIM評価（実データ）
-
-**GPT-2タンパク質配列：**
-
-- `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym評価
-- `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification評価
-
-**RNA配列：**
-
-- `run_rna_benchmark_evaluation.sh` - RNA Benchmark評価
-
-### 🛠️ **開発スクリプト** (4スクリプト)
-
-デバッグ、テスト、開発用ユーティリティ
-
-- `batch_test_gpt2.sh` - GPT-2チェックポイント一括テスト（全ドメイン対応）
-- `gpt2_test_checkpoint.sh` - GPT-2チェックポイント検証
-- `debug_protein_bert.sh` - BERTモデルのデバッグ
-- `reboot-cause-check.sh` - システムリブート原因の分析
-
-### 🏭 **インフラスクリプト** (4スクリプト)
-
-システムセットアップ、サービス管理、実験トラッキング基盤
-
-- `setup_experiment_system.sh` - 実験システムの初期化
-- `start_experiment_system.sh` - 実験サービスの起動
-- `demo_experiment_system.sh` - システムデモンストレーション
-- `start_api_server.py` - Web APIサーバー起動
-
-### ⚙️ **ユーティリティスクリプト** (2スクリプト)
-
-データ準備とプロジェクトセットアップ用ヘルパースクリプト
-
-- `common_functions.sh` - 共通関数ライブラリ（GPU選択、メモリチェック、環境変数検証）
-- `create_sample_vocab.sh` - サンプル語彙ファイルの生成
-
-## 🔄 統合スクリプトの構造
-
-### 3フェーズパイプライン
-
-すべての評価スクリプトは以下の3フェーズで構成されています：
-
-1. **データ準備フェーズ** (`--skip_data_prep`でスキップ可能)
-   - データセットのダウンロード/生成
-   - 前処理とフォーマット変換
-   - `$LEARNING_SOURCE_DIR/{model_type}/data/`に保存
-   - **カスタマイズ**：一部スクリプトで`--data_dir`オプション使用可能
-
-2. **モデル評価フェーズ** (`--skip_evaluation`でスキップ可能)
-   - 訓練済みモデルのロード
-   - データセットでの推論実行
-   - メトリクス計算と結果保存
-   - **カスタマイズ**：すべてのスクリプトで`-o`または`--output_dir`使用可能
-
-3. **可視化フェーズ** (`--skip_visualization`でスキップ可能)
-   - 評価結果のグラフ生成
-   - HTMLレポート作成
-   - `{output_dir}/visualizations/`サブディレクトリに保存
-   - **カスタマイズ**：可視化スクリプトで`--output_dir`使用可能
-
-### 出力ディレクトリの柔軟な指定
-
-すべての評価スクリプトで出力先をカスタマイズ可能：
-
-```bash
-# デフォルト出力先（LEARNING_SOURCE_DIR配下）
-./workflows/run_bert_proteingym_evaluation.sh
-# -> $LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_YYYYMMDD_HHMMSS/
-
-# カスタム出力先を指定
-./workflows/run_bert_proteingym_evaluation.sh \
-  --output_dir /mnt/results/my_proteingym_eval
-# -> /mnt/results/my_proteingym_eval/
-
-# 相対パス指定も可能
-./workflows/run_gpt2_clinvar_evaluation.sh \
-  -o ./my_clinvar_results
-# -> ./my_clinvar_results/
-
-# データ準備とレポート出力を別々に指定（一部スクリプト）
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --output_dir /results/omim_eval \
-  --config /custom/config.yaml
-```
-
-**出力先のデフォルト値：**
-
-| スクリプト | デフォルト出力先 |
-|-----------|----------------|
-| `run_bert_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation` |
-| `run_bert_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym` |
-| `run_gpt2_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation` |
-| `run_gpt2_cosmic_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_evaluation` |
-| `run_gpt2_omim_evaluation_dummy.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation` |
-| `run_gpt2_omim_evaluation_real.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
-| `run_gpt2_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
-| `run_gpt2_protein_classification.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
-
-### フェーズ別実行の利点
-
-- **開発効率**：データ準備は1回だけ、評価と可視化を繰り返し実行可能
-- **デバッグ容易性**：各フェーズを個別にテスト可能
-- **リソース管理**：必要なフェーズのみ実行してリソースを節約
-- **柔軟性**：外部で準備したデータを使用する場合はデータ準備をスキップ
-
-## 🚨 重要な注意事項
-
-### 実行環境
-
-- **実行場所**：すべてのスクリプトはプロジェクトルートディレクトリから実行
-- **LEARNING_SOURCE_DIR**：必須環境変数。すべての評価スクリプトで使用
-- **GPU要件**：CUDA対応GPUが推奨（CPU実行も可能だが遅い）
-
-### データ管理
-
-- **出力管理**：結果は自動的にタイムスタンプ付きで整理
-- **実データアクセス**：`run_gpt2_omim_evaluation_real.sh`はOMIM認証が必要
-- **サンプルデータ**：`_dummy.sh`スクリプトは認証不要で開発・テスト可能
-
-### スクリプト構造
-
-- **統合スクリプト**：データ準備・評価・可視化の3フェーズを1つのスクリプトに統合
-- **フェーズスキップ**：`--skip_*`オプションで任意のフェーズをスキップ可能
-- **エラーハンドリング**：堅牢なエラーチェックとリカバリー機能
-
-### リソース管理
-
-- **GPUメモリ**：モデルサイズとバッチサイズに応じて変動
-- **ディスク容量**：データセットと結果ファイルのサイズを考慮
-- **ログ**：すべての操作で包括的なログを提供
-- **パフォーマンス**：GPU使用でCPUより約4倍高速（例：ProteinGym 50サンプル/GPU ≈ 12秒）
-
-### パフォーマンス最適化
-
-- **デフォルトデバイス**：すべての評価スクリプトはGPU (cuda)をデフォルト使用
-- **CPU切り替え**：`--device cpu`オプションでCPU実行可能（低速）
-- **サンプル数制限**：`--max_samples N`でテスト実行を高速化
-- **バッチサイズ調整**：`--batch_size N`でメモリ使用量を制御
-- **データ再利用**：`--existing_omim_dir`でダウンロード時間を節約
-
-### 新機能
-
-- **Protein Classification可視化**：10種類以上のグラフとHTML詳細レポートを自動生成
-- **ProteinGymサンプルデータ**：`--create-sample`で推奨データセットを自動ダウンロード
-- **OMIM既存データ再利用**：`--existing_omim_dir`でダウンロード済みデータを活用
-- **デフォルトモデル**：Protein Classificationはモデル指定なしで実行可能
-- **ClinVarバランスサンプリング**：病原性・良性が1000件ずつのバランスの取れたデータセットで正確な評価
-
-### ClinVarバランスサンプリングの詳細
-
-#### 背景
-
-従来のClinVarデータ準備では数件しか抽出されず、評価の信頼性が低い問題がありました。
-
-#### 改善点
-
-`extract_random_clinvar_samples.py`を使用して以下を実現：
-
-**データ構成**：
-
-- 病原性（Pathogenic）バリアント：1000件
-- 良性（Benign）バリアント：1000件
-- 合計：2000件のバランスの取れたデータセット
-
-**サンプリング方法**：
-
-1. HuggingFace DatasetsからClinVarデータを取得
-2. Clinical Significanceを自動分類（病原性/良性）
-3. 各クラスから1000件ずつランダムサンプリング
-4. 参照ゲノムから周辺配列を抽出（flanking領域含む）
-
-**利点**：
-
-- クラス不均衡を解消し、正確な精度評価が可能
-- 再現可能なランダムサンプリング（seed=42固定）
-- 自動化されたデータ準備フロー
-
-**使用方法**：
-
-```bash
-# GPT-2 ClinVar評価
-./workflows/run_gpt2_clinvar_evaluation.sh --download
-
-# BERT ClinVar評価
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-```
-
-## 📞 トラブルシューティング
-
-### よくある問題と解決方法
-
-1. **環境変数エラー**
-
-   ```bash
-   # エラー：LEARNING_SOURCE_DIR環境変数が設定されていません
-   export LEARNING_SOURCE_DIR=/path/to/learning_source
-   ```
-
-2. **モデルファイルが見つからない**
-
-   ```bash
-   # モデルディレクトリを確認
-   ls -la gpt2-output/
-   ls -la runs_train_bert_*/
-
-   # Protein Classificationはデフォルトモデルを使用
-   ./workflows/run_gpt2_protein_classification.sh -s
-   # -> gpt2-output/protein_sequence-small/ckpt.pt を自動使用
-   ```
-
-3. **CUDAエラー**
-
-   ```bash
-   # GPU確認
-   nvidia-smi
-
-   # CPU使用に切り替え（全スクリプトでサポート）
-   ./workflows/run_gpt2_*.sh --device cpu
-
-   # 注意：CPUはGPUより約4倍遅い
-   ```
-
-4. **データファイルが見つからない**
-
-   ```bash
-   # データ準備フェーズを再実行
-   ./workflows/run_gpt2_*.sh --force_download
-
-   # または、データ準備のみ実行
-   ./workflows/run_gpt2_*.sh --skip_evaluation --skip_visualization
-
-   # ProteinGymサンプルデータの自動作成
-   ./workflows/run_gpt2_proteingym_evaluation.sh \
-     -m model.pt --create-sample
-
-   # ClinVarバランスサンプリングデータの作成
-   # GPT-2の場合
-   ./workflows/run_gpt2_clinvar_evaluation.sh --download
-   # BERTの場合
-   ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-   ```
-
-5. **OMIM実データアクセスエラー**
-
-   ```bash
-   # 設定ファイルに認証URLが正しく設定されているか確認
-   cat assets/configs/omim_real_data.yaml
-
-   # サンプルデータで動作確認
-   ./workflows/run_gpt2_omim_evaluation_dummy.sh
-
-   # 既存データを再利用（再ダウンロードを避ける）
-   ./workflows/run_gpt2_omim_evaluation_real.sh \
-     --existing_omim_dir /path/to/omim_data
-   ```
-
-6. **Pythonパッケージ不足**
-
-   ```bash
-   # 必要なパッケージをインストール
-   pip install torch transformers pandas numpy scikit-learn matplotlib seaborn sentencepiece scipy
-   ```
-
-7. **ProteinGym評価が遅い**
-
-   ```bash
-   # GPUを使用（デフォルト、約4倍高速）
-   ./workflows/run_gpt2_proteingym_evaluation.sh -m model.pt -d data.csv
-
-   # サンプル数を制限してテスト
-   ./workflows/run_gpt2_proteingym_evaluation.sh \
-     -m model.pt -d data.csv --max_samples 100
-
-   # 進捗状況：50サンプル/GPU ≈ 12秒、2770サンプル/GPU ≈ 11分
-   ```
-
-8. **可視化エラー**
-
-   ```bash
-   # 評価結果があるか確認
-   ls -la $LEARNING_SOURCE_DIR/*/report/*/
-
-   # 可視化のみ再実行
-   ./workflows/run_gpt2_*.sh --skip_data_prep --skip_evaluation
-
-   # Protein Classificationの詳細レポート
-   # -> visualizations/ディレクトリに10種類以上のグラフ + HTML
-
-   # カスタム出力先を指定して可視化
-   ./workflows/run_gpt2_proteingym_evaluation.sh \
-     --skip_data_prep --skip_evaluation \
-     -o /custom/visualization/path
-   ```
-
-9. **出力ディレクトリが見つからない**
-
-   ```bash
-   # デフォルト出力先を確認
-   echo $LEARNING_SOURCE_DIR
-   ls -la $LEARNING_SOURCE_DIR/*/report/
-
-   # カスタム出力先を使用した場合
-   ls -la /path/to/custom/output/
-
-   # 出力先を明示的に指定して再実行
-   ./workflows/run_bert_proteingym_evaluation.sh \
-     --output_dir /specific/output/path
-
-   # 最新の評価結果ディレクトリを探す
-   find $LEARNING_SOURCE_DIR -type d -name "*proteingym*" -o -name "*clinvar*" | sort
-   ```
-
-10. **ClinVarデータが数件しか抽出されない**
-
-```bash
-# 問題：従来の方法では少数のサンプルのみ
-# 解決策：バランスサンプリングスクリプトを使用
-
-# GPT-2の場合（2000件のバランスデータを自動生成）
-./workflows/run_gpt2_clinvar_evaluation.sh --download
-
-# BERTの場合（2000件のバランスデータを自動生成）
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-
-# データセットの統計を確認
-python -c "
-import pandas as pd
-df = pd.read_csv('$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv')
-print(f'総サンプル数：{len(df)}')
-print(df['ClinicalSignificance'].value_counts())
-"
-# 期待結果：病原性 1000件、良性 1000件
-```
-
-11. **参照ゲノムファイルが見つからない（ClinVarバランスサンプリング）**
-
-    ```bash
-    # 参照ゲノムのダウンロード
-    wget -P $LEARNING_SOURCE_DIR/genome_sequence/data/ \
-      https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
-
-    # または既にダウンロード済みの場合はパスを確認
-    ls -lh $LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna*
-
-    # .gzファイルはそのまま使用可能（スクリプトが自動展開）
-    ```
-
-12. **複数のGPT-2チェックポイントをまとめてテストしたい**
-
-    ```bash
-    # 全ドメインのチェックポイントを一括テスト
-    ./workflows/batch_test_gpt2.sh gpt2-output/
-
-    # 特定のディレクトリ配下のみテスト
-    ./workflows/batch_test_gpt2.sh path/to/checkpoints/
-
-    # テスト結果は gpt2_test_results_TIMESTAMP/ に保存
-    ls -la gpt2_test_results_*/
-
-    # ドメイン別の結果を確認
-    # - compounds：化合物生成の妥当性
-    # - genome_sequence：ゲノム配列の整合性
-    # - protein_sequence：タンパク質配列の品質
-    # - rna：RNA配列の構造妥当性
-    # - molecule_nat_lang：分子記述テキストの品質
-    ```
-
-### ログの確認
-
-各スクリプトは詳細なログを出力します：
-
-- コンソール出力：リアルタイムの進行状況
-- `logs/`：システムログ（一部のスクリプト）
-- `$OUTPUT_DIR/*_report.txt`：評価結果の詳細レポート
-
-## 🔄 移行ノート
-
-### スクリプト構造の変更
-
-これらのスクリプトは以下の変更が行われました：
-
-1. **ファイル名の明確化**
-   - GPT-2専用スクリプトに`run_gpt2_`プレフィックスを追加
-   - BERT専用スクリプトに`run_bert_`プレフィックスを追加
-   - OMIM実データスクリプトに`_real`サフィックスを追加
-
-2. **3フェーズ統合**
-   - データ準備、評価、可視化スクリプトを統合
-   - フェーズ別スキップオプションを追加
-
-3. **LEARNING_SOURCE_DIR構造の統一**
-   - すべてのスクリプトで統一されたディレクトリ構造を使用
-   - 環境変数チェックを追加
-
-4. **スクリプトパスの統一**
-   - すべてのPython実行パスを`molcrawl/tasks/evaluation/{task}/{arch}_*.py (organized by task)`配下に統一
-
-プロジェクトルートディレクトリから実行する限り、すべての機能は同一です。
