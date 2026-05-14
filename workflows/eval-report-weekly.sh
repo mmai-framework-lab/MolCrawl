@@ -7,13 +7,17 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/common_functions.sh"
+
 INPUT_DIR="${INPUT_DIR:-experiment_data/eval}"
 OUTPUT_DIR="${OUTPUT_DIR:-docs/evaluation}"
 PREVIOUS="${PREVIOUS:-}"
 
 mkdir -p "$OUTPUT_DIR"
 
-cmd=(python -m molcrawl.tasks.evaluation._snapshot
+cmd=("$PYTHON" -m molcrawl.tasks.evaluation._snapshot
      --input-dir "$INPUT_DIR"
      --output-dir "$OUTPUT_DIR")
 if [[ -n "$PREVIOUS" ]]; then
