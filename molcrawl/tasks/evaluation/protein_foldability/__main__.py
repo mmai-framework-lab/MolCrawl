@@ -26,6 +26,39 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--top-k", type=int, default=None)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="torch.manual_seed before sampling (reproducibility)",
+    )
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for novelty / amino_acid_kl CI (0 disables)",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=30,
+        help="Number of generated sequences shown in predictions.txt",
+    )
+    parser.add_argument(
+        "--foldable-min-length",
+        type=int,
+        default=50,
+        help="Length threshold (aa) for splitting novel sequences into "
+        "long / short quadrants in predictions.txt",
+    )
+    parser.add_argument(
+        "--max-ref-for-aa",
+        type=int,
+        default=None,
+        help="Subsample the reference corpus to this many sequences when "
+        "computing the AA distribution (membership set still covers the "
+        "full corpus). Useful for the RCSB pdb_seqres FASTA (~1.1 M).",
+    )
     return parser
 
 
@@ -49,6 +82,11 @@ def main(argv: Optional[list[str]] = None) -> None:
             "temperature": args.temperature,
             "max_new_tokens": args.max_new_tokens,
             "top_k": args.top_k,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
+            "foldable_min_length": args.foldable_min_length,
+            "max_ref_for_aa": args.max_ref_for_aa,
         },
     )
     result = evaluator.run()

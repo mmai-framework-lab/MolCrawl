@@ -6,7 +6,8 @@ Invoke as::
         --model-path path/to/ckpt.pt \\
         --tokenizer-path path/to/tokenizer.model \\
         --clinvar-data path/to/clinvar.csv \\
-        --output-dir experiment_data/eval/clinvar_smoke
+        --output-dir experiment_data/eval/clinvar_smoke \\
+        --n-per-class 1000
 """
 
 from __future__ import annotations
@@ -50,10 +51,51 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum context length fed to the adapter",
     )
     parser.add_argument(
+        "--n-per-class",
+        type=int,
+        default=None,
+        help=(
+            "Class-balanced sample size per class (pathogenic and benign). "
+            "Omit to evaluate on the full dataset."
+        ),
+    )
+    parser.add_argument(
+        "--no-stratify-chrom",
+        dest="stratify_chrom",
+        action="store_false",
+        help=(
+            "Disable per-chromosome stratified sampling within each class. "
+            "Stratification is on by default to neutralise the per-chromosome "
+            "pathogenic-rate variance (chrY ≈ 86 %%, chrX ≈ 48 %%, overall 27 %%)."
+        ),
+    )
+    parser.set_defaults(stratify_chrom=True)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducible sampling (default: 42)",
+    )
+    parser.add_argument(
         "--max-examples",
         type=int,
         default=None,
-        help="Cap the number of variants evaluated (useful for smoke runs)",
+        help=(
+            "[deprecated] Legacy cap on evaluated variants. When set without "
+            "--n-per-class it is re-interpreted as n_per_class=max_examples//2 "
+            "so old smoke scripts still draw both classes."
+        ),
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=20,
+        help=(
+            "Number of variants rendered in the human-readable "
+            "predictions.txt narrative (sampled across {label} × {correct} "
+            "quadrants). Set 0 to skip the preview; predictions.jsonl is "
+            "always produced."
+        ),
     )
     return parser
 
@@ -77,7 +119,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         clinvar_path=args.clinvar_data,
         config={
             "context_length": args.context_length,
+            "n_per_class": args.n_per_class,
+            "stratify_chrom": args.stratify_chrom,
+            "seed": args.seed,
             "max_examples": args.max_examples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

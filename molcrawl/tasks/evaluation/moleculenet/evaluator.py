@@ -4,17 +4,21 @@ The evaluator follows the scaffold-split protocol used by MoleculeNet:
 
 1. Load the task CSV and canonicalise SMILES
    (:mod:`.data_preparation`).
-2. Build a scaffold split
-   (:mod:`.splits`).
-3. Embed the train and test subsets through ``ModelAdapter.embed``.
-4. Fit a simple linear probe (logistic regression for classification,
+2. Optionally stratify-subsample before splitting so smoke runs still
+   exercise both classes / all quantiles (:func:`.splits.stratified_subsample`).
+3. Build a scaffold split (:mod:`.splits`).
+4. Embed the train and test subsets through ``ModelAdapter.embed``.
+5. Fit a simple linear probe (logistic regression for classification,
    ridge for regression) on the train embeddings.
-5. Report the metric pack selected in :mod:`.metrics`.
+6. Report the metric pack selected in :mod:`.metrics`, add bootstrap
+   95 % CIs for the ranking / regression primaries, and emit
+   ``predictions.jsonl`` + ``predictions.txt`` so the user can
+   inspect what the probe actually did without re-running.
 
 Adapters that do not support embedding but do support likelihood can
-still produce a zero-shot perplexity baseline - the evaluator falls back
-to this when embedding is unavailable and reports perplexity plus NaN
-placeholders for the task-specific metrics.
+still produce a zero-shot perplexity baseline — the evaluator falls
+back to this when embedding is unavailable and flags the mode in the
+report.
 """
 
 from __future__ import annotations
@@ -34,8 +38,14 @@ from molcrawl.tasks.evaluation._base import (
 )
 
 from .data_preparation import MoleculeNetTaskSpec, get_task, load_dataset
-from .metrics import score_classification, score_regression
-from .splits import apply_split, random_split, scaffold_split
+from .metrics import (
+    bootstrap_ci,
+    score_classification,
+    score_regression,
+    split_label_distribution,
+)
+from .predictions_log import write_predictions
+from .splits import apply_split, random_split, scaffold_split, stratified_subsample
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +84,35 @@ class MoleculeNetEvaluator(BaseEvaluator):
 
     def load_dataset(self) -> pd.DataFrame:
         df = load_dataset(self.task_dir, self.task_spec)
+
+        n_examples = self.config.get("n_examples")
         max_examples = self.config.get("max_examples")
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if n_examples is None and max_examples is not None:
+            n_examples = int(max_examples)
+            logger.warning(
+                "MoleculeNetEvaluator: max_examples=%s deprecated; "
+                "re-interpreting as n_examples=%d with stratified subsample.",
+                max_examples,
+                n_examples,
+            )
+
+        if n_examples is not None and n_examples < len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(n_examples),
+                label_columns=list(self.task_spec.label_columns),
+                task_type=self.task_spec.task_type,
+                seed=int(self.config.get("subsample_seed", self.seed + 1)),
+            )
+
+        self._last_sampling = {
+            "n_examples": n_examples,
+            "split": self.split_strategy,
+            "val_frac": self.val_frac,
+            "test_frac": self.test_frac,
+            "seed": self.seed,
+            "total_after_subsample": int(len(df)),
+        }
         return df
 
     # ------------------------------------------------------------------
@@ -97,7 +133,7 @@ class MoleculeNetEvaluator(BaseEvaluator):
 
     def run_predictions(self, dataset: pd.DataFrame):
         split = self._build_split(dataset)
-        train_df, _val_df, test_df = apply_split(dataset, split)
+        train_df, val_df, test_df = apply_split(dataset, split)
 
         adapter = self.adapter
         smi_col = self.task_spec.smiles_column
@@ -119,6 +155,25 @@ class MoleculeNetEvaluator(BaseEvaluator):
                 f"Adapter {type(adapter).__name__} supports neither embedding nor likelihood; "
                 "cannot evaluate MoleculeNet."
             )
+
+        self._last_split_sizes = {
+            "train": int(len(train_df)),
+            "val": int(len(val_df)),
+            "test": int(len(test_df)),
+        }
+        self._last_label_distribution = {
+            split_name: {
+                col: split_label_distribution(
+                    split_df[col].to_numpy(), self.task_spec.task_type
+                )
+                for col in label_cols
+            }
+            for split_name, split_df in (
+                ("train", train_df),
+                ("val", val_df),
+                ("test", test_df),
+            )
+        }
 
         return {
             "mode": mode,
@@ -175,10 +230,15 @@ class MoleculeNetEvaluator(BaseEvaluator):
         if mode == "zero_shot_likelihood":
             ll = predictions["predictions"]["log_likelihood"]
             ppl = default_registry.compute("perplexity", float(-np.mean(ll)))
-            return {"perplexity": ppl}
+            self._last_bootstrap = {}
+            return {"perplexity": float(ppl)}
 
         metrics: Dict[str, float] = {}
+        bootstrap_payload: Dict[str, Dict[str, Dict[str, float]]] = {}
         preds = predictions["predictions"]
+        n_boot = int(self.config.get("bootstrap_samples", 200))
+        seed = int(self.config.get("seed", 0))
+
         for col, scores in preds.items():
             y_true = test_df[col].to_numpy()
             mask = ~pd.isna(y_true) & ~pd.isna(scores)
@@ -186,21 +246,64 @@ class MoleculeNetEvaluator(BaseEvaluator):
                 logger.warning("Skipping %s: insufficient labelled test rows", col)
                 continue
             if task_spec.task_type == "classification":
-                sub = score_classification(y_true[mask].astype(int), scores[mask])
+                sub = score_classification(
+                    y_true[mask].astype(int), np.asarray(scores)[mask]
+                )
+                ci = bootstrap_ci(
+                    y_true[mask].astype(int),
+                    np.asarray(scores)[mask],
+                    task_type="classification",
+                    n_boot=n_boot,
+                    seed=seed,
+                )
             else:
-                sub = score_regression(y_true[mask].astype(float), scores[mask])
+                sub = score_regression(
+                    y_true[mask].astype(float), np.asarray(scores)[mask]
+                )
+                ci = bootstrap_ci(
+                    y_true[mask].astype(float),
+                    np.asarray(scores)[mask],
+                    task_type="regression",
+                    n_boot=n_boot,
+                    seed=seed,
+                )
             for metric_name, value in sub.items():
                 metrics[f"{col}.{metric_name}"] = float(value)
+            if ci:
+                bootstrap_payload[col] = {
+                    key: {"ci_lo": float(lo), "ci_hi": float(hi)}
+                    for key, (lo, hi) in ci.items()
+                }
 
         # task-level averages ease the markdown summary
         if metrics:
-            for metric_name in set(k.split(".", 1)[1] for k in metrics if "." in k):
+            metric_names = set(k.split(".", 1)[1] for k in metrics if "." in k)
+            for metric_name in metric_names:
                 values = [v for k, v in metrics.items() if k.endswith("." + metric_name)]
-                metrics[f"mean.{metric_name}"] = float(np.nanmean(values)) if values else float("nan")
+                metrics[f"mean.{metric_name}"] = (
+                    float(np.nanmean(values)) if values else float("nan")
+                )
+
+        self._last_bootstrap = bootstrap_payload
         return metrics
 
     def build_report(self, metrics: Dict[str, float], dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+
+        preview_count = int(self.config.get("predictions_preview_count", 20))
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            test_df=predictions["test_df"],
+            preds=predictions["predictions"],
+            label_columns=list(self.task_spec.label_columns),
+            smiles_column=self.task_spec.smiles_column,
+            task_type=self.task_spec.task_type,
+            mode=predictions["mode"],
+            split_sizes=getattr(self, "_last_split_sizes", None),
+            arch=self.handle.arch,
+            preview_count=preview_count,
+        )
+
         report.update(
             {
                 "task_spec": {
@@ -209,8 +312,21 @@ class MoleculeNetEvaluator(BaseEvaluator):
                     "label_columns": list(self.task_spec.label_columns),
                 },
                 "split_strategy": self.split_strategy,
+                "split_sizes": getattr(self, "_last_split_sizes", None),
+                "label_distribution": getattr(
+                    self, "_last_label_distribution", None
+                ),
                 "mode": predictions["mode"],
                 "num_test_examples": int(len(predictions["test_df"])),
+                "sampling": getattr(self, "_last_sampling", None),
+                "bootstrap_ci_95": getattr(self, "_last_bootstrap", None),
+                "artefacts": prediction_paths,
+                "notes": (
+                    "Linear probe (LogReg / Ridge) on top of ModelAdapter.embed. "
+                    "Classification primaries: AUROC / AUPRC. Regression "
+                    "primaries: RMSE / R² / Spearman. Bootstrap 95 % CIs are "
+                    "computed per label column under the same seed."
+                ),
             }
         )
         return report

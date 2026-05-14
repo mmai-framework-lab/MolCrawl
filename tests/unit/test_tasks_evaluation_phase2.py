@@ -57,11 +57,17 @@ def test_proteingym_spearman(tmp_path: Path):
     from molcrawl.tasks.evaluation.proteingym.evaluator import ProteinGymEvaluator
 
     csv = tmp_path / "pgym.csv"
+    # Upstream requires ≥ 10 rows before computing correlation metrics. Use a
+    # set of mutants whose log-likelihood (length-scaled) correlates with the
+    # DMS score so spearman/pearson are well-defined.
+    wt = ["AAAA"] * 12
+    mut = ["AAAA", "AAAG", "AAGG", "AAAAA", "AAGGA", "AAGAG", "AGAGA", "GAGAG", "AGGGG", "GGGGG", "AAAGG", "AAGGG"]
+    score = [0.0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -0.15, -0.25]
     pd.DataFrame(
         {
-            "wildtype_sequence": ["AAAA", "AAAG", "AAAG", "AAAG"],
-            "mutated_sequence": ["AAAA", "AAAG", "AAGG", "AAAA"],
-            "DMS_score": [0.0, -0.1, -0.5, -1.0],
+            "wildtype_sequence": wt,
+            "mutated_sequence": mut,
+            "DMS_score": score,
         }
     ).to_csv(csv, index=False)
     handle = ModelHandle(arch="phase2-ll", modality="protein_sequence", model_path="x")

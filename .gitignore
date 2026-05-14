@@ -1,5 +1,6 @@
 # Environment and IDE settings (personal)
 .env*
+!.env.example
 pyrightconfig.json
 
 # VSCode: Allow team-shared settings, ignore personal settings

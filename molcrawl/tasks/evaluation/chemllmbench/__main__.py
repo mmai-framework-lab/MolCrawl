@@ -26,7 +26,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--temperature", type=float, default=0.0)
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help="Reproducibly random-subsample examples (replaces head() slicing).",
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=20,
+        help="Correct/wrong rows shown in predictions.txt for exact/smiles tasks.",
+    )
     return parser
 
 
@@ -50,6 +62,8 @@ def main(argv: Optional[list[str]] = None) -> None:
             "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature,
             "max_examples": args.max_examples,
+            "seed": args.seed,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

@@ -11,8 +11,16 @@
 #   MODALITY        - foundation modality (default: compounds)
 #   OUTPUT_DIR      - default: experiment_data/eval/moleculenet
 #   SUBTASKS        - space-separated list (default: bbbp esol)
+#   N_EXAMPLES      - per-sub-task cap (stratified subsample; omit for full)
+#   SEED            - random seed for split / sampling (default 0)
+#   BOOTSTRAP       - bootstrap resamples for CI (default 200)
+#   SPLIT           - "scaffold" (default) or "random"
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/common_functions.sh"
 
 : "${MODEL_PATH:?MODEL_PATH must be set}"
 : "${MOLECULENET_DIR:?MOLECULENET_DIR must be set}"
@@ -31,7 +39,7 @@ for subtask in $SUBTASKS; do
     task_out="$OUTPUT_DIR/$subtask"
     echo "Evaluating MoleculeNet/$subtask -> $task_out"
 
-    cmd=(python -m molcrawl.tasks.evaluation.moleculenet
+    cmd=("$PYTHON" -m molcrawl.tasks.evaluation.moleculenet
          --model-path "$MODEL_PATH"
          --arch "$ARCH"
          --modality "$MODALITY"
@@ -41,6 +49,21 @@ for subtask in $SUBTASKS; do
          --output-dir "$task_out")
     if [[ -n "$TOKENIZER_PATH" ]]; then
         cmd+=(--tokenizer-path "$TOKENIZER_PATH")
+    fi
+    if [[ -n "${N_EXAMPLES:-}" ]]; then
+        cmd+=(--n-examples "$N_EXAMPLES")
+    fi
+    if [[ -n "${SEED:-}" ]]; then
+        cmd+=(--seed "$SEED")
+    fi
+    if [[ -n "${BOOTSTRAP:-}" ]]; then
+        cmd+=(--bootstrap-samples "$BOOTSTRAP")
+    fi
+    if [[ -n "${SPLIT:-}" ]]; then
+        cmd+=(--split "$SPLIT")
+    fi
+    if [[ -n "${MAX_EXAMPLES:-}" ]]; then
+        cmd+=(--max-examples "$MAX_EXAMPLES")
     fi
     "${cmd[@]}"
 done

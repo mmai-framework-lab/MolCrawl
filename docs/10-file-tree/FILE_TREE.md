@@ -377,52 +377,35 @@ riken-dataset-fundational-model/
 │   │   │           ├── gpt2_{small,medium,large,xl}.py
 │   │   │           ├── gpt2_celltype_{small,medium,large,xl}.py
 │   │   │           └── rnaformer.py          # Size selected at runtime
-│   │   ├── evaluation/                       # Benchmarks organized by task (arch as file prefix)
+│   │   ├── evaluation/                       # Benchmarks organized by task — arch-agnostic
 │   │   │   ├── __init__.py
+│   │   │   ├── _adapters/                    # Per-arch model adapters (gpt2, hf_mlm)
+│   │   │   ├── _base/                        # BaseEvaluator, ModelAdapter, ReportWriter
+│   │   │   ├── _dashboard/                   # REPORT.md → docs-src/evaluations.json
+│   │   │   ├── chebi20/
+│   │   │   ├── chembl_scaffold_heldout/
+│   │   │   ├── chemllmbench/
 │   │   │   ├── clinvar/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── bert_config.py            # BERT ClinVar evaluation config
-│   │   │   │   ├── bert_evaluation.py        # BERT ClinVar evaluation
-│   │   │   │   ├── bert_visualization.py     # BERT ClinVar result visualization
-│   │   │   │   ├── extract_random_samples.py # Random-sample extraction helper
-│   │   │   │   ├── gpt2_data_preparation.py  # GPT-2 ClinVar data preparation
-│   │   │   │   ├── gpt2_evaluation.py        # GPT-2 ClinVar evaluation
-│   │   │   │   ├── gpt2_visualization.py     # GPT-2 ClinVar result visualization
-│   │   │   │   └── prepare_sequences.py      # Extracts sequences from raw ClinVar VCF
-│   │   │   ├── cosmic/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── gpt2_data_preparation.py  # GPT-2 COSMIC data preparation
-│   │   │   │   ├── gpt2_evaluation.py        # GPT-2 COSMIC evaluation
-│   │   │   │   └── gpt2_visualization.py     # GPT-2 COSMIC result visualization
+│   │   │   ├── cosmic/                       # gated by COSMIC_EMAIL/COSMIC_PASSWORD
+│   │   │   ├── deeploc/
+│   │   │   ├── gnomad_af_correlation/
+│   │   │   ├── gue/
 │   │   │   ├── molecule_nat_lang/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── bert_evaluation.py        # BERT molecule-NL evaluation
-│   │   │   │   ├── gpt2_evaluation.py        # GPT-2 molecule-NL evaluation
-│   │   │   │   └── gpt2_visualization.py     # GPT-2 molecule-NL visualization
-│   │   │   ├── omim/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── gpt2_data_preparation.py  # GPT-2 OMIM data preparation
-│   │   │   │   ├── gpt2_evaluation.py        # GPT-2 OMIM evaluation
-│   │   │   │   ├── gpt2_real_data_processor.py  # Data processor for real OMIM data
-│   │   │   │   └── gpt2_visualization.py     # GPT-2 OMIM visualization
-│   │   │   ├── protein_classification/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── gpt2_data_preparation.py
-│   │   │   │   ├── gpt2_evaluation.py
-│   │   │   │   └── gpt2_visualization.py
+│   │   │   ├── moleculenet/
+│   │   │   ├── moses/
+│   │   │   ├── omim/                         # gated by OMIM_API_KEY
+│   │   │   ├── protein_foldability/
 │   │   │   ├── proteingym/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── bert_config.py            # BERT ProteinGym evaluation config
-│   │   │   │   ├── bert_data_preparation.py
-│   │   │   │   ├── bert_evaluation.py
-│   │   │   │   ├── bert_visualization.py
-│   │   │   │   ├── gpt2_data_preparation.py
-│   │   │   │   ├── gpt2_evaluation.py
-│   │   │   │   └── gpt2_visualization.py
-│   │   │   └── rna_benchmark/
-│   │   │       ├── __init__.py
-│   │   │       ├── data_preparation.py       # RNA benchmark data preparation
-│   │   │       └── evaluation.py             # RNA benchmark evaluation
+│   │   │   ├── replogle_perturb_seq/
+│   │   │   ├── rna_benchmark/
+│   │   │   ├── tabula_sapiens/
+│   │   │   └── tape/                         # fluorescence / stability / remote_homology / SS3 / SS8
+│   │   │   # Each task directory carries the same shape:
+│   │   │   #   __init__.py + __main__.py
+│   │   │   #   data_preparation.py + (optional) prepare_*.py
+│   │   │   #   evaluator.py + metrics.py + splits.py
+│   │   │   #   predictions_log.py + visualization.py
+│   │   │   #   configs/  README.md
 │   │   └── downstream/                       # Multimodal downstream tasks
 │   │       ├── __init__.py
 │   │       └── compound_protein/
@@ -609,15 +592,12 @@ riken-dataset-fundational-model/
     ├── demo_experiment_system.sh                 # Demonstrates the experiment tracking system
     ├── gpt2_test_checkpoint.sh                   # Tests a specific GPT-2 checkpoint via CLI
     ├── reboot-cause-check.sh                     # Checks system logs for unexpected reboot causes
-    ├── run_bert_clinvar_evaluation.sh            # Runs BERT evaluation on ClinVar variant dataset
-    ├── run_bert_proteingym_evaluation.sh         # Runs BERT evaluation on ProteinGym benchmark
-    ├── run_gpt2_clinvar_evaluation.sh            # Runs GPT-2 evaluation on ClinVar variant dataset
-    ├── run_gpt2_cosmic_evaluation.sh             # Runs GPT-2 evaluation on COSMIC mutation dataset
-    ├── run_gpt2_omim_evaluation_dummy.sh         # Runs GPT-2 OMIM evaluation with dummy data
-    ├── run_gpt2_omim_evaluation_real.sh          # Runs GPT-2 OMIM evaluation with real data
-    ├── run_gpt2_protein_classification.sh        # Runs GPT-2 protein function classification task
-    ├── run_gpt2_proteingym_evaluation.sh         # Runs GPT-2 evaluation on ProteinGym benchmark
-    ├── run_rna_benchmark_evaluation.sh           # Runs model evaluation on RNA benchmark dataset
+    # Evaluation harness has migrated to per-task arch-agnostic wrappers
+    # under workflows/eval-<task>.sh and data downloaders under
+    # workflows/data/eval-data-<task>.sh. The pre-refactor
+    # run_{bert,gpt2}_*_evaluation.sh wrappers (clinvar/proteingym/
+    # protein_classification/cosmic/omim) have been retired; credentials
+    # for COSMIC/OMIM/HF live in repo-root .env (see .env.example).
     ├── setup_experiment_system.sh                # Sets up the experiment tracking system
     ├── start_api_server.py                       # Python script to start the experiment tracker API
     ├── start_experiment_system.sh                # Starts the full experiment tracking system

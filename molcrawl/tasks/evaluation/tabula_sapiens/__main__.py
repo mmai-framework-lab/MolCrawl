@@ -24,8 +24,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--test-fraction", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--max-cells", type=int, default=None)
+    parser.add_argument(
+        "--max-cells",
+        type=int,
+        default=None,
+        help="Class-balanced subsample cap (replaces the legacy head clipping).",
+    )
     parser.add_argument("--holdout-tissues", nargs="*", default=None)
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for accuracy/f1_macro 95%% CI (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=16,
+        help="Per-evaluation per-class CORRECT + WRONG rows shown in predictions.txt.",
+    )
     return parser
 
 
@@ -49,6 +66,8 @@ def main(argv: Optional[list[str]] = None) -> None:
             "seed": args.seed,
             "max_cells": args.max_cells,
             "holdout_tissues": args.holdout_tissues,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

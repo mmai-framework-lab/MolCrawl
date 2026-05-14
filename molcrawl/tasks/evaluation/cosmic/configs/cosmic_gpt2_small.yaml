@@ -1,6 +1,0 @@
-task: cosmic
-modality: genome_sequence
-arch: gpt2
-size: small
-label_column: FATHMM_PREDICTION
-context_length: 512

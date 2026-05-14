@@ -26,8 +26,38 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--max-new-tokens", type=int, default=128)
-    parser.add_argument("--reference-limit", type=int, default=None)
+    parser.add_argument("--reference-limit", type=int, default=None,
+                        help="Cap the train reference pool (default: full)")
+    parser.add_argument("--test-limit", type=int, default=None)
+    parser.add_argument("--scaffolds-limit", type=int, default=None)
+    parser.add_argument(
+        "--no-scaffolds-novelty",
+        dest="include_scaffolds",
+        action="store_false",
+        help="Skip cross-novelty against test_scaffolds.csv even when present",
+    )
+    parser.set_defaults(include_scaffolds=True)
     parser.add_argument("--disable-extended", action="store_true")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="torch.manual_seed before sampling, for reproducibility",
+    )
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for the validity / uniqueness / novelty CI "
+        "(0 disables; internal_diversity is excluded for cost reasons)",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=30,
+        help="Number of generated SMILES rendered in predictions.txt "
+        "(sampled across valid+novel / valid+seen / invalid)",
+    )
     return parser
 
 
@@ -53,7 +83,13 @@ def main(argv: Optional[list[str]] = None) -> None:
             "top_k": args.top_k,
             "max_new_tokens": args.max_new_tokens,
             "reference_limit": args.reference_limit,
+            "test_limit": args.test_limit,
+            "scaffolds_limit": args.scaffolds_limit,
+            "include_scaffolds": args.include_scaffolds,
             "enable_extended_metrics": not args.disable_extended,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

@@ -17,6 +17,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/common_functions.sh"
+
 : "${MODEL_PATH:?MODEL_PATH must be set}"
 : "${TOKENIZER_PATH:?TOKENIZER_PATH must be set}"
 : "${CLINVAR_DATA:?CLINVAR_DATA must be set}"
@@ -27,7 +31,7 @@ MAX_EXAMPLES="${MAX_EXAMPLES:-16}"
 
 mkdir -p "$OUTPUT_DIR"
 
-python -m molcrawl.tasks.evaluation.clinvar \
+"$PYTHON" -m molcrawl.tasks.evaluation.clinvar \
     --model-path "$MODEL_PATH" \
     --tokenizer-path "$TOKENIZER_PATH" \
     --clinvar-data "$CLINVAR_DATA" \

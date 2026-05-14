@@ -143,6 +143,19 @@ class ModelAdapter(ABC):
             f"{type(self).__name__} does not support embedding"
         )
 
+    def embed_per_residue(
+        self, inputs: Sequence[Any], **kwargs: Any
+    ) -> List[Any]:
+        """Return one ``(L_i, D)`` array per input — no pooling.
+
+        Used by sequence-labeling tasks (e.g. TAPE secondary_structure_*).
+        Default raises ``NotImplementedError``; subclasses opt in by
+        overriding this method.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support per-residue embedding"
+        )
+
     def score_likelihood(
         self, inputs: Sequence[str], **kwargs: Any
     ) -> LikelihoodOutput:
@@ -165,6 +178,7 @@ _CAPABILITY_METHOD = {
     "classification": "predict_classification",
     "regression": "predict_regression",
     "embedding": "embed",
+    "per_residue_embedding": "embed_per_residue",
     "likelihood": "score_likelihood",
     "generation": "generate",
 }
