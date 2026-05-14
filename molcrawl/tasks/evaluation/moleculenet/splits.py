@@ -141,3 +141,91 @@ def apply_split(df: pd.DataFrame, split: SplitResult):
         df.iloc[split.val_idx].reset_index(drop=True),
         df.iloc[split.test_idx].reset_index(drop=True),
     )
+
+
+def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    label_columns: Sequence[str],
+    task_type: str,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Reproducibly down-sample a task CSV while preserving label shape.
+
+    * ``task_type='classification'``: for single-label tasks, preserve
+      the 0/1 ratio of the first label column. For multi-label
+      (tox21-style), fall back to uniform random sampling since there
+      is no unambiguous stratification target.
+    * ``task_type='regression'``: bucket the first label column into
+      ``min(10, n_examples)`` quantile bins and sample proportionally
+      from each bin so all quantiles are represented.
+
+    Always shuffled with ``seed`` for reproducibility.
+    """
+    if n_examples >= len(df):
+        return df.reset_index(drop=True)
+
+    rng = np.random.default_rng(seed)
+    target = label_columns[0] if label_columns else None
+
+    if task_type == "classification" and target is not None and len(label_columns) == 1:
+        pool = df.dropna(subset=[target])
+        classes = sorted(pool[target].dropna().unique())
+        if len(classes) >= 2:
+            parts = []
+            base = n_examples // len(classes)
+            remainder = n_examples - base * len(classes)
+            for i, cls in enumerate(classes):
+                quota = base + (1 if i < remainder else 0)
+                sub = pool[pool[target] == cls]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                "stratified_subsample: %s classification — %d rows across %d classes",
+                target,
+                len(sampled),
+                len(classes),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    if task_type == "regression" and target is not None:
+        pool = df.dropna(subset=[target])
+        if len(pool) > 10:
+            n_bins = min(10, max(2, n_examples // 5))
+            try:
+                bin_ids = pd.qcut(
+                    pool[target].astype(float),
+                    q=n_bins,
+                    labels=False,
+                    duplicates="drop",
+                ).to_numpy()
+            except Exception:
+                bin_ids = np.zeros(len(pool), dtype=int)
+            parts = []
+            unique_bins = np.unique(bin_ids[~pd.isna(bin_ids)])
+            base = n_examples // max(1, len(unique_bins))
+            remainder = n_examples - base * len(unique_bins)
+            for i, b in enumerate(sorted(unique_bins)):
+                quota = base + (1 if i < remainder else 0)
+                sub = pool[bin_ids == b]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                "stratified_subsample: %s regression — %d rows across %d quantile bins",
+                target,
+                len(sampled),
+                len(unique_bins),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    # Fallback (multi-label classification or task_type unknown)
+    state = int(rng.integers(0, 2**32 - 1))
+    logger.info(
+        "stratified_subsample: uniform random %d rows (no single-column stratification target)",
+        n_examples,
+    )
+    return df.sample(n=n_examples, random_state=state).reset_index(drop=True)

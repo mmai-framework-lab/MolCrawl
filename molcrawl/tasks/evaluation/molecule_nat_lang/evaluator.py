@@ -1,4 +1,12 @@
-"""Evaluator for molecule-natural-language pair scoring."""
+"""Evaluator for molecule-natural-language pair scoring.
+
+足固め upgrade adds:
+
+- combined-length-stratified subsample (replaces df.head(max_examples))
+- bootstrap 95 % CI on perplexity
+- per-pair predictions log (jsonl + best/worst-fit narrative TXT)
+- length stats so the report makes the scored corpus shape explicit
+"""
 
 from __future__ import annotations
 
@@ -12,8 +20,9 @@ import pandas as pd
 from molcrawl.tasks.evaluation import _adapters  # noqa: F401 - registers adapters
 from molcrawl.tasks.evaluation._base import BaseEvaluator, ModelHandle
 
-from .data_preparation import load_pairs
-from .metrics import summarise
+from .data_preparation import load_pairs, stratified_subsample
+from .metrics import bootstrap_perplexity_ci, summarise
+from .predictions_log import write_predictions
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +50,26 @@ class MoleculeNatLangEvaluator(BaseEvaluator):
         self.smiles_column: str = str(self.config.get("smiles_column", "smiles"))
         self.caption_column: str = str(self.config.get("caption_column", "caption"))
         self.template: str = str(self.config.get("template", "{caption}\n{smiles}"))
+        self.max_examples: Optional[int] = self.config.get("max_examples")
+        self.seed: int = int(self.config.get("seed", 42))
+        self.bootstrap_samples: int = int(self.config.get("bootstrap_samples", 100))
+        self.predictions_preview_count: int = int(
+            self.config.get("predictions_preview_count", 20)
+        )
 
     def category(self) -> str:
         return "text_alignment"
 
     def load_dataset(self) -> pd.DataFrame:
         df = load_pairs(self.pairs_path, self.smiles_column, self.caption_column)
-        max_examples = self.config.get("max_examples")
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None and self.max_examples < len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(self.max_examples),
+                smiles_column=self.smiles_column,
+                caption_column=self.caption_column,
+                seed=self.seed,
+            )
         return df
 
     def run_predictions(self, dataset: pd.DataFrame):
@@ -65,12 +85,55 @@ class MoleculeNatLangEvaluator(BaseEvaluator):
             for _, row in dataset.iterrows()
         ]
         out = adapter.score_likelihood(formatted)
-        return {"log_likelihoods": np.asarray(out.log_likelihood, dtype=float)}
+        return {
+            "log_likelihoods": np.asarray(out.log_likelihood, dtype=float),
+            "formatted_lengths": [len(s) for s in formatted],
+        }
 
     def compute_metrics(self, dataset, predictions) -> Dict[str, float]:
-        return summarise(predictions["log_likelihoods"])
+        ll = predictions["log_likelihoods"]
+        metrics: Dict[str, float] = dict(summarise(ll))
+        ci_lo, ci_hi = bootstrap_perplexity_ci(
+            ll, n_boot=self.bootstrap_samples, seed=self.seed
+        )
+        self._last_bootstrap_ci = {"perplexity": {"ci_lo": ci_lo, "ci_hi": ci_hi}}
+        if predictions.get("formatted_lengths"):
+            lengths = np.asarray(predictions["formatted_lengths"], dtype=float)
+            metrics.update(
+                {
+                    "formatted_length_mean": float(lengths.mean()),
+                    "formatted_length_median": float(np.median(lengths)),
+                    "formatted_length_max": float(lengths.max()),
+                }
+            )
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
-        report.update({"num_pairs": int(len(dataset)), "template": self.template})
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            pairs=dataset,
+            log_likelihoods=predictions["log_likelihoods"],
+            smiles_column=self.smiles_column,
+            caption_column=self.caption_column,
+            template=self.template,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report.update(
+            {
+                "num_pairs": int(len(dataset)),
+                "template": self.template,
+                "seed": self.seed,
+                "bootstrap_ci_95": getattr(self, "_last_bootstrap_ci", {}),
+                "artefacts": artefacts,
+                "notes": (
+                    "Pseudo / causal perplexity of formatted "
+                    "(caption + molecule) pairs. Lower is better. "
+                    "Best-fit examples are pairs the model reproduces fluently; "
+                    "worst-fit examples are corpus-mismatched (long SELFIES, "
+                    "terse captions, or rare entities)."
+                ),
+            }
+        )
         return report

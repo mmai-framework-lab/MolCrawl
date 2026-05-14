@@ -72,3 +72,43 @@ def sensitivity_specificity(y_true: np.ndarray, y_pred: np.ndarray) -> Tuple[flo
     sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
     return sensitivity, specificity
+
+
+def score_distribution_stats(
+    labels: np.ndarray,
+    ref_ll: np.ndarray,
+    var_ll: np.ndarray,
+    scores: np.ndarray,
+) -> Dict[str, Dict[str, float]]:
+    """Per-class summary statistics of the raw likelihood signal.
+
+    Returned layout::
+
+        {
+          "benign":     {"n": int, "ll_ref_mean": ..., "ll_var_mean": ...,
+                         "score_mean": ..., "score_std": ...},
+          "pathogenic": {...},
+        }
+
+    These numbers make visible whether the likelihood-ratio signal
+    actually separates the two classes, independent of any threshold
+    choice. They are the first thing to inspect when the threshold
+    metrics look degenerate.
+    """
+    out: Dict[str, Dict[str, float]] = {}
+    for label_value, name in ((0, "benign"), (1, "pathogenic")):
+        mask = labels == label_value
+        n = int(mask.sum())
+        if n == 0:
+            out[name] = {"n": 0}
+            continue
+        out[name] = {
+            "n": n,
+            "ll_ref_mean": float(np.mean(ref_ll[mask])),
+            "ll_ref_std": float(np.std(ref_ll[mask])),
+            "ll_var_mean": float(np.mean(var_ll[mask])),
+            "ll_var_std": float(np.std(var_ll[mask])),
+            "score_mean": float(np.mean(scores[mask])),
+            "score_std": float(np.std(scores[mask])),
+        }
+    return out

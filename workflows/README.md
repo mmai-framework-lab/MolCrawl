@@ -183,57 +183,54 @@ This section contains **46 training scripts** (Phase 3a: 29, Phase 3b: 1, Phase 
 
 ## 🚀 AI Model Evaluation Scripts
 
-### BERT Model Evaluations
+The evaluation harness has migrated to a single arch-agnostic layout
+under `molcrawl/tasks/evaluation/<task>/`. Each task ships a
+`__main__.py` CLI plus a thin `workflows/eval-<task>.sh` driver, and
+data fetches live under `workflows/data/eval-data-<task>.sh`.
+Credential-gated downloads (COSMIC, OMIM, gated HuggingFace datasets)
+read from a repo-root `.env` — see [`.env.example`](../.env.example)
+for the full list.
 
-| Script                              | Purpose                                      | Dataset    | Dataset Size                            | Output Location                                                  |
-| ----------------------------------- | -------------------------------------------- | ---------- | --------------------------------------- | ---------------------------------------------------------------- |
-| `run_bert_proteingym_evaluation.sh` | BERT protein fitness prediction (integrated) | ProteinGym | Variable                                | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_*` |
-| `run_bert_clinvar_evaluation.sh`    | BERT variant pathogenicity prediction        | ClinVar    | 2,000 (1,000 positive + 1,000 negative) | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_*`     |
+| Workflow                              | Task package                                            | Modality          | Notes                                       |
+| ------------------------------------- | ------------------------------------------------------- | ----------------- | ------------------------------------------- |
+| `eval-clinvar.sh`                     | `molcrawl.tasks.evaluation.clinvar`                     | genome_sequence   | balanced positive/negative + bootstrap CI   |
+| `eval-gnomad.sh`                      | `molcrawl.tasks.evaluation.gnomad_af_correlation`       | genome_sequence   | AF-bin stratified                           |
+| `eval-gue.sh`                         | `molcrawl.tasks.evaluation.gue`                         | genome_sequence   | 28 sub-tasks                                |
+| `eval-proteingym.sh`                  | `molcrawl.tasks.evaluation.proteingym`                  | protein_sequence  | reference-vs-variant likelihood             |
+| `eval-deeploc.sh`                     | `molcrawl.tasks.evaluation.deeploc`                     | protein_sequence  | 10-class subcellular localisation           |
+| `eval-tape.sh`                        | `molcrawl.tasks.evaluation.tape`                        | protein_sequence  | fluorescence / stability / remote_homology / SS3 / SS8 |
+| `eval-protein-foldability.sh`         | `molcrawl.tasks.evaluation.protein_foldability`         | protein_sequence  | structure-free foldability proxies          |
+| `eval-moleculenet.sh`                 | `molcrawl.tasks.evaluation.moleculenet`                 | compounds         | 12 standard property-prediction subsets     |
+| `eval-moses.sh`                       | `molcrawl.tasks.evaluation.moses`                       | compounds         | validity / uniqueness / novelty / int. div. |
+| `eval-chembl-heldout.sh`              | `molcrawl.tasks.evaluation.chembl_scaffold_heldout`     | compounds         | scaffold-disjoint perplexity                |
+| `eval-rna-benchmark.sh`               | `molcrawl.tasks.evaluation.rna_benchmark`               | rna               | per-tissue PLL                              |
+| `eval-tabula-sapiens.sh`              | `molcrawl.tasks.evaluation.tabula_sapiens`              | rna               | cell-type annotation                        |
+| `eval-replogle-perturb-seq.sh`        | `molcrawl.tasks.evaluation.replogle_perturb_seq`        | rna               | perturbation response                       |
+| `eval-molecule-nat-lang.sh`           | `molcrawl.tasks.evaluation.molecule_nat_lang`           | molecule_nat_lang | molecule / caption pair likelihood          |
+| `eval-chemllmbench.sh`                | `molcrawl.tasks.evaluation.chemllmbench`                | molecule_nat_lang | 9 sub-tasks (3 currently wired)             |
+| `eval-chebi20.sh`                     | `molcrawl.tasks.evaluation.chebi20`                     | molecule_nat_lang | bidirectional generation                    |
+| (credential-gated) `eval-data-cosmic.sh` | `molcrawl.tasks.evaluation.cosmic`                   | genome_sequence   | requires COSMIC_EMAIL / COSMIC_PASSWORD     |
+| (credential-gated) `eval-data-omim.sh`   | `molcrawl.tasks.evaluation.omim`                     | genome_sequence   | requires OMIM_API_KEY                       |
 
-**Notes**:
+**Common features**:
 
-- The BERT ProteinGym script is a single integrated pipeline covering three phases: data preparation, evaluation, and visualization
-- **ClinVar balanced sampling**: Randomly samples 1,000 pathogenic and 1,000 benign variants to ensure a balanced evaluation dataset
+- **Bootstrap 95 % CIs** rendered alongside point estimates wherever the
+  metric is well-defined under resampling.
+- **Predictions log**: every evaluator emits `predictions.jsonl`
+  (per-row records) and `predictions.txt` (best/worst-fit narrative)
+  next to `metrics.json` and `REPORT.md`.
+- **Idempotent matrix runner**: `workflows/eval-matrix-bench.sh` drives
+  a full (evaluator × arch × size) sweep and skips combos whose
+  REPORT.md already exists.
+- **Dashboard**: `python -m molcrawl.tasks.evaluation._dashboard` walks
+  the REPORT.md files and rebuilds `docs-src/assets/data/evaluations.json`
+  for the static dashboard.
 
-### GPT-2 Model Evaluations
-
-#### Genome Sequence
-
-| Script                              | Purpose                              | Dataset | Dataset Size                            | Default Device | Output Location                                                    |
-| ----------------------------------- | ------------------------------------ | ------- | --------------------------------------- | -------------- | ------------------------------------------------------------------ |
-| `run_gpt2_clinvar_evaluation.sh`    | Pathogenic variant prediction        | ClinVar | 2,000 (1,000 positive + 1,000 negative) | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_*`            |
-| `run_gpt2_cosmic_evaluation.sh`     | Cancer-related variant analysis      | COSMIC  | Sample                                  | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_*`             |
-| `run_gpt2_omim_evaluation_dummy.sh` | Hereditary disease prediction (dev)  | OMIM    | Sample                                  | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation`      |
-| `run_gpt2_omim_evaluation_real.sh`  | Hereditary disease prediction (prod) | OMIM    | Real data                               | GPU (cuda)     | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
-
-**Notes**:
-
-- `_dummy.sh`: Uses sample data for quick development and testing
-- `_real.sh`: For production evaluation. Fetches real data from OMIM official database (authentication required)
-- **GPU optimization**: All scripts use GPU (cuda) by default (approx. 4× faster than CPU)
-- **Reuse existing data**: `run_gpt2_omim_evaluation_real.sh` supports `--existing_omim_dir` to skip re-downloading
-- **ClinVar balanced sampling**: Randomly samples 1,000 pathogenic and 1,000 benign variants for balanced evaluation
-
-#### Protein Sequence
-
-| Script                               | Purpose                                      | Dataset    | Default Model          | Default Device | Output Location                                                            |
-| ------------------------------------ | -------------------------------------------- | ---------- | ---------------------- | -------------- | -------------------------------------------------------------------------- |
-| `run_gpt2_proteingym_evaluation.sh`  | Protein fitness prediction (integrated)      | ProteinGym | Required               | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym`             |
-| `run_gpt2_protein_classification.sh` | Protein sequence classification (integrated) | Custom     | protein_sequence-small | GPU (cuda)     | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
-
-**Notes**:
-
-- **Integrated script**: A single script covering three phases: data preparation, evaluation, and visualization
-- **Default model**: `run_gpt2_protein_classification.sh` can run without specifying a model (uses `gpt2-output/protein_sequence-small/ckpt.pt`)
-- **Auto sample creation**: `run_gpt2_proteingym_evaluation.sh --create-sample` automatically downloads the recommended dataset
-- **GPU optimization**: Uses GPU by default; switch to CPU with `--device cpu`
-- **Rich visualization**: Automatically generates 10+ charts and detailed HTML reports
-
-#### RNA Sequence
-
-| Script                            | Purpose                  | Dataset       | Default Device | Output Location                                   |
-| --------------------------------- | ------------------------ | ------------- | -------------- | ------------------------------------------------- |
-| `run_rna_benchmark_evaluation.sh` | RNA benchmark evaluation | RNA Benchmark | GPU (cuda)     | `$LEARNING_SOURCE_DIR/rna/report/rna_benchmark_*` |
+The pre-refactor per-architecture wrappers (`run_bert_*`, `run_gpt2_*`)
+have been retired in favour of this layout. The legacy
+`protein_classification` task is also gone — its use cases are covered
+by `proteingym` (variant effect), `deeploc` (localisation), and
+`tape.remote_homology` (fold classification).
 
 ## 🔧 Development & Testing
 
@@ -306,16 +303,17 @@ export LEARNING_SOURCE_DIR=/data/learning_source
 ./workflows/03a-compounds-guacamol-train-small.sh
 # ... corresponding training scripts
 
-# Evaluation (standard usage)
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
+# Evaluation (arch-agnostic harness)
+bash workflows/data/eval-data-clinvar.sh   # download data
+bash workflows/eval-clinvar.sh             # run evaluator
 
 # Web interface
 ./workflows/web.sh
 
 # Separating input and output
 export LEARNING_SOURCE_DIR=/readonly/learning_source  # input (read-only)
-export EVALUATION_OUTPUT_DIR=/writable/outputs        # output (writable)
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
+export OUTPUT_DIR=/writable/outputs/clinvar           # eval output (writable)
+bash workflows/eval-clinvar.sh
 ```
 
 ### Directory Structure
@@ -362,32 +360,25 @@ logs/                                   # Script execution logs
 
 ### Output Directory Customization
 
-All evaluation scripts support custom output paths via `-o` or `--output_dir`:
+Every evaluation wrapper honours the `OUTPUT_DIR` env var (default
+`experiment_data/eval/<task>/`):
 
 ```bash
-# BERT ProteinGym evaluation - custom output
-./workflows/run_bert_proteingym_evaluation.sh \
-  --output_dir /custom/path/bert_proteingym_results
+# ClinVar (genome decoder)
+OUTPUT_DIR=/custom/path/clinvar_results bash workflows/eval-clinvar.sh
 
-# GPT-2 ClinVar evaluation - custom output
-./workflows/run_gpt2_clinvar_evaluation.sh \
-  --output_dir /custom/path/clinvar_results
+# ProteinGym (protein encoder)
+OUTPUT_DIR=/custom/path/proteingym_results bash workflows/eval-proteingym.sh
 
-# GPT-2 ProteinGym evaluation - custom output
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv \
-  -o /custom/path/proteingym_results
-
-# GPT-2 OMIM real data evaluation - custom output
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --output_dir /custom/path/omim_real_results
+# DeepLoc / TAPE / GUE / etc. follow the same pattern
 ```
 
 **Notes**:
 
-- If no output path is specified, results are saved to `$LEARNING_SOURCE_DIR/{model_type}/report/{evaluation_type}` by default
-- The data preparation path (`--data_dir`) and report/visualization path (`--output_dir`) can be specified independently
-- Visualization results are saved to the `{output_dir}/visualizations/` subdirectory
+- Default output is `experiment_data/eval/<task>/` under repo root
+- All evaluators emit `metrics.json`, `REPORT.md`, `predictions.jsonl`,
+  and `predictions.txt` under `OUTPUT_DIR`
+- Bootstrap CIs render alongside point estimates whenever applicable
 
 ### Evaluation Directory Contents
 
@@ -400,141 +391,56 @@ All evaluation scripts support custom output paths via `-o` or `--output_dir`:
 
 ### Standard Evaluations
 
-#### BERT Model Evaluations
+The arch-agnostic evaluators all share the same `eval-<task>.sh`
+wrapper convention. Each takes an env-var-style configuration:
 
 ```bash
-# BERT ProteinGym evaluation (integrated: data prep -> evaluation -> visualization)
-./workflows/run_bert_proteingym_evaluation.sh --max_variants 2000 --batch_size 32
+# ClinVar — pathogenic/benign variant classification (genome decoder)
+MODEL_PATH=$LEARNING_SOURCE_DIR/genome_sequence/gpt2-output/.../ckpt.pt \
+TOKENIZER_PATH=assets/genome/sentencepiece.model \
+CLINVAR_CSV=$LEARNING_SOURCE_DIR/eval/clinvar/clinvar_sequences.csv \
+N_PER_CLASS=1000 BOOTSTRAP=100 \
+bash workflows/eval-clinvar.sh
 
-# Create sample data only
-./workflows/run_bert_proteingym_evaluation.sh --sample_only
+# ProteinGym — zero-shot variant effect (protein encoder)
+MODEL_PATH=$LEARNING_SOURCE_DIR/protein_sequence/esm2-output/.../checkpoint-25000 \
+PROTEINGYM_DIR=$LEARNING_SOURCE_DIR/eval/proteingym/unpacked \
+ARCH=esm2 MAX_EXAMPLES=300 BOOTSTRAP=100 \
+bash workflows/eval-proteingym.sh
 
-# Run evaluation only (skip data preparation)
-./workflows/run_bert_proteingym_evaluation.sh --skip_data_prep
+# DeepLoc — subcellular localisation (10-class probe over esm2 / bert)
+MODEL_PATH=$LEARNING_SOURCE_DIR/protein_sequence/esm2-output/.../checkpoint-25000 \
+DEEPLOC_DATA=$LEARNING_SOURCE_DIR/eval/deeploc/deeploc.csv \
+ARCH=esm2 MAX_EXAMPLES=300 BOOTSTRAP=100 \
+bash workflows/eval-deeploc.sh
 
-# BERT ClinVar evaluation (balanced sampling: 1,000 positive + 1,000 negative)
-# First run: start from data preparation
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-
-# If data is already prepared: run evaluation only
-./workflows/run_bert_clinvar_evaluation.sh
-
-# Force re-download data
-./workflows/run_bert_clinvar_evaluation.sh --force-download
+# TAPE — fluorescence / stability / remote_homology / SS3 / SS8
+MODEL_PATH=$LEARNING_SOURCE_DIR/protein_sequence/esm2-output/.../checkpoint-25000 \
+TAPE_DIR=$LEARNING_SOURCE_DIR/eval/tape \
+TASKS="fluorescence stability remote_homology" \
+ARCH=esm2 MAX_EXAMPLES=300 BOOTSTRAP=100 \
+bash workflows/eval-tape.sh
 ```
 
-#### GPT-2 Genome Sequence Evaluations
+The full task list is in the table earlier in this README.
+
+### Matrix sweep (one command across all evaluators)
 
 ```bash
-# ClinVar evaluation (balanced sampling: 1,000 positive + 1,000 negative)
-# First run: download data & balanced sampling
-./workflows/run_gpt2_clinvar_evaluation.sh --download --model-size medium
-
-# If data is already prepared: run evaluation only
-./workflows/run_gpt2_clinvar_evaluation.sh --model-size small
-
-# Run evaluation only (skip data preparation)
-./workflows/run_gpt2_clinvar_evaluation.sh --eval-only --model-size medium
-
-# Run visualization only
-./workflows/run_gpt2_clinvar_evaluation.sh --visualize-only
-
-# COSMIC evaluation
-./workflows/run_gpt2_cosmic_evaluation.sh --model_size small --batch_size 32
-
-# OMIM evaluation (sample data, for development)
-./workflows/run_gpt2_omim_evaluation_dummy.sh --max_samples 50
-
-# OMIM evaluation (real data, for production; authentication required)
-./workflows/run_gpt2_omim_evaluation_real.sh --force_download --model_size medium
-
-# OMIM evaluation (reuse existing data)
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --existing_omim_dir /path/to/downloaded/omim_data \
-  --model_size medium
+MATRIX_DEVICE=cpu MATRIX_BOOTSTRAP=30 \
+bash workflows/eval-matrix-bench.sh
 ```
 
-#### GPT-2 Protein Sequence Evaluations
+`eval-matrix-bench.sh` is idempotent — combos whose `REPORT.md`
+already exists are skipped on re-runs. Use `MATRIX_FILTER=<regex>` to
+restrict to a sub-set of `<task>__<arch>__<size>` ids.
 
-```bash
-# ProteinGym evaluation (integrated)
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m gpt2-output/protein_sequence-small/ckpt.pt \
-  -d proteingym_data/sample.csv
+### Custom output directory
 
-# Auto-create sample data and evaluate (downloads recommended dataset)
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m gpt2-output/protein_sequence-small/ckpt.pt \
-  --create-sample
-
-# Protein Classification evaluation (using default model)
-./workflows/run_gpt2_protein_classification.sh -s
-
-# Protein Classification evaluation (custom model)
-./workflows/run_gpt2_protein_classification.sh \
-  -m gpt2-output/protein_sequence-medium/ckpt.pt \
-  -s
-
-# Run visualization only (if evaluation is already complete)
-./workflows/run_gpt2_protein_classification.sh \
-  -s --skip_data_prep --skip_evaluation
-```
-
-### Advanced Options
-
-#### Phase-based Execution (GPT-2 scripts)
-
-```bash
-# Data preparation only
-./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_evaluation --skip_visualization
-
-# Evaluation only (if data is already prepared)
-./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_visualization
-
-# Visualization only (if evaluation results exist)
-./workflows/run_gpt2_omim_evaluation_dummy.sh --skip_data_prep --skip_evaluation
-```
-
-#### Device and Performance Tuning
-
-```bash
-# Use CPU (for environments without GPU)
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv --device cpu
-
-# Reduce batch size and sample count (to save memory)
-./workflows/run_gpt2_clinvar_evaluation.sh \
-  --max_samples 200 --batch_size 8
-
-# ProteinGym quick test (limit max samples)
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv --max_samples 100
-```
-
-#### Data Management Options
-
-```bash
-# Specify custom output directory (common to all evaluation scripts)
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt -d data.csv -o /custom/output/path
-
-./workflows/run_bert_clinvar_evaluation.sh \
-  --output_dir /custom/clinvar/results
-
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --output_dir /custom/omim/results
-
-# Specify data prep and report output separately
-# (some scripts support --data_dir and --output_dir independently)
-
-# Reuse existing OMIM data (skip download)
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --existing_omim_dir /path/to/omim_data
-
-# Auto-create ProteinGym sample data
-./workflows/run_gpt2_proteingym_evaluation.sh \
-  -m model.pt --create-sample
-```
+Every wrapper honours `OUTPUT_DIR=...`. Default is
+`experiment_data/eval/<task>/`. `MAX_EXAMPLES`, `BOOTSTRAP`,
+`PREDICTIONS_PREVIEW_COUNT`, and `SEED` are also accepted by every
+wrapper.
 
 ### Experiment System
 
@@ -616,28 +522,24 @@ This directory contains 91 scripts (Shell: 89, Python: 2):
 
 ### 🔍 **Evaluation Scripts** (9 scripts)
 
-Automated model evaluation scripts integrating three phases: data preparation, evaluation, and visualization
+Arch-agnostic evaluation entry points under `workflows/eval-*.sh`
+backed by Python packages under `molcrawl/tasks/evaluation/<task>/`.
 
-**BERT Models:**
+The full list (data downloader → evaluator wrapper → task package) is
+in the table earlier in this README. Highlights:
 
-- `run_bert_proteingym_evaluation.sh` - BERT ProteinGym evaluation
-- `run_bert_clinvar_evaluation.sh` - BERT ClinVar evaluation
-
-**GPT-2 Genome Sequence:**
-
-- `run_gpt2_clinvar_evaluation.sh` - GPT-2 ClinVar evaluation
-- `run_gpt2_cosmic_evaluation.sh` - GPT-2 COSMIC evaluation
-- `run_gpt2_omim_evaluation_dummy.sh` - GPT-2 OMIM evaluation (sample)
-- `run_gpt2_omim_evaluation_real.sh` - GPT-2 OMIM evaluation (real data)
-
-**GPT-2 Protein Sequence:**
-
-- `run_gpt2_proteingym_evaluation.sh` - GPT-2 ProteinGym evaluation
-- `run_gpt2_protein_classification.sh` - GPT-2 Protein Classification evaluation
-
-**RNA Sequence:**
-
-- `run_rna_benchmark_evaluation.sh` - RNA Benchmark evaluation
+- `eval-clinvar.sh` — ClinVar pathogenic / benign variant classification
+- `eval-gnomad.sh` — gnomAD allele-frequency correlation
+- `eval-gue.sh` — GUE 28-task genome benchmark
+- `eval-proteingym.sh` — ProteinGym zero-shot variant effect
+- `eval-deeploc.sh` — DeepLoc subcellular localisation
+- `eval-tape.sh` — TAPE (fluorescence / stability / remote_homology / SS3 / SS8)
+- `eval-protein-foldability.sh` — structure-free foldability proxies
+- `eval-moleculenet.sh`, `eval-moses.sh`, `eval-chembl-heldout.sh`
+- `eval-rna-benchmark.sh`, `eval-tabula-sapiens.sh`, `eval-replogle-perturb-seq.sh`
+- `eval-molecule-nat-lang.sh`, `eval-chemllmbench.sh`, `eval-chebi20.sh`
+- (credential-gated) `eval-data-cosmic.sh`, `eval-data-omim.sh` — paired
+  with `molcrawl.tasks.evaluation.{cosmic,omim}` and `.env`
 
 ### 🛠️ **Development Scripts** (4 scripts)
 
@@ -690,41 +592,21 @@ All evaluation scripts are structured around three phases:
 
 ### Flexible Output Directory
 
-All evaluation scripts support customizable output paths:
+Every evaluation wrapper takes `OUTPUT_DIR=...` as its output target.
+Default is `experiment_data/eval/<task>/` under repo root.
 
 ```bash
-# Default output (under LEARNING_SOURCE_DIR)
-./workflows/run_bert_proteingym_evaluation.sh
-# -> $LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym_YYYYMMDD_HHMMSS/
+# Default
+bash workflows/eval-clinvar.sh
+# -> experiment_data/eval/clinvar/
 
-# Specify custom output path
-./workflows/run_bert_proteingym_evaluation.sh \
-  --output_dir /mnt/results/my_proteingym_eval
-# -> /mnt/results/my_proteingym_eval/
-
-# Relative path also supported
-./workflows/run_gpt2_clinvar_evaluation.sh \
-  -o ./my_clinvar_results
-# -> ./my_clinvar_results/
-
-# Specify data prep and report output separately (some scripts)
-./workflows/run_gpt2_omim_evaluation_real.sh \
-  --output_dir /results/omim_eval \
-  --config /custom/config.yaml
+# Custom
+OUTPUT_DIR=/mnt/results/my_clinvar bash workflows/eval-clinvar.sh
+# -> /mnt/results/my_clinvar/
 ```
 
-**Default output paths:**
-
-| Script | Default Output Path |
-|--------|---------------------|
-| `run_bert_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/bert_clinvar_evaluation` |
-| `run_bert_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/bert_proteingym` |
-| `run_gpt2_clinvar_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/clinvar_evaluation` |
-| `run_gpt2_cosmic_evaluation.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/cosmic_evaluation` |
-| `run_gpt2_omim_evaluation_dummy.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_evaluation` |
-| `run_gpt2_omim_evaluation_real.sh` | `$LEARNING_SOURCE_DIR/genome_sequence/report/omim_real_evaluation` |
-| `run_gpt2_proteingym_evaluation.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_proteingym` |
-| `run_gpt2_protein_classification.sh` | `$LEARNING_SOURCE_DIR/protein_sequence/report/gpt2_protein_classification` |
+Each run writes `metrics.json`, `REPORT.md`, `predictions.jsonl`, and
+`predictions.txt` into `OUTPUT_DIR`.
 
 ### Benefits of Phase-Based Execution
 
@@ -744,8 +626,9 @@ All evaluation scripts support customizable output paths:
 ### Data Management
 
 - **Output management**: Results are automatically organized with timestamps
-- **Real data access**: `run_gpt2_omim_evaluation_real.sh` requires OMIM authentication
-- **Sample data**: `_dummy.sh` scripts require no authentication and are suitable for development/testing
+- **Credential-gated downloads**: COSMIC and OMIM data fetches need API
+  credentials — set them in the repo-root `.env` (see `.env.example`)
+  and run `workflows/data/eval-data-{cosmic,omim}.sh`.
 
 ### Script Structure
 
@@ -762,267 +645,74 @@ All evaluation scripts support customizable output paths:
 
 ### Performance Optimization
 
-- **Default device**: All evaluation scripts use GPU (cuda) by default
-- **CPU fallback**: Use `--device cpu` option to run on CPU (slower)
-- **Sample limit**: Use `--max_samples N` to speed up test runs
-- **Batch size tuning**: Use `--batch_size N` to control memory usage
-- **Data reuse**: Use `--existing_omim_dir` to avoid re-downloading
-
-### New Features
-
-- **Protein Classification visualization**: Automatically generates 10+ charts and detailed HTML reports
-- **ProteinGym sample data**: Use `--create-sample` to automatically download the recommended dataset
-- **OMIM data reuse**: Use `--existing_omim_dir` to leverage already-downloaded data
-- **Default model**: Protein Classification can run without specifying a model
-- **ClinVar balanced sampling**: Accurate evaluation with 1,000 pathogenic and 1,000 benign variants each
-
-### ClinVar Balanced Sampling Details
-
-#### Background
-
-Previous ClinVar data preparation extracted only a few samples, resulting in low evaluation reliability.
-
-#### Improvements
-
-Using `extract_random_clinvar_samples.py` to achieve the following:
-
-**Dataset composition**:
-
-- Pathogenic variants: 1,000 samples
-- Benign variants: 1,000 samples
-- Total: 2,000 balanced samples
-
-**Sampling method**:
-
-1. Fetch ClinVar data from HuggingFace Datasets
-2. Automatically classify by clinical significance (pathogenic/benign)
-3. Randomly sample 1,000 from each class
-4. Extract flanking sequences from the reference genome
-
-**Benefits**:
-
-- Eliminates class imbalance for accurate accuracy evaluation
-- Reproducible random sampling (fixed seed=42)
-- Automated data preparation workflow
-
-**Usage**:
-
-```bash
-# GPT-2 ClinVar evaluation
-./workflows/run_gpt2_clinvar_evaluation.sh --download
-
-# BERT ClinVar evaluation
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-```
+- **Default device**: every evaluator wrapper accepts `DEVICE=cuda` or
+  `DEVICE=cpu` (default `cuda`).
+- **Sample limit**: `MAX_EXAMPLES=N` to cap how many rows are scored.
+- **Bootstrap iterations**: `BOOTSTRAP=N` (default 100) to control CI
+  estimation cost; set to `0` to disable.
+- **Idempotent reruns**: the matrix runner skips combos whose REPORT.md
+  already exists; individual wrappers don't, so set `OUTPUT_DIR` to a
+  fresh path when re-running.
 
 ## 📞 Troubleshooting
 
 ### Common Issues and Solutions
 
-1. **Environment variable error**
+1. **`LEARNING_SOURCE_DIR` not set**
 
    ```bash
-   # Error: LEARNING_SOURCE_DIR environment variable is not set
    export LEARNING_SOURCE_DIR=/path/to/learning_source
    ```
 
-2. **Model file not found**
+2. **Model file not found** — every wrapper takes `MODEL_PATH=...`. The
+   accepted layouts are `<dir>/ckpt.pt` for GPT-2 / minGPT checkpoints
+   and `<dir>/checkpoint-N/` for HuggingFace MLM checkpoints.
+
+3. **Data file not found** — re-run the corresponding
+   `workflows/data/eval-data-<task>.sh` downloader. Each one is
+   idempotent.
+
+4. **Credential-gated downloads (COSMIC / OMIM / gated HuggingFace)**
 
    ```bash
-   # Check model directory
-   ls -la gpt2-output/
-   ls -la runs_train_bert_*/
+   # Verify credentials are loaded
+   grep -E '^(COSMIC_|OMIM_API_KEY|HF_TOKEN)' .env
 
-   # Protein Classification uses default model automatically
-   ./workflows/run_gpt2_protein_classification.sh -s
-   # -> uses gpt2-output/protein_sequence-small/ckpt.pt automatically
+   # Re-run the relevant downloader
+   bash workflows/data/eval-data-cosmic.sh
+   bash workflows/data/eval-data-omim.sh
    ```
 
-3. **CUDA error**
-
-   ```bash
-   # Check GPU
-   nvidia-smi
-
-   # Switch to CPU (supported by all scripts)
-   ./workflows/run_gpt2_*.sh --device cpu
-
-   # Note: CPU is approx. 4x slower than GPU
-   ```
-
-4. **Data file not found**
-
-   ```bash
-   # Re-run data preparation phase
-   ./workflows/run_gpt2_*.sh --force_download
-
-   # Or run data preparation only
-   ./workflows/run_gpt2_*.sh --skip_evaluation --skip_visualization
-
-   # Auto-create ProteinGym sample data
-   ./workflows/run_gpt2_proteingym_evaluation.sh \
-     -m model.pt --create-sample
-
-   # Create ClinVar balanced sampling data
-   # For GPT-2
-   ./workflows/run_gpt2_clinvar_evaluation.sh --download
-   # For BERT
-   ./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-   ```
-
-5. **OMIM real data access error**
-
-   ```bash
-   # Verify authentication URL is correctly configured
-   cat assets/configs/omim_real_data.yaml
-
-   # Verify operation with sample data
-   ./workflows/run_gpt2_omim_evaluation_dummy.sh
-
-   # Reuse existing data (avoid re-downloading)
-   ./workflows/run_gpt2_omim_evaluation_real.sh \
-     --existing_omim_dir /path/to/omim_data
-   ```
+5. **Slow evaluator on CPU** — reduce `MAX_EXAMPLES` (100–500 is typical
+   for smoke runs) and `BOOTSTRAP` (20–30 keeps cost down).
 
 6. **Missing Python packages**
 
    ```bash
-   # Install required packages
-   pip install torch transformers pandas numpy scikit-learn matplotlib seaborn sentencepiece scipy
+   pip install torch transformers pandas numpy scikit-learn \
+     matplotlib seaborn sentencepiece scipy huggingface_hub
    ```
 
-7. **ProteinGym evaluation is slow**
+### Output Directory Layout
 
-   ```bash
-   # Use GPU (default, approx. 4x faster)
-   ./workflows/run_gpt2_proteingym_evaluation.sh -m model.pt -d data.csv
-
-   # Limit sample count for testing
-   ./workflows/run_gpt2_proteingym_evaluation.sh \
-     -m model.pt -d data.csv --max_samples 100
-
-   # Progress: 50 samples/GPU ~ 12 sec, 2770 samples/GPU ~ 11 min
-   ```
-
-8. **Visualization error**
-
-   ```bash
-   # Check if evaluation results exist
-   ls -la $LEARNING_SOURCE_DIR/*/report/*/
-
-   # Re-run visualization only
-   ./workflows/run_gpt2_*.sh --skip_data_prep --skip_evaluation
-
-   # Protein Classification detailed report
-   # -> 10+ charts + HTML in visualizations/ directory
-
-   # Specify custom output and re-run visualization
-   ./workflows/run_gpt2_proteingym_evaluation.sh \
-     --skip_data_prep --skip_evaluation \
-     -o /custom/visualization/path
-   ```
-
-9. **Output directory not found**
-
-   ```bash
-   # Check default output path
-   echo $LEARNING_SOURCE_DIR
-   ls -la $LEARNING_SOURCE_DIR/*/report/
-
-   # If custom output was used
-   ls -la /path/to/custom/output/
-
-   # Re-run with explicit output path
-   ./workflows/run_bert_proteingym_evaluation.sh \
-     --output_dir /specific/output/path
-
-   # Find the latest evaluation result directory
-   find $LEARNING_SOURCE_DIR -type d -name "*proteingym*" -o -name "*clinvar*" | sort
-   ```
-
-10. **ClinVar data has only a few samples**
-
-```bash
-# Problem: legacy method extracts only a small number of samples
-# Solution: use balanced sampling script
-
-# For GPT-2 (auto-generates 2,000 balanced samples)
-./workflows/run_gpt2_clinvar_evaluation.sh --download
-
-# For BERT (auto-generates 2,000 balanced samples)
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
-
-# Check dataset statistics
-python -c "
-import pandas as pd
-df = pd.read_csv('$LEARNING_SOURCE_DIR/genome_sequence/data/clinvar/clinvar_evaluation_dataset.csv')
-print(f'Total samples: {len(df)}')
-print(df['ClinicalSignificance'].value_counts())
-"
-# Expected: Pathogenic 1,000, Benign 1,000
 ```
-
-11. **Reference genome file not found (ClinVar balanced sampling)**
-
-    ```bash
-    # Download reference genome
-    wget -P $LEARNING_SOURCE_DIR/genome_sequence/data/ \
-      https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
-
-    # If already downloaded, verify path
-    ls -lh $LEARNING_SOURCE_DIR/genome_sequence/data/GCA_000001405.28_GRCh38.p13_genomic.fna*
-
-    # .gz files can be used as-is (scripts auto-decompress)
-    ```
-
-12. **Batch-testing multiple GPT-2 checkpoints**
-
-    ```bash
-    # Batch test all domain checkpoints
-    ./workflows/batch_test_gpt2.sh gpt2-output/
-
-    # Test only a specific subdirectory
-    ./workflows/batch_test_gpt2.sh path/to/checkpoints/
-
-    # Results saved to gpt2_test_results_TIMESTAMP/
-    ls -la gpt2_test_results_*/
-
-    # Check per-domain results
-    # - compounds: compound generation validity
-    # - genome_sequence: genomic sequence consistency
-    # - protein_sequence: protein sequence quality
-    # - rna: RNA sequence structural validity
-    # - molecule_nat_lang: molecular description text quality
-    ```
-
-### Log Inspection
-
-Each script outputs detailed logs:
-
-- Console output: Real-time progress
-- `logs/`: System logs (some scripts)
-- `$OUTPUT_DIR/*_report.txt`: Detailed evaluation result reports
+$OUTPUT_DIR/
+  metrics.json        # machine-readable metrics + bootstrap_ci_95
+  REPORT.md           # human-readable summary
+  predictions.jsonl   # per-row records
+  predictions.txt     # narrative best/worst-fit preview
+```
 
 ## 🔄 Migration Notes
 
-### Script Structural Changes
+The pre-refactor per-architecture wrappers (`run_bert_*`, `run_gpt2_*`)
+and per-architecture evaluation modules (`bert_*.py`, `gpt2_*.py` under
+each evaluator package) have been retired. The current arch-agnostic
+pipeline:
 
-These scripts have undergone the following changes:
-
-1. **Clarified file naming**
-   - Added `run_gpt2_` prefix to GPT-2-specific scripts
-   - Added `run_bert_` prefix to BERT-specific scripts
-   - Added `_real` suffix to OMIM real data scripts
-
-2. **Three-phase integration**
-   - Merged data preparation, evaluation, and visualization scripts
-   - Added per-phase skip options
-
-3. **Unified LEARNING_SOURCE_DIR structure**
-   - Consistent directory structure across all scripts
-   - Added environment variable checks
-
-4. **Unified script paths**
-   - All Python execution paths unified under `molcrawl/tasks/evaluation/{task}/{arch}_*.py (organized by task)`
-
-All functionality is identical as long as scripts are run from the project root directory.
+1. Each evaluator lives under `molcrawl/tasks/evaluation/<task>/`.
+2. Architectures (GPT-2 / BERT / ESM-2 / DNABERT-2 / RNAformer /
+   ChemBERTa-2) plug in through `molcrawl/tasks/evaluation/_adapters/`.
+3. Data fetches live in `workflows/data/eval-data-<task>.sh`.
+4. Wrapper drivers live in `workflows/eval-<task>.sh`.
+5. Credentials come from a single `.env` (template: `.env.example`).

@@ -25,7 +25,31 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--smiles-column", default="smiles")
     parser.add_argument("--label-column", default=None)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help="Length-stratified subsample (perplexity) or class-balanced subsample "
+        "(probe). Replaces the legacy df.head() slicing.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Reproducibility seed for stratified subsample + bootstrap.",
+    )
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=100,
+        help="Bootstrap resamples for perplexity / probe-metric 95%% CIs (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=30,
+        help="Number of best- + worst-fit SMILES shown in predictions.txt.",
+    )
     return parser
 
 
@@ -50,6 +74,9 @@ def main(argv: Optional[list[str]] = None) -> None:
             "label_column": args.label_column,
             "train_csv": args.train_csv,
             "max_examples": args.max_examples,
+            "seed": args.seed,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

@@ -33,7 +33,12 @@ TASK_TYPE = {
     "property_prediction": "exact",
     "reaction_prediction": "smiles",
     "retrosynthesis": "smiles",
-    "yield_prediction": "regression",
+    # NOTE: ChemLLMBench's official ``yield_prediction`` data ships
+    # binary Yes/No labels (whether the reaction yield exceeds 30 %), not
+    # numeric yields, so exact-match is the right scoring rule. The
+    # README's "RMSE / MAE" mention is aspirational — match it once the
+    # upstream emits numeric yields.
+    "yield_prediction": "exact",
     "molecule_captioning": "text",
     "text_guided_generation": "smiles",
     "molecule_design": "smiles",

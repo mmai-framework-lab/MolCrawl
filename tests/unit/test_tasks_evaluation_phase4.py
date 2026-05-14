@@ -34,8 +34,13 @@ class HashEmbedAdapter(ModelAdapter):
     def load(self) -> None:
         return None
 
-    def embed(self, inputs: Sequence[str], **_: Any) -> EmbeddingOutput:
-        feats = np.array([[abs(hash(s)) % 997, len(s)] for s in inputs], dtype=float)
+    def embed(self, inputs: Sequence[Any], **_: Any) -> EmbeddingOutput:
+        # Upstream TabulaSapiens passes pre-tokenised int lists; convert any
+        # non-hashable input into a stable string key before hashing.
+        def _key(s: Any) -> str:
+            return s if isinstance(s, str) else repr(s)
+
+        feats = np.array([[abs(hash(_key(s))) % 997, len(s)] for s in inputs], dtype=float)
         return EmbeddingOutput(embeddings=feats, pooled=True)
 
 

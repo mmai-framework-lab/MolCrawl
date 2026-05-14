@@ -2,6 +2,54 @@
 # Common functions for bootstrap scripts
 
 # ---------------------------------------------------------------------------
+# Local credential loader.  Sources ".env" from the repo root so that
+# COSMIC_EMAIL / COSMIC_PASSWORD / OMIM_API_KEY / HF_TOKEN etc. can be
+# kept in a single gitignored file rather than re-exported every shell.
+# Falls back to ~/.config/molcrawl/.env when the repo-local file is
+# absent, so a single global secret store can serve multiple checkouts.
+# See ".env.example" for the documented variable list.
+#
+# NB: parses ``KEY=VALUE`` lines directly instead of ``source``ing the
+# file. ``source`` runs each line through bash word-splitting + variable
+# expansion, which both (a) forces users to escape ``$`` in passwords
+# and (b) explodes under ``set -u`` when callers (eval-data-*.sh) have
+# strict mode active before this loader runs. Direct parsing keeps the
+# value byte-for-byte and ignores the surrounding shell options.
+# ---------------------------------------------------------------------------
+_CF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_REPO_ROOT="$(cd "${_CF_DIR}/.." && pwd)"
+for _env_path in "${_REPO_ROOT}/.env" "${HOME}/.config/molcrawl/.env"; do
+    if [ -f "${_env_path}" ]; then
+        while IFS= read -r _env_line || [ -n "${_env_line}" ]; do
+            # skip comments and blank lines
+            case "${_env_line}" in
+                ''|'#'*) continue ;;
+            esac
+            # only ``KEY=VALUE`` lines (KEY must be a valid env-var name)
+            case "${_env_line}" in
+                [A-Za-z_]*=*) ;;
+                *) continue ;;
+            esac
+            _env_key="${_env_line%%=*}"
+            _env_val="${_env_line#*=}"
+            # strip a single matching pair of surrounding quotes if present
+            case "${_env_val}" in
+                \"*\") _env_val="${_env_val#\"}"; _env_val="${_env_val%\"}" ;;
+                \'*\') _env_val="${_env_val#\'}"; _env_val="${_env_val%\'}" ;;
+            esac
+            # outer environment wins — match the de-facto dotenv convention
+            # so that ad-hoc overrides like ``COSMIC_GENOME=GRCh37 bash ...``
+            # behave the way users expect.
+            if [ -z "$(eval "echo \${${_env_key}:-}")" ]; then
+                export "${_env_key}=${_env_val}"
+            fi
+        done < "${_env_path}"
+        break
+    fi
+done
+unset _env_path _env_line _env_key _env_val _CF_DIR _REPO_ROOT
+
+# ---------------------------------------------------------------------------
 # Python executable — select ROCm env on AMD GPU nodes (gpu04), molcrawl elsewhere
 # ---------------------------------------------------------------------------
 _SCRIPT_DIR_CF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +90,7 @@ unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _ROCM_PYTHON _NODE_NAME _IS_AMD_N
 # Check if LEARNING_SOURCE_DIR environment variable is set
 # Usage: check_learning_source_dir
 check_learning_source_dir() {
-    if [ -z "$LEARNING_SOURCE_DIR" ]; then
+    if [ -z "${LEARNING_SOURCE_DIR:-}" ]; then
         echo "ERROR: LEARNING_SOURCE_DIR environment variable is not set."
         echo "Please set it before running this script:"
         echo "  export LEARNING_SOURCE_DIR='...'"

@@ -28,7 +28,37 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--val-frac", type=float, default=0.1)
     parser.add_argument("--test-frac", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--max-examples", type=int, default=None)
+    parser.add_argument(
+        "--n-examples",
+        type=int,
+        default=None,
+        help=(
+            "Cap on total rows after stratified subsampling (preserving "
+            "label distribution for single-label classification or "
+            "quantile buckets for regression). Omit to use the full task."
+        ),
+    )
+    parser.add_argument(
+        "--bootstrap-samples",
+        type=int,
+        default=200,
+        help="Bootstrap resamples for the 95 %% CI (0 disables).",
+    )
+    parser.add_argument(
+        "--predictions-preview-count",
+        type=int,
+        default=20,
+        help=(
+            "Number of molecules rendered in the predictions.txt narrative. "
+            "Set 0 to skip; predictions.jsonl is always produced."
+        ),
+    )
+    parser.add_argument(
+        "--max-examples",
+        type=int,
+        default=None,
+        help="[deprecated] Legacy alias for --n-examples.",
+    )
     return parser
 
 
@@ -54,7 +84,10 @@ def main(argv: Optional[list[str]] = None) -> None:
             "val_frac": args.val_frac,
             "test_frac": args.test_frac,
             "seed": args.seed,
+            "n_examples": args.n_examples,
             "max_examples": args.max_examples,
+            "bootstrap_samples": args.bootstrap_samples,
+            "predictions_preview_count": args.predictions_preview_count,
         },
     )
     result = evaluator.run()

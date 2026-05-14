@@ -3,6 +3,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/common_functions.sh"
+
 : "${MODEL_PATH:?MODEL_PATH must be set}"
 : "${CHEMLLMBENCH_DIR:?CHEMLLMBENCH_DIR must be set}"
 
@@ -14,7 +18,7 @@ SUBTASKS="${SUBTASKS:-}"
 mkdir -p "$OUTPUT_DIR"
 
 if [[ -z "$SUBTASKS" ]]; then
-    SUBTASKS=$(python -c "from molcrawl.tasks.evaluation.chemllmbench.data_preparation import TASKS; print(' '.join(TASKS))")
+    SUBTASKS=$("$PYTHON" -c "from molcrawl.tasks.evaluation.chemllmbench.data_preparation import TASKS; print(' '.join(TASKS))")
 fi
 
 for subtask in $SUBTASKS; do
@@ -23,7 +27,7 @@ for subtask in $SUBTASKS; do
         echo "Skipping missing $jsonl" >&2
         continue
     fi
-    cmd=(python -m molcrawl.tasks.evaluation.chemllmbench
+    cmd=("$PYTHON" -m molcrawl.tasks.evaluation.chemllmbench
          --model-path "$MODEL_PATH"
          --arch "$ARCH"
          --modality molecule_nat_lang
@@ -33,6 +37,21 @@ for subtask in $SUBTASKS; do
          --output-dir "$OUTPUT_DIR/$subtask")
     if [[ -n "${TOKENIZER_PATH:-}" ]]; then
         cmd+=(--tokenizer-path "$TOKENIZER_PATH")
+    fi
+    if [[ -n "${MAX_EXAMPLES:-}" ]]; then
+        cmd+=(--max-examples "$MAX_EXAMPLES")
+    fi
+    if [[ -n "${SEED:-}" ]]; then
+        cmd+=(--seed "$SEED")
+    fi
+    if [[ -n "${PREDICTIONS_PREVIEW_COUNT:-}" ]]; then
+        cmd+=(--predictions-preview-count "$PREDICTIONS_PREVIEW_COUNT")
+    fi
+    if [[ -n "${MAX_NEW_TOKENS:-}" ]]; then
+        cmd+=(--max-new-tokens "$MAX_NEW_TOKENS")
+    fi
+    if [[ -n "${TEMPERATURE:-}" ]]; then
+        cmd+=(--temperature "$TEMPERATURE")
     fi
     "${cmd[@]}"
 done

@@ -214,13 +214,16 @@ python molcrawl/data/molecule_nat_lang/preparation.py \
 ### 2. 評価実行
 
 ```bash
-# BERT ClinVar評価
-./workflows/run_bert_clinvar_evaluation.sh --prepare-data
+# ClinVar (genome decoder + arch-agnostic harness)
+bash workflows/data/eval-data-clinvar.sh
+MODEL_PATH=... TOKENIZER_PATH=... CLINVAR_CSV=... \
+  bash workflows/eval-clinvar.sh
 
-# GPT-2 ProteinGym評価
-./workflows/run_gpt2_proteingym_evaluation.sh \
-    -m gpt2-output/protein_sequence-large/ckpt.pt \
-    -o results/proteingym
+# ProteinGym (protein encoder)
+MODEL_PATH=gpt2-output/protein_sequence-large/ckpt.pt \
+  PROTEINGYM_DIR=$LEARNING_SOURCE_DIR/eval/proteingym/unpacked \
+  OUTPUT_DIR=results/proteingym \
+  bash workflows/eval-proteingym.sh
 ```
 
 ---
@@ -278,10 +281,10 @@ python molcrawl/data/molecule_nat_lang/preparation.py \
 
 ### 1. **柔軟な出力先指定**
 
-全評価スクリプトで `-o` / `--output-dir` オプションをサポート
+全評価ラッパーが `OUTPUT_DIR=...` をサポート
 
 ```bash
-./run_bert_clinvar_evaluation.sh -o /custom/results/path
+OUTPUT_DIR=/custom/results/path bash workflows/eval-clinvar.sh
 ```
 
 ### 2. **GPU自動検出**
@@ -313,15 +316,13 @@ riken-dataset-fundational-model/
 │   └── evaluation/           # 8つの評価パイプライン
 │       ├── bert/
 │       └── gpt2/
-├── workflows/               # 8つの評価実行スクリプト
-│   ├── run_bert_clinvar_evaluation.sh
-│   ├── run_bert_proteingym_evaluation.sh
-│   ├── run_gpt2_clinvar_evaluation.sh
-│   ├── run_gpt2_cosmic_evaluation.sh
-│   ├── run_gpt2_omim_evaluation_dummy.sh
-│   ├── run_gpt2_omim_evaluation_real.sh
-│   ├── run_gpt2_protein_classification.sh
-│   └── run_gpt2_proteingym_evaluation.sh
+├── workflows/               # アーキ非依存の評価実行スクリプト
+│   ├── eval-clinvar.sh、eval-proteingym.sh、eval-tape.sh、…
+│   ├── eval-matrix-bench.sh           # 全評価器を一括 sweep する idempotent runner
+│   └── data/                          # 各評価器のデータ取得スクリプト
+│       ├── eval-data-clinvar.sh、eval-data-proteingym.sh、…
+│       ├── eval-data-cosmic.sh        # 認証必須 (.env: COSMIC_*)
+│       └── eval-data-omim.sh          # 認証必須 (.env: OMIM_API_KEY)
 ├── molcrawl-web/             # Webインターフェース
 │   ├── src/
 │   │   ├── App.js

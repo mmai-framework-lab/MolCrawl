@@ -1,8 +1,9 @@
-"""TAPE JSONL loader.
+"""TAPE JSONL loader + sampling helpers.
 
-The upstream release ships per-task JSON files with ``primary`` (amino
-acid sequence) plus a task-specific label column.  We follow the same
-convention here and keep the label-column name configurable per task.
+The upstream release ships per-task JSONL files with ``primary`` (amino
+acid sequence) plus a task-specific label column. We follow that
+convention (see :mod:`prepare_csv` for how the mirrors are normalised
+into this schema) and keep the label-column name configurable per task.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 
+import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -77,3 +79,100 @@ def to_frame(records: Iterable[dict], spec: TAPETaskSpec) -> pd.DataFrame:
             f"TAPE records missing columns {missing}. Available: {list(df.columns)}"
         )
     return df
+
+
+def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    spec: TAPETaskSpec,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Reproducibly down-sample a TAPE split.
+
+    * Classification: class-balanced if there are ≥ 2 distinct labels with
+      enough rows, else uniform random.
+    * Regression: quantile-binned by the label column so the perplexity
+      / Spearman number reflects the corpus tail.
+    * Sequence labelling: uniform random (per-residue label balancing is
+      infeasible at row level).
+    """
+    if n_examples >= len(df):
+        return df.reset_index(drop=True)
+    rng = np.random.default_rng(seed)
+    label_col = spec.label_column
+
+    if spec.task_type == "classification" and label_col in df.columns:
+        pool = df.dropna(subset=[label_col])
+        # remote_homology has 1195 fold classes; class-balanced sampling
+        # past a few hundred examples mostly degenerates to "1 row per class".
+        # Cap quotas at 4 per class so we still see diverse folds without
+        # blowing up.
+        classes = sorted(pool[label_col].dropna().unique())
+        if len(classes) >= 2 and len(classes) * 4 >= n_examples:
+            # n_examples small enough that 4-per-class is achievable
+            quota_per_class = max(1, n_examples // len(classes))
+            parts = []
+            for cls in rng.choice(classes, size=min(n_examples, len(classes)), replace=False):
+                sub = pool[pool[label_col] == cls]
+                take = min(quota_per_class, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            if len(sampled) > n_examples:
+                sampled = sampled.sample(n=n_examples, random_state=seed)
+        elif len(classes) >= 2:
+            parts = []
+            base = n_examples // len(classes)
+            remainder = n_examples - base * len(classes)
+            for i, cls in enumerate(classes):
+                quota = base + (1 if i < remainder else 0)
+                sub = pool[pool[label_col] == cls]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+        else:
+            state = int(rng.integers(0, 2**32 - 1))
+            sampled = df.sample(n=n_examples, random_state=state)
+        logger.info(
+            "stratified_subsample (classification, %s): %d rows from %d candidates",
+            label_col,
+            len(sampled),
+            len(df),
+        )
+        return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    if spec.task_type == "regression" and label_col in df.columns:
+        pool = df.dropna(subset=[label_col])
+        if len(pool) > 10:
+            n_bins = min(10, max(2, n_examples // 25))
+            try:
+                bin_ids = pd.qcut(
+                    pool[label_col].astype(float),
+                    q=n_bins,
+                    labels=False,
+                    duplicates="drop",
+                ).to_numpy()
+            except Exception:
+                bin_ids = np.zeros(len(pool), dtype=int)
+            parts = []
+            unique_bins = sorted(np.unique(bin_ids[~pd.isna(bin_ids)]))
+            base = n_examples // max(1, len(unique_bins))
+            remainder = n_examples - base * len(unique_bins)
+            for i, b in enumerate(unique_bins):
+                quota = base + (1 if i < remainder else 0)
+                sub = pool[bin_ids == b]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                "stratified_subsample (regression, %s): %d rows across %d quantile bins",
+                label_col,
+                len(sampled),
+                len(unique_bins),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    state = int(rng.integers(0, 2**32 - 1))
+    return df.sample(n=n_examples, random_state=state).reset_index(drop=True)
