@@ -69,10 +69,13 @@ el.replaceWith(d);
             if selected is not None and name not in selected:
                 continue
             group = groups.setdefault(name, CellGroup(name=name))
-            group.tokens.append(record[&#34;tokens&#34;])
+            group.tokens.append([int(t) for t in record[&#34;tokens&#34;]])
             if &#34;label&#34; in record:
                 group.labels.append(record[&#34;label&#34;])
-    logger.info(&#34;Loaded %d RNA benchmark groups&#34;, len(groups))
+            group.token_counts.append(
+                int(record.get(&#34;token_count&#34;, len(record[&#34;tokens&#34;])))
+            )
+    logger.info(&#34;Loaded %d RNA benchmark groups from %s&#34;, len(groups), jsonl_path)
     return groups</code></pre>
 </details>
 <div class="desc"></div>
@@ -84,7 +87,7 @@ el.replaceWith(d);
 <dl>
 <dt id="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup"><code class="flex name class">
 <span>class <span class="ident">CellGroup</span></span>
-<span>(</span><span>name: str,<br>tokens: List[List[int]] = &lt;factory&gt;,<br>labels: List[object] = &lt;factory&gt;)</span>
+<span>(</span><span>name: str,<br>tokens: List[List[int]] = &lt;factory&gt;,<br>labels: List[object] = &lt;factory&gt;,<br>token_counts: List[int] = &lt;factory&gt;)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -95,9 +98,10 @@ el.replaceWith(d);
 class CellGroup:
     name: str
     tokens: List[List[int]] = field(default_factory=list)
-    labels: List[object] = field(default_factory=list)</code></pre>
+    labels: List[object] = field(default_factory=list)
+    token_counts: List[int] = field(default_factory=list)</code></pre>
 </details>
-<div class="desc"><p>CellGroup(name: 'str', tokens: 'List[List[int]]' = <factory>, labels: 'List[object]' = <factory>)</p></div>
+<div class="desc"><p>CellGroup(name: 'str', tokens: 'List[List[int]]' = <factory>, labels: 'List[object]' = <factory>, token_counts: 'List[int]' = <factory>)</p></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.labels"><code class="name">var <span class="ident">labels</span> : List[object]</code></dt>
@@ -105,6 +109,10 @@ class CellGroup:
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.token_counts"><code class="name">var <span class="ident">token_counts</span> : List[int]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -139,6 +147,7 @@ class CellGroup:
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.labels" href="#molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.labels">labels</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.name" href="#molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.name">name</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.token_counts" href="#molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.token_counts">token_counts</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.tokens" href="#molcrawl.tasks.evaluation.rna_benchmark.splits.CellGroup.tokens">tokens</a></code></li>
 </ul>
 </li>

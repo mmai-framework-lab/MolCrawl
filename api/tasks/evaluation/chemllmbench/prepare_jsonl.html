@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.protein_classification API documentation</title>
-<meta name="description" content="Evaluation harness for the protein_classification benchmark.">
+<title>molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl API documentation</title>
+<meta name="description" content="Build ChemLLMBench JSONL files from the upstream CSV / NPZ releases …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,31 +33,133 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.protein_classification</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl</code></h1>
 </header>
 <section id="section-intro">
-<p>Evaluation harness for the protein_classification benchmark.</p>
+<p>Build ChemLLMBench JSONL files from the upstream CSV / NPZ releases.</p>
+<p>The downloader at <code>workflows/data/eval-data-chemllmbench.sh</code> fetches
+the per-task source files from
+<code>https://github.com/ChemFoundationModels/ChemLLMBench/tree/main/data/&lt;task&gt;/</code>.
+This script consumes them and emits the
+<code>{"prompt": ..., "answer": ..., "metadata": {...}}</code> JSONL the
+evaluator's :func:<code>load_jsonl</code> reader expects.</p>
+<p>Supported sub-tasks (all backed by upstream files in the public GitHub
+repo — no Box / external links needed):</p>
+<ul>
+<li><code>molecule_captioning</code> — <code>molecule_captioning/molecule_captioning_test.csv</code>
+schema: <code>SMILES</code>, <code>description</code></li>
+<li><code>molecule_design</code> — <code>molecule_design/molecule_design_test.csv</code>
+schema: <code>description</code>, <code>SMILES</code></li>
+<li><code>reaction_prediction</code> — <code>reaction_prediction/uspto_test.csv</code>
+schema: <code>reactant</code>, <code>product</code></li>
+<li><code>name_conversion</code> — <code>name_prediction/llm_test.csv</code>
+schema: <code>CID, smiles, iupac, formula, mol_length, label</code> →
+prompt asks for IUPAC given SMILES (the dominant direction in the
+upstream paper).</li>
+<li><code>retrosynthesis</code> — <code>retro/uspto50k_retro_test.csv</code>
+schema: <code>products_smiles, reactants_smiles</code></li>
+<li><code>yield_prediction</code> — <code>yield_prediction/BH_sample_100_test.npz</code> (or
+<code>SU_sample_100_test.npz</code>), expects an <code>allow_pickle</code> numpy archive
+whose <code>data_df</code> key holds an <code>(N, 2)</code> object array of
+<code>(reaction_smiles, "Yes"|"No")</code> rows.</li>
+<li><code>property_prediction</code> — a <em>directory</em> containing one or more of
+<code>BBBP_test.csv</code>, <code>BACE_test.csv</code>, <code>ClinTox_test.csv</code>,
+<code>HIV_test.csv</code>, <code>Tox_test.csv</code>. The converter unions every
+matching file it finds, with a <code>dataset</code> key in metadata so the
+per-row breakdown survives.</li>
+</ul>
+<p>Sub-tasks not yet supported here: <code>text_guided_generation</code> and
+<code>smiles_understanding</code> — neither has an obvious upstream artefact in
+<code>ChemFoundationModels/ChemLLMBench/data</code>. Add a converter once the
+data location is identified.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_classification.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.protein_classification.gpt2_data_preparation</a></code></dt>
+<dt id="molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl.convert_csv_to_jsonl"><code class="name flex">
+<span>def <span class="ident">convert_csv_to_jsonl</span></span>(<span>task: str, csv_path: Path, output_jsonl: Path, max_examples: Optional[int] = None) ‑> dict</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Protein Classification Data Preparation …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_classification.gpt2_evaluation" href="gpt2_evaluation.html">molcrawl.tasks.evaluation.protein_classification.gpt2_evaluation</a></code></dt>
-<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_csv_to_jsonl(
+    task: str,
+    csv_path: Path,
+    output_jsonl: Path,
+    max_examples: Optional[int] = None,
+) -&gt; dict:
+    if task not in _CONVERTERS:
+        raise ValueError(
+            f&#34;Unsupported sub-task {task!r}. Currently supported: &#34;
+            f&#34;{list(_CONVERTERS.keys())}. Two of the nine ChemLLMBench &#34;
+            &#34;sub-tasks (text_guided_generation, smiles_understanding) &#34;
+            &#34;have no obvious upstream artefact yet; flag them when their &#34;
+            &#34;data location is identified.&#34;
+        )
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
+        raise FileNotFoundError(csv_path)
+    output_jsonl = Path(output_jsonl)
+    output_jsonl.parent.mkdir(parents=True, exist_ok=True)
+
+    n_written = 0
+    with output_jsonl.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        for prompt, answer, meta in _CONVERTERS[task](csv_path):
+            if max_examples is not None and n_written &gt;= max_examples:
+                break
+            fh.write(
+                json.dumps(
+                    {&#34;prompt&#34;: prompt, &#34;answer&#34;: answer, &#34;metadata&#34;: dict(meta)},
+                    ensure_ascii=False,
+                )
+                + &#34;\n&#34;
+            )
+            n_written += 1
+    logger.info(&#34;Wrote %d examples for task=%r -&gt; %s&#34;, n_written, task, output_jsonl)
+    return {&#34;task&#34;: task, &#34;n_examples&#34;: n_written, &#34;output&#34;: str(output_jsonl)}</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_classification.gpt2_visualization" href="gpt2_visualization.html">molcrawl.tasks.evaluation.protein_classification.gpt2_visualization</a></code></dt>
+<dt id="molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Convert ChemLLMBench upstream CSVs into the {prompt, answer, metadata} JSONL&#34;
+    )
+    parser.add_argument(
+        &#34;--task&#34;,
+        required=True,
+        choices=list(_CONVERTERS.keys()),
+        help=&#34;Sub-task name; only the in-repo CSV-shipping ones are wired here.&#34;,
+    )
+    parser.add_argument(&#34;--source-csv&#34;, required=True)
+    parser.add_argument(&#34;--output-jsonl&#34;, required=True)
+    parser.add_argument(&#34;--max-examples&#34;, type=int, default=None)
+    args = parser.parse_args(argv)
+
+    convert_csv_to_jsonl(
+        task=args.task,
+        csv_path=Path(args.source_csv),
+        output_jsonl=Path(args.output_jsonl),
+        max_examples=args.max_examples,
+    )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -69,14 +171,13 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation" href="../index.html">molcrawl.tasks.evaluation</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chemllmbench" href="index.html">molcrawl.tasks.evaluation.chemllmbench</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.tasks.evaluation.protein_classification.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.protein_classification.gpt2_data_preparation</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.protein_classification.gpt2_evaluation" href="gpt2_evaluation.html">molcrawl.tasks.evaluation.protein_classification.gpt2_evaluation</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.protein_classification.gpt2_visualization" href="gpt2_visualization.html">molcrawl.tasks.evaluation.protein_classification.gpt2_visualization</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl.convert_csv_to_jsonl" href="#molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl.convert_csv_to_jsonl">convert_csv_to_jsonl</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl.main" href="#molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl.main">main</a></code></li>
 </ul>
 </li>
 </ul>

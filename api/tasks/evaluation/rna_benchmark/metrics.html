@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.rna_benchmark.metrics API documentation</title>
-<meta name="description" content="Aggregate per-group perplexity + accuracy.">
+<meta name="description" content="Aggregate per-group perplexity + bootstrap CIs.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.rna_benchmark.metrics</code></h1>
 </header>
 <section id="section-intro">
-<p>Aggregate per-group perplexity + accuracy.</p>
+<p>Aggregate per-group perplexity + bootstrap CIs.</p>
 </section>
 <section>
 </section>
@@ -45,6 +45,44 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.metrics.bootstrap_perplexity_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_perplexity_ci</span></span>(<span>log_likelihoods: Sequence[float],<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Tuple[float, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_perplexity_ci(
+    log_likelihoods: Sequence[float],
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Tuple[float, float]:
+    &#34;&#34;&#34;Resample sequences with replacement to bracket per-group perplexity.
+
+    Returns ``(ci_lo, ci_hi)``. ``n_boot &lt;= 0`` disables and returns
+    ``(nan, nan)``.
+    &#34;&#34;&#34;
+    arr = np.asarray(list(log_likelihoods), dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if n_boot &lt;= 0 or arr.size == 0:
+        return float(&#34;nan&#34;), float(&#34;nan&#34;)
+    rng = np.random.default_rng(seed)
+    n = arr.size
+    estimates = np.empty(n_boot, dtype=float)
+    for k in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        estimates[k] = math.exp(-float(arr[idx].mean()))
+    alpha = (1.0 - ci) / 2.0
+    lo = float(np.quantile(estimates, alpha))
+    hi = float(np.quantile(estimates, 1.0 - alpha))
+    return lo, hi</code></pre>
+</details>
+<div class="desc"><p>Resample sequences with replacement to bracket per-group perplexity.</p>
+<p>Returns <code>(ci_lo, ci_hi)</code>. <code>n_boot &lt;= 0</code> disables and returns
+<code>(nan, nan)</code>.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.rna_benchmark.metrics.perplexity_from_mean_nll"><code class="name flex">
 <span>def <span class="ident">perplexity_from_mean_nll</span></span>(<span>mean_nll: float) ‑> float</span>
 </code></dt>
@@ -67,12 +105,19 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def summarise_group(log_likelihoods: Sequence[float]) -&gt; Dict[str, float]:
-    if not log_likelihoods:
-        return {&#34;perplexity&#34;: float(&#34;nan&#34;), &#34;mean_log_likelihood&#34;: float(&#34;nan&#34;)}
-    mean_ll = sum(log_likelihoods) / len(log_likelihoods)
+    arr = np.asarray(list(log_likelihoods), dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if arr.size == 0:
+        return {
+            &#34;perplexity&#34;: float(&#34;nan&#34;),
+            &#34;mean_log_likelihood&#34;: float(&#34;nan&#34;),
+            &#34;n&#34;: 0,
+        }
+    mean_ll = float(arr.mean())
     return {
-        &#34;mean_log_likelihood&#34;: float(mean_ll),
+        &#34;mean_log_likelihood&#34;: mean_ll,
         &#34;perplexity&#34;: perplexity_from_mean_nll(-mean_ll),
+        &#34;n&#34;: int(arr.size),
     }</code></pre>
 </details>
 <div class="desc"></div>
@@ -94,6 +139,7 @@ el.replaceWith(d);
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.metrics.bootstrap_perplexity_ci" href="#molcrawl.tasks.evaluation.rna_benchmark.metrics.bootstrap_perplexity_ci">bootstrap_perplexity_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.metrics.perplexity_from_mean_nll" href="#molcrawl.tasks.evaluation.rna_benchmark.metrics.perplexity_from_mean_nll">perplexity_from_mean_nll</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.metrics.summarise_group" href="#molcrawl.tasks.evaluation.rna_benchmark.metrics.summarise_group">summarise_group</a></code></li>
 </ul>

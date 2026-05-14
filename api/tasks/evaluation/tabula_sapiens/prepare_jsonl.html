@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl API documentation</title>
+<meta name="description" content="Materialise the Tabula Sapiens tokenised-cell JSONL …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl</code></h1>
+</header>
+<section id="section-intro">
+<p>Materialise the Tabula Sapiens tokenised-cell JSONL.</p>
+<p>The CellxGene H5AD originally referenced by the downloader returned
+403 anonymously (dataset retracted / URL rotated), but the broader
+<code>Tabula Sapiens</code> collection (CellxGene collection
+e5f58829-1a66-40b5-a624-9046778e74f5) still serves per-tissue H5AD
+slices that ARE reachable anonymously. By default we materialise the
+smallest slice (Testis, ~0.39 GB); override TABULA_DATASET_URL to
+pick a different organ.</p>
+<p>The evaluator expects JSONL with rows of the shape::</p>
+<pre><code>{"tokens": [...int ids...], "cell_type": "...", "tissue": "..."}
+</code></pre>
+<p>For each cell we:</p>
+<ol>
+<li>Find the top-N highest-expression genes (input format used by the
+molcrawl rna BERT / rnaformer pretraining pipeline).</li>
+<li>Map gene IDs (<code>var.feature_id</code> / <code>var_names</code>) to the encoder
+tokenizer's vocab — usually keyed by ENSG IDs. Genes outside the
+vocab are dropped per cell.</li>
+<li>Write the resulting token-id list together with the cell-type
+label and tissue tag.</li>
+</ol>
+<p>Optional subsampling caps the JSONL size for smoke runs.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Materialise the Tabula Sapiens tokenised-cell JSONL&#34;
+    )
+    parser.add_argument(
+        &#34;--h5ad-url&#34;,
+        default=&#34;https://datasets.cellxgene.cziscience.com/abec77b5-d7b2-4a83-8111-27f4dc8614dd.h5ad&#34;,
+        help=&#34;CellxGene H5AD asset URL (default: Tabula Sapiens — Testis, 0.39 GB).&#34;,
+    )
+    parser.add_argument(
+        &#34;--h5ad-path&#34;,
+        required=True,
+        help=&#34;Local cache path for the downloaded H5AD.&#34;,
+    )
+    parser.add_argument(&#34;--output-jsonl&#34;, required=True)
+    parser.add_argument(
+        &#34;--tokenizer-dir&#34;,
+        required=True,
+        help=&#34;HF tokenizer directory whose vocab is keyed by ENSG IDs &#34;
+        &#34;or HGNC symbols (typically &#34;
+        &#34;$LEARNING_SOURCE_DIR/rna/custom_tokenizer_bert).&#34;,
+    )
+    parser.add_argument(&#34;--top-n-genes-per-cell&#34;, type=int, default=1024)
+    parser.add_argument(&#34;--max-cells&#34;, type=int, default=None)
+    parser.add_argument(&#34;--cell-type-field&#34;, default=&#34;cell_type&#34;)
+    parser.add_argument(&#34;--tissue-field&#34;, default=&#34;tissue&#34;)
+    parser.add_argument(&#34;--seed&#34;, type=int, default=42)
+    args = parser.parse_args(argv)
+
+    materialise_tabula_jsonl(
+        h5ad_url=args.h5ad_url,
+        h5ad_path=Path(args.h5ad_path),
+        output_jsonl=Path(args.output_jsonl),
+        tokenizer_dir=Path(args.tokenizer_dir),
+        top_n_genes_per_cell=args.top_n_genes_per_cell,
+        max_cells=args.max_cells,
+        cell_type_field=args.cell_type_field,
+        tissue_field=args.tissue_field,
+        seed=args.seed,
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.materialise_tabula_jsonl"><code class="name flex">
+<span>def <span class="ident">materialise_tabula_jsonl</span></span>(<span>h5ad_url: str,<br>h5ad_path: Path,<br>output_jsonl: Path,<br>tokenizer_dir: Path,<br>top_n_genes_per_cell: int = 1024,<br>max_cells: Optional[int] = None,<br>cell_type_field: str = 'cell_type',<br>tissue_field: str = 'tissue',<br>seed: int = 42) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def materialise_tabula_jsonl(
+    h5ad_url: str,
+    h5ad_path: Path,
+    output_jsonl: Path,
+    tokenizer_dir: Path,
+    top_n_genes_per_cell: int = 1024,
+    max_cells: Optional[int] = None,
+    cell_type_field: str = &#34;cell_type&#34;,
+    tissue_field: str = &#34;tissue&#34;,
+    seed: int = 42,
+) -&gt; dict:
+    import anndata as ad
+
+    h5ad_path = Path(h5ad_path)
+    output_jsonl = Path(output_jsonl)
+    output_jsonl.parent.mkdir(parents=True, exist_ok=True)
+
+    _download(h5ad_path, h5ad_url)
+
+    logger.info(&#34;Loading H5AD: %s&#34;, h5ad_path)
+    adata = ad.read_h5ad(str(h5ad_path))
+    logger.info(
+        &#34;AnnData shape=%s, obs cols=%s, var cols=%s&#34;,
+        adata.shape,
+        list(adata.obs.columns)[:6],
+        list(adata.var.columns)[:6],
+    )
+
+    if cell_type_field not in adata.obs.columns:
+        raise ValueError(
+            f&#34;obs missing column {cell_type_field!r}. Available: {list(adata.obs.columns)}&#34;
+        )
+
+    # Resolve gene-symbol/ID column to use for tokenizer lookup. CellxGene
+    # H5ADs typically have ``var_names`` = ENSG ID and a HGNC symbol in
+    # ``var[&#39;feature_name&#39;]``. We support ENSG-keyed and symbol-keyed
+    # tokenizer vocabs by trying both.
+    vocab = _load_tokenizer_vocab(Path(tokenizer_dir))
+    var_names = list(adata.var_names.astype(str))
+    feature_names = (
+        list(adata.var[&#34;feature_name&#34;].astype(str))
+        if &#34;feature_name&#34; in adata.var.columns
+        else var_names
+    )
+
+    var_in_vocab_ensg = sum(1 for v in var_names if v in vocab)
+    var_in_vocab_sym = sum(1 for v in feature_names if v in vocab)
+    logger.info(
+        &#34;Vocab overlap: ENSG via var_names=%d/%d  HGNC via feature_name=%d/%d&#34;,
+        var_in_vocab_ensg,
+        len(var_names),
+        var_in_vocab_sym,
+        len(feature_names),
+    )
+    use_ensg = var_in_vocab_ensg &gt;= var_in_vocab_sym
+    keys = var_names if use_ensg else feature_names
+    logger.info(&#34;Using %s as tokenizer key&#34;, &#34;ENSG IDs&#34; if use_ensg else &#34;HGNC symbols&#34;)
+
+    # Per-gene token id (or -1 if unknown)
+    import numpy as np
+
+    gene_token_ids = np.array(
+        [int(vocab.get(k, -1)) for k in keys], dtype=np.int64
+    )
+    n_known = int((gene_token_ids &gt;= 0).sum())
+    logger.info(&#34;Per-gene token ids resolved: %d / %d&#34;, n_known, len(gene_token_ids))
+    if n_known == 0:
+        raise RuntimeError(
+            &#34;No gene from the H5AD overlaps the tokenizer vocab; cannot tokenise. &#34;
+            &#34;Pass a tokenizer whose vocab keys match the AnnData var column.&#34;
+        )
+
+    # Subsample cells reproducibly, optionally
+    rng = random.Random(seed)
+    n_cells = adata.n_obs
+    if max_cells is not None and max_cells &lt; n_cells:
+        keep = sorted(rng.sample(range(n_cells), int(max_cells)))
+        adata = adata[keep, :].copy()
+        logger.info(&#34;Subsampled to %d cells (seed=%d)&#34;, adata.n_obs, seed)
+
+    cell_types = adata.obs[cell_type_field].astype(str).tolist()
+    tissues = (
+        adata.obs[tissue_field].astype(str).tolist()
+        if tissue_field in adata.obs.columns
+        else [&#34;&#34;] * adata.n_obs
+    )
+
+    # Use the .X matrix; for CellxGene the canonical normalised counts
+    # live in obs.layers but ``X`` is fine for ranked-by-expression.
+    import scipy.sparse as sp
+
+    X = adata.X
+    if sp.issparse(X):
+        X = X.tocsr()
+
+    n_written = 0
+    skipped = 0
+    with output_jsonl.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        for i in range(adata.n_obs):
+            if sp.issparse(X):
+                row = X.getrow(i)
+                col_idx = row.indices
+                vals = row.data
+            else:
+                row = np.asarray(X[i]).ravel()
+                col_idx = np.where(row != 0)[0]
+                vals = row[col_idx]
+            if col_idx.size == 0:
+                skipped += 1
+                continue
+            # Sort by expression descending, take top-N, drop unknown genes
+            order = np.argsort(-vals)
+            top = col_idx[order]
+            tok_ids: List[int] = []
+            for c in top:
+                tid = int(gene_token_ids[int(c)])
+                if tid &lt; 0:
+                    continue
+                tok_ids.append(tid)
+                if len(tok_ids) &gt;= top_n_genes_per_cell:
+                    break
+            if not tok_ids:
+                skipped += 1
+                continue
+            rec = {
+                &#34;tokens&#34;: tok_ids,
+                &#34;cell_type&#34;: cell_types[i],
+                &#34;tissue&#34;: tissues[i],
+            }
+            fh.write(json.dumps(rec, ensure_ascii=False) + &#34;\n&#34;)
+            n_written += 1
+
+    summary = {
+        &#34;h5ad&#34;: str(h5ad_path),
+        &#34;output_jsonl&#34;: str(output_jsonl),
+        &#34;n_cells_written&#34;: n_written,
+        &#34;n_cells_skipped_empty&#34;: skipped,
+        &#34;tokenizer&#34;: str(tokenizer_dir),
+        &#34;tokenizer_key&#34;: &#34;ENSG&#34; if use_ensg else &#34;HGNC&#34;,
+        &#34;n_known_genes&#34;: n_known,
+        &#34;n_total_genes&#34;: len(gene_token_ids),
+        &#34;top_n_genes_per_cell&#34;: top_n_genes_per_cell,
+    }
+    logger.info(&#34;Wrote %s&#34;, summary)
+    return summary</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens" href="index.html">molcrawl.tasks.evaluation.tabula_sapiens</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.main" href="#molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.materialise_tabula_jsonl" href="#molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.materialise_tabula_jsonl">materialise_tabula_jsonl</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

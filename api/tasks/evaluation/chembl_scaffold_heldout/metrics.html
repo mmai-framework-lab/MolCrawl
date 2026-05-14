@@ -45,6 +45,134 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.bootstrap_perplexity_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_perplexity_ci</span></span>(<span>log_likelihoods: Sequence[float],<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Tuple[float, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_perplexity_ci(
+    log_likelihoods: Sequence[float],
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Tuple[float, float]:
+    &#34;&#34;&#34;Resample sequences with replacement to bracket perplexity uncertainty.
+
+    Returns ``(ci_lo, ci_hi)``. ``n_boot &lt;= 0`` disables and returns
+    ``(nan, nan)`` so the caller can elide the field cheaply.
+    &#34;&#34;&#34;
+    arr = np.asarray(list(log_likelihoods), dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if n_boot &lt;= 0 or arr.size == 0:
+        return float(&#34;nan&#34;), float(&#34;nan&#34;)
+    rng = np.random.default_rng(seed)
+    estimates = np.empty(n_boot, dtype=float)
+    n = arr.size
+    for k in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        estimates[k] = math.exp(-float(arr[idx].mean()))
+    alpha = (1.0 - ci) / 2.0
+    lo = float(np.quantile(estimates, alpha))
+    hi = float(np.quantile(estimates, 1.0 - alpha))
+    return lo, hi</code></pre>
+</details>
+<div class="desc"><p>Resample sequences with replacement to bracket perplexity uncertainty.</p>
+<p>Returns <code>(ci_lo, ci_hi)</code>. <code>n_boot &lt;= 0</code> disables and returns
+<code>(nan, nan)</code> so the caller can elide the field cheaply.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.bootstrap_probe_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_probe_ci</span></span>(<span>y_true: np.ndarray,<br>y_score: np.ndarray,<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_probe_ci(
+    y_true: np.ndarray,
+    y_score: np.ndarray,
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Bootstrap CIs for AUROC / AUPRC / accuracy / F1.
+
+    Skips a metric when a resample collapses to one class (AUROC/AUPRC
+    are undefined there). Returns NaN tuples when no metric is computable.
+    &#34;&#34;&#34;
+    if n_boot &lt;= 0:
+        return {}
+    yt = np.asarray(y_true)
+    ys = np.asarray(y_score)
+    mask = ~np.isnan(yt.astype(float)) &amp; ~np.isnan(ys.astype(float))
+    yt = yt[mask].astype(int)
+    ys = ys[mask].astype(float)
+    if yt.size == 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    auroc_arr, auprc_arr, acc_arr, f1_arr = [], [], [], []
+    for _ in range(n_boot):
+        idx = rng.integers(0, yt.size, size=yt.size)
+        yt_b, ys_b = yt[idx], ys[idx]
+        try:
+            m = probe_metrics(yt_b, ys_b)
+        except Exception:
+            continue
+        if &#34;auroc&#34; in m:
+            auroc_arr.append(m[&#34;auroc&#34;])
+        if &#34;auprc&#34; in m:
+            auprc_arr.append(m[&#34;auprc&#34;])
+        acc_arr.append(m.get(&#34;accuracy&#34;, float(&#34;nan&#34;)))
+        f1_arr.append(m.get(&#34;f1_binary&#34;, float(&#34;nan&#34;)))
+
+    alpha = (1.0 - ci) / 2.0
+
+    def _ci(arr):
+        a = np.asarray(arr, dtype=float)
+        a = a[~np.isnan(a)]
+        if a.size == 0:
+            return float(&#34;nan&#34;), float(&#34;nan&#34;)
+        return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
+
+    out: Dict[str, Tuple[float, float]] = {}
+    if auroc_arr:
+        out[&#34;auroc&#34;] = _ci(auroc_arr)
+    if auprc_arr:
+        out[&#34;auprc&#34;] = _ci(auprc_arr)
+    out[&#34;accuracy&#34;] = _ci(acc_arr)
+    out[&#34;f1_binary&#34;] = _ci(f1_arr)
+    return out</code></pre>
+</details>
+<div class="desc"><p>Bootstrap CIs for AUROC / AUPRC / accuracy / F1.</p>
+<p>Skips a metric when a resample collapses to one class (AUROC/AUPRC
+are undefined there). Returns NaN tuples when no metric is computable.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.length_stats"><code class="name flex">
+<span>def <span class="ident">length_stats</span></span>(<span>smiles: Sequence[str]) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def length_stats(smiles: Sequence[str]) -&gt; Dict[str, float]:
+    if not smiles:
+        return {}
+    lengths = np.array([len(s) for s in smiles], dtype=float)
+    return {
+        &#34;smiles_length_mean&#34;: float(lengths.mean()),
+        &#34;smiles_length_std&#34;: float(lengths.std()),
+        &#34;smiles_length_min&#34;: float(lengths.min()),
+        &#34;smiles_length_median&#34;: float(np.median(lengths)),
+        &#34;smiles_length_max&#34;: float(lengths.max()),
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.perplexity_from_log_likelihoods"><code class="name flex">
 <span>def <span class="ident">perplexity_from_log_likelihoods</span></span>(<span>log_likelihoods: Sequence[float]) ‑> float</span>
 </code></dt>
@@ -62,6 +190,7 @@ el.replaceWith(d);
     averages them across sequences and returns ``exp(-mean_ll)``.
     &#34;&#34;&#34;
     arr = np.asarray(list(log_likelihoods), dtype=float)
+    arr = arr[~np.isnan(arr)]
     if arr.size == 0:
         return float(&#34;nan&#34;)
     mean_ll = float(arr.mean())
@@ -80,7 +209,7 @@ averages them across sequences and returns <code>exp(-mean_ll)</code>.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def probe_metrics(y_true: np.ndarray, y_score: np.ndarray) -&gt; Dict[str, float]:
-    &#34;&#34;&#34;AUROC / AUPRC / accuracy wrapper using the default registry.&#34;&#34;&#34;
+    &#34;&#34;&#34;AUROC / AUPRC / accuracy / F1 wrapper using the default registry.&#34;&#34;&#34;
     from molcrawl.tasks.evaluation._base import default_registry
 
     out: Dict[str, float] = {}
@@ -92,7 +221,7 @@ averages them across sequences and returns <code>exp(-mean_ll)</code>.</p></div>
     out[&#34;f1_binary&#34;] = default_registry.compute(&#34;f1_binary&#34;, y_true, preds)
     return out</code></pre>
 </details>
-<div class="desc"><p>AUROC / AUPRC / accuracy wrapper using the default registry.</p></div>
+<div class="desc"><p>AUROC / AUPRC / accuracy / F1 wrapper using the default registry.</p></div>
 </dd>
 </dl>
 </section>
@@ -111,6 +240,9 @@ averages them across sequences and returns <code>exp(-mean_ll)</code>.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.bootstrap_perplexity_ci" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.bootstrap_perplexity_ci">bootstrap_perplexity_ci</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.bootstrap_probe_ci" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.bootstrap_probe_ci">bootstrap_probe_ci</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.length_stats" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.length_stats">length_stats</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.perplexity_from_log_likelihoods" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.perplexity_from_log_likelihoods">perplexity_from_log_likelihoods</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.probe_metrics" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.metrics.probe_metrics">probe_metrics</a></code></li>
 </ul>

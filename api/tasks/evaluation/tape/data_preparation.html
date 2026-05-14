@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.tape.data_preparation API documentation</title>
-<meta name="description" content="TAPE JSONL loader …">
+<meta name="description" content="TAPE JSONL loader + sampling helpers …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,11 +36,11 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.tape.data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>TAPE JSONL loader.</p>
-<p>The upstream release ships per-task JSON files with <code>primary</code> (amino
-acid sequence) plus a task-specific label column.
-We follow the same
-convention here and keep the label-column name configurable per task.</p>
+<p>TAPE JSONL loader + sampling helpers.</p>
+<p>The upstream release ships per-task JSONL files with <code>primary</code> (amino
+acid sequence) plus a task-specific label column. We follow that
+convention (see :mod:<code>prepare_csv</code> for how the mirrors are normalised
+into this schema) and keep the label-column name configurable per task.</p>
 </section>
 <section>
 </section>
@@ -97,6 +97,120 @@ convention here and keep the label-column name configurable per task.</p>
     return records</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tape.data_preparation.stratified_subsample"><code class="name flex">
+<span>def <span class="ident">stratified_subsample</span></span>(<span>df: pd.DataFrame,<br>n_examples: int,<br>spec: <a title="molcrawl.tasks.evaluation.tape.data_preparation.TAPETaskSpec" href="#molcrawl.tasks.evaluation.tape.data_preparation.TAPETaskSpec">TAPETaskSpec</a>,<br>seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    spec: TAPETaskSpec,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Reproducibly down-sample a TAPE split.
+
+    * Classification: class-balanced if there are ≥ 2 distinct labels with
+      enough rows, else uniform random.
+    * Regression: quantile-binned by the label column so the perplexity
+      / Spearman number reflects the corpus tail.
+    * Sequence labelling: uniform random (per-residue label balancing is
+      infeasible at row level).
+    &#34;&#34;&#34;
+    if n_examples &gt;= len(df):
+        return df.reset_index(drop=True)
+    rng = np.random.default_rng(seed)
+    label_col = spec.label_column
+
+    if spec.task_type == &#34;classification&#34; and label_col in df.columns:
+        pool = df.dropna(subset=[label_col])
+        # remote_homology has 1195 fold classes; class-balanced sampling
+        # past a few hundred examples mostly degenerates to &#34;1 row per class&#34;.
+        # Cap quotas at 4 per class so we still see diverse folds without
+        # blowing up.
+        classes = sorted(pool[label_col].dropna().unique())
+        if len(classes) &gt;= 2 and len(classes) * 4 &gt;= n_examples:
+            # n_examples small enough that 4-per-class is achievable
+            quota_per_class = max(1, n_examples // len(classes))
+            parts = []
+            for cls in rng.choice(classes, size=min(n_examples, len(classes)), replace=False):
+                sub = pool[pool[label_col] == cls]
+                take = min(quota_per_class, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            if len(sampled) &gt; n_examples:
+                sampled = sampled.sample(n=n_examples, random_state=seed)
+        elif len(classes) &gt;= 2:
+            parts = []
+            base = n_examples // len(classes)
+            remainder = n_examples - base * len(classes)
+            for i, cls in enumerate(classes):
+                quota = base + (1 if i &lt; remainder else 0)
+                sub = pool[pool[label_col] == cls]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+        else:
+            state = int(rng.integers(0, 2**32 - 1))
+            sampled = df.sample(n=n_examples, random_state=state)
+        logger.info(
+            &#34;stratified_subsample (classification, %s): %d rows from %d candidates&#34;,
+            label_col,
+            len(sampled),
+            len(df),
+        )
+        return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    if spec.task_type == &#34;regression&#34; and label_col in df.columns:
+        pool = df.dropna(subset=[label_col])
+        if len(pool) &gt; 10:
+            n_bins = min(10, max(2, n_examples // 25))
+            try:
+                bin_ids = pd.qcut(
+                    pool[label_col].astype(float),
+                    q=n_bins,
+                    labels=False,
+                    duplicates=&#34;drop&#34;,
+                ).to_numpy()
+            except Exception:
+                bin_ids = np.zeros(len(pool), dtype=int)
+            parts = []
+            unique_bins = sorted(np.unique(bin_ids[~pd.isna(bin_ids)]))
+            base = n_examples // max(1, len(unique_bins))
+            remainder = n_examples - base * len(unique_bins)
+            for i, b in enumerate(unique_bins):
+                quota = base + (1 if i &lt; remainder else 0)
+                sub = pool[bin_ids == b]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                &#34;stratified_subsample (regression, %s): %d rows across %d quantile bins&#34;,
+                label_col,
+                len(sampled),
+                len(unique_bins),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    state = int(rng.integers(0, 2**32 - 1))
+    return df.sample(n=n_examples, random_state=state).reset_index(drop=True)</code></pre>
+</details>
+<div class="desc"><p>Reproducibly down-sample a TAPE split.</p>
+<ul>
+<li>Classification: class-balanced if there are ≥ 2 distinct labels with
+enough rows, else uniform random.</li>
+<li>Regression: quantile-binned by the label column so the perplexity
+/ Spearman number reflects the corpus tail.</li>
+<li>Sequence labelling: uniform random (per-residue label balancing is
+infeasible at row level).</li>
+</ul></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.tape.data_preparation.to_frame"><code class="name flex">
 <span>def <span class="ident">to_frame</span></span>(<span>records: Iterable[dict],<br>spec: <a title="molcrawl.tasks.evaluation.tape.data_preparation.TAPETaskSpec" href="#molcrawl.tasks.evaluation.tape.data_preparation.TAPETaskSpec">TAPETaskSpec</a>) ‑> pandas.core.frame.DataFrame</span>
@@ -186,6 +300,7 @@ class TAPETaskSpec:
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.tape.data_preparation.get_spec" href="#molcrawl.tasks.evaluation.tape.data_preparation.get_spec">get_spec</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.data_preparation.load_jsonl" href="#molcrawl.tasks.evaluation.tape.data_preparation.load_jsonl">load_jsonl</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.data_preparation.stratified_subsample" href="#molcrawl.tasks.evaluation.tape.data_preparation.stratified_subsample">stratified_subsample</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.data_preparation.to_frame" href="#molcrawl.tasks.evaluation.tape.data_preparation.to_frame">to_frame</a></code></li>
 </ul>
 </li>

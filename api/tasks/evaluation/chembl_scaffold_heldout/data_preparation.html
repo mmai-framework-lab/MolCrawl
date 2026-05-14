@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation API documentation</title>
-<meta name="description" content="Loader for the ChEMBL scaffold held-out split …">
+<meta name="description" content="Loader + sampling helpers for the ChEMBL scaffold held-out split …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,12 +36,17 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>Loader for the ChEMBL scaffold held-out split.</p>
-<p>The held-out CSV is produced by an optional scaffold-split flag that
-will be wired into <code>molcrawl.compounds.dataset.prepare_chembl</code> as part
-of this phase.
-Until that wiring is complete, any CSV with at least a
-<code>smiles</code> column (and optionally an assay label column) works as input.</p>
+<p>Loader + sampling helpers for the ChEMBL scaffold held-out split.</p>
+<p>The held-out CSV is produced by <code>prepare_csv.py</code> (scaffold-disjoint
+split of ChEMBL's flat <code>smiles.txt</code>). Any CSV with at least a
+<code>smiles</code> column (and optionally a label column for probe mode)
+also works as input.</p>
+<p>In addition to the basic CSV loader, this module exposes a
+length-stratified subsample helper. The legacy path was
+<code>df.head(max_examples)</code> which silently biases toward whichever
+ordering the file happens to use; for ChEMBL that bias is real
+(the upstream pipeline groups by chembl_id, which clusters
+analogues together).</p>
 </section>
 <section>
 </section>
@@ -82,10 +87,103 @@ Until that wiring is complete, any CSV with at least a
         keep.append(label_column)
     df = df[keep].copy()
     df = df.dropna(subset=[smiles_column]).reset_index(drop=True)
-    logger.info(&#34;Loaded %d ChEMBL scaffold held-out examples&#34;, len(df))
+    logger.info(&#34;Loaded %d ChEMBL scaffold held-out examples from %s&#34;, len(df), csv_path)
     return df</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation.stratified_subsample"><code class="name flex">
+<span>def <span class="ident">stratified_subsample</span></span>(<span>df: pd.DataFrame,<br>n_examples: int,<br>smiles_column: str = 'smiles',<br>label_column: Optional[str] = None,<br>seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    smiles_column: str = &#34;smiles&#34;,
+    label_column: Optional[str] = None,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Sample ``n_examples`` rows with reproducible stratification.
+
+    * Probe mode (``label_column`` given): class-balanced sample over the
+      first (binary) label column. Falls back to uniform random if the
+      label has fewer than 2 distinct values.
+    * Perplexity mode (no label): SMILES-length quantile binning so the
+      sample covers the short ↔ long axis. ChEMBL has a long tail of
+      very long natural-product-style SMILES; ``df.head`` would over-
+      represent the early-id (short) part of the corpus.
+    &#34;&#34;&#34;
+    if n_examples &gt;= len(df):
+        return df.reset_index(drop=True)
+
+    rng = np.random.default_rng(seed)
+
+    if label_column is not None and label_column in df.columns:
+        pool = df.dropna(subset=[label_column])
+        classes = sorted(pool[label_column].dropna().unique())
+        if len(classes) &gt;= 2:
+            parts = []
+            base = n_examples // len(classes)
+            remainder = n_examples - base * len(classes)
+            for i, cls in enumerate(classes):
+                quota = base + (1 if i &lt; remainder else 0)
+                sub = pool[pool[label_column] == cls]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                &#34;stratified_subsample (probe): %d rows across %d classes&#34;,
+                len(sampled),
+                len(classes),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    # Perplexity mode — bin by SMILES length.
+    lengths = df[smiles_column].astype(str).str.len().to_numpy()
+    n_bins = min(10, max(2, n_examples // 25))
+    try:
+        bin_ids = pd.qcut(
+            lengths,
+            q=n_bins,
+            labels=False,
+            duplicates=&#34;drop&#34;,
+        )
+    except Exception:
+        bin_ids = np.zeros(len(df), dtype=int)
+    bin_arr = np.asarray(bin_ids)
+    parts = []
+    unique_bins = sorted(np.unique(bin_arr[~pd.isna(bin_arr)]))
+    base = n_examples // max(1, len(unique_bins))
+    remainder = n_examples - base * len(unique_bins)
+    for i, b in enumerate(unique_bins):
+        quota = base + (1 if i &lt; remainder else 0)
+        sub = df[bin_arr == b]
+        take = min(quota, len(sub))
+        state = int(rng.integers(0, 2**32 - 1))
+        parts.append(sub.sample(n=take, random_state=state))
+    sampled = pd.concat(parts, ignore_index=False)
+    logger.info(
+        &#34;stratified_subsample (length): %d rows across %d length bins&#34;,
+        len(sampled),
+        len(unique_bins),
+    )
+    return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)</code></pre>
+</details>
+<div class="desc"><p>Sample <code>n_examples</code> rows with reproducible stratification.</p>
+<ul>
+<li>Probe mode (<code>label_column</code> given): class-balanced sample over the
+first (binary) label column. Falls back to uniform random if the
+label has fewer than 2 distinct values.</li>
+<li>Perplexity mode (no label): SMILES-length quantile binning so the
+sample covers the short ↔ long axis. ChEMBL has a long tail of
+very long natural-product-style SMILES; <code>df.head</code> would over-
+represent the early-id (short) part of the corpus.</li>
+</ul></div>
 </dd>
 </dl>
 </section>
@@ -105,6 +203,7 @@ Until that wiring is complete, any CSV with at least a
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation.load_heldout" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation.load_heldout">load_heldout</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation.stratified_subsample" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.data_preparation.stratified_subsample">stratified_subsample</a></code></li>
 </ul>
 </li>
 </ul>

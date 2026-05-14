@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.moses.splits API documentation</title>
-<meta name="description" content="MOSES does not require a custom split …">
+<title>molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv API documentation</title>
+<meta name="description" content="Build the scaffold-disjoint train/heldout CSVs for ChEMBL …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,14 +33,31 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.moses.splits</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv</code></h1>
 </header>
 <section id="section-intro">
-<p>MOSES does not require a custom split.</p>
-<p>The reference CSVs ship with their own train / test / test_scaffolds
-files. This module validates the expected filenames exist and gathers
-all three reference pools needed by the evaluator (train list +
-canonical sets for train / test / test_scaffolds).</p>
+<p>Build the scaffold-disjoint train/heldout CSVs for ChEMBL.</p>
+<p>The training pipeline emits a flat <code>smiles.txt</code> (≈ 2.7 M canonical
+SMILES) under <code>$LEARNING_SOURCE_DIR/compounds/chembl/chembl_db/</code>.
+For a held-out <em>likelihood</em> benchmark we need a test set whose
+Bemis-Murcko scaffolds are disjoint from the training scaffolds —
+otherwise the SMILES has effectively been seen and the perplexity
+number is over-optimistic.</p>
+<p>What this module does:</p>
+<ol>
+<li>Read SMILES from <code>smiles.txt</code> (or any one-SMILES-per-line file),
+optionally subsampling to a manageable scale via reservoir
+sampling (keeps memory bounded for the 2.7 M-row source file).</li>
+<li>Compute the Bemis-Murcko scaffold for each SMILES (RDKit).</li>
+<li>Sort scaffolds by frequency: large/common scaffolds → train,
+rare scaffolds → heldout. This mirrors the MoleculeNet
+convention and ensures the held-out set is genuinely OOD.</li>
+<li>Write <code>train.csv</code> and <code>heldout.csv</code> with a single <code>smiles</code>
+column. Both CSVs are deterministic given <code>seed</code>.</li>
+</ol>
+<p>The heldout split aims for <code>heldout_frac</code> of total sampled rows;
+exact size depends on scaffold cluster sizes (we take whole
+scaffolds, never split a scaffold across train/heldout).</p>
 </section>
 <section>
 </section>
@@ -49,111 +66,128 @@ canonical sets for train / test / test_scaffolds).</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.tasks.evaluation.moses.splits.ensure_reference_files"><code class="name flex">
-<span>def <span class="ident">ensure_reference_files</span></span>(<span>reference_dir: Path) ‑> None</span>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ensure_reference_files(reference_dir: Path) -&gt; None:
-    for name in REQUIRED_FILES:
-        if not (Path(reference_dir) / name).exists():
-            raise FileNotFoundError(
-                f&#34;Expected {name} under {reference_dir}. See README.md for &#34;
-                &#34;where to download the MOSES reference split.&#34;
-            )</code></pre>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Prepare scaffold-disjoint train/heldout CSVs for ChEMBL&#34;
+    )
+    parser.add_argument(
+        &#34;--source-smiles&#34;,
+        required=True,
+        help=&#34;One-SMILES-per-line text file (e.g. learning_source_*/compounds/chembl/chembl_db/smiles.txt)&#34;,
+    )
+    parser.add_argument(&#34;--output-dir&#34;, required=True)
+    parser.add_argument(&#34;--heldout-frac&#34;, type=float, default=0.05)
+    parser.add_argument(
+        &#34;--max-source&#34;,
+        type=int,
+        default=None,
+        help=&#34;Reservoir-subsample source SMILES to this many rows before scaffold &#34;
+        &#34;computation (e.g. 200000 keeps RDKit&#39;s per-molecule scaffold pass tractable).&#34;,
+    )
+    parser.add_argument(
+        &#34;--max-train&#34;,
+        type=int,
+        default=None,
+        help=&#34;Cap the train.csv row count (random subsample after splitting).&#34;,
+    )
+    parser.add_argument(
+        &#34;--max-heldout&#34;,
+        type=int,
+        default=None,
+        help=&#34;Cap the heldout.csv row count (random subsample after splitting).&#34;,
+    )
+    parser.add_argument(&#34;--seed&#34;, type=int, default=42)
+    args = parser.parse_args(argv)
+
+    prepare_chembl_scaffold_csvs(
+        source_smiles=Path(args.source_smiles),
+        output_dir=Path(args.output_dir),
+        heldout_frac=args.heldout_frac,
+        max_source=args.max_source,
+        max_train=args.max_train,
+        max_heldout=args.max_heldout,
+        seed=args.seed,
+    )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="molcrawl.tasks.evaluation.moses.splits.prepare_reference_pools"><code class="name flex">
-<span>def <span class="ident">prepare_reference_pools</span></span>(<span>reference_dir: Path,<br>train_limit: Optional[int] = None,<br>test_limit: Optional[int] = None,<br>scaffolds_limit: Optional[int] = None,<br>include_scaffolds: bool = True) ‑> <a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools" href="#molcrawl.tasks.evaluation.moses.splits.ReferencePools">ReferencePools</a></span>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv.prepare_chembl_scaffold_csvs"><code class="name flex">
+<span>def <span class="ident">prepare_chembl_scaffold_csvs</span></span>(<span>source_smiles: Path,<br>output_dir: Path,<br>heldout_frac: float = 0.05,<br>max_source: Optional[int] = None,<br>max_train: Optional[int] = None,<br>max_heldout: Optional[int] = None,<br>seed: int = 42) ‑> dict</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def prepare_reference_pools(
-    reference_dir: Path,
-    train_limit: Optional[int] = None,
-    test_limit: Optional[int] = None,
-    scaffolds_limit: Optional[int] = None,
-    include_scaffolds: bool = True,
-) -&gt; ReferencePools:
-    &#34;&#34;&#34;Load the three reference splits and pre-canonicalise their SMILES.&#34;&#34;&#34;
-    ensure_reference_files(reference_dir)
-    reference_dir = Path(reference_dir)
+<pre><code class="python">def prepare_chembl_scaffold_csvs(
+    source_smiles: Path,
+    output_dir: Path,
+    heldout_frac: float = 0.05,
+    max_source: Optional[int] = None,
+    max_train: Optional[int] = None,
+    max_heldout: Optional[int] = None,
+    seed: int = 42,
+) -&gt; dict:
+    &#34;&#34;&#34;End-to-end driver: smiles.txt → train.csv + heldout.csv.
 
-    train = load_reference_smiles(reference_dir / &#34;train.csv&#34;, limit=train_limit)
-    test = load_reference_smiles(reference_dir / &#34;test.csv&#34;, limit=test_limit)
-    scaffolds: List[str] = []
-    if include_scaffolds and (reference_dir / &#34;test_scaffolds.csv&#34;).exists():
-        scaffolds = load_reference_smiles(
-            reference_dir / &#34;test_scaffolds.csv&#34;, limit=scaffolds_limit
-        )
+    Returns a dict of artefact paths + summary counts.
+    &#34;&#34;&#34;
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info(
-        &#34;Canonicalising reference pools (train=%d, test=%d, scaffolds=%d)&#34;,
-        len(train),
-        len(test),
-        len(scaffolds),
-    )
-    return ReferencePools(
-        train=train,
-        train_canonical=canonicalise_set(train),
-        test_canonical=canonicalise_set(test),
-        scaffolds_canonical=canonicalise_set(scaffolds) if scaffolds else set(),
-    )</code></pre>
+    smiles = _read_smiles(Path(source_smiles), max_source=max_source, seed=seed)
+    buckets, dropped = _build_scaffold_groups(smiles)
+    train_idx, heldout_idx = _split_scaffolds_disjoint(buckets, heldout_frac)
+
+    rng = random.Random(seed)
+    if max_train is not None and len(train_idx) &gt; max_train:
+        train_idx = rng.sample(train_idx, max_train)
+        train_idx.sort()
+    if max_heldout is not None and len(heldout_idx) &gt; max_heldout:
+        heldout_idx = rng.sample(heldout_idx, max_heldout)
+        heldout_idx.sort()
+
+    train_smiles = [smiles[i] for i in train_idx]
+    heldout_smiles = [smiles[i] for i in heldout_idx]
+
+    train_path = output_dir / &#34;train.csv&#34;
+    heldout_path = output_dir / &#34;heldout.csv&#34;
+    pd.DataFrame({&#34;smiles&#34;: train_smiles}).to_csv(train_path, index=False)
+    pd.DataFrame({&#34;smiles&#34;: heldout_smiles}).to_csv(heldout_path, index=False)
+
+    summary = {
+        &#34;train_csv&#34;: str(train_path),
+        &#34;heldout_csv&#34;: str(heldout_path),
+        &#34;n_source_total&#34;: len(smiles),
+        &#34;n_unparseable&#34;: len(dropped),
+        &#34;n_train&#34;: len(train_smiles),
+        &#34;n_heldout&#34;: len(heldout_smiles),
+        &#34;heldout_frac&#34;: heldout_frac,
+        &#34;seed&#34;: seed,
+    }
+    summary_path = output_dir / &#34;prepare_summary.txt&#34;
+    with summary_path.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        for k, v in summary.items():
+            fh.write(f&#34;{k}: {v}\n&#34;)
+    summary[&#34;summary_txt&#34;] = str(summary_path)
+    logger.info(&#34;Wrote ChEMBL scaffold split: %s&#34;, summary)
+    return summary</code></pre>
 </details>
-<div class="desc"><p>Load the three reference splits and pre-canonicalise their SMILES.</p></div>
+<div class="desc"><p>End-to-end driver: smiles.txt → train.csv + heldout.csv.</p>
+<p>Returns a dict of artefact paths + summary counts.</p></div>
 </dd>
 </dl>
 </section>
 <section>
-<h2 class="section-title" id="header-classes">Classes</h2>
-<dl>
-<dt id="molcrawl.tasks.evaluation.moses.splits.ReferencePools"><code class="flex name class">
-<span>class <span class="ident">ReferencePools</span></span>
-<span>(</span><span>train: List[str],<br>train_canonical: Set[str],<br>test_canonical: Set[str],<br>scaffolds_canonical: Set[str] = &lt;factory&gt;)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@dataclass
-class ReferencePools:
-    &#34;&#34;&#34;Bundle of all reference SMILES pools the evaluator may consult.&#34;&#34;&#34;
-
-    train: List[str]
-    train_canonical: Set[str]
-    test_canonical: Set[str]
-    scaffolds_canonical: Set[str] = field(default_factory=set)</code></pre>
-</details>
-<div class="desc"><p>Bundle of all reference SMILES pools the evaluator may consult.</p></div>
-<h3>Instance variables</h3>
-<dl>
-<dt id="molcrawl.tasks.evaluation.moses.splits.ReferencePools.scaffolds_canonical"><code class="name">var <span class="ident">scaffolds_canonical</span> : Set[str]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="molcrawl.tasks.evaluation.moses.splits.ReferencePools.test_canonical"><code class="name">var <span class="ident">test_canonical</span> : Set[str]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="molcrawl.tasks.evaluation.moses.splits.ReferencePools.train"><code class="name">var <span class="ident">train</span> : List[str]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="molcrawl.tasks.evaluation.moses.splits.ReferencePools.train_canonical"><code class="name">var <span class="ident">train_canonical</span> : Set[str]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-</dd>
-</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -163,26 +197,13 @@ class ReferencePools:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.moses" href="index.html">molcrawl.tasks.evaluation.moses</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout" href="index.html">molcrawl.tasks.evaluation.chembl_scaffold_heldout</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="molcrawl.tasks.evaluation.moses.splits.ensure_reference_files" href="#molcrawl.tasks.evaluation.moses.splits.ensure_reference_files">ensure_reference_files</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.moses.splits.prepare_reference_pools" href="#molcrawl.tasks.evaluation.moses.splits.prepare_reference_pools">prepare_reference_pools</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-classes">Classes</a></h3>
-<ul>
-<li>
-<h4><code><a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools" href="#molcrawl.tasks.evaluation.moses.splits.ReferencePools">ReferencePools</a></code></h4>
-<ul class="">
-<li><code><a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools.scaffolds_canonical" href="#molcrawl.tasks.evaluation.moses.splits.ReferencePools.scaffolds_canonical">scaffolds_canonical</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools.test_canonical" href="#molcrawl.tasks.evaluation.moses.splits.ReferencePools.test_canonical">test_canonical</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools.train" href="#molcrawl.tasks.evaluation.moses.splits.ReferencePools.train">train</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools.train_canonical" href="#molcrawl.tasks.evaluation.moses.splits.ReferencePools.train_canonical">train_canonical</a></code></li>
-</ul>
-</li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv.main" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv.prepare_chembl_scaffold_csvs" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.prepare_csv.prepare_chembl_scaffold_csvs">prepare_chembl_scaffold_csvs</a></code></li>
 </ul>
 </li>
 </ul>

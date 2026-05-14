@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.deeploc.metrics API documentation</title>
-<meta name="description" content="Metric pack for DeepLoc subcellular localisation.">
+<title>molcrawl.tasks.evaluation.gue.prepare_csv API documentation</title>
+<meta name="description" content="Materialise GUE sub-task CSVs from a HuggingFace dataset repo …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,10 +33,34 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.deeploc.metrics</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.gue.prepare_csv</code></h1>
 </header>
 <section id="section-intro">
-<p>Metric pack for DeepLoc subcellular localisation.</p>
+<p>Materialise GUE sub-task CSVs from a HuggingFace dataset repo.</p>
+<p>Two upstream repos host the GUE benchmark:</p>
+<ul>
+<li><code>leannmlindsey/GUE</code> — community mirror, public, no token required.
+Naming: <code>GUE/emp_H3K4me1/train.csv</code>, <code>GUE/human_tf_0/train.csv</code>,
+<code>GUE/virus_covid/train.csv</code>, etc.</li>
+<li><code>zhihan1996/DNABERT_2</code> — canonical release, gated. Naming: same
+basenames as the mirror's <code>GUE/&lt;task&gt;/</code> subtree once the released
+<code>GUE.zip</code> is unpacked.</li>
+</ul>
+<p>This module:</p>
+<ol>
+<li>Calls :func:<code>huggingface_hub.snapshot_download</code> to clone the repo
+into a local cache (HF_TOKEN is honoured automatically when the
+repo is gated; ungated repos require no auth).</li>
+<li>Locates the GUE/ root inside the cache (the mirror nests a <code>GUE/</code>
+directory; some mirrors don't).</li>
+<li>Aliases mirror sub-task names to the canonical 28-task names
+expected by :mod:<code><a title="molcrawl.tasks.evaluation.gue.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.gue.data_preparation</a></code>.</li>
+<li>Copies the renamed sub-task directories into <code>output_dir</code>,
+skipping any unchanged files (idempotent).</li>
+</ol>
+<p>The rest of the pipeline does not need to know which upstream repo
+was used — it just sees the canonical layout under
+<code>$LEARNING_SOURCE_DIR/eval/gue/&lt;task&gt;/{train,dev,test}.csv</code>.</p>
 </section>
 <section>
 </section>
@@ -45,80 +69,139 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.tasks.evaluation.deeploc.metrics.bootstrap_multiclass_ci"><code class="name flex">
-<span>def <span class="ident">bootstrap_multiclass_ci</span></span>(<span>y_true: np.ndarray,<br>y_pred: np.ndarray,<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Dict[str, Tuple[float, float]]</span>
+<dt id="molcrawl.tasks.evaluation.gue.prepare_csv.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def bootstrap_multiclass_ci(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    n_boot: int = 100,
-    ci: float = 0.95,
-    seed: int = 42,
-) -&gt; Dict[str, Tuple[float, float]]:
-    &#34;&#34;&#34;Bootstrap CIs for accuracy / f1_macro / mcc.
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Materialise GUE sub-task CSVs from a HuggingFace dataset repo&#34;
+    )
+    parser.add_argument(
+        &#34;--hf-repo&#34;,
+        default=&#34;leannmlindsey/GUE&#34;,
+        help=&#34;Dataset repo id (default: leannmlindsey/GUE — public mirror, no token needed).&#34;,
+    )
+    parser.add_argument(&#34;--hf-revision&#34;, default=&#34;main&#34;)
+    parser.add_argument(&#34;--output-dir&#34;, required=True)
+    parser.add_argument(
+        &#34;--include-extras&#34;,
+        action=&#34;store_true&#34;,
+        help=&#34;Also copy mirror-only extra tasks (EPI_*, fungi_species_20, &#34;
+        &#34;phage_fragments, virus_species_40) into output_dir.&#34;,
+    )
+    args = parser.parse_args(argv)
 
-    Skips a metric when a resample collapses to one class (mcc / f1_macro
-    are undefined). Returns NaN tuples in that case.
-    &#34;&#34;&#34;
-    if n_boot &lt;= 0:
-        return {}
-    yt = np.asarray(y_true).astype(int)
-    yp = np.asarray(y_pred).astype(int)
-    if yt.size == 0:
-        return {}
-    rng = np.random.default_rng(seed)
-
-    acc_arr, f1_arr, mcc_arr = [], [], []
-    for _ in range(n_boot):
-        idx = rng.integers(0, yt.size, size=yt.size)
-        try:
-            m = multiclass_metrics(yt[idx], yp[idx])
-        except Exception:
-            continue
-        acc_arr.append(m.get(&#34;accuracy&#34;, float(&#34;nan&#34;)))
-        f1_arr.append(m.get(&#34;f1_macro&#34;, float(&#34;nan&#34;)))
-        mcc_arr.append(m.get(&#34;mcc&#34;, float(&#34;nan&#34;)))
-
-    alpha = (1.0 - ci) / 2.0
-
-    def _ci(arr) -&gt; Tuple[float, float]:
-        a = np.asarray(arr, dtype=float)
-        a = a[~np.isnan(a)]
-        if a.size == 0:
-            return float(&#34;nan&#34;), float(&#34;nan&#34;)
-        return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
-
-    return {
-        &#34;accuracy&#34;: _ci(acc_arr),
-        &#34;f1_macro&#34;: _ci(f1_arr),
-        &#34;mcc&#34;: _ci(mcc_arr),
-    }</code></pre>
-</details>
-<div class="desc"><p>Bootstrap CIs for accuracy / f1_macro / mcc.</p>
-<p>Skips a metric when a resample collapses to one class (mcc / f1_macro
-are undefined). Returns NaN tuples in that case.</p></div>
-</dd>
-<dt id="molcrawl.tasks.evaluation.deeploc.metrics.multiclass_metrics"><code class="name flex">
-<span>def <span class="ident">multiclass_metrics</span></span>(<span>y_true: np.ndarray, y_pred: np.ndarray) ‑> Dict[str, float]</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def multiclass_metrics(y_true: np.ndarray, y_pred: np.ndarray) -&gt; Dict[str, float]:
-    return {
-        &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, y_true, y_pred),
-        &#34;f1_macro&#34;: default_registry.compute(&#34;f1_macro&#34;, y_true, y_pred),
-        &#34;mcc&#34;: default_registry.compute(&#34;mcc&#34;, y_true, y_pred),
-    }</code></pre>
+    materialise_gue(
+        hf_repo=args.hf_repo,
+        output_dir=Path(args.output_dir),
+        hf_revision=args.hf_revision,
+        include_extras=args.include_extras,
+    )</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gue.prepare_csv.materialise_gue"><code class="name flex">
+<span>def <span class="ident">materialise_gue</span></span>(<span>hf_repo: str,<br>output_dir: Path,<br>hf_revision: str = 'main',<br>include_extras: bool = False) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def materialise_gue(
+    hf_repo: str,
+    output_dir: Path,
+    hf_revision: str = &#34;main&#34;,
+    include_extras: bool = False,
+) -&gt; dict:
+    &#34;&#34;&#34;Snapshot-download ``hf_repo`` and copy renamed sub-tasks into ``output_dir``.&#34;&#34;&#34;
+    try:
+        from huggingface_hub import snapshot_download
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            &#34;huggingface_hub is required; install via `pip install huggingface_hub`.&#34;
+        ) from exc
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info(
+        &#34;snapshot_download(repo=%s, revision=%s) ...&#34;,
+        hf_repo,
+        hf_revision,
+    )
+    cache_path = snapshot_download(
+        repo_id=hf_repo,
+        repo_type=&#34;dataset&#34;,
+        revision=hf_revision,
+        allow_patterns=[&#34;GUE/*/*.csv&#34;, &#34;*.csv&#34;],
+    )
+    cache = Path(cache_path)
+    logger.info(&#34;snapshot at %s&#34;, cache)
+
+    # Locate GUE/&lt;task&gt;/ root
+    if (cache / &#34;GUE&#34;).is_dir():
+        gue_root = cache / &#34;GUE&#34;
+    else:
+        gue_root = cache
+
+    available_dirs = sorted(p for p in gue_root.iterdir() if p.is_dir())
+    logger.info(
+        &#34;found %d sub-task directories under %s&#34;,
+        len(available_dirs),
+        gue_root,
+    )
+
+    copied: List[str] = []
+    skipped: List[str] = []
+    extras: List[str] = []
+    for d in available_dirs:
+        mirror_name = d.name
+        if mirror_name in _MIRROR_TO_CANONICAL:
+            canonical = _MIRROR_TO_CANONICAL[mirror_name]
+        elif mirror_name in _MIRROR_TO_CANONICAL.values():
+            # Already canonical (e.g. zhihan1996/DNABERT_2 release uses canonical names directly)
+            canonical = mirror_name
+        else:
+            extras.append(mirror_name)
+            if not include_extras:
+                continue
+            canonical = mirror_name
+
+        target = output_dir / canonical
+        # Verify train.csv presence before copying so we can log meaningfully.
+        if not (d / &#34;train.csv&#34;).exists():
+            skipped.append(mirror_name)
+            continue
+        n_files = _copy_tree(d, target)
+        copied.append(f&#34;{mirror_name}-&gt;{canonical} ({n_files} files)&#34;)
+
+    summary = {
+        &#34;hf_repo&#34;: hf_repo,
+        &#34;hf_revision&#34;: hf_revision,
+        &#34;output_dir&#34;: str(output_dir),
+        &#34;n_copied&#34;: len(copied),
+        &#34;copied&#34;: copied,
+        &#34;skipped_no_train&#34;: skipped,
+        &#34;ignored_extras&#34;: extras,
+    }
+    logger.info(
+        &#34;materialise_gue done: copied=%d skipped=%d extras_ignored=%d&#34;,
+        len(copied),
+        len(skipped),
+        len(extras),
+    )
+    if skipped:
+        logger.warning(&#34;skipped (no train.csv): %s&#34;, skipped)
+    return summary</code></pre>
+</details>
+<div class="desc"><p>Snapshot-download <code>hf_repo</code> and copy renamed sub-tasks into <code>output_dir</code>.</p></div>
 </dd>
 </dl>
 </section>
@@ -132,13 +215,13 @@ are undefined). Returns NaN tuples in that case.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.deeploc" href="index.html">molcrawl.tasks.evaluation.deeploc</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue" href="index.html">molcrawl.tasks.evaluation.gue</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="molcrawl.tasks.evaluation.deeploc.metrics.bootstrap_multiclass_ci" href="#molcrawl.tasks.evaluation.deeploc.metrics.bootstrap_multiclass_ci">bootstrap_multiclass_ci</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.deeploc.metrics.multiclass_metrics" href="#molcrawl.tasks.evaluation.deeploc.metrics.multiclass_metrics">multiclass_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue.prepare_csv.main" href="#molcrawl.tasks.evaluation.gue.prepare_csv.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue.prepare_csv.materialise_gue" href="#molcrawl.tasks.evaluation.gue.prepare_csv.materialise_gue">materialise_gue</a></code></li>
 </ul>
 </li>
 </ul>

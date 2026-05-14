@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv API documentation</title>
+<meta name="description" content="Prepare a ClinVar-shaped CSV from a gnomAD chromosome-scoped VCF …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv</code></h1>
+</header>
+<section id="section-intro">
+<p>Prepare a ClinVar-shaped CSV from a gnomAD chromosome-scoped VCF.</p>
+<p>gnomAD ships allele frequencies inside VCF INFO fields but the
+evaluator expects a flat CSV with (reference_sequence, variant_sequence,
+allele_frequency). This module streams through the VCF, keeps only
+biallelic SNVs with a numerical AF, pulls a flank-length context around
+each site from the reference FASTA, and writes one row per variant.</p>
+<p>The output layout matches :mod:<code><a title="molcrawl.tasks.evaluation.clinvar" href="../clinvar/index.html">molcrawl.tasks.evaluation.clinvar</a></code>
+(<code>chrom</code>, <code>pos</code>, <code>ref</code>, <code>alt</code>, <code>reference_sequence</code>,
+<code>variant_sequence</code>, <code>allele_frequency</code>) so the gnomAD and ClinVar
+pipelines share sampling / metric / prediction-log helpers downstream.</p>
+<p>Typical invocation::</p>
+<pre><code>python -m molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv \
+    --vcf   $LSD/eval/gnomad_af_correlation/gnomad.genomes.v4.1.sites.chr22.vcf.bgz \
+    --fasta $PROJECT/dataset/GCA_000001405.28_GRCh38.p13_genomic.fna \
+    --output $LSD/eval/gnomad_af_correlation/gnomad_chr22.csv \
+    --flank 64 --max-variants 50000 --seed 42
+</code></pre>
+<p><code>--max-variants</code> activates reservoir sampling so the script can run in
+bounded memory against whole-chromosome VCFs containing several million
+records. The reservoir is a <strong>random sample of biallelic SNVs with a
+finite AF</strong>; downstream evaluators may still subsample further.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.build_fasta_chrom_map"><code class="name flex">
+<span>def <span class="ident">build_fasta_chrom_map</span></span>(<span>fasta_path: Path) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_fasta_chrom_map(fasta_path: Path) -&gt; Dict[str, str]:
+    &#34;&#34;&#34;Return ``{chrom_label -&gt; fasta_contig_id}`` for the primary chromosomes.
+
+    gnomAD uses ``chr1``..``chr22``, ``chrX``, ``chrY``. The GRCh38
+    primary-assembly FASTA used here stores them under GenBank
+    accessions (``CM000663.2`` .. ``CM000686.2``), with the descriptor
+    ``Homo sapiens chromosome N, GRCh38 reference primary assembly``.
+    We scan FASTA headers once and emit a bidirectional mapping keyed by
+    both ``chrN`` and ``N`` so callers with either naming style work.
+    &#34;&#34;&#34;
+    mapping: Dict[str, str] = {}
+    with fasta_path.open(&#34;r&#34;) as fh:
+        for line in fh:
+            if not line.startswith(&#34;&gt;&#34;):
+                continue
+            match = _HEADER_RE.match(line)
+            if not match:
+                continue
+            contig, chrom = match.group(1), match.group(2)
+            mapping[f&#34;chr{chrom}&#34;] = contig
+            mapping[chrom] = contig
+    return mapping</code></pre>
+</details>
+<div class="desc"><p>Return <code>{chrom_label -&gt; fasta_contig_id}</code> for the primary chromosomes.</p>
+<p>gnomAD uses <code>chr1</code>..<code>chr22</code>, <code>chrX</code>, <code>chrY</code>. The GRCh38
+primary-assembly FASTA used here stores them under GenBank
+accessions (<code>CM000663.2</code> .. <code>CM000686.2</code>), with the descriptor
+<code>Homo sapiens chromosome N, GRCh38 reference primary assembly</code>.
+We scan FASTA headers once and emit a bidirectional mapping keyed by
+both <code>chrN</code> and <code>N</code> so callers with either naming style work.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.build_parser"><code class="name flex">
+<span>def <span class="ident">build_parser</span></span>(<span>) ‑> argparse.ArgumentParser</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_parser() -&gt; argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=&#34;Convert a gnomAD VCF to a ClinVar-shaped CSV &#34;
+        &#34;(reference_sequence, variant_sequence, allele_frequency).&#34;
+    )
+    parser.add_argument(&#34;--vcf&#34;, required=True, type=Path, help=&#34;Input .vcf.bgz&#34;)
+    parser.add_argument(
+        &#34;--fasta&#34;,
+        required=True,
+        type=Path,
+        help=&#34;Reference genome FASTA (GRCh38 primary assembly, CM-accession headers)&#34;,
+    )
+    parser.add_argument(&#34;--output&#34;, required=True, type=Path, help=&#34;Destination CSV&#34;)
+    parser.add_argument(
+        &#34;--flank&#34;,
+        type=int,
+        default=64,
+        help=(
+            &#34;Half-window around the variant site; output sequences are &#34;
+            &#34;(2*flank + 1) bp long (default 64 → 129 bp like ClinVar).&#34;
+        ),
+    )
+    parser.add_argument(
+        &#34;--max-variants&#34;,
+        type=int,
+        default=None,
+        help=(
+            &#34;Activate reservoir sampling to keep at most N SNV rows. &#34;
+            &#34;Set None (omit) to keep all biallelic SNVs with AF.&#34;
+        ),
+    )
+    parser.add_argument(&#34;--seed&#34;, type=int, default=42, help=&#34;Reservoir seed&#34;)
+    return parser</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.extract_snv_records"><code class="name flex">
+<span>def <span class="ident">extract_snv_records</span></span>(<span>vcf_path: Path,<br>fasta_path: Path,<br>flank: int,<br>max_variants: Optional[int],<br>seed: int) ‑> List[Dict[str, object]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_snv_records(
+    vcf_path: Path,
+    fasta_path: Path,
+    flank: int,
+    max_variants: Optional[int],
+    seed: int,
+) -&gt; List[Dict[str, object]]:
+    &#34;&#34;&#34;Stream the VCF once and return a list of CSV-ready rows.&#34;&#34;&#34;
+    import pyfaidx
+    import pysam
+
+    chrom_map = build_fasta_chrom_map(fasta_path)
+    if not chrom_map:
+        raise RuntimeError(
+            f&#34;Could not derive a chromosome map from {fasta_path}. &#34;
+            &#34;The FASTA may use a non-GRCh38 header format.&#34;
+        )
+    logger.info(&#34;Mapped %d chromosome labels from FASTA headers&#34;, len(chrom_map))
+
+    fasta = pyfaidx.Fasta(str(fasta_path), as_raw=True)
+    vcf = pysam.VariantFile(str(vcf_path))
+
+    rng = random.Random(seed)
+    reservoir: List[Dict[str, object]] = []
+    total_seen = 0
+    total_kept_candidates = 0
+    dropped_not_snv = 0
+    dropped_no_af = 0
+    dropped_flank = 0
+
+    for rec in vcf:
+        total_seen += 1
+        if total_seen % 500_000 == 0:
+            logger.info(
+                &#34;Scanned %d records (kept candidates=%d, reservoir=%d)&#34;,
+                total_seen,
+                total_kept_candidates,
+                len(reservoir),
+            )
+
+        if not rec.alts:
+            continue
+        # Biallelic SNVs only.
+        if len(rec.alts) != 1:
+            continue
+        ref = rec.ref or &#34;&#34;
+        alt = rec.alts[0] or &#34;&#34;
+        if len(ref) != 1 or len(alt) != 1 or ref.upper() == alt.upper():
+            dropped_not_snv += 1
+            continue
+        if ref.upper() not in &#34;ACGT&#34; or alt.upper() not in &#34;ACGT&#34;:
+            dropped_not_snv += 1
+            continue
+
+        af_field = rec.info.get(&#34;AF&#34;)
+        if af_field is None:
+            dropped_no_af += 1
+            continue
+        if isinstance(af_field, (tuple, list)):
+            af_value = af_field[0] if af_field else None
+        else:
+            af_value = af_field
+        if af_value is None:
+            dropped_no_af += 1
+            continue
+        try:
+            af_float = float(af_value)
+        except (TypeError, ValueError):
+            dropped_no_af += 1
+            continue
+        if not (0.0 &lt;= af_float &lt;= 1.0):
+            dropped_no_af += 1
+            continue
+
+        chrom_label = str(rec.chrom)
+        contig = chrom_map.get(chrom_label) or chrom_map.get(
+            chrom_label.replace(&#34;chr&#34;, &#34;&#34;)
+        )
+        if contig is None:
+            continue
+
+        ref_seq = _flank_from_fasta(fasta, contig, rec.pos, flank, ref)
+        if ref_seq is None:
+            dropped_flank += 1
+            continue
+        var_seq = _substitute_center(ref_seq, flank, alt)
+
+        row = {
+            &#34;chrom&#34;: chrom_label,
+            &#34;pos&#34;: int(rec.pos),
+            &#34;ref&#34;: ref.upper(),
+            &#34;alt&#34;: alt.upper(),
+            &#34;reference_sequence&#34;: ref_seq,
+            &#34;variant_sequence&#34;: var_seq,
+            &#34;allele_frequency&#34;: af_float,
+        }
+        total_kept_candidates += 1
+
+        if max_variants is None:
+            reservoir.append(row)
+        else:
+            # Classic reservoir sampling (Vitter&#39;s Algorithm R).
+            if len(reservoir) &lt; max_variants:
+                reservoir.append(row)
+            else:
+                j = rng.randint(0, total_kept_candidates - 1)
+                if j &lt; max_variants:
+                    reservoir[j] = row
+
+    logger.info(
+        &#34;VCF scan complete: total=%d, candidates=%d, kept=%d &#34;
+        &#34;(dropped: not_snv=%d, no_af=%d, flank_mismatch=%d)&#34;,
+        total_seen,
+        total_kept_candidates,
+        len(reservoir),
+        dropped_not_snv,
+        dropped_no_af,
+        dropped_flank,
+    )
+    return reservoir</code></pre>
+</details>
+<div class="desc"><p>Stream the VCF once and return a list of CSV-ready rows.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    args = build_parser().parse_args(argv)
+
+    rows = extract_snv_records(
+        vcf_path=args.vcf,
+        fasta_path=args.fasta,
+        flank=args.flank,
+        max_variants=args.max_variants,
+        seed=args.seed,
+    )
+    write_csv(rows, args.output)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.write_csv"><code class="name flex">
+<span>def <span class="ident">write_csv</span></span>(<span>rows: List[Dict[str, object]], output_path: Path) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_csv(rows: List[Dict[str, object]], output_path: Path) -&gt; None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        &#34;chrom&#34;,
+        &#34;pos&#34;,
+        &#34;ref&#34;,
+        &#34;alt&#34;,
+        &#34;reference_sequence&#34;,
+        &#34;variant_sequence&#34;,
+        &#34;allele_frequency&#34;,
+    ]
+    with output_path.open(&#34;w&#34;, newline=&#34;&#34;) as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+    logger.info(&#34;Wrote %d rows -&gt; %s&#34;, len(rows), output_path)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation" href="index.html">molcrawl.tasks.evaluation.gnomad_af_correlation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.build_fasta_chrom_map" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.build_fasta_chrom_map">build_fasta_chrom_map</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.build_parser" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.build_parser">build_parser</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.extract_snv_records" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.extract_snv_records">extract_snv_records</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.main" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.write_csv" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.prepare_csv.write_csv">write_csv</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

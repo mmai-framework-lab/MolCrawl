@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.gnomad_af_correlation.splits API documentation</title>
-<meta name="description" content="gnomAD currently has no split concept; stub kept for layout parity.">
+<meta name="description" content="Reproducible AF-stratified sampling for the gnomAD evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,18 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.gnomad_af_correlation.splits</code></h1>
 </header>
 <section id="section-intro">
-<p>gnomAD currently has no split concept; stub kept for layout parity.</p>
+<p>Reproducible AF-stratified sampling for the gnomAD evaluator.</p>
+<p>gnomAD allele frequencies are heavy-tailed: the vast majority of
+variants sit at AF &lt; 1e-4, so uniform random sampling effectively
+picks only rare variants and gives the correlation metric almost no
+common-AF leverage. :func:<code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.sample_gnomad" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.splits.sample_gnomad">sample_gnomad()</a></code> bins AF on a <code>log10</code> scale
+and draws <code>n_per_bin</code> rows per bin, which forces a rank-diverse test
+set and lets the evaluator report per-bin Spearman to see whether the
+model's likelihood signal is concentrated in a particular frequency
+regime.</p>
+<p>Variants with AF = 0 (observed but downstream-filtered alleles) are
+excluded because <code>log10(0)</code> is undefined and they are biologically
+distinct from "rare but observed".</p>
 </section>
 <section>
 </section>
@@ -45,36 +56,162 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.chromosome_split"><code class="name flex">
-<span>def <span class="ident">chromosome_split</span></span>(<span>df: pd.DataFrame,<br>unseen: Iterable[str] = ('chr21', 'chr22', 'chrX', 'chrY'),<br>column: str = 'Chromosome') ‑> Tuple[pandas.core.frame.DataFrame, pandas.core.frame.DataFrame]</span>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.assign_af_bins"><code class="name flex">
+<span>def <span class="ident">assign_af_bins</span></span>(<span>af: Union[Sequence[float], np.ndarray],<br>bins: Sequence[Tuple[float, float]] = ((0.0, 1e-05), (1e-05, 0.0001), (0.0001, 0.001), (0.001, 0.01), (0.01, 0.1), (0.1, 1.000000000001))) ‑> numpy.ndarray</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def chromosome_split(
-    df: pd.DataFrame,
-    unseen: Iterable[str] = DEFAULT_UNSEEN_CHROMOSOMES,
-    column: str = &#34;Chromosome&#34;,
-) -&gt; Tuple[pd.DataFrame, pd.DataFrame]:
-    &#34;&#34;&#34;Split the dataframe into (seen, unseen) by chromosome.
-
-    The split is a no-op (``unseen`` is empty) when the dataframe has no
-    ``column`` field, so the evaluator can still run on sample data that
-    lacks chromosome annotations.
-    &#34;&#34;&#34;
-    if column not in df.columns:
-        return df, df.iloc[0:0]
-    unseen_set = {c.lower() for c in unseen}
-    chrom = df[column].astype(str).str.lower()
-    mask = chrom.isin(unseen_set)
-    return df[~mask].copy(), df[mask].copy()</code></pre>
+<pre><code class="python">def assign_af_bins(
+    af: Union[Sequence[float], np.ndarray], bins: Sequence[Tuple[float, float]] = DEFAULT_AF_BINS
+) -&gt; np.ndarray:
+    &#34;&#34;&#34;Return a bin index per AF value; ``-1`` for values outside any bin.&#34;&#34;&#34;
+    af_arr = np.asarray(af, dtype=float)
+    out = np.full(len(af_arr), -1, dtype=int)
+    for idx, (lo, hi) in enumerate(bins):
+        mask = (af_arr &gt;= lo) &amp; (af_arr &lt; hi)
+        out[mask] = idx
+    return out</code></pre>
 </details>
-<div class="desc"><p>Split the dataframe into (seen, unseen) by chromosome.</p>
-<p>The split is a no-op (<code>unseen</code> is empty) when the dataframe has no
-<code>column</code> field, so the evaluator can still run on sample data that
-lacks chromosome annotations.</p></div>
+<div class="desc"><p>Return a bin index per AF value; <code>-1</code> for values outside any bin.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.bin_label"><code class="name flex">
+<span>def <span class="ident">bin_label</span></span>(<span>lo: float, hi: float) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bin_label(lo: float, hi: float) -&gt; str:
+    &#34;&#34;&#34;Return a compact label such as ``&#34;1e-3..1e-2&#34;``.&#34;&#34;&#34;
+    def _fmt(x: float) -&gt; str:
+        if x == 0.0:
+            return &#34;0&#34;
+        return f&#34;1e{int(round(math.log10(x)))}&#34;
+    return f&#34;{_fmt(lo)}..{_fmt(hi)}&#34;</code></pre>
+</details>
+<div class="desc"><p>Return a compact label such as <code>"1e-3..1e-2"</code>.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.sample_gnomad"><code class="name flex">
+<span>def <span class="ident">sample_gnomad</span></span>(<span>df: pd.DataFrame,<br>n_per_bin: Optional[int] = None,<br>seed: int = 42,<br>bins: Sequence[Tuple[float, float]] = ((0.0, 1e-05), (1e-05, 0.0001), (0.0001, 0.001), (0.001, 0.01), (0.01, 0.1), (0.1, 1.000000000001)),<br>af_column: str = 'allele_frequency') ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample_gnomad(
+    df: pd.DataFrame,
+    n_per_bin: Optional[int] = None,
+    seed: int = 42,
+    bins: Sequence[Tuple[float, float]] = DEFAULT_AF_BINS,
+    af_column: str = &#34;allele_frequency&#34;,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Return a reproducible AF-stratified sample of gnomAD variants.
+
+    Parameters
+    ----------
+    df:
+        Preprocessed gnomAD table with ``reference_sequence``,
+        ``variant_sequence`` and a numerical allele-frequency column.
+    n_per_bin:
+        Target draws per AF bin. ``None`` returns the dataframe
+        unchanged (full-run mode). When set, each of the ``len(bins)``
+        bins contributes at most ``n_per_bin`` rows; empty or
+        undersized bins yield whatever they have (with a log line).
+    seed:
+        Random seed for reproducibility.
+    bins:
+        Sequence of ``(lo, hi)`` half-open intervals covering
+        ``[0, 1]``. Defaults to six log10-spaced bins.
+    af_column:
+        Name of the AF column (default: ``&#34;allele_frequency&#34;``).
+    &#34;&#34;&#34;
+    if n_per_bin is None:
+        logger.info(
+            &#34;sample_gnomad: n_per_bin=None → returning full dataframe (%d rows)&#34;,
+            len(df),
+        )
+        return df.reset_index(drop=True)
+
+    if af_column not in df.columns:
+        raise ValueError(
+            f&#34;sample_gnomad requires an AF column named {af_column!r}; &#34;
+            f&#34;got {list(df.columns)}&#34;
+        )
+
+    # Drop AF = 0 (filtered / unobserved alleles) — undefined in log space.
+    nonzero = df[df[af_column] &gt; 0]
+    if len(nonzero) &lt; len(df):
+        logger.info(
+            &#34;sample_gnomad: dropped %d rows with AF &lt;= 0 before binning&#34;,
+            len(df) - len(nonzero),
+        )
+    nonzero = nonzero.reset_index(drop=True)
+
+    bin_ids = assign_af_bins(nonzero[af_column].to_numpy(), bins)
+    rng = np.random.default_rng(seed)
+
+    parts: List[pd.DataFrame] = []
+    counts_log = {}
+    for i, (lo, hi) in enumerate(bins):
+        mask = bin_ids == i
+        pool = nonzero[mask]
+        if len(pool) == 0:
+            counts_log[bin_label(lo, hi)] = 0
+            continue
+        take = min(n_per_bin, len(pool))
+        state = int(rng.integers(0, 2**32 - 1))
+        drawn = pool.sample(n=take, random_state=state)
+        parts.append(drawn)
+        counts_log[bin_label(lo, hi)] = take
+        if take &lt; n_per_bin:
+            logger.info(
+                &#34;sample_gnomad: bin %s undersized — took all %d rows (wanted %d)&#34;,
+                bin_label(lo, hi),
+                take,
+                n_per_bin,
+            )
+
+    if not parts:
+        raise ValueError(
+            &#34;sample_gnomad: no AF values fell into any of the configured bins&#34;
+        )
+
+    out = (
+        pd.concat(parts, ignore_index=False)
+        .sample(frac=1, random_state=seed)
+        .reset_index(drop=True)
+    )
+    logger.info(
+        &#34;sample_gnomad: produced %d rows across %d bins (seed=%d) — %s&#34;,
+        len(out),
+        len(parts),
+        seed,
+        counts_log,
+    )
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return a reproducible AF-stratified sample of gnomAD variants.</p>
+<h2 id="parameters">Parameters</h2>
+<p>df:
+Preprocessed gnomAD table with <code>reference_sequence</code>,
+<code>variant_sequence</code> and a numerical allele-frequency column.
+n_per_bin:
+Target draws per AF bin. <code>None</code> returns the dataframe
+unchanged (full-run mode). When set, each of the <code>len(bins)</code>
+bins contributes at most <code>n_per_bin</code> rows; empty or
+undersized bins yield whatever they have (with a log line).
+seed:
+Random seed for reproducibility.
+bins:
+Sequence of <code>(lo, hi)</code> half-open intervals covering
+<code>[0, 1]</code>. Defaults to six log10-spaced bins.
+af_column:
+Name of the AF column (default: <code>"allele_frequency"</code>).</p></div>
 </dd>
 </dl>
 </section>
@@ -93,7 +230,9 @@ lacks chromosome annotations.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.chromosome_split" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.splits.chromosome_split">chromosome_split</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.assign_af_bins" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.splits.assign_af_bins">assign_af_bins</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.bin_label" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.splits.bin_label">bin_label</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.splits.sample_gnomad" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.splits.sample_gnomad">sample_gnomad</a></code></li>
 </ul>
 </li>
 </ul>

@@ -41,9 +41,15 @@ el.replaceWith(d);
 indicators:</p>
 <ul>
 <li><code>mean_length</code> / <code>std_length</code> of generated sequences</li>
-<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl">amino_acid_kl()</a></code> - KL divergence between generated composition and
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl">amino_acid_kl()</a></code> — KL divergence between generated composition and
 the reference corpus composition (natural log)</li>
-<li><code>novelty</code> - 1.0 - (fraction of exact matches with the reference)</li>
+<li><code>novelty</code> — fraction of generated sequences not present in the
+reference corpus</li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.pfam_hit_rate" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.pfam_hit_rate">pfam_hit_rate()</a></code> — placeholder for HMMER/Pfam scan (NaN when the
+binary is not installed)</li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.bootstrap_distribution_ci" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.bootstrap_distribution_ci">bootstrap_distribution_ci()</a></code> — 95 % bootstrap CIs on novelty and
+amino_acid_kl, with reference-side pre-computation so the resampling
+loop does not re-scan ≈ 1 M reference sequences per iteration.</li>
 </ul>
 </section>
 <section>
@@ -66,14 +72,79 @@ the reference corpus composition (natural log)</li>
 ) -&gt; float:
     gen_dist = _composition(generated)
     ref_dist = _composition(reference)
-    divergence = 0.0
-    for aa in AA_ALPHABET:
-        p = gen_dist[aa] + epsilon
-        q = ref_dist[aa] + epsilon
-        divergence += p * math.log(p / q)
-    return divergence</code></pre>
+    return _kl_from_dists(gen_dist, ref_dist, epsilon)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.metrics.bootstrap_distribution_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_distribution_ci</span></span>(<span>generated: Sequence[str],<br>reference_set: Set[str],<br>reference_aa_dist: Dict[str, float],<br>n_boot: int = 100,<br>seed: int = 0,<br>alpha: float = 0.05) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_distribution_ci(
+    generated: Sequence[str],
+    reference_set: Set[str],
+    reference_aa_dist: Dict[str, float],
+    n_boot: int = 100,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Return percentile ``(lo, hi)`` intervals over ``n_boot`` resamples.
+
+    Both reference inputs are pre-computed (set membership for novelty,
+    AA distribution for KL) so the loop body is O(N) per iteration even
+    when the reference corpus has ≈ 1 M sequences.
+
+    Returns CIs for ``novelty`` and ``amino_acid_kl``. ``length`` stats
+    are not bootstrapped (they&#39;re already distributional and cheap).
+    &#34;&#34;&#34;
+    n = len(generated)
+    if n &lt; 5 or n_boot &lt;= 0:
+        return {}
+
+    is_novel = np.array([1 if s not in reference_set else 0 for s in generated], dtype=int)
+    per_seq = per_sequence_counters(generated)
+
+    rng = np.random.default_rng(seed)
+    novelty_samples: List[float] = []
+    kl_samples: List[float] = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        novelty_samples.append(float(is_novel[idx].mean()))
+
+        agg: Counter = Counter()
+        for i in idx:
+            agg.update(per_seq[i])
+        total = sum(agg.values())
+        if total &lt;= 0:
+            continue
+        gen_dist = {aa: agg.get(aa, 0) / total for aa in AA_ALPHABET}
+        kl_samples.append(_kl_from_dists(gen_dist, reference_aa_dist))
+
+    lo_p = 100.0 * alpha / 2.0
+    hi_p = 100.0 * (1.0 - alpha / 2.0)
+    out: Dict[str, Tuple[float, float]] = {}
+    if novelty_samples:
+        out[&#34;novelty&#34;] = (
+            float(np.percentile(novelty_samples, lo_p)),
+            float(np.percentile(novelty_samples, hi_p)),
+        )
+    if kl_samples:
+        out[&#34;amino_acid_kl&#34;] = (
+            float(np.percentile(kl_samples, lo_p)),
+            float(np.percentile(kl_samples, hi_p)),
+        )
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return percentile <code>(lo, hi)</code> intervals over <code>n_boot</code> resamples.</p>
+<p>Both reference inputs are pre-computed (set membership for novelty,
+AA distribution for KL) so the loop body is O(N) per iteration even
+when the reference corpus has ≈ 1 M sequences.</p>
+<p>Returns CIs for <code>novelty</code> and <code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl">amino_acid_kl()</a></code>. <code>length</code> stats
+are not bootstrapped (they're already distributional and cheap).</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.protein_foldability.metrics.length_stats"><code class="name flex">
 <span>def <span class="ident">length_stats</span></span>(<span>sequences: Sequence[str]) ‑> Dict[str, float]</span>
@@ -85,11 +156,45 @@ the reference corpus composition (natural log)</li>
 </summary>
 <pre><code class="python">def length_stats(sequences: Sequence[str]) -&gt; Dict[str, float]:
     if not sequences:
-        return {&#34;mean_length&#34;: 0.0, &#34;std_length&#34;: 0.0}
-    lengths = [len(s) for s in sequences]
-    mean = sum(lengths) / len(lengths)
-    variance = sum((length - mean) ** 2 for length in lengths) / len(lengths)
-    return {&#34;mean_length&#34;: float(mean), &#34;std_length&#34;: float(math.sqrt(variance))}</code></pre>
+        return {
+            &#34;n&#34;: 0,
+            &#34;mean_length&#34;: 0.0,
+            &#34;std_length&#34;: 0.0,
+            &#34;min_length&#34;: 0.0,
+            &#34;max_length&#34;: 0.0,
+            &#34;median_length&#34;: 0.0,
+        }
+    lengths = np.array([len(s) for s in sequences], dtype=float)
+    mean = float(lengths.mean())
+    variance = float(((lengths - mean) ** 2).mean())
+    return {
+        &#34;n&#34;: int(lengths.size),
+        &#34;mean_length&#34;: mean,
+        &#34;std_length&#34;: float(math.sqrt(variance)),
+        &#34;min_length&#34;: float(lengths.min()),
+        &#34;max_length&#34;: float(lengths.max()),
+        &#34;median_length&#34;: float(np.median(lengths)),
+        &#34;p25_length&#34;: float(np.percentile(lengths, 25)),
+        &#34;p75_length&#34;: float(np.percentile(lengths, 75)),
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.metrics.novelty_against_set"><code class="name flex">
+<span>def <span class="ident">novelty_against_set</span></span>(<span>generated: Sequence[str], reference_set: Set[str]) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def novelty_against_set(
+    generated: Sequence[str], reference_set: Set[str]
+) -&gt; float:
+    if not generated:
+        return 0.0
+    matches = sum(1 for s in generated if s in reference_set)
+    return 1.0 - matches / len(generated)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -111,6 +216,28 @@ the reference corpus composition (natural log)</li>
     return 1.0 - unique_matches / len(generated)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.metrics.per_sequence_counters"><code class="name flex">
+<span>def <span class="ident">per_sequence_counters</span></span>(<span>sequences: Sequence[str]) ‑> List[collections.Counter]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def per_sequence_counters(sequences: Sequence[str]) -&gt; List[Counter]:
+    &#34;&#34;&#34;Return the per-sequence amino-acid Counter (cached for bootstrap).&#34;&#34;&#34;
+    out: List[Counter] = []
+    for s in sequences:
+        c: Counter = Counter()
+        for ch in s:
+            ch = ch.upper()
+            if ch in AA_ALPHABET:
+                c[ch] += 1
+        out.append(c)
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return the per-sequence amino-acid Counter (cached for bootstrap).</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.protein_foldability.metrics.pfam_hit_rate"><code class="name flex">
 <span>def <span class="ident">pfam_hit_rate</span></span>(<span>_generated: Sequence[str]) ‑> float</span>
@@ -135,6 +262,42 @@ dependency is unavailable.
 The workflow wiring the actual
 computation is left for a follow-up PR.</p></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.metrics.precompute_reference"><code class="name flex">
+<span>def <span class="ident">precompute_reference</span></span>(<span>reference: Sequence[str], max_ref_for_set: Optional[int] = None, seed: int = 42) ‑> Tuple[Set[str], Dict[str, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def precompute_reference(
+    reference: Sequence[str],
+    max_ref_for_set: Optional[int] = None,
+    seed: int = 42,
+) -&gt; Tuple[Set[str], Dict[str, float]]:
+    &#34;&#34;&#34;Return ``(reference_set, reference_aa_dist)`` ready for bootstrap.
+
+    For novelty we always need the full reference set (membership lookup
+    is O(1) regardless of reference size). For amino_acid_kl the full
+    composition is informative; we only subsample if ``max_ref_for_set``
+    is set, in which case the AA distribution is computed from the
+    subsample to keep the smoke pipeline fast.
+    &#34;&#34;&#34;
+    if max_ref_for_set is not None and len(reference) &gt; max_ref_for_set:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(reference), size=int(max_ref_for_set), replace=False)
+        ref_subset = [reference[int(i)] for i in idx]
+    else:
+        ref_subset = list(reference)
+    return set(reference), _composition(ref_subset)</code></pre>
+</details>
+<div class="desc"><p>Return <code>(reference_set, reference_aa_dist)</code> ready for bootstrap.</p>
+<p>For novelty we always need the full reference set (membership lookup
+is O(1) regardless of reference size). For amino_acid_kl the full
+composition is informative; we only subsample if <code>max_ref_for_set</code>
+is set, in which case the AA distribution is computed from the
+subsample to keep the smoke pipeline fast.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -153,9 +316,13 @@ computation is left for a follow-up PR.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.amino_acid_kl">amino_acid_kl</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.bootstrap_distribution_ci" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.bootstrap_distribution_ci">bootstrap_distribution_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.length_stats" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.length_stats">length_stats</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.novelty_against_set" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.novelty_against_set">novelty_against_set</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.novelty_vs_reference" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.novelty_vs_reference">novelty_vs_reference</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.per_sequence_counters" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.per_sequence_counters">per_sequence_counters</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.pfam_hit_rate" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.pfam_hit_rate">pfam_hit_rate</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics.precompute_reference" href="#molcrawl.tasks.evaluation.protein_foldability.metrics.precompute_reference">precompute_reference</a></code></li>
 </ul>
 </li>
 </ul>

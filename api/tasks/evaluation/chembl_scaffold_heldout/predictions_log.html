@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.cosmic.gpt2_evaluation API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.tasks.evaluation.chembl_scaffold_heldout.predictions_log API documentation</title>
+<meta name="description" content="Per-row predictions dump for the ChEMBL scaffold held-out evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,15 +33,81 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.cosmic.gpt2_evaluation</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.chembl_scaffold_heldout.predictions_log</code></h1>
 </header>
 <section id="section-intro">
+<p>Per-row predictions dump for the ChEMBL scaffold held-out evaluator.</p>
+<p>Two artefacts:</p>
+<ul>
+<li><code>predictions.jsonl</code> — one row per held-out SMILES with per-token mean
+log-likelihood (perplexity mode) or probe score + label (probe mode).</li>
+<li><code>predictions.txt</code> — narrative preview. Perplexity mode samples
+best-fit (highest LL) and worst-fit (lowest LL) SMILES so the reader
+can see <em>what kind</em> of molecule the model finds easy / hard. Probe
+mode samples top- and bottom-scored molecules per class.</li>
+</ul>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.chembl_scaffold_heldout.predictions_log.write_predictions"><code class="name flex">
+<span>def <span class="ident">write_predictions</span></span>(<span>output_dir: Path,<br>smiles: Sequence[str],<br>mode: str,<br>log_likelihood: Optional[Sequence[float]] = None,<br>probe_scores: Optional[Sequence[float]] = None,<br>labels: Optional[Sequence[Any]] = None,<br>label_column: Optional[str] = None,<br>arch: Optional[str] = None,<br>preview_count: int = 30) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_predictions(
+    output_dir: Path,
+    smiles: Sequence[str],
+    mode: str,
+    log_likelihood: Optional[Sequence[float]] = None,
+    probe_scores: Optional[Sequence[float]] = None,
+    labels: Optional[Sequence[Any]] = None,
+    label_column: Optional[str] = None,
+    arch: Optional[str] = None,
+    preview_count: int = 30,
+) -&gt; Dict[str, str]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    jsonl_path = output_dir / &#34;predictions.jsonl&#34;
+    txt_path = output_dir / &#34;predictions.txt&#34;
+
+    _write_jsonl(
+        jsonl_path,
+        smiles=smiles,
+        mode=mode,
+        log_likelihood=log_likelihood,
+        probe_scores=probe_scores,
+        labels=labels,
+        label_column=label_column,
+    )
+    _write_narrative(
+        txt_path,
+        smiles=smiles,
+        mode=mode,
+        log_likelihood=log_likelihood,
+        probe_scores=probe_scores,
+        labels=labels,
+        label_column=label_column,
+        arch=arch,
+        preview_count=preview_count,
+    )
+
+    return {
+        &#34;predictions_jsonl&#34;: str(jsonl_path),
+        &#34;predictions_txt&#34;: str(txt_path),
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -53,7 +119,12 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.cosmic" href="index.html">molcrawl.tasks.evaluation.cosmic</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout" href="index.html">molcrawl.tasks.evaluation.chembl_scaffold_heldout</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.chembl_scaffold_heldout.predictions_log.write_predictions" href="#molcrawl.tasks.evaluation.chembl_scaffold_heldout.predictions_log.write_predictions">write_predictions</a></code></li>
 </ul>
 </li>
 </ul>

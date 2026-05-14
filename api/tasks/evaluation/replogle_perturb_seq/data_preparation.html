@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation API documentation</title>
-<meta name="description" content="Replogle Perturb-seq loader …">
+<meta name="description" content="Replogle Perturb-seq loader + sampling helpers …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,10 +36,12 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>Replogle Perturb-seq loader.</p>
-<p>Expected schema (CSV): <code>perturbation</code> (gene KO target), <code>baseline</code>
-(control expression vector, list / JSON), <code>perturbed</code> (post-KO
-vector), and <code>gene_names</code> (optional list aligning to the vectors).</p>
+<p>Replogle Perturb-seq loader + sampling helpers.</p>
+<p>Expected schema (CSV emitted by :mod:<code>prepare_csv</code>): <code>perturbation</code>
+(gene KO target), <code>baseline</code> (control expression vector, JSON-
+serialised list), <code>perturbed</code> (post-KO vector). The evaluator
+computes <code>delta = perturbed - baseline</code> and treats that as the
+perturbation response signal.</p>
 </section>
 <section>
 </section>
@@ -76,10 +78,73 @@ vector), and <code>gene_names</code> (optional list aligning to the vectors).</p
 
     df[&#34;baseline&#34;] = df[&#34;baseline&#34;].map(_parse)
     df[&#34;perturbed&#34;] = df[&#34;perturbed&#34;].map(_parse)
-    logger.info(&#34;Loaded %d perturbations&#34;, len(df))
+    logger.info(&#34;Loaded %d perturbations from %s&#34;, len(df), csv_path)
     return df</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation.stratified_subsample"><code class="name flex">
+<span>def <span class="ident">stratified_subsample</span></span>(<span>df: pd.DataFrame, n_examples: int, seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Reproducibly down-sample to ``n_examples`` rows.
+
+    We keep the strongest KO effects (by mean |delta|) for half the
+    quota — those are where any model signal is easiest to detect —
+    and fill the rest with uniform random rows so the distribution
+    still covers weaker effects.
+    &#34;&#34;&#34;
+    if n_examples &gt;= len(df):
+        return df.reset_index(drop=True)
+    rng = np.random.default_rng(seed)
+
+    def _strength(row) -&gt; float:
+        b = np.asarray(row[&#34;baseline&#34;], dtype=float)
+        p = np.asarray(row[&#34;perturbed&#34;], dtype=float)
+        if b.size == 0 or p.size == 0:
+            return 0.0
+        return float(np.mean(np.abs(p - b)))
+
+    df = df.copy()
+    df[&#34;_strength&#34;] = df.apply(_strength, axis=1)
+
+    n_strong = max(1, n_examples // 2)
+    strong_idx = df[&#34;_strength&#34;].sort_values(ascending=False).head(n_strong).index
+    remaining = df.drop(index=strong_idx)
+    n_random = n_examples - n_strong
+    if n_random &gt; 0 and len(remaining) &gt; 0:
+        random_idx = remaining.sample(
+            n=min(n_random, len(remaining)),
+            random_state=int(rng.integers(0, 2**32 - 1)),
+        ).index
+        sampled_idx = strong_idx.union(random_idx)
+    else:
+        sampled_idx = strong_idx
+
+    sampled = df.loc[sampled_idx].drop(columns=[&#34;_strength&#34;], errors=&#34;ignore&#34;)
+    sampled = sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+    logger.info(
+        &#34;stratified_subsample: %d rows (%d strong + %d random)&#34;,
+        len(sampled),
+        n_strong,
+        max(0, len(sampled) - n_strong),
+    )
+    return sampled</code></pre>
+</details>
+<div class="desc"><p>Reproducibly down-sample to <code>n_examples</code> rows.</p>
+<p>We keep the strongest KO effects (by mean |delta|) for half the
+quota — those are where any model signal is easiest to detect —
+and fill the rest with uniform random rows so the distribution
+still covers weaker effects.</p></div>
 </dd>
 </dl>
 </section>
@@ -99,6 +164,7 @@ vector), and <code>gene_names</code> (optional list aligning to the vectors).</p
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation.load_replogle" href="#molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation.load_replogle">load_replogle</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation.stratified_subsample" href="#molcrawl.tasks.evaluation.replogle_perturb_seq.data_preparation.stratified_subsample">stratified_subsample</a></code></li>
 </ul>
 </li>
 </ul>

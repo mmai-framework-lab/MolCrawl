@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.tabula_sapiens.evaluator API documentation</title>
-<meta name="description" content="Tabula Sapiens cell-type classification evaluator.">
+<meta name="description" content="Tabula Sapiens cell-type classification evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,16 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Tabula Sapiens cell-type classification evaluator.</p>
+<p>足固め upgrade adds:</p>
+<ul>
+<li>class-balanced subsample over <code>cell_type</code> (replaces unbounded
+<code>max_cells</code> head-clipping).</li>
+<li>bootstrap 95 % CI on accuracy / f1_macro.</li>
+<li>per-cell predictions log (jsonl + per-class CORRECT vs WRONG
+narrative TXT).</li>
+<li>token ids passed through to the adapter directly (no string
+round-trip), matching the rna_benchmark fix.</li>
+</ul>
 </section>
 <section>
 </section>
@@ -79,12 +89,24 @@ el.replaceWith(d);
         self.test_fraction: float = float(self.config.get(&#34;test_fraction&#34;, 0.2))
         self.seed: int = int(self.config.get(&#34;seed&#34;, 0))
         self.holdout_tissues: Optional[List[str]] = self.config.get(&#34;holdout_tissues&#34;)
+        self.max_cells: Optional[int] = self.config.get(&#34;max_cells&#34;)
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 16)
+        )
 
     def category(self) -&gt; str:
         return &#34;cell_type_annotation&#34;
 
     def load_dataset(self):
-        return load_jsonl(self.jsonl_path, max_cells=self.config.get(&#34;max_cells&#34;))
+        # Load everything (max_cells is a sampling cap, not a head cap), then
+        # stratify by class.
+        ds = load_jsonl(self.jsonl_path, max_cells=None)
+        if self.max_cells is not None and self.max_cells &lt; len(ds[&#34;tokens&#34;]):
+            ds = stratified_subsample(
+                ds, n_examples=int(self.max_cells), seed=self.seed
+            )
+        return ds
 
     def run_predictions(self, dataset):
         adapter = self.adapter
@@ -93,45 +115,85 @@ el.replaceWith(d);
                 f&#34;Adapter {type(adapter).__name__} cannot embed; cell-type annotation requires embeddings.&#34;
             )
 
-        strings = _tokens_to_strings(dataset[&#34;tokens&#34;])
+        tokens = dataset[&#34;tokens&#34;]
         labels = np.asarray(dataset[&#34;cell_type&#34;])
 
         if self.holdout_tissues is not None:
             train_idx, test_idx = cross_tissue_split(dataset[&#34;tissue&#34;], self.holdout_tissues)
         else:
             train_idx, test_idx = random_split(
-                len(strings), test_fraction=self.test_fraction, seed=self.seed
+                len(tokens), test_fraction=self.test_fraction, seed=self.seed
             )
         if len(test_idx) == 0:
             raise RuntimeError(&#34;TabulaSapiens split produced an empty test set&#34;)
 
-        train_strings = [strings[i] for i in train_idx]
-        test_strings = [strings[i] for i in test_idx]
+        train_tokens = [tokens[i] for i in train_idx]
+        test_tokens = [tokens[i] for i in test_idx]
         train_labels = labels[train_idx]
         test_labels = labels[test_idx]
 
-        train_emb = np.asarray(adapter.embed(train_strings).embeddings)
-        test_emb = np.asarray(adapter.embed(test_strings).embeddings)
+        logger.info(
+            &#34;TabulaSapiens split: train=%d test=%d (test_fraction=%.2f)&#34;,
+            len(train_idx),
+            len(test_idx),
+            self.test_fraction,
+        )
+        # Pass token-id lists straight to the adapter (HfMlm.embed accepts
+        # both strings and pre-tokenised int lists).
+        train_emb = np.asarray(adapter.embed(train_tokens).embeddings)
+        test_emb = np.asarray(adapter.embed(test_tokens).embeddings)
 
         from sklearn.linear_model import LogisticRegression
 
         clf = LogisticRegression(max_iter=1000)
         clf.fit(train_emb, train_labels)
         preds = clf.predict(test_emb)
-        return {&#34;predictions&#34;: preds, &#34;test_labels&#34;: test_labels, &#34;test_size&#34;: int(len(test_idx))}
+        return {
+            &#34;predictions&#34;: preds,
+            &#34;test_labels&#34;: test_labels,
+            &#34;test_tokens&#34;: test_tokens,
+            &#34;test_tissue&#34;: [dataset[&#34;tissue&#34;][i] for i in test_idx],
+            &#34;train_size&#34;: int(len(train_idx)),
+            &#34;test_size&#34;: int(len(test_idx)),
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-        return cell_type_metrics(
-            np.asarray(predictions[&#34;test_labels&#34;]),
-            np.asarray(predictions[&#34;predictions&#34;]),
+        yt = np.asarray(predictions[&#34;test_labels&#34;])
+        yp = np.asarray(predictions[&#34;predictions&#34;])
+        metrics = cell_type_metrics(yt, yp)
+        ci = bootstrap_celltype_ci(
+            yt, yp, n_boot=self.bootstrap_samples, seed=self.seed
         )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            test_tokens=predictions[&#34;test_tokens&#34;],
+            test_cell_types=list(predictions[&#34;test_labels&#34;]),
+            test_tissues=predictions[&#34;test_tissue&#34;],
+            predictions=list(predictions[&#34;predictions&#34;]),
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
         report.update(
             {
                 &#34;test_size&#34;: predictions[&#34;test_size&#34;],
+                &#34;train_size&#34;: predictions[&#34;train_size&#34;],
                 &#34;num_classes&#34;: int(len(set(dataset[&#34;cell_type&#34;]))),
+                &#34;num_classes_in_test&#34;: int(len(set(predictions[&#34;test_labels&#34;].tolist()))),
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;Cell-type classification via encoder embed + LogReg probe. &#34;
+                    &#34;Tokens are passed straight to the adapter (no string &#34;
+                    &#34;round-trip).&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -164,10 +226,29 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        test_tokens=predictions[&#34;test_tokens&#34;],
+        test_cell_types=list(predictions[&#34;test_labels&#34;]),
+        test_tissues=predictions[&#34;test_tissue&#34;],
+        predictions=list(predictions[&#34;predictions&#34;]),
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
     report.update(
         {
             &#34;test_size&#34;: predictions[&#34;test_size&#34;],
+            &#34;train_size&#34;: predictions[&#34;train_size&#34;],
             &#34;num_classes&#34;: int(len(set(dataset[&#34;cell_type&#34;]))),
+            &#34;num_classes_in_test&#34;: int(len(set(predictions[&#34;test_labels&#34;].tolist()))),
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;Cell-type classification via encoder embed + LogReg probe. &#34;
+                &#34;Tokens are passed straight to the adapter (no string &#34;
+                &#34;round-trip).&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -200,10 +281,16 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-    return cell_type_metrics(
-        np.asarray(predictions[&#34;test_labels&#34;]),
-        np.asarray(predictions[&#34;predictions&#34;]),
-    )</code></pre>
+    yt = np.asarray(predictions[&#34;test_labels&#34;])
+    yp = np.asarray(predictions[&#34;predictions&#34;])
+    metrics = cell_type_metrics(yt, yp)
+    ci = bootstrap_celltype_ci(
+        yt, yp, n_boot=self.bootstrap_samples, seed=self.seed
+    )
+    self._last_bootstrap_ci = {
+        k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+    }
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -216,7 +303,14 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def load_dataset(self):
-    return load_jsonl(self.jsonl_path, max_cells=self.config.get(&#34;max_cells&#34;))</code></pre>
+    # Load everything (max_cells is a sampling cap, not a head cap), then
+    # stratify by class.
+    ds = load_jsonl(self.jsonl_path, max_cells=None)
+    if self.max_cells is not None and self.max_cells &lt; len(ds[&#34;tokens&#34;]):
+        ds = stratified_subsample(
+            ds, n_examples=int(self.max_cells), seed=self.seed
+        )
+    return ds</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
 </dd>
@@ -235,32 +329,47 @@ distribution summaries, etc.</p></div>
             f&#34;Adapter {type(adapter).__name__} cannot embed; cell-type annotation requires embeddings.&#34;
         )
 
-    strings = _tokens_to_strings(dataset[&#34;tokens&#34;])
+    tokens = dataset[&#34;tokens&#34;]
     labels = np.asarray(dataset[&#34;cell_type&#34;])
 
     if self.holdout_tissues is not None:
         train_idx, test_idx = cross_tissue_split(dataset[&#34;tissue&#34;], self.holdout_tissues)
     else:
         train_idx, test_idx = random_split(
-            len(strings), test_fraction=self.test_fraction, seed=self.seed
+            len(tokens), test_fraction=self.test_fraction, seed=self.seed
         )
     if len(test_idx) == 0:
         raise RuntimeError(&#34;TabulaSapiens split produced an empty test set&#34;)
 
-    train_strings = [strings[i] for i in train_idx]
-    test_strings = [strings[i] for i in test_idx]
+    train_tokens = [tokens[i] for i in train_idx]
+    test_tokens = [tokens[i] for i in test_idx]
     train_labels = labels[train_idx]
     test_labels = labels[test_idx]
 
-    train_emb = np.asarray(adapter.embed(train_strings).embeddings)
-    test_emb = np.asarray(adapter.embed(test_strings).embeddings)
+    logger.info(
+        &#34;TabulaSapiens split: train=%d test=%d (test_fraction=%.2f)&#34;,
+        len(train_idx),
+        len(test_idx),
+        self.test_fraction,
+    )
+    # Pass token-id lists straight to the adapter (HfMlm.embed accepts
+    # both strings and pre-tokenised int lists).
+    train_emb = np.asarray(adapter.embed(train_tokens).embeddings)
+    test_emb = np.asarray(adapter.embed(test_tokens).embeddings)
 
     from sklearn.linear_model import LogisticRegression
 
     clf = LogisticRegression(max_iter=1000)
     clf.fit(train_emb, train_labels)
     preds = clf.predict(test_emb)
-    return {&#34;predictions&#34;: preds, &#34;test_labels&#34;: test_labels, &#34;test_size&#34;: int(len(test_idx))}</code></pre>
+    return {
+        &#34;predictions&#34;: preds,
+        &#34;test_labels&#34;: test_labels,
+        &#34;test_tokens&#34;: test_tokens,
+        &#34;test_tissue&#34;: [dataset[&#34;tissue&#34;][i] for i in test_idx],
+        &#34;train_size&#34;: int(len(train_idx)),
+        &#34;test_size&#34;: int(len(test_idx)),
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

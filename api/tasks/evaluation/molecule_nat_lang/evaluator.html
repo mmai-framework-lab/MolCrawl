@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.molecule_nat_lang.evaluator API documentation</title>
-<meta name="description" content="Evaluator for molecule-natural-language pair scoring.">
+<meta name="description" content="Evaluator for molecule-natural-language pair scoring …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,13 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Evaluator for molecule-natural-language pair scoring.</p>
+<p>足固め upgrade adds:</p>
+<ul>
+<li>combined-length-stratified subsample (replaces df.head(max_examples))</li>
+<li>bootstrap 95 % CI on perplexity</li>
+<li>per-pair predictions log (jsonl + best/worst-fit narrative TXT)</li>
+<li>length stats so the report makes the scored corpus shape explicit</li>
+</ul>
 </section>
 <section>
 </section>
@@ -79,15 +86,26 @@ el.replaceWith(d);
         self.smiles_column: str = str(self.config.get(&#34;smiles_column&#34;, &#34;smiles&#34;))
         self.caption_column: str = str(self.config.get(&#34;caption_column&#34;, &#34;caption&#34;))
         self.template: str = str(self.config.get(&#34;template&#34;, &#34;{caption}\n{smiles}&#34;))
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 20)
+        )
 
     def category(self) -&gt; str:
         return &#34;text_alignment&#34;
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_pairs(self.pairs_path, self.smiles_column, self.caption_column)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None and self.max_examples &lt; len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(self.max_examples),
+                smiles_column=self.smiles_column,
+                caption_column=self.caption_column,
+                seed=self.seed,
+            )
         return df
 
     def run_predictions(self, dataset: pd.DataFrame):
@@ -103,14 +121,57 @@ el.replaceWith(d);
             for _, row in dataset.iterrows()
         ]
         out = adapter.score_likelihood(formatted)
-        return {&#34;log_likelihoods&#34;: np.asarray(out.log_likelihood, dtype=float)}
+        return {
+            &#34;log_likelihoods&#34;: np.asarray(out.log_likelihood, dtype=float),
+            &#34;formatted_lengths&#34;: [len(s) for s in formatted],
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-        return summarise(predictions[&#34;log_likelihoods&#34;])
+        ll = predictions[&#34;log_likelihoods&#34;]
+        metrics: Dict[str, float] = dict(summarise(ll))
+        ci_lo, ci_hi = bootstrap_perplexity_ci(
+            ll, n_boot=self.bootstrap_samples, seed=self.seed
+        )
+        self._last_bootstrap_ci = {&#34;perplexity&#34;: {&#34;ci_lo&#34;: ci_lo, &#34;ci_hi&#34;: ci_hi}}
+        if predictions.get(&#34;formatted_lengths&#34;):
+            lengths = np.asarray(predictions[&#34;formatted_lengths&#34;], dtype=float)
+            metrics.update(
+                {
+                    &#34;formatted_length_mean&#34;: float(lengths.mean()),
+                    &#34;formatted_length_median&#34;: float(np.median(lengths)),
+                    &#34;formatted_length_max&#34;: float(lengths.max()),
+                }
+            )
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
-        report.update({&#34;num_pairs&#34;: int(len(dataset)), &#34;template&#34;: self.template})
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            pairs=dataset,
+            log_likelihoods=predictions[&#34;log_likelihoods&#34;],
+            smiles_column=self.smiles_column,
+            caption_column=self.caption_column,
+            template=self.template,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report.update(
+            {
+                &#34;num_pairs&#34;: int(len(dataset)),
+                &#34;template&#34;: self.template,
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;Pseudo / causal perplexity of formatted &#34;
+                    &#34;(caption + molecule) pairs. Lower is better. &#34;
+                    &#34;Best-fit examples are pairs the model reproduces fluently; &#34;
+                    &#34;worst-fit examples are corpus-mismatched (long SELFIES, &#34;
+                    &#34;terse captions, or rare entities).&#34;
+                ),
+            }
+        )
         return report</code></pre>
 </details>
 <div class="desc"><p>Common scaffolding for evaluation tasks.</p>
@@ -141,7 +202,32 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
-    report.update({&#34;num_pairs&#34;: int(len(dataset)), &#34;template&#34;: self.template})
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        pairs=dataset,
+        log_likelihoods=predictions[&#34;log_likelihoods&#34;],
+        smiles_column=self.smiles_column,
+        caption_column=self.caption_column,
+        template=self.template,
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
+    report.update(
+        {
+            &#34;num_pairs&#34;: int(len(dataset)),
+            &#34;template&#34;: self.template,
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;Pseudo / causal perplexity of formatted &#34;
+                &#34;(caption + molecule) pairs. Lower is better. &#34;
+                &#34;Best-fit examples are pairs the model reproduces fluently; &#34;
+                &#34;worst-fit examples are corpus-mismatched (long SELFIES, &#34;
+                &#34;terse captions, or rare entities).&#34;
+            ),
+        }
+    )
     return report</code></pre>
 </details>
 <div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
@@ -172,7 +258,22 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-    return summarise(predictions[&#34;log_likelihoods&#34;])</code></pre>
+    ll = predictions[&#34;log_likelihoods&#34;]
+    metrics: Dict[str, float] = dict(summarise(ll))
+    ci_lo, ci_hi = bootstrap_perplexity_ci(
+        ll, n_boot=self.bootstrap_samples, seed=self.seed
+    )
+    self._last_bootstrap_ci = {&#34;perplexity&#34;: {&#34;ci_lo&#34;: ci_lo, &#34;ci_hi&#34;: ci_hi}}
+    if predictions.get(&#34;formatted_lengths&#34;):
+        lengths = np.asarray(predictions[&#34;formatted_lengths&#34;], dtype=float)
+        metrics.update(
+            {
+                &#34;formatted_length_mean&#34;: float(lengths.mean()),
+                &#34;formatted_length_median&#34;: float(np.median(lengths)),
+                &#34;formatted_length_max&#34;: float(lengths.max()),
+            }
+        )
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -186,9 +287,14 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_pairs(self.pairs_path, self.smiles_column, self.caption_column)
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
+    if self.max_examples is not None and self.max_examples &lt; len(df):
+        df = stratified_subsample(
+            df,
+            n_examples=int(self.max_examples),
+            smiles_column=self.smiles_column,
+            caption_column=self.caption_column,
+            seed=self.seed,
+        )
     return df</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -214,7 +320,10 @@ distribution summaries, etc.</p></div>
         for _, row in dataset.iterrows()
     ]
     out = adapter.score_likelihood(formatted)
-    return {&#34;log_likelihoods&#34;: np.asarray(out.log_likelihood, dtype=float)}</code></pre>
+    return {
+        &#34;log_likelihoods&#34;: np.asarray(out.log_likelihood, dtype=float),
+        &#34;formatted_lengths&#34;: [len(s) for s in formatted],
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

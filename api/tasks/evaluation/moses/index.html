@@ -52,11 +52,15 @@ dependencies are available.</p>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.moses.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.moses.evaluator</a></code></dt>
 <dd>
-<div class="desc"><p>Generation-quality evaluator for compound decoders.</p></div>
+<div class="desc"><p>Generation-quality evaluator for compound decoders …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.moses.metrics" href="metrics.html">molcrawl.tasks.evaluation.moses.metrics</a></code></dt>
 <dd>
 <div class="desc"><p>MOSES-family distribution-learning metrics …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.moses.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.moses.predictions_log</a></code></dt>
+<dd>
+<div class="desc"><p>Per-generated-SMILES dumps for the MOSES evaluator …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.moses.splits" href="splits.html">molcrawl.tasks.evaluation.moses.splits</a></code></dt>
 <dd>
@@ -111,26 +115,59 @@ dependencies are available.</p>
         self.top_k: Optional[int] = self.config.get(&#34;top_k&#34;)
         self.max_new_tokens: int = int(self.config.get(&#34;max_new_tokens&#34;, 128))
         self.reference_limit: Optional[int] = self.config.get(&#34;reference_limit&#34;)
-        self.enable_extended: bool = bool(self.config.get(&#34;enable_extended_metrics&#34;, True))
+        self.test_limit: Optional[int] = self.config.get(&#34;test_limit&#34;)
+        self.scaffolds_limit: Optional[int] = self.config.get(&#34;scaffolds_limit&#34;)
+        self.include_scaffolds: bool = bool(
+            self.config.get(&#34;include_scaffolds&#34;, True)
+        )
+        self.enable_extended: bool = bool(
+            self.config.get(&#34;enable_extended_metrics&#34;, True)
+        )
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 30)
+        )
 
     def category(self) -&gt; str:
         return &#34;generation_quality&#34;
 
-    def load_dataset(self) -&gt; Dict[str, List[str]]:
-        ensure_reference_files(self.reference_dir)
-        train_smiles = load_reference_smiles(
-            self.reference_dir / &#34;train.csv&#34;, limit=self.reference_limit
+    def load_dataset(self) -&gt; ReferencePools:  # type: ignore[override]
+        return prepare_reference_pools(
+            self.reference_dir,
+            train_limit=self.reference_limit,
+            test_limit=self.test_limit,
+            scaffolds_limit=self.scaffolds_limit,
+            include_scaffolds=self.include_scaffolds,
         )
-        return {&#34;reference&#34;: train_smiles}
 
-    def run_predictions(self, dataset: Dict[str, List[str]]):
+    def run_predictions(self, dataset: ReferencePools):
         adapter = self.adapter
         if not adapter.supports(&#34;generation&#34;):
             raise RuntimeError(
                 f&#34;Adapter {type(adapter).__name__} does not support generation; &#34;
                 &#34;cannot evaluate MOSES.&#34;
             )
-        logger.info(&#34;Sampling %d molecules (T=%.2f, top_k=%s)&#34;, self.num_samples, self.temperature, self.top_k)
+
+        # Reproducibility: seed torch before kicking generation. We rely on
+        # the adapter calling torch.multinomial under the hood.
+        try:
+            import torch
+
+            torch.manual_seed(self.seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(self.seed)
+        except ImportError:  # pragma: no cover
+            logger.warning(&#34;torch unavailable; cannot enforce sampling seed&#34;)
+
+        logger.info(
+            &#34;Sampling %d molecules (T=%.2f, top_k=%s, max_new_tokens=%d, seed=%d)&#34;,
+            self.num_samples,
+            self.temperature,
+            self.top_k,
+            self.max_new_tokens,
+            self.seed,
+        )
         gen_out = adapter.generate(
             num_samples=self.num_samples,
             temperature=self.temperature,
@@ -142,23 +179,144 @@ dependencies are available.</p>
             &#34;sampling_params&#34;: gen_out.sampling_params,
         }
 
-    def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
+    def compute_metrics(
+        self, dataset: ReferencePools, predictions: Dict[str, Any]
+    ) -&gt; Dict[str, float]:
         generated = predictions[&#34;generated&#34;]
-        reference = dataset[&#34;reference&#34;]
-        metrics = distribution_metrics(generated, reference)
+        reference_train = dataset.train
+
+        # Strip BertTokenizer special tokens + whitespace from each
+        # generated string before metric computation. The raw decoded
+        # form contains ``[CLS] C C ( = O ) ... [SEP] [PAD] ...`` which
+        # RDKit cannot parse; downstream metric functions (validity etc.)
+        # call ``Chem.MolFromSmiles`` directly so they see this cleaned
+        # variant rather than the surface decode.
+        cleaned = [_clean_generated_smiles(s) for s in generated]
+
+        metrics = distribution_metrics(cleaned, reference_train)
+
+        # Canonicalise the generated pool once. Used both for predictions
+        # logging and as the pre-canonicalised input to bootstrap CIs so
+        # the resampling loop does not re-canonicalise the reference set
+        # (≈ 1.6 M SMILES on full MOSES train) per iteration.
+        generated_canonical_list: List[Optional[str]] = _canonicalise_each(generated)
+        generated_canonical_set = {c for c in generated_canonical_list if c is not None}
+
+        bootstrap_ci = bootstrap_distribution_ci(
+            cleaned,
+            reference_train,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+            skip_internal_diversity=True,
+            generated_canonical=generated_canonical_list,
+            reference_canonical_set=dataset.train_canonical,
+        )
+
+        # Cross-novelty against test / test_scaffolds
+        cross_novelty: Dict[str, float] = {}
+        if dataset.test_canonical:
+            valid = [c for c in generated_canonical_list if c is not None]
+            if valid:
+                cross_novelty[&#34;novelty_vs_test&#34;] = float(
+                    sum(1 for c in valid if c not in dataset.test_canonical) / len(valid)
+                )
+        if dataset.scaffolds_canonical:
+            valid = [c for c in generated_canonical_list if c is not None]
+            if valid:
+                cross_novelty[&#34;novelty_vs_scaffolds&#34;] = float(
+                    sum(
+                        1 for c in valid if c not in dataset.scaffolds_canonical
+                    )
+                    / len(valid)
+                )
+        metrics.update(cross_novelty)
+
+        # Optional reference-package extended metrics
         if self.enable_extended:
-            extra = optional_extended_metrics(generated, reference)
+            extra = optional_extended_metrics(generated, reference_train)
             if extra:
                 metrics.update(extra)
+
+        # Stash side data for build_report
+        self._last_canonicalised = generated_canonical_list
+        self._last_canonical_set = generated_canonical_set
+        self._last_bootstrap_ci = bootstrap_ci
+        self._last_failure_modes = failure_mode_summary(
+            generated, generated_canonical_list
+        )
+        self._last_length_stats_gen = length_distribution_stats(
+            [c for c in generated_canonical_list if c is not None]
+        )
+        self._last_length_stats_ref = length_distribution_stats(reference_train)
+        gen_elem = element_distribution(
+            [c for c in generated_canonical_list if c is not None]
+        )
+        ref_elem = element_distribution(reference_train)
+        self._last_element_dist_gen = gen_elem
+        self._last_element_dist_ref = ref_elem
+        self._last_element_kl = element_distribution_kl(gen_elem, ref_elem)
         return metrics
 
-    def build_report(self, metrics, dataset, predictions):
+    def build_report(
+        self,
+        metrics: Dict[str, float],
+        dataset: ReferencePools,
+        predictions: Dict[str, Any],
+    ) -&gt; Dict[str, Any]:
         report = super().build_report(metrics, dataset, predictions)
+
+        bootstrap_payload: Dict[str, Dict[str, float]] = {}
+        for key, (lo, hi) in (getattr(self, &#34;_last_bootstrap_ci&#34;, {}) or {}).items():
+            bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            generated_raw=predictions[&#34;generated&#34;],
+            canonicalised=getattr(self, &#34;_last_canonicalised&#34;, []),
+            train_canonical=dataset.train_canonical,
+            test_canonical=dataset.test_canonical or None,
+            scaffolds_canonical=dataset.scaffolds_canonical or None,
+            sampling_params=predictions[&#34;sampling_params&#34;],
+            failure_mode_counts=getattr(self, &#34;_last_failure_modes&#34;, None),
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+
         report.update(
             {
-                &#34;num_reference&#34;: len(dataset[&#34;reference&#34;]),
+                &#34;num_reference_train&#34;: len(dataset.train),
+                &#34;num_reference_test&#34;: len(dataset.test_canonical),
+                &#34;num_reference_scaffolds&#34;: len(dataset.scaffolds_canonical),
                 &#34;num_generated&#34;: len(predictions[&#34;generated&#34;]),
                 &#34;sampling_params&#34;: predictions[&#34;sampling_params&#34;],
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+                &#34;failure_modes&#34;: getattr(self, &#34;_last_failure_modes&#34;, None),
+                &#34;length_stats_generated_canonical&#34;: getattr(
+                    self, &#34;_last_length_stats_gen&#34;, None
+                ),
+                &#34;length_stats_reference_train&#34;: getattr(
+                    self, &#34;_last_length_stats_ref&#34;, None
+                ),
+                &#34;element_distribution_generated&#34;: getattr(
+                    self, &#34;_last_element_dist_gen&#34;, None
+                ),
+                &#34;element_distribution_reference&#34;: getattr(
+                    self, &#34;_last_element_dist_ref&#34;, None
+                ),
+                &#34;element_distribution_kl&#34;: getattr(
+                    self, &#34;_last_element_kl&#34;, None
+                ),
+                &#34;artefacts&#34;: prediction_paths,
+                &#34;notes&#34;: (
+                    &#34;Score is the standard MOSES distribution-level pack. &#34;
+                    &#34;validity / uniqueness / novelty are reported with 95 % &#34;
+                    &#34;bootstrap CIs over the generated pool. internal_diversity &#34;
+                    &#34;is left as a point estimate because each bootstrap &#34;
+                    &#34;iteration is O(N^2) on Morgan fingerprints. Use the &#34;
+                    &#34;failure_modes block plus predictions.txt to localise &#34;
+                    &#34;where invalid molecules come from.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -179,20 +337,73 @@ dependencies are available.</p>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.tasks.evaluation.moses.MOSESEvaluator.build_report"><code class="name flex">
-<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+<span>def <span class="ident">build_report</span></span>(<span>self,<br>metrics: Dict[str, float],<br>dataset: ReferencePools,<br>predictions: Dict[str, Any]) ‑> Dict[str, Any]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+<pre><code class="python">def build_report(
+    self,
+    metrics: Dict[str, float],
+    dataset: ReferencePools,
+    predictions: Dict[str, Any],
+) -&gt; Dict[str, Any]:
     report = super().build_report(metrics, dataset, predictions)
+
+    bootstrap_payload: Dict[str, Dict[str, float]] = {}
+    for key, (lo, hi) in (getattr(self, &#34;_last_bootstrap_ci&#34;, {}) or {}).items():
+        bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+    prediction_paths = write_predictions(
+        output_dir=self.output_dir,
+        generated_raw=predictions[&#34;generated&#34;],
+        canonicalised=getattr(self, &#34;_last_canonicalised&#34;, []),
+        train_canonical=dataset.train_canonical,
+        test_canonical=dataset.test_canonical or None,
+        scaffolds_canonical=dataset.scaffolds_canonical or None,
+        sampling_params=predictions[&#34;sampling_params&#34;],
+        failure_mode_counts=getattr(self, &#34;_last_failure_modes&#34;, None),
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
+
     report.update(
         {
-            &#34;num_reference&#34;: len(dataset[&#34;reference&#34;]),
+            &#34;num_reference_train&#34;: len(dataset.train),
+            &#34;num_reference_test&#34;: len(dataset.test_canonical),
+            &#34;num_reference_scaffolds&#34;: len(dataset.scaffolds_canonical),
             &#34;num_generated&#34;: len(predictions[&#34;generated&#34;]),
             &#34;sampling_params&#34;: predictions[&#34;sampling_params&#34;],
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+            &#34;failure_modes&#34;: getattr(self, &#34;_last_failure_modes&#34;, None),
+            &#34;length_stats_generated_canonical&#34;: getattr(
+                self, &#34;_last_length_stats_gen&#34;, None
+            ),
+            &#34;length_stats_reference_train&#34;: getattr(
+                self, &#34;_last_length_stats_ref&#34;, None
+            ),
+            &#34;element_distribution_generated&#34;: getattr(
+                self, &#34;_last_element_dist_gen&#34;, None
+            ),
+            &#34;element_distribution_reference&#34;: getattr(
+                self, &#34;_last_element_dist_ref&#34;, None
+            ),
+            &#34;element_distribution_kl&#34;: getattr(
+                self, &#34;_last_element_kl&#34;, None
+            ),
+            &#34;artefacts&#34;: prediction_paths,
+            &#34;notes&#34;: (
+                &#34;Score is the standard MOSES distribution-level pack. &#34;
+                &#34;validity / uniqueness / novelty are reported with 95 % &#34;
+                &#34;bootstrap CIs over the generated pool. internal_diversity &#34;
+                &#34;is left as a point estimate because each bootstrap &#34;
+                &#34;iteration is O(N^2) on Morgan fingerprints. Use the &#34;
+                &#34;failure_modes block plus predictions.txt to localise &#34;
+                &#34;where invalid molecules come from.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -217,58 +428,147 @@ distribution summaries, etc.</p></div>
 <div class="desc"><p>Return the high-level task category.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.moses.MOSESEvaluator.compute_metrics"><code class="name flex">
-<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset, predictions) ‑> Dict[str, float]</span>
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: ReferencePools, predictions: Dict[str, Any]) ‑> Dict[str, float]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
+<pre><code class="python">def compute_metrics(
+    self, dataset: ReferencePools, predictions: Dict[str, Any]
+) -&gt; Dict[str, float]:
     generated = predictions[&#34;generated&#34;]
-    reference = dataset[&#34;reference&#34;]
-    metrics = distribution_metrics(generated, reference)
+    reference_train = dataset.train
+
+    # Strip BertTokenizer special tokens + whitespace from each
+    # generated string before metric computation. The raw decoded
+    # form contains ``[CLS] C C ( = O ) ... [SEP] [PAD] ...`` which
+    # RDKit cannot parse; downstream metric functions (validity etc.)
+    # call ``Chem.MolFromSmiles`` directly so they see this cleaned
+    # variant rather than the surface decode.
+    cleaned = [_clean_generated_smiles(s) for s in generated]
+
+    metrics = distribution_metrics(cleaned, reference_train)
+
+    # Canonicalise the generated pool once. Used both for predictions
+    # logging and as the pre-canonicalised input to bootstrap CIs so
+    # the resampling loop does not re-canonicalise the reference set
+    # (≈ 1.6 M SMILES on full MOSES train) per iteration.
+    generated_canonical_list: List[Optional[str]] = _canonicalise_each(generated)
+    generated_canonical_set = {c for c in generated_canonical_list if c is not None}
+
+    bootstrap_ci = bootstrap_distribution_ci(
+        cleaned,
+        reference_train,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+        skip_internal_diversity=True,
+        generated_canonical=generated_canonical_list,
+        reference_canonical_set=dataset.train_canonical,
+    )
+
+    # Cross-novelty against test / test_scaffolds
+    cross_novelty: Dict[str, float] = {}
+    if dataset.test_canonical:
+        valid = [c for c in generated_canonical_list if c is not None]
+        if valid:
+            cross_novelty[&#34;novelty_vs_test&#34;] = float(
+                sum(1 for c in valid if c not in dataset.test_canonical) / len(valid)
+            )
+    if dataset.scaffolds_canonical:
+        valid = [c for c in generated_canonical_list if c is not None]
+        if valid:
+            cross_novelty[&#34;novelty_vs_scaffolds&#34;] = float(
+                sum(
+                    1 for c in valid if c not in dataset.scaffolds_canonical
+                )
+                / len(valid)
+            )
+    metrics.update(cross_novelty)
+
+    # Optional reference-package extended metrics
     if self.enable_extended:
-        extra = optional_extended_metrics(generated, reference)
+        extra = optional_extended_metrics(generated, reference_train)
         if extra:
             metrics.update(extra)
+
+    # Stash side data for build_report
+    self._last_canonicalised = generated_canonical_list
+    self._last_canonical_set = generated_canonical_set
+    self._last_bootstrap_ci = bootstrap_ci
+    self._last_failure_modes = failure_mode_summary(
+        generated, generated_canonical_list
+    )
+    self._last_length_stats_gen = length_distribution_stats(
+        [c for c in generated_canonical_list if c is not None]
+    )
+    self._last_length_stats_ref = length_distribution_stats(reference_train)
+    gen_elem = element_distribution(
+        [c for c in generated_canonical_list if c is not None]
+    )
+    ref_elem = element_distribution(reference_train)
+    self._last_element_dist_gen = gen_elem
+    self._last_element_dist_ref = ref_elem
+    self._last_element_kl = element_distribution_kl(gen_elem, ref_elem)
     return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.moses.MOSESEvaluator.load_dataset"><code class="name flex">
-<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> Dict[str, List[str]]</span>
+<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> <a title="molcrawl.tasks.evaluation.moses.splits.ReferencePools" href="splits.html#molcrawl.tasks.evaluation.moses.splits.ReferencePools">ReferencePools</a></span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_dataset(self) -&gt; Dict[str, List[str]]:
-    ensure_reference_files(self.reference_dir)
-    train_smiles = load_reference_smiles(
-        self.reference_dir / &#34;train.csv&#34;, limit=self.reference_limit
-    )
-    return {&#34;reference&#34;: train_smiles}</code></pre>
+<pre><code class="python">def load_dataset(self) -&gt; ReferencePools:  # type: ignore[override]
+    return prepare_reference_pools(
+        self.reference_dir,
+        train_limit=self.reference_limit,
+        test_limit=self.test_limit,
+        scaffolds_limit=self.scaffolds_limit,
+        include_scaffolds=self.include_scaffolds,
+    )</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.moses.MOSESEvaluator.run_predictions"><code class="name flex">
-<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: Dict[str, List[str]])</span>
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: ReferencePools)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_predictions(self, dataset: Dict[str, List[str]]):
+<pre><code class="python">def run_predictions(self, dataset: ReferencePools):
     adapter = self.adapter
     if not adapter.supports(&#34;generation&#34;):
         raise RuntimeError(
             f&#34;Adapter {type(adapter).__name__} does not support generation; &#34;
             &#34;cannot evaluate MOSES.&#34;
         )
-    logger.info(&#34;Sampling %d molecules (T=%.2f, top_k=%s)&#34;, self.num_samples, self.temperature, self.top_k)
+
+    # Reproducibility: seed torch before kicking generation. We rely on
+    # the adapter calling torch.multinomial under the hood.
+    try:
+        import torch
+
+        torch.manual_seed(self.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(self.seed)
+    except ImportError:  # pragma: no cover
+        logger.warning(&#34;torch unavailable; cannot enforce sampling seed&#34;)
+
+    logger.info(
+        &#34;Sampling %d molecules (T=%.2f, top_k=%s, max_new_tokens=%d, seed=%d)&#34;,
+        self.num_samples,
+        self.temperature,
+        self.top_k,
+        self.max_new_tokens,
+        self.seed,
+    )
     gen_out = adapter.generate(
         num_samples=self.num_samples,
         temperature=self.temperature,
@@ -302,6 +602,7 @@ distribution summaries, etc.</p></div>
 <li><code><a title="molcrawl.tasks.evaluation.moses.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.moses.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.moses.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.metrics" href="metrics.html">molcrawl.tasks.evaluation.moses.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.moses.predictions_log</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.splits" href="splits.html">molcrawl.tasks.evaluation.moses.splits</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.visualization" href="visualization.html">molcrawl.tasks.evaluation.moses.visualization</a></code></li>
 </ul>

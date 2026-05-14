@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.gue.data_preparation API documentation</title>
-<meta name="description" content="GUE sub-task loader …">
+<meta name="description" content="GUE sub-task loader + sampling helpers …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,12 +36,11 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.gue.data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>GUE sub-task loader.</p>
+<p>GUE sub-task loader + sampling helpers.</p>
 <p>Each sub-task ships three CSV files (train / dev / test) with a
-<code>sequence</code> + <code>label</code> schema.
-Task-specific metadata (e.g. number of
-classes) is kept in the :class:<code><a title="molcrawl.tasks.evaluation.gue.data_preparation.GUETaskSpec" href="#molcrawl.tasks.evaluation.gue.data_preparation.GUETaskSpec">GUETaskSpec</a></code> returned by
-:func:<code><a title="molcrawl.tasks.evaluation.gue.data_preparation.get_spec" href="#molcrawl.tasks.evaluation.gue.data_preparation.get_spec">get_spec()</a></code>.</p>
+<code>sequence</code> + <code>label</code> schema. Task-specific metadata (binary vs
+multi-class, number of classes) is kept in the :class:<code><a title="molcrawl.tasks.evaluation.gue.data_preparation.GUETaskSpec" href="#molcrawl.tasks.evaluation.gue.data_preparation.GUETaskSpec">GUETaskSpec</a></code>
+returned by :func:<code><a title="molcrawl.tasks.evaluation.gue.data_preparation.get_spec" href="#molcrawl.tasks.evaluation.gue.data_preparation.get_spec">get_spec()</a></code>.</p>
 </section>
 <section>
 </section>
@@ -106,6 +105,58 @@ classes) is kept in the :class:<code><a title="molcrawl.tasks.evaluation.gue.dat
     return out</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gue.data_preparation.stratified_subsample"><code class="name flex">
+<span>def <span class="ident">stratified_subsample</span></span>(<span>df: pd.DataFrame, n_examples: int, label_column: str = 'label', seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    label_column: str = &#34;label&#34;,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Class-balanced subsample so each split keeps every class.
+
+    Reproducible given ``seed``. Falls back to uniform random if the
+    label column has fewer than 2 classes (already homogeneous).
+    &#34;&#34;&#34;
+    if n_examples &gt;= len(df):
+        return df.reset_index(drop=True)
+    rng = np.random.default_rng(seed)
+
+    if label_column in df.columns:
+        pool = df.dropna(subset=[label_column])
+        classes = sorted(pool[label_column].dropna().unique())
+        if len(classes) &gt;= 2:
+            parts = []
+            base = n_examples // len(classes)
+            remainder = n_examples - base * len(classes)
+            for i, cls in enumerate(classes):
+                quota = base + (1 if i &lt; remainder else 0)
+                sub = pool[pool[label_column] == cls]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                &#34;stratified_subsample (%s): %d rows across %d classes&#34;,
+                label_column,
+                len(sampled),
+                len(classes),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    state = int(rng.integers(0, 2**32 - 1))
+    return df.sample(n=n_examples, random_state=state).reset_index(drop=True)</code></pre>
+</details>
+<div class="desc"><p>Class-balanced subsample so each split keeps every class.</p>
+<p>Reproducible given <code>seed</code>. Falls back to uniform random if the
+label column has fewer than 2 classes (already homogeneous).</p></div>
 </dd>
 </dl>
 </section>
@@ -172,6 +223,7 @@ class GUETaskSpec:
 <li><code><a title="molcrawl.tasks.evaluation.gue.data_preparation.all_task_names" href="#molcrawl.tasks.evaluation.gue.data_preparation.all_task_names">all_task_names</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gue.data_preparation.get_spec" href="#molcrawl.tasks.evaluation.gue.data_preparation.get_spec">get_spec</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gue.data_preparation.load_splits" href="#molcrawl.tasks.evaluation.gue.data_preparation.load_splits">load_splits</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue.data_preparation.stratified_subsample" href="#molcrawl.tasks.evaluation.gue.data_preparation.stratified_subsample">stratified_subsample</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

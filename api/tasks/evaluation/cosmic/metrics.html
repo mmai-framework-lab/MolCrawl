@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.cosmic.metrics API documentation</title>
-<meta name="description" content="COSMIC shares ClinVar threshold / confusion helpers.">
+<meta name="description" content="COSMIC metric helpers — threshold + bootstrap CI + score-distribution …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,17 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.cosmic.metrics</code></h1>
 </header>
 <section id="section-intro">
-<p>COSMIC shares ClinVar threshold / confusion helpers.</p>
+<p>COSMIC metric helpers — threshold + bootstrap CI + score-distribution.</p>
+<p>Reuses ClinVar's threshold/confusion helpers (since both tasks reduce to the
+same LL(ref) − LL(var) → binary pathogenicity score) and adds:</p>
+<ul>
+<li>:func:<code><a title="molcrawl.tasks.evaluation.cosmic.metrics.bootstrap_binary_ci" href="#molcrawl.tasks.evaluation.cosmic.metrics.bootstrap_binary_ci">bootstrap_binary_ci()</a></code> — 95 % CI for AUROC / AUPRC / accuracy / F1 /
+sensitivity / specificity via row-resampling. Mirrors gnomAD's
+<code>bootstrap_correlation_ci</code> and DeepLoc's <code>bootstrap_multiclass_ci</code>.</li>
+<li>:func:<code><a title="molcrawl.tasks.evaluation.cosmic.metrics.score_distribution_stats" href="#molcrawl.tasks.evaluation.cosmic.metrics.score_distribution_stats">score_distribution_stats()</a></code> — per-class summary of LL(ref), LL(var)
+and the score itself; the same shape ClinVar emits so the dashboard
+renders cosmic and clinvar in a consistent layout.</li>
+</ul>
 </section>
 <section>
 </section>
@@ -45,6 +55,100 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.cosmic.metrics.bootstrap_binary_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_binary_ci</span></span>(<span>labels: np.ndarray,<br>scores: np.ndarray,<br>threshold: float | None = None,<br>n_boot: int = 200,<br>seed: int = 0,<br>alpha: float = 0.05) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_binary_ci(
+    labels: np.ndarray,
+    scores: np.ndarray,
+    threshold: float | None = None,
+    n_boot: int = 200,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Return ``(lo, hi)`` 95 % bootstrap CIs for the binary metric pack.
+
+    Resamples row indices with replacement ``n_boot`` times. Resamples that
+    collapse to a single class (e.g. all-pathogenic) are skipped because
+    AUROC / AUPRC are undefined there. When ``threshold`` is provided the
+    threshold-based metrics (accuracy / f1 / sensitivity / specificity) are
+    bootstrapped at the same cut so the CI reflects sampling variance only,
+    not threshold-search variance.
+    &#34;&#34;&#34;
+    labels = np.asarray(labels, dtype=int)
+    scores = np.asarray(scores, dtype=float)
+    n = labels.size
+    if n &lt; 5 or n_boot &lt;= 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    auroc: List[float] = []
+    auprc: List[float] = []
+    acc: List[float] = []
+    f1: List[float] = []
+    sens: List[float] = []
+    spec: List[float] = []
+
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        y = labels[idx]
+        s = scores[idx]
+        if np.unique(y).size &lt; 2:
+            continue
+        try:
+            auroc.append(float(default_registry.compute(&#34;auroc&#34;, y, s)))
+            auprc.append(float(default_registry.compute(&#34;auprc&#34;, y, s)))
+        except Exception:
+            continue
+        if threshold is not None:
+            preds = (s &gt; threshold).astype(int)
+            try:
+                acc.append(float(default_registry.compute(&#34;accuracy&#34;, y, preds)))
+                f1.append(float(default_registry.compute(&#34;f1_binary&#34;, y, preds)))
+            except Exception:
+                pass
+            sens_b, spec_b = sensitivity_specificity(y, preds)
+            sens.append(float(sens_b))
+            spec.append(float(spec_b))
+
+    if not auroc:
+        return {}
+
+    lo_p = 100.0 * alpha / 2.0
+    hi_p = 100.0 * (1.0 - alpha / 2.0)
+
+    def _ci(vals: List[float]) -&gt; Tuple[float, float]:
+        if not vals:
+            return float(&#34;nan&#34;), float(&#34;nan&#34;)
+        return (
+            float(np.percentile(vals, lo_p)),
+            float(np.percentile(vals, hi_p)),
+        )
+
+    out: Dict[str, Tuple[float, float]] = {
+        &#34;auroc&#34;: _ci(auroc),
+        &#34;auprc&#34;: _ci(auprc),
+    }
+    if threshold is not None:
+        out[&#34;accuracy&#34;] = _ci(acc)
+        out[&#34;f1_binary&#34;] = _ci(f1)
+        out[&#34;sensitivity&#34;] = _ci(sens)
+        out[&#34;specificity&#34;] = _ci(spec)
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return <code>(lo, hi)</code> 95 % bootstrap CIs for the binary metric pack.</p>
+<p>Resamples row indices with replacement <code>n_boot</code> times. Resamples that
+collapse to a single class (e.g. all-pathogenic) are skipped because
+AUROC / AUPRC are undefined there. When <code>threshold</code> is provided the
+threshold-based metrics (accuracy / f1 / sensitivity / specificity) are
+bootstrapped at the same cut so the CI reflects sampling variance only,
+not threshold-search variance.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.cosmic.metrics.confusion_summary"><code class="name flex">
 <span>def <span class="ident">confusion_summary</span></span>(<span>y_true: np.ndarray, y_pred: np.ndarray) ‑> Dict[str, int]</span>
 </code></dt>
@@ -119,6 +223,53 @@ This is more thorough than <code>sklearn.metrics.roc_curve</code>
 (which drops intermediate thresholds) and is required to recover a
 perfect split when one exists.</p></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.cosmic.metrics.score_distribution_stats"><code class="name flex">
+<span>def <span class="ident">score_distribution_stats</span></span>(<span>labels: np.ndarray, ref_ll: np.ndarray, var_ll: np.ndarray, scores: np.ndarray) ‑> Dict[str, Dict[str, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def score_distribution_stats(
+    labels: np.ndarray,
+    ref_ll: np.ndarray,
+    var_ll: np.ndarray,
+    scores: np.ndarray,
+) -&gt; Dict[str, Dict[str, float]]:
+    &#34;&#34;&#34;Per-class mean/std of LL(ref), LL(var), and the score.
+
+    Same shape as the clinvar version so the dashboard renders both tasks
+    with the same layout. Class names use the COSMIC convention
+    (``pathogenic`` / ``neutral``) so the labels match what
+    :mod:`prepare_csv` writes (``DAMAGING`` / ``NEUTRAL`` → cosmic_label
+    1 / 0).
+    &#34;&#34;&#34;
+    out: Dict[str, Dict[str, float]] = {}
+    for label_value, name in ((0, &#34;neutral&#34;), (1, &#34;pathogenic&#34;)):
+        mask = labels == label_value
+        n = int(mask.sum())
+        if n == 0:
+            out[name] = {&#34;n&#34;: 0}
+            continue
+        out[name] = {
+            &#34;n&#34;: n,
+            &#34;ll_ref_mean&#34;: float(np.mean(ref_ll[mask])),
+            &#34;ll_ref_std&#34;: float(np.std(ref_ll[mask])),
+            &#34;ll_var_mean&#34;: float(np.mean(var_ll[mask])),
+            &#34;ll_var_std&#34;: float(np.std(var_ll[mask])),
+            &#34;score_mean&#34;: float(np.mean(scores[mask])),
+            &#34;score_std&#34;: float(np.std(scores[mask])),
+        }
+    return out</code></pre>
+</details>
+<div class="desc"><p>Per-class mean/std of LL(ref), LL(var), and the score.</p>
+<p>Same shape as the clinvar version so the dashboard renders both tasks
+with the same layout. Class names use the COSMIC convention
+(<code>pathogenic</code> / <code>neutral</code>) so the labels match what
+:mod:<code>prepare_csv</code> writes (<code>DAMAGING</code> / <code>NEUTRAL</code> → cosmic_label
+1 / 0).</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.cosmic.metrics.sensitivity_specificity"><code class="name flex">
 <span>def <span class="ident">sensitivity_specificity</span></span>(<span>y_true: np.ndarray, y_pred: np.ndarray) ‑> Tuple[float, float]</span>
 </code></dt>
@@ -156,8 +307,10 @@ perfect split when one exists.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.metrics.bootstrap_binary_ci" href="#molcrawl.tasks.evaluation.cosmic.metrics.bootstrap_binary_ci">bootstrap_binary_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.cosmic.metrics.confusion_summary" href="#molcrawl.tasks.evaluation.cosmic.metrics.confusion_summary">confusion_summary</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.cosmic.metrics.find_optimal_f1_threshold" href="#molcrawl.tasks.evaluation.cosmic.metrics.find_optimal_f1_threshold">find_optimal_f1_threshold</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.metrics.score_distribution_stats" href="#molcrawl.tasks.evaluation.cosmic.metrics.score_distribution_stats">score_distribution_stats</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.cosmic.metrics.sensitivity_specificity" href="#molcrawl.tasks.evaluation.cosmic.metrics.sensitivity_specificity">sensitivity_specificity</a></code></li>
 </ul>
 </li>

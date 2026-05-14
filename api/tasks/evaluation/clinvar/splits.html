@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.clinvar.splits API documentation</title>
-<meta name="description" content="Holdout splits for ClinVar …">
+<meta name="description" content="Holdout splits and reproducible sampling for ClinVar …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,11 +36,18 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.clinvar.splits</code></h1>
 </header>
 <section id="section-intro">
-<p>Holdout splits for ClinVar.</p>
-<p>The upstream evaluation protocol keeps a single test split.
-This module
-exposes a stable chromosome-aware split so that later work can compare
-<code>seen</code> and <code>unseen</code> chromosomes without touching the evaluator.</p>
+<p>Holdout splits and reproducible sampling for ClinVar.</p>
+<p>Two helpers live here:</p>
+<ul>
+<li>:func:<code><a title="molcrawl.tasks.evaluation.clinvar.splits.chromosome_split" href="#molcrawl.tasks.evaluation.clinvar.splits.chromosome_split">chromosome_split()</a></code> retains the seen / unseen split used when we
+want to compare generalisation to held-out chromosomes (e.g. chrX /
+chrY) without touching the evaluator wiring.</li>
+<li>:func:<code><a title="molcrawl.tasks.evaluation.clinvar.splits.sample_clinvar" href="#molcrawl.tasks.evaluation.clinvar.splits.sample_clinvar">sample_clinvar()</a></code> produces a reproducible, class-balanced, and
+(where possible) chromosome-stratified sample for the main evaluation
+protocol. It replaces the naive <code>df.head(max_examples)</code> slice which
+used to bias every smoke run toward one class because the on-disk CSV
+groups rows by <code>ClinicalSignificance</code>.</li>
+</ul>
 </section>
 <section>
 </section>
@@ -80,6 +87,156 @@ exposes a stable chromosome-aware split so that later work can compare
 <code>column</code> field, so the evaluator can still run on sample data that
 lacks chromosome annotations.</p></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.clinvar.splits.sample_clinvar"><code class="name flex">
+<span>def <span class="ident">sample_clinvar</span></span>(<span>df: pd.DataFrame,<br>n_per_class: Optional[int] = None,<br>stratify_chrom: bool = True,<br>seed: int = 42,<br>chrom_column: str = 'chrom',<br>label_column: str = 'pathogenic') ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample_clinvar(
+    df: pd.DataFrame,
+    n_per_class: Optional[int] = None,
+    stratify_chrom: bool = True,
+    seed: int = 42,
+    chrom_column: str = &#34;chrom&#34;,
+    label_column: str = &#34;pathogenic&#34;,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Return a reproducible, class-balanced ClinVar sample.
+
+    Parameters
+    ----------
+    df:
+        Labelled ClinVar dataframe produced by :func:`load_clinvar`
+        (must include ``reference_sequence``, ``variant_sequence``,
+        ``pathogenic`` and — for stratification — a chromosome column).
+    n_per_class:
+        Target size per class. ``None`` returns the dataframe unchanged
+        (full-run mode). When set, the same count is drawn from each
+        class (the dataset&#39;s 73 % / 27 % imbalance is intentionally
+        neutralised so AUROC / AUPRC are well-defined).
+    stratify_chrom:
+        When ``True`` (default) and ``n_per_class`` is large enough to
+        allocate at least one row to each chromosome, rows are drawn
+        proportionally from each chromosome within each class. This
+        counteracts the per-chromosome pathogenic-rate variance
+        (e.g. 86 % on chrY, 48 % on chrX, 27 % overall) so the model is
+        not secretly measured on chromosome identity.
+    seed:
+        Random seed for reproducibility.
+    chrom_column:
+        Name of the chromosome column (defaults to ``&#34;chrom&#34;`` as
+        produced by the upstream data preparation scripts).
+    label_column:
+        Binary label column (``1`` = pathogenic, ``0`` = benign).
+
+    Raises
+    ------
+    ValueError
+        If the requested ``n_per_class`` exceeds the number of rows
+        available for either class.
+    &#34;&#34;&#34;
+
+    if n_per_class is None:
+        logger.info(
+            &#34;sample_clinvar: n_per_class=None → returning full dataframe (%d rows)&#34;,
+            len(df),
+        )
+        return df.reset_index(drop=True)
+
+    if label_column not in df.columns:
+        raise ValueError(
+            f&#34;sample_clinvar requires a {label_column!r} column; got {list(df.columns)}&#34;
+        )
+
+    rng = np.random.default_rng(seed)
+    per_class_parts = []
+    for label in (0, 1):
+        pool = df[df[label_column] == label]
+        if len(pool) &lt; n_per_class:
+            raise ValueError(
+                f&#34;Only {len(pool)} rows available for {label_column}={label}, &#34;
+                f&#34;requested n_per_class={n_per_class}. Reduce n_per_class or &#34;
+                &#34;disable stratified sampling.&#34;
+            )
+
+        use_chrom_stratification = (
+            stratify_chrom
+            and chrom_column in pool.columns
+            and n_per_class &gt;= pool[chrom_column].nunique()
+        )
+
+        if use_chrom_stratification:
+            sampled = _stratified_chrom_sample(
+                pool, n_per_class, chrom_column, rng
+            )
+        else:
+            if stratify_chrom and chrom_column not in pool.columns:
+                logger.info(
+                    &#34;sample_clinvar: no %r column; falling back to within-class &#34;
+                    &#34;random sampling.&#34;,
+                    chrom_column,
+                )
+            elif stratify_chrom:
+                logger.info(
+                    &#34;sample_clinvar: n_per_class=%d &lt; %d unique chromosomes; &#34;
+                    &#34;falling back to within-class random sampling.&#34;,
+                    n_per_class,
+                    pool[chrom_column].nunique(),
+                )
+            state = int(rng.integers(0, 2**32 - 1))
+            sampled = pool.sample(n=n_per_class, random_state=state)
+
+        per_class_parts.append(sampled)
+        _log_class_composition(label, sampled, chrom_column)
+
+    out = (
+        pd.concat(per_class_parts, ignore_index=False)
+        .sample(frac=1, random_state=seed)
+        .reset_index(drop=True)
+    )
+    logger.info(
+        &#34;sample_clinvar: produced %d rows (n_per_class=%d, seed=%d, stratify_chrom=%s)&#34;,
+        len(out),
+        n_per_class,
+        seed,
+        stratify_chrom,
+    )
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return a reproducible, class-balanced ClinVar sample.</p>
+<h2 id="parameters">Parameters</h2>
+<p>df:
+Labelled ClinVar dataframe produced by :func:<code>load_clinvar</code>
+(must include <code>reference_sequence</code>, <code>variant_sequence</code>,
+<code>pathogenic</code> and — for stratification — a chromosome column).
+n_per_class:
+Target size per class. <code>None</code> returns the dataframe unchanged
+(full-run mode). When set, the same count is drawn from each
+class (the dataset's 73 % / 27 % imbalance is intentionally
+neutralised so AUROC / AUPRC are well-defined).
+stratify_chrom:
+When <code>True</code> (default) and <code>n_per_class</code> is large enough to
+allocate at least one row to each chromosome, rows are drawn
+proportionally from each chromosome within each class. This
+counteracts the per-chromosome pathogenic-rate variance
+(e.g. 86 % on chrY, 48 % on chrX, 27 % overall) so the model is
+not secretly measured on chromosome identity.
+seed:
+Random seed for reproducibility.
+chrom_column:
+Name of the chromosome column (defaults to <code>"chrom"</code> as
+produced by the upstream data preparation scripts).
+label_column:
+Binary label column (<code>1</code> = pathogenic, <code>0</code> = benign).</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the requested <code>n_per_class</code> exceeds the number of rows
+available for either class.</dd>
+</dl></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -98,6 +255,7 @@ lacks chromosome annotations.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.clinvar.splits.chromosome_split" href="#molcrawl.tasks.evaluation.clinvar.splits.chromosome_split">chromosome_split</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.clinvar.splits.sample_clinvar" href="#molcrawl.tasks.evaluation.clinvar.splits.sample_clinvar">sample_clinvar</a></code></li>
 </ul>
 </li>
 </ul>

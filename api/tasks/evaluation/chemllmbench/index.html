@@ -52,11 +52,19 @@ against a gold answer by task-specific scoring.</p>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.chemllmbench.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.chemllmbench.evaluator</a></code></dt>
 <dd>
-<div class="desc"><p>ChemLLMBench evaluator - one sub-task per run.</p></div>
+<div class="desc"><p>ChemLLMBench evaluator - one sub-task per run …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.chemllmbench.metrics" href="metrics.html">molcrawl.tasks.evaluation.chemllmbench.metrics</a></code></dt>
 <dd>
 <div class="desc"><p>Task-type-specific metric dispatch for ChemLLMBench.</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.chemllmbench.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.chemllmbench.predictions_log</a></code></dt>
+<dd>
+<div class="desc"><p>Per-prompt predictions dump for the ChemLLMBench evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl" href="prepare_jsonl.html">molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl</a></code></dt>
+<dd>
+<div class="desc"><p>Build ChemLLMBench JSONL files from the upstream CSV / NPZ releases …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.chemllmbench.splits" href="splits.html">molcrawl.tasks.evaluation.chemllmbench.splits</a></code></dt>
 <dd>
@@ -110,15 +118,26 @@ against a gold answer by task-specific scoring.</p>
         self.jsonl_path = Path(jsonl_path)
         self.max_new_tokens: int = int(self.config.get(&#34;max_new_tokens&#34;, 128))
         self.temperature: float = float(self.config.get(&#34;temperature&#34;, 0.0))
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 20)
+        )
 
     def category(self) -&gt; str:
         return &#34;text_alignment&#34;
 
-    def load_dataset(self):
+    def load_dataset(self) -&gt; List[ChemLLMBenchExample]:
         examples = load_jsonl(self.jsonl_path)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            examples = examples[: int(max_examples)]
+        if self.max_examples is not None and self.max_examples &lt; len(examples):
+            rng = random.Random(self.seed)
+            indices = sorted(rng.sample(range(len(examples)), int(self.max_examples)))
+            examples = [examples[i] for i in indices]
+            logger.info(
+                &#34;Random subsample to %d examples (seed=%d)&#34;,
+                len(examples),
+                self.seed,
+            )
         return examples
 
     def run_predictions(self, dataset):
@@ -153,7 +172,24 @@ against a gold answer by task-specific scoring.</p>
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
-        report.update({&#34;subtask&#34;: self.task, &#34;task_type&#34;: TASK_TYPE[self.task], &#34;num_examples&#34;: int(len(dataset))})
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            examples=dataset,
+            predictions=predictions[&#34;predictions&#34;],
+            task=self.task,
+            task_type=TASK_TYPE[self.task],
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report.update(
+            {
+                &#34;subtask&#34;: self.task,
+                &#34;task_type&#34;: TASK_TYPE[self.task],
+                &#34;num_examples&#34;: int(len(dataset)),
+                &#34;seed&#34;: self.seed,
+                &#34;artefacts&#34;: artefacts,
+            }
+        )
         return report</code></pre>
 </details>
 <div class="desc"><p>Common scaffolding for evaluation tasks.</p>
@@ -184,7 +220,24 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
-    report.update({&#34;subtask&#34;: self.task, &#34;task_type&#34;: TASK_TYPE[self.task], &#34;num_examples&#34;: int(len(dataset))})
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        examples=dataset,
+        predictions=predictions[&#34;predictions&#34;],
+        task=self.task,
+        task_type=TASK_TYPE[self.task],
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
+    report.update(
+        {
+            &#34;subtask&#34;: self.task,
+            &#34;task_type&#34;: TASK_TYPE[self.task],
+            &#34;num_examples&#34;: int(len(dataset)),
+            &#34;seed&#34;: self.seed,
+            &#34;artefacts&#34;: artefacts,
+        }
+    )
     return report</code></pre>
 </details>
 <div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
@@ -231,18 +284,24 @@ distribution summaries, etc.</p></div>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.chemllmbench.ChemLLMBenchEvaluator.load_dataset"><code class="name flex">
-<span>def <span class="ident">load_dataset</span></span>(<span>self)</span>
+<span>def <span class="ident">load_dataset</span></span>(<span>self) ‑> List[<a title="molcrawl.tasks.evaluation.chemllmbench.data_preparation.ChemLLMBenchExample" href="data_preparation.html#molcrawl.tasks.evaluation.chemllmbench.data_preparation.ChemLLMBenchExample">ChemLLMBenchExample</a>]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_dataset(self):
+<pre><code class="python">def load_dataset(self) -&gt; List[ChemLLMBenchExample]:
     examples = load_jsonl(self.jsonl_path)
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        examples = examples[: int(max_examples)]
+    if self.max_examples is not None and self.max_examples &lt; len(examples):
+        rng = random.Random(self.seed)
+        indices = sorted(rng.sample(range(len(examples)), int(self.max_examples)))
+        examples = [examples[i] for i in indices]
+        logger.info(
+            &#34;Random subsample to %d examples (seed=%d)&#34;,
+            len(examples),
+            self.seed,
+        )
     return examples</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -293,6 +352,8 @@ distribution summaries, etc.</p></div>
 <li><code><a title="molcrawl.tasks.evaluation.chemllmbench.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.chemllmbench.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.chemllmbench.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.chemllmbench.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.chemllmbench.metrics" href="metrics.html">molcrawl.tasks.evaluation.chemllmbench.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chemllmbench.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.chemllmbench.predictions_log</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl" href="prepare_jsonl.html">molcrawl.tasks.evaluation.chemllmbench.prepare_jsonl</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.chemllmbench.splits" href="splits.html">molcrawl.tasks.evaluation.chemllmbench.splits</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.chemllmbench.visualization" href="visualization.html">molcrawl.tasks.evaluation.chemllmbench.visualization</a></code></li>
 </ul>

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.omim.gpt2_evaluation API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.tasks.evaluation.tape.predictions_log API documentation</title>
+<meta name="description" content="Per-row predictions dump for TAPE evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,15 +33,158 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.omim.gpt2_evaluation</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.tape.predictions_log</code></h1>
 </header>
 <section id="section-intro">
+<p>Per-row predictions dump for TAPE evaluator.</p>
+<p>Three artefacts depending on task mode:</p>
+<ul>
+<li>regression / classification: <code>predictions.jsonl</code> (one record per
+test row) + <code>predictions.txt</code> narrative (over/under-predicted
+for regression; CORRECT vs WRONG per class for classification).</li>
+<li>sequence_labeling (secondary_structure_*): <code>predictions.jsonl</code>
+one record per protein with primary / gold-ss / pred-ss strings +
+per-residue accuracy; <code>predictions.txt</code> shows worst/best-fit
+proteins so confusion patterns surface as text alignments.</li>
+</ul>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.tape.predictions_log.write_predictions"><code class="name flex">
+<span>def <span class="ident">write_predictions</span></span>(<span>output_dir: Path,<br>test_df: pd.DataFrame,<br>y_pred: Sequence[float],<br>task_name: str,<br>task_type: str,<br>sequence_column: str = 'primary',<br>label_column: str = 'log_fluorescence',<br>arch: Optional[str] = None,<br>preview_count: int = 20) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_predictions(
+    output_dir: Path,
+    test_df: pd.DataFrame,
+    y_pred: Sequence[float],
+    task_name: str,
+    task_type: str,
+    sequence_column: str = &#34;primary&#34;,
+    label_column: str = &#34;log_fluorescence&#34;,
+    arch: Optional[str] = None,
+    preview_count: int = 20,
+) -&gt; Dict[str, str]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    jsonl_path = output_dir / &#34;predictions.jsonl&#34;
+    txt_path = output_dir / &#34;predictions.txt&#34;
+
+    _write_jsonl(jsonl_path, test_df, y_pred, task_type, sequence_column, label_column)
+    _write_narrative(
+        txt_path,
+        test_df=test_df,
+        y_pred=y_pred,
+        task_name=task_name,
+        task_type=task_type,
+        sequence_column=sequence_column,
+        label_column=label_column,
+        arch=arch,
+        preview_count=preview_count,
+    )
+
+    return {
+        &#34;predictions_jsonl&#34;: str(jsonl_path),
+        &#34;predictions_txt&#34;: str(txt_path),
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tape.predictions_log.write_sequence_labeling_predictions"><code class="name flex">
+<span>def <span class="ident">write_sequence_labeling_predictions</span></span>(<span>output_dir: Path,<br>test_df: pd.DataFrame,<br>per_protein_pred: Sequence[Sequence[int]],<br>per_protein_label: Sequence[Sequence[int]],<br>per_protein_mask: Sequence[Sequence[int]],<br>task_name: str,<br>num_classes: int,<br>sequence_column: str = 'primary',<br>arch: Optional[str] = None,<br>preview_count: int = 12) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_sequence_labeling_predictions(
+    output_dir: Path,
+    test_df: pd.DataFrame,
+    per_protein_pred: Sequence[Sequence[int]],
+    per_protein_label: Sequence[Sequence[int]],
+    per_protein_mask: Sequence[Sequence[int]],
+    task_name: str,
+    num_classes: int,
+    sequence_column: str = &#34;primary&#34;,
+    arch: Optional[str] = None,
+    preview_count: int = 12,
+) -&gt; Dict[str, str]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    jsonl_path = output_dir / &#34;predictions.jsonl&#34;
+    txt_path = output_dir / &#34;predictions.txt&#34;
+
+    df = test_df.reset_index(drop=True)
+    seqs = df[sequence_column].astype(str).tolist()
+    alphabet = _alphabet_for(num_classes)
+
+    rows: List[Dict[str, Any]] = []
+    for i in range(len(seqs)):
+        if i &gt;= len(per_protein_pred):
+            break
+        pred = list(per_protein_pred[i])
+        label = list(per_protein_label[i])
+        mask = list(per_protein_mask[i])
+        n_valid = int(sum(1 for m in mask if m))
+        if n_valid == 0:
+            acc = float(&#34;nan&#34;)
+        else:
+            acc = float(
+                sum(1 for j, m in enumerate(mask) if m and pred[j] == label[j])
+                / n_valid
+            )
+        gold_str = &#34;&#34;.join(
+            alphabet[label[j]] if 0 &lt;= label[j] &lt; len(alphabet) else &#34;-&#34;
+            for j in range(len(label))
+        )
+        pred_str = &#34;&#34;.join(
+            alphabet[pred[j]] if 0 &lt;= pred[j] &lt; len(alphabet) else &#34;-&#34;
+            for j in range(len(pred))
+        )
+        rows.append(
+            {
+                &#34;index&#34;: int(i),
+                &#34;primary&#34;: seqs[i],
+                &#34;gold_ss&#34;: gold_str,
+                &#34;pred_ss&#34;: pred_str,
+                &#34;valid_residues&#34;: n_valid,
+                &#34;per_residue_accuracy&#34;: acc,
+            }
+        )
+
+    with jsonl_path.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        for rec in rows:
+            fh.write(json.dumps(rec, ensure_ascii=False) + &#34;\n&#34;)
+
+    _write_seq_labeling_narrative(
+        txt_path,
+        rows=rows,
+        task_name=task_name,
+        num_classes=num_classes,
+        arch=arch,
+        preview_count=preview_count,
+    )
+
+    return {
+        &#34;predictions_jsonl&#34;: str(jsonl_path),
+        &#34;predictions_txt&#34;: str(txt_path),
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -53,7 +196,13 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.omim" href="index.html">molcrawl.tasks.evaluation.omim</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape" href="index.html">molcrawl.tasks.evaluation.tape</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.tape.predictions_log.write_predictions" href="#molcrawl.tasks.evaluation.tape.predictions_log.write_predictions">write_predictions</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.predictions_log.write_sequence_labeling_predictions" href="#molcrawl.tasks.evaluation.tape.predictions_log.write_sequence_labeling_predictions">write_sequence_labeling_predictions</a></code></li>
 </ul>
 </li>
 </ul>

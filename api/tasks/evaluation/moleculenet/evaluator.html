@@ -41,17 +41,21 @@ el.replaceWith(d);
 <ol>
 <li>Load the task CSV and canonicalise SMILES
 (:mod:<code>.data_preparation</code>).</li>
-<li>Build a scaffold split
-(:mod:<code>.splits</code>).</li>
+<li>Optionally stratify-subsample before splitting so smoke runs still
+exercise both classes / all quantiles (:func:<code>.splits.stratified_subsample</code>).</li>
+<li>Build a scaffold split (:mod:<code>.splits</code>).</li>
 <li>Embed the train and test subsets through <code>ModelAdapter.embed</code>.</li>
 <li>Fit a simple linear probe (logistic regression for classification,
 ridge for regression) on the train embeddings.</li>
-<li>Report the metric pack selected in :mod:<code>.metrics</code>.</li>
+<li>Report the metric pack selected in :mod:<code>.metrics</code>, add bootstrap
+95 % CIs for the ranking / regression primaries, and emit
+<code>predictions.jsonl</code> + <code>predictions.txt</code> so the user can
+inspect what the probe actually did without re-running.</li>
 </ol>
 <p>Adapters that do not support embedding but do support likelihood can
-still produce a zero-shot perplexity baseline - the evaluator falls back
-to this when embedding is unavailable and reports perplexity plus NaN
-placeholders for the task-specific metrics.</p>
+still produce a zero-shot perplexity baseline — the evaluator falls
+back to this when embedding is unavailable and flags the mode in the
+report.</p>
 </section>
 <section>
 </section>
@@ -145,9 +149,35 @@ placeholders for the task-specific metrics.</p>
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_dataset(self.task_dir, self.task_spec)
+
+        n_examples = self.config.get(&#34;n_examples&#34;)
         max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if n_examples is None and max_examples is not None:
+            n_examples = int(max_examples)
+            logger.warning(
+                &#34;MoleculeNetEvaluator: max_examples=%s deprecated; &#34;
+                &#34;re-interpreting as n_examples=%d with stratified subsample.&#34;,
+                max_examples,
+                n_examples,
+            )
+
+        if n_examples is not None and n_examples &lt; len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(n_examples),
+                label_columns=list(self.task_spec.label_columns),
+                task_type=self.task_spec.task_type,
+                seed=int(self.config.get(&#34;subsample_seed&#34;, self.seed + 1)),
+            )
+
+        self._last_sampling = {
+            &#34;n_examples&#34;: n_examples,
+            &#34;split&#34;: self.split_strategy,
+            &#34;val_frac&#34;: self.val_frac,
+            &#34;test_frac&#34;: self.test_frac,
+            &#34;seed&#34;: self.seed,
+            &#34;total_after_subsample&#34;: int(len(df)),
+        }
         return df
 
     # ------------------------------------------------------------------
@@ -168,7 +198,7 @@ placeholders for the task-specific metrics.</p>
 
     def run_predictions(self, dataset: pd.DataFrame):
         split = self._build_split(dataset)
-        train_df, _val_df, test_df = apply_split(dataset, split)
+        train_df, val_df, test_df = apply_split(dataset, split)
 
         adapter = self.adapter
         smi_col = self.task_spec.smiles_column
@@ -190,6 +220,25 @@ placeholders for the task-specific metrics.</p>
                 f&#34;Adapter {type(adapter).__name__} supports neither embedding nor likelihood; &#34;
                 &#34;cannot evaluate MoleculeNet.&#34;
             )
+
+        self._last_split_sizes = {
+            &#34;train&#34;: int(len(train_df)),
+            &#34;val&#34;: int(len(val_df)),
+            &#34;test&#34;: int(len(test_df)),
+        }
+        self._last_label_distribution = {
+            split_name: {
+                col: split_label_distribution(
+                    split_df[col].to_numpy(), self.task_spec.task_type
+                )
+                for col in label_cols
+            }
+            for split_name, split_df in (
+                (&#34;train&#34;, train_df),
+                (&#34;val&#34;, val_df),
+                (&#34;test&#34;, test_df),
+            )
+        }
 
         return {
             &#34;mode&#34;: mode,
@@ -246,10 +295,15 @@ placeholders for the task-specific metrics.</p>
         if mode == &#34;zero_shot_likelihood&#34;:
             ll = predictions[&#34;predictions&#34;][&#34;log_likelihood&#34;]
             ppl = default_registry.compute(&#34;perplexity&#34;, float(-np.mean(ll)))
-            return {&#34;perplexity&#34;: ppl}
+            self._last_bootstrap = {}
+            return {&#34;perplexity&#34;: float(ppl)}
 
         metrics: Dict[str, float] = {}
+        bootstrap_payload: Dict[str, Dict[str, Dict[str, float]]] = {}
         preds = predictions[&#34;predictions&#34;]
+        n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+        seed = int(self.config.get(&#34;seed&#34;, 0))
+
         for col, scores in preds.items():
             y_true = test_df[col].to_numpy()
             mask = ~pd.isna(y_true) &amp; ~pd.isna(scores)
@@ -257,21 +311,64 @@ placeholders for the task-specific metrics.</p>
                 logger.warning(&#34;Skipping %s: insufficient labelled test rows&#34;, col)
                 continue
             if task_spec.task_type == &#34;classification&#34;:
-                sub = score_classification(y_true[mask].astype(int), scores[mask])
+                sub = score_classification(
+                    y_true[mask].astype(int), np.asarray(scores)[mask]
+                )
+                ci = bootstrap_ci(
+                    y_true[mask].astype(int),
+                    np.asarray(scores)[mask],
+                    task_type=&#34;classification&#34;,
+                    n_boot=n_boot,
+                    seed=seed,
+                )
             else:
-                sub = score_regression(y_true[mask].astype(float), scores[mask])
+                sub = score_regression(
+                    y_true[mask].astype(float), np.asarray(scores)[mask]
+                )
+                ci = bootstrap_ci(
+                    y_true[mask].astype(float),
+                    np.asarray(scores)[mask],
+                    task_type=&#34;regression&#34;,
+                    n_boot=n_boot,
+                    seed=seed,
+                )
             for metric_name, value in sub.items():
                 metrics[f&#34;{col}.{metric_name}&#34;] = float(value)
+            if ci:
+                bootstrap_payload[col] = {
+                    key: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+                    for key, (lo, hi) in ci.items()
+                }
 
         # task-level averages ease the markdown summary
         if metrics:
-            for metric_name in set(k.split(&#34;.&#34;, 1)[1] for k in metrics if &#34;.&#34; in k):
+            metric_names = set(k.split(&#34;.&#34;, 1)[1] for k in metrics if &#34;.&#34; in k)
+            for metric_name in metric_names:
                 values = [v for k, v in metrics.items() if k.endswith(&#34;.&#34; + metric_name)]
-                metrics[f&#34;mean.{metric_name}&#34;] = float(np.nanmean(values)) if values else float(&#34;nan&#34;)
+                metrics[f&#34;mean.{metric_name}&#34;] = (
+                    float(np.nanmean(values)) if values else float(&#34;nan&#34;)
+                )
+
+        self._last_bootstrap = bootstrap_payload
         return metrics
 
     def build_report(self, metrics: Dict[str, float], dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+
+        preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            test_df=predictions[&#34;test_df&#34;],
+            preds=predictions[&#34;predictions&#34;],
+            label_columns=list(self.task_spec.label_columns),
+            smiles_column=self.task_spec.smiles_column,
+            task_type=self.task_spec.task_type,
+            mode=predictions[&#34;mode&#34;],
+            split_sizes=getattr(self, &#34;_last_split_sizes&#34;, None),
+            arch=self.handle.arch,
+            preview_count=preview_count,
+        )
+
         report.update(
             {
                 &#34;task_spec&#34;: {
@@ -280,8 +377,21 @@ placeholders for the task-specific metrics.</p>
                     &#34;label_columns&#34;: list(self.task_spec.label_columns),
                 },
                 &#34;split_strategy&#34;: self.split_strategy,
+                &#34;split_sizes&#34;: getattr(self, &#34;_last_split_sizes&#34;, None),
+                &#34;label_distribution&#34;: getattr(
+                    self, &#34;_last_label_distribution&#34;, None
+                ),
                 &#34;mode&#34;: predictions[&#34;mode&#34;],
                 &#34;num_test_examples&#34;: int(len(predictions[&#34;test_df&#34;])),
+                &#34;sampling&#34;: getattr(self, &#34;_last_sampling&#34;, None),
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap&#34;, None),
+                &#34;artefacts&#34;: prediction_paths,
+                &#34;notes&#34;: (
+                    &#34;Linear probe (LogReg / Ridge) on top of ModelAdapter.embed. &#34;
+                    &#34;Classification primaries: AUROC / AUPRC. Regression &#34;
+                    &#34;primaries: RMSE / R² / Spearman. Bootstrap 95 % CIs are &#34;
+                    &#34;computed per label column under the same seed.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -311,6 +421,21 @@ placeholders for the task-specific metrics.</p>
 </summary>
 <pre><code class="python">def build_report(self, metrics: Dict[str, float], dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+
+    preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+    prediction_paths = write_predictions(
+        output_dir=self.output_dir,
+        test_df=predictions[&#34;test_df&#34;],
+        preds=predictions[&#34;predictions&#34;],
+        label_columns=list(self.task_spec.label_columns),
+        smiles_column=self.task_spec.smiles_column,
+        task_type=self.task_spec.task_type,
+        mode=predictions[&#34;mode&#34;],
+        split_sizes=getattr(self, &#34;_last_split_sizes&#34;, None),
+        arch=self.handle.arch,
+        preview_count=preview_count,
+    )
+
     report.update(
         {
             &#34;task_spec&#34;: {
@@ -319,8 +444,21 @@ placeholders for the task-specific metrics.</p>
                 &#34;label_columns&#34;: list(self.task_spec.label_columns),
             },
             &#34;split_strategy&#34;: self.split_strategy,
+            &#34;split_sizes&#34;: getattr(self, &#34;_last_split_sizes&#34;, None),
+            &#34;label_distribution&#34;: getattr(
+                self, &#34;_last_label_distribution&#34;, None
+            ),
             &#34;mode&#34;: predictions[&#34;mode&#34;],
             &#34;num_test_examples&#34;: int(len(predictions[&#34;test_df&#34;])),
+            &#34;sampling&#34;: getattr(self, &#34;_last_sampling&#34;, None),
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap&#34;, None),
+            &#34;artefacts&#34;: prediction_paths,
+            &#34;notes&#34;: (
+                &#34;Linear probe (LogReg / Ridge) on top of ModelAdapter.embed. &#34;
+                &#34;Classification primaries: AUROC / AUPRC. Regression &#34;
+                &#34;primaries: RMSE / R² / Spearman. Bootstrap 95 % CIs are &#34;
+                &#34;computed per label column under the same seed.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -360,10 +498,15 @@ distribution summaries, etc.</p></div>
     if mode == &#34;zero_shot_likelihood&#34;:
         ll = predictions[&#34;predictions&#34;][&#34;log_likelihood&#34;]
         ppl = default_registry.compute(&#34;perplexity&#34;, float(-np.mean(ll)))
-        return {&#34;perplexity&#34;: ppl}
+        self._last_bootstrap = {}
+        return {&#34;perplexity&#34;: float(ppl)}
 
     metrics: Dict[str, float] = {}
+    bootstrap_payload: Dict[str, Dict[str, Dict[str, float]]] = {}
     preds = predictions[&#34;predictions&#34;]
+    n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+    seed = int(self.config.get(&#34;seed&#34;, 0))
+
     for col, scores in preds.items():
         y_true = test_df[col].to_numpy()
         mask = ~pd.isna(y_true) &amp; ~pd.isna(scores)
@@ -371,17 +514,45 @@ distribution summaries, etc.</p></div>
             logger.warning(&#34;Skipping %s: insufficient labelled test rows&#34;, col)
             continue
         if task_spec.task_type == &#34;classification&#34;:
-            sub = score_classification(y_true[mask].astype(int), scores[mask])
+            sub = score_classification(
+                y_true[mask].astype(int), np.asarray(scores)[mask]
+            )
+            ci = bootstrap_ci(
+                y_true[mask].astype(int),
+                np.asarray(scores)[mask],
+                task_type=&#34;classification&#34;,
+                n_boot=n_boot,
+                seed=seed,
+            )
         else:
-            sub = score_regression(y_true[mask].astype(float), scores[mask])
+            sub = score_regression(
+                y_true[mask].astype(float), np.asarray(scores)[mask]
+            )
+            ci = bootstrap_ci(
+                y_true[mask].astype(float),
+                np.asarray(scores)[mask],
+                task_type=&#34;regression&#34;,
+                n_boot=n_boot,
+                seed=seed,
+            )
         for metric_name, value in sub.items():
             metrics[f&#34;{col}.{metric_name}&#34;] = float(value)
+        if ci:
+            bootstrap_payload[col] = {
+                key: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+                for key, (lo, hi) in ci.items()
+            }
 
     # task-level averages ease the markdown summary
     if metrics:
-        for metric_name in set(k.split(&#34;.&#34;, 1)[1] for k in metrics if &#34;.&#34; in k):
+        metric_names = set(k.split(&#34;.&#34;, 1)[1] for k in metrics if &#34;.&#34; in k)
+        for metric_name in metric_names:
             values = [v for k, v in metrics.items() if k.endswith(&#34;.&#34; + metric_name)]
-            metrics[f&#34;mean.{metric_name}&#34;] = float(np.nanmean(values)) if values else float(&#34;nan&#34;)
+            metrics[f&#34;mean.{metric_name}&#34;] = (
+                float(np.nanmean(values)) if values else float(&#34;nan&#34;)
+            )
+
+    self._last_bootstrap = bootstrap_payload
     return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
@@ -396,9 +567,35 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_dataset(self.task_dir, self.task_spec)
+
+    n_examples = self.config.get(&#34;n_examples&#34;)
     max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
+    if n_examples is None and max_examples is not None:
+        n_examples = int(max_examples)
+        logger.warning(
+            &#34;MoleculeNetEvaluator: max_examples=%s deprecated; &#34;
+            &#34;re-interpreting as n_examples=%d with stratified subsample.&#34;,
+            max_examples,
+            n_examples,
+        )
+
+    if n_examples is not None and n_examples &lt; len(df):
+        df = stratified_subsample(
+            df,
+            n_examples=int(n_examples),
+            label_columns=list(self.task_spec.label_columns),
+            task_type=self.task_spec.task_type,
+            seed=int(self.config.get(&#34;subsample_seed&#34;, self.seed + 1)),
+        )
+
+    self._last_sampling = {
+        &#34;n_examples&#34;: n_examples,
+        &#34;split&#34;: self.split_strategy,
+        &#34;val_frac&#34;: self.val_frac,
+        &#34;test_frac&#34;: self.test_frac,
+        &#34;seed&#34;: self.seed,
+        &#34;total_after_subsample&#34;: int(len(df)),
+    }
     return df</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -413,7 +610,7 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def run_predictions(self, dataset: pd.DataFrame):
     split = self._build_split(dataset)
-    train_df, _val_df, test_df = apply_split(dataset, split)
+    train_df, val_df, test_df = apply_split(dataset, split)
 
     adapter = self.adapter
     smi_col = self.task_spec.smiles_column
@@ -435,6 +632,25 @@ distribution summaries, etc.</p></div>
             f&#34;Adapter {type(adapter).__name__} supports neither embedding nor likelihood; &#34;
             &#34;cannot evaluate MoleculeNet.&#34;
         )
+
+    self._last_split_sizes = {
+        &#34;train&#34;: int(len(train_df)),
+        &#34;val&#34;: int(len(val_df)),
+        &#34;test&#34;: int(len(test_df)),
+    }
+    self._last_label_distribution = {
+        split_name: {
+            col: split_label_distribution(
+                split_df[col].to_numpy(), self.task_spec.task_type
+            )
+            for col in label_cols
+        }
+        for split_name, split_df in (
+            (&#34;train&#34;, train_df),
+            (&#34;val&#34;, val_df),
+            (&#34;test&#34;, test_df),
+        )
+    }
 
     return {
         &#34;mode&#34;: mode,

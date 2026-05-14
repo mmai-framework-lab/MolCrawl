@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.chembl_scaffold_heldout.evaluator API documentation</title>
-<meta name="description" content="Held-out evaluator for ChEMBL scaffold splits.">
+<meta name="description" content="Held-out evaluator for ChEMBL scaffold splits …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,17 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Held-out evaluator for ChEMBL scaffold splits.</p>
+<p>足固め upgrade adds:</p>
+<ul>
+<li>length-stratified subsample (replaces <code>df.head(max_examples)</code> so
+the held-out evaluation no longer over-represents short / early-id
+ChEMBL records)</li>
+<li>bootstrap 95 % CI on perplexity (and on probe AUROC/AUPRC/acc/F1)</li>
+<li>per-row predictions log (jsonl + narrative TXT showing best-fit /
+worst-fit SMILES under the model)</li>
+<li>length stats on the held-out SMILES so the report makes the
+composition of the test set explicit</li>
+</ul>
 </section>
 <section>
 </section>
@@ -81,6 +92,12 @@ el.replaceWith(d);
         self.smiles_column: str = str(self.config.get(&#34;smiles_column&#34;, &#34;smiles&#34;))
         self.label_column: Optional[str] = self.config.get(&#34;label_column&#34;)
         self.train_csv: Optional[str] = self.config.get(&#34;train_csv&#34;)
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 30)
+        )
 
     def category(self) -&gt; str:
         return &#34;property_prediction&#34; if self.label_column else &#34;generation_quality&#34;
@@ -91,9 +108,14 @@ el.replaceWith(d);
             smiles_column=self.smiles_column,
             label_column=self.label_column,
         )
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None and self.max_examples &lt; len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(self.max_examples),
+                smiles_column=self.smiles_column,
+                label_column=self.label_column,
+                seed=self.seed,
+            )
         return df
 
     def run_predictions(self, dataset: pd.DataFrame):
@@ -106,7 +128,11 @@ el.replaceWith(d);
                     f&#34;Adapter {type(adapter).__name__} does not support likelihood scoring.&#34;
                 )
             out = adapter.score_likelihood(smi_list)
-            return {&#34;mode&#34;: &#34;perplexity&#34;, &#34;log_likelihood&#34;: np.asarray(out.log_likelihood, dtype=float)}
+            return {
+                &#34;mode&#34;: &#34;perplexity&#34;,
+                &#34;log_likelihood&#34;: np.asarray(out.log_likelihood, dtype=float),
+                &#34;smiles&#34;: smi_list,
+            }
 
         if not adapter.supports(&#34;embedding&#34;):
             raise RuntimeError(
@@ -124,6 +150,30 @@ el.replaceWith(d);
             smiles_column=self.smiles_column,
             label_column=self.label_column,
         )
+        # Mirror the held-out cap on the train side so embedding cost stays
+        # bounded for very large training CSVs.
+        if self.max_examples is not None and self.max_examples &lt; len(train_df):
+            train_df = stratified_subsample(
+                train_df,
+                n_examples=int(self.max_examples),
+                smiles_column=self.smiles_column,
+                label_column=self.label_column,
+                seed=self.seed,
+            )
+
+        # Sanity-check the user-provided split is genuinely scaffold-disjoint.
+        n_overlap = warn_on_scaffold_overlap(
+            train_smiles=train_df[self.smiles_column].astype(str).tolist(),
+            test_smiles=smi_list,
+        )
+        if n_overlap &gt; 0:
+            logger.warning(
+                &#34;Scaffold leak detected: %d scaffolds appear in both train_csv &#34;
+                &#34;and heldout_csv. Held-out perplexity / probe metrics may be &#34;
+                &#34;optimistic.&#34;,
+                n_overlap,
+            )
+
         train_embed = np.asarray(
             adapter.embed(train_df[self.smiles_column].astype(str).tolist()).embeddings
         )
@@ -136,25 +186,98 @@ el.replaceWith(d);
         clf = LogisticRegression(max_iter=1000)
         clf.fit(train_embed[mask], y_train[mask].astype(int))
         scores = clf.predict_proba(test_embed)[:, 1]
-        return {&#34;mode&#34;: &#34;probe&#34;, &#34;scores&#34;: scores}
+        return {
+            &#34;mode&#34;: &#34;probe&#34;,
+            &#34;scores&#34;: scores,
+            &#34;smiles&#34;: smi_list,
+            &#34;n_train_used&#34;: int(mask.sum()),
+            &#34;scaffold_overlap&#34;: int(n_overlap),
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
         if predictions[&#34;mode&#34;] == &#34;perplexity&#34;:
-            return {&#34;perplexity&#34;: perplexity_from_log_likelihoods(predictions[&#34;log_likelihood&#34;])}
+            ll = predictions[&#34;log_likelihood&#34;]
+            metrics: Dict[str, float] = {
+                &#34;perplexity&#34;: perplexity_from_log_likelihoods(ll),
+                &#34;mean_log_likelihood&#34;: float(np.nanmean(ll)) if len(ll) else float(&#34;nan&#34;),
+            }
+            metrics.update(length_stats(predictions[&#34;smiles&#34;]))
+            ci_lo, ci_hi = bootstrap_perplexity_ci(
+                ll,
+                n_boot=self.bootstrap_samples,
+                seed=self.seed,
+            )
+            self._last_bootstrap_ci: Dict[str, Any] = {
+                &#34;perplexity&#34;: {&#34;ci_lo&#34;: ci_lo, &#34;ci_hi&#34;: ci_hi}
+            }
+            return metrics
+
         scores = predictions[&#34;scores&#34;]
         y_true = dataset[self.label_column].to_numpy()
         mask = ~pd.isna(y_true)
-        return probe_metrics(y_true[mask].astype(int), scores[mask])
+        y_true_clean = y_true[mask].astype(int)
+        scores_clean = scores[mask]
+        metrics = probe_metrics(y_true_clean, scores_clean)
+        metrics.update(length_stats(predictions[&#34;smiles&#34;]))
+        ci = bootstrap_probe_ci(
+            y_true_clean,
+            scores_clean,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+
+        if predictions[&#34;mode&#34;] == &#34;perplexity&#34;:
+            artefacts = write_predictions(
+                output_dir=self.output_dir,
+                smiles=predictions[&#34;smiles&#34;],
+                mode=&#34;perplexity&#34;,
+                log_likelihood=predictions[&#34;log_likelihood&#34;],
+                arch=self.handle.arch,
+                preview_count=self.predictions_preview_count,
+            )
+        else:
+            labels = (
+                dataset[self.label_column].to_numpy().tolist()
+                if self.label_column
+                else None
+            )
+            artefacts = write_predictions(
+                output_dir=self.output_dir,
+                smiles=predictions[&#34;smiles&#34;],
+                mode=&#34;probe&#34;,
+                probe_scores=predictions[&#34;scores&#34;],
+                labels=labels,
+                label_column=self.label_column,
+                arch=self.handle.arch,
+                preview_count=self.predictions_preview_count,
+            )
+
         report.update(
             {
                 &#34;num_examples&#34;: int(len(dataset)),
                 &#34;mode&#34;: predictions[&#34;mode&#34;],
                 &#34;label_column&#34;: self.label_column,
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;Scaffold held-out: heldout SMILES come from Bemis-Murcko &#34;
+                    &#34;scaffolds disjoint from training. perplexity = exp(-mean LL). &#34;
+                    &#34;Lower is better. The predictions narrative samples best- and &#34;
+                    &#34;worst-fit SMILES; worst-fit rows are the genuine OOD signal.&#34;
+                ),
             }
         )
+        if predictions[&#34;mode&#34;] == &#34;probe&#34;:
+            report[&#34;n_train_used&#34;] = predictions.get(&#34;n_train_used&#34;)
+            report[&#34;scaffold_overlap_count&#34;] = predictions.get(&#34;scaffold_overlap&#34;)
         return report</code></pre>
 </details>
 <div class="desc"><p>Evaluate compound models on a scaffold held-out ChEMBL split.</p></div>
@@ -182,13 +305,52 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+
+    if predictions[&#34;mode&#34;] == &#34;perplexity&#34;:
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            smiles=predictions[&#34;smiles&#34;],
+            mode=&#34;perplexity&#34;,
+            log_likelihood=predictions[&#34;log_likelihood&#34;],
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+    else:
+        labels = (
+            dataset[self.label_column].to_numpy().tolist()
+            if self.label_column
+            else None
+        )
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            smiles=predictions[&#34;smiles&#34;],
+            mode=&#34;probe&#34;,
+            probe_scores=predictions[&#34;scores&#34;],
+            labels=labels,
+            label_column=self.label_column,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+
     report.update(
         {
             &#34;num_examples&#34;: int(len(dataset)),
             &#34;mode&#34;: predictions[&#34;mode&#34;],
             &#34;label_column&#34;: self.label_column,
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;Scaffold held-out: heldout SMILES come from Bemis-Murcko &#34;
+                &#34;scaffolds disjoint from training. perplexity = exp(-mean LL). &#34;
+                &#34;Lower is better. The predictions narrative samples best- and &#34;
+                &#34;worst-fit SMILES; worst-fit rows are the genuine OOD signal.&#34;
+            ),
         }
     )
+    if predictions[&#34;mode&#34;] == &#34;probe&#34;:
+        report[&#34;n_train_used&#34;] = predictions.get(&#34;n_train_used&#34;)
+        report[&#34;scaffold_overlap_count&#34;] = predictions.get(&#34;scaffold_overlap&#34;)
     return report</code></pre>
 </details>
 <div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
@@ -220,11 +382,39 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
     if predictions[&#34;mode&#34;] == &#34;perplexity&#34;:
-        return {&#34;perplexity&#34;: perplexity_from_log_likelihoods(predictions[&#34;log_likelihood&#34;])}
+        ll = predictions[&#34;log_likelihood&#34;]
+        metrics: Dict[str, float] = {
+            &#34;perplexity&#34;: perplexity_from_log_likelihoods(ll),
+            &#34;mean_log_likelihood&#34;: float(np.nanmean(ll)) if len(ll) else float(&#34;nan&#34;),
+        }
+        metrics.update(length_stats(predictions[&#34;smiles&#34;]))
+        ci_lo, ci_hi = bootstrap_perplexity_ci(
+            ll,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci: Dict[str, Any] = {
+            &#34;perplexity&#34;: {&#34;ci_lo&#34;: ci_lo, &#34;ci_hi&#34;: ci_hi}
+        }
+        return metrics
+
     scores = predictions[&#34;scores&#34;]
     y_true = dataset[self.label_column].to_numpy()
     mask = ~pd.isna(y_true)
-    return probe_metrics(y_true[mask].astype(int), scores[mask])</code></pre>
+    y_true_clean = y_true[mask].astype(int)
+    scores_clean = scores[mask]
+    metrics = probe_metrics(y_true_clean, scores_clean)
+    metrics.update(length_stats(predictions[&#34;smiles&#34;]))
+    ci = bootstrap_probe_ci(
+        y_true_clean,
+        scores_clean,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+    )
+    self._last_bootstrap_ci = {
+        k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+    }
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -242,9 +432,14 @@ distribution summaries, etc.</p></div>
         smiles_column=self.smiles_column,
         label_column=self.label_column,
     )
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
+    if self.max_examples is not None and self.max_examples &lt; len(df):
+        df = stratified_subsample(
+            df,
+            n_examples=int(self.max_examples),
+            smiles_column=self.smiles_column,
+            label_column=self.label_column,
+            seed=self.seed,
+        )
     return df</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -267,7 +462,11 @@ distribution summaries, etc.</p></div>
                 f&#34;Adapter {type(adapter).__name__} does not support likelihood scoring.&#34;
             )
         out = adapter.score_likelihood(smi_list)
-        return {&#34;mode&#34;: &#34;perplexity&#34;, &#34;log_likelihood&#34;: np.asarray(out.log_likelihood, dtype=float)}
+        return {
+            &#34;mode&#34;: &#34;perplexity&#34;,
+            &#34;log_likelihood&#34;: np.asarray(out.log_likelihood, dtype=float),
+            &#34;smiles&#34;: smi_list,
+        }
 
     if not adapter.supports(&#34;embedding&#34;):
         raise RuntimeError(
@@ -285,6 +484,30 @@ distribution summaries, etc.</p></div>
         smiles_column=self.smiles_column,
         label_column=self.label_column,
     )
+    # Mirror the held-out cap on the train side so embedding cost stays
+    # bounded for very large training CSVs.
+    if self.max_examples is not None and self.max_examples &lt; len(train_df):
+        train_df = stratified_subsample(
+            train_df,
+            n_examples=int(self.max_examples),
+            smiles_column=self.smiles_column,
+            label_column=self.label_column,
+            seed=self.seed,
+        )
+
+    # Sanity-check the user-provided split is genuinely scaffold-disjoint.
+    n_overlap = warn_on_scaffold_overlap(
+        train_smiles=train_df[self.smiles_column].astype(str).tolist(),
+        test_smiles=smi_list,
+    )
+    if n_overlap &gt; 0:
+        logger.warning(
+            &#34;Scaffold leak detected: %d scaffolds appear in both train_csv &#34;
+            &#34;and heldout_csv. Held-out perplexity / probe metrics may be &#34;
+            &#34;optimistic.&#34;,
+            n_overlap,
+        )
+
     train_embed = np.asarray(
         adapter.embed(train_df[self.smiles_column].astype(str).tolist()).embeddings
     )
@@ -297,7 +520,13 @@ distribution summaries, etc.</p></div>
     clf = LogisticRegression(max_iter=1000)
     clf.fit(train_embed[mask], y_train[mask].astype(int))
     scores = clf.predict_proba(test_embed)[:, 1]
-    return {&#34;mode&#34;: &#34;probe&#34;, &#34;scores&#34;: scores}</code></pre>
+    return {
+        &#34;mode&#34;: &#34;probe&#34;,
+        &#34;scores&#34;: scores,
+        &#34;smiles&#34;: smi_list,
+        &#34;n_train_used&#34;: int(mask.sum()),
+        &#34;scaffold_overlap&#34;: int(n_overlap),
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

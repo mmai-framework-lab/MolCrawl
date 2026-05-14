@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.deeploc.evaluator API documentation</title>
-<meta name="description" content="DeepLoc 2.0 subcellular localisation evaluator.">
+<meta name="description" content="DeepLoc 2.0 subcellular localisation evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,15 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>DeepLoc 2.0 subcellular localisation evaluator.</p>
+<p>足固め upgrade adds:</p>
+<ul>
+<li>class-balanced subsample (replaces <code>df.head(max_examples)</code> so
+rare classes — Peroxisome, Lysosome — survive into the test split)</li>
+<li>bootstrap 95 % CI on accuracy / f1_macro / mcc</li>
+<li>per-protein predictions log (jsonl + per-kingdom narrative TXT)</li>
+<li>test-set composition summary (cluster ids used for test, per-class
+count, per-kingdom count) surfaced in the report</li>
+</ul>
 </section>
 <section>
 </section>
@@ -80,18 +89,26 @@ el.replaceWith(d);
         self.deeploc_path = Path(deeploc_path)
         self.test_fraction: float = float(self.config.get(&#34;test_fraction&#34;, 0.2))
         self.seed: int = int(self.config.get(&#34;seed&#34;, 0))
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 20)
+        )
 
     def category(self) -&gt; str:
         return &#34;property_prediction&#34;
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_deeploc(self.deeploc_path)
-        # Normalise labels to contiguous integers.
         df[&#34;label&#34;] = df[&#34;localisation&#34;].map(_label_to_index)
         df = df.dropna(subset=[&#34;label&#34;]).reset_index(drop=True)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None and self.max_examples &lt; len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(self.max_examples),
+                label_column=&#34;localisation&#34;,
+                seed=self.seed,
+            )
         return df
 
     def run_predictions(self, dataset: pd.DataFrame):
@@ -102,6 +119,12 @@ el.replaceWith(d);
             )
         train_df, test_df = cluster_split(
             dataset, test_fraction=self.test_fraction, seed=self.seed
+        )
+        logger.info(
+            &#34;DeepLoc split: train=%d test=%d (test_fraction=%.2f)&#34;,
+            len(train_df),
+            len(test_df),
+            self.test_fraction,
         )
         train_emb = np.asarray(
             adapter.embed(train_df[&#34;sequence&#34;].astype(str).tolist()).embeddings
@@ -114,20 +137,71 @@ el.replaceWith(d);
         clf = LogisticRegression(max_iter=1000)
         clf.fit(train_emb, train_df[&#34;label&#34;].astype(int).to_numpy())
         preds = clf.predict(test_emb)
-        return {&#34;predictions&#34;: preds, &#34;test_df&#34;: test_df}
+        return {
+            &#34;predictions&#34;: preds,
+            &#34;test_df&#34;: test_df,
+            &#34;train_size&#34;: int(len(train_df)),
+            &#34;test_size&#34;: int(len(test_df)),
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
         test_df = predictions[&#34;test_df&#34;]
         y_true = test_df[&#34;label&#34;].astype(int).to_numpy()
         y_pred = np.asarray(predictions[&#34;predictions&#34;], dtype=int)
-        return multiclass_metrics(y_true, y_pred)
+        metrics = multiclass_metrics(y_true, y_pred)
+        ci = bootstrap_multiclass_ci(
+            y_true,
+            y_pred,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+        test_df = predictions[&#34;test_df&#34;]
+
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            test_df=test_df,
+            y_pred=predictions[&#34;predictions&#34;],
+            classes=DEEPLOC_CLASSES,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+
+        # Test-set composition for the report
+        composition: Dict[str, Any] = {}
+        if &#34;kingdom&#34; in test_df.columns:
+            composition[&#34;per_kingdom&#34;] = (
+                test_df[&#34;kingdom&#34;].astype(str).value_counts().to_dict()
+            )
+        composition[&#34;per_class&#34;] = (
+            test_df[&#34;localisation&#34;].astype(str).value_counts().to_dict()
+        )
+        if &#34;cluster_id&#34; in test_df.columns:
+            composition[&#34;test_clusters&#34;] = sorted(
+                int(c) for c in test_df[&#34;cluster_id&#34;].astype(int).unique()
+            )
+
         report.update(
             {
                 &#34;num_classes&#34;: len(DEEPLOC_CLASSES),
-                &#34;test_size&#34;: int(len(predictions[&#34;test_df&#34;])),
+                &#34;train_size&#34;: predictions[&#34;train_size&#34;],
+                &#34;test_size&#34;: predictions[&#34;test_size&#34;],
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;test_composition&#34;: composition,
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;Encoder-probe over a logistic-regression head. Train / test &#34;
+                    &#34;split honours DeepLoc Partition (cluster id) so homologous &#34;
+                    &#34;proteins do not leak across splits. Multi-localised proteins &#34;
+                    &#34;are collapsed to their dominant compartment in prepare_csv.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -157,10 +231,46 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+    test_df = predictions[&#34;test_df&#34;]
+
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        test_df=test_df,
+        y_pred=predictions[&#34;predictions&#34;],
+        classes=DEEPLOC_CLASSES,
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
+
+    # Test-set composition for the report
+    composition: Dict[str, Any] = {}
+    if &#34;kingdom&#34; in test_df.columns:
+        composition[&#34;per_kingdom&#34;] = (
+            test_df[&#34;kingdom&#34;].astype(str).value_counts().to_dict()
+        )
+    composition[&#34;per_class&#34;] = (
+        test_df[&#34;localisation&#34;].astype(str).value_counts().to_dict()
+    )
+    if &#34;cluster_id&#34; in test_df.columns:
+        composition[&#34;test_clusters&#34;] = sorted(
+            int(c) for c in test_df[&#34;cluster_id&#34;].astype(int).unique()
+        )
+
     report.update(
         {
             &#34;num_classes&#34;: len(DEEPLOC_CLASSES),
-            &#34;test_size&#34;: int(len(predictions[&#34;test_df&#34;])),
+            &#34;train_size&#34;: predictions[&#34;train_size&#34;],
+            &#34;test_size&#34;: predictions[&#34;test_size&#34;],
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;test_composition&#34;: composition,
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;Encoder-probe over a logistic-regression head. Train / test &#34;
+                &#34;split honours DeepLoc Partition (cluster id) so homologous &#34;
+                &#34;proteins do not leak across splits. Multi-localised proteins &#34;
+                &#34;are collapsed to their dominant compartment in prepare_csv.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -196,7 +306,17 @@ distribution summaries, etc.</p></div>
     test_df = predictions[&#34;test_df&#34;]
     y_true = test_df[&#34;label&#34;].astype(int).to_numpy()
     y_pred = np.asarray(predictions[&#34;predictions&#34;], dtype=int)
-    return multiclass_metrics(y_true, y_pred)</code></pre>
+    metrics = multiclass_metrics(y_true, y_pred)
+    ci = bootstrap_multiclass_ci(
+        y_true,
+        y_pred,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+    )
+    self._last_bootstrap_ci = {
+        k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+    }
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -210,12 +330,15 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_deeploc(self.deeploc_path)
-    # Normalise labels to contiguous integers.
     df[&#34;label&#34;] = df[&#34;localisation&#34;].map(_label_to_index)
     df = df.dropna(subset=[&#34;label&#34;]).reset_index(drop=True)
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
+    if self.max_examples is not None and self.max_examples &lt; len(df):
+        df = stratified_subsample(
+            df,
+            n_examples=int(self.max_examples),
+            label_column=&#34;localisation&#34;,
+            seed=self.seed,
+        )
     return df</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -237,6 +360,12 @@ distribution summaries, etc.</p></div>
     train_df, test_df = cluster_split(
         dataset, test_fraction=self.test_fraction, seed=self.seed
     )
+    logger.info(
+        &#34;DeepLoc split: train=%d test=%d (test_fraction=%.2f)&#34;,
+        len(train_df),
+        len(test_df),
+        self.test_fraction,
+    )
     train_emb = np.asarray(
         adapter.embed(train_df[&#34;sequence&#34;].astype(str).tolist()).embeddings
     )
@@ -248,7 +377,12 @@ distribution summaries, etc.</p></div>
     clf = LogisticRegression(max_iter=1000)
     clf.fit(train_emb, train_df[&#34;label&#34;].astype(int).to_numpy())
     preds = clf.predict(test_emb)
-    return {&#34;predictions&#34;: preds, &#34;test_df&#34;: test_df}</code></pre>
+    return {
+        &#34;predictions&#34;: preds,
+        &#34;test_df&#34;: test_df,
+        &#34;train_size&#34;: int(len(train_df)),
+        &#34;test_size&#34;: int(len(test_df)),
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

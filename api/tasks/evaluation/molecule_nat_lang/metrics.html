@@ -45,6 +45,35 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.molecule_nat_lang.metrics.bootstrap_perplexity_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_perplexity_ci</span></span>(<span>log_likelihoods: Sequence[float],<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Tuple[float, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_perplexity_ci(
+    log_likelihoods: Sequence[float],
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Tuple[float, float]:
+    arr = np.asarray(list(log_likelihoods), dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if n_boot &lt;= 0 or arr.size == 0:
+        return float(&#34;nan&#34;), float(&#34;nan&#34;)
+    rng = np.random.default_rng(seed)
+    estimates = np.empty(n_boot, dtype=float)
+    n = arr.size
+    for k in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        estimates[k] = math.exp(-float(arr[idx].mean()))
+    alpha = (1.0 - ci) / 2.0
+    return float(np.quantile(estimates, alpha)), float(np.quantile(estimates, 1.0 - alpha))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.molecule_nat_lang.metrics.summarise"><code class="name flex">
 <span>def <span class="ident">summarise</span></span>(<span>log_likelihoods: Sequence[float]) ‑> Dict[str, float]</span>
 </code></dt>
@@ -54,13 +83,19 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def summarise(log_likelihoods: Sequence[float]) -&gt; Dict[str, float]:
-    arr = list(log_likelihoods)
-    if not arr:
-        return {&#34;mean_log_likelihood&#34;: float(&#34;nan&#34;), &#34;perplexity&#34;: float(&#34;nan&#34;)}
-    mean_ll = sum(arr) / len(arr)
+    arr = np.asarray(list(log_likelihoods), dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if arr.size == 0:
+        return {
+            &#34;mean_log_likelihood&#34;: float(&#34;nan&#34;),
+            &#34;perplexity&#34;: float(&#34;nan&#34;),
+            &#34;n_pairs_scored&#34;: 0,
+        }
+    mean_ll = float(arr.mean())
     return {
-        &#34;mean_log_likelihood&#34;: float(mean_ll),
+        &#34;mean_log_likelihood&#34;: mean_ll,
         &#34;perplexity&#34;: math.exp(-mean_ll),
+        &#34;n_pairs_scored&#34;: int(arr.size),
     }</code></pre>
 </details>
 <div class="desc"></div>
@@ -82,6 +117,7 @@ el.replaceWith(d);
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang.metrics.bootstrap_perplexity_ci" href="#molcrawl.tasks.evaluation.molecule_nat_lang.metrics.bootstrap_perplexity_ci">bootstrap_perplexity_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang.metrics.summarise" href="#molcrawl.tasks.evaluation.molecule_nat_lang.metrics.summarise">summarise</a></code></li>
 </ul>
 </li>

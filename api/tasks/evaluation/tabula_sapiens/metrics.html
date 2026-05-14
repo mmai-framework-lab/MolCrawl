@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.tabula_sapiens.metrics API documentation</title>
-<meta name="description" content="Multiclass cell-type metrics …">
+<meta name="description" content="Multiclass cell-type metrics + bootstrap CI …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.tabula_sapiens.metrics</code></h1>
 </header>
 <section id="section-intro">
-<p>Multiclass cell-type metrics.</p>
+<p>Multiclass cell-type metrics + bootstrap CI.</p>
 <p>Labels may be arbitrary strings, so we factorise them before dispatching
 to the integer-only metric registry entries.</p>
 </section>
@@ -47,6 +47,52 @@ to the integer-only metric registry entries.</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.tabula_sapiens.metrics.bootstrap_celltype_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_celltype_ci</span></span>(<span>y_true: np.ndarray,<br>y_pred: np.ndarray,<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_celltype_ci(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Dict[str, Tuple[float, float]]:
+    if n_boot &lt;= 0:
+        return {}
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred)
+    if yt.size == 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    acc_arr, f1_arr = [], []
+    for _ in range(n_boot):
+        idx = rng.integers(0, yt.size, size=yt.size)
+        try:
+            m = cell_type_metrics(yt[idx], yp[idx])
+        except Exception:
+            continue
+        acc_arr.append(m.get(&#34;accuracy&#34;, float(&#34;nan&#34;)))
+        f1_arr.append(m.get(&#34;f1_macro&#34;, float(&#34;nan&#34;)))
+
+    alpha = (1.0 - ci) / 2.0
+
+    def _ci(arr) -&gt; Tuple[float, float]:
+        a = np.asarray(arr, dtype=float)
+        a = a[~np.isnan(a)]
+        if a.size == 0:
+            return float(&#34;nan&#34;), float(&#34;nan&#34;)
+        return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
+
+    return {&#34;accuracy&#34;: _ci(acc_arr), &#34;f1_macro&#34;: _ci(f1_arr)}</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.tabula_sapiens.metrics.cell_type_metrics"><code class="name flex">
 <span>def <span class="ident">cell_type_metrics</span></span>(<span>y_true: np.ndarray, y_pred: np.ndarray) ‑> Dict[str, float]</span>
 </code></dt>
@@ -56,15 +102,10 @@ to the integer-only metric registry entries.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def cell_type_metrics(y_true: np.ndarray, y_pred: np.ndarray) -&gt; Dict[str, float]:
-    y_true_arr = np.asarray(y_true)
-    y_pred_arr = np.asarray(y_pred)
-    classes = np.unique(np.concatenate([y_true_arr, y_pred_arr]))
-    mapping = {label: idx for idx, label in enumerate(classes)}
-    y_true_int = np.array([mapping[v] for v in y_true_arr], dtype=int)
-    y_pred_int = np.array([mapping[v] for v in y_pred_arr], dtype=int)
+    yt, yp = _factorise(np.asarray(y_true), np.asarray(y_pred))
     return {
-        &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, y_true_int, y_pred_int),
-        &#34;f1_macro&#34;: default_registry.compute(&#34;f1_macro&#34;, y_true_int, y_pred_int),
+        &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, yt, yp),
+        &#34;f1_macro&#34;: default_registry.compute(&#34;f1_macro&#34;, yt, yp),
     }</code></pre>
 </details>
 <div class="desc"></div>
@@ -86,6 +127,7 @@ to the integer-only metric registry entries.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.metrics.bootstrap_celltype_ci" href="#molcrawl.tasks.evaluation.tabula_sapiens.metrics.bootstrap_celltype_ci">bootstrap_celltype_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.metrics.cell_type_metrics" href="#molcrawl.tasks.evaluation.tabula_sapiens.metrics.cell_type_metrics">cell_type_metrics</a></code></li>
 </ul>
 </li>

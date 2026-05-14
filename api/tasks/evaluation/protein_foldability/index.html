@@ -50,15 +50,19 @@ from pLDDT to length / composition / Pfam hit-rate proxies.</p>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_foldability.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.protein_foldability.evaluator</a></code></dt>
 <dd>
-<div class="desc"><p>Foldability evaluator (structure-free proxies).</p></div>
+<div class="desc"><p>Foldability evaluator (structure-free proxies) …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_foldability.metrics" href="metrics.html">molcrawl.tasks.evaluation.protein_foldability.metrics</a></code></dt>
 <dd>
 <div class="desc"><p>Structure-free foldability proxies …</p></div>
 </dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_foldability.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.protein_foldability.predictions_log</a></code></dt>
+<dd>
+<div class="desc"><p>Per-generated-sequence dumps for the protein foldability evaluator …</p></div>
+</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_foldability.splits" href="splits.html">molcrawl.tasks.evaluation.protein_foldability.splits</a></code></dt>
 <dd>
-<div class="desc"><p>Foldability evaluation does not require a dataset split.</p></div>
+<div class="desc"><p>Foldability evaluation does not require a dataset split …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.protein_foldability.visualization" href="visualization.html">molcrawl.tasks.evaluation.protein_foldability.visualization</a></code></dt>
 <dd>
@@ -108,49 +112,137 @@ from pLDDT to length / composition / Pfam hit-rate proxies.</p>
         self.temperature: float = float(self.config.get(&#34;temperature&#34;, 1.0))
         self.max_new_tokens: int = int(self.config.get(&#34;max_new_tokens&#34;, 256))
         self.top_k: Optional[int] = self.config.get(&#34;top_k&#34;)
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 30)
+        )
+        self.foldable_min_length: int = int(
+            self.config.get(&#34;foldable_min_length&#34;, 50)
+        )
+        # When the reference FASTA is huge (RCSB pdb_seqres ≈ 1.1 M
+        # sequences) we subsample for AA-distribution computation only;
+        # the membership set still covers the full corpus.
+        self.max_ref_for_aa: Optional[int] = self.config.get(&#34;max_ref_for_aa&#34;)
 
     def category(self) -&gt; str:
         return &#34;foldability&#34;
 
     def load_dataset(self):
-        return {&#34;reference&#34;: load_fasta_sequences(self.reference_fasta)}
+        sequences = load_fasta_sequences(self.reference_fasta)
+        return prepare_reference_pool(
+            sequences,
+            max_ref_for_aa=self.max_ref_for_aa,
+            seed=self.seed,
+        )
 
     def run_predictions(self, dataset):
         adapter = self.adapter
         if not adapter.supports(&#34;generation&#34;):
             raise RuntimeError(
-                f&#34;Adapter {type(adapter).__name__} cannot generate; foldability requires samples.&#34;
+                f&#34;Adapter {type(adapter).__name__} cannot generate; &#34;
+                &#34;foldability requires samples.&#34;
             )
+
+        # Reproducibility: seed torch right before sampling.
+        try:
+            import torch
+
+            torch.manual_seed(self.seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(self.seed)
+        except ImportError:  # pragma: no cover
+            logger.warning(&#34;torch unavailable; cannot enforce sampling seed&#34;)
+
+        logger.info(
+            &#34;Sampling %d protein sequences (T=%.2f, top_k=%s, &#34;
+            &#34;max_new_tokens=%d, seed=%d)&#34;,
+            self.num_samples,
+            self.temperature,
+            self.top_k,
+            self.max_new_tokens,
+            self.seed,
+        )
         gen_out = adapter.generate(
             num_samples=self.num_samples,
             temperature=self.temperature,
             max_new_tokens=self.max_new_tokens,
             top_k=self.top_k,
         )
-        sequences = [_strip_non_amino_acids(s) for s in gen_out.sequences]
+        raw_generated = list(gen_out.sequences)
+        cleaned = [_strip_non_amino_acids(s) for s in raw_generated]
+        deduped = dedupe_generated(cleaned)
         return {
-            &#34;generated&#34;: dedupe_generated(sequences),
-            &#34;raw_generated&#34;: list(gen_out.sequences),
+            &#34;raw_generated&#34;: raw_generated,
+            &#34;cleaned_generated&#34;: cleaned,
+            &#34;generated&#34;: deduped,
             &#34;sampling_params&#34;: gen_out.sampling_params,
         }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-        generated = predictions[&#34;generated&#34;]
-        reference = dataset[&#34;reference&#34;]
+        cleaned = predictions[&#34;cleaned_generated&#34;]
+        deduped = predictions[&#34;generated&#34;]
+
         metrics: Dict[str, float] = {}
-        metrics.update(length_stats(generated))
-        metrics[&#34;amino_acid_kl&#34;] = amino_acid_kl(generated, reference)
-        metrics[&#34;novelty&#34;] = novelty_vs_reference(generated, reference)
-        metrics[&#34;pfam_hit_rate&#34;] = pfam_hit_rate(generated)
+        metrics.update(length_stats(cleaned))
+        metrics[&#34;novelty&#34;] = novelty_against_set(cleaned, dataset.reference_set)
+        metrics[&#34;amino_acid_kl&#34;] = amino_acid_kl(cleaned, dataset.sequences)
+        metrics[&#34;pfam_hit_rate&#34;] = pfam_hit_rate(cleaned)
+
+        # Bootstrap CIs (novelty + amino_acid_kl)
+        bootstrap_ci = bootstrap_distribution_ci(
+            cleaned,
+            reference_set=dataset.reference_set,
+            reference_aa_dist=dataset.aa_distribution,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+
+        # Side data for the report
+        self._last_bootstrap_ci = bootstrap_ci
+        self._last_dedupe_count = len(deduped)
         return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+
+        bootstrap_payload: Dict[str, Dict[str, float]] = {}
+        for key, (lo, hi) in (getattr(self, &#34;_last_bootstrap_ci&#34;, {}) or {}).items():
+            bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            raw_generated=predictions[&#34;raw_generated&#34;],
+            cleaned_generated=predictions[&#34;cleaned_generated&#34;],
+            reference_set=dataset.reference_set,
+            sampling_params=predictions[&#34;sampling_params&#34;],
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+            foldable_min_length=self.foldable_min_length,
+        )
+
         report.update(
             {
-                &#34;num_generated&#34;: len(predictions[&#34;generated&#34;]),
-                &#34;num_reference&#34;: len(dataset[&#34;reference&#34;]),
+                &#34;num_generated&#34;: len(predictions[&#34;cleaned_generated&#34;]),
+                &#34;num_unique_after_dedup&#34;: getattr(
+                    self, &#34;_last_dedupe_count&#34;, None
+                ),
+                &#34;num_reference&#34;: len(dataset.sequences),
                 &#34;sampling_params&#34;: predictions[&#34;sampling_params&#34;],
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+                &#34;reference_aa_distribution&#34;: dataset.aa_distribution,
+                &#34;artefacts&#34;: prediction_paths,
+                &#34;notes&#34;: (
+                    &#34;Structure-free foldability proxies. mean_length / &#34;
+                    &#34;amino_acid_kl quantify whether generated sequences match &#34;
+                    &#34;the reference&#39;s length and composition shape. novelty &#34;
+                    &#34;checks that the model is not regurgitating the reference. &#34;
+                    &#34;pfam_hit_rate is NaN unless HMMER + a Pfam HMM library &#34;
+                    &#34;are wired in. The predictions narrative samples &#34;
+                    &#34;novel-long / novel-short / duplicate-of-reference rows &#34;
+                    &#34;so the actual generated sequences can be inspected.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -180,11 +272,44 @@ from pLDDT to length / composition / Pfam hit-rate proxies.</p>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+
+    bootstrap_payload: Dict[str, Dict[str, float]] = {}
+    for key, (lo, hi) in (getattr(self, &#34;_last_bootstrap_ci&#34;, {}) or {}).items():
+        bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+    prediction_paths = write_predictions(
+        output_dir=self.output_dir,
+        raw_generated=predictions[&#34;raw_generated&#34;],
+        cleaned_generated=predictions[&#34;cleaned_generated&#34;],
+        reference_set=dataset.reference_set,
+        sampling_params=predictions[&#34;sampling_params&#34;],
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+        foldable_min_length=self.foldable_min_length,
+    )
+
     report.update(
         {
-            &#34;num_generated&#34;: len(predictions[&#34;generated&#34;]),
-            &#34;num_reference&#34;: len(dataset[&#34;reference&#34;]),
+            &#34;num_generated&#34;: len(predictions[&#34;cleaned_generated&#34;]),
+            &#34;num_unique_after_dedup&#34;: getattr(
+                self, &#34;_last_dedupe_count&#34;, None
+            ),
+            &#34;num_reference&#34;: len(dataset.sequences),
             &#34;sampling_params&#34;: predictions[&#34;sampling_params&#34;],
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+            &#34;reference_aa_distribution&#34;: dataset.aa_distribution,
+            &#34;artefacts&#34;: prediction_paths,
+            &#34;notes&#34;: (
+                &#34;Structure-free foldability proxies. mean_length / &#34;
+                &#34;amino_acid_kl quantify whether generated sequences match &#34;
+                &#34;the reference&#39;s length and composition shape. novelty &#34;
+                &#34;checks that the model is not regurgitating the reference. &#34;
+                &#34;pfam_hit_rate is NaN unless HMMER + a Pfam HMM library &#34;
+                &#34;are wired in. The predictions narrative samples &#34;
+                &#34;novel-long / novel-short / duplicate-of-reference rows &#34;
+                &#34;so the actual generated sequences can be inspected.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -217,13 +342,27 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-    generated = predictions[&#34;generated&#34;]
-    reference = dataset[&#34;reference&#34;]
+    cleaned = predictions[&#34;cleaned_generated&#34;]
+    deduped = predictions[&#34;generated&#34;]
+
     metrics: Dict[str, float] = {}
-    metrics.update(length_stats(generated))
-    metrics[&#34;amino_acid_kl&#34;] = amino_acid_kl(generated, reference)
-    metrics[&#34;novelty&#34;] = novelty_vs_reference(generated, reference)
-    metrics[&#34;pfam_hit_rate&#34;] = pfam_hit_rate(generated)
+    metrics.update(length_stats(cleaned))
+    metrics[&#34;novelty&#34;] = novelty_against_set(cleaned, dataset.reference_set)
+    metrics[&#34;amino_acid_kl&#34;] = amino_acid_kl(cleaned, dataset.sequences)
+    metrics[&#34;pfam_hit_rate&#34;] = pfam_hit_rate(cleaned)
+
+    # Bootstrap CIs (novelty + amino_acid_kl)
+    bootstrap_ci = bootstrap_distribution_ci(
+        cleaned,
+        reference_set=dataset.reference_set,
+        reference_aa_dist=dataset.aa_distribution,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+    )
+
+    # Side data for the report
+    self._last_bootstrap_ci = bootstrap_ci
+    self._last_dedupe_count = len(deduped)
     return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
@@ -237,7 +376,12 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def load_dataset(self):
-    return {&#34;reference&#34;: load_fasta_sequences(self.reference_fasta)}</code></pre>
+    sequences = load_fasta_sequences(self.reference_fasta)
+    return prepare_reference_pool(
+        sequences,
+        max_ref_for_aa=self.max_ref_for_aa,
+        seed=self.seed,
+    )</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
 </dd>
@@ -253,18 +397,42 @@ distribution summaries, etc.</p></div>
     adapter = self.adapter
     if not adapter.supports(&#34;generation&#34;):
         raise RuntimeError(
-            f&#34;Adapter {type(adapter).__name__} cannot generate; foldability requires samples.&#34;
+            f&#34;Adapter {type(adapter).__name__} cannot generate; &#34;
+            &#34;foldability requires samples.&#34;
         )
+
+    # Reproducibility: seed torch right before sampling.
+    try:
+        import torch
+
+        torch.manual_seed(self.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(self.seed)
+    except ImportError:  # pragma: no cover
+        logger.warning(&#34;torch unavailable; cannot enforce sampling seed&#34;)
+
+    logger.info(
+        &#34;Sampling %d protein sequences (T=%.2f, top_k=%s, &#34;
+        &#34;max_new_tokens=%d, seed=%d)&#34;,
+        self.num_samples,
+        self.temperature,
+        self.top_k,
+        self.max_new_tokens,
+        self.seed,
+    )
     gen_out = adapter.generate(
         num_samples=self.num_samples,
         temperature=self.temperature,
         max_new_tokens=self.max_new_tokens,
         top_k=self.top_k,
     )
-    sequences = [_strip_non_amino_acids(s) for s in gen_out.sequences]
+    raw_generated = list(gen_out.sequences)
+    cleaned = [_strip_non_amino_acids(s) for s in raw_generated]
+    deduped = dedupe_generated(cleaned)
     return {
-        &#34;generated&#34;: dedupe_generated(sequences),
-        &#34;raw_generated&#34;: list(gen_out.sequences),
+        &#34;raw_generated&#34;: raw_generated,
+        &#34;cleaned_generated&#34;: cleaned,
+        &#34;generated&#34;: deduped,
         &#34;sampling_params&#34;: gen_out.sampling_params,
     }</code></pre>
 </details>
@@ -290,6 +458,7 @@ distribution summaries, etc.</p></div>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.protein_foldability.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.protein_foldability.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.metrics" href="metrics.html">molcrawl.tasks.evaluation.protein_foldability.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.protein_foldability.predictions_log</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits" href="splits.html">molcrawl.tasks.evaluation.protein_foldability.splits</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.visualization" href="visualization.html">molcrawl.tasks.evaluation.protein_foldability.visualization</a></code></li>
 </ul>

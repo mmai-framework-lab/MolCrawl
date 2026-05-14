@@ -39,6 +39,15 @@ el.replaceWith(d);
 <p>Arch-agnostic rna_benchmark evaluator.</p>
 <p>Scores cell sequences with :meth:<code>ModelAdapter.score_likelihood</code> and
 reports per-group perplexity + mean log-likelihood.</p>
+<p>足固め upgrade adds:</p>
+<ul>
+<li>reproducible per-group subsampling</li>
+<li>bootstrap 95 % CI on per-group perplexity</li>
+<li>per-cell predictions log (jsonl + narrative TXT)</li>
+<li>direct int-list pass-through to the adapter (no string round-trip),
+enabling rna BERT / rnaformer to score raw token ids straight from
+the parquet pipeline output</li>
+</ul>
 </section>
 <section>
 </section>
@@ -79,18 +88,26 @@ reports per-group perplexity + mean log-likelihood.</p>
         )
         self.rna_jsonl = Path(rna_jsonl)
         self.datasets: Optional[List[str]] = self.config.get(&#34;datasets&#34;)
-        self.max_cells_per_group: Optional[int] = self.config.get(&#34;max_cells_per_group&#34;)
+        self.cells_per_group: Optional[int] = self.config.get(
+            &#34;cells_per_group&#34;, self.config.get(&#34;max_cells_per_group&#34;)
+        )
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 6)
+        )
 
     def category(self) -&gt; str:
         return &#34;cell_type_annotation&#34;
 
     def load_dataset(self) -&gt; Dict[str, CellGroup]:
         groups = load_jsonl(self.rna_jsonl, datasets=self.datasets)
-        if self.max_cells_per_group is not None:
-            limit = int(self.max_cells_per_group)
-            for group in groups.values():
-                group.tokens = group.tokens[:limit]
-                group.labels = group.labels[:limit]
+        if self.cells_per_group is not None:
+            groups = subsample_groups(
+                groups,
+                cells_per_group=int(self.cells_per_group),
+                seed=self.seed,
+            )
         return groups
 
     def run_predictions(self, dataset):
@@ -99,28 +116,85 @@ reports per-group perplexity + mean log-likelihood.</p>
             raise RuntimeError(
                 f&#34;Adapter {type(adapter).__name__} cannot score likelihoods.&#34;
             )
-        per_group: Dict[str, np.ndarray] = {}
+        per_cell: Dict[str, Dict[str, list]] = {}
         for name, group in dataset.items():
-            strings = tokens_to_strings(group.tokens)
-            out = adapter.score_likelihood(strings)
-            per_group[name] = np.asarray(out.log_likelihood, dtype=float)
-        return {&#34;log_likelihoods&#34;: per_group}
+            logger.info(
+                &#34;Scoring %d cells for tissue=%r (mean tokens=%.0f)&#34;,
+                len(group.tokens),
+                name,
+                float(np.mean(group.token_counts)) if group.token_counts else 0.0,
+            )
+            out = adapter.score_likelihood(group.tokens)
+            per_cell[name] = {
+                &#34;log_likelihood&#34;: [float(v) for v in out.log_likelihood],
+                &#34;token_count&#34;: list(group.token_counts),
+                &#34;num_scored_tokens&#34;: [int(v) for v in (out.num_tokens or [])],
+            }
+        return {&#34;per_cell&#34;: per_cell}
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
         metrics: Dict[str, float] = {}
-        for name, ll in predictions[&#34;log_likelihoods&#34;].items():
-            summary = summarise_group(ll.tolist())
+        bootstrap_payload: Dict[str, Dict[str, float]] = {}
+        per_cell = predictions[&#34;per_cell&#34;]
+        all_ll: List[float] = []
+        for name, data in per_cell.items():
+            ll = data[&#34;log_likelihood&#34;]
+            summary = summarise_group(ll)
             for key, value in summary.items():
-                metrics[f&#34;{name}.{key}&#34;] = float(value)
+                metrics[f&#34;{name}.{key}&#34;] = float(value) if value is not None else float(&#34;nan&#34;)
+            ci_lo, ci_hi = bootstrap_perplexity_ci(
+                ll,
+                n_boot=self.bootstrap_samples,
+                seed=self.seed,
+            )
+            bootstrap_payload[name] = {&#34;ci_lo&#34;: ci_lo, &#34;ci_hi&#34;: ci_hi}
+            all_ll.extend(ll)
+
         if metrics:
-            perplexities = [v for k, v in metrics.items() if k.endswith(&#34;.perplexity&#34;)]
+            perplexities = [
+                v for k, v in metrics.items() if k.endswith(&#34;.perplexity&#34;)
+            ]
             if perplexities:
                 metrics[&#34;mean.perplexity&#34;] = float(np.nanmean(perplexities))
+            if all_ll:
+                pooled = summarise_group(all_ll)
+                metrics[&#34;all.mean_log_likelihood&#34;] = pooled[&#34;mean_log_likelihood&#34;]
+                metrics[&#34;all.perplexity&#34;] = pooled[&#34;perplexity&#34;]
+                bootstrap_payload[&#34;all&#34;] = dict(
+                    zip(
+                        (&#34;ci_lo&#34;, &#34;ci_hi&#34;),
+                        bootstrap_perplexity_ci(
+                            all_ll, n_boot=self.bootstrap_samples, seed=self.seed
+                        ),
+                    )
+                )
+
+        self._last_bootstrap_ci = bootstrap_payload
         return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
-        report.update({&#34;groups&#34;: {name: len(group.tokens) for name, group in dataset.items()}})
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            per_cell=predictions[&#34;per_cell&#34;],
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report.update(
+            {
+                &#34;groups&#34;: {name: len(g.tokens) for name, g in dataset.items()},
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;rna_benchmark scores cells via PLL on the configured MLM &#34;
+                    &#34;(bert / rnaformer). Tokens are passed straight to the adapter &#34;
+                    &#34;(no string round-trip), so per-cell perplexity is comparable &#34;
+                    &#34;across architectures that share the gene vocabulary. &#34;
+                    &#34;Per-group bootstrap CIs use 100 resamples by default.&#34;
+                ),
+            }
+        )
         return report</code></pre>
 </details>
 <div class="desc"><p>Common scaffolding for evaluation tasks.</p>
@@ -151,7 +225,27 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
-    report.update({&#34;groups&#34;: {name: len(group.tokens) for name, group in dataset.items()}})
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        per_cell=predictions[&#34;per_cell&#34;],
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
+    report.update(
+        {
+            &#34;groups&#34;: {name: len(g.tokens) for name, g in dataset.items()},
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;rna_benchmark scores cells via PLL on the configured MLM &#34;
+                &#34;(bert / rnaformer). Tokens are passed straight to the adapter &#34;
+                &#34;(no string round-trip), so per-cell perplexity is comparable &#34;
+                &#34;across architectures that share the gene vocabulary. &#34;
+                &#34;Per-group bootstrap CIs use 100 resamples by default.&#34;
+            ),
+        }
+    )
     return report</code></pre>
 </details>
 <div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
@@ -183,14 +277,42 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
     metrics: Dict[str, float] = {}
-    for name, ll in predictions[&#34;log_likelihoods&#34;].items():
-        summary = summarise_group(ll.tolist())
+    bootstrap_payload: Dict[str, Dict[str, float]] = {}
+    per_cell = predictions[&#34;per_cell&#34;]
+    all_ll: List[float] = []
+    for name, data in per_cell.items():
+        ll = data[&#34;log_likelihood&#34;]
+        summary = summarise_group(ll)
         for key, value in summary.items():
-            metrics[f&#34;{name}.{key}&#34;] = float(value)
+            metrics[f&#34;{name}.{key}&#34;] = float(value) if value is not None else float(&#34;nan&#34;)
+        ci_lo, ci_hi = bootstrap_perplexity_ci(
+            ll,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        bootstrap_payload[name] = {&#34;ci_lo&#34;: ci_lo, &#34;ci_hi&#34;: ci_hi}
+        all_ll.extend(ll)
+
     if metrics:
-        perplexities = [v for k, v in metrics.items() if k.endswith(&#34;.perplexity&#34;)]
+        perplexities = [
+            v for k, v in metrics.items() if k.endswith(&#34;.perplexity&#34;)
+        ]
         if perplexities:
             metrics[&#34;mean.perplexity&#34;] = float(np.nanmean(perplexities))
+        if all_ll:
+            pooled = summarise_group(all_ll)
+            metrics[&#34;all.mean_log_likelihood&#34;] = pooled[&#34;mean_log_likelihood&#34;]
+            metrics[&#34;all.perplexity&#34;] = pooled[&#34;perplexity&#34;]
+            bootstrap_payload[&#34;all&#34;] = dict(
+                zip(
+                    (&#34;ci_lo&#34;, &#34;ci_hi&#34;),
+                    bootstrap_perplexity_ci(
+                        all_ll, n_boot=self.bootstrap_samples, seed=self.seed
+                    ),
+                )
+            )
+
+    self._last_bootstrap_ci = bootstrap_payload
     return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
@@ -205,11 +327,12 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; Dict[str, CellGroup]:
     groups = load_jsonl(self.rna_jsonl, datasets=self.datasets)
-    if self.max_cells_per_group is not None:
-        limit = int(self.max_cells_per_group)
-        for group in groups.values():
-            group.tokens = group.tokens[:limit]
-            group.labels = group.labels[:limit]
+    if self.cells_per_group is not None:
+        groups = subsample_groups(
+            groups,
+            cells_per_group=int(self.cells_per_group),
+            seed=self.seed,
+        )
     return groups</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -228,12 +351,21 @@ distribution summaries, etc.</p></div>
         raise RuntimeError(
             f&#34;Adapter {type(adapter).__name__} cannot score likelihoods.&#34;
         )
-    per_group: Dict[str, np.ndarray] = {}
+    per_cell: Dict[str, Dict[str, list]] = {}
     for name, group in dataset.items():
-        strings = tokens_to_strings(group.tokens)
-        out = adapter.score_likelihood(strings)
-        per_group[name] = np.asarray(out.log_likelihood, dtype=float)
-    return {&#34;log_likelihoods&#34;: per_group}</code></pre>
+        logger.info(
+            &#34;Scoring %d cells for tissue=%r (mean tokens=%.0f)&#34;,
+            len(group.tokens),
+            name,
+            float(np.mean(group.token_counts)) if group.token_counts else 0.0,
+        )
+        out = adapter.score_likelihood(group.tokens)
+        per_cell[name] = {
+            &#34;log_likelihood&#34;: [float(v) for v in out.log_likelihood],
+            &#34;token_count&#34;: list(group.token_counts),
+            &#34;num_scored_tokens&#34;: [int(v) for v in (out.num_tokens or [])],
+        }
+    return {&#34;per_cell&#34;: per_cell}</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv API documentation</title>
+<meta name="description" content="Materialise the Replogle Perturb-seq evaluator CSV from a public mirror …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv</code></h1>
+</header>
+<section id="section-intro">
+<p>Materialise the Replogle Perturb-seq evaluator CSV from a public mirror.</p>
+<p>The CellxGene H5AD that the original eval-data-replogle-perturb-seq.sh
+points at returns 403 anonymously. The TruthSeq figshare release
+(figshare 31840141) ships the same Replogle 2022 K562 atlas in a
+single ~150 MB long-format parquet:</p>
+<pre><code>knocked_down_gene | affected_gene | z_score | cell_line
+</code></pre>
+<p>(7,639 KO targets × 8,246 affected genes, 37.7 M non-NaN pairs.)</p>
+<p>This module:</p>
+<ol>
+<li>Downloads the parquet (idempotent — skips if already on disk).</li>
+<li>Pivots to wide format (rows=perturbations, cols=genes, value=z-score).</li>
+<li>Optionally subsamples the top-N perturbations and top-K
+highest-variance genes (keeps the evaluator CSV small enough for
+smoke runs).</li>
+<li>Emits the CSV the existing :func:<code>load_replogle</code> reader expects:
+<code>perturbation,baseline,perturbed</code> with <code>baseline</code> = zero vector
+and <code>perturbed</code> = the z-score vector serialised as JSON. The
+evaluator computes <code>delta = perturbed - baseline</code> so this matches
+the LFC / z-score semantics one-to-one.</li>
+</ol>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Materialise the Replogle Perturb-seq evaluator CSV from TruthSeq&#39;s figshare release&#34;
+    )
+    parser.add_argument(&#34;--output-csv&#34;, required=True)
+    parser.add_argument(
+        &#34;--parquet-path&#34;,
+        default=None,
+        help=&#34;Where to cache the source parquet (default: alongside output CSV).&#34;,
+    )
+    parser.add_argument(&#34;--parquet-url&#34;, default=_DEFAULT_PARQUET_URL)
+    parser.add_argument(
+        &#34;--cell-line&#34;,
+        default=&#34;K562&#34;,
+        help=&#34;Filter rows to this cell line (default: K562 — the only one in TruthSeq).&#34;,
+    )
+    parser.add_argument(
+        &#34;--max-perturbations&#34;,
+        type=int,
+        default=None,
+        help=&#34;Restrict to the top-N strongest perturbations (mean |z|). &#34;
+        &#34;Default: no cap.&#34;,
+    )
+    parser.add_argument(
+        &#34;--max-genes&#34;,
+        type=int,
+        default=None,
+        help=&#34;Restrict to the top-K highest-variance genes. Default: no cap.&#34;,
+    )
+    parser.add_argument(
+        &#34;--symbol-to-ensg-cache&#34;,
+        default=None,
+        help=&#34;If set, resolve HGNC symbols to Ensembl gene IDs via the &#34;
+        &#34;Ensembl REST API (batched POST /lookup/symbol/homo_sapiens) &#34;
+        &#34;and cache to this CSV path. Required when the downstream &#34;
+        &#34;encoder vocab is keyed by ENSG IDs (e.g. molcrawl rna BERT / &#34;
+        &#34;rnaformer); perturbations with no ENSG match are dropped.&#34;,
+    )
+    parser.add_argument(&#34;--seed&#34;, type=int, default=42)
+    args = parser.parse_args(argv)
+
+    materialise_replogle_csv(
+        output_csv=Path(args.output_csv),
+        parquet_path=Path(args.parquet_path) if args.parquet_path else None,
+        parquet_url=args.parquet_url,
+        cell_line=args.cell_line,
+        max_perturbations=args.max_perturbations,
+        max_genes=args.max_genes,
+        symbol_to_ensg_cache=Path(args.symbol_to_ensg_cache)
+        if args.symbol_to_ensg_cache
+        else None,
+        seed=args.seed,
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv.materialise_replogle_csv"><code class="name flex">
+<span>def <span class="ident">materialise_replogle_csv</span></span>(<span>output_csv: Path,<br>parquet_path: Optional[Path] = None,<br>parquet_url: str = 'https://ndownloader.figshare.com/files/63037363',<br>cell_line: str = 'K562',<br>max_perturbations: Optional[int] = None,<br>max_genes: Optional[int] = None,<br>symbol_to_ensg_cache: Optional[Path] = None,<br>seed: int = 42) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def materialise_replogle_csv(
+    output_csv: Path,
+    parquet_path: Optional[Path] = None,
+    parquet_url: str = _DEFAULT_PARQUET_URL,
+    cell_line: str = &#34;K562&#34;,
+    max_perturbations: Optional[int] = None,
+    max_genes: Optional[int] = None,
+    symbol_to_ensg_cache: Optional[Path] = None,
+    seed: int = 42,
+) -&gt; dict:
+    import pandas as pd
+
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    if parquet_path is None:
+        parquet_path = output_csv.parent / _DEFAULT_PARQUET_NAME
+    else:
+        parquet_path = Path(parquet_path)
+    _download_parquet(parquet_path, parquet_url)
+
+    logger.info(&#34;Loading parquet ...&#34;)
+    df_long = pd.read_parquet(
+        parquet_path, columns=[&#34;knocked_down_gene&#34;, &#34;affected_gene&#34;, &#34;z_score&#34;, &#34;cell_line&#34;]
+    )
+    if cell_line:
+        before = len(df_long)
+        df_long = df_long[df_long[&#34;cell_line&#34;] == cell_line]
+        logger.info(
+            &#34;filtered cell_line=%r: %d -&gt; %d rows&#34;, cell_line, before, len(df_long)
+        )
+        if df_long.empty:
+            available = pd.read_parquet(parquet_path, columns=[&#34;cell_line&#34;])[&#34;cell_line&#34;].unique()
+            raise ValueError(
+                f&#34;No rows for cell_line={cell_line!r}. &#34;
+                f&#34;Available: {sorted(available)}&#34;
+            )
+
+    logger.info(&#34;Pivoting to wide format (perturbation x gene)...&#34;)
+    wide = (
+        df_long.pivot_table(
+            index=&#34;knocked_down_gene&#34;,
+            columns=&#34;affected_gene&#34;,
+            values=&#34;z_score&#34;,
+            aggfunc=&#34;mean&#34;,
+        )
+        .fillna(0.0)
+        .sort_index()
+    )
+    logger.info(&#34;Wide matrix: %d perturbations x %d genes&#34;, *wide.shape)
+
+    if max_genes is not None and max_genes &lt; wide.shape[1]:
+        # Pick the highest-variance genes — they carry the most signal.
+        gene_var = wide.var(axis=0)
+        top_genes = gene_var.sort_values(ascending=False).head(int(max_genes)).index
+        wide = wide[top_genes]
+        logger.info(
+            &#34;Restricted to top-%d highest-variance genes (out of %d)&#34;,
+            int(max_genes),
+            len(gene_var),
+        )
+
+    if max_perturbations is not None and max_perturbations &lt; wide.shape[0]:
+        # Pick the perturbations with the largest mean |z| — the strongest KO effects.
+        per_pert_strength = wide.abs().mean(axis=1)
+        top_perts = (
+            per_pert_strength.sort_values(ascending=False).head(int(max_perturbations)).index
+        )
+        wide = wide.loc[top_perts]
+        logger.info(
+            &#34;Restricted to top-%d strongest perturbations (out of %d)&#34;,
+            int(max_perturbations),
+            len(per_pert_strength),
+        )
+
+    n_genes = wide.shape[1]
+    zero_vec = json.dumps([0.0] * n_genes)
+
+    # Optional HGNC symbol -&gt; ENSG ID mapping. The molcrawl rna BERT and
+    # rnaformer vocabs are keyed by ENSG IDs; without this translation
+    # the encoder treats every perturbation as [UNK].
+    if symbol_to_ensg_cache is not None:
+        cache_path = Path(symbol_to_ensg_cache)
+        mapping = _build_or_load_symbol_mapping(
+            symbols=[str(s) for s in wide.index],
+            cache_path=cache_path,
+        )
+        unmapped = [s for s in wide.index if not mapping.get(str(s))]
+        if unmapped:
+            logger.warning(
+                &#34;Dropping %d perturbations with no Ensembl mapping (e.g. %s)&#34;,
+                len(unmapped),
+                unmapped[:5],
+            )
+            wide = wide.loc[[s for s in wide.index if mapping.get(str(s))]]
+    else:
+        mapping = None
+
+    rows: List[dict] = []
+    for pert in wide.index:
+        if mapping is not None:
+            label = mapping.get(str(pert)) or str(pert)
+        else:
+            label = str(pert)
+        rows.append(
+            {
+                &#34;perturbation&#34;: label,
+                &#34;baseline&#34;: zero_vec,
+                &#34;perturbed&#34;: json.dumps(wide.loc[pert].astype(float).tolist()),
+            }
+        )
+
+    pd.DataFrame(rows).to_csv(output_csv, index=False)
+    summary = {
+        &#34;output_csv&#34;: str(output_csv),
+        &#34;parquet_path&#34;: str(parquet_path),
+        &#34;cell_line&#34;: cell_line,
+        &#34;n_perturbations&#34;: int(wide.shape[0]),
+        &#34;n_genes&#34;: int(wide.shape[1]),
+        &#34;seed&#34;: seed,
+    }
+    logger.info(&#34;Wrote %s&#34;, summary)
+    return summary</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.tasks.evaluation.replogle_perturb_seq" href="index.html">molcrawl.tasks.evaluation.replogle_perturb_seq</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv.main" href="#molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv.materialise_replogle_csv" href="#molcrawl.tasks.evaluation.replogle_perturb_seq.prepare_csv.materialise_replogle_csv">materialise_replogle_csv</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

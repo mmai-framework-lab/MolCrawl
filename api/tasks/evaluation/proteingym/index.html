@@ -46,49 +46,25 @@ package provides the arch-agnostic evaluator and a minimal loader.</p>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.bert_config" href="bert_config.html">molcrawl.tasks.evaluation.proteingym.bert_config</a></code></dt>
-<dd>
-<div class="desc"><p>BERT version ProteinGym evaluation configuration file</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.bert_data_preparation" href="bert_data_preparation.html">molcrawl.tasks.evaluation.proteingym.bert_data_preparation</a></code></dt>
-<dd>
-<div class="desc"><p>Preprocessing script for BERT version of ProteinGym dataset …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.bert_evaluation" href="bert_evaluation.html">molcrawl.tasks.evaluation.proteingym.bert_evaluation</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.bert_visualization" href="bert_visualization.html">molcrawl.tasks.evaluation.proteingym.bert_visualization</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.proteingym.data_preparation</a></code></dt>
 <dd>
 <div class="desc"><p>ProteinGym table loader …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.proteingym.evaluator</a></code></dt>
 <dd>
-<div class="desc"><p>Arch-agnostic ProteinGym evaluator.</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation</a></code></dt>
-<dd>
-<div class="desc"><p>ProteinGym dataset download and preprocessing utility …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.gpt2_evaluation" href="gpt2_evaluation.html">molcrawl.tasks.evaluation.proteingym.gpt2_evaluation</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.gpt2_visualization" href="gpt2_visualization.html">molcrawl.tasks.evaluation.proteingym.gpt2_visualization</a></code></dt>
-<dd>
-<div class="desc"></div>
+<div class="desc"><p>Arch-agnostic ProteinGym evaluator …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.metrics" href="metrics.html">molcrawl.tasks.evaluation.proteingym.metrics</a></code></dt>
 <dd>
 <div class="desc"><p>Metric helpers for ProteinGym …</p></div>
 </dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.proteingym.predictions_log</a></code></dt>
+<dd>
+<div class="desc"><p>Per-variant prediction dumps for the ProteinGym evaluator …</p></div>
+</dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.splits" href="splits.html">molcrawl.tasks.evaluation.proteingym.splits</a></code></dt>
 <dd>
-<div class="desc"><p>Family-aware splits for ProteinGym …</p></div>
+<div class="desc"><p>Reproducible sampling + study-based grouping for ProteinGym …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.proteingym.visualization" href="visualization.html">molcrawl.tasks.evaluation.proteingym.visualization</a></code></dt>
 <dd>
@@ -141,12 +117,36 @@ package provides the arch-agnostic evaluator and a minimal loader.</p>
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_proteingym(self.proteingym_path)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
-        return df
 
-    def run_predictions(self, dataset: pd.DataFrame):
+        n_examples = self.config.get(&#34;n_examples&#34;)
+        max_examples = self.config.get(&#34;max_examples&#34;)
+        if n_examples is None and max_examples is not None:
+            n_examples = int(max_examples)
+            logger.warning(
+                &#34;ProteinGymEvaluator: max_examples=%s deprecated; &#34;
+                &#34;re-interpreting as n_examples=%d (no structural change).&#34;,
+                max_examples,
+                n_examples,
+            )
+
+        stratify_bin = bool(self.config.get(&#34;stratify_bin&#34;, True))
+        seed = int(self.config.get(&#34;seed&#34;, 42))
+
+        sampled = sample_proteingym(
+            df,
+            n_examples=n_examples,
+            stratify_bin=stratify_bin,
+            seed=seed,
+        )
+        self._last_sampling = {
+            &#34;n_examples&#34;: n_examples,
+            &#34;stratify_bin&#34;: stratify_bin,
+            &#34;seed&#34;: seed,
+            &#34;total_rows_in_file&#34;: int(len(df)),
+        }
+        return sampled
+
+    def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
         adapter = self.adapter
         if not adapter.supports(&#34;likelihood&#34;):
             raise RuntimeError(
@@ -170,23 +170,97 @@ package provides the arch-agnostic evaluator and a minimal loader.</p>
         }
 
     def compute_metrics(
-        self, dataset: pd.DataFrame, predictions
+        self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]
     ) -&gt; Dict[str, float]:
         scores = predictions[&#34;scores&#34;]
         dms = dataset[&#34;DMS_score&#34;].to_numpy(dtype=float)
+        ref_ll = predictions[&#34;reference_ll&#34;]
+        mut_ll = predictions[&#34;mutated_ll&#34;]
+
+        if len(dms) &lt; _MIN_ROWS_FOR_CORRELATION:
+            logger.warning(
+                &#34;ProteinGymEvaluator: skipping correlation metrics (%d rows &lt; %d)&#34;,
+                len(dms),
+                _MIN_ROWS_FOR_CORRELATION,
+            )
+            self._last_bootstrap = {}
+            self._last_score_distribution = {}
+            return {}
+
         metrics = correlation_metrics(dms, scores)
+
+        bin_labels: Optional[np.ndarray] = None
         if &#34;DMS_bin_score&#34; in dataset.columns:
-            y_bin = dataset[&#34;DMS_bin_score&#34;].to_numpy()
-            extra = optional_binary_metrics(y_bin.astype(int), scores)
-            metrics.update(extra)
+            bin_series = dataset[&#34;DMS_bin_score&#34;].dropna()
+            if not bin_series.empty:
+                bin_labels = dataset[&#34;DMS_bin_score&#34;].to_numpy()
+                extra = optional_binary_metrics(
+                    bin_series.astype(int).to_numpy(),
+                    scores[dataset[&#34;DMS_bin_score&#34;].notna().to_numpy()],
+                )
+                metrics.update(extra)
+
+        n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+        self._last_bootstrap = bootstrap_correlation_ci(
+            dms, scores, n_boot=n_boot, seed=int(self.config.get(&#34;seed&#34;, 42))
+        )
+        self._last_score_distribution = score_distribution_stats(
+            dms, ref_ll, mut_ll, scores, bin_labels=bin_labels
+        )
         return metrics
 
-    def build_report(self, metrics, dataset, predictions):
+    def build_report(
+        self,
+        metrics: Dict[str, float],
+        dataset: pd.DataFrame,
+        predictions: Dict[str, np.ndarray],
+    ) -&gt; Dict[str, Any]:
         report = super().build_report(metrics, dataset, predictions)
+
+        bootstrap_ci = getattr(self, &#34;_last_bootstrap&#34;, None) or {}
+        bootstrap_payload: Dict[str, Dict[str, float]] = {}
+        for key, (lo, hi) in bootstrap_ci.items():
+            bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+        sampling = getattr(self, &#34;_last_sampling&#34;, None)
+        score_distribution = getattr(self, &#34;_last_score_distribution&#34;, None)
+
+        preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            dataset=dataset,
+            predictions=predictions,
+            score_distribution=score_distribution,
+            sampling=sampling,
+            arch=self.handle.arch,
+            modality=self.handle.modality,
+            preview_count=preview_count,
+        )
+
         report.update(
             {
                 &#34;num_variants&#34;: int(len(dataset)),
                 &#34;context_length&#34;: self.context_length,
+                &#34;sampling&#34;: sampling,
+                &#34;assay_csv&#34;: str(self.proteingym_path),
+                &#34;dms_summary&#34;: {
+                    &#34;min&#34;: float(dataset[&#34;DMS_score&#34;].min()) if len(dataset) else None,
+                    &#34;max&#34;: float(dataset[&#34;DMS_score&#34;].max()) if len(dataset) else None,
+                    &#34;median&#34;: float(dataset[&#34;DMS_score&#34;].median()) if len(dataset) else None,
+                    &#34;mean&#34;: float(dataset[&#34;DMS_score&#34;].mean()) if len(dataset) else None,
+                },
+                &#34;score_distribution&#34;: score_distribution,
+                &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+                &#34;artefacts&#34;: prediction_paths,
+                &#34;notes&#34;: (
+                    &#34;Score is LL(mutant) − LL(wildtype); positive Spearman &#34;
+                    &#34;with DMS_score means the model&#39;s ranking of variants &#34;
+                    &#34;agrees with the experimental fitness order. ProteinGym &#34;
+                    &#34;reports are per-assay; running across the full 217-assay &#34;
+                    &#34;set requires an outer workflow that iterates this &#34;
+                    &#34;evaluator over each CSV and aggregates the per-assay &#34;
+                    &#34;Spearman values.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -207,19 +281,65 @@ package provides the arch-agnostic evaluator and a minimal loader.</p>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.build_report"><code class="name flex">
-<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+<span>def <span class="ident">build_report</span></span>(<span>self,<br>metrics: Dict[str, float],<br>dataset: pd.DataFrame,<br>predictions: Dict[str, np.ndarray]) ‑> Dict[str, Any]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+<pre><code class="python">def build_report(
+    self,
+    metrics: Dict[str, float],
+    dataset: pd.DataFrame,
+    predictions: Dict[str, np.ndarray],
+) -&gt; Dict[str, Any]:
     report = super().build_report(metrics, dataset, predictions)
+
+    bootstrap_ci = getattr(self, &#34;_last_bootstrap&#34;, None) or {}
+    bootstrap_payload: Dict[str, Dict[str, float]] = {}
+    for key, (lo, hi) in bootstrap_ci.items():
+        bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+    sampling = getattr(self, &#34;_last_sampling&#34;, None)
+    score_distribution = getattr(self, &#34;_last_score_distribution&#34;, None)
+
+    preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+    prediction_paths = write_predictions(
+        output_dir=self.output_dir,
+        dataset=dataset,
+        predictions=predictions,
+        score_distribution=score_distribution,
+        sampling=sampling,
+        arch=self.handle.arch,
+        modality=self.handle.modality,
+        preview_count=preview_count,
+    )
+
     report.update(
         {
             &#34;num_variants&#34;: int(len(dataset)),
             &#34;context_length&#34;: self.context_length,
+            &#34;sampling&#34;: sampling,
+            &#34;assay_csv&#34;: str(self.proteingym_path),
+            &#34;dms_summary&#34;: {
+                &#34;min&#34;: float(dataset[&#34;DMS_score&#34;].min()) if len(dataset) else None,
+                &#34;max&#34;: float(dataset[&#34;DMS_score&#34;].max()) if len(dataset) else None,
+                &#34;median&#34;: float(dataset[&#34;DMS_score&#34;].median()) if len(dataset) else None,
+                &#34;mean&#34;: float(dataset[&#34;DMS_score&#34;].mean()) if len(dataset) else None,
+            },
+            &#34;score_distribution&#34;: score_distribution,
+            &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+            &#34;artefacts&#34;: prediction_paths,
+            &#34;notes&#34;: (
+                &#34;Score is LL(mutant) − LL(wildtype); positive Spearman &#34;
+                &#34;with DMS_score means the model&#39;s ranking of variants &#34;
+                &#34;agrees with the experimental fitness order. ProteinGym &#34;
+                &#34;reports are per-assay; running across the full 217-assay &#34;
+                &#34;set requires an outer workflow that iterates this &#34;
+                &#34;evaluator over each CSV and aggregates the per-assay &#34;
+                &#34;Spearman values.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -244,7 +364,7 @@ distribution summaries, etc.</p></div>
 <div class="desc"><p>Return the high-level task category.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.compute_metrics"><code class="name flex">
-<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions) ‑> Dict[str, float]</span>
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]) ‑> Dict[str, float]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -252,15 +372,43 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_metrics(
-    self, dataset: pd.DataFrame, predictions
+    self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]
 ) -&gt; Dict[str, float]:
     scores = predictions[&#34;scores&#34;]
     dms = dataset[&#34;DMS_score&#34;].to_numpy(dtype=float)
+    ref_ll = predictions[&#34;reference_ll&#34;]
+    mut_ll = predictions[&#34;mutated_ll&#34;]
+
+    if len(dms) &lt; _MIN_ROWS_FOR_CORRELATION:
+        logger.warning(
+            &#34;ProteinGymEvaluator: skipping correlation metrics (%d rows &lt; %d)&#34;,
+            len(dms),
+            _MIN_ROWS_FOR_CORRELATION,
+        )
+        self._last_bootstrap = {}
+        self._last_score_distribution = {}
+        return {}
+
     metrics = correlation_metrics(dms, scores)
+
+    bin_labels: Optional[np.ndarray] = None
     if &#34;DMS_bin_score&#34; in dataset.columns:
-        y_bin = dataset[&#34;DMS_bin_score&#34;].to_numpy()
-        extra = optional_binary_metrics(y_bin.astype(int), scores)
-        metrics.update(extra)
+        bin_series = dataset[&#34;DMS_bin_score&#34;].dropna()
+        if not bin_series.empty:
+            bin_labels = dataset[&#34;DMS_bin_score&#34;].to_numpy()
+            extra = optional_binary_metrics(
+                bin_series.astype(int).to_numpy(),
+                scores[dataset[&#34;DMS_bin_score&#34;].notna().to_numpy()],
+            )
+            metrics.update(extra)
+
+    n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+    self._last_bootstrap = bootstrap_correlation_ci(
+        dms, scores, n_boot=n_boot, seed=int(self.config.get(&#34;seed&#34;, 42))
+    )
+    self._last_score_distribution = score_distribution_stats(
+        dms, ref_ll, mut_ll, scores, bin_labels=bin_labels
+    )
     return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
@@ -275,22 +423,46 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_proteingym(self.proteingym_path)
+
+    n_examples = self.config.get(&#34;n_examples&#34;)
     max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
-    return df</code></pre>
+    if n_examples is None and max_examples is not None:
+        n_examples = int(max_examples)
+        logger.warning(
+            &#34;ProteinGymEvaluator: max_examples=%s deprecated; &#34;
+            &#34;re-interpreting as n_examples=%d (no structural change).&#34;,
+            max_examples,
+            n_examples,
+        )
+
+    stratify_bin = bool(self.config.get(&#34;stratify_bin&#34;, True))
+    seed = int(self.config.get(&#34;seed&#34;, 42))
+
+    sampled = sample_proteingym(
+        df,
+        n_examples=n_examples,
+        stratify_bin=stratify_bin,
+        seed=seed,
+    )
+    self._last_sampling = {
+        &#34;n_examples&#34;: n_examples,
+        &#34;stratify_bin&#34;: stratify_bin,
+        &#34;seed&#34;: seed,
+        &#34;total_rows_in_file&#34;: int(len(df)),
+    }
+    return sampled</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.proteingym.ProteinGymEvaluator.run_predictions"><code class="name flex">
-<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame)</span>
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame) ‑> Dict[str, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame):
+<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
     adapter = self.adapter
     if not adapter.supports(&#34;likelihood&#34;):
         raise RuntimeError(
@@ -332,16 +504,10 @@ distribution summaries, etc.</p></div>
 </li>
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_config" href="bert_config.html">molcrawl.tasks.evaluation.proteingym.bert_config</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_data_preparation" href="bert_data_preparation.html">molcrawl.tasks.evaluation.proteingym.bert_data_preparation</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_evaluation" href="bert_evaluation.html">molcrawl.tasks.evaluation.proteingym.bert_evaluation</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.bert_visualization" href="bert_visualization.html">molcrawl.tasks.evaluation.proteingym.bert_visualization</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.proteingym.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.proteingym.evaluator</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation" href="gpt2_data_preparation.html">molcrawl.tasks.evaluation.proteingym.gpt2_data_preparation</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.gpt2_evaluation" href="gpt2_evaluation.html">molcrawl.tasks.evaluation.proteingym.gpt2_evaluation</a></code></li>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym.gpt2_visualization" href="gpt2_visualization.html">molcrawl.tasks.evaluation.proteingym.gpt2_visualization</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.metrics" href="metrics.html">molcrawl.tasks.evaluation.proteingym.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.proteingym.predictions_log</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.splits" href="splits.html">molcrawl.tasks.evaluation.proteingym.splits</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.visualization" href="visualization.html">molcrawl.tasks.evaluation.proteingym.visualization</a></code></li>
 </ul>

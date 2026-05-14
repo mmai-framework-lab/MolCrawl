@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.cosmic.splits API documentation</title>
-<meta name="description" content="COSMIC uses the same chromosome-aware split fixture as ClinVar.">
+<meta name="description" content="COSMIC sampling helpers …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,12 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.cosmic.splits</code></h1>
 </header>
 <section id="section-intro">
-<p>COSMIC uses the same chromosome-aware split fixture as ClinVar.</p>
+<p>COSMIC sampling helpers.</p>
+<p>Reuses ClinVar's chromosome split fixture and adds :func:<code><a title="molcrawl.tasks.evaluation.cosmic.splits.sample_cosmic" href="#molcrawl.tasks.evaluation.cosmic.splits.sample_cosmic">sample_cosmic()</a></code>,
+a class-balanced reproducible sampler that optionally stratifies by
+<code>MUTATION_SIGNIFICANCE_TIER</code> so tier-1 (high-confidence driver) and
+tier-2 rows are not under-represented when the input pool is dominated
+by tier-3 passenger calls.</p>
 </section>
 <section>
 </section>
@@ -76,6 +81,120 @@ el.replaceWith(d);
 <code>column</code> field, so the evaluator can still run on sample data that
 lacks chromosome annotations.</p></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.cosmic.splits.sample_cosmic"><code class="name flex">
+<span>def <span class="ident">sample_cosmic</span></span>(<span>df: pd.DataFrame,<br>n_per_class: Optional[int] = None,<br>stratify_tier: bool = True,<br>seed: int = 42,<br>label_column: str = 'cosmic_label',<br>tier_column: str = 'MUTATION_SIGNIFICANCE_TIER') ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample_cosmic(
+    df: pd.DataFrame,
+    n_per_class: Optional[int] = None,
+    stratify_tier: bool = True,
+    seed: int = 42,
+    label_column: str = &#34;cosmic_label&#34;,
+    tier_column: str = &#34;MUTATION_SIGNIFICANCE_TIER&#34;,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Return a reproducible, class-balanced COSMIC sample.
+
+    Parameters
+    ----------
+    df:
+        Labelled cosmic dataframe from :func:`load_cosmic` (must include
+        ``reference_sequence`` / ``variant_sequence`` / ``cosmic_label``).
+    n_per_class:
+        Target rows per class (0 = neutral / 1 = pathogenic). ``None``
+        returns the dataframe unchanged.
+    stratify_tier:
+        When ``True`` (default), draw within each class proportionally
+        across ``MUTATION_SIGNIFICANCE_TIER`` values present in the pool.
+        Tiers 1 / 2 (driver) and tier 3 (passenger) are otherwise wildly
+        unbalanced — without stratification a 100-row pathogenic draw
+        would essentially never see a tier-2 row.
+    seed:
+        Random seed.
+    label_column:
+        Binary label column (1 = pathogenic, 0 = neutral).
+    tier_column:
+        Significance-tier column emitted by :mod:`prepare_csv`.
+    &#34;&#34;&#34;
+    if n_per_class is None:
+        logger.info(
+            &#34;sample_cosmic: n_per_class=None → returning full dataframe (%d rows)&#34;,
+            len(df),
+        )
+        return df.reset_index(drop=True)
+
+    if label_column not in df.columns:
+        raise ValueError(
+            f&#34;sample_cosmic requires a {label_column!r} column; got {list(df.columns)}&#34;
+        )
+
+    rng = np.random.default_rng(seed)
+    parts = []
+    for label in (0, 1):
+        pool = df[df[label_column] == label]
+        if len(pool) == 0:
+            raise ValueError(
+                f&#34;No rows available for {label_column}={label}; cannot sample. &#34;
+                &#34;Re-run prepare_csv with --per-class large enough to populate &#34;
+                &#34;both classes.&#34;
+            )
+        if len(pool) &lt; n_per_class:
+            logger.warning(
+                &#34;sample_cosmic: only %d rows for %s=%d, requested %d — &#34;
+                &#34;drawing all available.&#34;,
+                len(pool),
+                label_column,
+                label,
+                n_per_class,
+            )
+            sampled = pool.copy()
+        elif stratify_tier and tier_column in pool.columns and pool[tier_column].nunique() &gt; 1:
+            sampled = _stratified_tier_sample(pool, n_per_class, tier_column, rng)
+        else:
+            state = int(rng.integers(0, 2**32 - 1))
+            sampled = pool.sample(n=n_per_class, random_state=state)
+        parts.append(sampled)
+        _log_class_composition(label, sampled, tier_column)
+
+    out = (
+        pd.concat(parts, ignore_index=False)
+        .sample(frac=1, random_state=seed)
+        .reset_index(drop=True)
+    )
+    logger.info(
+        &#34;sample_cosmic: produced %d rows (n_per_class=%d, seed=%d, stratify_tier=%s)&#34;,
+        len(out),
+        n_per_class,
+        seed,
+        stratify_tier,
+    )
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return a reproducible, class-balanced COSMIC sample.</p>
+<h2 id="parameters">Parameters</h2>
+<p>df:
+Labelled cosmic dataframe from :func:<code>load_cosmic</code> (must include
+<code>reference_sequence</code> / <code>variant_sequence</code> / <code>cosmic_label</code>).
+n_per_class:
+Target rows per class (0 = neutral / 1 = pathogenic). <code>None</code>
+returns the dataframe unchanged.
+stratify_tier:
+When <code>True</code> (default), draw within each class proportionally
+across <code>MUTATION_SIGNIFICANCE_TIER</code> values present in the pool.
+Tiers 1 / 2 (driver) and tier 3 (passenger) are otherwise wildly
+unbalanced — without stratification a 100-row pathogenic draw
+would essentially never see a tier-2 row.
+seed:
+Random seed.
+label_column:
+Binary label column (1 = pathogenic, 0 = neutral).
+tier_column:
+Significance-tier column emitted by :mod:<code>prepare_csv</code>.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -94,6 +213,7 @@ lacks chromosome annotations.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.cosmic.splits.chromosome_split" href="#molcrawl.tasks.evaluation.cosmic.splits.chromosome_split">chromosome_split</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.cosmic.splits.sample_cosmic" href="#molcrawl.tasks.evaluation.cosmic.splits.sample_cosmic">sample_cosmic</a></code></li>
 </ul>
 </li>
 </ul>

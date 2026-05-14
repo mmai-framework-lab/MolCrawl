@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.proteingym.splits API documentation</title>
-<meta name="description" content="Family-aware splits for ProteinGym …">
+<meta name="description" content="Reproducible sampling + study-based grouping for ProteinGym …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,11 +36,16 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.proteingym.splits</code></h1>
 </header>
 <section id="section-intro">
-<p>Family-aware splits for ProteinGym.</p>
-<p>ProteinGym ships with a stable per-study split.
-When a <code>study</code> column
-is present we simply group by that field so the evaluator can report
-out-of-family Spearman correlations.</p>
+<p>Reproducible sampling + study-based grouping for ProteinGym.</p>
+<p>Each ProteinGym CSV corresponds to a single protein / assay and
+typically contains a few thousand rows with a reasonably balanced
+DMS-score distribution. The main sampling need within one CSV is
+reproducibility + an optional cap for smoke runs; <code>stratify_bin</code>
+leverages <code>DMS_bin_score</code> (when present) to draw equal numbers from
+the functional / non-functional halves so AUROC / AUPRC stay
+well-defined on small samples.</p>
+<p><code><a title="molcrawl.tasks.evaluation.proteingym.splits.group_by_study" href="#molcrawl.tasks.evaluation.proteingym.splits.group_by_study">group_by_study()</a></code> / <code><a title="molcrawl.tasks.evaluation.proteingym.splits.filter_studies" href="#molcrawl.tasks.evaluation.proteingym.splits.filter_studies">filter_studies()</a></code> are preserved for downstream
+workflows that want to aggregate per-assay metrics.</p>
 </section>
 <section>
 </section>
@@ -60,8 +65,8 @@ out-of-family Spearman correlations.</p>
 <pre><code class="python">def filter_studies(df: pd.DataFrame, studies: Iterable[str], column: str = &#34;study&#34;) -&gt; pd.DataFrame:
     if column not in df.columns:
         return df
-    studies = set(studies)
-    return df[df[column].isin(studies)].reset_index(drop=True)</code></pre>
+    studies_set = set(studies)
+    return df[df[column].isin(studies_set)].reset_index(drop=True)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -84,6 +89,93 @@ out-of-family Spearman correlations.</p>
 </details>
 <div class="desc"><p>Return a <code>{study_name: subframe}</code> mapping.</p></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.proteingym.splits.sample_proteingym"><code class="name flex">
+<span>def <span class="ident">sample_proteingym</span></span>(<span>df: pd.DataFrame,<br>n_examples: Optional[int] = None,<br>stratify_bin: bool = True,<br>seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample_proteingym(
+    df: pd.DataFrame,
+    n_examples: Optional[int] = None,
+    stratify_bin: bool = True,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Return a reproducible ProteinGym sample.
+
+    Parameters
+    ----------
+    df:
+        Output of :func:`load_proteingym`.
+    n_examples:
+        Optional cap on the total returned rows. ``None`` (or a value
+        ``&gt;= len(df)``) returns the full assay unchanged.
+    stratify_bin:
+        When ``True`` and a ``DMS_bin_score`` column is present with
+        ≥ 2 labels, draws roughly ``n_examples / 2`` rows from each
+        binary class so downstream AUROC / AUPRC have both classes
+        populated. Falls back to uniform within-dataframe sampling.
+    seed:
+        Random seed for reproducibility.
+    &#34;&#34;&#34;
+    if n_examples is None or n_examples &gt;= len(df):
+        logger.info(
+            &#34;sample_proteingym: returning full dataframe (%d rows; n_examples=%s)&#34;,
+            len(df),
+            n_examples,
+        )
+        return df.reset_index(drop=True)
+
+    rng = np.random.default_rng(seed)
+    if (
+        stratify_bin
+        and &#34;DMS_bin_score&#34; in df.columns
+        and df[&#34;DMS_bin_score&#34;].dropna().nunique() &gt;= 2
+    ):
+        per_bin = n_examples // 2
+        remainder = n_examples - per_bin * 2
+        parts = []
+        for i, label in enumerate(sorted(df[&#34;DMS_bin_score&#34;].dropna().unique())):
+            take = per_bin + (1 if i &lt; remainder else 0)
+            pool = df[df[&#34;DMS_bin_score&#34;] == label]
+            take = min(take, len(pool))
+            state = int(rng.integers(0, 2**32 - 1))
+            parts.append(pool.sample(n=take, random_state=state))
+        sampled = pd.concat(parts, ignore_index=False)
+        logger.info(
+            &#34;sample_proteingym: bin-stratified sample of %d rows (per-bin target=%d)&#34;,
+            len(sampled),
+            per_bin,
+        )
+    else:
+        if stratify_bin:
+            logger.info(
+                &#34;sample_proteingym: stratify_bin requested but DMS_bin_score &#34;
+                &#34;unavailable — falling back to uniform random sampling.&#34;
+            )
+        state = int(rng.integers(0, 2**32 - 1))
+        sampled = df.sample(n=n_examples, random_state=state)
+        logger.info(&#34;sample_proteingym: random sample of %d rows&#34;, len(sampled))
+
+    return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)</code></pre>
+</details>
+<div class="desc"><p>Return a reproducible ProteinGym sample.</p>
+<h2 id="parameters">Parameters</h2>
+<p>df:
+Output of :func:<code>load_proteingym</code>.
+n_examples:
+Optional cap on the total returned rows. <code>None</code> (or a value
+<code>&gt;= len(df)</code>) returns the full assay unchanged.
+stratify_bin:
+When <code>True</code> and a <code>DMS_bin_score</code> column is present with
+≥ 2 labels, draws roughly <code>n_examples / 2</code> rows from each
+binary class so downstream AUROC / AUPRC have both classes
+populated. Falls back to uniform within-dataframe sampling.
+seed:
+Random seed for reproducibility.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -103,6 +195,7 @@ out-of-family Spearman correlations.</p>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.splits.filter_studies" href="#molcrawl.tasks.evaluation.proteingym.splits.filter_studies">filter_studies</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.splits.group_by_study" href="#molcrawl.tasks.evaluation.proteingym.splits.group_by_study">group_by_study</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.splits.sample_proteingym" href="#molcrawl.tasks.evaluation.proteingym.splits.sample_proteingym">sample_proteingym</a></code></li>
 </ul>
 </li>
 </ul>

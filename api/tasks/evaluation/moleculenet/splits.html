@@ -160,6 +160,113 @@ the evaluator skeleton in environments without chemistry tooling.</p>
 Molecules where the scaffold cannot be computed are placed in their
 own singleton groups so the split stays deterministic.</p></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.moleculenet.splits.stratified_subsample"><code class="name flex">
+<span>def <span class="ident">stratified_subsample</span></span>(<span>df: pd.DataFrame,<br>n_examples: int,<br>label_columns: Sequence[str],<br>task_type: str,<br>seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    label_columns: Sequence[str],
+    task_type: str,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Reproducibly down-sample a task CSV while preserving label shape.
+
+    * ``task_type=&#39;classification&#39;``: for single-label tasks, preserve
+      the 0/1 ratio of the first label column. For multi-label
+      (tox21-style), fall back to uniform random sampling since there
+      is no unambiguous stratification target.
+    * ``task_type=&#39;regression&#39;``: bucket the first label column into
+      ``min(10, n_examples)`` quantile bins and sample proportionally
+      from each bin so all quantiles are represented.
+
+    Always shuffled with ``seed`` for reproducibility.
+    &#34;&#34;&#34;
+    if n_examples &gt;= len(df):
+        return df.reset_index(drop=True)
+
+    rng = np.random.default_rng(seed)
+    target = label_columns[0] if label_columns else None
+
+    if task_type == &#34;classification&#34; and target is not None and len(label_columns) == 1:
+        pool = df.dropna(subset=[target])
+        classes = sorted(pool[target].dropna().unique())
+        if len(classes) &gt;= 2:
+            parts = []
+            base = n_examples // len(classes)
+            remainder = n_examples - base * len(classes)
+            for i, cls in enumerate(classes):
+                quota = base + (1 if i &lt; remainder else 0)
+                sub = pool[pool[target] == cls]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                &#34;stratified_subsample: %s classification — %d rows across %d classes&#34;,
+                target,
+                len(sampled),
+                len(classes),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    if task_type == &#34;regression&#34; and target is not None:
+        pool = df.dropna(subset=[target])
+        if len(pool) &gt; 10:
+            n_bins = min(10, max(2, n_examples // 5))
+            try:
+                bin_ids = pd.qcut(
+                    pool[target].astype(float),
+                    q=n_bins,
+                    labels=False,
+                    duplicates=&#34;drop&#34;,
+                ).to_numpy()
+            except Exception:
+                bin_ids = np.zeros(len(pool), dtype=int)
+            parts = []
+            unique_bins = np.unique(bin_ids[~pd.isna(bin_ids)])
+            base = n_examples // max(1, len(unique_bins))
+            remainder = n_examples - base * len(unique_bins)
+            for i, b in enumerate(sorted(unique_bins)):
+                quota = base + (1 if i &lt; remainder else 0)
+                sub = pool[bin_ids == b]
+                take = min(quota, len(sub))
+                state = int(rng.integers(0, 2**32 - 1))
+                parts.append(sub.sample(n=take, random_state=state))
+            sampled = pd.concat(parts, ignore_index=False)
+            logger.info(
+                &#34;stratified_subsample: %s regression — %d rows across %d quantile bins&#34;,
+                target,
+                len(sampled),
+                len(unique_bins),
+            )
+            return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    # Fallback (multi-label classification or task_type unknown)
+    state = int(rng.integers(0, 2**32 - 1))
+    logger.info(
+        &#34;stratified_subsample: uniform random %d rows (no single-column stratification target)&#34;,
+        n_examples,
+    )
+    return df.sample(n=n_examples, random_state=state).reset_index(drop=True)</code></pre>
+</details>
+<div class="desc"><p>Reproducibly down-sample a task CSV while preserving label shape.</p>
+<ul>
+<li><code>task_type='classification'</code>: for single-label tasks, preserve
+the 0/1 ratio of the first label column. For multi-label
+(tox21-style), fall back to uniform random sampling since there
+is no unambiguous stratification target.</li>
+<li><code>task_type='regression'</code>: bucket the first label column into
+<code>min(10, n_examples)</code> quantile bins and sample proportionally
+from each bin so all quantiles are represented.</li>
+</ul>
+<p>Always shuffled with <code>seed</code> for reproducibility.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -215,6 +322,7 @@ class SplitResult:
 <li><code><a title="molcrawl.tasks.evaluation.moleculenet.splits.apply_split" href="#molcrawl.tasks.evaluation.moleculenet.splits.apply_split">apply_split</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moleculenet.splits.random_split" href="#molcrawl.tasks.evaluation.moleculenet.splits.random_split">random_split</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moleculenet.splits.scaffold_split" href="#molcrawl.tasks.evaluation.moleculenet.splits.scaffold_split">scaffold_split</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moleculenet.splits.stratified_subsample" href="#molcrawl.tasks.evaluation.moleculenet.splits.stratified_subsample">stratified_subsample</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

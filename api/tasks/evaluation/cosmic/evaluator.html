@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.cosmic.evaluator API documentation</title>
-<meta name="description" content="Arch-agnostic COSMIC evaluator.">
+<meta name="description" content="Architecture-agnostic COSMIC evaluator …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,23 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.cosmic.evaluator</code></h1>
 </header>
 <section id="section-intro">
-<p>Arch-agnostic COSMIC evaluator.</p>
+<p>Architecture-agnostic COSMIC evaluator.</p>
+<p>Parallels the ClinVar evaluator: scores <code>LL(ref) − LL(var)</code> for each
+variant and reports threshold-free ranking metrics (AUROC / AUPRC) as
+primary signal, with the F1-optimal threshold-based metrics retained as
+a secondary block (same-set-fitted, per the zero-shot variant-effect
+convention).</p>
+<p>What 足固め mode adds on top of the basic flow:</p>
+<ul>
+<li>Reproducible class-balanced sampling (optionally tier-stratified)
+via :func:<code>splits.sample_cosmic</code> so the dataset's tier-3-dominated
+imbalance does not silently bias the metric estimate.</li>
+<li>95 % bootstrap CIs for every metric, computed on the same sample at
+the same threshold so the CI reflects sampling variance only.</li>
+<li>Per-class score-distribution stats and per-variant predictions log
+(JSONL + narrative TXT) so the output is inspectable without
+re-running the model.</li>
+</ul>
 </section>
 <section>
 </section>
@@ -84,12 +100,36 @@ el.replaceWith(d);
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_cosmic(self.cosmic_path, label_column=self.label_column)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
-        return df
 
-    def run_predictions(self, dataset: pd.DataFrame):
+        n_per_class = self.config.get(&#34;n_per_class&#34;)
+        max_examples = self.config.get(&#34;max_examples&#34;)
+        if n_per_class is None and max_examples is not None:
+            n_per_class = max(1, int(max_examples) // 2)
+            logger.warning(
+                &#34;CosmicEvaluator: max_examples=%s is deprecated; re-interpreting &#34;
+                &#34;as n_per_class=%d (class-balanced).&#34;,
+                max_examples,
+                n_per_class,
+            )
+
+        stratify_tier = bool(self.config.get(&#34;stratify_tier&#34;, True))
+        seed = int(self.config.get(&#34;seed&#34;, 42))
+
+        sampled = sample_cosmic(
+            df,
+            n_per_class=n_per_class,
+            stratify_tier=stratify_tier,
+            seed=seed,
+        )
+        self._last_sampling = {
+            &#34;n_per_class&#34;: n_per_class,
+            &#34;stratify_tier&#34;: stratify_tier,
+            &#34;seed&#34;: seed,
+            &#34;total_rows_in_file&#34;: int(len(df)),
+        }
+        return sampled
+
+    def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
         adapter = self.adapter
         if not adapter.supports(&#34;likelihood&#34;):
             raise RuntimeError(
@@ -111,34 +151,157 @@ el.replaceWith(d);
             &#34;variant_ll&#34;: var_ll,
         }
 
-    def compute_metrics(self, dataset: pd.DataFrame, predictions) -&gt; Dict[str, float]:
+    def compute_metrics(
+        self,
+        dataset: pd.DataFrame,
+        predictions: Dict[str, np.ndarray],
+    ) -&gt; Dict[str, float]:
         scores = predictions[&#34;scores&#34;]
         labels = dataset[&#34;cosmic_label&#34;].to_numpy(dtype=int)
-        threshold = find_optimal_f1_threshold(scores, labels)
-        preds = (scores &gt; threshold).astype(int)
+        ref_ll = predictions[&#34;reference_ll&#34;]
+        var_ll = predictions[&#34;variant_ll&#34;]
 
-        metrics: Dict[str, float] = {
-            &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, labels, preds),
-            &#34;f1_binary&#34;: default_registry.compute(&#34;f1_binary&#34;, labels, preds),
-        }
-        if len(np.unique(labels)) &gt;= 2:
-            metrics[&#34;auroc&#34;] = default_registry.compute(&#34;auroc&#34;, labels, scores)
-            metrics[&#34;auprc&#34;] = default_registry.compute(&#34;auprc&#34;, labels, scores)
-        sensitivity, specificity = sensitivity_specificity(labels, preds)
-        metrics[&#34;sensitivity&#34;] = sensitivity
-        metrics[&#34;specificity&#34;] = specificity
+        n_pos = int((labels == 1).sum())
+        n_neg = int((labels == 0).sum())
+        n_total = int(labels.size)
+        has_both_classes = n_pos &gt; 0 and n_neg &gt; 0
 
-        self._last_threshold = float(threshold)
-        self._last_confusion = confusion_summary(labels, preds)
+        metrics: Dict[str, float] = {}
+
+        # ---- Primary: threshold-free ranking metrics ----
+        if has_both_classes and n_total &gt;= _MIN_TOTAL_FOR_RANKING_METRICS:
+            metrics[&#34;auroc&#34;] = float(default_registry.compute(&#34;auroc&#34;, labels, scores))
+            metrics[&#34;auprc&#34;] = float(default_registry.compute(&#34;auprc&#34;, labels, scores))
+        else:
+            logger.warning(
+                &#34;CosmicEvaluator: skipping ranking metrics &#34;
+                &#34;(n_pos=%d, n_neg=%d, total=%d &lt; %d)&#34;,
+                n_pos, n_neg, n_total, _MIN_TOTAL_FOR_RANKING_METRICS,
+            )
+
+        # ---- Secondary: threshold-based (fitted on this same set) ----
+        threshold_metrics_skipped_reason: Optional[str] = None
+        threshold_value: Optional[float] = None
+        if n_pos &gt;= _MIN_PER_CLASS_FOR_THRESHOLD_METRICS and n_neg &gt;= _MIN_PER_CLASS_FOR_THRESHOLD_METRICS:
+            threshold_value = float(find_optimal_f1_threshold(scores, labels))
+            preds = (scores &gt; threshold_value).astype(int)
+            metrics[&#34;accuracy&#34;] = float(default_registry.compute(&#34;accuracy&#34;, labels, preds))
+            metrics[&#34;f1_binary&#34;] = float(default_registry.compute(&#34;f1_binary&#34;, labels, preds))
+            sens, spec = sensitivity_specificity(labels, preds)
+            metrics[&#34;sensitivity&#34;] = float(sens)
+            metrics[&#34;specificity&#34;] = float(spec)
+            self._last_threshold = threshold_value
+            self._last_confusion = confusion_summary(labels, preds)
+            self._threshold_fitted_on_this_set = True
+        else:
+            threshold_metrics_skipped_reason = (
+                f&#34;per-class count below {_MIN_PER_CLASS_FOR_THRESHOLD_METRICS} &#34;
+                f&#34;(n_pos={n_pos}, n_neg={n_neg})&#34;
+            )
+            self._last_threshold = None
+            self._last_confusion = None
+            self._threshold_fitted_on_this_set = False
+            logger.warning(
+                &#34;CosmicEvaluator: skipping threshold-based metrics (%s)&#34;,
+                threshold_metrics_skipped_reason,
+            )
+
+        # ---- Bootstrap CI ----
+        n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+        seed = int(self.config.get(&#34;seed&#34;, 42))
+        if has_both_classes and n_total &gt;= _MIN_TOTAL_FOR_RANKING_METRICS:
+            self._last_bootstrap = bootstrap_binary_ci(
+                labels=labels,
+                scores=scores,
+                threshold=threshold_value,
+                n_boot=n_boot,
+                seed=seed,
+            )
+        else:
+            self._last_bootstrap = {}
+
+        # ---- Diagnostics ----
+        self._last_score_distribution = score_distribution_stats(
+            labels, ref_ll, var_ll, scores
+        )
+        self._last_threshold_skip_reason = threshold_metrics_skipped_reason
         return metrics
 
-    def build_report(self, metrics, dataset, predictions):
+    def build_report(
+        self,
+        metrics: Dict[str, float],
+        dataset: pd.DataFrame,
+        predictions: Dict[str, np.ndarray],
+    ) -&gt; Dict[str, Any]:
         report = super().build_report(metrics, dataset, predictions)
+
+        sampling = getattr(self, &#34;_last_sampling&#34;, None)
+        score_distribution = getattr(self, &#34;_last_score_distribution&#34;, None)
+        threshold_value = getattr(self, &#34;_last_threshold&#34;, None)
+        bootstrap_ci = getattr(self, &#34;_last_bootstrap&#34;, None) or {}
+
+        bootstrap_payload: Dict[str, Dict[str, float]] = {}
+        for key, (lo, hi) in bootstrap_ci.items():
+            bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+        # Per-tier composition for the report.
+        tier_distribution: Optional[Dict[str, Dict[str, int]]] = None
+        if &#34;MUTATION_SIGNIFICANCE_TIER&#34; in dataset.columns:
+            tier_series = dataset[&#34;MUTATION_SIGNIFICANCE_TIER&#34;].astype(str)
+            tier_distribution = (
+                dataset.assign(_tier=tier_series)
+                .groupby(&#34;_tier&#34;)[&#34;cosmic_label&#34;]
+                .value_counts()
+                .unstack(fill_value=0)
+                .astype(int)
+                .rename(columns={0: &#34;neutral&#34;, 1: &#34;pathogenic&#34;})
+                .to_dict(orient=&#34;index&#34;)
+            )
+
+        preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            dataset=dataset,
+            predictions=predictions,
+            threshold=threshold_value,
+            score_distribution=score_distribution,
+            sampling=sampling,
+            arch=self.handle.arch,
+            modality=self.handle.modality,
+            preview_count=preview_count,
+        )
+
         report.update(
             {
                 &#34;num_examples&#34;: int(len(dataset)),
-                &#34;optimal_threshold&#34;: getattr(self, &#34;_last_threshold&#34;, None),
-                &#34;confusion_matrix&#34;: getattr(self, &#34;_last_confusion&#34;, None),
+                &#34;class_distribution&#34;: {
+                    &#34;pathogenic&#34;: int((dataset[&#34;cosmic_label&#34;] == 1).sum()),
+                    &#34;neutral&#34;: int((dataset[&#34;cosmic_label&#34;] == 0).sum()),
+                },
+                &#34;sampling&#34;: sampling,
+                &#34;tier_distribution&#34;: tier_distribution,
+                &#34;score_distribution&#34;: score_distribution,
+                &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+                &#34;threshold&#34;: {
+                    &#34;optimal_threshold&#34;: threshold_value,
+                    &#34;fitted_on_this_set&#34;: getattr(
+                        self, &#34;_threshold_fitted_on_this_set&#34;, False
+                    ),
+                    &#34;skip_reason&#34;: getattr(
+                        self, &#34;_last_threshold_skip_reason&#34;, None
+                    ),
+                    &#34;confusion_matrix&#34;: getattr(self, &#34;_last_confusion&#34;, None),
+                    &#34;note&#34;: (
+                        &#34;Threshold-based metrics use the F1-optimal cut &#34;
+                        &#34;computed on this same sample (standard zero-shot &#34;
+                        &#34;variant-effect convention). Prefer the ranking &#34;
+                        &#34;metrics (auroc / auprc) as primary signal; the &#34;
+                        &#34;bootstrap CI on each metric is computed on the same &#34;
+                        &#34;row resamples at the same threshold so it captures &#34;
+                        &#34;sampling variance only.&#34;
+                    ),
+                },
+                &#34;artefacts&#34;: prediction_paths,
             }
         )
         return report</code></pre>
@@ -162,20 +325,88 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.tasks.evaluation.cosmic.evaluator.CosmicEvaluator.build_report"><code class="name flex">
-<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+<span>def <span class="ident">build_report</span></span>(<span>self,<br>metrics: Dict[str, float],<br>dataset: pd.DataFrame,<br>predictions: Dict[str, np.ndarray]) ‑> Dict[str, Any]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+<pre><code class="python">def build_report(
+    self,
+    metrics: Dict[str, float],
+    dataset: pd.DataFrame,
+    predictions: Dict[str, np.ndarray],
+) -&gt; Dict[str, Any]:
     report = super().build_report(metrics, dataset, predictions)
+
+    sampling = getattr(self, &#34;_last_sampling&#34;, None)
+    score_distribution = getattr(self, &#34;_last_score_distribution&#34;, None)
+    threshold_value = getattr(self, &#34;_last_threshold&#34;, None)
+    bootstrap_ci = getattr(self, &#34;_last_bootstrap&#34;, None) or {}
+
+    bootstrap_payload: Dict[str, Dict[str, float]] = {}
+    for key, (lo, hi) in bootstrap_ci.items():
+        bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+    # Per-tier composition for the report.
+    tier_distribution: Optional[Dict[str, Dict[str, int]]] = None
+    if &#34;MUTATION_SIGNIFICANCE_TIER&#34; in dataset.columns:
+        tier_series = dataset[&#34;MUTATION_SIGNIFICANCE_TIER&#34;].astype(str)
+        tier_distribution = (
+            dataset.assign(_tier=tier_series)
+            .groupby(&#34;_tier&#34;)[&#34;cosmic_label&#34;]
+            .value_counts()
+            .unstack(fill_value=0)
+            .astype(int)
+            .rename(columns={0: &#34;neutral&#34;, 1: &#34;pathogenic&#34;})
+            .to_dict(orient=&#34;index&#34;)
+        )
+
+    preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+    prediction_paths = write_predictions(
+        output_dir=self.output_dir,
+        dataset=dataset,
+        predictions=predictions,
+        threshold=threshold_value,
+        score_distribution=score_distribution,
+        sampling=sampling,
+        arch=self.handle.arch,
+        modality=self.handle.modality,
+        preview_count=preview_count,
+    )
+
     report.update(
         {
             &#34;num_examples&#34;: int(len(dataset)),
-            &#34;optimal_threshold&#34;: getattr(self, &#34;_last_threshold&#34;, None),
-            &#34;confusion_matrix&#34;: getattr(self, &#34;_last_confusion&#34;, None),
+            &#34;class_distribution&#34;: {
+                &#34;pathogenic&#34;: int((dataset[&#34;cosmic_label&#34;] == 1).sum()),
+                &#34;neutral&#34;: int((dataset[&#34;cosmic_label&#34;] == 0).sum()),
+            },
+            &#34;sampling&#34;: sampling,
+            &#34;tier_distribution&#34;: tier_distribution,
+            &#34;score_distribution&#34;: score_distribution,
+            &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+            &#34;threshold&#34;: {
+                &#34;optimal_threshold&#34;: threshold_value,
+                &#34;fitted_on_this_set&#34;: getattr(
+                    self, &#34;_threshold_fitted_on_this_set&#34;, False
+                ),
+                &#34;skip_reason&#34;: getattr(
+                    self, &#34;_last_threshold_skip_reason&#34;, None
+                ),
+                &#34;confusion_matrix&#34;: getattr(self, &#34;_last_confusion&#34;, None),
+                &#34;note&#34;: (
+                    &#34;Threshold-based metrics use the F1-optimal cut &#34;
+                    &#34;computed on this same sample (standard zero-shot &#34;
+                    &#34;variant-effect convention). Prefer the ranking &#34;
+                    &#34;metrics (auroc / auprc) as primary signal; the &#34;
+                    &#34;bootstrap CI on each metric is computed on the same &#34;
+                    &#34;row resamples at the same threshold so it captures &#34;
+                    &#34;sampling variance only.&#34;
+                ),
+            },
+            &#34;artefacts&#34;: prediction_paths,
         }
     )
     return report</code></pre>
@@ -200,32 +431,87 @@ distribution summaries, etc.</p></div>
 <div class="desc"><p>Return the high-level task category.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.cosmic.evaluator.CosmicEvaluator.compute_metrics"><code class="name flex">
-<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions) ‑> Dict[str, float]</span>
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]) ‑> Dict[str, float]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def compute_metrics(self, dataset: pd.DataFrame, predictions) -&gt; Dict[str, float]:
+<pre><code class="python">def compute_metrics(
+    self,
+    dataset: pd.DataFrame,
+    predictions: Dict[str, np.ndarray],
+) -&gt; Dict[str, float]:
     scores = predictions[&#34;scores&#34;]
     labels = dataset[&#34;cosmic_label&#34;].to_numpy(dtype=int)
-    threshold = find_optimal_f1_threshold(scores, labels)
-    preds = (scores &gt; threshold).astype(int)
+    ref_ll = predictions[&#34;reference_ll&#34;]
+    var_ll = predictions[&#34;variant_ll&#34;]
 
-    metrics: Dict[str, float] = {
-        &#34;accuracy&#34;: default_registry.compute(&#34;accuracy&#34;, labels, preds),
-        &#34;f1_binary&#34;: default_registry.compute(&#34;f1_binary&#34;, labels, preds),
-    }
-    if len(np.unique(labels)) &gt;= 2:
-        metrics[&#34;auroc&#34;] = default_registry.compute(&#34;auroc&#34;, labels, scores)
-        metrics[&#34;auprc&#34;] = default_registry.compute(&#34;auprc&#34;, labels, scores)
-    sensitivity, specificity = sensitivity_specificity(labels, preds)
-    metrics[&#34;sensitivity&#34;] = sensitivity
-    metrics[&#34;specificity&#34;] = specificity
+    n_pos = int((labels == 1).sum())
+    n_neg = int((labels == 0).sum())
+    n_total = int(labels.size)
+    has_both_classes = n_pos &gt; 0 and n_neg &gt; 0
 
-    self._last_threshold = float(threshold)
-    self._last_confusion = confusion_summary(labels, preds)
+    metrics: Dict[str, float] = {}
+
+    # ---- Primary: threshold-free ranking metrics ----
+    if has_both_classes and n_total &gt;= _MIN_TOTAL_FOR_RANKING_METRICS:
+        metrics[&#34;auroc&#34;] = float(default_registry.compute(&#34;auroc&#34;, labels, scores))
+        metrics[&#34;auprc&#34;] = float(default_registry.compute(&#34;auprc&#34;, labels, scores))
+    else:
+        logger.warning(
+            &#34;CosmicEvaluator: skipping ranking metrics &#34;
+            &#34;(n_pos=%d, n_neg=%d, total=%d &lt; %d)&#34;,
+            n_pos, n_neg, n_total, _MIN_TOTAL_FOR_RANKING_METRICS,
+        )
+
+    # ---- Secondary: threshold-based (fitted on this same set) ----
+    threshold_metrics_skipped_reason: Optional[str] = None
+    threshold_value: Optional[float] = None
+    if n_pos &gt;= _MIN_PER_CLASS_FOR_THRESHOLD_METRICS and n_neg &gt;= _MIN_PER_CLASS_FOR_THRESHOLD_METRICS:
+        threshold_value = float(find_optimal_f1_threshold(scores, labels))
+        preds = (scores &gt; threshold_value).astype(int)
+        metrics[&#34;accuracy&#34;] = float(default_registry.compute(&#34;accuracy&#34;, labels, preds))
+        metrics[&#34;f1_binary&#34;] = float(default_registry.compute(&#34;f1_binary&#34;, labels, preds))
+        sens, spec = sensitivity_specificity(labels, preds)
+        metrics[&#34;sensitivity&#34;] = float(sens)
+        metrics[&#34;specificity&#34;] = float(spec)
+        self._last_threshold = threshold_value
+        self._last_confusion = confusion_summary(labels, preds)
+        self._threshold_fitted_on_this_set = True
+    else:
+        threshold_metrics_skipped_reason = (
+            f&#34;per-class count below {_MIN_PER_CLASS_FOR_THRESHOLD_METRICS} &#34;
+            f&#34;(n_pos={n_pos}, n_neg={n_neg})&#34;
+        )
+        self._last_threshold = None
+        self._last_confusion = None
+        self._threshold_fitted_on_this_set = False
+        logger.warning(
+            &#34;CosmicEvaluator: skipping threshold-based metrics (%s)&#34;,
+            threshold_metrics_skipped_reason,
+        )
+
+    # ---- Bootstrap CI ----
+    n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+    seed = int(self.config.get(&#34;seed&#34;, 42))
+    if has_both_classes and n_total &gt;= _MIN_TOTAL_FOR_RANKING_METRICS:
+        self._last_bootstrap = bootstrap_binary_ci(
+            labels=labels,
+            scores=scores,
+            threshold=threshold_value,
+            n_boot=n_boot,
+            seed=seed,
+        )
+    else:
+        self._last_bootstrap = {}
+
+    # ---- Diagnostics ----
+    self._last_score_distribution = score_distribution_stats(
+        labels, ref_ll, var_ll, scores
+    )
+    self._last_threshold_skip_reason = threshold_metrics_skipped_reason
     return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
@@ -240,22 +526,46 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_cosmic(self.cosmic_path, label_column=self.label_column)
+
+    n_per_class = self.config.get(&#34;n_per_class&#34;)
     max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
-    return df</code></pre>
+    if n_per_class is None and max_examples is not None:
+        n_per_class = max(1, int(max_examples) // 2)
+        logger.warning(
+            &#34;CosmicEvaluator: max_examples=%s is deprecated; re-interpreting &#34;
+            &#34;as n_per_class=%d (class-balanced).&#34;,
+            max_examples,
+            n_per_class,
+        )
+
+    stratify_tier = bool(self.config.get(&#34;stratify_tier&#34;, True))
+    seed = int(self.config.get(&#34;seed&#34;, 42))
+
+    sampled = sample_cosmic(
+        df,
+        n_per_class=n_per_class,
+        stratify_tier=stratify_tier,
+        seed=seed,
+    )
+    self._last_sampling = {
+        &#34;n_per_class&#34;: n_per_class,
+        &#34;stratify_tier&#34;: stratify_tier,
+        &#34;seed&#34;: seed,
+        &#34;total_rows_in_file&#34;: int(len(df)),
+    }
+    return sampled</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.cosmic.evaluator.CosmicEvaluator.run_predictions"><code class="name flex">
-<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame)</span>
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame) ‑> Dict[str, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame):
+<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
     adapter = self.adapter
     if not adapter.supports(&#34;likelihood&#34;):
         raise RuntimeError(

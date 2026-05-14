@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.protein_foldability.splits API documentation</title>
-<meta name="description" content="Foldability evaluation does not require a dataset split.">
+<meta name="description" content="Foldability evaluation does not require a dataset split …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,8 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Foldability evaluation does not require a dataset split.</p>
+<p>Provides utilities to deduplicate generated sequences and to bundle
+the reference pool with its pre-computed novelty set / AA distribution.</p>
 </section>
 <section>
 </section>
@@ -46,16 +48,16 @@ el.replaceWith(d);
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="molcrawl.tasks.evaluation.protein_foldability.splits.dedupe_generated"><code class="name flex">
-<span>def <span class="ident">dedupe_generated</span></span>(<span>sequences: Iterable[str]) ‑> list[str]</span>
+<span>def <span class="ident">dedupe_generated</span></span>(<span>sequences: Iterable[str]) ‑> List[str]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def dedupe_generated(sequences: Iterable[str]) -&gt; list[str]:
-    seen: set[str] = set()
-    out: list[str] = []
+<pre><code class="python">def dedupe_generated(sequences: Iterable[str]) -&gt; List[str]:
+    seen: Set[str] = set()
+    out: List[str] = []
     for seq in sequences:
         if seq not in seen:
             seen.add(seq)
@@ -64,9 +66,83 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.splits.prepare_reference_pool"><code class="name flex">
+<span>def <span class="ident">prepare_reference_pool</span></span>(<span>sequences: List[str], max_ref_for_aa: Optional[int] = None, seed: int = 42) ‑> <a title="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool" href="#molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool">ReferencePool</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_reference_pool(
+    sequences: List[str],
+    max_ref_for_aa: Optional[int] = None,
+    seed: int = 42,
+) -&gt; ReferencePool:
+    &#34;&#34;&#34;Pre-compute the membership set and AA distribution.
+
+    Both are reused across the (point-estimate) metric pass and the
+    bootstrap CI loop, so this avoids re-iterating ≈ 1 M reference
+    sequences per resample.
+    &#34;&#34;&#34;
+    logger.info(
+        &#34;Pre-computing reference set + AA distribution from %d sequences &#34;
+        &#34;(max_ref_for_aa=%s)&#34;,
+        len(sequences),
+        max_ref_for_aa,
+    )
+    ref_set, aa_dist = precompute_reference(
+        sequences, max_ref_for_set=max_ref_for_aa, seed=seed
+    )
+    return ReferencePool(
+        sequences=list(sequences), reference_set=ref_set, aa_distribution=aa_dist
+    )</code></pre>
+</details>
+<div class="desc"><p>Pre-compute the membership set and AA distribution.</p>
+<p>Both are reused across the (point-estimate) metric pass and the
+bootstrap CI loop, so this avoids re-iterating ≈ 1 M reference
+sequences per resample.</p></div>
+</dd>
 </dl>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool"><code class="flex name class">
+<span>class <span class="ident">ReferencePool</span></span>
+<span>(</span><span>sequences: List[str],<br>reference_set: Set[str] = &lt;factory&gt;,<br>aa_distribution: Dict[str, float] = &lt;factory&gt;)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class ReferencePool:
+    &#34;&#34;&#34;Reference corpus plus the derived structures the evaluator needs.&#34;&#34;&#34;
+
+    sequences: List[str]
+    reference_set: Set[str] = field(default_factory=set)
+    aa_distribution: Dict[str, float] = field(default_factory=dict)</code></pre>
+</details>
+<div class="desc"><p>Reference corpus plus the derived structures the evaluator needs.</p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.aa_distribution"><code class="name">var <span class="ident">aa_distribution</span> : Dict[str, float]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.reference_set"><code class="name">var <span class="ident">reference_set</span> : Set[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.sequences"><code class="name">var <span class="ident">sequences</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -82,6 +158,19 @@ el.replaceWith(d);
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits.dedupe_generated" href="#molcrawl.tasks.evaluation.protein_foldability.splits.dedupe_generated">dedupe_generated</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits.prepare_reference_pool" href="#molcrawl.tasks.evaluation.protein_foldability.splits.prepare_reference_pool">prepare_reference_pool</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool" href="#molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool">ReferencePool</a></code></h4>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.aa_distribution" href="#molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.aa_distribution">aa_distribution</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.reference_set" href="#molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.reference_set">reference_set</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.sequences" href="#molcrawl.tasks.evaluation.protein_foldability.splits.ReferencePool.sequences">sequences</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

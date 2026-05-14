@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.proteingym.gpt2_evaluation API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.tasks.evaluation.deeploc.prepare_csv API documentation</title>
+<meta name="description" content="Reshape the DeepLoc 2.0 multi-label CSV into the evaluator&#39;s schema …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,15 +33,143 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.proteingym.gpt2_evaluation</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.deeploc.prepare_csv</code></h1>
 </header>
 <section id="section-intro">
+<p>Reshape the DeepLoc 2.0 multi-label CSV into the evaluator's schema.</p>
+<p>The upstream CSV ships 10 binary class columns plus metadata:</p>
+<pre><code>ACC, Kingdom, Partition, Membrane,
+Cytoplasm, Nucleus, Extracellular, Cell membrane, Mitochondrion,
+Plastid, Endoplasmic reticulum, Lysosome/Vacuole, Golgi apparatus,
+Peroxisome, Sequence
+</code></pre>
+<p>The :class:<code>DeepLocEvaluator</code> consumes a single-label format with:</p>
+<pre><code>sequence, localisation, cluster_id, kingdom
+</code></pre>
+<p>This module emits the latter, picking the <em>dominant</em> localisation per
+protein. Ties are broken by class-prevalence order (most-frequent class
+in the corpus wins); proteins with no positive label are dropped. The
+upstream <code>Partition</code> column is renamed to <code>cluster_id</code> so
+:func:<code>splits.cluster_split</code> can consume it directly.</p>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.deeploc.prepare_csv.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Reshape DeepLoc 2.0 multi-label CSV into single-label evaluator format&#34;
+    )
+    parser.add_argument(&#34;--source-csv&#34;, required=True)
+    parser.add_argument(&#34;--output-csv&#34;, required=True)
+    args = parser.parse_args(argv)
+
+    reshape_deeploc_csv(
+        source_csv=Path(args.source_csv),
+        output_csv=Path(args.output_csv),
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.deeploc.prepare_csv.reshape_deeploc_csv"><code class="name flex">
+<span>def <span class="ident">reshape_deeploc_csv</span></span>(<span>source_csv: Path, output_csv: Path) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reshape_deeploc_csv(
+    source_csv: Path,
+    output_csv: Path,
+) -&gt; dict:
+    &#34;&#34;&#34;Read the multi-label CSV and emit a single-label version.&#34;&#34;&#34;
+    import pandas as pd
+
+    source_csv = Path(source_csv)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(source_csv)
+    logger.info(&#34;Loaded %d rows from %s (cols=%s)&#34;, len(df), source_csv, list(df.columns))
+
+    missing = [c for c in _CLASSES if c not in df.columns]
+    if missing:
+        raise ValueError(
+            f&#34;DeepLoc source missing class columns: {missing}. &#34;
+            f&#34;Got: {list(df.columns)}&#34;
+        )
+    if &#34;Sequence&#34; not in df.columns:
+        raise ValueError(&#34;DeepLoc source missing &#39;Sequence&#39; column&#34;)
+
+    label_block = df[list(_CLASSES)].fillna(0).astype(float)
+    # Class-prevalence order, used to break argmax ties deterministically.
+    prevalence = label_block.sum().sort_values(ascending=False).index.tolist()
+    rank = {cls: i for i, cls in enumerate(prevalence)}
+
+    def _dominant(row) -&gt; Optional[str]:
+        positives = [cls for cls in _CLASSES if row[cls] &gt;= 1.0]
+        if not positives:
+            return None
+        # Lower rank = more prevalent class; pick that one.
+        positives.sort(key=lambda c: rank[c])
+        return positives[0]
+
+    df[&#34;localisation&#34;] = label_block.apply(_dominant, axis=1)
+
+    n_before = len(df)
+    df = df.dropna(subset=[&#34;localisation&#34;, &#34;Sequence&#34;]).reset_index(drop=True)
+    n_dropped = n_before - len(df)
+    if n_dropped &gt; 0:
+        logger.info(&#34;Dropped %d rows with no positive label or missing sequence&#34;, n_dropped)
+
+    out_cols = {
+        &#34;sequence&#34;: df[&#34;Sequence&#34;].astype(str),
+        &#34;localisation&#34;: df[&#34;localisation&#34;].astype(str),
+    }
+    if &#34;Partition&#34; in df.columns:
+        out_cols[&#34;cluster_id&#34;] = df[&#34;Partition&#34;].astype(int)
+    if &#34;Kingdom&#34; in df.columns:
+        out_cols[&#34;kingdom&#34;] = df[&#34;Kingdom&#34;].astype(str)
+    if &#34;ACC&#34; in df.columns:
+        out_cols[&#34;accession&#34;] = df[&#34;ACC&#34;].astype(str)
+
+    out = (
+        __import__(&#34;pandas&#34;)
+        .DataFrame(out_cols)
+        .reset_index(drop=True)
+    )
+    out.to_csv(output_csv, index=False)
+
+    summary = {
+        &#34;output&#34;: str(output_csv),
+        &#34;n_rows&#34;: int(len(out)),
+        &#34;n_dropped_unlabeled&#34;: int(n_dropped),
+        &#34;class_counts&#34;: out[&#34;localisation&#34;].value_counts().to_dict(),
+    }
+    logger.info(
+        &#34;Wrote %d single-label rows -&gt; %s. Class counts: %s&#34;,
+        summary[&#34;n_rows&#34;],
+        output_csv,
+        summary[&#34;class_counts&#34;],
+    )
+    return summary</code></pre>
+</details>
+<div class="desc"><p>Read the multi-label CSV and emit a single-label version.</p></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -53,7 +181,13 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym" href="index.html">molcrawl.tasks.evaluation.proteingym</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.deeploc" href="index.html">molcrawl.tasks.evaluation.deeploc</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.deeploc.prepare_csv.main" href="#molcrawl.tasks.evaluation.deeploc.prepare_csv.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.deeploc.prepare_csv.reshape_deeploc_csv" href="#molcrawl.tasks.evaluation.deeploc.prepare_csv.reshape_deeploc_csv">reshape_deeploc_csv</a></code></li>
 </ul>
 </li>
 </ul>

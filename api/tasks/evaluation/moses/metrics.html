@@ -37,12 +37,16 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>MOSES-family distribution-learning metrics.</p>
-<p>Core metrics (validity, uniqueness, novelty, internal diversity) are
+<p>Core metrics (validity / uniqueness / novelty / internal_diversity) are
 delegated to :data:<code>molcrawl.tasks.evaluation._base.default_registry</code>.
-This module also exposes thin shims for the optional FCD / SNN / Fragment /
-Scaffold metrics that live in the upstream <code>moses</code> / <code>fcd</code> packages,
-so the evaluator can report them when those dependencies are installed
-without failing in minimal environments.</p>
+This module also adds bootstrap 95 % CIs over the four core metrics,
+classifies invalid SMILES into rough failure modes, and reports
+generation-vs-reference distribution shape diagnostics (length stats,
+heavy-atom KL, element coverage).</p>
+<p>Optional FCD / SNN / Fragment / Scaffold metrics from the upstream
+<code>moses</code> / <code>fcd</code> packages are still surfaced via
+:func:<code><a title="molcrawl.tasks.evaluation.moses.metrics.optional_extended_metrics" href="#molcrawl.tasks.evaluation.moses.metrics.optional_extended_metrics">optional_extended_metrics()</a></code> when those dependencies are
+installed.</p>
 </section>
 <section>
 </section>
@@ -51,6 +55,162 @@ without failing in minimal environments.</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.moses.metrics.bootstrap_distribution_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_distribution_ci</span></span>(<span>generated: Sequence[str],<br>reference: Sequence[str],<br>n_boot: int = 100,<br>seed: int = 0,<br>alpha: float = 0.05,<br>skip_internal_diversity: bool = True,<br>generated_canonical: Optional[Sequence[Optional[str]]] = None,<br>reference_canonical_set: Optional[set] = None) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_distribution_ci(
+    generated: Sequence[str],
+    reference: Sequence[str],
+    n_boot: int = 100,
+    seed: int = 0,
+    alpha: float = 0.05,
+    skip_internal_diversity: bool = True,
+    generated_canonical: Optional[Sequence[Optional[str]]] = None,
+    reference_canonical_set: Optional[set] = None,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Return ``(lo, hi)`` percentile CIs on the core metrics.
+
+    ``internal_diversity`` is skipped by default because it is O(N²) on
+    Morgan fingerprints — running it 100× over 30k molecules dominates
+    the wall-clock. Set ``skip_internal_diversity=False`` to include it.
+
+    Performance critical: novelty against MOSES train (≈ 1.6 M SMILES)
+    must NOT re-canonicalise the reference per iteration. Callers should
+    pass ``generated_canonical`` (one canonical-or-None per generated)
+    and ``reference_canonical_set`` (canonical SMILES set) so the loop
+    body becomes O(N) per iteration instead of O(N + |reference|) RDKit
+    calls. When either is omitted, the function falls back to a one-off
+    canonicalisation up front (cheaper than per-iteration but still
+    requires RDKit).
+    &#34;&#34;&#34;
+    n = len(generated)
+    if n &lt; 5 or n_boot &lt;= 0:
+        return {}
+
+    if generated_canonical is None or reference_canonical_set is None:
+        try:
+            from rdkit import Chem, RDLogger
+
+            RDLogger.DisableLog(&#34;rdApp.*&#34;)  # type: ignore[attr-defined]
+        except ImportError:
+            return {}
+
+        def _canon(s: str) -&gt; Optional[str]:
+            if not isinstance(s, str) or not s:
+                return None
+            mol = Chem.MolFromSmiles(s)
+            if mol is None:
+                return None
+            try:
+                return Chem.MolToSmiles(mol, canonical=True)
+            except Exception:  # noqa: BLE001
+                return None
+
+        if generated_canonical is None:
+            generated_canonical = [_canon(s) for s in generated]
+        if reference_canonical_set is None:
+            reference_canonical_set = {c for c in (_canon(s) for s in reference) if c is not None}
+
+    canon_arr = list(generated_canonical)
+    ref_set = reference_canonical_set
+
+    # Note: uniqueness is intentionally NOT bootstrapped. Bootstrap uses
+    # sampling with replacement, which inflates duplicate counts in the
+    # resample even when every molecule in the original pool is unique
+    # (every with-replacement resample of size n has ≈ 0.37 n duplicates
+    # by construction). The point estimate remains in the main metrics
+    # block; the CI here covers validity and novelty only, both of which
+    # are per-molecule properties that resample correctly.
+    rng = np.random.default_rng(seed)
+    samples: Dict[str, List[float]] = {
+        &#34;validity&#34;: [],
+        &#34;novelty&#34;: [],
+    }
+    if not skip_internal_diversity:
+        # Internal diversity still needs RDKit per resample; left to the
+        # registry path so callers can opt-in.
+        samples[&#34;internal_diversity&#34;] = []
+
+    gen_list = list(generated)
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        sub_canon = [canon_arr[i] for i in idx]
+        valid = [c for c in sub_canon if c is not None]
+        samples[&#34;validity&#34;].append(len(valid) / n)
+        if valid:
+            samples[&#34;novelty&#34;].append(
+                sum(1 for c in valid if c not in ref_set) / len(valid)
+            )
+        else:
+            samples[&#34;novelty&#34;].append(0.0)
+        if not skip_internal_diversity:
+            sub = [gen_list[i] for i in idx]
+            samples[&#34;internal_diversity&#34;].append(
+                float(default_registry.compute(&#34;internal_diversity&#34;, sub))
+            )
+
+    lo_p = 100.0 * alpha / 2.0
+    hi_p = 100.0 * (1.0 - alpha / 2.0)
+    return {
+        k: (float(np.percentile(v, lo_p)), float(np.percentile(v, hi_p)))
+        for k, v in samples.items()
+        if v
+    }</code></pre>
+</details>
+<div class="desc"><p>Return <code>(lo, hi)</code> percentile CIs on the core metrics.</p>
+<p><code>internal_diversity</code> is skipped by default because it is O(N²) on
+Morgan fingerprints — running it 100× over 30k molecules dominates
+the wall-clock. Set <code>skip_internal_diversity=False</code> to include it.</p>
+<p>Performance critical: novelty against MOSES train (≈ 1.6 M SMILES)
+must NOT re-canonicalise the reference per iteration. Callers should
+pass <code>generated_canonical</code> (one canonical-or-None per generated)
+and <code>reference_canonical_set</code> (canonical SMILES set) so the loop
+body becomes O(N) per iteration instead of O(N + |reference|) RDKit
+calls. When either is omitted, the function falls back to a one-off
+canonicalisation up front (cheaper than per-iteration but still
+requires RDKit).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.metrics.classify_invalid"><code class="name flex">
+<span>def <span class="ident">classify_invalid</span></span>(<span>smiles: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def classify_invalid(smiles: str) -&gt; str:
+    &#34;&#34;&#34;Return a rough category for why a generated SMILES is invalid.
+
+    The categories are heuristic rather than chemically rigorous; they
+    are designed to surface the dominant failure modes to a reviewer
+    without invoking RDKit twice.
+    &#34;&#34;&#34;
+    if not isinstance(smiles, str) or not smiles.strip():
+        return &#34;empty&#34;
+    s = smiles.strip()
+    if &#34;(&#34; in s and s.count(&#34;(&#34;) != s.count(&#34;)&#34;):
+        return &#34;paren_mismatch&#34;
+    if &#34;[&#34; in s and s.count(&#34;[&#34;) != s.count(&#34;]&#34;):
+        return &#34;bracket_mismatch&#34;
+    if &#34;.&#34; in s:
+        return &#34;fragmented&#34;
+    rings = _RING_RE.findall(s)
+    digit_counts = Counter(rings)
+    odd = [d for d, c in digit_counts.items() if c % 2 == 1]
+    if odd:
+        return &#34;ring_unclosed&#34;
+    return &#34;rdkit_parse_failure&#34;</code></pre>
+</details>
+<div class="desc"><p>Return a rough category for why a generated SMILES is invalid.</p>
+<p>The categories are heuristic rather than chemically rigorous; they
+are designed to surface the dominant failure modes to a reviewer
+without invoking RDKit twice.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.moses.metrics.distribution_metrics"><code class="name flex">
 <span>def <span class="ident">distribution_metrics</span></span>(<span>generated: Sequence[str], reference: Sequence[str]) ‑> Dict[str, float]</span>
 </code></dt>
@@ -63,16 +223,157 @@ without failing in minimal environments.</p>
     generated: Sequence[str],
     reference: Sequence[str],
 ) -&gt; Dict[str, float]:
-    &#34;&#34;&#34;Return the core MOSES metrics, skipping any that require RDKit if absent.&#34;&#34;&#34;
-    metrics: Dict[str, float] = {
-        &#34;validity&#34;: default_registry.compute(&#34;validity&#34;, generated),
-        &#34;uniqueness&#34;: default_registry.compute(&#34;uniqueness&#34;, generated),
-        &#34;novelty&#34;: default_registry.compute(&#34;novelty&#34;, generated, reference),
-        &#34;internal_diversity&#34;: default_registry.compute(&#34;internal_diversity&#34;, generated),
-    }
-    return metrics</code></pre>
+    &#34;&#34;&#34;Return the core MOSES metrics.&#34;&#34;&#34;
+    return {
+        &#34;validity&#34;: float(default_registry.compute(&#34;validity&#34;, generated)),
+        &#34;uniqueness&#34;: float(default_registry.compute(&#34;uniqueness&#34;, generated)),
+        &#34;novelty&#34;: float(default_registry.compute(&#34;novelty&#34;, generated, reference)),
+        &#34;internal_diversity&#34;: float(
+            default_registry.compute(&#34;internal_diversity&#34;, generated)
+        ),
+    }</code></pre>
 </details>
-<div class="desc"><p>Return the core MOSES metrics, skipping any that require RDKit if absent.</p></div>
+<div class="desc"><p>Return the core MOSES metrics.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.metrics.element_distribution"><code class="name flex">
+<span>def <span class="ident">element_distribution</span></span>(<span>smiles_list: Sequence[str]) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def element_distribution(smiles_list: Sequence[str]) -&gt; Dict[str, float]:
+    &#34;&#34;&#34;Return the relative frequency of common elements across all molecules.
+
+    Counts plain element letters in upper-case (C, N, O, S, F, Cl, Br, I, P)
+    on the canonical-SMILES string. Aromatic lower-case `c`, `n`, `o`, `s`
+    are folded into their upper-case counterparts. Bracketed atoms
+    (e.g. ``[Cu]``) are also counted.
+    &#34;&#34;&#34;
+    counts: Counter = Counter()
+    total = 0
+    for s in smiles_list:
+        if not isinstance(s, str):
+            continue
+        # Bracketed atoms first
+        for m in _BRACKET_RE.finditer(s):
+            inside = m.group(1)
+            sym = &#34;&#34;.join(ch for ch in inside if ch.isalpha())
+            if sym:
+                counts[sym.capitalize()] += 1
+                total += 1
+        # Plain non-bracketed atoms
+        clean = _BRACKET_RE.sub(&#34;&#34;, s)
+        i = 0
+        while i &lt; len(clean):
+            ch = clean[i]
+            if ch in &#34;CNOSPFI&#34;:
+                counts[ch] += 1
+                total += 1
+            elif ch in &#34;cnops&#34;:
+                counts[ch.upper()] += 1
+                total += 1
+            elif ch == &#34;B&#34; and i + 1 &lt; len(clean) and clean[i + 1] == &#34;r&#34;:
+                counts[&#34;Br&#34;] += 1
+                total += 1
+                i += 1
+            elif ch == &#34;C&#34; and i + 1 &lt; len(clean) and clean[i + 1] == &#34;l&#34;:
+                counts[&#34;Cl&#34;] += 1
+                total += 1
+                i += 1
+            i += 1
+
+    if total == 0:
+        return {}
+    return {k: float(v / total) for k, v in sorted(counts.items())}</code></pre>
+</details>
+<div class="desc"><p>Return the relative frequency of common elements across all molecules.</p>
+<p>Counts plain element letters in upper-case (C, N, O, S, F, Cl, Br, I, P)
+on the canonical-SMILES string. Aromatic lower-case <code>c</code>, <code>n</code>, <code>o</code>, <code>s</code>
+are folded into their upper-case counterparts. Bracketed atoms
+(e.g. <code>[Cu]</code>) are also counted.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.metrics.element_distribution_kl"><code class="name flex">
+<span>def <span class="ident">element_distribution_kl</span></span>(<span>gen_dist: Dict[str, float], ref_dist: Dict[str, float]) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def element_distribution_kl(
+    gen_dist: Dict[str, float], ref_dist: Dict[str, float]
+) -&gt; float:
+    &#34;&#34;&#34;Return KL(generated || reference) over the element distribution.&#34;&#34;&#34;
+    if not gen_dist or not ref_dist:
+        return float(&#34;nan&#34;)
+    keys = set(gen_dist) | set(ref_dist)
+    eps = 1e-9
+    kl = 0.0
+    for k in keys:
+        p = gen_dist.get(k, 0.0) + eps
+        q = ref_dist.get(k, 0.0) + eps
+        kl += p * np.log(p / q)
+    return float(kl)</code></pre>
+</details>
+<div class="desc"><p>Return KL(generated || reference) over the element distribution.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.metrics.failure_mode_summary"><code class="name flex">
+<span>def <span class="ident">failure_mode_summary</span></span>(<span>generated: Sequence[str], canonicalised: Sequence[Optional[str]]) ‑> Dict[str, int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def failure_mode_summary(
+    generated: Sequence[str], canonicalised: Sequence[Optional[str]]
+) -&gt; Dict[str, int]:
+    &#34;&#34;&#34;Categorise each invalid generated SMILES.
+
+    ``canonicalised[i]`` is the RDKit canonical SMILES (str) when valid,
+    ``None`` otherwise — produced upstream once per molecule to avoid
+    recomputing here.
+    &#34;&#34;&#34;
+    counts: Counter = Counter()
+    for raw, canon in zip(generated, canonicalised):
+        if canon is not None:
+            continue
+        counts[classify_invalid(str(raw))] += 1
+    return dict(counts)</code></pre>
+</details>
+<div class="desc"><p>Categorise each invalid generated SMILES.</p>
+<p><code>canonicalised[i]</code> is the RDKit canonical SMILES (str) when valid,
+<code>None</code> otherwise — produced upstream once per molecule to avoid
+recomputing here.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.metrics.length_distribution_stats"><code class="name flex">
+<span>def <span class="ident">length_distribution_stats</span></span>(<span>smiles_list: Sequence[str]) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def length_distribution_stats(
+    smiles_list: Sequence[str],
+) -&gt; Dict[str, float]:
+    if not smiles_list:
+        return {&#34;n&#34;: 0}
+    lens = np.array([len(s) for s in smiles_list], dtype=float)
+    return {
+        &#34;n&#34;: int(lens.size),
+        &#34;len_mean&#34;: float(lens.mean()),
+        &#34;len_std&#34;: float(lens.std()),
+        &#34;len_min&#34;: float(lens.min()),
+        &#34;len_p25&#34;: float(np.percentile(lens, 25)),
+        &#34;len_median&#34;: float(np.median(lens)),
+        &#34;len_p75&#34;: float(np.percentile(lens, 75)),
+        &#34;len_max&#34;: float(lens.max()),
+    }</code></pre>
+</details>
+<div class="desc"></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.moses.metrics.optional_extended_metrics"><code class="name flex">
 <span>def <span class="ident">optional_extended_metrics</span></span>(<span>generated: Sequence[str], reference: Sequence[str]) ‑> Dict[str, float] | None</span>
@@ -88,27 +389,22 @@ without failing in minimal environments.</p>
 ) -&gt; Optional[Dict[str, float]]:
     &#34;&#34;&#34;Best-effort wrapper over the reference ``moses`` package.
 
-    Returns ``None`` when the upstream dependency is unavailable, so the
-    evaluator can continue with just the core metrics.
+    Returns ``None`` when the upstream dependency is unavailable.
     &#34;&#34;&#34;
     try:
         from moses.metrics import get_all_metrics  # type: ignore
     except ImportError:
-        logger.info(&#34;Optional dependency &#39;moses&#39; not available; skipping FCD / SNN / Fragment / Scaffold&#34;)
+        logger.info(
+            &#34;Optional dependency &#39;moses&#39; not available; skipping FCD / SNN / Fragment / Scaffold&#34;
+        )
         return None
-
     try:
         extended = get_all_metrics(
-            gen=list(generated),
-            train=list(reference),
-            n_jobs=1,
-            device=&#34;cpu&#34;,
+            gen=list(generated), train=list(reference), n_jobs=1, device=&#34;cpu&#34;
         )
-    except Exception:  # pragma: no cover - upstream is heavy, best-effort only
+    except Exception:  # pragma: no cover - upstream is heavy, best-effort
         logger.exception(&#34;MOSES reference metric computation failed&#34;)
         return None
-
-    # Flatten numeric entries only.
     out: Dict[str, float] = {}
     for key, value in extended.items():
         try:
@@ -118,8 +414,7 @@ without failing in minimal environments.</p>
     return out</code></pre>
 </details>
 <div class="desc"><p>Best-effort wrapper over the reference <code>moses</code> package.</p>
-<p>Returns <code>None</code> when the upstream dependency is unavailable, so the
-evaluator can continue with just the core metrics.</p></div>
+<p>Returns <code>None</code> when the upstream dependency is unavailable.</p></div>
 </dd>
 </dl>
 </section>
@@ -138,7 +433,13 @@ evaluator can continue with just the core metrics.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.moses.metrics.bootstrap_distribution_ci" href="#molcrawl.tasks.evaluation.moses.metrics.bootstrap_distribution_ci">bootstrap_distribution_ci</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.metrics.classify_invalid" href="#molcrawl.tasks.evaluation.moses.metrics.classify_invalid">classify_invalid</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.metrics.distribution_metrics" href="#molcrawl.tasks.evaluation.moses.metrics.distribution_metrics">distribution_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.metrics.element_distribution" href="#molcrawl.tasks.evaluation.moses.metrics.element_distribution">element_distribution</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.metrics.element_distribution_kl" href="#molcrawl.tasks.evaluation.moses.metrics.element_distribution_kl">element_distribution_kl</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.metrics.failure_mode_summary" href="#molcrawl.tasks.evaluation.moses.metrics.failure_mode_summary">failure_mode_summary</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moses.metrics.length_distribution_stats" href="#molcrawl.tasks.evaluation.moses.metrics.length_distribution_stats">length_distribution_stats</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.metrics.optional_extended_metrics" href="#molcrawl.tasks.evaluation.moses.metrics.optional_extended_metrics">optional_extended_metrics</a></code></li>
 </ul>
 </li>

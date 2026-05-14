@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.molecule_nat_lang.gpt2_visualization API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs API documentation</title>
+<meta name="description" content="Build the (molecule, caption) pair CSV the molecule_nat_lang evaluator consumes …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,15 +33,154 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.molecule_nat_lang.gpt2_visualization</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs</code></h1>
 </header>
 <section id="section-intro">
+<p>Build the (molecule, caption) pair CSV the molecule_nat_lang evaluator consumes.</p>
+<p>Source: Mol-Instructions <code>molecular_description_generation</code> HF dataset, which
+ships under
+<code>$LEARNING_SOURCE_DIR/molecule_nat_lang/mol_instructions/zjunlp_Mol-Instructions/</code>
+after the training prep step. Schema:</p>
+<ul>
+<li><code>input</code>
+— SELFIES (or SMILES) string</li>
+<li><code>output</code>
+— natural-language caption</li>
+<li><code>instruction</code>
+— task prompt (constant for this subset)</li>
+<li><code>metadata</code>
+— JSON-serialised stats (split, task)</li>
+</ul>
+<p>For evaluation we want a CSV with <code>smiles</code> + <code>caption</code> columns.
+The molecule_nat_lang model was trained on the same encoding, so the
+<code>input</code> field flows through as-is (no SELFIES → SMILES conversion).</p>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Build the molecule_nat_lang pair CSV from the Mol-Instructions HF dataset&#34;
+    )
+    parser.add_argument(
+        &#34;--source-dir&#34;,
+        required=True,
+        help=&#34;HF dataset directory, typically &#34;
+        &#34;$LEARNING_SOURCE_DIR/molecule_nat_lang/mol_instructions/zjunlp_Mol-Instructions/molecular_description_generation&#34;,
+    )
+    parser.add_argument(&#34;--output-csv&#34;, required=True)
+    parser.add_argument(&#34;--split&#34;, default=&#34;test&#34;)
+    parser.add_argument(&#34;--max-pairs&#34;, type=int, default=None)
+    parser.add_argument(&#34;--seed&#34;, type=int, default=42)
+    args = parser.parse_args(argv)
+
+    prepare_pairs_csv(
+        source_dir=Path(args.source_dir),
+        output_csv=Path(args.output_csv),
+        split=args.split,
+        max_pairs=args.max_pairs,
+        seed=args.seed,
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs.prepare_pairs_csv"><code class="name flex">
+<span>def <span class="ident">prepare_pairs_csv</span></span>(<span>source_dir: Path,<br>output_csv: Path,<br>split: str = 'test',<br>max_pairs: Optional[int] = None,<br>seed: int = 42) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_pairs_csv(
+    source_dir: Path,
+    output_csv: Path,
+    split: str = &#34;test&#34;,
+    max_pairs: Optional[int] = None,
+    seed: int = 42,
+) -&gt; dict:
+    &#34;&#34;&#34;Read the Mol-Instructions HF dataset and emit a flat CSV.
+
+    ``split`` is read from the ``metadata.split`` field (Mol-Instructions
+    folds train/valid/test inside one HF Dataset shard rather than three
+    separate shards). When the field is missing we fall back to all rows.
+    &#34;&#34;&#34;
+    try:
+        from datasets import load_from_disk
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            &#34;datasets is required; install via `pip install datasets`.&#34;
+        ) from exc
+
+    source_dir = Path(source_dir)
+    if not source_dir.exists():
+        raise FileNotFoundError(source_dir)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    ds = load_from_disk(str(source_dir))
+    logger.info(&#34;Loaded %d rows from %s&#34;, len(ds), source_dir)
+
+    df = ds.to_pandas()
+    if &#34;metadata&#34; in df.columns and split:
+        wanted = split.strip().lower()
+
+        def _split_of(meta: object) -&gt; str:
+            if isinstance(meta, dict):
+                return str(meta.get(&#34;split&#34;, &#34;&#34;)).lower()
+            try:
+                return str(json.loads(str(meta).replace(&#34;&#39;&#34;, &#39;&#34;&#39;)).get(&#34;split&#34;, &#34;&#34;)).lower()
+            except Exception:
+                return &#34;&#34;
+
+        df[&#34;_split&#34;] = df[&#34;metadata&#34;].map(_split_of)
+        kept = df[df[&#34;_split&#34;] == wanted]
+        if len(kept) == 0:
+            logger.warning(
+                &#34;No rows for split=%r in metadata; falling back to all rows&#34;, wanted
+            )
+        else:
+            df = kept
+        df = df.drop(columns=[&#34;_split&#34;], errors=&#34;ignore&#34;)
+
+    df = df.rename(columns={&#34;input&#34;: &#34;smiles&#34;, &#34;output&#34;: &#34;caption&#34;})[
+        [&#34;smiles&#34;, &#34;caption&#34;]
+    ].dropna().reset_index(drop=True)
+    logger.info(&#34;Filtered to %d rows after split + dropna&#34;, len(df))
+
+    if max_pairs is not None and len(df) &gt; max_pairs:
+        df = df.sample(n=int(max_pairs), random_state=seed).reset_index(drop=True)
+        logger.info(&#34;Random subsample to %d pairs (seed=%d)&#34;, len(df), seed)
+
+    df.to_csv(output_csv, index=False)
+    summary = {
+        &#34;output&#34;: str(output_csv),
+        &#34;n_pairs&#34;: int(len(df)),
+        &#34;split&#34;: split,
+        &#34;seed&#34;: seed,
+    }
+    logger.info(&#34;Wrote %d pairs -&gt; %s&#34;, summary[&#34;n_pairs&#34;], output_csv)
+    return summary</code></pre>
+</details>
+<div class="desc"><p>Read the Mol-Instructions HF dataset and emit a flat CSV.</p>
+<p><code>split</code> is read from the <code>metadata.split</code> field (Mol-Instructions
+folds train/valid/test inside one HF Dataset shard rather than three
+separate shards). When the field is missing we fall back to all rows.</p></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -54,6 +193,12 @@ el.replaceWith(d);
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang" href="index.html">molcrawl.tasks.evaluation.molecule_nat_lang</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs.main" href="#molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs.prepare_pairs_csv" href="#molcrawl.tasks.evaluation.molecule_nat_lang.prepare_pairs.prepare_pairs_csv">prepare_pairs_csv</a></code></li>
 </ul>
 </li>
 </ul>

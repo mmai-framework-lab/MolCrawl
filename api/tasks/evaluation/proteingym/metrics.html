@@ -37,10 +37,13 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Metric helpers for ProteinGym.</p>
-<p>The canonical ProteinGym benchmark reports Spearman rank correlation
-between the model score and the experimental DMS score; we additionally
-expose Pearson, AUROC (binary label, when available) and AUPRC so
-downstream dashboards can slice by metric family.</p>
+<p>Primary: Spearman rank correlation between the model score and the
+experimental DMS score. Also exposes Pearson, bootstrap 95 % CIs, and
+(optionally) AUROC / AUPRC when a binary <code>DMS_bin_score</code> column is
+present. <code><a title="molcrawl.tasks.evaluation.proteingym.metrics.score_distribution_stats" href="#molcrawl.tasks.evaluation.proteingym.metrics.score_distribution_stats">score_distribution_stats()</a></code> produces per-class LL / score
+summaries keyed by the binary label so readers can see whether the
+ref-vs-mutant likelihood gap separates the functional / non-functional
+halves independent of any threshold choice.</p>
 </section>
 <section>
 </section>
@@ -49,6 +52,62 @@ downstream dashboards can slice by metric family.</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.proteingym.metrics.bootstrap_correlation_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_correlation_ci</span></span>(<span>y_true: np.ndarray,<br>y_score: np.ndarray,<br>n_boot: int = 200,<br>seed: int = 0,<br>alpha: float = 0.05) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_correlation_ci(
+    y_true: np.ndarray,
+    y_score: np.ndarray,
+    n_boot: int = 200,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Return percentile-based bootstrap ``(lo, hi)`` intervals for
+    Spearman and Pearson over the aligned arrays.&#34;&#34;&#34;
+    y_true = np.asarray(y_true, dtype=float)
+    y_score = np.asarray(y_score, dtype=float)
+    n = len(y_true)
+    if n &lt; 5 or n_boot &lt;= 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    spearmans: List[float] = []
+    pearsons: List[float] = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        yt = y_true[idx]
+        ys = y_score[idx]
+        if np.unique(yt).size &lt; 2 or np.unique(ys).size &lt; 2:
+            continue
+        spearmans.append(
+            float(default_registry.compute(&#34;spearman&#34;, yt, ys))
+        )
+        pearsons.append(
+            float(default_registry.compute(&#34;pearson&#34;, yt, ys))
+        )
+    if not spearmans:
+        return {}
+    lo_p = 100.0 * alpha / 2.0
+    hi_p = 100.0 * (1.0 - alpha / 2.0)
+    return {
+        &#34;spearman&#34;: (
+            float(np.percentile(spearmans, lo_p)),
+            float(np.percentile(spearmans, hi_p)),
+        ),
+        &#34;pearson&#34;: (
+            float(np.percentile(pearsons, lo_p)),
+            float(np.percentile(pearsons, hi_p)),
+        ),
+    }</code></pre>
+</details>
+<div class="desc"><p>Return percentile-based bootstrap <code>(lo, hi)</code> intervals for
+Spearman and Pearson over the aligned arrays.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.proteingym.metrics.correlation_metrics"><code class="name flex">
 <span>def <span class="ident">correlation_metrics</span></span>(<span>y_true: np.ndarray, y_score: np.ndarray) ‑> Dict[str, float]</span>
 </code></dt>
@@ -60,11 +119,10 @@ downstream dashboards can slice by metric family.</p>
 <pre><code class="python">def correlation_metrics(
     y_true: np.ndarray, y_score: np.ndarray
 ) -&gt; Dict[str, float]:
-    out = {
-        &#34;spearman&#34;: default_registry.compute(&#34;spearman&#34;, y_true, y_score),
-        &#34;pearson&#34;: default_registry.compute(&#34;pearson&#34;, y_true, y_score),
-    }
-    return out</code></pre>
+    return {
+        &#34;spearman&#34;: float(default_registry.compute(&#34;spearman&#34;, y_true, y_score)),
+        &#34;pearson&#34;: float(default_registry.compute(&#34;pearson&#34;, y_true, y_score)),
+    }</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -82,11 +140,65 @@ downstream dashboards can slice by metric family.</p>
     if len(np.unique(y_true_binary)) &lt; 2:
         return {}
     return {
-        &#34;auroc&#34;: default_registry.compute(&#34;auroc&#34;, y_true_binary, y_score),
-        &#34;auprc&#34;: default_registry.compute(&#34;auprc&#34;, y_true_binary, y_score),
+        &#34;auroc&#34;: float(default_registry.compute(&#34;auroc&#34;, y_true_binary, y_score)),
+        &#34;auprc&#34;: float(default_registry.compute(&#34;auprc&#34;, y_true_binary, y_score)),
     }</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.proteingym.metrics.score_distribution_stats"><code class="name flex">
+<span>def <span class="ident">score_distribution_stats</span></span>(<span>dms: np.ndarray,<br>ref_ll: np.ndarray,<br>mut_ll: np.ndarray,<br>scores: np.ndarray,<br>bin_labels: Optional[np.ndarray] = None) ‑> Dict[str, Dict[str, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def score_distribution_stats(
+    dms: np.ndarray,
+    ref_ll: np.ndarray,
+    mut_ll: np.ndarray,
+    scores: np.ndarray,
+    bin_labels: Optional[np.ndarray] = None,
+) -&gt; Dict[str, Dict[str, float]]:
+    &#34;&#34;&#34;Summarise the likelihood signal, per DMS-bin when available.
+
+    When ``bin_labels`` is ``None`` returns a single ``&#34;all&#34;`` summary;
+    when it carries binary class labels (0 / 1) returns separate blocks
+    per class so the model&#39;s LL gap vs fitness is visible at the
+    class level.
+    &#34;&#34;&#34;
+    def _block(mask: np.ndarray) -&gt; Dict[str, float]:
+        n = int(mask.sum())
+        if n == 0:
+            return {&#34;n&#34;: 0}
+        return {
+            &#34;n&#34;: n,
+            &#34;dms_mean&#34;: float(np.mean(dms[mask])),
+            &#34;dms_std&#34;: float(np.std(dms[mask])),
+            &#34;ll_ref_mean&#34;: float(np.mean(ref_ll[mask])),
+            &#34;ll_mut_mean&#34;: float(np.mean(mut_ll[mask])),
+            &#34;score_mean&#34;: float(np.mean(scores[mask])),
+            &#34;score_std&#34;: float(np.std(scores[mask])),
+        }
+
+    if bin_labels is None:
+        return {&#34;all&#34;: _block(np.ones(len(dms), dtype=bool))}
+
+    bin_labels = np.asarray(bin_labels)
+    out: Dict[str, Dict[str, float]] = {}
+    unique = sorted({int(x) for x in np.unique(bin_labels) if not np.isnan(x)})
+    for label in unique:
+        mask = bin_labels == label
+        name = &#34;non_functional&#34; if label == 0 else &#34;functional&#34; if label == 1 else f&#34;bin_{label}&#34;
+        out[name] = _block(mask)
+    return out</code></pre>
+</details>
+<div class="desc"><p>Summarise the likelihood signal, per DMS-bin when available.</p>
+<p>When <code>bin_labels</code> is <code>None</code> returns a single <code>"all"</code> summary;
+when it carries binary class labels (0 / 1) returns separate blocks
+per class so the model's LL gap vs fitness is visible at the
+class level.</p></div>
 </dd>
 </dl>
 </section>
@@ -105,8 +217,10 @@ downstream dashboards can slice by metric family.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.metrics.bootstrap_correlation_ci" href="#molcrawl.tasks.evaluation.proteingym.metrics.bootstrap_correlation_ci">bootstrap_correlation_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.metrics.correlation_metrics" href="#molcrawl.tasks.evaluation.proteingym.metrics.correlation_metrics">correlation_metrics</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.proteingym.metrics.optional_binary_metrics" href="#molcrawl.tasks.evaluation.proteingym.metrics.optional_binary_metrics">optional_binary_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.proteingym.metrics.score_distribution_stats" href="#molcrawl.tasks.evaluation.proteingym.metrics.score_distribution_stats">score_distribution_stats</a></code></li>
 </ul>
 </li>
 </ul>

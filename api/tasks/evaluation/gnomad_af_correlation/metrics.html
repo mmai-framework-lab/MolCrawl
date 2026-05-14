@@ -45,6 +45,70 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.bootstrap_correlation_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_correlation_ci</span></span>(<span>af: np.ndarray,<br>scores: np.ndarray,<br>n_boot: int = 200,<br>seed: int = 0,<br>alpha: float = 0.05) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_correlation_ci(
+    af: np.ndarray,
+    scores: np.ndarray,
+    n_boot: int = 200,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Return ``(lo, hi)`` bootstrap CIs for spearman and pearson.
+
+    Draws ``n_boot`` resamples (with replacement) of the aligned
+    ``(af, scores)`` pairs, recomputes each correlation on the resample,
+    and reports the ``[alpha/2, 1 - alpha/2]`` percentile interval.
+    &#34;&#34;&#34;
+    af_arr = np.asarray(af, dtype=float)
+    score_arr = np.asarray(scores, dtype=float)
+    n = len(af_arr)
+    if n &lt; 5 or n_boot &lt;= 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    spearmans: List[float] = []
+    pearsons: List[float] = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        af_b = af_arr[idx]
+        score_b = score_arr[idx]
+        if np.unique(af_b).size &lt; 2 or np.unique(score_b).size &lt; 2:
+            continue
+        spearmans.append(
+            float(default_registry.compute(&#34;spearman&#34;, af_b, score_b))
+        )
+        pearsons.append(
+            float(default_registry.compute(&#34;pearson&#34;, af_b, score_b))
+        )
+
+    if not spearmans:
+        return {}
+
+    lo_p = 100.0 * alpha / 2.0
+    hi_p = 100.0 * (1.0 - alpha / 2.0)
+    return {
+        &#34;spearman&#34;: (
+            float(np.percentile(spearmans, lo_p)),
+            float(np.percentile(spearmans, hi_p)),
+        ),
+        &#34;pearson&#34;: (
+            float(np.percentile(pearsons, lo_p)),
+            float(np.percentile(pearsons, hi_p)),
+        ),
+    }</code></pre>
+</details>
+<div class="desc"><p>Return <code>(lo, hi)</code> bootstrap CIs for spearman and pearson.</p>
+<p>Draws <code>n_boot</code> resamples (with replacement) of the aligned
+<code>(af, scores)</code> pairs, recomputes each correlation on the resample,
+and reports the <code>[alpha/2, 1 - alpha/2]</code> percentile interval.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.correlation_metrics"><code class="name flex">
 <span>def <span class="ident">correlation_metrics</span></span>(<span>af: np.ndarray, scores: np.ndarray) ‑> Dict[str, float]</span>
 </code></dt>
@@ -54,12 +118,102 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def correlation_metrics(af: np.ndarray, scores: np.ndarray) -&gt; Dict[str, float]:
+    &#34;&#34;&#34;Plain Spearman / Pearson over the whole sample.&#34;&#34;&#34;
     return {
-        &#34;spearman&#34;: default_registry.compute(&#34;spearman&#34;, af, scores),
-        &#34;pearson&#34;: default_registry.compute(&#34;pearson&#34;, af, scores),
+        &#34;spearman&#34;: float(default_registry.compute(&#34;spearman&#34;, af, scores)),
+        &#34;pearson&#34;: float(default_registry.compute(&#34;pearson&#34;, af, scores)),
     }</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Plain Spearman / Pearson over the whole sample.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.per_bin_correlation"><code class="name flex">
+<span>def <span class="ident">per_bin_correlation</span></span>(<span>af: np.ndarray,<br>scores: np.ndarray,<br>bins: Sequence[Tuple[float, float]] = ((0.0, 1e-05), (1e-05, 0.0001), (0.0001, 0.001), (0.001, 0.01), (0.01, 0.1), (0.1, 1.000000000001))) ‑> Dict[str, Dict[str, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def per_bin_correlation(
+    af: np.ndarray,
+    scores: np.ndarray,
+    bins: Sequence[Tuple[float, float]] = DEFAULT_AF_BINS,
+) -&gt; Dict[str, Dict[str, float]]:
+    &#34;&#34;&#34;Return per-AF-bin Spearman / Pearson + counts.
+
+    Helps localize whether the model&#39;s signal sits on rare vs common
+    variants, which is invisible in the pooled correlation alone.
+    &#34;&#34;&#34;
+    af_arr = np.asarray(af, dtype=float)
+    score_arr = np.asarray(scores, dtype=float)
+    bin_ids = assign_af_bins(af_arr, bins)
+
+    out: Dict[str, Dict[str, float]] = {}
+    for i, (lo, hi) in enumerate(bins):
+        mask = bin_ids == i
+        n = int(mask.sum())
+        label = bin_label(lo, hi)
+        if n &lt; 5 or np.unique(score_arr[mask]).size &lt; 2:
+            out[label] = {
+                &#34;n&#34;: n,
+                &#34;spearman&#34;: float(&#34;nan&#34;),
+                &#34;pearson&#34;: float(&#34;nan&#34;),
+            }
+            continue
+        out[label] = {
+            &#34;n&#34;: n,
+            &#34;spearman&#34;: float(
+                default_registry.compute(&#34;spearman&#34;, af_arr[mask], score_arr[mask])
+            ),
+            &#34;pearson&#34;: float(
+                default_registry.compute(&#34;pearson&#34;, af_arr[mask], score_arr[mask])
+            ),
+        }
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return per-AF-bin Spearman / Pearson + counts.</p>
+<p>Helps localize whether the model's signal sits on rare vs common
+variants, which is invisible in the pooled correlation alone.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.score_distribution_stats"><code class="name flex">
+<span>def <span class="ident">score_distribution_stats</span></span>(<span>af: np.ndarray,<br>ref_ll: np.ndarray,<br>var_ll: np.ndarray,<br>scores: np.ndarray,<br>bins: Sequence[Tuple[float, float]] = ((0.0, 1e-05), (1e-05, 0.0001), (0.0001, 0.001), (0.001, 0.01), (0.01, 0.1), (0.1, 1.000000000001))) ‑> Dict[str, Dict[str, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def score_distribution_stats(
+    af: np.ndarray,
+    ref_ll: np.ndarray,
+    var_ll: np.ndarray,
+    scores: np.ndarray,
+    bins: Sequence[Tuple[float, float]] = DEFAULT_AF_BINS,
+) -&gt; Dict[str, Dict[str, float]]:
+    &#34;&#34;&#34;Per-AF-bin summary statistics of the raw likelihood signal.&#34;&#34;&#34;
+    af_arr = np.asarray(af, dtype=float)
+    bin_ids = assign_af_bins(af_arr, bins)
+
+    out: Dict[str, Dict[str, float]] = {}
+    for i, (lo, hi) in enumerate(bins):
+        mask = bin_ids == i
+        n = int(mask.sum())
+        label = bin_label(lo, hi)
+        if n == 0:
+            out[label] = {&#34;n&#34;: 0}
+            continue
+        out[label] = {
+            &#34;n&#34;: n,
+            &#34;ll_ref_mean&#34;: float(np.mean(ref_ll[mask])),
+            &#34;ll_ref_std&#34;: float(np.std(ref_ll[mask])),
+            &#34;ll_var_mean&#34;: float(np.mean(var_ll[mask])),
+            &#34;ll_var_std&#34;: float(np.std(var_ll[mask])),
+            &#34;score_mean&#34;: float(np.mean(scores[mask])),
+            &#34;score_std&#34;: float(np.std(scores[mask])),
+        }
+    return out</code></pre>
+</details>
+<div class="desc"><p>Per-AF-bin summary statistics of the raw likelihood signal.</p></div>
 </dd>
 </dl>
 </section>
@@ -78,7 +232,10 @@ el.replaceWith(d);
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.bootstrap_correlation_ci" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.bootstrap_correlation_ci">bootstrap_correlation_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.correlation_metrics" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.correlation_metrics">correlation_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.per_bin_correlation" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.per_bin_correlation">per_bin_correlation</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.score_distribution_stats" href="#molcrawl.tasks.evaluation.gnomad_af_correlation.metrics.score_distribution_stats">score_distribution_stats</a></code></li>
 </ul>
 </li>
 </ul>

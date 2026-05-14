@@ -37,16 +37,26 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>ProteinGym table loader.</p>
-<p>Supports the DMS substitution subset.
-Expected columns:</p>
+<p>Supports two on-disk schemas:</p>
+<ol>
+<li>Legacy (pre-2025 Zenodo release): <code>mutated_sequence</code> and
+<code>wildtype_sequence</code> both present as full sequences.</li>
+<li>Current Zenodo release (record 15293562 and later): each per-assay
+CSV only ships <code>mutant</code> (e.g. <code>"M1I"</code> or <code>"M1I:K12L"</code>) and
+<code>mutated_sequence</code>. The wildtype is reconstructed here by reverting
+the listed substitutions on any one mutated row.</li>
+</ol>
+<p>In either case the loader guarantees the returned dataframe has the
+three columns downstream evaluators expect:</p>
 <ul>
 <li><code>mutated_sequence</code>
 - variant sequence as a string</li>
-<li><code>wildtype_sequence</code> - reference sequence</li>
+<li><code>wildtype_sequence</code> - reference sequence (shared across all rows
+from a given ProteinGym CSV)</li>
 <li><code>DMS_score</code>
 - experimental fitness label (float)</li>
-<li><code>DMS_bin_score</code> (optional) - binarised label, used when the task is
-framed as classification</li>
+<li><code>DMS_bin_score</code> / <code>DMS_score_bin</code> (optional) - binarised label,
+surfaced as <code>DMS_bin_score</code> when either is present.</li>
 </ul>
 </section>
 <section>
@@ -69,13 +79,37 @@ framed as classification</li>
     if not csv_path.exists():
         raise FileNotFoundError(csv_path)
     df = pd.read_csv(csv_path)
-    required = {&#34;mutated_sequence&#34;, &#34;wildtype_sequence&#34;, &#34;DMS_score&#34;}
-    missing = required - set(df.columns)
-    if missing:
+    if &#34;mutated_sequence&#34; not in df.columns or &#34;DMS_score&#34; not in df.columns:
         raise ValueError(
-            f&#34;ProteinGym file missing required columns: {sorted(missing)}. &#34;
+            f&#34;ProteinGym file missing required columns: {sorted(set([&#39;mutated_sequence&#39;, &#39;DMS_score&#39;]) - set(df.columns))}. &#34;
             f&#34;Available: {list(df.columns)}&#34;
         )
+
+    if &#34;wildtype_sequence&#34; not in df.columns:
+        if &#34;mutant&#34; not in df.columns:
+            raise ValueError(
+                f&#34;ProteinGym file {csv_path} has neither wildtype_sequence nor &#34;
+                &#34;a mutant column; cannot reconstruct the wildtype. Available: &#34;
+                f&#34;{list(df.columns)}&#34;
+            )
+        wildtype = _reconstruct_wildtype(df)
+        if wildtype is None:
+            raise ValueError(
+                f&#34;Could not reconstruct wildtype from any row in {csv_path}. &#34;
+                &#34;mutant strings may use an unsupported format.&#34;
+            )
+        df = df.copy()
+        df[&#34;wildtype_sequence&#34;] = wildtype
+        logger.info(
+            &#34;Reconstructed wildtype for %s (length %d)&#34;,
+            csv_path.name,
+            len(wildtype),
+        )
+
+    if &#34;DMS_bin_score&#34; not in df.columns and &#34;DMS_score_bin&#34; in df.columns:
+        df = df.rename(columns={&#34;DMS_score_bin&#34;: &#34;DMS_bin_score&#34;})
+
+    required = {&#34;mutated_sequence&#34;, &#34;wildtype_sequence&#34;, &#34;DMS_score&#34;}
     df = df.dropna(subset=list(required)).reset_index(drop=True)
     logger.info(&#34;Loaded %d ProteinGym variants from %s&#34;, len(df), csv_path)
     return df</code></pre>

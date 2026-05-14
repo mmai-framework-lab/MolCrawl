@@ -38,9 +38,10 @@ el.replaceWith(d);
 <section id="section-intro">
 <p>Metric selection helpers for MoleculeNet tasks.</p>
 <p>The registry-backed metrics live in
-<code>molcrawl.tasks.evaluation._base.metric_registry</code>.
-Here we only choose
-which metrics are meaningful for each task type.</p>
+<code>molcrawl.tasks.evaluation._base.metric_registry</code>. This module chooses
+which metrics are meaningful for each task type, plus provides a
+bootstrap CI helper keyed on the primary ranking metric (AUROC for
+classification, RMSE for regression).</p>
 </section>
 <section>
 </section>
@@ -49,6 +50,85 @@ which metrics are meaningful for each task type.</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.moleculenet.metrics.bootstrap_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_ci</span></span>(<span>y_true: np.ndarray,<br>y_score: np.ndarray,<br>task_type: str,<br>n_boot: int = 200,<br>seed: int = 0,<br>alpha: float = 0.05) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_ci(
+    y_true: np.ndarray,
+    y_score: np.ndarray,
+    task_type: str,
+    n_boot: int = 200,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Return percentile ``(lo, hi)`` intervals for the primary metrics.
+
+    Classification: auroc and auprc.
+    Regression:     rmse and r2 and spearman.
+    &#34;&#34;&#34;
+    y_true = np.asarray(y_true)
+    y_score = np.asarray(y_score)
+    n = len(y_true)
+    if n &lt; 5 or n_boot &lt;= 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    samples: Dict[str, List[float]] = {}
+
+    if task_type == &#34;classification&#34;:
+        if len(np.unique(y_true)) &lt; 2:
+            return {}
+        for _ in range(n_boot):
+            idx = rng.integers(0, n, size=n)
+            yt = y_true[idx]
+            ys = y_score[idx]
+            if len(np.unique(yt)) &lt; 2:
+                continue
+            samples.setdefault(&#34;auroc&#34;, []).append(
+                float(default_registry.compute(&#34;auroc&#34;, yt, ys))
+            )
+            samples.setdefault(&#34;auprc&#34;, []).append(
+                float(default_registry.compute(&#34;auprc&#34;, yt, ys))
+            )
+    else:
+        yt_num = np.asarray(y_true, dtype=float)
+        ys_num = np.asarray(y_score, dtype=float)
+        for _ in range(n_boot):
+            idx = rng.integers(0, n, size=n)
+            yt = yt_num[idx]
+            ys = ys_num[idx]
+            if np.std(yt) == 0 or np.std(ys) == 0:
+                continue
+            samples.setdefault(&#34;rmse&#34;, []).append(
+                float(default_registry.compute(&#34;rmse&#34;, yt, ys))
+            )
+            samples.setdefault(&#34;r2&#34;, []).append(
+                float(default_registry.compute(&#34;r2&#34;, yt, ys))
+            )
+            samples.setdefault(&#34;spearman&#34;, []).append(
+                float(default_registry.compute(&#34;spearman&#34;, yt, ys))
+            )
+
+    if not samples:
+        return {}
+    lo_p = 100.0 * alpha / 2.0
+    hi_p = 100.0 * (1.0 - alpha / 2.0)
+    return {
+        k: (float(np.percentile(v, lo_p)), float(np.percentile(v, hi_p)))
+        for k, v in samples.items()
+        if v
+    }</code></pre>
+</details>
+<div class="desc"><p>Return percentile <code>(lo, hi)</code> intervals for the primary metrics.</p>
+<p>Classification: auroc and auprc.
+Regression:
+rmse and r2 and spearman.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.moleculenet.metrics.score_classification"><code class="name flex">
 <span>def <span class="ident">score_classification</span></span>(<span>y_true: np.ndarray, y_score: np.ndarray) ‑> Dict[str, float]</span>
 </code></dt>
@@ -86,9 +166,54 @@ which metrics are meaningful for each task type.</p>
         &#34;rmse&#34;: default_registry.compute(&#34;rmse&#34;, y_true, y_pred),
         &#34;mae&#34;: default_registry.compute(&#34;mae&#34;, y_true, y_pred),
         &#34;r2&#34;: default_registry.compute(&#34;r2&#34;, y_true, y_pred),
+        &#34;spearman&#34;: default_registry.compute(&#34;spearman&#34;, y_true, y_pred),
     }</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moleculenet.metrics.split_label_distribution"><code class="name flex">
+<span>def <span class="ident">split_label_distribution</span></span>(<span>y: np.ndarray, task_type: str) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_label_distribution(
+    y: np.ndarray, task_type: str
+) -&gt; Dict[str, float]:
+    &#34;&#34;&#34;Return a concise label-distribution diagnostic for a split.&#34;&#34;&#34;
+    series = pd.Series(y)
+    valid = series.dropna().to_numpy()
+    if valid.size == 0:
+        return {&#34;n&#34;: 0}
+    out: Dict[str, float] = {&#34;n&#34;: int(valid.size)}
+    if task_type == &#34;classification&#34;:
+        try:
+            ints = valid.astype(int)
+        except (TypeError, ValueError):
+            return {&#34;n&#34;: int(valid.size)}
+        uniq, counts = np.unique(ints, return_counts=True)
+        for u, c in zip(uniq, counts):
+            out[f&#34;class_{int(u)}_count&#34;] = int(c)
+        if 1 in uniq:
+            out[&#34;positive_ratio&#34;] = float(
+                counts[list(uniq).index(1)] / valid.size
+            )
+    else:
+        arr_f = valid.astype(float)
+        out.update(
+            {
+                &#34;mean&#34;: float(arr_f.mean()),
+                &#34;std&#34;: float(arr_f.std()),
+                &#34;min&#34;: float(arr_f.min()),
+                &#34;max&#34;: float(arr_f.max()),
+                &#34;median&#34;: float(np.median(arr_f)),
+            }
+        )
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return a concise label-distribution diagnostic for a split.</p></div>
 </dd>
 </dl>
 </section>
@@ -107,8 +232,10 @@ which metrics are meaningful for each task type.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.moleculenet.metrics.bootstrap_ci" href="#molcrawl.tasks.evaluation.moleculenet.metrics.bootstrap_ci">bootstrap_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moleculenet.metrics.score_classification" href="#molcrawl.tasks.evaluation.moleculenet.metrics.score_classification">score_classification</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moleculenet.metrics.score_regression" href="#molcrawl.tasks.evaluation.moleculenet.metrics.score_regression">score_regression</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.moleculenet.metrics.split_label_distribution" href="#molcrawl.tasks.evaluation.moleculenet.metrics.split_label_distribution">split_label_distribution</a></code></li>
 </ul>
 </li>
 </ul>

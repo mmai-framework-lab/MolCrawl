@@ -49,15 +49,23 @@ ablations.</p>
 <dl>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.tape.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.tape.data_preparation</a></code></dt>
 <dd>
-<div class="desc"><p>TAPE JSONL loader …</p></div>
+<div class="desc"><p>TAPE JSONL loader + sampling helpers …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.tape.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.tape.evaluator</a></code></dt>
 <dd>
-<div class="desc"><p>Evaluator that dispatches to one TAPE sub-task at a time.</p></div>
+<div class="desc"><p>Evaluator that dispatches to one TAPE sub-task at a time …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.tape.metrics" href="metrics.html">molcrawl.tasks.evaluation.tape.metrics</a></code></dt>
 <dd>
-<div class="desc"><p>TAPE metric dispatch …</p></div>
+<div class="desc"><p>TAPE metric dispatch + bootstrap CIs …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.tape.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.tape.predictions_log</a></code></dt>
+<dd>
+<div class="desc"><p>Per-row predictions dump for TAPE evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.tape.prepare_csv" href="prepare_csv.html">molcrawl.tasks.evaluation.tape.prepare_csv</a></code></dt>
+<dd>
+<div class="desc"><p>Materialise TAPE sub-task JSONL files from public HuggingFace mirrors …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.tape.splits" href="splits.html">molcrawl.tasks.evaluation.tape.splits</a></code></dt>
 <dd>
@@ -109,6 +117,12 @@ ablations.</p>
         )
         self.task_dir = Path(task_dir)
         self.task_spec = task_spec
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 20)
+        )
 
     def category(self) -&gt; str:
         if self.task_spec.task_type == &#34;sequence_labeling&#34;:
@@ -120,10 +134,14 @@ ablations.</p>
     def load_dataset(self) -&gt; Dict[str, pd.DataFrame]:
         splits = load_splits(self.task_dir, self.task_spec.name)
         frames = {name: to_frame(records, self.task_spec) for name, records in splits.items()}
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            for split in frames:
-                frames[split] = frames[split].head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None:
+            for split in list(frames.keys()):
+                frames[split] = stratified_subsample(
+                    frames[split],
+                    n_examples=int(self.max_examples),
+                    spec=self.task_spec,
+                    seed=self.seed,
+                )
         return frames
 
     def run_predictions(self, dataset):
@@ -131,10 +149,29 @@ ablations.</p>
         spec = self.task_spec
 
         if spec.task_type == &#34;sequence_labeling&#34; and spec.name == &#34;contact_prediction&#34;:
-            # Contact prediction needs residue-residue logits; defer to
-            # upstream wiring.  We return a placeholder result so the
-            # metric layer can still emit NaN entries.
-            return {&#34;mode&#34;: &#34;placeholder&#34;}
+            train_df = dataset.get(&#34;train&#34;)
+            test_df = dataset.get(&#34;test&#34;)
+            if test_df is None:
+                test_df = dataset.get(&#34;valid&#34;)
+            if train_df is None or test_df is None:
+                raise RuntimeError(
+                    f&#34;TAPE {spec.name}: need train + (valid or test) splits &#34;
+                    f&#34;under {self.task_dir}&#34;
+                )
+            return self._run_contact_prediction(adapter, train_df, test_df)
+
+        train_df = dataset.get(&#34;train&#34;)
+        test_df = dataset.get(&#34;test&#34;)
+        if test_df is None:
+            test_df = dataset.get(&#34;valid&#34;)
+        if train_df is None or test_df is None:
+            raise RuntimeError(
+                f&#34;TAPE {spec.name}: need train + (valid or test) splits &#34;
+                f&#34;under {self.task_dir}&#34;
+            )
+
+        if spec.task_type == &#34;sequence_labeling&#34;:
+            return self._run_sequence_labeling(adapter, spec, train_df, test_df)
 
         if not adapter.supports(&#34;embedding&#34;):
             raise RuntimeError(
@@ -142,16 +179,13 @@ ablations.</p>
                 &#34;TAPE evaluation requires encoder embeddings.&#34;
             )
 
-        train_df = dataset.get(&#34;train&#34;)
-        test_df = dataset.get(&#34;valid&#34;)
-        if test_df is None:
-            test_df = dataset.get(&#34;test&#34;)
-        if train_df is None or test_df is None:
-            raise RuntimeError(
-                f&#34;TAPE {spec.name}: need at least train + (valid or test) split &#34;
-                f&#34;under {self.task_dir}&#34;
-            )
-
+        logger.info(
+            &#34;TAPE %s: embedding train=%d test=%d (task_type=%s)&#34;,
+            spec.name,
+            len(train_df),
+            len(test_df),
+            spec.task_type,
+        )
         train_emb = np.asarray(
             adapter.embed(train_df[spec.sequence_column].astype(str).tolist()).embeddings
         )
@@ -173,18 +207,321 @@ ablations.</p>
             clf.fit(train_emb, y_train.astype(int))
             preds = clf.predict(test_emb)
 
-        return {&#34;mode&#34;: &#34;probe&#34;, &#34;predictions&#34;: preds, &#34;test_df&#34;: test_df}
+        return {
+            &#34;mode&#34;: &#34;probe&#34;,
+            &#34;predictions&#34;: preds,
+            &#34;test_df&#34;: test_df,
+            &#34;train_size&#34;: int(len(train_df)),
+            &#34;test_size&#34;: int(len(test_df)),
+        }
+
+    def _run_sequence_labeling(
+        self, adapter, spec: TAPETaskSpec, train_df: pd.DataFrame, test_df: pd.DataFrame
+    ):
+        &#34;&#34;&#34;Per-residue probe: encoder embed_per_residue -&gt; LogReg.
+
+        Trains a single LogisticRegression head on residue-level features
+        flattened across all training proteins, then applies it per-residue
+        to each test protein. Special tokens (cls / eos / pad) and
+        disorder-masked residues are excluded from the training and metric
+        pools alike.
+        &#34;&#34;&#34;
+        if not adapter.supports(&#34;per_residue_embedding&#34;):
+            raise RuntimeError(
+                f&#34;Adapter {type(adapter).__name__} cannot produce per-residue &#34;
+                &#34;embeddings; TAPE secondary_structure_* requires &#34;
+                &#34;embed_per_residue support.&#34;
+            )
+        from sklearn.linear_model import LogisticRegression
+
+        logger.info(
+            &#34;TAPE %s sequence_labeling: train=%d test=%d (num_classes=%d)&#34;,
+            spec.name,
+            len(train_df),
+            len(test_df),
+            spec.task_spec_num_classes if hasattr(spec, &#34;task_spec_num_classes&#34;) else spec.num_classes,
+        )
+
+        train_seqs = train_df[spec.sequence_column].astype(str).tolist()
+        test_seqs = test_df[spec.sequence_column].astype(str).tolist()
+        train_labels = list(train_df[spec.label_column])
+        test_labels = list(test_df[spec.label_column])
+        train_masks = (
+            list(train_df[&#34;valid_mask&#34;])
+            if &#34;valid_mask&#34; in train_df.columns
+            else [[1] * len(s) for s in train_seqs]
+        )
+        test_masks = (
+            list(test_df[&#34;valid_mask&#34;])
+            if &#34;valid_mask&#34; in test_df.columns
+            else [[1] * len(s) for s in test_seqs]
+        )
+
+        train_per_res = adapter.embed_per_residue(train_seqs)
+        test_per_res = adapter.embed_per_residue(test_seqs)
+
+        # Stack train residues. The encoder usually adds [CLS] and [EOS] /
+        # [SEP] padding, so the per-residue tensor length is len(primary)+2
+        # (or +1 for some tokenizers). We align to the right by *trimming
+        # to the length of the labels* — the first ``offset`` rows are the
+        # leading cls/bos token(s) and we drop them.
+        X_train_parts: List[Any] = []
+        y_train_parts: List[int] = []
+        for _i, (seq, hidden, labels, mask) in enumerate(
+            zip(train_seqs, train_per_res, train_labels, train_masks)
+        ):
+            X_p, y_p, _ = _align_and_mask(hidden, labels, mask, seq_len=len(seq))
+            if X_p.size == 0:
+                continue
+            X_train_parts.append(X_p)
+            y_train_parts.extend(int(v) for v in y_p)
+        if not X_train_parts:
+            raise RuntimeError(
+                &#34;No usable training residues remained after aligning + masking.&#34;
+            )
+        X_train = np.concatenate(X_train_parts, axis=0)
+        y_train = np.asarray(y_train_parts, dtype=int)
+
+        clf = LogisticRegression(max_iter=200, n_jobs=1)
+        clf.fit(X_train, y_train)
+
+        per_protein_pred: List[List[int]] = []
+        per_protein_label: List[List[int]] = []
+        per_protein_mask: List[List[int]] = []
+        for seq, hidden, labels, mask in zip(
+            test_seqs, test_per_res, test_labels, test_masks
+        ):
+            X_p, y_p, m_p = _align_and_mask(
+                hidden, labels, mask, seq_len=len(seq), keep_invalid=True
+            )
+            if X_p.size == 0:
+                # No usable rows; emit empty placeholder so length parity holds.
+                per_protein_pred.append([])
+                per_protein_label.append([])
+                per_protein_mask.append([])
+                continue
+            preds = clf.predict(X_p)
+            per_protein_pred.append([int(v) for v in preds])
+            per_protein_label.append([int(v) for v in y_p])
+            per_protein_mask.append([int(v) for v in m_p])
+
+        return {
+            &#34;mode&#34;: &#34;sequence_labeling&#34;,
+            &#34;per_protein_pred&#34;: per_protein_pred,
+            &#34;per_protein_label&#34;: per_protein_label,
+            &#34;per_protein_mask&#34;: per_protein_mask,
+            &#34;test_df&#34;: test_df,
+            &#34;train_size&#34;: int(len(train_df)),
+            &#34;test_size&#34;: int(len(test_df)),
+        }
+
+    def _run_contact_prediction(
+        self, adapter, train_df: pd.DataFrame, test_df: pd.DataFrame
+    ):
+        &#34;&#34;&#34;Per-residue-pair logistic-regression probe for contact prediction.
+
+        For each protein the dataset stores a list of (i, j) pairs that
+        ARE in contact (the negatives are implicit in the complement).
+        We:
+
+        1. Embed every train + test protein per-residue.
+        2. Sample ``contact_pairs_per_protein`` long-range positives and
+           the same number of long-range negatives from each train protein.
+           Pair feature = element-wise product of the two residue
+           embeddings (symmetric, dim = D).
+        3. Train one shared :class:`LogisticRegression` head on the
+           concatenated training pairs.
+        4. For each test protein, score *every* long-range pair
+           (j - i &gt;= ``contact_min_separation``) and return the score
+           array + 0/1 labels for the metric.
+        &#34;&#34;&#34;
+        if not adapter.supports(&#34;per_residue_embedding&#34;):
+            raise RuntimeError(
+                f&#34;Adapter {type(adapter).__name__} cannot produce per-residue &#34;
+                &#34;embeddings; TAPE contact_prediction requires &#34;
+                &#34;embed_per_residue support.&#34;
+            )
+        from sklearn.linear_model import LogisticRegression
+
+        rng = np.random.default_rng(self.seed)
+        min_sep = int(self.config.get(&#34;contact_min_separation&#34;, 24))
+        pairs_per_train = int(self.config.get(&#34;contact_pairs_per_protein&#34;, 50))
+
+        train_seqs = train_df[&#34;primary&#34;].astype(str).tolist()
+        test_seqs = test_df[&#34;primary&#34;].astype(str).tolist()
+        logger.info(
+            &#34;TAPE contact_prediction: embedding train=%d test=%d (min_sep=%d, &#34;
+            &#34;pairs_per_train=%d)&#34;,
+            len(train_seqs), len(test_seqs), min_sep, pairs_per_train,
+        )
+
+        train_emb = list(adapter.embed_per_residue(train_seqs))
+        test_emb = list(adapter.embed_per_residue(test_seqs))
+
+        train_X: List[np.ndarray] = []
+        train_y: List[int] = []
+        for emb_p, contacts_p, seq_p in zip(
+            train_emb,
+            train_df[&#34;tertiary&#34;].tolist(),
+            train_seqs,
+        ):
+            emb_arr = np.asarray(emb_p, dtype=np.float32)
+            L = min(emb_arr.shape[0], len(seq_p))
+            if L &lt; min_sep + 2:
+                continue
+            contact_set = {(int(p[0]), int(p[1])) for p in contacts_p
+                           if int(p[0]) &lt; L and int(p[1]) &lt; L}
+            # sample positives (long-range)
+            pos_pairs = [(i, j) for (i, j) in contact_set if 0 &lt;= i &lt; j &lt; L and j - i &gt;= min_sep]
+            if not pos_pairs:
+                continue
+            n_pos = min(pairs_per_train, len(pos_pairs))
+            pos_idx = rng.choice(len(pos_pairs), size=n_pos, replace=False)
+            for k in pos_idx:
+                i, j = pos_pairs[int(k)]
+                train_X.append(emb_arr[i] * emb_arr[j])
+                train_y.append(1)
+            # sample negatives uniformly from long-range non-contacts
+            n_neg = n_pos
+            tries = 0
+            taken = 0
+            while taken &lt; n_neg and tries &lt; 20 * n_neg:
+                i = int(rng.integers(0, L - min_sep))
+                j = int(rng.integers(i + min_sep, L))
+                tries += 1
+                if (i, j) in contact_set:
+                    continue
+                train_X.append(emb_arr[i] * emb_arr[j])
+                train_y.append(0)
+                taken += 1
+
+        if not train_X:
+            raise RuntimeError(
+                &#34;TAPE contact_prediction: no usable training pairs collected — &#34;
+                &#34;train split too small or proteins too short for min_sep=&#34;
+                f&#34;{min_sep}.&#34;
+            )
+        Xtr = np.stack(train_X).astype(np.float32)
+        ytr = np.asarray(train_y, dtype=int)
+        logger.info(
+            &#34;TAPE contact_prediction: training pairs=%d (positives=%d)&#34;,
+            Xtr.shape[0], int(ytr.sum()),
+        )
+        clf = LogisticRegression(max_iter=500, n_jobs=1)
+        clf.fit(Xtr, ytr)
+
+        per_protein: List[Dict[str, Any]] = []
+        for emb_p, contacts_p, seq_p in zip(
+            test_emb,
+            test_df[&#34;tertiary&#34;].tolist(),
+            test_seqs,
+        ):
+            emb_arr = np.asarray(emb_p, dtype=np.float32)
+            L = min(emb_arr.shape[0], len(seq_p))
+            if L &lt; min_sep + 2:
+                continue
+            contact_set = {(int(p[0]), int(p[1])) for p in contacts_p
+                           if int(p[0]) &lt; L and int(p[1]) &lt; L}
+            # build all long-range pair indices
+            ii, jj = np.triu_indices(L, k=min_sep)
+            if ii.size == 0:
+                continue
+            X_all = emb_arr[ii] * emb_arr[jj]
+            scores = clf.predict_proba(X_all)[:, 1]
+            labels = np.array(
+                [1 if (int(i), int(j)) in contact_set else 0 for i, j in zip(ii, jj)],
+                dtype=int,
+            )
+            per_protein.append({
+                &#34;seq_len&#34;: int(L),
+                &#34;pair_idx&#34;: np.stack([ii, jj], axis=1),
+                &#34;scores&#34;: scores.astype(np.float32),
+                &#34;labels&#34;: labels,
+            })
+
+        return {
+            &#34;mode&#34;: &#34;contact_prediction&#34;,
+            &#34;per_protein&#34;: per_protein,
+            &#34;test_df&#34;: test_df,
+            &#34;train_size&#34;: int(len(train_df)),
+            &#34;test_size&#34;: int(len(test_df)),
+            &#34;min_separation&#34;: min_sep,
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
         spec = self.task_spec
+        if predictions.get(&#34;mode&#34;) == &#34;contact_prediction&#34;:
+            return self._compute_contact_prediction_metrics(predictions)
         if predictions.get(&#34;mode&#34;) == &#34;placeholder&#34;:
-            return contact_prediction_metrics()
+            self._last_bootstrap_ci: Dict[str, Any] = {}
+            return contact_prediction_metrics([])
+        if predictions.get(&#34;mode&#34;) == &#34;sequence_labeling&#34;:
+            return self._compute_sequence_labeling_metrics(predictions)
         preds = predictions[&#34;predictions&#34;]
         test_df = predictions[&#34;test_df&#34;]
         y_true = test_df[spec.label_column].to_numpy()
         if spec.task_type == &#34;regression&#34;:
-            return regression_metrics(y_true.astype(float), np.asarray(preds, dtype=float))
-        return classification_metrics(y_true.astype(int), np.asarray(preds, dtype=int))
+            yt = y_true.astype(float)
+            yp = np.asarray(preds, dtype=float)
+            metrics = regression_metrics(yt, yp)
+        else:
+            yt = y_true.astype(int)
+            yp = np.asarray(preds, dtype=int)
+            metrics = classification_metrics(yt, yp)
+        ci = bootstrap_ci(
+            yt,
+            yp,
+            task_type=spec.task_type,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
+
+    def _compute_contact_prediction_metrics(self, predictions) -&gt; Dict[str, float]:
+        from .metrics import bootstrap_contact_ci
+
+        per_protein = predictions[&#34;per_protein&#34;]
+        min_sep = int(predictions.get(&#34;min_separation&#34;, 24))
+        ks = (1, 2, 5)
+        metrics = contact_prediction_metrics(
+            per_protein, min_separation=min_sep, ks=ks
+        )
+        ci = bootstrap_contact_ci(
+            per_protein,
+            min_separation=min_sep,
+            ks=ks,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
+
+    def _compute_sequence_labeling_metrics(self, predictions):
+        from .metrics import (
+            bootstrap_sequence_labeling_ci,
+            sequence_labeling_metrics,
+        )
+
+        per_pred = predictions[&#34;per_protein_pred&#34;]
+        per_label = predictions[&#34;per_protein_label&#34;]
+        per_mask = predictions[&#34;per_protein_mask&#34;]
+        metrics = sequence_labeling_metrics(per_pred, per_label, per_mask)
+        ci = bootstrap_sequence_labeling_ci(
+            per_pred,
+            per_label,
+            per_mask,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
@@ -196,9 +533,127 @@ ablations.</p>
                     &#34;label_column&#34;: self.task_spec.label_column,
                 },
                 &#34;split_sizes&#34;: {k: int(len(v)) for k, v in dataset.items()},
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
             }
         )
-        return report</code></pre>
+        if predictions.get(&#34;mode&#34;) == &#34;probe&#34;:
+            artefacts = write_predictions(
+                output_dir=self.output_dir,
+                test_df=predictions[&#34;test_df&#34;],
+                y_pred=predictions[&#34;predictions&#34;],
+                task_name=self.task_spec.name,
+                task_type=self.task_spec.task_type,
+                sequence_column=self.task_spec.sequence_column,
+                label_column=self.task_spec.label_column,
+                arch=self.handle.arch,
+                preview_count=self.predictions_preview_count,
+            )
+            report[&#34;artefacts&#34;] = artefacts
+            report[&#34;train_size_used&#34;] = predictions[&#34;train_size&#34;]
+            report[&#34;test_size_used&#34;] = predictions[&#34;test_size&#34;]
+        elif predictions.get(&#34;mode&#34;) == &#34;sequence_labeling&#34;:
+            from .predictions_log import write_sequence_labeling_predictions
+
+            artefacts = write_sequence_labeling_predictions(
+                output_dir=self.output_dir,
+                test_df=predictions[&#34;test_df&#34;],
+                per_protein_pred=predictions[&#34;per_protein_pred&#34;],
+                per_protein_label=predictions[&#34;per_protein_label&#34;],
+                per_protein_mask=predictions[&#34;per_protein_mask&#34;],
+                task_name=self.task_spec.name,
+                num_classes=self.task_spec.num_classes,
+                sequence_column=self.task_spec.sequence_column,
+                arch=self.handle.arch,
+                preview_count=self.predictions_preview_count,
+            )
+            report[&#34;artefacts&#34;] = artefacts
+            report[&#34;train_size_used&#34;] = predictions[&#34;train_size&#34;]
+            report[&#34;test_size_used&#34;] = predictions[&#34;test_size&#34;]
+        elif predictions.get(&#34;mode&#34;) == &#34;contact_prediction&#34;:
+            artefacts = self._write_contact_predictions(predictions)
+            report[&#34;artefacts&#34;] = artefacts
+            report[&#34;train_size_used&#34;] = predictions[&#34;train_size&#34;]
+            report[&#34;test_size_used&#34;] = predictions[&#34;test_size&#34;]
+            report[&#34;min_separation&#34;] = predictions[&#34;min_separation&#34;]
+        return report
+
+    def _write_contact_predictions(self, predictions) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;Emit predictions.jsonl + a short narrative for contact_prediction.
+
+        The JSONL has one record per test protein with the ranked top
+        ``L // 5`` long-range pairs (the same set that the precision@L/5
+        metric uses) — small enough to stay readable yet enough to spot
+        whether the model preferentially picked clustered residues vs.
+        well-separated ones.
+        &#34;&#34;&#34;
+        import json as _json
+
+        out_dir = self.output_dir
+        out_dir.mkdir(parents=True, exist_ok=True)
+        per_protein = predictions[&#34;per_protein&#34;]
+        min_sep = int(predictions[&#34;min_separation&#34;])
+        jsonl_path = out_dir / &#34;predictions.jsonl&#34;
+        with jsonl_path.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+            for i, prot in enumerate(per_protein):
+                L = int(prot[&#34;seq_len&#34;])
+                top_n = max(1, L // 5)
+                scores = np.asarray(prot[&#34;scores&#34;], dtype=float)
+                pair_idx = np.asarray(prot[&#34;pair_idx&#34;], dtype=int)
+                labels = np.asarray(prot[&#34;labels&#34;], dtype=int)
+                order = np.argsort(-scores)[:top_n]
+                top_pairs = [
+                    {
+                        &#34;i&#34;: int(pair_idx[k, 0]),
+                        &#34;j&#34;: int(pair_idx[k, 1]),
+                        &#34;score&#34;: float(scores[k]),
+                        &#34;label&#34;: int(labels[k]),
+                    }
+                    for k in order
+                ]
+                fh.write(_json.dumps({
+                    &#34;index&#34;: i,
+                    &#34;seq_len&#34;: L,
+                    &#34;min_separation&#34;: min_sep,
+                    &#34;n_long_range_pairs_scored&#34;: int(scores.size),
+                    &#34;n_true_long_range_contacts&#34;: int(labels.sum()),
+                    &#34;top_L_over_5&#34;: top_pairs,
+                }) + &#34;\n&#34;)
+
+        txt_path = out_dir / &#34;predictions.txt&#34;
+        with txt_path.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+            fh.write(&#34;TAPE contact_prediction summary\n&#34;)
+            fh.write(&#34;=&#34; * 72 + &#34;\n&#34;)
+            fh.write(f&#34;arch              : {self.handle.arch}\n&#34;)
+            fh.write(f&#34;modality          : {self.handle.modality}\n&#34;)
+            fh.write(f&#34;min_separation    : {min_sep}\n&#34;)
+            fh.write(f&#34;n_proteins_scored : {len(per_protein)}\n&#34;)
+            if per_protein:
+                lens = [int(p[&#34;seq_len&#34;]) for p in per_protein]
+                fh.write(
+                    f&#34;seq_len           : min={min(lens)} median={int(np.median(lens))} max={max(lens)}\n&#34;
+                )
+                preview_n = min(self.predictions_preview_count, len(per_protein))
+                fh.write(
+                    f&#34;\nFirst {preview_n} proteins (top L/5 long-range pairs each):\n&#34;
+                )
+                fh.write(&#34;-&#34; * 72 + &#34;\n&#34;)
+                for p in per_protein[:preview_n]:
+                    L = int(p[&#34;seq_len&#34;])
+                    top_n = max(1, L // 5)
+                    scores = np.asarray(p[&#34;scores&#34;], dtype=float)
+                    pair_idx = np.asarray(p[&#34;pair_idx&#34;], dtype=int)
+                    labels = np.asarray(p[&#34;labels&#34;], dtype=int)
+                    order = np.argsort(-scores)[:top_n]
+                    correct = int(labels[order].sum())
+                    fh.write(
+                        f&#34;  L={L:&gt;4d}  top_{top_n:&gt;3d}  precision_L/5={correct/top_n:.3f}  &#34;
+                        f&#34;true_LR_contacts={int(labels.sum())}\n&#34;
+                    )
+        return {
+            &#34;predictions_jsonl&#34;: str(jsonl_path),
+            &#34;predictions_txt&#34;: str(txt_path),
+        }</code></pre>
 </details>
 <div class="desc"><p>Evaluate a protein encoder / decoder on one TAPE task.</p></div>
 <h3>Ancestors</h3>
@@ -233,8 +688,49 @@ ablations.</p>
                 &#34;label_column&#34;: self.task_spec.label_column,
             },
             &#34;split_sizes&#34;: {k: int(len(v)) for k, v in dataset.items()},
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
         }
     )
+    if predictions.get(&#34;mode&#34;) == &#34;probe&#34;:
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            test_df=predictions[&#34;test_df&#34;],
+            y_pred=predictions[&#34;predictions&#34;],
+            task_name=self.task_spec.name,
+            task_type=self.task_spec.task_type,
+            sequence_column=self.task_spec.sequence_column,
+            label_column=self.task_spec.label_column,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report[&#34;artefacts&#34;] = artefacts
+        report[&#34;train_size_used&#34;] = predictions[&#34;train_size&#34;]
+        report[&#34;test_size_used&#34;] = predictions[&#34;test_size&#34;]
+    elif predictions.get(&#34;mode&#34;) == &#34;sequence_labeling&#34;:
+        from .predictions_log import write_sequence_labeling_predictions
+
+        artefacts = write_sequence_labeling_predictions(
+            output_dir=self.output_dir,
+            test_df=predictions[&#34;test_df&#34;],
+            per_protein_pred=predictions[&#34;per_protein_pred&#34;],
+            per_protein_label=predictions[&#34;per_protein_label&#34;],
+            per_protein_mask=predictions[&#34;per_protein_mask&#34;],
+            task_name=self.task_spec.name,
+            num_classes=self.task_spec.num_classes,
+            sequence_column=self.task_spec.sequence_column,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
+        report[&#34;artefacts&#34;] = artefacts
+        report[&#34;train_size_used&#34;] = predictions[&#34;train_size&#34;]
+        report[&#34;test_size_used&#34;] = predictions[&#34;test_size&#34;]
+    elif predictions.get(&#34;mode&#34;) == &#34;contact_prediction&#34;:
+        artefacts = self._write_contact_predictions(predictions)
+        report[&#34;artefacts&#34;] = artefacts
+        report[&#34;train_size_used&#34;] = predictions[&#34;train_size&#34;]
+        report[&#34;test_size_used&#34;] = predictions[&#34;test_size&#34;]
+        report[&#34;min_separation&#34;] = predictions[&#34;min_separation&#34;]
     return report</code></pre>
 </details>
 <div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
@@ -270,14 +766,35 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
     spec = self.task_spec
+    if predictions.get(&#34;mode&#34;) == &#34;contact_prediction&#34;:
+        return self._compute_contact_prediction_metrics(predictions)
     if predictions.get(&#34;mode&#34;) == &#34;placeholder&#34;:
-        return contact_prediction_metrics()
+        self._last_bootstrap_ci: Dict[str, Any] = {}
+        return contact_prediction_metrics([])
+    if predictions.get(&#34;mode&#34;) == &#34;sequence_labeling&#34;:
+        return self._compute_sequence_labeling_metrics(predictions)
     preds = predictions[&#34;predictions&#34;]
     test_df = predictions[&#34;test_df&#34;]
     y_true = test_df[spec.label_column].to_numpy()
     if spec.task_type == &#34;regression&#34;:
-        return regression_metrics(y_true.astype(float), np.asarray(preds, dtype=float))
-    return classification_metrics(y_true.astype(int), np.asarray(preds, dtype=int))</code></pre>
+        yt = y_true.astype(float)
+        yp = np.asarray(preds, dtype=float)
+        metrics = regression_metrics(yt, yp)
+    else:
+        yt = y_true.astype(int)
+        yp = np.asarray(preds, dtype=int)
+        metrics = classification_metrics(yt, yp)
+    ci = bootstrap_ci(
+        yt,
+        yp,
+        task_type=spec.task_type,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+    )
+    self._last_bootstrap_ci = {
+        k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+    }
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -292,10 +809,14 @@ distribution summaries, etc.</p></div>
 <pre><code class="python">def load_dataset(self) -&gt; Dict[str, pd.DataFrame]:
     splits = load_splits(self.task_dir, self.task_spec.name)
     frames = {name: to_frame(records, self.task_spec) for name, records in splits.items()}
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        for split in frames:
-            frames[split] = frames[split].head(int(max_examples)).reset_index(drop=True)
+    if self.max_examples is not None:
+        for split in list(frames.keys()):
+            frames[split] = stratified_subsample(
+                frames[split],
+                n_examples=int(self.max_examples),
+                spec=self.task_spec,
+                seed=self.seed,
+            )
     return frames</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -313,10 +834,29 @@ distribution summaries, etc.</p></div>
     spec = self.task_spec
 
     if spec.task_type == &#34;sequence_labeling&#34; and spec.name == &#34;contact_prediction&#34;:
-        # Contact prediction needs residue-residue logits; defer to
-        # upstream wiring.  We return a placeholder result so the
-        # metric layer can still emit NaN entries.
-        return {&#34;mode&#34;: &#34;placeholder&#34;}
+        train_df = dataset.get(&#34;train&#34;)
+        test_df = dataset.get(&#34;test&#34;)
+        if test_df is None:
+            test_df = dataset.get(&#34;valid&#34;)
+        if train_df is None or test_df is None:
+            raise RuntimeError(
+                f&#34;TAPE {spec.name}: need train + (valid or test) splits &#34;
+                f&#34;under {self.task_dir}&#34;
+            )
+        return self._run_contact_prediction(adapter, train_df, test_df)
+
+    train_df = dataset.get(&#34;train&#34;)
+    test_df = dataset.get(&#34;test&#34;)
+    if test_df is None:
+        test_df = dataset.get(&#34;valid&#34;)
+    if train_df is None or test_df is None:
+        raise RuntimeError(
+            f&#34;TAPE {spec.name}: need train + (valid or test) splits &#34;
+            f&#34;under {self.task_dir}&#34;
+        )
+
+    if spec.task_type == &#34;sequence_labeling&#34;:
+        return self._run_sequence_labeling(adapter, spec, train_df, test_df)
 
     if not adapter.supports(&#34;embedding&#34;):
         raise RuntimeError(
@@ -324,16 +864,13 @@ distribution summaries, etc.</p></div>
             &#34;TAPE evaluation requires encoder embeddings.&#34;
         )
 
-    train_df = dataset.get(&#34;train&#34;)
-    test_df = dataset.get(&#34;valid&#34;)
-    if test_df is None:
-        test_df = dataset.get(&#34;test&#34;)
-    if train_df is None or test_df is None:
-        raise RuntimeError(
-            f&#34;TAPE {spec.name}: need at least train + (valid or test) split &#34;
-            f&#34;under {self.task_dir}&#34;
-        )
-
+    logger.info(
+        &#34;TAPE %s: embedding train=%d test=%d (task_type=%s)&#34;,
+        spec.name,
+        len(train_df),
+        len(test_df),
+        spec.task_type,
+    )
     train_emb = np.asarray(
         adapter.embed(train_df[spec.sequence_column].astype(str).tolist()).embeddings
     )
@@ -355,7 +892,13 @@ distribution summaries, etc.</p></div>
         clf.fit(train_emb, y_train.astype(int))
         preds = clf.predict(test_emb)
 
-    return {&#34;mode&#34;: &#34;probe&#34;, &#34;predictions&#34;: preds, &#34;test_df&#34;: test_df}</code></pre>
+    return {
+        &#34;mode&#34;: &#34;probe&#34;,
+        &#34;predictions&#34;: preds,
+        &#34;test_df&#34;: test_df,
+        &#34;train_size&#34;: int(len(train_df)),
+        &#34;test_size&#34;: int(len(test_df)),
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>
@@ -379,6 +922,8 @@ distribution summaries, etc.</p></div>
 <li><code><a title="molcrawl.tasks.evaluation.tape.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.tape.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.tape.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.metrics" href="metrics.html">molcrawl.tasks.evaluation.tape.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.tape.predictions_log</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.prepare_csv" href="prepare_csv.html">molcrawl.tasks.evaluation.tape.prepare_csv</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.splits" href="splits.html">molcrawl.tasks.evaluation.tape.splits</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.visualization" href="visualization.html">molcrawl.tasks.evaluation.tape.visualization</a></code></li>
 </ul>

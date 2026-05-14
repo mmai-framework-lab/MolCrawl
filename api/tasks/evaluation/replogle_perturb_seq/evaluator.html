@@ -39,11 +39,25 @@ el.replaceWith(d);
 <p>Replogle Perturb-seq perturbation-response evaluator.</p>
 <p>This task falls outside the core decoder/encoder protocol: predicting
 expression deltas requires a regression head or a learned adapter on
-top of the RNA encoder.
-The task-centric layout keeps that wiring in
-one place: the adapter is expected to expose an <code>embedding</code> capability,
-the evaluator fits a multi-output Ridge on <code>(embedding) -&gt; delta</code>, and
-reports mean per-perturbation correlations.</p>
+top of the RNA encoder. The evaluator wires that here:</p>
+<ol>
+<li>Load the (perturbation, baseline, perturbed) CSV produced by
+:mod:<code>prepare_csv</code> (TruthSeq figshare release; see the README of
+<code>workflows/data/eval-data-replogle-perturb-seq.sh</code> for provenance).</li>
+<li>Embed each perturbation gene name with the adapter.</li>
+<li>Fit multi-output Ridge on <code>(embedding) -&gt; delta</code>.</li>
+<li>Report mean per-perturbation Spearman / Pearson on the held-out
+test split, with bootstrap CIs.</li>
+</ol>
+<p>足固め upgrade adds:</p>
+<ul>
+<li>delta-strength-aware subsample (replaces <code>df.head(max_examples)</code>
+so the train+test slice contains both strong and weak KO effects).</li>
+<li>bootstrap 95 % CI on per-perturbation mean Spearman / Pearson
+(resamples whole rows so the CI reflects perturbation-level
+uncertainty, not gene-level).</li>
+<li>per-perturbation predictions log (jsonl + best/worst-fit narrative).</li>
+</ul>
 </section>
 <section>
 </section>
@@ -85,15 +99,23 @@ reports mean per-perturbation correlations.</p>
         self.replogle_path = Path(replogle_path)
         self.test_fraction: float = float(self.config.get(&#34;test_fraction&#34;, 0.2))
         self.seed: int = int(self.config.get(&#34;seed&#34;, 0))
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 16)
+        )
 
     def category(self) -&gt; str:
         return &#34;perturbation_response&#34;
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_replogle(self.replogle_path)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None and self.max_examples &lt; len(df):
+            df = stratified_subsample(
+                df,
+                n_examples=int(self.max_examples),
+                seed=self.seed,
+            )
         return df
 
     def _delta_matrix(self, df: pd.DataFrame) -&gt; np.ndarray:
@@ -113,6 +135,12 @@ reports mean per-perturbation correlations.</p>
         )
         if test_df.empty:
             raise RuntimeError(&#34;Replogle split produced an empty test set&#34;)
+        logger.info(
+            &#34;Replogle split: train=%d test=%d (test_fraction=%.2f)&#34;,
+            len(train_df),
+            len(test_df),
+            self.test_fraction,
+        )
 
         train_emb = np.asarray(
             adapter.embed(train_df[&#34;perturbation&#34;].astype(str).tolist()).embeddings
@@ -128,18 +156,56 @@ reports mean per-perturbation correlations.</p>
         reg = Ridge(alpha=1.0)
         reg.fit(train_emb, train_delta)
         preds = reg.predict(test_emb)
-        return {&#34;predictions&#34;: preds, &#34;observed&#34;: test_delta, &#34;test_df&#34;: test_df}
+        return {
+            &#34;predictions&#34;: preds,
+            &#34;observed&#34;: test_delta,
+            &#34;test_df&#34;: test_df,
+            &#34;train_size&#34;: int(len(train_df)),
+            &#34;test_size&#34;: int(len(test_df)),
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-        return delta_correlation(predictions[&#34;observed&#34;], predictions[&#34;predictions&#34;])
+        observed = predictions[&#34;observed&#34;]
+        preds = predictions[&#34;predictions&#34;]
+        metrics = delta_correlation(observed, preds)
+        ci = bootstrap_correlation_ci(
+            observed,
+            preds,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            test_df=predictions[&#34;test_df&#34;],
+            observed=predictions[&#34;observed&#34;],
+            predicted=predictions[&#34;predictions&#34;],
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
         report.update(
             {
                 &#34;num_test_perturbations&#34;: int(len(predictions[&#34;test_df&#34;])),
                 &#34;num_genes&#34;: int(predictions[&#34;observed&#34;].shape[1])
-                if predictions[&#34;observed&#34;].size else 0,
+                if predictions[&#34;observed&#34;].size
+                else 0,
+                &#34;train_size&#34;: predictions[&#34;train_size&#34;],
+                &#34;test_size&#34;: predictions[&#34;test_size&#34;],
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;Adapter embed(perturbation gene name) -&gt; Ridge -&gt; delta. &#34;
+                    &#34;Bootstrap CI resamples whole perturbations (rows), so the &#34;
+                    &#34;interval reflects perturbation-level uncertainty rather than &#34;
+                    &#34;gene-level.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -172,11 +238,31 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        test_df=predictions[&#34;test_df&#34;],
+        observed=predictions[&#34;observed&#34;],
+        predicted=predictions[&#34;predictions&#34;],
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
     report.update(
         {
             &#34;num_test_perturbations&#34;: int(len(predictions[&#34;test_df&#34;])),
             &#34;num_genes&#34;: int(predictions[&#34;observed&#34;].shape[1])
-            if predictions[&#34;observed&#34;].size else 0,
+            if predictions[&#34;observed&#34;].size
+            else 0,
+            &#34;train_size&#34;: predictions[&#34;train_size&#34;],
+            &#34;test_size&#34;: predictions[&#34;test_size&#34;],
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;Adapter embed(perturbation gene name) -&gt; Ridge -&gt; delta. &#34;
+                &#34;Bootstrap CI resamples whole perturbations (rows), so the &#34;
+                &#34;interval reflects perturbation-level uncertainty rather than &#34;
+                &#34;gene-level.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -209,7 +295,19 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-    return delta_correlation(predictions[&#34;observed&#34;], predictions[&#34;predictions&#34;])</code></pre>
+    observed = predictions[&#34;observed&#34;]
+    preds = predictions[&#34;predictions&#34;]
+    metrics = delta_correlation(observed, preds)
+    ci = bootstrap_correlation_ci(
+        observed,
+        preds,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+    )
+    self._last_bootstrap_ci = {
+        k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+    }
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -223,9 +321,12 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_replogle(self.replogle_path)
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
+    if self.max_examples is not None and self.max_examples &lt; len(df):
+        df = stratified_subsample(
+            df,
+            n_examples=int(self.max_examples),
+            seed=self.seed,
+        )
     return df</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -249,6 +350,12 @@ distribution summaries, etc.</p></div>
     )
     if test_df.empty:
         raise RuntimeError(&#34;Replogle split produced an empty test set&#34;)
+    logger.info(
+        &#34;Replogle split: train=%d test=%d (test_fraction=%.2f)&#34;,
+        len(train_df),
+        len(test_df),
+        self.test_fraction,
+    )
 
     train_emb = np.asarray(
         adapter.embed(train_df[&#34;perturbation&#34;].astype(str).tolist()).embeddings
@@ -264,7 +371,13 @@ distribution summaries, etc.</p></div>
     reg = Ridge(alpha=1.0)
     reg.fit(train_emb, train_delta)
     preds = reg.predict(test_emb)
-    return {&#34;predictions&#34;: preds, &#34;observed&#34;: test_delta, &#34;test_df&#34;: test_df}</code></pre>
+    return {
+        &#34;predictions&#34;: preds,
+        &#34;observed&#34;: test_delta,
+        &#34;test_df&#34;: test_df,
+        &#34;train_size&#34;: int(len(train_df)),
+        &#34;test_size&#34;: int(len(test_df)),
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

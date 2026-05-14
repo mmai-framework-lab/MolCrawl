@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.clinvar.bert_visualization API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.tasks.evaluation.tape.prepare_csv API documentation</title>
+<meta name="description" content="Materialise TAPE sub-task JSONL files from public HuggingFace mirrors …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,15 +33,94 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.clinvar.bert_visualization</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.tape.prepare_csv</code></h1>
 </header>
 <section id="section-intro">
+<p>Materialise TAPE sub-task JSONL files from public HuggingFace mirrors.</p>
+<p>The original TAPE release (songlab-cal/tape) hosts its data on the
+<code>songlabdata</code> S3 bucket, which has returned 403 anonymously since
+2025. Several community mirrors keep the same data publicly available:</p>
+<ul>
+<li><code>AI4Protein/TAPE_Fluorescence</code> — fluorescence regression</li>
+<li><code>AI4Protein/TAPE_Stability</code>
+— stability regression</li>
+<li><code>proteinea/remote_homology</code>
+— remote homology classification (1195 folds)</li>
+<li><code>proteinea/secondary_structure_prediction</code> — SS3 / SS8 sequence labelling</li>
+<li><code>proteinglm/contact_prediction_binary</code> — residue-residue contact pairs</li>
+</ul>
+<p>We fetch the right file from the right mirror, rename columns to the
+canonical TAPE schema (<code>primary</code> for sequence, task-specific label
+column matching :class:<code>TAPETaskSpec</code>), and emit
+<code>&lt;task&gt;_&lt;split&gt;.json</code> JSONL files in the layout the existing
+:func:<code>splits.load_splits</code> expects.</p>
+<p>All six TAPE sub-tasks are now wired through public mirrors.</p>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.tape.prepare_csv.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Materialise TAPE JSONL splits from public HF mirrors&#34;
+    )
+    parser.add_argument(&#34;--output-dir&#34;, required=True)
+    parser.add_argument(
+        &#34;--tasks&#34;,
+        nargs=&#34;*&#34;,
+        default=None,
+        help=f&#34;Tasks to materialise (default: all wired = {list(_MATERIALISERS.keys())})&#34;,
+    )
+    args = parser.parse_args(argv)
+
+    materialise_tape(output_dir=Path(args.output_dir), tasks=args.tasks)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tape.prepare_csv.materialise_tape"><code class="name flex">
+<span>def <span class="ident">materialise_tape</span></span>(<span>output_dir: Path, tasks: Optional[List[str]] = None) ‑> Dict[str, Dict[str, int]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def materialise_tape(
+    output_dir: Path, tasks: Optional[List[str]] = None
+) -&gt; Dict[str, Dict[str, int]]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    selected = tasks if tasks else list(_MATERIALISERS.keys())
+    summary: Dict[str, Dict[str, int]] = {}
+    for t in selected:
+        if t not in _MATERIALISERS:
+            logger.warning(
+                &#34;task %r has no public-mirror materialiser; skipping. &#34;
+                &#34;Available: %s&#34;,
+                t,
+                list(_MATERIALISERS.keys()),
+            )
+            summary[t] = {}
+            continue
+        summary[t] = _MATERIALISERS[t](output_dir)
+    return summary</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -53,7 +132,13 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.clinvar" href="index.html">molcrawl.tasks.evaluation.clinvar</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape" href="index.html">molcrawl.tasks.evaluation.tape</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.tape.prepare_csv.main" href="#molcrawl.tasks.evaluation.tape.prepare_csv.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.prepare_csv.materialise_tape" href="#molcrawl.tasks.evaluation.tape.prepare_csv.materialise_tape">materialise_tape</a></code></li>
 </ul>
 </li>
 </ul>

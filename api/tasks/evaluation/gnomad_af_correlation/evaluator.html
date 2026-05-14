@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.gnomad_af_correlation.evaluator API documentation</title>
-<meta name="description" content="Score likelihoods and correlate with gnomAD allele frequency.">
+<meta name="description" content="Score likelihoods and correlate with gnomAD allele frequency …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,15 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Score likelihoods and correlate with gnomAD allele frequency.</p>
+<p>The evaluator samples variants with AF-log-bin stratification (rare vs
+common) so the Spearman / Pearson correlation is not dominated by the
+heavy rare-variant tail of gnomAD, reports 95 % bootstrap CIs as
+primary uncertainty quantification, and additionally emits a per-bin
+correlation table so the reader can see whether the model's signal
+concentrates at a particular AF regime.</p>
+<p>Per-variant artefacts (<code>predictions.jsonl</code> / <code>predictions.txt</code>)
+mirror the ClinVar evaluator but the narrative previews by AF rank
+rather than by correct/wrong quadrants.</p>
 </section>
 <section>
 </section>
@@ -83,12 +92,32 @@ el.replaceWith(d);
 
     def load_dataset(self) -&gt; pd.DataFrame:
         df = load_gnomad(self.gnomad_path)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            df = df.head(int(max_examples)).reset_index(drop=True)
-        return df
 
-    def run_predictions(self, dataset: pd.DataFrame):
+        n_per_bin = self.config.get(&#34;n_per_bin&#34;)
+        max_examples = self.config.get(&#34;max_examples&#34;)
+        if n_per_bin is None and max_examples is not None:
+            # Backwards compatibility: redistribute the legacy cap across
+            # the 6 default AF bins so old smoke scripts still draw a
+            # rank-diverse sample rather than a head() slice.
+            n_per_bin = max(1, int(max_examples) // 6)
+            logger.warning(
+                &#34;GnomadAFEvaluator: max_examples=%s is deprecated; &#34;
+                &#34;re-interpreting as n_per_bin=%d across 6 AF bins.&#34;,
+                max_examples,
+                n_per_bin,
+            )
+
+        seed = int(self.config.get(&#34;seed&#34;, 42))
+        sampled = sample_gnomad(df, n_per_bin=n_per_bin, seed=seed)
+
+        self._last_sampling = {
+            &#34;n_per_bin&#34;: n_per_bin,
+            &#34;seed&#34;: seed,
+            &#34;total_rows_in_file&#34;: int(len(df)),
+        }
+        return sampled
+
+    def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
         adapter = self.adapter
         if not adapter.supports(&#34;likelihood&#34;):
             raise RuntimeError(
@@ -104,15 +133,108 @@ el.replaceWith(d);
         )
         ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)
         var_ll = np.asarray(var_out.log_likelihood, dtype=float)
-        return {&#34;scores&#34;: var_ll - ref_ll}
+        # Common alleles are expected to look &#34;natural&#34; to the model, so we
+        # score as LL(var) − LL(ref): a positive Spearman(AF, score) means
+        # the model ranks more-frequent alleles higher.
+        scores = var_ll - ref_ll
+        return {
+            &#34;scores&#34;: scores,
+            &#34;reference_log_likelihood&#34;: ref_ll,
+            &#34;variant_log_likelihood&#34;: var_ll,
+        }
 
-    def compute_metrics(self, dataset: pd.DataFrame, predictions) -&gt; Dict[str, float]:
+    def compute_metrics(
+        self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]
+    ) -&gt; Dict[str, float]:
         af = dataset[&#34;allele_frequency&#34;].to_numpy(dtype=float)
-        return correlation_metrics(af, predictions[&#34;scores&#34;])
+        scores = predictions[&#34;scores&#34;]
+        ref_ll = predictions[&#34;reference_log_likelihood&#34;]
+        var_ll = predictions[&#34;variant_log_likelihood&#34;]
 
-    def build_report(self, metrics, dataset, predictions):
+        metrics: Dict[str, float] = {}
+        if len(af) &lt; _MIN_ROWS_FOR_CORRELATION:
+            logger.warning(
+                &#34;GnomadAFEvaluator: skipping correlation metrics (%d &lt; %d rows)&#34;,
+                len(af),
+                _MIN_ROWS_FOR_CORRELATION,
+            )
+            self._last_bootstrap = {}
+            self._last_per_bin = {}
+            self._last_score_distribution = {}
+            return metrics
+
+        metrics.update(correlation_metrics(af, scores))
+
+        n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+        self._last_bootstrap = bootstrap_correlation_ci(
+            af, scores, n_boot=n_boot, seed=int(self.config.get(&#34;seed&#34;, 42))
+        )
+        self._last_per_bin = per_bin_correlation(af, scores)
+        self._last_score_distribution = score_distribution_stats(
+            af, ref_ll, var_ll, scores
+        )
+        return metrics
+
+    def build_report(
+        self,
+        metrics: Dict[str, float],
+        dataset: pd.DataFrame,
+        predictions: Dict[str, np.ndarray],
+    ) -&gt; Dict[str, Any]:
         report = super().build_report(metrics, dataset, predictions)
-        report.update({&#34;num_variants&#34;: int(len(dataset))})
+
+        sampling = getattr(self, &#34;_last_sampling&#34;, None)
+        per_bin = getattr(self, &#34;_last_per_bin&#34;, None)
+        bootstrap_ci = getattr(self, &#34;_last_bootstrap&#34;, None)
+        score_distribution = getattr(self, &#34;_last_score_distribution&#34;, None)
+
+        # Format the bootstrap CIs as serialisable dicts.
+        bootstrap_payload: Dict[str, Dict[str, float]] = {}
+        if bootstrap_ci:
+            for key, (lo, hi) in bootstrap_ci.items():
+                bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+        preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+        prediction_paths = write_predictions(
+            output_dir=self.output_dir,
+            dataset=dataset,
+            predictions=predictions,
+            score_distribution=score_distribution,
+            sampling=sampling,
+            arch=self.handle.arch,
+            modality=self.handle.modality,
+            preview_count=preview_count,
+        )
+
+        report.update(
+            {
+                &#34;num_variants&#34;: int(len(dataset)),
+                &#34;sampling&#34;: sampling,
+                &#34;af_distribution&#34;: {
+                    &#34;min&#34;: float(dataset[&#34;allele_frequency&#34;].min())
+                    if len(dataset)
+                    else None,
+                    &#34;max&#34;: float(dataset[&#34;allele_frequency&#34;].max())
+                    if len(dataset)
+                    else None,
+                    &#34;median&#34;: float(dataset[&#34;allele_frequency&#34;].median())
+                    if len(dataset)
+                    else None,
+                },
+                &#34;per_bin_correlation&#34;: per_bin,
+                &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+                &#34;score_distribution&#34;: score_distribution,
+                &#34;artefacts&#34;: prediction_paths,
+                &#34;notes&#34;: (
+                    &#34;Score is LL(var) − LL(ref): higher means the model ranks &#34;
+                    &#34;the variant allele above the reference. Positive Spearman &#34;
+                    &#34;with AF is the expected direction (common alleles look &#34;
+                    &#34;&#39;natural&#39;). Bootstrap CI uses resampling over rows; 95 % &#34;
+                    &#34;intervals that straddle 0 mean the correlation is not &#34;
+                    &#34;statistically distinguishable from zero.&#34;
+                ),
+            }
+        )
         return report</code></pre>
 </details>
 <div class="desc"><p>Common scaffolding for evaluation tasks.</p>
@@ -134,16 +256,73 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.evaluator.GnomadAFEvaluator.build_report"><code class="name flex">
-<span>def <span class="ident">build_report</span></span>(<span>self, metrics, dataset, predictions)</span>
+<span>def <span class="ident">build_report</span></span>(<span>self,<br>metrics: Dict[str, float],<br>dataset: pd.DataFrame,<br>predictions: Dict[str, np.ndarray]) ‑> Dict[str, Any]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_report(self, metrics, dataset, predictions):
+<pre><code class="python">def build_report(
+    self,
+    metrics: Dict[str, float],
+    dataset: pd.DataFrame,
+    predictions: Dict[str, np.ndarray],
+) -&gt; Dict[str, Any]:
     report = super().build_report(metrics, dataset, predictions)
-    report.update({&#34;num_variants&#34;: int(len(dataset))})
+
+    sampling = getattr(self, &#34;_last_sampling&#34;, None)
+    per_bin = getattr(self, &#34;_last_per_bin&#34;, None)
+    bootstrap_ci = getattr(self, &#34;_last_bootstrap&#34;, None)
+    score_distribution = getattr(self, &#34;_last_score_distribution&#34;, None)
+
+    # Format the bootstrap CIs as serialisable dicts.
+    bootstrap_payload: Dict[str, Dict[str, float]] = {}
+    if bootstrap_ci:
+        for key, (lo, hi) in bootstrap_ci.items():
+            bootstrap_payload[key] = {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)}
+
+    preview_count = int(self.config.get(&#34;predictions_preview_count&#34;, 20))
+    prediction_paths = write_predictions(
+        output_dir=self.output_dir,
+        dataset=dataset,
+        predictions=predictions,
+        score_distribution=score_distribution,
+        sampling=sampling,
+        arch=self.handle.arch,
+        modality=self.handle.modality,
+        preview_count=preview_count,
+    )
+
+    report.update(
+        {
+            &#34;num_variants&#34;: int(len(dataset)),
+            &#34;sampling&#34;: sampling,
+            &#34;af_distribution&#34;: {
+                &#34;min&#34;: float(dataset[&#34;allele_frequency&#34;].min())
+                if len(dataset)
+                else None,
+                &#34;max&#34;: float(dataset[&#34;allele_frequency&#34;].max())
+                if len(dataset)
+                else None,
+                &#34;median&#34;: float(dataset[&#34;allele_frequency&#34;].median())
+                if len(dataset)
+                else None,
+            },
+            &#34;per_bin_correlation&#34;: per_bin,
+            &#34;bootstrap_ci_95&#34;: bootstrap_payload,
+            &#34;score_distribution&#34;: score_distribution,
+            &#34;artefacts&#34;: prediction_paths,
+            &#34;notes&#34;: (
+                &#34;Score is LL(var) − LL(ref): higher means the model ranks &#34;
+                &#34;the variant allele above the reference. Positive Spearman &#34;
+                &#34;with AF is the expected direction (common alleles look &#34;
+                &#34;&#39;natural&#39;). Bootstrap CI uses resampling over rows; 95 % &#34;
+                &#34;intervals that straddle 0 mean the correlation is not &#34;
+                &#34;statistically distinguishable from zero.&#34;
+            ),
+        }
+    )
     return report</code></pre>
 </details>
 <div class="desc"><p>Return the payload written to JSON and markdown reports.</p>
@@ -166,16 +345,44 @@ distribution summaries, etc.</p></div>
 <div class="desc"><p>Return the high-level task category.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.evaluator.GnomadAFEvaluator.compute_metrics"><code class="name flex">
-<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions) ‑> Dict[str, float]</span>
+<span>def <span class="ident">compute_metrics</span></span>(<span>self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]) ‑> Dict[str, float]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def compute_metrics(self, dataset: pd.DataFrame, predictions) -&gt; Dict[str, float]:
+<pre><code class="python">def compute_metrics(
+    self, dataset: pd.DataFrame, predictions: Dict[str, np.ndarray]
+) -&gt; Dict[str, float]:
     af = dataset[&#34;allele_frequency&#34;].to_numpy(dtype=float)
-    return correlation_metrics(af, predictions[&#34;scores&#34;])</code></pre>
+    scores = predictions[&#34;scores&#34;]
+    ref_ll = predictions[&#34;reference_log_likelihood&#34;]
+    var_ll = predictions[&#34;variant_log_likelihood&#34;]
+
+    metrics: Dict[str, float] = {}
+    if len(af) &lt; _MIN_ROWS_FOR_CORRELATION:
+        logger.warning(
+            &#34;GnomadAFEvaluator: skipping correlation metrics (%d &lt; %d rows)&#34;,
+            len(af),
+            _MIN_ROWS_FOR_CORRELATION,
+        )
+        self._last_bootstrap = {}
+        self._last_per_bin = {}
+        self._last_score_distribution = {}
+        return metrics
+
+    metrics.update(correlation_metrics(af, scores))
+
+    n_boot = int(self.config.get(&#34;bootstrap_samples&#34;, 200))
+    self._last_bootstrap = bootstrap_correlation_ci(
+        af, scores, n_boot=n_boot, seed=int(self.config.get(&#34;seed&#34;, 42))
+    )
+    self._last_per_bin = per_bin_correlation(af, scores)
+    self._last_score_distribution = score_distribution_stats(
+        af, ref_ll, var_ll, scores
+    )
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -189,22 +396,42 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
     df = load_gnomad(self.gnomad_path)
+
+    n_per_bin = self.config.get(&#34;n_per_bin&#34;)
     max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        df = df.head(int(max_examples)).reset_index(drop=True)
-    return df</code></pre>
+    if n_per_bin is None and max_examples is not None:
+        # Backwards compatibility: redistribute the legacy cap across
+        # the 6 default AF bins so old smoke scripts still draw a
+        # rank-diverse sample rather than a head() slice.
+        n_per_bin = max(1, int(max_examples) // 6)
+        logger.warning(
+            &#34;GnomadAFEvaluator: max_examples=%s is deprecated; &#34;
+            &#34;re-interpreting as n_per_bin=%d across 6 AF bins.&#34;,
+            max_examples,
+            n_per_bin,
+        )
+
+    seed = int(self.config.get(&#34;seed&#34;, 42))
+    sampled = sample_gnomad(df, n_per_bin=n_per_bin, seed=seed)
+
+    self._last_sampling = {
+        &#34;n_per_bin&#34;: n_per_bin,
+        &#34;seed&#34;: seed,
+        &#34;total_rows_in_file&#34;: int(len(df)),
+    }
+    return sampled</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.gnomad_af_correlation.evaluator.GnomadAFEvaluator.run_predictions"><code class="name flex">
-<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame)</span>
+<span>def <span class="ident">run_predictions</span></span>(<span>self, dataset: pd.DataFrame) ‑> Dict[str, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame):
+<pre><code class="python">def run_predictions(self, dataset: pd.DataFrame) -&gt; Dict[str, np.ndarray]:
     adapter = self.adapter
     if not adapter.supports(&#34;likelihood&#34;):
         raise RuntimeError(
@@ -220,7 +447,15 @@ distribution summaries, etc.</p></div>
     )
     ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)
     var_ll = np.asarray(var_out.log_likelihood, dtype=float)
-    return {&#34;scores&#34;: var_ll - ref_ll}</code></pre>
+    # Common alleles are expected to look &#34;natural&#34; to the model, so we
+    # score as LL(var) − LL(ref): a positive Spearman(AF, score) means
+    # the model ranks more-frequent alleles higher.
+    scores = var_ll - ref_ll
+    return {
+        &#34;scores&#34;: scores,
+        &#34;reference_log_likelihood&#34;: ref_ll,
+        &#34;variant_log_likelihood&#34;: var_ll,
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>

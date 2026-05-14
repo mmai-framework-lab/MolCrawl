@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.tape.metrics API documentation</title>
-<meta name="description" content="TAPE metric dispatch …">
+<meta name="description" content="TAPE metric dispatch + bootstrap CIs …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,10 +36,10 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.tape.metrics</code></h1>
 </header>
 <section id="section-intro">
-<p>TAPE metric dispatch.</p>
-<p>Picks the metric pack appropriate for each task type:</p>
+<p>TAPE metric dispatch + bootstrap CIs.</p>
+<p>Metric packs:</p>
 <ul>
-<li>classification / sequence_labeling: accuracy, F1 (macro), MCC</li>
+<li>classification / sequence_labeling: accuracy, macro F1, MCC</li>
 <li>regression: RMSE, Spearman, Pearson</li>
 <li>contact_prediction: placeholder <code>precision_at_L_over_5</code> that
 requires external CASP-style evaluation; the default implementation
@@ -53,6 +53,176 @@ returns NaN and the real computation is wired in a follow-up PR.</li>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.tasks.evaluation.tape.metrics.bootstrap_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_ci</span></span>(<span>y_true: np.ndarray,<br>y_pred: np.ndarray,<br>task_type: str,<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Dict[str, Tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_ci(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    task_type: str,
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Dict[str, Tuple[float, float]]:
+    &#34;&#34;&#34;Bootstrap CIs for the active metric pack.
+
+    Returns ``{}`` for placeholders and when n_boot &lt;= 0. Skips a metric
+    when a resample collapses to one class (mcc / f1 are undefined).
+    &#34;&#34;&#34;
+    if n_boot &lt;= 0:
+        return {}
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred)
+    if yt.size == 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    if task_type == &#34;regression&#34;:
+        keys = (&#34;rmse&#34;, &#34;spearman&#34;, &#34;pearson&#34;)
+
+        def compute(yti, ypi):
+            return regression_metrics(yti.astype(float), ypi.astype(float))
+    else:
+        keys = (&#34;accuracy&#34;, &#34;f1_macro&#34;, &#34;mcc&#34;)
+
+        def compute(yti, ypi):
+            return classification_metrics(yti.astype(int), ypi.astype(int))
+
+    buckets: Dict[str, list] = {k: [] for k in keys}
+    for _ in range(n_boot):
+        idx = rng.integers(0, yt.size, size=yt.size)
+        try:
+            m = compute(yt[idx], yp[idx])
+        except Exception:
+            continue
+        for k in keys:
+            if k in m and m[k] is not None:
+                buckets[k].append(m[k])
+
+    alpha = (1.0 - ci) / 2.0
+
+    def _ci(arr) -&gt; Tuple[float, float]:
+        a = np.asarray(arr, dtype=float)
+        a = a[~np.isnan(a)]
+        if a.size == 0:
+            return float(&#34;nan&#34;), float(&#34;nan&#34;)
+        return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
+
+    return {k: _ci(v) for k, v in buckets.items()}</code></pre>
+</details>
+<div class="desc"><p>Bootstrap CIs for the active metric pack.</p>
+<p>Returns <code>{}</code> for placeholders and when n_boot &lt;= 0. Skips a metric
+when a resample collapses to one class (mcc / f1 are undefined).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tape.metrics.bootstrap_contact_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_contact_ci</span></span>(<span>per_protein: list,<br>min_separation: int = 24,<br>ks: tuple = (1, 2, 5),<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Dict[str, tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_contact_ci(
+    per_protein: list,
+    min_separation: int = 24,
+    ks: tuple = (1, 2, 5),
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Dict[str, &#34;tuple[float, float]&#34;]:
+    &#34;&#34;&#34;Bootstrap CIs for ``precision_at_L_over_k`` by resampling proteins.&#34;&#34;&#34;
+    if n_boot &lt;= 0 or not per_protein:
+        return {}
+    n = len(per_protein)
+    rng = np.random.default_rng(seed)
+    buckets: Dict[str, list] = {f&#34;precision_at_L_over_{k}&#34;: [] for k in ks}
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        try:
+            m = contact_prediction_metrics(
+                [per_protein[i] for i in idx],
+                min_separation=min_separation,
+                ks=ks,
+            )
+        except Exception:
+            continue
+        for k in ks:
+            key = f&#34;precision_at_L_over_{k}&#34;
+            v = m.get(key)
+            if v is not None and not np.isnan(v):
+                buckets[key].append(float(v))
+
+    alpha = (1.0 - ci) / 2.0
+
+    def _ci(arr):
+        a = np.asarray(arr, dtype=float)
+        a = a[~np.isnan(a)]
+        if a.size == 0:
+            return float(&#34;nan&#34;), float(&#34;nan&#34;)
+        return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
+
+    return {k: _ci(v) for k, v in buckets.items()}</code></pre>
+</details>
+<div class="desc"><p>Bootstrap CIs for <code>precision_at_L_over_k</code> by resampling proteins.</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tape.metrics.bootstrap_sequence_labeling_ci"><code class="name flex">
+<span>def <span class="ident">bootstrap_sequence_labeling_ci</span></span>(<span>per_protein_pred: list,<br>per_protein_label: list,<br>per_protein_mask: list,<br>n_boot: int = 100,<br>ci: float = 0.95,<br>seed: int = 42) ‑> Dict[str, tuple[float, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bootstrap_sequence_labeling_ci(
+    per_protein_pred: list,
+    per_protein_label: list,
+    per_protein_mask: list,
+    n_boot: int = 100,
+    ci: float = 0.95,
+    seed: int = 42,
+) -&gt; Dict[str, &#34;tuple[float, float]&#34;]:
+    &#34;&#34;&#34;Resample whole proteins (rows), recompute Q-overall / per-protein mean / f1_macro.&#34;&#34;&#34;
+    if n_boot &lt;= 0:
+        return {}
+    n = len(per_protein_pred)
+    if n == 0:
+        return {}
+    rng = np.random.default_rng(seed)
+    keys = (&#34;q_overall&#34;, &#34;q_per_protein_mean&#34;, &#34;f1_macro&#34;)
+    buckets: Dict[str, List[float]] = {k: [] for k in keys}
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        try:
+            m = sequence_labeling_metrics(
+                [per_protein_pred[i] for i in idx],
+                [per_protein_label[i] for i in idx],
+                [per_protein_mask[i] for i in idx],
+            )
+        except Exception:
+            continue
+        for k in keys:
+            v = m.get(k)
+            if v is not None:
+                buckets[k].append(float(v))
+
+    alpha = (1.0 - ci) / 2.0
+
+    def _ci(arr):
+        a = np.asarray(arr, dtype=float)
+        a = a[~np.isnan(a)]
+        if a.size == 0:
+            return float(&#34;nan&#34;), float(&#34;nan&#34;)
+        return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
+
+    return {k: _ci(v) for k, v in buckets.items()}</code></pre>
+</details>
+<div class="desc"><p>Resample whole proteins (rows), recompute Q-overall / per-protein mean / f1_macro.</p></div>
+</dd>
 <dt id="molcrawl.tasks.evaluation.tape.metrics.classification_metrics"><code class="name flex">
 <span>def <span class="ident">classification_metrics</span></span>(<span>y_true: np.ndarray, y_pred: np.ndarray) ‑> Dict[str, float]</span>
 </code></dt>
@@ -71,18 +241,98 @@ returns NaN and the real computation is wired in a follow-up PR.</li>
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.tape.metrics.contact_prediction_metrics"><code class="name flex">
-<span>def <span class="ident">contact_prediction_metrics</span></span>(<span>) ‑> Dict[str, float]</span>
+<span>def <span class="ident">contact_prediction_metrics</span></span>(<span>per_protein: list, min_separation: int = 24, ks: tuple = (1, 2, 5)) ‑> Dict[str, float]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def contact_prediction_metrics() -&gt; Dict[str, float]:
-    # Placeholder: the upstream protocol requires PDB-specific masking.
-    return {&#34;precision_at_L_over_5&#34;: float(&#34;nan&#34;)}</code></pre>
+<pre><code class="python">def contact_prediction_metrics(
+    per_protein: list,
+    min_separation: int = 24,
+    ks: tuple = (1, 2, 5),
+) -&gt; Dict[str, float]:
+    &#34;&#34;&#34;Long-range precision@L/k for contact maps.
+
+    ``per_protein`` is a list of dicts with keys::
+
+        seq_len   : int — protein length L
+        pair_idx  : np.ndarray of shape (P, 2) listing the (i, j) pairs
+                    that the model SCORED (only long-range pairs with
+                    j - i &gt;= min_separation should be passed in).
+        scores    : np.ndarray of shape (P,) — predicted contact scores
+                    aligned with ``pair_idx``.
+        labels    : np.ndarray of shape (P,) of 0/1 ground-truth contact
+                    labels for the same pairs.
+
+    For each protein, sort scored pairs by score (desc), take the top
+    ``L // k`` for each ``k`` in ``ks``, and report the fraction that
+    are true contacts. Returns the mean across proteins, the median,
+    and the per-k count of proteins scored. NaN when no protein has
+    enough long-range pairs to evaluate at that k.
+    &#34;&#34;&#34;
+    if not per_protein:
+        return {f&#34;precision_at_L_over_{k}&#34;: float(&#34;nan&#34;) for k in ks} | {
+            &#34;n_proteins_scored&#34;: 0.0,
+        }
+
+    out: Dict[str, float] = {}
+    n_scored = 0
+    per_k: Dict[int, list] = {k: [] for k in ks}
+    for prot in per_protein:
+        L = int(prot[&#34;seq_len&#34;])
+        pair_idx = np.asarray(prot[&#34;pair_idx&#34;], dtype=int)
+        scores = np.asarray(prot[&#34;scores&#34;], dtype=float)
+        labels = np.asarray(prot[&#34;labels&#34;], dtype=int)
+        # filter to long-range pairs (defensive — caller should already pass these)
+        if pair_idx.size &gt; 0:
+            sep = pair_idx[:, 1] - pair_idx[:, 0]
+            keep = sep &gt;= min_separation
+            scores = scores[keep]
+            labels = labels[keep]
+        if scores.size == 0:
+            continue
+        order = np.argsort(-scores)
+        scored = False
+        for k in ks:
+            top_n = max(1, L // k)
+            if scores.size &lt; top_n:
+                continue
+            top_idx = order[:top_n]
+            precision = float(labels[top_idx].mean())
+            per_k[k].append(precision)
+            scored = True
+        if scored:
+            n_scored += 1
+
+    for k in ks:
+        vals = per_k[k]
+        if vals:
+            out[f&#34;precision_at_L_over_{k}&#34;] = float(np.mean(vals))
+            out[f&#34;precision_at_L_over_{k}_median&#34;] = float(np.median(vals))
+        else:
+            out[f&#34;precision_at_L_over_{k}&#34;] = float(&#34;nan&#34;)
+            out[f&#34;precision_at_L_over_{k}_median&#34;] = float(&#34;nan&#34;)
+    out[&#34;n_proteins_scored&#34;] = float(n_scored)
+    return out</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Long-range precision@L/k for contact maps.</p>
+<p><code>per_protein</code> is a list of dicts with keys::</p>
+<pre><code>seq_len   : int — protein length L
+pair_idx  : np.ndarray of shape (P, 2) listing the (i, j) pairs
+            that the model SCORED (only long-range pairs with
+            j - i &gt;= min_separation should be passed in).
+scores    : np.ndarray of shape (P,) — predicted contact scores
+            aligned with &lt;code&gt;pair\_idx&lt;/code&gt;.
+labels    : np.ndarray of shape (P,) of 0/1 ground-truth contact
+            labels for the same pairs.
+</code></pre>
+<p>For each protein, sort scored pairs by score (desc), take the top
+<code>L // k</code> for each <code>k</code> in <code>ks</code>, and report the fraction that
+are true contacts. Returns the mean across proteins, the median,
+and the per-k count of proteins scored. NaN when no protein has
+enough long-range pairs to evaluate at that k.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.tape.metrics.regression_metrics"><code class="name flex">
 <span>def <span class="ident">regression_metrics</span></span>(<span>y_true: np.ndarray, y_pred: np.ndarray) ‑> Dict[str, float]</span>
@@ -101,6 +351,75 @@ returns NaN and the real computation is wired in a follow-up PR.</li>
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.tape.metrics.sequence_labeling_metrics"><code class="name flex">
+<span>def <span class="ident">sequence_labeling_metrics</span></span>(<span>per_protein_pred: list, per_protein_label: list, per_protein_mask: list) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sequence_labeling_metrics(
+    per_protein_pred: list,
+    per_protein_label: list,
+    per_protein_mask: list,
+) -&gt; Dict[str, float]:
+    &#34;&#34;&#34;Per-residue Q3/Q8 + macro F1 + per-protein mean accuracy.
+
+    All inputs are lists of length ``n_proteins``; each entry is a
+    1-D array (or list) of equal length per protein. Residues with
+    ``mask[i] == 0`` are excluded from both pooled and per-protein scores.
+    &#34;&#34;&#34;
+    if not per_protein_pred:
+        return {
+            &#34;q_overall&#34;: float(&#34;nan&#34;),
+            &#34;q_per_protein_mean&#34;: float(&#34;nan&#34;),
+            &#34;f1_macro&#34;: float(&#34;nan&#34;),
+            &#34;n_proteins_scored&#34;: 0.0,
+            &#34;n_residues_scored&#34;: 0.0,
+        }
+
+    flat_yt: list = []
+    flat_yp: list = []
+    per_prot_acc: list = []
+    for preds, labels, mask in zip(per_protein_pred, per_protein_label, per_protein_mask):
+        preds = np.asarray(preds, dtype=int)
+        labels = np.asarray(labels, dtype=int)
+        mask = np.asarray(mask, dtype=int)
+        if preds.size == 0 or labels.size == 0:
+            continue
+        valid = mask.astype(bool)
+        if not valid.any():
+            continue
+        p = preds[valid]
+        y = labels[valid]
+        flat_yt.extend(int(v) for v in y)
+        flat_yp.extend(int(v) for v in p)
+        per_prot_acc.append(float((p == y).mean()))
+
+    if not flat_yt:
+        return {
+            &#34;q_overall&#34;: float(&#34;nan&#34;),
+            &#34;q_per_protein_mean&#34;: float(&#34;nan&#34;),
+            &#34;f1_macro&#34;: float(&#34;nan&#34;),
+            &#34;n_proteins_scored&#34;: 0.0,
+            &#34;n_residues_scored&#34;: 0.0,
+        }
+    yt_arr = np.asarray(flat_yt, dtype=int)
+    yp_arr = np.asarray(flat_yp, dtype=int)
+    return {
+        &#34;q_overall&#34;: float((yt_arr == yp_arr).mean()),
+        &#34;q_per_protein_mean&#34;: float(np.mean(per_prot_acc)) if per_prot_acc else float(&#34;nan&#34;),
+        &#34;f1_macro&#34;: default_registry.compute(&#34;f1_macro&#34;, yt_arr, yp_arr),
+        &#34;n_proteins_scored&#34;: float(len(per_prot_acc)),
+        &#34;n_residues_scored&#34;: float(yt_arr.size),
+    }</code></pre>
+</details>
+<div class="desc"><p>Per-residue Q3/Q8 + macro F1 + per-protein mean accuracy.</p>
+<p>All inputs are lists of length <code>n_proteins</code>; each entry is a
+1-D array (or list) of equal length per protein. Residues with
+<code>mask[i] == 0</code> are excluded from both pooled and per-protein scores.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -118,9 +437,13 @@ returns NaN and the real computation is wired in a follow-up PR.</li>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.tape.metrics.bootstrap_ci" href="#molcrawl.tasks.evaluation.tape.metrics.bootstrap_ci">bootstrap_ci</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.metrics.bootstrap_contact_ci" href="#molcrawl.tasks.evaluation.tape.metrics.bootstrap_contact_ci">bootstrap_contact_ci</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.metrics.bootstrap_sequence_labeling_ci" href="#molcrawl.tasks.evaluation.tape.metrics.bootstrap_sequence_labeling_ci">bootstrap_sequence_labeling_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.metrics.classification_metrics" href="#molcrawl.tasks.evaluation.tape.metrics.classification_metrics">classification_metrics</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.metrics.contact_prediction_metrics" href="#molcrawl.tasks.evaluation.tape.metrics.contact_prediction_metrics">contact_prediction_metrics</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tape.metrics.regression_metrics" href="#molcrawl.tasks.evaluation.tape.metrics.regression_metrics">regression_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tape.metrics.sequence_labeling_metrics" href="#molcrawl.tasks.evaluation.tape.metrics.sequence_labeling_metrics">sequence_labeling_metrics</a></code></li>
 </ul>
 </li>
 </ul>

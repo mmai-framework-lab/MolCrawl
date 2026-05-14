@@ -38,12 +38,12 @@ el.replaceWith(d);
 <section id="section-intro">
 <p>Reference-set loading for MOSES.</p>
 <p>The MOSES benchmark distributes three canonical CSVs: <code>train.csv</code>,
-<code>test.csv</code>, and <code>test_scaffolds.csv</code> (ZINC-derived).
-The evaluator
-only needs the training SMILES (for novelty) and optionally the test
-SMILES for downstream distribution metrics.
-<code>manifest.json</code> next to
-these files records provenance and SHA-256.</p>
+<code>test.csv</code>, and <code>test_scaffolds.csv</code> (ZINC-derived). The evaluator
+needs the training SMILES (for novelty) and benefits from the test /
+test_scaffolds sets as a <em>cross-novelty</em> signal: a model that
+"memorises" only the train side may still score high vs train, so we
+also report novelty against the held-out splits.</p>
+<p><code>manifest.json</code> next to these files records provenance and SHA-256.</p>
 </section>
 <section>
 </section>
@@ -52,22 +52,69 @@ these files records provenance and SHA-256.</p>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="molcrawl.tasks.evaluation.moses.data_preparation.load_reference_smiles"><code class="name flex">
-<span>def <span class="ident">load_reference_smiles</span></span>(<span>path: Path, column: str = 'SMILES', limit: int | None = None) ‑> List[str]</span>
+<dt id="molcrawl.tasks.evaluation.moses.data_preparation.canonicalise_set"><code class="name flex">
+<span>def <span class="ident">canonicalise_set</span></span>(<span>smiles_list: Iterable[str]) ‑> Set[str]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_reference_smiles(path: Path, column: str = &#34;SMILES&#34;, limit: int | None = None) -&gt; List[str]:
+<pre><code class="python">def canonicalise_set(
+    smiles_list: Iterable[str],
+) -&gt; Set[str]:
+    &#34;&#34;&#34;Return the set of canonical SMILES (RDKit) for fast novelty lookup.
+
+    Falls back to a set of raw strings when RDKit is unavailable, so the
+    evaluator still runs in a stripped-down environment (with the caveat
+    that novelty becomes a string-equality check rather than a chemical
+    one).
+    &#34;&#34;&#34;
+    try:
+        from rdkit import Chem, RDLogger
+    except ImportError:
+        logger.info(
+            &#34;RDKit unavailable; canonicalise_set falls back to raw string equality&#34;
+        )
+        return {str(s) for s in smiles_list}
+
+    RDLogger.DisableLog(&#34;rdApp.*&#34;)  # type: ignore[attr-defined]
+    out: Set[str] = set()
+    for s in smiles_list:
+        if not isinstance(s, str) or not s:
+            continue
+        mol = Chem.MolFromSmiles(s)
+        if mol is None:
+            continue
+        try:
+            out.add(Chem.MolToSmiles(mol, canonical=True))
+        except Exception:  # noqa: BLE001 — RDKit can raise on edge-case mols
+            continue
+    return out</code></pre>
+</details>
+<div class="desc"><p>Return the set of canonical SMILES (RDKit) for fast novelty lookup.</p>
+<p>Falls back to a set of raw strings when RDKit is unavailable, so the
+evaluator still runs in a stripped-down environment (with the caveat
+that novelty becomes a string-equality check rather than a chemical
+one).</p></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.moses.data_preparation.load_reference_smiles"><code class="name flex">
+<span>def <span class="ident">load_reference_smiles</span></span>(<span>path: Path, column: str = 'SMILES', limit: Optional[int] = None) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_reference_smiles(
+    path: Path, column: str = &#34;SMILES&#34;, limit: Optional[int] = None
+) -&gt; List[str]:
     csv_path = Path(path)
     if not csv_path.exists():
         raise FileNotFoundError(csv_path)
 
     df = pd.read_csv(csv_path)
     if column not in df.columns:
-        # Some distributions use lowercase or a single-column file.
         if &#34;smiles&#34; in df.columns:
             column = &#34;smiles&#34;
         else:
@@ -100,6 +147,7 @@ these files records provenance and SHA-256.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.moses.data_preparation.canonicalise_set" href="#molcrawl.tasks.evaluation.moses.data_preparation.canonicalise_set">canonicalise_set</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.moses.data_preparation.load_reference_smiles" href="#molcrawl.tasks.evaluation.moses.data_preparation.load_reference_smiles">load_reference_smiles</a></code></li>
 </ul>
 </li>

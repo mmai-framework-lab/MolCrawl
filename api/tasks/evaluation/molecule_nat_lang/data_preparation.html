@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation API documentation</title>
-<meta name="description" content="Loader for molecule-caption pair evaluations.">
+<meta name="description" content="Loader + sampling helpers for molecule-caption pair evaluations.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation</code></h1>
 </header>
 <section id="section-intro">
-<p>Loader for molecule-caption pair evaluations.</p>
+<p>Loader + sampling helpers for molecule-caption pair evaluations.</p>
 </section>
 <section>
 </section>
@@ -70,10 +70,72 @@ el.replaceWith(d);
             f&#34;Available: {list(df.columns)}&#34;
         )
     df = df.dropna(subset=list(required)).reset_index(drop=True)
-    logger.info(&#34;Loaded %d molecule-caption pairs&#34;, len(df))
+    logger.info(&#34;Loaded %d molecule-caption pairs from %s&#34;, len(df), file_path)
     return df</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation.stratified_subsample"><code class="name flex">
+<span>def <span class="ident">stratified_subsample</span></span>(<span>df: pd.DataFrame,<br>n_examples: int,<br>smiles_column: str = 'smiles',<br>caption_column: str = 'caption',<br>seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stratified_subsample(
+    df: pd.DataFrame,
+    n_examples: int,
+    smiles_column: str = &#34;smiles&#34;,
+    caption_column: str = &#34;caption&#34;,
+    seed: int = 42,
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Down-sample by combined-length quantile bins.
+
+    The metric here is mean PLL of ``caption + smiles``; samples that
+    happen to be all very short (or all very long) bias the perplexity
+    point estimate. Bin by total length and sample proportionally so the
+    perplexity reflects the corpus length distribution.
+    &#34;&#34;&#34;
+    if n_examples &gt;= len(df):
+        return df.reset_index(drop=True)
+    rng = np.random.default_rng(seed)
+
+    lengths = (
+        df[smiles_column].astype(str).str.len()
+        + df[caption_column].astype(str).str.len()
+    ).to_numpy()
+    n_bins = min(10, max(2, n_examples // 25))
+    try:
+        bin_ids = pd.qcut(
+            lengths, q=n_bins, labels=False, duplicates=&#34;drop&#34;
+        ).to_numpy()
+    except Exception:
+        bin_ids = np.zeros(len(df), dtype=int)
+
+    parts = []
+    unique_bins = sorted(np.unique(bin_ids[~pd.isna(bin_ids)]))
+    base = n_examples // max(1, len(unique_bins))
+    remainder = n_examples - base * len(unique_bins)
+    for i, b in enumerate(unique_bins):
+        quota = base + (1 if i &lt; remainder else 0)
+        sub = df[bin_ids == b]
+        take = min(quota, len(sub))
+        state = int(rng.integers(0, 2**32 - 1))
+        parts.append(sub.sample(n=take, random_state=state))
+    sampled = pd.concat(parts, ignore_index=False)
+    logger.info(
+        &#34;stratified_subsample: %d rows across %d combined-length bins&#34;,
+        len(sampled),
+        len(unique_bins),
+    )
+    return sampled.sample(frac=1, random_state=seed).reset_index(drop=True)</code></pre>
+</details>
+<div class="desc"><p>Down-sample by combined-length quantile bins.</p>
+<p>The metric here is mean PLL of <code>caption + smiles</code>; samples that
+happen to be all very short (or all very long) bias the perplexity
+point estimate. Bin by total length and sample proportionally so the
+perplexity reflects the corpus length distribution.</p></div>
 </dd>
 </dl>
 </section>
@@ -93,6 +155,7 @@ el.replaceWith(d);
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation.load_pairs" href="#molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation.load_pairs">load_pairs</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation.stratified_subsample" href="#molcrawl.tasks.evaluation.molecule_nat_lang.data_preparation.stratified_subsample">stratified_subsample</a></code></li>
 </ul>
 </li>
 </ul>

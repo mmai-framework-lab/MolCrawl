@@ -47,7 +47,7 @@ supervised classification problem with its own train / dev / test CSVs.</p>
 <dl>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.gue.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.gue.data_preparation</a></code></dt>
 <dd>
-<div class="desc"><p>GUE sub-task loader …</p></div>
+<div class="desc"><p>GUE sub-task loader + sampling helpers …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.gue.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.gue.evaluator</a></code></dt>
 <dd>
@@ -56,6 +56,14 @@ supervised classification problem with its own train / dev / test CSVs.</p>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.gue.metrics" href="metrics.html">molcrawl.tasks.evaluation.gue.metrics</a></code></dt>
 <dd>
 <div class="desc"><p>Metric pack for GUE sub-tasks.</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.gue.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.gue.predictions_log</a></code></dt>
+<dd>
+<div class="desc"><p>Per-row predictions dump for GUE evaluator …</p></div>
+</dd>
+<dt><code class="name"><a title="molcrawl.tasks.evaluation.gue.prepare_csv" href="prepare_csv.html">molcrawl.tasks.evaluation.gue.prepare_csv</a></code></dt>
+<dd>
+<div class="desc"><p>Materialise GUE sub-task CSVs from a HuggingFace dataset repo …</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.gue.splits" href="splits.html">molcrawl.tasks.evaluation.gue.splits</a></code></dt>
 <dd>
@@ -105,16 +113,26 @@ supervised classification problem with its own train / dev / test CSVs.</p>
         )
         self.task_dir = Path(task_dir)
         self.task_spec = task_spec
+        self.max_examples: Optional[int] = self.config.get(&#34;max_examples&#34;)
+        self.seed: int = int(self.config.get(&#34;seed&#34;, 42))
+        self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        self.predictions_preview_count: int = int(
+            self.config.get(&#34;predictions_preview_count&#34;, 16)
+        )
 
     def category(self) -&gt; str:
         return &#34;sequence_annotation&#34;
 
     def load_dataset(self):
         frames = load_splits(self.task_dir)
-        max_examples = self.config.get(&#34;max_examples&#34;)
-        if max_examples is not None:
-            for split in frames:
-                frames[split] = frames[split].head(int(max_examples)).reset_index(drop=True)
+        if self.max_examples is not None:
+            for split in list(frames.keys()):
+                frames[split] = stratified_subsample(
+                    frames[split],
+                    n_examples=int(self.max_examples),
+                    label_column=self.task_spec.label_column,
+                    seed=self.seed,
+                )
         return frames
 
     def run_predictions(self, dataset):
@@ -130,6 +148,13 @@ supervised classification problem with its own train / dev / test CSVs.</p>
         if test_df is None:
             raise RuntimeError(&#34;GUE needs a test or dev split&#34;)
 
+        logger.info(
+            &#34;GUE %s: embedding train=%d test=%d (num_classes=%d)&#34;,
+            self.task_spec.name,
+            len(train_df),
+            len(test_df),
+            self.task_spec.num_classes,
+        )
         train_emb = np.asarray(
             adapter.embed(train_df[self.task_spec.sequence_column].astype(str).tolist()).embeddings
         )
@@ -141,16 +166,43 @@ supervised classification problem with its own train / dev / test CSVs.</p>
         clf = LogisticRegression(max_iter=1000)
         clf.fit(train_emb, train_df[self.task_spec.label_column].astype(int).to_numpy())
         preds = clf.predict(test_emb)
-        return {&#34;predictions&#34;: preds, &#34;test_df&#34;: test_df}
+        return {
+            &#34;predictions&#34;: preds,
+            &#34;test_df&#34;: test_df,
+            &#34;train_size&#34;: int(len(train_df)),
+            &#34;test_size&#34;: int(len(test_df)),
+        }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
         test_df = predictions[&#34;test_df&#34;]
         y_true = test_df[self.task_spec.label_column].astype(int).to_numpy()
         y_pred = np.asarray(predictions[&#34;predictions&#34;], dtype=int)
-        return classification_metrics(y_true, y_pred, self.task_spec.num_classes)
+        metrics = classification_metrics(y_true, y_pred, self.task_spec.num_classes)
+        ci = bootstrap_classification_ci(
+            y_true,
+            y_pred,
+            num_classes=self.task_spec.num_classes,
+            n_boot=self.bootstrap_samples,
+            seed=self.seed,
+        )
+        self._last_bootstrap_ci = {
+            k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+        }
+        return metrics
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+        artefacts = write_predictions(
+            output_dir=self.output_dir,
+            test_df=predictions[&#34;test_df&#34;],
+            y_pred=predictions[&#34;predictions&#34;],
+            task_name=self.task_spec.name,
+            num_classes=self.task_spec.num_classes,
+            sequence_column=self.task_spec.sequence_column,
+            label_column=self.task_spec.label_column,
+            arch=self.handle.arch,
+            preview_count=self.predictions_preview_count,
+        )
         report.update(
             {
                 &#34;task_spec&#34;: {
@@ -158,6 +210,16 @@ supervised classification problem with its own train / dev / test CSVs.</p>
                     &#34;num_classes&#34;: self.task_spec.num_classes,
                 },
                 &#34;split_sizes&#34;: {k: int(len(v)) for k, v in dataset.items()},
+                &#34;train_size_used&#34;: predictions[&#34;train_size&#34;],
+                &#34;test_size_used&#34;: predictions[&#34;test_size&#34;],
+                &#34;seed&#34;: self.seed,
+                &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+                &#34;artefacts&#34;: artefacts,
+                &#34;notes&#34;: (
+                    &#34;Encoder-probe over a logistic-regression head. &#34;
+                    &#34;Multi-class tasks (splice_reconstructed=3, covid_variants=9) &#34;
+                    &#34;report accuracy/f1_macro; binary tasks add mcc/f1_binary.&#34;
+                ),
             }
         )
         return report</code></pre>
@@ -190,6 +252,17 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+    artefacts = write_predictions(
+        output_dir=self.output_dir,
+        test_df=predictions[&#34;test_df&#34;],
+        y_pred=predictions[&#34;predictions&#34;],
+        task_name=self.task_spec.name,
+        num_classes=self.task_spec.num_classes,
+        sequence_column=self.task_spec.sequence_column,
+        label_column=self.task_spec.label_column,
+        arch=self.handle.arch,
+        preview_count=self.predictions_preview_count,
+    )
     report.update(
         {
             &#34;task_spec&#34;: {
@@ -197,6 +270,16 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
                 &#34;num_classes&#34;: self.task_spec.num_classes,
             },
             &#34;split_sizes&#34;: {k: int(len(v)) for k, v in dataset.items()},
+            &#34;train_size_used&#34;: predictions[&#34;train_size&#34;],
+            &#34;test_size_used&#34;: predictions[&#34;test_size&#34;],
+            &#34;seed&#34;: self.seed,
+            &#34;bootstrap_ci_95&#34;: getattr(self, &#34;_last_bootstrap_ci&#34;, {}),
+            &#34;artefacts&#34;: artefacts,
+            &#34;notes&#34;: (
+                &#34;Encoder-probe over a logistic-regression head. &#34;
+                &#34;Multi-class tasks (splice_reconstructed=3, covid_variants=9) &#34;
+                &#34;report accuracy/f1_macro; binary tasks add mcc/f1_binary.&#34;
+            ),
         }
     )
     return report</code></pre>
@@ -232,7 +315,18 @@ distribution summaries, etc.</p></div>
     test_df = predictions[&#34;test_df&#34;]
     y_true = test_df[self.task_spec.label_column].astype(int).to_numpy()
     y_pred = np.asarray(predictions[&#34;predictions&#34;], dtype=int)
-    return classification_metrics(y_true, y_pred, self.task_spec.num_classes)</code></pre>
+    metrics = classification_metrics(y_true, y_pred, self.task_spec.num_classes)
+    ci = bootstrap_classification_ci(
+        y_true,
+        y_pred,
+        num_classes=self.task_spec.num_classes,
+        n_boot=self.bootstrap_samples,
+        seed=self.seed,
+    )
+    self._last_bootstrap_ci = {
+        k: {&#34;ci_lo&#34;: float(lo), &#34;ci_hi&#34;: float(hi)} for k, (lo, hi) in ci.items()
+    }
+    return metrics</code></pre>
 </details>
 <div class="desc"><p>Compute a mapping of metric name -&gt; scalar.</p></div>
 </dd>
@@ -246,10 +340,14 @@ distribution summaries, etc.</p></div>
 </summary>
 <pre><code class="python">def load_dataset(self):
     frames = load_splits(self.task_dir)
-    max_examples = self.config.get(&#34;max_examples&#34;)
-    if max_examples is not None:
-        for split in frames:
-            frames[split] = frames[split].head(int(max_examples)).reset_index(drop=True)
+    if self.max_examples is not None:
+        for split in list(frames.keys()):
+            frames[split] = stratified_subsample(
+                frames[split],
+                n_examples=int(self.max_examples),
+                label_column=self.task_spec.label_column,
+                seed=self.seed,
+            )
     return frames</code></pre>
 </details>
 <div class="desc"><p>Return the dataset (list of examples, dataframe, etc.).</p></div>
@@ -275,6 +373,13 @@ distribution summaries, etc.</p></div>
     if test_df is None:
         raise RuntimeError(&#34;GUE needs a test or dev split&#34;)
 
+    logger.info(
+        &#34;GUE %s: embedding train=%d test=%d (num_classes=%d)&#34;,
+        self.task_spec.name,
+        len(train_df),
+        len(test_df),
+        self.task_spec.num_classes,
+    )
     train_emb = np.asarray(
         adapter.embed(train_df[self.task_spec.sequence_column].astype(str).tolist()).embeddings
     )
@@ -286,7 +391,12 @@ distribution summaries, etc.</p></div>
     clf = LogisticRegression(max_iter=1000)
     clf.fit(train_emb, train_df[self.task_spec.label_column].astype(int).to_numpy())
     preds = clf.predict(test_emb)
-    return {&#34;predictions&#34;: preds, &#34;test_df&#34;: test_df}</code></pre>
+    return {
+        &#34;predictions&#34;: preds,
+        &#34;test_df&#34;: test_df,
+        &#34;train_size&#34;: int(len(train_df)),
+        &#34;test_size&#34;: int(len(test_df)),
+    }</code></pre>
 </details>
 <div class="desc"><p>Produce predictions over the dataset using <code>self.adapter</code>.</p></div>
 </dd>
@@ -310,6 +420,8 @@ distribution summaries, etc.</p></div>
 <li><code><a title="molcrawl.tasks.evaluation.gue.data_preparation" href="data_preparation.html">molcrawl.tasks.evaluation.gue.data_preparation</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gue.evaluator" href="evaluator.html">molcrawl.tasks.evaluation.gue.evaluator</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gue.metrics" href="metrics.html">molcrawl.tasks.evaluation.gue.metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue.predictions_log" href="predictions_log.html">molcrawl.tasks.evaluation.gue.predictions_log</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.gue.prepare_csv" href="prepare_csv.html">molcrawl.tasks.evaluation.gue.prepare_csv</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gue.splits" href="splits.html">molcrawl.tasks.evaluation.gue.splits</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.gue.visualization" href="visualization.html">molcrawl.tasks.evaluation.gue.visualization</a></code></li>
 </ul>

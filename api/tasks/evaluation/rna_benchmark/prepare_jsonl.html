@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.tasks.evaluation.proteingym.gpt2_visualization API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl API documentation</title>
+<meta name="description" content="Build the per-tissue JSONL the rna_benchmark evaluator consumes …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,15 +33,148 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.tasks.evaluation.proteingym.gpt2_visualization</code></h1>
+<h1 class="title">Module <code>molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl</code></h1>
 </header>
 <section id="section-intro">
+<p>Build the per-tissue JSONL the rna_benchmark evaluator consumes.</p>
+<p>The training pipeline emits per-tissue parquet shards under
+<code>$LEARNING_SOURCE_DIR/rna/parquet_files/&lt;tissue&gt;.&lt;chunk&gt;.parquet</code>,
+each with two columns:</p>
+<ul>
+<li><code>token</code> — list of int16 token ids in the rna BERT / rnaformer vocab</li>
+<li><code>token_count</code> — original cell length</li>
+</ul>
+<p>For evaluation we want a small, balanced JSONL where each record is</p>
+<pre><code>{"dataset": &lt;tissue&gt;, "tokens": [...], "token_count": N}
+</code></pre>
+<p>The rna_benchmark evaluator groups by <code>dataset</code> and reports per-group
+mean log-likelihood / perplexity. The HfMlm adapter has been extended
+to accept pre-tokenised int lists so we ship the raw ids through; no
+tokenizer round-trip is required.</p>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>argv: Optional[List[str]] = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main(argv: Optional[List[str]] = None) -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    parser = argparse.ArgumentParser(
+        description=&#34;Build the rna_benchmark JSONL from training-pipeline parquet shards&#34;
+    )
+    parser.add_argument(
+        &#34;--parquet-dir&#34;,
+        required=True,
+        help=&#34;Directory containing &lt;tissue&gt;.&lt;chunk&gt;.parquet files &#34;
+        &#34;(typically $LEARNING_SOURCE_DIR/rna/parquet_files/).&#34;,
+    )
+    parser.add_argument(&#34;--output-path&#34;, required=True)
+    parser.add_argument(&#34;--cells-per-tissue&#34;, type=int, default=100)
+    parser.add_argument(
+        &#34;--max-tissues&#34;,
+        type=int,
+        default=None,
+        help=&#34;If set, keep only the first N tissues (alphabetical).&#34;,
+    )
+    parser.add_argument(
+        &#34;--tissues&#34;,
+        nargs=&#34;*&#34;,
+        default=None,
+        help=&#34;If set, restrict to this list of tissue names &#34;
+        &#34;(matched against the parquet filename prefix).&#34;,
+    )
+    parser.add_argument(&#34;--seed&#34;, type=int, default=42)
+    args = parser.parse_args(argv)
+
+    prepare_rna_benchmark_jsonl(
+        parquet_dir=Path(args.parquet_dir),
+        output_path=Path(args.output_path),
+        cells_per_tissue=args.cells_per_tissue,
+        max_tissues=args.max_tissues,
+        tissues=args.tissues,
+        seed=args.seed,
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl.prepare_rna_benchmark_jsonl"><code class="name flex">
+<span>def <span class="ident">prepare_rna_benchmark_jsonl</span></span>(<span>parquet_dir: Path,<br>output_path: Path,<br>cells_per_tissue: int = 100,<br>max_tissues: Optional[int] = None,<br>tissues: Optional[Iterable[str]] = None,<br>seed: int = 42) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_rna_benchmark_jsonl(
+    parquet_dir: Path,
+    output_path: Path,
+    cells_per_tissue: int = 100,
+    max_tissues: Optional[int] = None,
+    tissues: Optional[Iterable[str]] = None,
+    seed: int = 42,
+) -&gt; dict:
+    parquet_dir = Path(parquet_dir)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    tissue_files = _list_tissues(parquet_dir)
+    if tissues is not None:
+        wanted = {t.strip() for t in tissues}
+        tissue_files = {k: v for k, v in tissue_files.items() if k in wanted}
+    if max_tissues is not None:
+        tissue_files = dict(list(tissue_files.items())[: int(max_tissues)])
+
+    summary: Dict[str, Any] = {&#34;output&#34;: str(output_path), &#34;tissues&#34;: {}, &#34;total_cells&#34;: 0}
+    with output_path.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        for tissue, files in tissue_files.items():
+            logger.info(
+                &#34;Sampling %d cells from %d parquet shards for tissue=%r&#34;,
+                cells_per_tissue,
+                len(files),
+                tissue,
+            )
+            cells = _sample_from_parquet(
+                files, n_target=cells_per_tissue, seed=seed
+            )
+            for c in cells:
+                fh.write(
+                    json.dumps(
+                        {
+                            &#34;dataset&#34;: tissue,
+                            &#34;tokens&#34;: c[&#34;tokens&#34;],
+                            &#34;token_count&#34;: c[&#34;token_count&#34;],
+                        }
+                    )
+                    + &#34;\n&#34;
+                )
+            summary[&#34;tissues&#34;][tissue] = len(cells)
+            summary[&#34;total_cells&#34;] += len(cells)
+
+    logger.info(
+        &#34;Wrote %d cells across %d tissues -&gt; %s&#34;,
+        summary[&#34;total_cells&#34;],
+        len(summary[&#34;tissues&#34;]),
+        output_path,
+    )
+    summary_path = output_path.parent / (output_path.stem + &#34;_summary.json&#34;)
+    with summary_path.open(&#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        json.dump(summary, fh, indent=2, ensure_ascii=False)
+    summary[&#34;summary_path&#34;] = str(summary_path)
+    return summary</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -53,7 +186,13 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.tasks.evaluation.proteingym" href="index.html">molcrawl.tasks.evaluation.proteingym</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark" href="index.html">molcrawl.tasks.evaluation.rna_benchmark</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl.main" href="#molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl.main">main</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl.prepare_rna_benchmark_jsonl" href="#molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl.prepare_rna_benchmark_jsonl">prepare_rna_benchmark_jsonl</a></code></li>
 </ul>
 </li>
 </ul>
