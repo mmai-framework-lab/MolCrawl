@@ -48,11 +48,14 @@ def test_cosmic_runs(tmp_path: Path):
     from molcrawl.tasks.evaluation.cosmic.evaluator import CosmicEvaluator
 
     csv = tmp_path / "cosmic.csv"
+    # Need ≥ 20 total rows and ≥ 10 per class for ranking + threshold metrics
+    # to be computed; the upstream evaluator gates them on these thresholds.
+    bases = ["AAGT", "ACCT", "ACGA", "ACGC", "AGCT", "ATGT", "CCGT", "GCGT", "TCGT", "ACAT"]
     pd.DataFrame(
         {
-            "reference_sequence": ["ACGT", "ACGT", "ACGT", "ACGT"],
-            "variant_sequence": ["AAGT", "ACCT", "ACGA", "ACGC"],
-            "FATHMM_PREDICTION": ["PATHOGENIC", "NEUTRAL", "PATHOGENIC", "NEUTRAL"],
+            "reference_sequence": ["ACGT"] * 20,
+            "variant_sequence": bases + bases,
+            "FATHMM_PREDICTION": ["PATHOGENIC"] * 10 + ["NEUTRAL"] * 10,
         }
     ).to_csv(csv, index=False)
     handle = ModelHandle(arch="phase3-ll", modality="genome_sequence", model_path="x")
@@ -84,11 +87,16 @@ def test_gnomad_runs(tmp_path: Path):
     from molcrawl.tasks.evaluation.gnomad_af_correlation.evaluator import GnomadAFEvaluator
 
     csv = tmp_path / "gnomad.csv"
+    # Need ≥ _MIN_ROWS_FOR_CORRELATION (10) rows for correlation metrics to be
+    # computed; keep the bases varied so log-likelihood differences are non-zero.
+    ref = ["AAAA", "AACG", "AAGG", "AACC", "AGTC", "ATGC", "ACGT", "AGGC", "ATTC", "AATG", "AGAC", "AACT"]
+    var = ["AAAG", "AACG", "AAGG", "ACCC", "AGTA", "ATGA", "ACGA", "AGGA", "ATTA", "AATA", "AGAA", "AACA"]
+    af = [0.01, 0.5, 0.001, 0.3, 0.05, 0.2, 0.1, 0.4, 0.02, 0.25, 0.15, 0.08]
     pd.DataFrame(
         {
-            "reference_sequence": ["AAAA", "AACG", "AAGG", "AACC"],
-            "variant_sequence": ["AAAG", "AACG", "AAGG", "ACCC"],
-            "allele_frequency": [0.01, 0.5, 0.001, 0.3],
+            "reference_sequence": ref,
+            "variant_sequence": var,
+            "allele_frequency": af,
         }
     ).to_csv(csv, index=False)
     handle = ModelHandle(arch="phase3-ll", modality="genome_sequence", model_path="x")
