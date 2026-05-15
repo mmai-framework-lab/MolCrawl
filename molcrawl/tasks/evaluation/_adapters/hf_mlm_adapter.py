@@ -89,9 +89,9 @@ class HfMlmAdapter(ModelAdapter):
 
     def __init__(self, handle: ModelHandle):
         super().__init__(handle)
-        self.model = None
-        self.tokenizer = None
-        self._torch = None
+        self.model: Any = None
+        self.tokenizer: Any = None
+        self._torch: Any = None
 
     def load(self) -> None:
         import torch

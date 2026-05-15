@@ -35,11 +35,11 @@ class GPT2Adapter(ModelAdapter):
 
     def __init__(self, handle: ModelHandle):
         super().__init__(handle)
-        self.model = None
-        self.tokenizer = None
+        self.model: Any = None
+        self.tokenizer: Any = None
         self._tokenizer_kind: Optional[str] = None
         self._vocab_size: int = 0
-        self._torch = None
+        self._torch: Any = None
 
     def load(self) -> None:
         import torch
@@ -173,13 +173,13 @@ class GPT2Adapter(ModelAdapter):
             # tokenizer used during rna training).
             from transformers import AutoTokenizer
 
-            tok_dir = self.handle.tokenizer_path
-            if tok_dir is None:
+            rna_tok_dir: Optional[str] = self.handle.tokenizer_path
+            if rna_tok_dir is None:
                 from molcrawl.core.paths import get_custom_tokenizer_path
 
-                tok_dir = get_custom_tokenizer_path("rna", "bert")
-            logger.info("Loading rna AutoTokenizer from %s", tok_dir)
-            tok = AutoTokenizer.from_pretrained(tok_dir)
+                rna_tok_dir = get_custom_tokenizer_path("rna", "bert")
+            logger.info("Loading rna AutoTokenizer from %s", rna_tok_dir)
+            tok = AutoTokenizer.from_pretrained(rna_tok_dir)
             vocab_size = getattr(tok, "vocab_size", None)
             if vocab_size is None:
                 vocab_size = len(tok)
@@ -393,7 +393,7 @@ class GPT2Adapter(ModelAdapter):
         sequences: List[str] = []
         with torch.no_grad():
             for prompt in prompt_list:
-                for _ in range(num_samples):
+                for _sample_idx in range(num_samples):
                     prompt_ids = self._encode(prompt) or [default_start_id]
                     idx = torch.tensor(prompt_ids, dtype=torch.long, device=self.device).unsqueeze(0)
                     out = self.model.generate(
