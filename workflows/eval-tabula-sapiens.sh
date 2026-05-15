@@ -29,7 +29,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-rnaformer}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/tabula_sapiens}"
+RUNTAG="${RUNTAG:-tabula_sapiens_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir rna "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 

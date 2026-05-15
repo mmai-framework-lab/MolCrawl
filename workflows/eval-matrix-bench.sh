@@ -5,7 +5,9 @@
 # matrix completes in roughly half an hour.
 #
 # Optional environment:
-#   MATRIX_TAG       - subdirectory under experiment_data/eval/ (default v1)
+#   MATRIX_TAG       - tag prefixed onto each leaf (default v1). With the
+#                      flattened layout, runs land at
+#                      ``<eval>/<model-slug>/matrix_<TAG>_<task>_<arch>_<size>/``
 #   MATRIX_MAX       - common MAX_EXAMPLES override (default per-task tuned)
 #   MATRIX_DEVICE    - cuda / cpu (default cpu)
 #   MATRIX_BOOTSTRAP - bootstrap CI resamples (default 30)
@@ -34,20 +36,27 @@ BOOTSTRAP="${MATRIX_BOOTSTRAP:-30}"
 DRY="${MATRIX_DRY_RUN:-0}"
 FILTER="${MATRIX_FILTER:-}"
 
-MATRIX_BASE="${REPO_ROOT}/experiment_data/eval/matrix_${TAG}"
-mkdir -p "${MATRIX_BASE}"
+# Matrix runs live under LEARNING_SOURCE_DIR (canonical eval root),
+# directly under ``<modality>-<arch>-<size>/`` like every other run, with
+# a ``matrix_<TAG>_`` prefix on the leaf so the batch is still
+# identifiable inline. This keeps the model-first principle consistent
+# (no separate ``matrix_<TAG>/`` wrapper directory).
+EVAL_BASE="${LSD}/experiment_data/eval"
+LEAF_PREFIX="matrix_${TAG}_"
+mkdir -p "${EVAL_BASE}"
 
 run_one() {
-    # Args: task arch size out_subdir cmd...
-    local task="$1" arch="$2" size="$3" subdir="$4"
-    shift 4
+    # Args: modality task arch size leaf_basename cmd...
+    local modality="$1" task="$2" arch="$3" size="$4" leaf="$5"
+    shift 5
 
     local run_id="${task}__${arch}__${size}"
     if [[ -n "${FILTER}" ]] && [[ ! "${run_id}" =~ ${FILTER} ]]; then
         return 0
     fi
 
-    local outdir="${MATRIX_BASE}/${subdir}"
+    local slug="${modality}-${arch}-${size}"
+    local outdir="${EVAL_BASE}/${slug}/${LEAF_PREFIX}${leaf}"
     # gue / tape wrappers nest one level deeper (per-sub-task subdir),
     # so we look for *any* REPORT.md at depth ≤ 2 rather than only at
     # the top of ${outdir}.
@@ -78,7 +87,7 @@ export LEARNING_SOURCE_DIR="${LSD}"
 for size in small medium large ex-large; do
     ckpt="${LSD}/compounds_chembl/gpt2-output/compounds_chembl-${size}/ckpt.pt"
     [[ -f "$ckpt" ]] || continue
-    run_one chembl_scaffold_heldout gpt2 "${size}" "chembl_scaffold_heldout_gpt2_${size}" \
+    run_one compounds chembl_scaffold_heldout gpt2 "${size}" "chembl_scaffold_heldout_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TOKENIZER_PATH='${REPO_ROOT}/assets/molecules/vocab.txt' \
                  HELDOUT_CSV='${LSD}/eval/chembl_scaffold_heldout/heldout.csv' \
@@ -95,7 +104,7 @@ for size in small medium large; do
     [[ -d "$ckpt" ]] || continue
     # CELLS_PER_GROUP=4 (5 tissues × 4 = 20 cells, each 256 tokens)
     # keeps PLL tractable on CPU for bert-medium.
-    run_one rna_benchmark bert "${size}" "rna_benchmark_bert_${size}" \
+    run_one rna rna_benchmark bert "${size}" "rna_benchmark_bert_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TOKENIZER_PATH='${LSD}/rna/custom_tokenizer_bert' \
                  RNA_JSONL='${LSD}/eval/rna_benchmark/cells.jsonl' \
@@ -110,7 +119,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/rna/bert-output/rna-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one tabula_sapiens bert "${size}" "tabula_sapiens_bert_${size}" \
+    run_one rna tabula_sapiens bert "${size}" "tabula_sapiens_bert_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TOKENIZER_PATH='${LSD}/rna/custom_tokenizer_bert' \
                  TABULA_JSONL='${LSD}/eval/tabula_sapiens/cells.jsonl' \
@@ -125,7 +134,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/rna/bert-output/rna-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one replogle_perturb_seq bert "${size}" "replogle_perturb_seq_bert_${size}" \
+    run_one rna replogle_perturb_seq bert "${size}" "replogle_perturb_seq_bert_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TOKENIZER_PATH='${LSD}/rna/custom_tokenizer_bert' \
                  REPLOGLE_DATA='${LSD}/eval/replogle_perturb_seq/replogle.csv' \
@@ -145,17 +154,17 @@ done
 for size in small medium large; do
     ckpt="${LSD}/rna/gpt2-output/rna-${size}/ckpt.pt"
     [[ -f "$ckpt" ]] || continue
-    run_one rna_benchmark gpt2 "${size}" "rna_benchmark_gpt2_${size}" \
+    run_one rna rna_benchmark gpt2 "${size}" "rna_benchmark_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  RNA_JSONL='${LSD}/eval/rna_benchmark/cells.jsonl' \
                  ARCH=gpt2 CELLS_PER_GROUP=4 PREDICTIONS_PREVIEW_COUNT=4 \
                  bash '${REPO_ROOT}/workflows/eval-rna-benchmark.sh'"
-    run_one tabula_sapiens gpt2 "${size}" "tabula_sapiens_gpt2_${size}" \
+    run_one rna tabula_sapiens gpt2 "${size}" "tabula_sapiens_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TABULA_JSONL='${LSD}/eval/tabula_sapiens/cells.jsonl' \
                  ARCH=gpt2 MAX_CELLS=200 PREDICTIONS_PREVIEW_COUNT=8 \
                  bash '${REPO_ROOT}/workflows/eval-tabula-sapiens.sh'"
-    run_one replogle_perturb_seq gpt2 "${size}" "replogle_perturb_seq_gpt2_${size}" \
+    run_one rna replogle_perturb_seq gpt2 "${size}" "replogle_perturb_seq_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  REPLOGLE_DATA='${LSD}/eval/replogle_perturb_seq/replogle.csv' \
                  ARCH=gpt2 MAX_EXAMPLES=200 PREDICTIONS_PREVIEW_COUNT=4 \
@@ -177,7 +186,7 @@ if [[ -f "$pf_ref" ]]; then
         # ``checkpoint-XXXX/`` HF-format directory.
         ckpt="${LSD}/protein_sequence/gpt2-output/protein_sequence-${size}/ckpt.pt"
         [[ -f "$ckpt" ]] || continue
-        run_one protein_foldability gpt2 "${size}" "protein_foldability_gpt2_${size}" \
+        run_one protein_sequence protein_foldability gpt2 "${size}" "protein_foldability_gpt2_${size}" \
             bash -c "MODEL_PATH='${ckpt}' \
                      REFERENCE_FASTA='${pf_ref}' \
                      ARCH=gpt2 NUM_SAMPLES=200 MAX_NEW_TOKENS=128 SEED=42 \
@@ -193,7 +202,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/protein_sequence/esm2-output/esm2-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one deeploc esm2 "${size}" "deeploc_esm2_${size}" \
+    run_one protein_sequence deeploc esm2 "${size}" "deeploc_esm2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  DEEPLOC_DATA='${LSD}/eval/deeploc/deeploc.csv' \
                  ARCH=esm2 MAX_EXAMPLES=200 PREDICTIONS_PREVIEW_COUNT=8 \
@@ -205,7 +214,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/protein_sequence/bert-output/protein_sequence-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one deeploc bert "${size}" "deeploc_bert_${size}" \
+    run_one protein_sequence deeploc bert "${size}" "deeploc_bert_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  DEEPLOC_DATA='${LSD}/eval/deeploc/deeploc.csv' \
                  ARCH=bert MAX_EXAMPLES=200 PREDICTIONS_PREVIEW_COUNT=8 \
@@ -214,7 +223,7 @@ done
 for size in small medium large; do
     ckpt="${LSD}/protein_sequence/gpt2-output/protein_sequence-${size}/ckpt.pt"
     [[ -f "$ckpt" ]] || continue
-    run_one deeploc gpt2 "${size}" "deeploc_gpt2_${size}" \
+    run_one protein_sequence deeploc gpt2 "${size}" "deeploc_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  DEEPLOC_DATA='${LSD}/eval/deeploc/deeploc.csv' \
                  ARCH=gpt2 MAX_EXAMPLES=200 PREDICTIONS_PREVIEW_COUNT=8 \
@@ -228,7 +237,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/genome_sequence/dnabert2-output/dnabert2-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one gue dnabert2 "${size}" "gue_dnabert2_${size}" \
+    run_one genome_sequence gue dnabert2 "${size}" "gue_dnabert2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  GUE_DIR='${LSD}/eval/gue' \
                  TASKS='prom_300_all H3 tf_0' \
@@ -242,7 +251,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/genome_sequence/bert-output/genome_sequence-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one gue bert "${size}" "gue_bert_${size}" \
+    run_one genome_sequence gue bert "${size}" "gue_bert_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  GUE_DIR='${LSD}/eval/gue' \
                  TASKS='prom_300_all H3 tf_0' \
@@ -257,7 +266,7 @@ for size in small medium large; do
     ckpt="${LSD}/genome_sequence/gpt2-output/genome_sequence-${size}/ckpt.pt"
     [[ -f "$ckpt" ]] || continue
     tokenizer="${LSD}/genome_sequence/spm_tokenizer.model"
-    run_one gue gpt2 "${size}" "gue_gpt2_${size}" \
+    run_one genome_sequence gue gpt2 "${size}" "gue_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TOKENIZER_PATH='${tokenizer}' \
                  GUE_DIR='${LSD}/eval/gue' \
@@ -274,7 +283,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/protein_sequence/esm2-output/esm2-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one tape esm2 "${size}" "tape_esm2_${size}" \
+    run_one protein_sequence tape esm2 "${size}" "tape_esm2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TAPE_DIR='${LSD}/eval/tape' \
                  TASKS='fluorescence stability remote_homology secondary_structure_3 secondary_structure_8 contact_prediction' \
@@ -289,7 +298,7 @@ for size in small medium large; do
     ckpt_dir="${LSD}/protein_sequence/bert-output/protein_sequence-${size}"
     ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
     [[ -d "$ckpt" ]] || continue
-    run_one tape bert "${size}" "tape_bert_${size}" \
+    run_one protein_sequence tape bert "${size}" "tape_bert_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TAPE_DIR='${LSD}/eval/tape' \
                  TASKS='fluorescence stability remote_homology secondary_structure_3 secondary_structure_8 contact_prediction' \
@@ -304,7 +313,7 @@ done
 for size in small medium large; do
     ckpt="${LSD}/protein_sequence/gpt2-output/protein_sequence-${size}/ckpt.pt"
     [[ -f "$ckpt" ]] || continue
-    run_one tape gpt2 "${size}" "tape_gpt2_${size}" \
+    run_one protein_sequence tape gpt2 "${size}" "tape_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  TAPE_DIR='${LSD}/eval/tape' \
                  TASKS='fluorescence stability remote_homology' \
@@ -323,7 +332,7 @@ if [[ -f "${cp_dir}/contact_prediction_train.json" ]]; then
         ckpt_dir="${LSD}/protein_sequence/esm2-output/esm2-${size}"
         ckpt=$(ls -1d "${ckpt_dir}/checkpoint-"* 2>/dev/null | sort -V | tail -1)
         [[ -d "$ckpt" ]] || continue
-        run_one tape_contact_prediction esm2 "${size}" "tape_contact_prediction_esm2_${size}" \
+        run_one protein_sequence tape_contact_prediction esm2 "${size}" "tape_contact_prediction_esm2_${size}" \
             bash -c "MODEL_PATH='${ckpt}' \
                      TAPE_DIR='${LSD}/eval/tape' \
                      TASKS='contact_prediction' \
@@ -343,7 +352,7 @@ if [[ -f "${cosmic_csv}" ]]; then
         ckpt="${LSD}/genome_sequence/gpt2-output/genome_sequence-${size}/ckpt.pt"
         [[ -f "$ckpt" ]] || continue
         tokenizer="${LSD}/genome_sequence/spm_tokenizer.model"
-        run_one cosmic gpt2 "${size}" "cosmic_gpt2_${size}" \
+        run_one genome_sequence cosmic gpt2 "${size}" "cosmic_gpt2_${size}" \
             bash -c "MODEL_PATH='${ckpt}' \
                      TOKENIZER_PATH='${tokenizer}' \
                      COSMIC_DATA='${cosmic_csv}' \
@@ -371,7 +380,7 @@ if [[ -d "${chemllm_dir}" ]] && ls "${chemllm_dir}"/*.jsonl >/dev/null 2>&1; the
     for size in small medium large ex-large; do
         ckpt="${LSD}/molecule_nat_lang/gpt2-output/molecule_nat_lang-${size}/ckpt.pt"
         [[ -f "$ckpt" ]] || continue
-        run_one chemllmbench gpt2 "${size}" "chemllmbench_gpt2_${size}" \
+        run_one molecule_nat_lang chemllmbench gpt2 "${size}" "chemllmbench_gpt2_${size}" \
             bash -c "MODEL_PATH='${ckpt}' \
                      CHEMLLMBENCH_DIR='${chemllm_dir}' \
                      SUBTASKS='molecule_captioning molecule_design reaction_prediction name_conversion retrosynthesis yield_prediction property_prediction' \
@@ -391,7 +400,7 @@ for size in small medium large ex-large; do
     [[ -f "$ckpt" ]] || continue
     pairs="${LSD}/eval/molecule_nat_lang/pairs.csv"
     [[ -f "$pairs" ]] || continue
-    run_one molecule_nat_lang gpt2 "${size}" "molecule_nat_lang_gpt2_${size}" \
+    run_one molecule_nat_lang molecule_nat_lang gpt2 "${size}" "molecule_nat_lang_gpt2_${size}" \
         bash -c "MODEL_PATH='${ckpt}' \
                  PAIRS_CSV='${pairs}' \
                  ARCH=gpt2 MAX_EXAMPLES=200 PREDICTIONS_PREVIEW_COUNT=8 \
@@ -406,7 +415,7 @@ if [[ -d "${chebi_dir}" ]] && [[ -f "${chebi_dir}/test.txt" ]]; then
     for size in small medium large; do
         ckpt="${LSD}/molecule_nat_lang/gpt2-output/molecule_nat_lang-${size}/ckpt.pt"
         [[ -f "$ckpt" ]] || continue
-        run_one chebi20 gpt2 "${size}" "chebi20_gpt2_${size}" \
+        run_one molecule_nat_lang chebi20 gpt2 "${size}" "chebi20_gpt2_${size}" \
             bash -c "MODEL_PATH='${ckpt}' \
                      CHEBI20_DIR='${chebi_dir}' \
                      ARCH=gpt2 MAX_EXAMPLES=10 \
@@ -425,7 +434,7 @@ if [[ -f "${omim_csv}" ]]; then
         # invoke the python module directly. ``run_one`` exports
         # OUTPUT_DIR; we double-quote the inner bash -c body so it
         # expands inside the child shell rather than at composition time.
-        run_one omim gpt2 "${size}" "omim_gpt2_${size}" \
+        run_one genome_sequence omim gpt2 "${size}" "omim_gpt2_${size}" \
             bash -c "\"$PYTHON\" -m molcrawl.tasks.evaluation.omim \
                      --model-path '${ckpt}' \
                      --tokenizer-path '${tokenizer}' \
@@ -436,9 +445,6 @@ if [[ -f "${omim_csv}" ]]; then
 fi
 
 echo
-echo "[matrix] all combos processed under ${MATRIX_BASE}"
+echo "[matrix] all combos processed under ${EVAL_BASE}/<model-slug>/${LEAF_PREFIX}<task>_<arch>_<size>/"
 echo "[matrix] now rebuild the dashboard:"
-echo "  $PYTHON -m molcrawl.tasks.evaluation._dashboard \\"
-echo "    --input-dir ${REPO_ROOT}/experiment_data/eval \\"
-echo "    --output ${REPO_ROOT}/docs-src/assets/data/evaluations.json \\"
-echo "    --repo-root ${REPO_ROOT}"
+echo "  bash ${REPO_ROOT}/workflows/eval-build-dashboard.sh"

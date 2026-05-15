@@ -9,7 +9,12 @@
 #   ARCH            - adapter to build (default: gpt2)
 #   TOKENIZER_PATH  - required for arch=gpt2 genome; defaulted/ignored
 #                     per modality in adapter routing otherwise
-#   OUTPUT_DIR      - default experiment_data/eval/clinvar
+#   OUTPUT_DIR      - default ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model-slug>/<RUNTAG>
+#                     where <model-slug> is derived from MODEL_PATH and
+#                     <RUNTAG> defaults to a unique name (see RUNTAG below).
+#   RUNTAG          - leaf directory name under the model slug
+#                     (default: clinvar_default). Set this per run to keep
+#                     historical results separated, e.g. RUNTAG=clinvar_nper1000.
 #   N_PER_CLASS     - class-balanced sample size per class (pathogenic
 #                     and benign). Omit to evaluate on the full dataset.
 #   STRATIFY_CHROM  - "0" to disable per-chromosome stratified sampling
@@ -29,7 +34,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/clinvar}"
+RUNTAG="${RUNTAG:-clinvar_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir genome_sequence "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 

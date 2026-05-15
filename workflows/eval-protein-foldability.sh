@@ -9,7 +9,8 @@
 # Optional:
 #   ARCH                       - default gpt2 (only gpt2 supports generate)
 #   TOKENIZER_PATH             - passed as --tokenizer-path when set
-#   OUTPUT_DIR                 - default experiment_data/eval/protein_foldability
+#   OUTPUT_DIR                 - default ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model-slug>/<RUNTAG>
+#   RUNTAG                     - leaf directory name (default: protein_foldability_default)
 #   NUM_SAMPLES                - default 200
 #   TEMPERATURE                - default 1.0
 #   TOP_K                      - default unset
@@ -33,7 +34,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/protein_foldability}"
+RUNTAG="${RUNTAG:-protein_foldability_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir protein_sequence "$MODEL_PATH" "$RUNTAG")}"
 NUM_SAMPLES="${NUM_SAMPLES:-200}"
 
 mkdir -p "$OUTPUT_DIR"

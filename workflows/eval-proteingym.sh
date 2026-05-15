@@ -9,7 +9,8 @@
 #   ARCH             - adapter to build (default: gpt2)
 #   MODALITY         - default: protein_sequence
 #   TOKENIZER_PATH   - passed as --tokenizer-path when set
-#   OUTPUT_DIR       - default: experiment_data/eval/proteingym
+#   OUTPUT_DIR       - default ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model-slug>/<RUNTAG>
+#   RUNTAG           - leaf directory name (default: proteingym_default)
 #   N_EXAMPLES       - cap on variants scored (omit for full assay)
 #   STRATIFY_BIN     - "0" to disable DMS_bin_score stratified sampling
 #                      (default: stratification on when DMS_bin_score exists)
@@ -29,7 +30,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 ARCH="${ARCH:-gpt2}"
 MODALITY="${MODALITY:-protein_sequence}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/proteingym}"
+RUNTAG="${RUNTAG:-proteingym_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir "$MODALITY" "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 

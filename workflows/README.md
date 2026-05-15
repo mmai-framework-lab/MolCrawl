@@ -360,25 +360,42 @@ logs/                                   # Script execution logs
 
 ### Output Directory Customization
 
-Every evaluation wrapper honours the `OUTPUT_DIR` env var (default
-`experiment_data/eval/<task>/`):
+Every evaluation wrapper now composes its `OUTPUT_DIR` automatically as
+
+```
+${LEARNING_SOURCE_DIR}/experiment_data/eval/<modality>-<arch>-<size>/<RUNTAG>/
+```
+
+where the model slug is derived from `MODEL_PATH`. Operators only need
+to set `RUNTAG` to keep historical results separated:
 
 ```bash
-# ClinVar (genome decoder)
-OUTPUT_DIR=/custom/path/clinvar_results bash workflows/eval-clinvar.sh
+# ClinVar — gives you
+#   ${LEARNING_SOURCE_DIR}/experiment_data/eval/genome_sequence-bert-small/clinvar_nper1000/
+LEARNING_SOURCE_DIR=$LSD \
+MODEL_PATH=$LSD/genome_sequence/bert-output/genome_sequence-small/checkpoint-60000 \
+CLINVAR_DATA=$LSD/eval/clinvar/clinvar.csv \
+RUNTAG=clinvar_nper1000 N_PER_CLASS=1000 \
+bash workflows/eval-clinvar.sh
 
-# ProteinGym (protein encoder)
-OUTPUT_DIR=/custom/path/proteingym_results bash workflows/eval-proteingym.sh
-
-# DeepLoc / TAPE / GUE / etc. follow the same pattern
+# ProteinGym, MOSES, MoleculeNet, DeepLoc, TAPE, GUE, ... all follow
+# the same pattern. Override OUTPUT_DIR explicitly to escape the slug
+# layout (rarely needed).
 ```
 
 **Notes**:
 
-- Default output is `experiment_data/eval/<task>/` under repo root
+- The model-slug parent is computed by `derive_model_slug` in
+  `common_functions.sh` from `MODEL_PATH`; absolute and repo-relative
+  paths both work.
+- `RUNTAG` defaults to `<task>_default` to flag unspecified runs —
+  set it explicitly per run to avoid clobbering historical output.
 - All evaluators emit `metrics.json`, `REPORT.md`, `predictions.jsonl`,
-  and `predictions.txt` under `OUTPUT_DIR`
-- Bootstrap CIs render alongside point estimates whenever applicable
+  and `predictions.txt` under `OUTPUT_DIR`.
+- Smoke runs land under `_smoke/<model-slug>/<RUNTAG>/`, failed runs
+  (no `metrics.json`) under `_failed/<old_dir>/`.
+- See [`docs/04-evaluation/eval_dashboard.ja.md`](../docs/04-evaluation/eval_dashboard.ja.md)
+  for the full convention plus migration helpers.
 
 ### Evaluation Directory Contents
 
@@ -438,8 +455,9 @@ restrict to a sub-set of `<task>__<arch>__<size>` ids.
 ### Custom output directory
 
 Every wrapper honours `OUTPUT_DIR=...`. Default is
-`experiment_data/eval/<task>/`. `MAX_EXAMPLES`, `BOOTSTRAP`,
-`PREDICTIONS_PREVIEW_COUNT`, and `SEED` are also accepted by every
+`${LEARNING_SOURCE_DIR}/experiment_data/eval/<modality>-<arch>-<size>/<RUNTAG>/`
+(model slug derived from `MODEL_PATH`). `MAX_EXAMPLES`, `BOOTSTRAP`,
+`PREDICTIONS_PREVIEW_COUNT`, `SEED`, and `RUNTAG` are accepted by every
 wrapper.
 
 ### Experiment System
@@ -593,14 +611,19 @@ All evaluation scripts are structured around three phases:
 ### Flexible Output Directory
 
 Every evaluation wrapper takes `OUTPUT_DIR=...` as its output target.
-Default is `experiment_data/eval/<task>/` under repo root.
+Default is `${LEARNING_SOURCE_DIR}/experiment_data/eval/<modality>-<arch>-<size>/<RUNTAG>/`
+(model-first layout — see Output Directory Customization above).
 
 ```bash
-# Default
+# Default (slug derived from MODEL_PATH; RUNTAG defaults to clinvar_default)
 bash workflows/eval-clinvar.sh
-# -> experiment_data/eval/clinvar/
+# -> ${LEARNING_SOURCE_DIR}/experiment_data/eval/genome_sequence-<arch>-<size>/clinvar_default/
 
-# Custom
+# Set RUNTAG to keep historical runs separated
+RUNTAG=clinvar_nper1000 bash workflows/eval-clinvar.sh
+# -> ${LEARNING_SOURCE_DIR}/experiment_data/eval/<slug>/clinvar_nper1000/
+
+# Override OUTPUT_DIR to escape the slug layout entirely
 OUTPUT_DIR=/mnt/results/my_clinvar bash workflows/eval-clinvar.sh
 # -> /mnt/results/my_clinvar/
 ```

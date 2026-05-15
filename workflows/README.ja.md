@@ -356,23 +356,39 @@ logs/                                   # スクリプト実行ログ
 
 ### 出力ディレクトリのカスタマイズ
 
-すべての評価ラッパーは `OUTPUT_DIR=...` 環境変数で出力先を指定可能
-（デフォルトはリポジトリ直下の `experiment_data/eval/<task>/`）：
+各評価ラッパーは `OUTPUT_DIR` を自動合成します:
 
-```bash
-# ClinVar
-OUTPUT_DIR=/custom/path/clinvar_results bash workflows/eval-clinvar.sh
-
-# ProteinGym
-OUTPUT_DIR=/custom/path/proteingym_results bash workflows/eval-proteingym.sh
+```
+${LEARNING_SOURCE_DIR}/experiment_data/eval/<modality>-<arch>-<size>/<RUNTAG>/
 ```
 
-**注意**：
+`<modality>-<arch>-<size>` は `MODEL_PATH` から自動派生。 操作者は
+`RUNTAG` だけ指定すれば履歴を分離できます:
 
-- デフォルトはリポジトリ直下の `experiment_data/eval/<task>/`
-- すべての評価器が `metrics.json`、`REPORT.md`、`predictions.jsonl`、
-  `predictions.txt` を `OUTPUT_DIR` に出力
-- Bootstrap CI は適用可能な metric に対し点推定とともに表示
+```bash
+# ClinVar — 出力先は
+#   ${LEARNING_SOURCE_DIR}/experiment_data/eval/genome_sequence-bert-small/clinvar_nper1000/
+LEARNING_SOURCE_DIR=$LSD \
+MODEL_PATH=$LSD/genome_sequence/bert-output/genome_sequence-small/checkpoint-60000 \
+CLINVAR_DATA=$LSD/eval/clinvar/clinvar.csv \
+RUNTAG=clinvar_nper1000 N_PER_CLASS=1000 \
+bash workflows/eval-clinvar.sh
+
+# ProteinGym / MOSES / MoleculeNet / TAPE / GUE / DeepLoc 等も同パターン。
+# OUTPUT_DIR を明示的に渡せば slug レイアウトを抜け出せる(必要に応じて)。
+```
+
+**注意**:
+
+- model slug は `common_functions.sh` の `derive_model_slug` が
+  `MODEL_PATH` から派生(絶対 / 相対パス両方対応)。
+- `RUNTAG` 省略時は `<task>_default`(意図的に "未指定の印")。
+- smoke run は `_smoke/<model-slug>/<RUNTAG>/` に、
+  失敗 run(`metrics.json` 不在)は `_failed/<old_dir>/` に分離。
+- 詳細は [`docs/04-evaluation/eval_dashboard.ja.md`](../docs/04-evaluation/eval_dashboard.ja.md) を参照。
+- 各評価器が `metrics.json` / `REPORT.md` / `predictions.jsonl` /
+  `predictions.txt` を `OUTPUT_DIR` に出力。
+- Bootstrap CI は適用可能な metric に対し点推定とともに表示。
 
 ### 各評価ディレクトリの内容
 

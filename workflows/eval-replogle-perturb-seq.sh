@@ -27,7 +27,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-rnaformer}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/replogle_perturb_seq}"
+RUNTAG="${RUNTAG:-replogle_perturb_seq_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir rna "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 
