@@ -9,7 +9,9 @@
 # Optional:
 #   ARCH            - architecture tag (default: chemberta2)
 #   MODALITY        - foundation modality (default: compounds)
-#   OUTPUT_DIR      - default: experiment_data/eval/moleculenet
+#   OUTPUT_DIR      - default ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model-slug>/<RUNTAG>
+#                     (subtask names append underneath as <RUNTAG>/<subtask>/)
+#   RUNTAG          - leaf directory name (default: moleculenet_default)
 #   SUBTASKS        - space-separated list (default: bbbp esol)
 #   N_EXAMPLES      - per-sub-task cap (stratified subsample; omit for full)
 #   SEED            - random seed for split / sampling (default 0)
@@ -29,7 +31,8 @@ TOKENIZER_PATH="${TOKENIZER_PATH:-}"
 ARCH="${ARCH:-chemberta2}"
 MODALITY="${MODALITY:-compounds}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/moleculenet}"
+RUNTAG="${RUNTAG:-moleculenet_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir "$MODALITY" "$MODEL_PATH" "$RUNTAG")}"
 SUBTASKS="${SUBTASKS:-bbbp esol}"
 
 mkdir -p "$OUTPUT_DIR"

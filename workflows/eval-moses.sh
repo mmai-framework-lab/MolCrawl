@@ -12,7 +12,8 @@
 #   TEMPERATURE               - default 1.0
 #   TOP_K                     - default unset (greedy filter off)
 #   MAX_NEW_TOKENS            - default 128
-#   OUTPUT_DIR                - default experiment_data/eval/moses
+#   OUTPUT_DIR                - default ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model-slug>/<RUNTAG>
+#   RUNTAG                    - leaf directory name (default: moses_default)
 #   SEED                      - torch sampling seed (default 42)
 #   BOOTSTRAP                 - bootstrap resamples for CI (default 100; 0 disables)
 #   PREDICTIONS_PREVIEW_COUNT - narrative size (default 30; 0 disables)
@@ -35,7 +36,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 NUM_SAMPLES="${NUM_SAMPLES:-30000}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/moses}"
+RUNTAG="${RUNTAG:-moses_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir compounds "$MODEL_PATH" "$RUNTAG")}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-128}"
 
 mkdir -p "$OUTPUT_DIR"

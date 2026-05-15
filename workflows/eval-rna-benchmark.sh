@@ -27,7 +27,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-bert}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/rna_benchmark}"
+RUNTAG="${RUNTAG:-rna_benchmark_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir rna "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 

@@ -8,7 +8,8 @@
 # Optional:
 #   ARCH            - adapter to build (default: gpt2)
 #   TOKENIZER_PATH  - passed to adapter as --tokenizer-path
-#   OUTPUT_DIR      - default experiment_data/eval/gnomad_af_correlation
+#   OUTPUT_DIR      - default ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model-slug>/<RUNTAG>
+#   RUNTAG          - leaf directory name (default: gnomad_af_correlation_default)
 #   N_PER_BIN       - AF-log-bin stratified sample size (per bin, 6 bins)
 #   SEED            - random seed (default 42)
 #   BOOTSTRAP       - bootstrap resamples for CI (default 200; 0 disables)
@@ -25,7 +26,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/gnomad_af_correlation}"
+RUNTAG="${RUNTAG:-gnomad_af_correlation_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir genome_sequence "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 

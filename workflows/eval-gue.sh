@@ -30,7 +30,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-dnabert2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/gue}"
+RUNTAG="${RUNTAG:-gue_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir genome_sequence "$MODEL_PATH" "$RUNTAG")}"
 TASKS="${TASKS:-}"
 
 mkdir -p "$OUTPUT_DIR"

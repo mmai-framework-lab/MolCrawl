@@ -11,7 +11,8 @@
 #
 # Optional:
 #   OUTPUT_DIR      - directory to write metrics.json / REPORT.md
-#                     (default: experiment_data/eval/clinvar_smoke)
+#                     (default: ${LEARNING_SOURCE_DIR}/experiment_data/eval/_smoke/<model-slug>/clinvar_smoke)
+#   RUNTAG          - leaf directory name (default: clinvar_smoke)
 #   DEVICE          - torch device string (default: cuda)
 #   MAX_EXAMPLES    - cap evaluated variants (default: 16)
 
@@ -25,7 +26,17 @@ source "${SCRIPT_DIR}/common_functions.sh"
 : "${TOKENIZER_PATH:?TOKENIZER_PATH must be set}"
 : "${CLINVAR_DATA:?CLINVAR_DATA must be set}"
 
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/clinvar_smoke}"
+RUNTAG="${RUNTAG:-clinvar_smoke}"
+# Smoke runs land under the ``_smoke/`` bucket of the new layout.
+if [[ -z "${OUTPUT_DIR:-}" ]]; then
+    : "${LEARNING_SOURCE_DIR:?LEARNING_SOURCE_DIR must be set for smoke output}"
+    _SLUG="$(derive_model_slug genome_sequence "$MODEL_PATH")"
+    if [[ -n "$_SLUG" ]]; then
+        OUTPUT_DIR="${LEARNING_SOURCE_DIR%/}/experiment_data/eval/_smoke/${_SLUG}/${RUNTAG}"
+    else
+        OUTPUT_DIR="${LEARNING_SOURCE_DIR%/}/experiment_data/eval/_smoke/${RUNTAG}"
+    fi
+fi
 DEVICE="${DEVICE:-cuda}"
 MAX_EXAMPLES="${MAX_EXAMPLES:-16}"
 

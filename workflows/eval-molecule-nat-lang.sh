@@ -29,7 +29,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/molecule_nat_lang}"
+RUNTAG="${RUNTAG:-molecule_nat_lang_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir molecule_nat_lang "$MODEL_PATH" "$RUNTAG")}"
 
 mkdir -p "$OUTPUT_DIR"
 

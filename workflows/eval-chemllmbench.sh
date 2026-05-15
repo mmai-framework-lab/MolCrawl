@@ -12,7 +12,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/chemllmbench}"
+RUNTAG="${RUNTAG:-chemllmbench_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir molecule_nat_lang "$MODEL_PATH" "$RUNTAG")}"
 SUBTASKS="${SUBTASKS:-}"
 
 mkdir -p "$OUTPUT_DIR"

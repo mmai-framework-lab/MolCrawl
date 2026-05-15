@@ -99,6 +99,54 @@ check_learning_source_dir() {
     echo "DatabaseDir: $LEARNING_SOURCE_DIR"
 }
 
+# Echo "<modality>-<arch>-<size>" derived from MODEL_PATH.
+# MODEL_PATH is expected to look like
+#   <root>/<modality>/<arch>-output/<size_dir>/<ckpt>
+# where <size_dir> is "<modality>-<size>" or "<arch>-<size>" (e.g.
+# "compounds-small" / "chemberta2-medium" / "protein_sequence-ex-large").
+# Echos an empty string when the pattern does not match.
+#
+# Usage: derive_model_slug <modality> <model_path>
+derive_model_slug() {
+    local modality="$1"
+    local model_path="$2"
+    local arch size_dir size
+    arch="$(echo "$model_path" | awk -F/ '{
+        for (i=1; i<NF; i++) if ($i ~ /-output$/) { sub(/-output$/, "", $i); print $i; exit }
+    }')"
+    size_dir="$(echo "$model_path" | awk -F/ '{
+        for (i=1; i<NF; i++) if ($i ~ /-output$/) { print $(i+1); exit }
+    }')"
+    if [ -z "$arch" ] || [ -z "$size_dir" ]; then
+        echo ""
+        return
+    fi
+    size="${size_dir#*-}"  # drop everything up to the first '-' (the modality/arch prefix)
+    echo "${modality}-${arch}-${size}"
+}
+
+# Compose ${LEARNING_SOURCE_DIR}/experiment_data/eval/<model_slug>/<runtag>.
+# Falls back to ${LEARNING_SOURCE_DIR}/experiment_data/eval/<runtag> when
+# the model slug cannot be derived.
+#
+# Usage: compose_eval_output_dir <modality> <model_path> <runtag>
+compose_eval_output_dir() {
+    local modality="$1"
+    local model_path="$2"
+    local runtag="$3"
+    if [ -z "${LEARNING_SOURCE_DIR:-}" ]; then
+        echo "ERROR: LEARNING_SOURCE_DIR must be set to compose eval output dir." >&2
+        exit 1
+    fi
+    local slug
+    slug="$(derive_model_slug "$modality" "$model_path")"
+    if [ -n "$slug" ]; then
+        echo "${LEARNING_SOURCE_DIR%/}/experiment_data/eval/${slug}/${runtag}"
+    else
+        echo "${LEARNING_SOURCE_DIR%/}/experiment_data/eval/${runtag}"
+    fi
+}
+
 # Select the GPU with the most free memory
 # Usage: select_best_gpu
 # Returns: GPU ID with most free memory

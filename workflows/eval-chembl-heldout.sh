@@ -30,7 +30,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/chembl_scaffold_heldout}"
+RUNTAG="${RUNTAG:-chembl_scaffold_heldout_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir compounds "$MODEL_PATH" "$RUNTAG")}"
 SMILES_COLUMN="${SMILES_COLUMN:-smiles}"
 
 mkdir -p "$OUTPUT_DIR"

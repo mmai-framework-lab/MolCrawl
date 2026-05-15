@@ -29,7 +29,8 @@ source "${SCRIPT_DIR}/common_functions.sh"
 
 ARCH="${ARCH:-esm2}"
 DEVICE="${DEVICE:-cuda}"
-OUTPUT_DIR="${OUTPUT_DIR:-experiment_data/eval/tape}"
+RUNTAG="${RUNTAG:-tape_default}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir protein_sequence "$MODEL_PATH" "$RUNTAG")}"
 TASKS="${TASKS:-fluorescence stability remote_homology}"
 
 mkdir -p "$OUTPUT_DIR"

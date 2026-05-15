@@ -50,6 +50,26 @@ logger = logging.getLogger(__name__)
 
 _SUPPORTED_ARCHS = ("bert", "esm2", "chemberta2", "dnabert2", "rnaformer")
 
+# HF repos whose canonical loader path ships custom modeling code that
+# AutoModelForMaskedLM can only execute when ``trust_remote_code=True``.
+# Matching is substring-based on the model_path so both ``org/repo`` and
+# locally-cloned copies trigger the flag.
+_TRUSTED_REMOTE_CODE_HINTS = (
+    "DNABERT-2",
+    "DNABERT2",
+    "dnabert-2",
+    "RNAformer",
+    "rnaformer",
+    "InstaDeepAI",
+    "NucleotideTransformer",
+)
+
+
+def _looks_like_trusted_remote_code_repo(model_path: str) -> bool:
+    if not isinstance(model_path, str) or not model_path:
+        return False
+    return any(hint in model_path for hint in _TRUSTED_REMOTE_CODE_HINTS)
+
 
 def _np_integer():
     """Return numpy.integer if numpy is importable, else a sentinel never matched."""
@@ -87,10 +107,21 @@ class HfMlmAdapter(ModelAdapter):
             self.handle.arch,
             self.handle.modality,
         )
-        trust_remote_code = bool(self.handle.extras.get("trust_remote_code", False))
+        # Auto-enable trust_remote_code for community HF models that ship
+        # custom modeling code (DNABERT-2, RNAformer, etc.). The flag can
+        # also be set explicitly via ``extras.trust_remote_code`` or the
+        # ``TRUST_REMOTE_CODE=1`` env var.
+        import os
+        trust_remote_code = (
+            bool(self.handle.extras.get("trust_remote_code", False))
+            or os.environ.get("TRUST_REMOTE_CODE", "").strip() == "1"
+            or _looks_like_trusted_remote_code_repo(self.handle.model_path)
+        )
         model = AutoModelForMaskedLM.from_pretrained(
             self.handle.model_path, trust_remote_code=trust_remote_code
         )
+        # Stash for the tokenizer loader.
+        self._trust_remote_code = trust_remote_code
         model.to(device)
         model.eval()
         self.model = model
@@ -109,7 +140,10 @@ class HfMlmAdapter(ModelAdapter):
                     "Loading tokenizer from --tokenizer-path %s",
                     self.handle.tokenizer_path,
                 )
-                return AutoTokenizer.from_pretrained(self.handle.tokenizer_path)
+                return AutoTokenizer.from_pretrained(
+                    self.handle.tokenizer_path,
+                    trust_remote_code=getattr(self, "_trust_remote_code", False),
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "AutoTokenizer.from_pretrained(%r) failed: %s. Falling back.",
@@ -124,7 +158,10 @@ class HfMlmAdapter(ModelAdapter):
                 "Trying tokenizer co-saved with checkpoint at %s",
                 self.handle.model_path,
             )
-            return AutoTokenizer.from_pretrained(self.handle.model_path)
+            return AutoTokenizer.from_pretrained(
+                self.handle.model_path,
+                trust_remote_code=getattr(self, "_trust_remote_code", False),
+            )
         except Exception as exc:  # noqa: BLE001
             logger.info(
                 "Checkpoint %r does not carry a tokenizer (%s); falling back to "
@@ -186,7 +223,10 @@ class HfMlmAdapter(ModelAdapter):
                 modality,
                 tok_dir,
             )
-            return AutoTokenizer.from_pretrained(tok_dir)
+            return AutoTokenizer.from_pretrained(
+                tok_dir,
+                trust_remote_code=getattr(self, "_trust_remote_code", False),
+            )
 
         raise ValueError(
             f"HfMlmAdapter has no tokenizer fallback for arch={arch!r} "
