@@ -35,11 +35,11 @@ class GPT2Adapter(ModelAdapter):
 
     def __init__(self, handle: ModelHandle):
         super().__init__(handle)
-        self.model: Any = None
-        self.tokenizer: Any = None
+        self.model = None
+        self.tokenizer = None
         self._tokenizer_kind: Optional[str] = None
         self._vocab_size: int = 0
-        self._torch: Any = None
+        self._torch = None
 
     def load(self) -> None:
         import torch
@@ -116,10 +116,37 @@ class GPT2Adapter(ModelAdapter):
         if modality == "molecule_nat_lang":
             from molcrawl.data.molecule_nat_lang.utils.tokenizer import MoleculeNatLangTokenizer
 
+            # When ``tokenizer_path`` points at an HF tokenizer directory
+            # (e.g. a task-specific fine-tune's ``checkpoint-N/`` that bakes
+            # its own ``tokenizer.json``), prefer that over the built-in
+            # ``MoleculeNatLangTokenizer``. Fine-tune ckpts like
+            # ``molecule_nat_lang_mol_instructions/.../checkpoint-N/`` use a
+            # different vocab mapping; running them through the master
+            # tokenizer otherwise produces token ids the model's embedding
+            # table doesn't cover (manifesting as cublasSgemm errors at
+            # generation time on the chebi20 evaluator).
             if self.handle.tokenizer_path:
+                from pathlib import Path as _Path
+
+                tok_dir = _Path(self.handle.tokenizer_path)
+                if tok_dir.is_dir() and (tok_dir / "tokenizer.json").exists():
+                    from transformers import AutoTokenizer
+
+                    logger.info(
+                        "Loading HF AutoTokenizer for molecule_nat_lang from %s",
+                        tok_dir,
+                    )
+                    tok = AutoTokenizer.from_pretrained(str(tok_dir))
+                    vocab_size = (
+                        int(tok.vocab_size)
+                        if hasattr(tok, "vocab_size")
+                        else int(len(tok))
+                    )
+                    return tok, vocab_size, _TOKENIZER_KIND_HF
                 logger.info(
-                    "Ignoring --tokenizer-path for modality 'molecule_nat_lang' "
-                    "(built-in HF GPT-2 tokenizer is used)."
+                    "tokenizer_path=%s is not an HF tokenizer dir; "
+                    "falling back to built-in MoleculeNatLangTokenizer.",
+                    self.handle.tokenizer_path,
                 )
             logger.info("Loading built-in MoleculeNatLangTokenizer")
             tok = MoleculeNatLangTokenizer()
@@ -366,7 +393,7 @@ class GPT2Adapter(ModelAdapter):
         sequences: List[str] = []
         with torch.no_grad():
             for prompt in prompt_list:
-                for _i in range(num_samples):
+                for _ in range(num_samples):
                     prompt_ids = self._encode(prompt) or [default_start_id]
                     idx = torch.tensor(prompt_ids, dtype=torch.long, device=self.device).unsqueeze(0)
                     out = self.model.generate(
