@@ -316,7 +316,12 @@ if __name__ == "__main__":
         report_to="wandb" if use_wandb else "none",
         save_total_limit=3,  # Keep only 3 most recent checkpoints
         load_best_model_at_end=False,  # Don't load best model (saves memory)
-        save_safetensors=False,  # Use pickle to preserve tied weights on resume
+        # save_safetensors=True is the HF default; tied weights are restored
+        # at resume time by molcrawl.core.utils.trainer_utils.install_tie_weights_on_resume.
+        # Setting this to False would break resume from existing safetensors-only
+        # checkpoints (HF Trainer 4.45 _load_from_checkpoint requires args.save_safetensors=True
+        # to enter the safetensors load branch).
+        save_safetensors=True,
     )
 
     # Load datasets
