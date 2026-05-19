@@ -104,6 +104,8 @@ ABSOLUTE_LEARNING_SOURCE_PATH = os.path.join(PROJECT_ROOT, LEARNING_SOURCE_DIR)
 # Basic path of GPT-2 model output directory
 GPT2_OUTPUT_BASE_DIR = "gpt2-output"
 BERT_OUTPUT_BASE_DIR = "bert-output"
+LLAMA_OUTPUT_BASE_DIR = "llama-output"
+ROBERTA_OUTPUT_BASE_DIR = "roberta-output"
 
 
 def get_gpt2_output_path(domain, model_size):
@@ -159,6 +161,60 @@ def get_bert_tensorboard_path(domain, model_size):
 def get_bert_model_output_path(domain, model_size):
     """Get BERT model output path"""
     return get_bert_output_path(domain, model_size)
+
+
+def get_llama_output_path(domain, model_size):
+    """
+    Function to get output path of Llama-style decoder model
+
+    Args:
+        domain (str): domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')
+        model_size (str): Model size ('small', 'medium', 'large', 'xl', 'ex-large')
+
+    Returns:
+        str: Llama-style output directory path
+    """
+    # Standardize model_size (match gpt2 convention: xl -> ex-large on disk)
+    if model_size == "xl":
+        size_suffix = "ex-large"
+    else:
+        size_suffix = model_size
+
+    return os.path.join(LEARNING_SOURCE_DIR, domain, LLAMA_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
+
+
+def get_llama_tensorboard_path(domain, model_size):
+    """Get Llama-style TensorBoard output path"""
+    return get_llama_output_path(domain, model_size)
+
+
+def get_llama_model_output_path(domain, model_size):
+    """Get Llama-style model output path"""
+    return get_llama_output_path(domain, model_size)
+
+
+def get_roberta_output_path(domain, model_size):
+    """
+    Function to get output path of RoBERTa model
+
+    Args:
+        domain (str): domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')
+        model_size (str): Model size ('small', 'medium', 'large')
+
+    Returns:
+        str: RoBERTa output directory path
+    """
+    return os.path.join(LEARNING_SOURCE_DIR, domain, ROBERTA_OUTPUT_BASE_DIR, f"{domain}-{model_size}")
+
+
+def get_roberta_tensorboard_path(domain, model_size):
+    """Get RoBERTa TensorBoard output path"""
+    return get_roberta_output_path(domain, model_size)
+
+
+def get_roberta_model_output_path(domain, model_size):
+    """Get RoBERTa model output path"""
+    return get_roberta_output_path(domain, model_size)
 
 
 def get_custom_tokenizer_path(domain, model_type="bert"):
