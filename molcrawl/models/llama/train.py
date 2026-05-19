@@ -17,7 +17,6 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 """
 
 import glob
-import json
 import math
 import os
 import shutil
