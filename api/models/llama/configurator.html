@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.models API documentation</title>
-<meta name="description" content="Model architecture implementations (decoder / encoder) by family …">
+<title>molcrawl.models.llama.configurator API documentation</title>
+<meta name="description" content="Poor Man&#39;s Configurator. Probably a terrible idea. Example usage:
+$ python train.py config/override_file.py --batch_size=32
+this will first run …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,51 +35,22 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.models</code></h1>
+<h1 class="title">Module <code>molcrawl.models.llama.configurator</code></h1>
 </header>
 <section id="section-intro">
-<p>Model architecture implementations (decoder / encoder) by family.</p>
-<p>Sub-packages implement specific architectures (GPT-2, BERT, ChemBERTa-2,
-ESM-2, DNABERT-2, RNAformer). Architecture-specific data handling (e.g.
-tokenizers) lives in :mod:<code><a title="molcrawl.data" href="../data/index.html">molcrawl.data</a></code>; this package is intentionally
-kept modality-agnostic where possible.</p>
+<p>Poor Man's Configurator. Probably a terrible idea. Example usage:
+$ python train.py config/override_file.py &ndash;batch_size=32
+this will first run config/override_file.py, then override batch_size to 32</p>
+<p>The code in this file will be run as follows from e.g. train.py:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; exec(open('configurator.py').read())
+</code></pre>
+<p>So it's not a Python module, it's just shuttling this code away from train.py
+The code in this script then overrides the globals()</p>
+<p>I know people are not going to love this, I just really dislike configuration
+complexity and having to prepend config. to every single variable. If someone
+comes up with a better simple Python solution I am all ears.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
-<dl>
-<dt><code class="name"><a title="molcrawl.models.bert" href="bert/index.html">molcrawl.models.bert</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.chemberta2" href="chemberta2/index.html">molcrawl.models.chemberta2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.dnabert2" href="dnabert2/index.html">molcrawl.models.dnabert2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.esm2" href="esm2/index.html">molcrawl.models.esm2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.gpt2" href="gpt2/index.html">molcrawl.models.gpt2</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.llama" href="llama/index.html">molcrawl.models.llama</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.rnaformer" href="rnaformer/index.html">molcrawl.models.rnaformer</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.models.roberta" href="roberta/index.html">molcrawl.models.roberta</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 </section>
 <section>
 </section>
@@ -93,19 +66,7 @@ kept modality-agnostic where possible.</p>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl" href="../index.html">molcrawl</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.models.bert" href="bert/index.html">molcrawl.models.bert</a></code></li>
-<li><code><a title="molcrawl.models.chemberta2" href="chemberta2/index.html">molcrawl.models.chemberta2</a></code></li>
-<li><code><a title="molcrawl.models.dnabert2" href="dnabert2/index.html">molcrawl.models.dnabert2</a></code></li>
-<li><code><a title="molcrawl.models.esm2" href="esm2/index.html">molcrawl.models.esm2</a></code></li>
-<li><code><a title="molcrawl.models.gpt2" href="gpt2/index.html">molcrawl.models.gpt2</a></code></li>
-<li><code><a title="molcrawl.models.llama" href="llama/index.html">molcrawl.models.llama</a></code></li>
-<li><code><a title="molcrawl.models.rnaformer" href="rnaformer/index.html">molcrawl.models.rnaformer</a></code></li>
-<li><code><a title="molcrawl.models.roberta" href="roberta/index.html">molcrawl.models.roberta</a></code></li>
+<li><code><a title="molcrawl.models.llama" href="index.html">molcrawl.models.llama</a></code></li>
 </ul>
 </li>
 </ul>

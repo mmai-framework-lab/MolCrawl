@@ -279,6 +279,75 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Get GPT-2 TensorBoard output path</p></div>
 </dd>
+<dt id="molcrawl.core.paths.get_llama_model_output_path"><code class="name flex">
+<span>def <span class="ident">get_llama_model_output_path</span></span>(<span>domain, model_size)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_llama_model_output_path(domain, model_size):
+    &#34;&#34;&#34;Get Llama-style model output path&#34;&#34;&#34;
+    return get_llama_output_path(domain, model_size)</code></pre>
+</details>
+<div class="desc"><p>Get Llama-style model output path</p></div>
+</dd>
+<dt id="molcrawl.core.paths.get_llama_output_path"><code class="name flex">
+<span>def <span class="ident">get_llama_output_path</span></span>(<span>domain, model_size)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_llama_output_path(domain, model_size):
+    &#34;&#34;&#34;
+    Function to get output path of Llama-style decoder model
+
+    Args:
+        domain (str): domain name (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
+        model_size (str): Model size (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;xl&#39;, &#39;ex-large&#39;)
+
+    Returns:
+        str: Llama-style output directory path
+    &#34;&#34;&#34;
+    # Standardize model_size (match gpt2 convention: xl -&gt; ex-large on disk)
+    if model_size == &#34;xl&#34;:
+        size_suffix = &#34;ex-large&#34;
+    else:
+        size_suffix = model_size
+
+    return os.path.join(LEARNING_SOURCE_DIR, domain, LLAMA_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Function to get output path of Llama-style decoder model</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
+<dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
+<dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
+<dd>Model size ('small', 'medium', 'large', 'xl', 'ex-large')</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>Llama-style output directory path</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.paths.get_llama_tensorboard_path"><code class="name flex">
+<span>def <span class="ident">get_llama_tensorboard_path</span></span>(<span>domain, model_size)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_llama_tensorboard_path(domain, model_size):
+    &#34;&#34;&#34;Get Llama-style TensorBoard output path&#34;&#34;&#34;
+    return get_llama_output_path(domain, model_size)</code></pre>
+</details>
+<div class="desc"><p>Get Llama-style TensorBoard output path</p></div>
+</dd>
 <dt id="molcrawl.core.paths.get_refseq_tokenizer_path"><code class="name flex">
 <span>def <span class="ident">get_refseq_tokenizer_path</span></span>(<span>)</span>
 </code></dt>
@@ -291,6 +360,69 @@ el.replaceWith(d);
     return os.path.join(PROJECT_ROOT, GENOME_SEQUENCE_DIR, &#34;spm_tokenizer.model&#34;)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.core.paths.get_roberta_model_output_path"><code class="name flex">
+<span>def <span class="ident">get_roberta_model_output_path</span></span>(<span>domain, model_size)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_roberta_model_output_path(domain, model_size):
+    &#34;&#34;&#34;Get RoBERTa model output path&#34;&#34;&#34;
+    return get_roberta_output_path(domain, model_size)</code></pre>
+</details>
+<div class="desc"><p>Get RoBERTa model output path</p></div>
+</dd>
+<dt id="molcrawl.core.paths.get_roberta_output_path"><code class="name flex">
+<span>def <span class="ident">get_roberta_output_path</span></span>(<span>domain, model_size)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_roberta_output_path(domain, model_size):
+    &#34;&#34;&#34;
+    Function to get output path of RoBERTa model
+
+    Args:
+        domain (str): domain name (&#39;protein_sequence&#39;, &#39;genome_sequence&#39;, &#39;rna&#39;, &#39;compounds&#39;, &#39;molecule_nat_lang&#39;)
+        model_size (str): Model size (&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;)
+
+    Returns:
+        str: RoBERTa output directory path
+    &#34;&#34;&#34;
+    return os.path.join(LEARNING_SOURCE_DIR, domain, ROBERTA_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Function to get output path of RoBERTa model</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
+<dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
+<dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
+<dd>Model size ('small', 'medium', 'large')</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>RoBERTa output directory path</dd>
+</dl></div>
+</dd>
+<dt id="molcrawl.core.paths.get_roberta_tensorboard_path"><code class="name flex">
+<span>def <span class="ident">get_roberta_tensorboard_path</span></span>(<span>domain, model_size)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_roberta_tensorboard_path(domain, model_size):
+    &#34;&#34;&#34;Get RoBERTa TensorBoard output path&#34;&#34;&#34;
+    return get_roberta_output_path(domain, model_size)</code></pre>
+</details>
+<div class="desc"><p>Get RoBERTa TensorBoard output path</p></div>
 </dd>
 </dl>
 </section>
@@ -318,7 +450,13 @@ el.replaceWith(d);
 <li><code><a title="molcrawl.core.paths.get_gpt2_model_output_path" href="#molcrawl.core.paths.get_gpt2_model_output_path">get_gpt2_model_output_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_gpt2_output_path" href="#molcrawl.core.paths.get_gpt2_output_path">get_gpt2_output_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_gpt2_tensorboard_path" href="#molcrawl.core.paths.get_gpt2_tensorboard_path">get_gpt2_tensorboard_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_llama_model_output_path" href="#molcrawl.core.paths.get_llama_model_output_path">get_llama_model_output_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_llama_output_path" href="#molcrawl.core.paths.get_llama_output_path">get_llama_output_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_llama_tensorboard_path" href="#molcrawl.core.paths.get_llama_tensorboard_path">get_llama_tensorboard_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_refseq_tokenizer_path" href="#molcrawl.core.paths.get_refseq_tokenizer_path">get_refseq_tokenizer_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_roberta_model_output_path" href="#molcrawl.core.paths.get_roberta_model_output_path">get_roberta_model_output_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_roberta_output_path" href="#molcrawl.core.paths.get_roberta_output_path">get_roberta_output_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_roberta_tensorboard_path" href="#molcrawl.core.paths.get_roberta_tensorboard_path">get_roberta_tensorboard_path</a></code></li>
 </ul>
 </li>
 </ul>
