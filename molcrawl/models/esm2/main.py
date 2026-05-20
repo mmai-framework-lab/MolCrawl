@@ -25,7 +25,6 @@ try:
     from transformers import (
         EsmConfig,
         EsmForMaskedLM,
-        DataCollatorForLanguageModeling,
         Trainer,
         TrainingArguments,
     )

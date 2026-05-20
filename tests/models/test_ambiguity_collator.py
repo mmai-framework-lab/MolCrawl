@@ -114,7 +114,6 @@ def test_mlm_collator_zeros_loss_on_ambiguous_positions(genome_tokenizer):
     batch = collator(examples)
 
     n_id = genome_tokenizer.convert_tokens_to_ids("N")
-    input_ids = batch["input_ids"]
     labels = batch["labels"]
 
     # Every position where input is still N OR labels still N → must be IGNORE.

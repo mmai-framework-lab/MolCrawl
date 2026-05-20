@@ -21,7 +21,6 @@ try:
     from transformers import (
         RobertaConfig,
         RobertaForMaskedLM,
-        DataCollatorForLanguageModeling,
         Trainer,
         TrainingArguments,
     )

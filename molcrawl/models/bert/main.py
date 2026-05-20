@@ -9,7 +9,6 @@ try:
     from transformers import (
         BertConfig,
         BertForMaskedLM,
-        DataCollatorForLanguageModeling,
         EarlyStoppingCallback,
         Trainer,
         TrainingArguments,

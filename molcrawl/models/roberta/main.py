@@ -9,7 +9,6 @@ try:
     from transformers import (
         RobertaConfig,
         RobertaForMaskedLM,
-        DataCollatorForLanguageModeling,
         EarlyStoppingCallback,
         Trainer,
         TrainingArguments,

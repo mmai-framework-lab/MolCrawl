@@ -21,7 +21,6 @@ try:
     from transformers import (
         BertConfig,
         BertForMaskedLM,
-        DataCollatorForLanguageModeling,
         Trainer,
         TrainingArguments,
     )
