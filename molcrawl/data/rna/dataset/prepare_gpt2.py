@@ -46,17 +46,26 @@ def create_chunks(examples, context_length):
 
 
 def tokenize_batch_dataset(output_dir, context_length, number_sample):
+    """Tokenize and chunk the RNA corpus into fixed-length samples.
+
+    ``number_sample`` semantics:
+    - ``None`` (or 0 / negative): use the entire parquet corpus (recommended
+      for full pretraining).
+    - positive int: sample the first ``number_sample`` rows after shuffling
+      (useful for smoke tests; reproduces the old hard-coded behaviour when
+      set to 50000).
+    """
     from datasets import DatasetDict, load_dataset
 
-    data = (
-        load_dataset(
-            "parquet",
-            data_dir=str(Path(output_dir) / "parquet_files"),
-            cache_dir=str(Path(output_dir) / "hf_cache"),
-            split="train",
-        ).shuffle()
-        # .select(range(number_sample))
-    )
+    data = load_dataset(
+        "parquet",
+        data_dir=str(Path(output_dir) / "parquet_files"),
+        cache_dir=str(Path(output_dir) / "hf_cache"),
+        split="train",
+    ).shuffle()
+
+    if number_sample is not None and number_sample > 0:
+        data = data.select(range(min(number_sample, len(data))))
 
     tokenized_datasets = data.train_test_split(test_size=0.2)
     valid_test_split = tokenized_datasets["test"].train_test_split(test_size=0.5)
@@ -81,12 +90,15 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
 
 
 if __name__ == "__main__":
-    number_sample = 50000
-    context_length = 1024
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = RnaConfig.from_file(args.config).data_preparation
+
+    # Read with backward-compatible defaults:
+    #   number_sample=None  => use the full parquet corpus
+    #   context_length=1024 => preserves the prior hard-coded value
+    number_sample = getattr(cfg, "number_sample", None)
+    context_length = getattr(cfg, "context_length", 1024)
 
     tokenize_batch_dataset(cfg.output_dir, context_length, number_sample)
