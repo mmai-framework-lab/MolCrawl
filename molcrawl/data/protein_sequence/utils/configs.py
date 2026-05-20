@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 
 from molcrawl.core.paths import PROTEIN_SEQUENCE_DIR
 from molcrawl.core.config import Config
@@ -22,6 +23,15 @@ class UniProtPreparationConfig:
     # Number of sequence per files for raw files and parquet. It also reflex the number
     # of sequence loaded in memory during the processing of those files.
     max_lines_per_file: int = 10**6
+
+    # Maximum number of (shuffled) sequences to feed into the GPT-2-style
+    # binarization step. ``None`` means "use every sequence from the raw
+    # files" (recommended for full pretraining on UniRef50's ~60M rows);
+    # small ints (e.g. 50000) cap the dataset for smoke testing.
+    number_sample: Optional[int] = None
+
+    # Context length used when chunking concatenated token streams.
+    context_length: int = 1024
 
 
 @dataclass
