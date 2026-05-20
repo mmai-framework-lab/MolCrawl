@@ -1,3 +1,5 @@
+Drosophila melanogaster
+Caenorhabditis elegans
 Brachionus rubens
 Ceroptes masudai
 Cotesia typhae

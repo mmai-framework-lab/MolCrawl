@@ -1,7 +1,13 @@
-Bubalus bubalis
-Camelus dromedarius
 Homo sapiens
+Mus musculus
+Rattus norvegicus
+Macaca mulatta
 Macaca assamensis
 Macaca nigra
-Mus musculus
+Pan troglodytes
+Canis lupus familiaris
+Sus scrofa
+Bos taurus
+Bubalus bubalis
+Camelus dromedarius
 Peromyscus californicus
