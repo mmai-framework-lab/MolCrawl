@@ -38,6 +38,15 @@ class RefSeqPreparationConfig:
     parquet_batch_size: Optional[int] = None
     local_base_dir: Optional[str] = None
 
+    # Maximum number of (shuffled) parquet rows to feed into the GPT-2-style
+    # binarization step. ``None`` means "use everything available"; small ints
+    # (e.g. 50000) reproduce the old hard-coded behaviour for smoke testing.
+    number_sample: Optional[int] = None
+    # Context length used when chunking concatenated token streams. Pulled
+    # out of the script so different runs can target different sequence
+    # lengths without code edits.
+    context_length: int = 1024
+
 
 @dataclass
 class GenomeSequenceConfig(Config):

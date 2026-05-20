@@ -21,7 +21,6 @@ try:
     from transformers import (
         BertConfig,
         BertForMaskedLM,
-        DataCollatorForLanguageModeling,
         Trainer,
         TrainingArguments,
     )
@@ -281,7 +280,6 @@ if __name__ == "__main__":
     if "data_collator" in globals():
         print("Using custom data collator from config")
     else:
-        print("Using default DataCollatorForLanguageModeling")
         tokenizer_obj = globals().get("tokenizer", None)
 
         if tokenizer_obj is not None and hasattr(tokenizer_obj, "tokenizer"):
@@ -292,8 +290,18 @@ if __name__ == "__main__":
         if actual_tokenizer is None:
             raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
 
-        # DNABERT-2: MLM probability 0.15 (BERT standard)
-        data_collator = DataCollatorForLanguageModeling(tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.15)
+        # DNABERT-2: MLM probability 0.15 (BERT standard).
+        # Ambiguity-aware: exclude N + IUPAC ambiguity codes from loss.
+        from molcrawl.models._collators import (
+            GENOME_AMBIGUOUS_TOKENS,
+            make_mlm_collator,
+        )
+
+        data_collator = make_mlm_collator(
+            actual_tokenizer,
+            ambiguous_tokens=GENOME_AMBIGUOUS_TOKENS,
+            mlm_probability=0.15,
+        )
 
     # Training arguments
     training_args = TrainingArguments(

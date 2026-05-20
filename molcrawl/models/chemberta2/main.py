@@ -21,7 +21,6 @@ try:
     from transformers import (
         RobertaConfig,
         RobertaForMaskedLM,
-        DataCollatorForLanguageModeling,
         Trainer,
         TrainingArguments,
     )
@@ -284,13 +283,17 @@ if __name__ == "__main__":
     model = RobertaForMaskedLM(model_config)
     logger.info(f"✅ Model initialized with {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M parameters")
 
-    # Data collator for masked language modeling
-    data_collator = DataCollatorForLanguageModeling(
-        tokenizer=tokenizer,
-        mlm=True,
+    # Data collator for MLM. Compounds has no IUPAC-style ambiguity policy,
+    # so make_mlm_collator returns a plain DataCollatorForLanguageModeling
+    # (the wrapper is bypassed when ambiguous_tokens is empty).
+    from molcrawl.models._collators import make_mlm_collator
+
+    data_collator = make_mlm_collator(
+        tokenizer,
+        ambiguous_tokens=[],
         mlm_probability=mlm_probability,
     )
-    logger.info("Using default DataCollatorForLanguageModeling")
+    logger.info("Using DataCollatorForLanguageModeling (no ambiguity policy for compounds)")
 
     # Load datasets
     dataset_loader = CompoundsDatasetLoader(dataset_dir, tokenizer, max_length)
