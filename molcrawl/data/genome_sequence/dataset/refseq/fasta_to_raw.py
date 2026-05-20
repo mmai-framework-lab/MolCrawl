@@ -2,9 +2,8 @@ from typing import Union, Iterator, List, Tuple
 from pathlib import Path
 from argparse import ArgumentParser
 from functools import partial
-from multiprocessing import Manager
-from multiprocessing.managers import ListProxy
 import concurrent.futures
+import queue
 import re
 import threading
 import time
@@ -39,18 +38,24 @@ def _split_at_n_runs(seq: str, min_len: int = DEFAULT_MIN_SEGMENT_LEN) -> Iterat
             yield segment
 
 
-def get_sequence_from_fasta(fasta_filepath: Path, max_lines_per_file: int, num_worker: int, sequence_list: ListProxy) -> None:
+def get_sequence_from_fasta(
+    fasta_filepath: Path,
+    max_lines_per_file: int,
+    num_worker: int,
+    sequence_queue: "queue.Queue[List[str]]",
+) -> None:
     sequence_chunk: List[str] = []
     for sequence in read_fasta_sequences(fasta_filepath):
         sequence_chunk.append(sequence)
         if len(sequence_chunk) == max_lines_per_file:
-            while len(sequence_list) > num_worker:
+            # Back-pressure: pause when the queue is saturated to bound memory.
+            while sequence_queue.qsize() > num_worker:
                 time.sleep(0.5)
-            sequence_list.append(sequence_chunk)
+            sequence_queue.put(sequence_chunk)
             sequence_chunk = []
 
     if len(sequence_chunk):
-        sequence_list.append(sequence_chunk)
+        sequence_queue.put(sequence_chunk)
 
 
 def read_fasta_sequences(
@@ -111,18 +116,25 @@ def iterate_over_chunk_raw_files(fasta_filepaths: List[Path], num_worker: int, m
             progress.advance(task)
 
         sequence_chunk: List[str] = []
-        with concurrent.futures.ThreadPoolExecutor(num_worker) as executor, Manager() as manager:
-            sequence_list = manager.list()
+        # In-process queue.Queue (thread-safe) instead of multiprocessing.Manager().list().
+        # The Manager spawns a subprocess and routes every list mutation through a Unix
+        # socket; with hundreds of FASTA files the IPC layer would silently deadlock
+        # (parent stuck in __skb_wait_for_more_packets, no progress, no error). A Queue
+        # stays in-process, is faster, and removes the deadlock failure mode entirely.
+        sequence_queue: "queue.Queue[List[str]]" = queue.Queue()
+        with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
             jobs = [
-                executor.submit(get_sequence_from_fasta, path, max_lines_per_file, num_worker, sequence_list)
+                executor.submit(get_sequence_from_fasta, path, max_lines_per_file, num_worker, sequence_queue)
                 for path in fasta_filepaths
             ]
             for job in jobs:
                 job.add_done_callback(job_done_callback)
-            while unfinished_jobs > 0 or len(sequence_list) > 0:
-                if len(sequence_list):
-                    sequence_chunk = sequence_chunk + sequence_list.pop(0)
-                if len(sequence_chunk) > max_lines_per_file:
+            while unfinished_jobs > 0 or not sequence_queue.empty():
+                try:
+                    sequence_chunk = sequence_chunk + sequence_queue.get(timeout=1.0)
+                except queue.Empty:
+                    continue
+                while len(sequence_chunk) > max_lines_per_file:
                     yield sequence_chunk[:max_lines_per_file]
                     sequence_chunk = sequence_chunk[max_lines_per_file:]
         if len(sequence_chunk):
