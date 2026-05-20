@@ -41,6 +41,15 @@ def create_chunks(examples, context_length):
 
 
 def tokenize_batch_dataset(parquet_path, context_length, number_sample):
+    """Tokenize and chunk the molecule-natural-language corpus.
+
+    ``number_sample`` semantics:
+    - ``None`` (or 0 / negative): use every example from each split
+      (recommended for full pretraining).
+    - positive int: draw an 80/10/10 random sample of exactly that many
+      rows total across train/valid/test (reproduces the old hard-coded
+      behaviour when set to 50000).
+    """
     from datasets import DatasetDict
     import numpy as np
 
@@ -55,15 +64,28 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
     elif "valid" not in tokenize_dataset and "validation" not in tokenize_dataset:
         raise KeyError("Neither 'valid' nor 'validation' split found in dataset")
 
-    tokenize_dataset["train"] = tokenize_dataset["train"].select(
-        np.random.choice(len(tokenize_dataset["train"]), int(number_sample * 0.8), replace=False)
-    )
-    tokenize_dataset["valid"] = tokenize_dataset["valid"].select(
-        np.random.choice(len(tokenize_dataset["valid"]), int(number_sample * 0.1), replace=False)
-    )
-    tokenize_dataset["test"] = tokenize_dataset["test"].select(
-        np.random.choice(len(tokenize_dataset["test"]), int(number_sample * 0.1), replace=False)
-    )
+    if number_sample is not None and number_sample > 0:
+        tokenize_dataset["train"] = tokenize_dataset["train"].select(
+            np.random.choice(
+                len(tokenize_dataset["train"]),
+                min(int(number_sample * 0.8), len(tokenize_dataset["train"])),
+                replace=False,
+            )
+        )
+        tokenize_dataset["valid"] = tokenize_dataset["valid"].select(
+            np.random.choice(
+                len(tokenize_dataset["valid"]),
+                min(int(number_sample * 0.1), len(tokenize_dataset["valid"])),
+                replace=False,
+            )
+        )
+        tokenize_dataset["test"] = tokenize_dataset["test"].select(
+            np.random.choice(
+                len(tokenize_dataset["test"]),
+                min(int(number_sample * 0.1), len(tokenize_dataset["test"])),
+                replace=False,
+            )
+        )
 
     tokenizer = MoleculeNatLangTokenizer()
 
@@ -91,13 +113,16 @@ if __name__ == "__main__":
     else:
         print("WARNING: utils.cache_config not found. Continuing without cache setup.")
 
-    number_sample = 50000
-    context_length = 1024
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = MoleculeNLConfig.from_file(args.config).data_preparation
+
+    # Read with backward-compatible defaults:
+    #   number_sample=None  => use every example from each split
+    #   context_length=1024 => preserves the prior hard-coded value
+    number_sample = getattr(cfg, "number_sample", None)
+    context_length = getattr(cfg, "context_length", 1024)
 
     # convert relative path to absolute path
     from molcrawl.core.paths import PROJECT_ROOT, LEARNING_SOURCE_DIR
