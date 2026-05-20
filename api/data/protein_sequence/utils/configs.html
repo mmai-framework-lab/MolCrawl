@@ -86,7 +86,7 @@ class ProteinSequenceConfig(Config):
 </dd>
 <dt id="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig"><code class="flex name class">
 <span>class <span class="ident">UniProtPreparationConfig</span></span>
-<span>(</span><span>dataset: str = 'UniRef50',<br>output_dir: str = 'learning_source_dummy/protein_sequence',<br>use_md5: bool = False,<br>num_worker: int = 4,<br>max_lines_per_file: int = 1000000)</span>
+<span>(</span><span>dataset: str = 'UniRef50',<br>output_dir: str = 'learning_source_dummy/protein_sequence',<br>use_md5: bool = False,<br>num_worker: int = 4,<br>max_lines_per_file: int = 1000000,<br>number_sample: int | None = None,<br>context_length: int = 1024)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -110,11 +110,24 @@ class UniProtPreparationConfig:
 
     # Number of sequence per files for raw files and parquet. It also reflex the number
     # of sequence loaded in memory during the processing of those files.
-    max_lines_per_file: int = 10**6</code></pre>
+    max_lines_per_file: int = 10**6
+
+    # Maximum number of (shuffled) sequences to feed into the GPT-2-style
+    # binarization step. ``None`` means &#34;use every sequence from the raw
+    # files&#34; (recommended for full pretraining on UniRef50&#39;s ~60M rows);
+    # small ints (e.g. 50000) cap the dataset for smoke testing.
+    number_sample: Optional[int] = None
+
+    # Context length used when chunking concatenated token streams.
+    context_length: int = 1024</code></pre>
 </details>
-<div class="desc"><p>UniProtPreparationConfig(dataset: str = 'UniRef50', output_dir: str = 'learning_source_dummy/protein_sequence', use_md5: bool = False, num_worker: int = 4, max_lines_per_file: int = 1000000)</p></div>
+<div class="desc"><p>UniProtPreparationConfig(dataset: str = 'UniRef50', output_dir: str = 'learning_source_dummy/protein_sequence', use_md5: bool = False, num_worker: int = 4, max_lines_per_file: int = 1000000, number_sample: Optional[int] = None, context_length: int = 1024)</p></div>
 <h3>Instance variables</h3>
 <dl>
+<dt id="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.context_length"><code class="name">var <span class="ident">context_length</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.dataset"><code class="name">var <span class="ident">dataset</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
@@ -124,6 +137,10 @@ class UniProtPreparationConfig:
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.num_worker"><code class="name">var <span class="ident">num_worker</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.number_sample"><code class="name">var <span class="ident">number_sample</span> : int | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -160,10 +177,12 @@ class UniProtPreparationConfig:
 </li>
 <li>
 <h4><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig">UniProtPreparationConfig</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.context_length" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.context_length">context_length</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.dataset" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.dataset">dataset</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.max_lines_per_file" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.max_lines_per_file">max_lines_per_file</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.num_worker" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.num_worker">num_worker</a></code></li>
+<li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.number_sample" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.number_sample">number_sample</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.output_dir" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.output_dir">output_dir</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.use_md5" href="#molcrawl.data.protein_sequence.utils.configs.UniProtPreparationConfig.use_md5">use_md5</a></code></li>
 </ul>

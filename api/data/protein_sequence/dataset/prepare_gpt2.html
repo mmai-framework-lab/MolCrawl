@@ -87,14 +87,23 @@ el.replaceWith(d);
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset"><code class="name flex">
-<span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>path_output: Path, context_length: int, number_sample: int) ‑> None</span>
+<span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>path_output: Path, context_length: int, number_sample: Optional[int]) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -&gt; None:
+<pre><code class="python">def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: Optional[int]) -&gt; None:
+    &#34;&#34;&#34;Tokenize and chunk the protein corpus into fixed-length samples.
+
+    ``number_sample`` semantics:
+    - ``None`` (or 0 / negative): use every sequence from the raw files
+      (recommended for full pretraining on UniRef50&#39;s ~60M rows).
+    - positive int: sample the first ``number_sample`` rows after
+      shuffling (useful for smoke tests; reproduces the old hard-coded
+      behaviour when set to 50000).
+    &#34;&#34;&#34;
     from datasets import DatasetDict, load_dataset
 
     from molcrawl.data.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
@@ -108,15 +117,14 @@ el.replaceWith(d);
         )
 
     # Avoid the effect of extension determination by explicitly passing the file list
-    data = (
-        load_dataset(
-            &#34;text&#34;,
-            data_files={&#34;train&#34;: [str(p) for p in raw_files]},
-            split=&#34;train&#34;,
-        )
-        .shuffle()
-        .select(range(number_sample))
-    )
+    data = load_dataset(
+        &#34;text&#34;,
+        data_files={&#34;train&#34;: [str(p) for p in raw_files]},
+        split=&#34;train&#34;,
+    ).shuffle()
+
+    if number_sample is not None and number_sample &gt; 0:
+        data = data.select(range(min(number_sample, len(data))))
     raw_datasets = data.train_test_split(test_size=0.2)
     valid_test_split = raw_datasets[&#34;test&#34;].train_test_split(test_size=0.5)
     raw_datasets = DatasetDict(
@@ -147,7 +155,13 @@ el.replaceWith(d);
     print(f&#34;Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py-&gt;dataset_dir parameter.&#34;)
     chunked_dataset.save_to_disk(path_dataset)</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Tokenize and chunk the protein corpus into fixed-length samples.</p>
+<p><code>number_sample</code> semantics:
+- <code>None</code> (or 0 / negative): use every sequence from the raw files
+(recommended for full pretraining on UniRef50's ~60M rows).
+- positive int: sample the first <code>number_sample</code> rows after
+shuffling (useful for smoke tests; reproduces the old hard-coded
+behaviour when set to 50000).</p></div>
 </dd>
 <dt id="molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_function"><code class="name flex">
 <span>def <span class="ident">tokenize_function</span></span>(<span>examples: Dict[str, List[str]], tokenizer: EsmSequenceTokenizer) ‑> Dict[str, List[List[int]]]</span>

@@ -86,7 +86,7 @@ class CompoundConfig(Config):
 </dd>
 <dt id="molcrawl.data.compounds.utils.config.Organix13PreparationConfig"><code class="flex name class">
 <span>class <span class="ident">Organix13PreparationConfig</span></span>
-<span>(</span><span>organix13_dataset: str = 'learning_source_dummy/compounds/organix13',<br>save_path: str = &lt;factory&gt;,<br>vocab_path: str = 'assets/molecules/vocab.txt',<br>max_length: int = 256,<br>raw_data_path: str = 'learning_source_dummy/compounds')</span>
+<span>(</span><span>organix13_dataset: str = 'learning_source_dummy/compounds/organix13',<br>save_path: str = &lt;factory&gt;,<br>vocab_path: str = 'assets/molecules/vocab.txt',<br>max_length: int = 256,<br>raw_data_path: str = 'learning_source_dummy/compounds',<br>number_sample: int | None = None,<br>context_length: int = 1024)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -108,12 +108,31 @@ class Organix13PreparationConfig:
     max_length: int = 256
 
     # Location to save raw unprocessed datasets
-    raw_data_path: str = COMPOUNDS_DIR</code></pre>
+    raw_data_path: str = COMPOUNDS_DIR
+
+    # Per-split SMILES line cap for the GPT-2-style binarization step.
+    # ``None`` means &#34;encode every SMILES line in each split file&#34;
+    # (recommended for full pretraining); a positive int truncates each
+    # of train / valid / test to at most that many lines.
+    number_sample: Optional[int] = None
+
+    # Context length used when chunking concatenated token streams. Previously
+    # hard-coded inside ``tokenize_batch_dataset``; lifted here so different
+    # runs can target different sequence lengths without code edits.
+    context_length: int = 1024</code></pre>
 </details>
-<div class="desc"><p>Organix13PreparationConfig(organix13_dataset: str = 'learning_source_dummy/compounds/organix13', save_path: str = <factory>, vocab_path: str = 'assets/molecules/vocab.txt', max_length: int = 256, raw_data_path: str = 'learning_source_dummy/compounds')</p></div>
+<div class="desc"><p>Organix13PreparationConfig(organix13_dataset: str = 'learning_source_dummy/compounds/organix13', save_path: str = <factory>, vocab_path: str = 'assets/molecules/vocab.txt', max_length: int = 256, raw_data_path: str = 'learning_source_dummy/compounds', number_sample: Optional[int] = None, context_length: int = 1024)</p></div>
 <h3>Instance variables</h3>
 <dl>
+<dt id="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.context_length"><code class="name">var <span class="ident">context_length</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.max_length"><code class="name">var <span class="ident">max_length</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.number_sample"><code class="name">var <span class="ident">number_sample</span> : int | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -158,8 +177,10 @@ class Organix13PreparationConfig:
 </li>
 <li>
 <h4><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig">Organix13PreparationConfig</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.context_length" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig.context_length">context_length</a></code></li>
 <li><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.max_length" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig.max_length">max_length</a></code></li>
+<li><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.number_sample" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig.number_sample">number_sample</a></code></li>
 <li><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.organix13_dataset" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig.organix13_dataset">organix13_dataset</a></code></li>
 <li><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.raw_data_path" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig.raw_data_path">raw_data_path</a></code></li>
 <li><code><a title="molcrawl.data.compounds.utils.config.Organix13PreparationConfig.save_path" href="#molcrawl.data.compounds.utils.config.Organix13PreparationConfig.save_path">save_path</a></code></li>

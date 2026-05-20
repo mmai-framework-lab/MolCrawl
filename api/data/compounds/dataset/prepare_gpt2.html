@@ -80,26 +80,30 @@ el.replaceWith(d);
 <div class="desc"><p>Split a flat input_ids list into fixed-length chunks.</p></div>
 </dd>
 <dt id="molcrawl.data.compounds.dataset.prepare_gpt2.tokenize_batch_dataset"><code class="name flex">
-<span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>compounds_dir, vocab_path, max_length)</span>
+<span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>compounds_dir, vocab_path, max_length, context_length, number_sample)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
+<pre><code class="python">def tokenize_batch_dataset(compounds_dir, vocab_path, max_length, context_length, number_sample):
     &#34;&#34;&#34;
     Tokenize GuacaMol benchmark data for GPT-2 training.
 
     Each SMILES is encoded without padding; all sequences are concatenated with
     [SEP] (eos_token_id=13) as the end-of-sequence marker and chunked into
-    blocks of 1024 tokens — matching the genome_sequence / protein_sequence
-    preparation pipeline.
+    ``context_length``-token blocks — matching the genome_sequence /
+    protein_sequence preparation pipeline.
 
     Args:
         compounds_dir: Base directory for compounds data (from LEARNING_SOURCE_DIR)
         vocab_path: Path to vocabulary file
         max_length: Maximum token length per SMILES (used for truncation)
+        context_length: Block size for the final chunked dataset.
+        number_sample: Per-split SMILES line cap. ``None`` means &#34;use every
+            line&#34; (recommended for full pretraining); a positive int truncates
+            each of train / valid / test to at most that many lines.
     &#34;&#34;&#34;
     from functools import partial
 
@@ -129,6 +133,9 @@ el.replaceWith(d);
         with open(smiles_file) as f:
             lines = [line.strip() for line in f if line.strip()]
 
+        if number_sample is not None and number_sample &gt; 0:
+            lines = lines[:number_sample]
+
         # Encode without padding; [SEP] is appended per-sequence by concatenate_texts
         encoded = []
         for smi in lines:
@@ -150,8 +157,7 @@ el.replaceWith(d);
     }
     dataset = DatasetDict(d)
 
-    # Concatenate sequences with [SEP] (id=13) as EOS, then chunk into 1024-token blocks
-    context_length = 1024
+    # Concatenate sequences with [SEP] as EOS, then chunk into context_length-token blocks
     eos_id = tokenizer.eos_token_id  # 13 ([SEP])
 
     concatenated = dataset.map(
@@ -181,8 +187,8 @@ el.replaceWith(d);
 <div class="desc"><p>Tokenize GuacaMol benchmark data for GPT-2 training.</p>
 <p>Each SMILES is encoded without padding; all sequences are concatenated with
 [SEP] (eos_token_id=13) as the end-of-sequence marker and chunked into
-blocks of 1024 tokens — matching the genome_sequence / protein_sequence
-preparation pipeline.</p>
+<code>context_length</code>-token blocks — matching the genome_sequence /
+protein_sequence preparation pipeline.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>compounds_dir</code></strong></dt>
@@ -191,6 +197,12 @@ preparation pipeline.</p>
 <dd>Path to vocabulary file</dd>
 <dt><strong><code>max_length</code></strong></dt>
 <dd>Maximum token length per SMILES (used for truncation)</dd>
+<dt><strong><code>context_length</code></strong></dt>
+<dd>Block size for the final chunked dataset.</dd>
+<dt><strong><code>number_sample</code></strong></dt>
+<dd>Per-split SMILES line cap. <code>None</code> means "use every
+line" (recommended for full pretraining); a positive int truncates
+each of train / valid / test to at most that many lines.</dd>
 </dl></div>
 </dd>
 </dl>

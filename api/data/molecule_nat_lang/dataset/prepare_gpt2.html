@@ -95,6 +95,15 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def tokenize_batch_dataset(parquet_path, context_length, number_sample):
+    &#34;&#34;&#34;Tokenize and chunk the molecule-natural-language corpus.
+
+    ``number_sample`` semantics:
+    - ``None`` (or 0 / negative): use every example from each split
+      (recommended for full pretraining).
+    - positive int: draw an 80/10/10 random sample of exactly that many
+      rows total across train/valid/test (reproduces the old hard-coded
+      behaviour when set to 50000).
+    &#34;&#34;&#34;
     from datasets import DatasetDict
     import numpy as np
 
@@ -109,15 +118,28 @@ el.replaceWith(d);
     elif &#34;valid&#34; not in tokenize_dataset and &#34;validation&#34; not in tokenize_dataset:
         raise KeyError(&#34;Neither &#39;valid&#39; nor &#39;validation&#39; split found in dataset&#34;)
 
-    tokenize_dataset[&#34;train&#34;] = tokenize_dataset[&#34;train&#34;].select(
-        np.random.choice(len(tokenize_dataset[&#34;train&#34;]), int(number_sample * 0.8), replace=False)
-    )
-    tokenize_dataset[&#34;valid&#34;] = tokenize_dataset[&#34;valid&#34;].select(
-        np.random.choice(len(tokenize_dataset[&#34;valid&#34;]), int(number_sample * 0.1), replace=False)
-    )
-    tokenize_dataset[&#34;test&#34;] = tokenize_dataset[&#34;test&#34;].select(
-        np.random.choice(len(tokenize_dataset[&#34;test&#34;]), int(number_sample * 0.1), replace=False)
-    )
+    if number_sample is not None and number_sample &gt; 0:
+        tokenize_dataset[&#34;train&#34;] = tokenize_dataset[&#34;train&#34;].select(
+            np.random.choice(
+                len(tokenize_dataset[&#34;train&#34;]),
+                min(int(number_sample * 0.8), len(tokenize_dataset[&#34;train&#34;])),
+                replace=False,
+            )
+        )
+        tokenize_dataset[&#34;valid&#34;] = tokenize_dataset[&#34;valid&#34;].select(
+            np.random.choice(
+                len(tokenize_dataset[&#34;valid&#34;]),
+                min(int(number_sample * 0.1), len(tokenize_dataset[&#34;valid&#34;])),
+                replace=False,
+            )
+        )
+        tokenize_dataset[&#34;test&#34;] = tokenize_dataset[&#34;test&#34;].select(
+            np.random.choice(
+                len(tokenize_dataset[&#34;test&#34;]),
+                min(int(number_sample * 0.1), len(tokenize_dataset[&#34;test&#34;])),
+                replace=False,
+            )
+        )
 
     tokenizer = MoleculeNatLangTokenizer()
 
@@ -138,7 +160,13 @@ el.replaceWith(d);
     print(f&#34;Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py-&gt;dataset_dir parameter.&#34;)
     chunked_dataset.save_to_disk(path_dataset)</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Tokenize and chunk the molecule-natural-language corpus.</p>
+<p><code>number_sample</code> semantics:
+- <code>None</code> (or 0 / negative): use every example from each split
+(recommended for full pretraining).
+- positive int: draw an 80/10/10 random sample of exactly that many
+rows total across train/valid/test (reproduces the old hard-coded
+behaviour when set to 50000).</p></div>
 </dd>
 </dl>
 </section>
