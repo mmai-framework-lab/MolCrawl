@@ -212,8 +212,9 @@ if __name__ == "__main__":
         resolve_ambiguous_token_ids,
     )
     _ambig_tokens = ambiguous_tokens_for_modality(dataset)
-    if _ambig_tokens and "tokenizer" in globals():
-        ambiguous_token_ids = resolve_ambiguous_token_ids(tokenizer, _ambig_tokens)
+    _tokenizer = globals().get("tokenizer")
+    if _ambig_tokens and _tokenizer is not None:
+        ambiguous_token_ids = resolve_ambiguous_token_ids(_tokenizer, _ambig_tokens)
     else:
         ambiguous_token_ids = []
 

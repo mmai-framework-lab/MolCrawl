@@ -221,7 +221,7 @@ def train_shared_tokenizer(
         raise RuntimeError("No raw files found across species — Process 2 must run first.")
 
     n_sample = max(1, int(input_sentence_size / max_lines_per_file) * 2)
-    sampled = list(np.random.permutation(all_raw)[:n_sample])
+    sampled = [all_raw[i] for i in np.random.permutation(len(all_raw))[:n_sample]]
     logger.info(
         "Training shared tokenizer: vocab=%d, sampling %d of %d raw files (input_sentence_size=%d)",
         vocab_size, len(sampled), len(all_raw), input_sentence_size,
