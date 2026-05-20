@@ -1,4 +1,11 @@
+Homo sapiens
+Mus musculus
+Rattus norvegicus
+Macaca mulatta
+Pan troglodytes
+Canis lupus familiaris
+Sus scrofa
+Bos taurus
 Bubalus bubalis
 Camelus dromedarius
-Mus musculus
 Peromyscus californicus

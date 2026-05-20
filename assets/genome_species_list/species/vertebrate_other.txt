@@ -1,3 +1,6 @@
+Danio rerio
+Gallus gallus
+Xenopus tropicalis
 Anas zonorhyncha
 Coregonus clupeaformis
 Gnathonemus longibarbis

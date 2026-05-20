@@ -1,2 +1,5 @@
+Danio rerio
+Gallus gallus
+Xenopus tropicalis
 Coregonus clupeaformis
 Myxocyprinus asiaticus
