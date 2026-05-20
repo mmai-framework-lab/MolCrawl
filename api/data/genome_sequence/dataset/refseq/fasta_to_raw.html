@@ -62,25 +62,31 @@ el.replaceWith(d);
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.get_sequence_from_fasta"><code class="name flex">
-<span>def <span class="ident">get_sequence_from_fasta</span></span>(<span>fasta_filepath: pathlib.Path,<br>max_lines_per_file: int,<br>num_worker: int,<br>sequence_list: multiprocessing.managers.ListProxy) ‑> None</span>
+<span>def <span class="ident">get_sequence_from_fasta</span></span>(<span>fasta_filepath: pathlib.Path,<br>max_lines_per_file: int,<br>num_worker: int,<br>sequence_queue: queue.Queue[List[str]]) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_sequence_from_fasta(fasta_filepath: Path, max_lines_per_file: int, num_worker: int, sequence_list: ListProxy) -&gt; None:
+<pre><code class="python">def get_sequence_from_fasta(
+    fasta_filepath: Path,
+    max_lines_per_file: int,
+    num_worker: int,
+    sequence_queue: &#34;queue.Queue[List[str]]&#34;,
+) -&gt; None:
     sequence_chunk: List[str] = []
     for sequence in read_fasta_sequences(fasta_filepath):
         sequence_chunk.append(sequence)
         if len(sequence_chunk) == max_lines_per_file:
-            while len(sequence_list) &gt; num_worker:
+            # Back-pressure: pause when the queue is saturated to bound memory.
+            while sequence_queue.qsize() &gt; num_worker:
                 time.sleep(0.5)
-            sequence_list.append(sequence_chunk)
+            sequence_queue.put(sequence_chunk)
             sequence_chunk = []
 
     if len(sequence_chunk):
-        sequence_list.append(sequence_chunk)</code></pre>
+        sequence_queue.put(sequence_chunk)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -115,18 +121,25 @@ el.replaceWith(d);
             progress.advance(task)
 
         sequence_chunk: List[str] = []
-        with concurrent.futures.ThreadPoolExecutor(num_worker) as executor, Manager() as manager:
-            sequence_list = manager.list()
+        # In-process queue.Queue (thread-safe) instead of multiprocessing.Manager().list().
+        # The Manager spawns a subprocess and routes every list mutation through a Unix
+        # socket; with hundreds of FASTA files the IPC layer would silently deadlock
+        # (parent stuck in __skb_wait_for_more_packets, no progress, no error). A Queue
+        # stays in-process, is faster, and removes the deadlock failure mode entirely.
+        sequence_queue: &#34;queue.Queue[List[str]]&#34; = queue.Queue()
+        with concurrent.futures.ThreadPoolExecutor(num_worker) as executor:
             jobs = [
-                executor.submit(get_sequence_from_fasta, path, max_lines_per_file, num_worker, sequence_list)
+                executor.submit(get_sequence_from_fasta, path, max_lines_per_file, num_worker, sequence_queue)
                 for path in fasta_filepaths
             ]
             for job in jobs:
                 job.add_done_callback(job_done_callback)
-            while unfinished_jobs &gt; 0 or len(sequence_list) &gt; 0:
-                if len(sequence_list):
-                    sequence_chunk = sequence_chunk + sequence_list.pop(0)
-                if len(sequence_chunk) &gt; max_lines_per_file:
+            while unfinished_jobs &gt; 0 or not sequence_queue.empty():
+                try:
+                    sequence_chunk = sequence_chunk + sequence_queue.get(timeout=1.0)
+                except queue.Empty:
+                    continue
+                while len(sequence_chunk) &gt; max_lines_per_file:
                     yield sequence_chunk[:max_lines_per_file]
                     sequence_chunk = sequence_chunk[max_lines_per_file:]
         if len(sequence_chunk):
@@ -186,47 +199,55 @@ el.replaceWith(d);
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.read_fasta_sequences"><code class="name flex">
-<span>def <span class="ident">read_fasta_sequences</span></span>(<span>fasta_filepath: pathlib.Path) ‑> Iterator[str]</span>
+<span>def <span class="ident">read_fasta_sequences</span></span>(<span>fasta_filepath: pathlib.Path, min_segment_len: int = 100) ‑> Iterator[str]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def read_fasta_sequences(fasta_filepath: Path) -&gt; Iterator[str]:
-    &#34;&#34;&#34;
-    Reads sequences from a FASTA file and yields them one by one.
+<pre><code class="python">def read_fasta_sequences(
+    fasta_filepath: Path,
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+) -&gt; Iterator[str]:
+    &#34;&#34;&#34;Yield ACGT segments from a FASTA file, splitting each entry at N runs.
 
     Parameters:
     - fasta_filepath: Path to the input FASTA file.
+    - min_segment_len: Drop N-free segments shorter than this length.
 
     Yields:
-    - A sequence string (without the header).
+    - One uppercase ACGT segment per ``yield`` (terminated by newline). A
+      single FASTA entry may emit zero, one, or many segments depending on
+      where its assembly gaps fall.
     &#34;&#34;&#34;
     current_sequence: List[str] = []
+
+    def _flush(chunks: List[str]) -&gt; Iterator[str]:
+        sequence_str = &#34;&#34;.join(chunks)
+        for segment in _split_at_n_runs(sequence_str, min_segment_len):
+            yield segment + &#34;\n&#34;
 
     with open(fasta_filepath, &#34;r&#34;) as fasta_file:
         for line in fasta_file:
             line = line.strip()
             if line.startswith(&#34;&gt;&#34;):
                 if current_sequence:
-                    sequence_str = &#34;&#34;.join(current_sequence)
-                    if &#34;N&#34; not in sequence_str:
-                        yield sequence_str.upper() + &#34;\n&#34;
-
+                    yield from _flush(current_sequence)
                     current_sequence = []
             else:
                 current_sequence.append(line)
         if current_sequence:
-            sequence_str = &#34;&#34;.join(current_sequence)
-            if &#34;N&#34; not in sequence_str:
-                yield sequence_str + &#34;\n&#34;</code></pre>
+            yield from _flush(current_sequence)</code></pre>
 </details>
-<div class="desc"><p>Reads sequences from a FASTA file and yields them one by one.</p>
+<div class="desc"><p>Yield ACGT segments from a FASTA file, splitting each entry at N runs.</p>
 <p>Parameters:
-- fasta_filepath: Path to the input FASTA file.</p>
+- fasta_filepath: Path to the input FASTA file.
+- min_segment_len: Drop N-free segments shorter than this length.</p>
 <p>Yields:
-- A sequence string (without the header).</p></div>
+- One uppercase ACGT segment per <code>yield</code> (terminated by newline). A
+single FASTA entry may emit zero, one, or many segments depending on
+where its assembly gaps fall.</p></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.write_chunk_file"><code class="name flex">
 <span>def <span class="ident">write_chunk_file</span></span>(<span>path_file, chunk_sequence: List[str])</span>
