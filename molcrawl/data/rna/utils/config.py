@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 
 from molcrawl.core.paths import RNA_DATASET_DIR
 from molcrawl.core.config import Config
@@ -25,6 +26,14 @@ class CellxGenePreparationConfig:
     # Each tissue retains min(N, C * sqrt(N)) cells drawn without replacement.
     # Set to 0 (or omit) to disable subsampling and use all cells.
     sqrt_scale_factor: float = 0
+
+    # Maximum number of (shuffled) parquet rows to feed into the GPT-2-style
+    # binarization step. ``None`` means "use the entire parquet corpus";
+    # small ints (e.g. 50000) cap the dataset for smoke testing.
+    number_sample: Optional[int] = None
+
+    # Context length used when chunking concatenated token streams.
+    context_length: int = 1024
 
 
 @dataclass

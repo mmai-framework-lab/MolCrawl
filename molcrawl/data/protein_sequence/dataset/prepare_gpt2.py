@@ -3,7 +3,7 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 # add project root to path（utilsetc.)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -60,7 +60,16 @@ def create_chunks(examples: Dict[str, List[int]], context_length: int) -> Dict[s
     return {"input_ids": input_ids}
 
 
-def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: int) -> None:
+def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: Optional[int]) -> None:
+    """Tokenize and chunk the protein corpus into fixed-length samples.
+
+    ``number_sample`` semantics:
+    - ``None`` (or 0 / negative): use every sequence from the raw files
+      (recommended for full pretraining on UniRef50's ~60M rows).
+    - positive int: sample the first ``number_sample`` rows after
+      shuffling (useful for smoke tests; reproduces the old hard-coded
+      behaviour when set to 50000).
+    """
     from datasets import DatasetDict, load_dataset
 
     from molcrawl.data.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
@@ -74,15 +83,14 @@ def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample
         )
 
     # Avoid the effect of extension determination by explicitly passing the file list
-    data = (
-        load_dataset(
-            "text",
-            data_files={"train": [str(p) for p in raw_files]},
-            split="train",
-        )
-        .shuffle()
-        .select(range(number_sample))
-    )
+    data = load_dataset(
+        "text",
+        data_files={"train": [str(p) for p in raw_files]},
+        split="train",
+    ).shuffle()
+
+    if number_sample is not None and number_sample > 0:
+        data = data.select(range(min(number_sample, len(data))))
     raw_datasets = data.train_test_split(test_size=0.2)
     valid_test_split = raw_datasets["test"].train_test_split(test_size=0.5)
     raw_datasets = DatasetDict(
@@ -115,13 +123,16 @@ def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample
 
 
 if __name__ == "__main__":
-    number_sample: int = 50000
-    context_length: int = 1024
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = ProteinSequenceConfig.from_file(args.config).data_preparation
+
+    # Read with backward-compatible defaults:
+    #   number_sample=None  => use every sequence from the raw files
+    #   context_length=1024 => preserves the prior hard-coded value
+    number_sample: Optional[int] = getattr(cfg, "number_sample", None)
+    context_length: int = getattr(cfg, "context_length", 1024)
 
     output_dir: Path = Path(cfg.output_dir)
     tokenize_batch_dataset(output_dir, context_length, number_sample)

@@ -38,19 +38,23 @@ def create_chunks(examples, context_length):
     return {"input_ids": input_ids}
 
 
-def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
+def tokenize_batch_dataset(compounds_dir, vocab_path, max_length, context_length, number_sample):
     """
     Tokenize GuacaMol benchmark data for GPT-2 training.
 
     Each SMILES is encoded without padding; all sequences are concatenated with
     [SEP] (eos_token_id=13) as the end-of-sequence marker and chunked into
-    blocks of 1024 tokens — matching the genome_sequence / protein_sequence
-    preparation pipeline.
+    ``context_length``-token blocks — matching the genome_sequence /
+    protein_sequence preparation pipeline.
 
     Args:
         compounds_dir: Base directory for compounds data (from LEARNING_SOURCE_DIR)
         vocab_path: Path to vocabulary file
         max_length: Maximum token length per SMILES (used for truncation)
+        context_length: Block size for the final chunked dataset.
+        number_sample: Per-split SMILES line cap. ``None`` means "use every
+            line" (recommended for full pretraining); a positive int truncates
+            each of train / valid / test to at most that many lines.
     """
     from functools import partial
 
@@ -80,6 +84,9 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
         with open(smiles_file) as f:
             lines = [line.strip() for line in f if line.strip()]
 
+        if number_sample is not None and number_sample > 0:
+            lines = lines[:number_sample]
+
         # Encode without padding; [SEP] is appended per-sequence by concatenate_texts
         encoded = []
         for smi in lines:
@@ -101,8 +108,7 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
     }
     dataset = DatasetDict(d)
 
-    # Concatenate sequences with [SEP] (id=13) as EOS, then chunk into 1024-token blocks
-    context_length = 1024
+    # Concatenate sequences with [SEP] as EOS, then chunk into context_length-token blocks
     eos_id = tokenizer.eos_token_id  # 13 ([SEP])
 
     concatenated = dataset.map(
@@ -131,13 +137,16 @@ def tokenize_batch_dataset(compounds_dir, vocab_path, max_length):
 
 
 if __name__ == "__main__":
-    number_sample = None
-
     parser = ArgumentParser()
     parser.add_argument("config")
     args = parser.parse_args()
     cfg = CompoundConfig.from_file(args.config).data_preparation
-    context_length = cfg.max_length
+
+    # Read with backward-compatible defaults:
+    #   number_sample=None  => encode every SMILES line in each split file
+    #   context_length=1024 => preserves the prior hard-coded chunk size
+    number_sample = getattr(cfg, "number_sample", None)
+    context_length = getattr(cfg, "context_length", 1024)
 
     # Get compounds directory from LEARNING_SOURCE_DIR
     learning_source_dir = os.environ.get("LEARNING_SOURCE_DIR")
@@ -151,4 +160,4 @@ if __name__ == "__main__":
     compounds_dir = Path(learning_source_dir) / "compounds"
     print(f"Using compounds directory: {compounds_dir}")
 
-    tokenize_batch_dataset(str(compounds_dir), cfg.vocab_path, cfg.max_length)
+    tokenize_batch_dataset(str(compounds_dir), cfg.vocab_path, cfg.max_length, context_length, number_sample)
