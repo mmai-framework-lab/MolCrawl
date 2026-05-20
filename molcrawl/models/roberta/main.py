@@ -293,12 +293,12 @@ if __name__ == "__main__":
         )
         print(f"Wandb initialized: {wandb_run.url}")
 
-    # Use custom data collator if defined in config, otherwise use default
+    # Use custom data collator if defined in config, otherwise use the
+    # ambiguity-aware default (wrapper around DataCollatorForLanguageModeling).
     if "data_collator" in globals():
         print("Using custom data collator from config")
         # data_collator is already defined in the config file
     else:
-        print("Using default DataCollatorForLanguageModeling")
         # Get the tokenizer from globals
         tokenizer_obj = globals().get("tokenizer", None)
 
@@ -312,7 +312,22 @@ if __name__ == "__main__":
         if actual_tokenizer is None:
             raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
 
-        data_collator = DataCollatorForLanguageModeling(tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.2)
+        from molcrawl.models._collators import (
+            ambiguous_tokens_for_modality,
+            infer_modality_from_path,
+            make_mlm_collator,
+        )
+
+        _modality = infer_modality_from_path(globals().get("dataset_dir")) \
+            or infer_modality_from_path(globals().get("model_path"))
+        _ambig = ambiguous_tokens_for_modality(_modality) if _modality else []
+        print(
+            f"Using {'AmbiguityAwareMLMCollator' if _ambig else 'DataCollatorForLanguageModeling'} "
+            f"(modality={_modality!r}, ambiguous_tokens={_ambig})"
+        )
+        data_collator = make_mlm_collator(
+            actual_tokenizer, ambiguous_tokens=_ambig, mlm_probability=0.2
+        )
 
     # Early stopping configuration
     early_stopping = globals().get("early_stopping", True)  # Enable by default

@@ -201,6 +201,18 @@ if __name__ == "__main__":
     }[dtype]
     ctx = nullcontext() if device_type == "cpu" else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
+    # Resolve ambiguous token ids once for CLM-side loss masking (legacy
+    # ablation path; same policy as the Llama-style train loop).
+    from molcrawl.models._collators import (
+        ambiguous_tokens_for_modality,
+        resolve_ambiguous_token_ids,
+    )
+    _ambig_tokens = ambiguous_tokens_for_modality(dataset)
+    if _ambig_tokens and "tokenizer" in globals():
+        ambiguous_token_ids = resolve_ambiguous_token_ids(tokenizer, _ambig_tokens)
+    else:
+        ambiguous_token_ids = []
+
     # RNA data loader - get paths from config if available
     rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
     rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
@@ -252,6 +264,13 @@ def get_batch(split):
     batch = torch.stack(padded_sequences)
     x = batch[:, :-1].long()  # Ensure long type for embedding
     y = batch[:, 1:].long()  # Ensure long type for embedding
+
+    # Zero out CLM loss at positions whose target is an ambiguous token
+    # (modality-specific; e.g. genome N + IUPAC codes). No-op when the list
+    # is empty. Applied to the shifted target y, not the input x.
+    if ambiguous_token_ids:
+        from molcrawl.models._collators import mask_ambiguous_targets_for_clm
+        y = mask_ambiguous_targets_for_clm(y, ambiguous_token_ids)
 
     if device_type == "cuda":
         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)

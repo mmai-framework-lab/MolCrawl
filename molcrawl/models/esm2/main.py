@@ -299,7 +299,6 @@ if __name__ == "__main__":
     if "data_collator" in globals():
         print("Using custom data collator from config")
     else:
-        print("Using default DataCollatorForLanguageModeling")
         tokenizer_obj = globals().get("tokenizer", None)
 
         if tokenizer_obj is not None and hasattr(tokenizer_obj, "tokenizer"):
@@ -310,8 +309,18 @@ if __name__ == "__main__":
         if actual_tokenizer is None:
             raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
 
-        # ESM-2: MLM probability 0.15 (BERT standard)
-        data_collator = DataCollatorForLanguageModeling(tokenizer=actual_tokenizer, mlm=True, mlm_probability=0.15)
+        # ESM-2: MLM probability 0.15 (BERT standard).
+        # Ambiguity-aware: exclude X/B/Z and structural markers from loss.
+        from molcrawl.models._collators import (
+            PROTEIN_AMBIGUOUS_TOKENS,
+            make_mlm_collator,
+        )
+
+        data_collator = make_mlm_collator(
+            actual_tokenizer,
+            ambiguous_tokens=PROTEIN_AMBIGUOUS_TOKENS,
+            mlm_probability=0.15,
+        )
 
     # Training arguments
     training_args = TrainingArguments(
