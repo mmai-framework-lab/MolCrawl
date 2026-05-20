@@ -5,12 +5,38 @@ from functools import partial
 from multiprocessing import Manager
 from multiprocessing.managers import ListProxy
 import concurrent.futures
+import re
 import threading
 import time
 
 import rich.progress as pb
 
 from molcrawl.data.genome_sequence.utils.config import GenomeSequenceConfig
+
+# Minimum length of an ACGT segment (after N-run splitting) to keep. Segments
+# shorter than this are dropped to avoid swamping the corpus with sub-context
+# fragments. 100 bp is well below typical model context windows (>=1024 bp)
+# while still recovering most chromosome content that the old N-filter lost.
+DEFAULT_MIN_SEGMENT_LEN = 100
+
+# Run of one-or-more Ns. Used to split chromosome-scale sequences at assembly
+# gaps so that the surrounding ACGT segments can be kept rather than discarding
+# the entire chromosome.
+_N_RUN_RE = re.compile(r"N+")
+
+
+def _split_at_n_runs(seq: str, min_len: int = DEFAULT_MIN_SEGMENT_LEN) -> Iterator[str]:
+    """Yield uppercase ACGT segments obtained by splitting ``seq`` at N runs.
+
+    Replaces the previous "drop the whole sequence if it contains any N"
+    behaviour, which silently discarded every chromosome-scale assembly entry
+    that carries centromeric/heterochromatic N gaps (~96% of GRCh38 bases were
+    lost). Empty splits and segments shorter than ``min_len`` are filtered out.
+    """
+    upper = seq.upper()
+    for segment in _N_RUN_RE.split(upper):
+        if len(segment) >= min_len:
+            yield segment
 
 
 def get_sequence_from_fasta(fasta_filepath: Path, max_lines_per_file: int, num_worker: int, sequence_list: ListProxy) -> None:
@@ -27,34 +53,39 @@ def get_sequence_from_fasta(fasta_filepath: Path, max_lines_per_file: int, num_w
         sequence_list.append(sequence_chunk)
 
 
-def read_fasta_sequences(fasta_filepath: Path) -> Iterator[str]:
-    """
-    Reads sequences from a FASTA file and yields them one by one.
+def read_fasta_sequences(
+    fasta_filepath: Path,
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+) -> Iterator[str]:
+    """Yield ACGT segments from a FASTA file, splitting each entry at N runs.
 
     Parameters:
     - fasta_filepath: Path to the input FASTA file.
+    - min_segment_len: Drop N-free segments shorter than this length.
 
     Yields:
-    - A sequence string (without the header).
+    - One uppercase ACGT segment per ``yield`` (terminated by newline). A
+      single FASTA entry may emit zero, one, or many segments depending on
+      where its assembly gaps fall.
     """
     current_sequence: List[str] = []
+
+    def _flush(chunks: List[str]) -> Iterator[str]:
+        sequence_str = "".join(chunks)
+        for segment in _split_at_n_runs(sequence_str, min_segment_len):
+            yield segment + "\n"
 
     with open(fasta_filepath, "r") as fasta_file:
         for line in fasta_file:
             line = line.strip()
             if line.startswith(">"):
                 if current_sequence:
-                    sequence_str = "".join(current_sequence)
-                    if "N" not in sequence_str:
-                        yield sequence_str.upper() + "\n"
-
+                    yield from _flush(current_sequence)
                     current_sequence = []
             else:
                 current_sequence.append(line)
         if current_sequence:
-            sequence_str = "".join(current_sequence)
-            if "N" not in sequence_str:
-                yield sequence_str + "\n"
+            yield from _flush(current_sequence)
 
 
 def iterate_over_chunk_raw_files(fasta_filepaths: List[Path], num_worker: int, max_lines_per_file: int) -> Iterator[list[str]]:
