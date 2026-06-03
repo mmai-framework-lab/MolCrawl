@@ -57,7 +57,10 @@ el.replaceWith(d);
     import cellxgene_census
 
     with cellxgene_census.open_soma(census_version=version) as census:
-        meta_data = (
+        # Materialise inside the context: tiledbsoma&gt;=1.16 invalidates lazy
+        # readers once the array closes, so .concat() must run before the
+        # `with` block exits (older versions tolerated it outside).
+        gene_list = (
             census[&#34;census_data&#34;][&#34;homo_sapiens&#34;]
             .ms[&#34;RNA&#34;]
             .var.read(
@@ -65,9 +68,10 @@ el.replaceWith(d);
                     &#34;feature_name&#34;,
                 ],
             )
+            .concat()
+            .to_pandas()[&#34;feature_name&#34;]
+            .to_list()
         )
-
-    gene_list = meta_data.concat().to_pandas()[&#34;feature_name&#34;].to_list()
     return _SimpleGeneVocab(gene_list)</code></pre>
 </details>
 <div class="desc"></div>
