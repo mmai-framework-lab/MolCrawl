@@ -61,6 +61,7 @@ early_stopping_patience = 5
 
 # weight decay
 weight_decay = 1e-1
+dropout = 0.1  # regularize against finite-corpus overfit (compounds-llama-small val_loss 0.027 in v1 was suspiciously low; matches protein gpt2_small precedent)
 
 # dataset
 dataset = "genome_sequence"
