@@ -48,6 +48,7 @@ max_checkpoints = 5  # Keep up to 5 checkpoints
 
 # weight decay
 weight_decay = 1e-1
+dropout = 0.1  # regularize against finite-corpus overfit (compounds-llama-small val_loss 0.027 in v1 was suspiciously low; matches protein gpt2_small precedent)
 
 # dataset
 dataset = "molecule_nat_lang"
