@@ -75,13 +75,23 @@ if [ "$_IS_AMD_NODE" = "true" ]; then
 elif [ -f "$_LOCAL_MINICONDA_PYTHON" ]; then
     PYTHON="$(realpath "$_LOCAL_MINICONDA_PYTHON")"
 else
-    _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null || true)"
-    if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
-        PYTHON="$_MOLCRAWL_PYTHON"
+    # Direct-path probe first (mirrors the molcrawl_rocm branch above). Works on
+    # compute nodes where ``conda`` is not on PATH — ``conda run`` would
+    # otherwise silently fail and we'd fall through to system python without
+    # the project's dependencies.
+    _MOLCRAWL_DIRECT="${MOLCRAWL_PYTHON:-$HOME/miniforge3/envs/molcrawl/bin/python}"
+    if [ -f "$_MOLCRAWL_DIRECT" ]; then
+        PYTHON="$_MOLCRAWL_DIRECT"
     else
-        echo "WARNING: local miniconda and conda env 'molcrawl' not found. Falling back to system python." >&2
-        PYTHON="$(which python3 || which python)"
+        _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null || true)"
+        if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
+            PYTHON="$_MOLCRAWL_PYTHON"
+        else
+            echo "WARNING: local miniconda and conda env 'molcrawl' not found. Falling back to system python." >&2
+            PYTHON="$(which python3 || which python)"
+        fi
     fi
+    unset _MOLCRAWL_DIRECT
 fi
 export PYTHON
 export PYTHONUNBUFFERED=1
