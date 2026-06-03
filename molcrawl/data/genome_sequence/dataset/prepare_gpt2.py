@@ -61,9 +61,18 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
     from datasets import DatasetDict, load_dataset
     import sentencepiece as spm
 
+    # parquet_files used to be a single .parquet file (v1); the
+    # ambiguity-aware v2 corpus is sharded into a directory of *.parquet
+    # files to dodge PyArrow's int32 offset overflow. Accept either layout.
+    parquet_path = Path(output_dir) / "parquet_files"
+    if parquet_path.is_dir():
+        data_files = [str(parquet_path / "*.parquet")]
+    else:
+        data_files = [str(parquet_path)]
+
     data = load_dataset(
         "parquet",
-        data_files=[str(Path(output_dir) / "parquet_files")],
+        data_files=data_files,
         cache_dir=str(Path(output_dir) / "hf_cache"),
         split="train",
     ).shuffle()
