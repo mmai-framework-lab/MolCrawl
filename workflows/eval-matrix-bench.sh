@@ -29,7 +29,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common_functions.sh"
 
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-LSD="${LEARNING_SOURCE_DIR:-${REPO_ROOT}/learning_source_20260316}"
+LSD="${LEARNING_SOURCE_DIR:-${REPO_ROOT}/../learning_source_20260316}"
 TAG="${MATRIX_TAG:-v1}"
 DEVICE="${MATRIX_DEVICE:-cpu}"
 BOOTSTRAP="${MATRIX_BOOTSTRAP:-30}"

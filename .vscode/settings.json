@@ -1,8 +1,20 @@
 {
+  // ------------------------------------------------------------
   // Git settings
+  // ------------------------------------------------------------
   "git.ignoreLimitWarning": true,
 
+  // Avoid expensive automatic Git scans on Lustre / huge ML worktrees.
+  // Use Git manually from terminal when needed.
+  "git.autorefresh": false,
+  "git.autoRepositoryDetection": false,
+
+  // If Git UI itself causes load again, uncomment this.
+  // "git.enabled": false,
+
+  // ------------------------------------------------------------
   // Python settings
+  // ------------------------------------------------------------
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
@@ -12,7 +24,9 @@
     }
   },
 
+  // ------------------------------------------------------------
   // JavaScript/JSX settings
+  // ------------------------------------------------------------
   "[javascript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
     "editor.formatOnSave": true,
@@ -28,7 +42,9 @@
     }
   },
 
+  // ------------------------------------------------------------
   // JSON/YAML settings
+  // ------------------------------------------------------------
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features",
     "editor.formatOnSave": true
@@ -43,19 +59,25 @@
     "editor.tabSize": 2
   },
 
+  // ------------------------------------------------------------
   // Markdown settings
+  // ------------------------------------------------------------
   "[markdown]": {
     "editor.formatOnSave": true,
     "editor.wordWrap": "on"
   },
 
+  // ------------------------------------------------------------
   // Ruff settings
+  // ------------------------------------------------------------
   "ruff.enable": true,
   "ruff.organizeImports": true,
   "ruff.fixAll": true,
   "ruff.lint.run": "onSave",
 
+  // ------------------------------------------------------------
   // ESLint settings
+  // ------------------------------------------------------------
   "eslint.enable": true,
   "eslint.run": "onSave",
   "eslint.format.enable": true,
@@ -63,11 +85,41 @@
     "molcrawl-web"
   ],
 
-  // Python-specific settings
+  // ------------------------------------------------------------
+  // Python analysis / Pylance settings
+  // ------------------------------------------------------------
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
 
+  // Limit Pylance indexing and analysis pressure.
+  "python.analysis.indexing": false,
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.exclude": [
+    "**/learning_source_*/**",
+    "**/dataset/**",
+    "**/slurm_logs/**",
+    "**/.claude/**",
+    "**/.cache/**",
+    "**/.mypy_cache/**",
+    "**/.ruff_cache/**",
+    "**/.pytest_cache/**",
+    "**/__pycache__/**",
+    "**/runs/**",
+    "**/runs_train_*/**",
+    "**/wandb/**",
+    "**/mlruns/**",
+    "**/outputs/**",
+    "**/checkpoints/**",
+    "**/gpt2-output*/**",
+    "**/node_modules/**",
+    "**/miniconda/**",
+    "**/venv/**",
+    "**/.venv/**"
+  ],
+
+  // ------------------------------------------------------------
   // General editor settings
+  // ------------------------------------------------------------
   "editor.formatOnSave": true,
   "editor.formatOnPaste": false,
   "editor.insertSpaces": true,
@@ -76,23 +128,129 @@
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
 
+  // ------------------------------------------------------------
   // File associations
+  // ------------------------------------------------------------
   "files.associations": {
     "*.yml": "yaml",
     "*.yaml": "yaml"
   },
 
-  // Exclude patterns from file watcher
+  // ------------------------------------------------------------
+  // Hide huge/generated directories from Explorer
+  // ------------------------------------------------------------
+  "files.exclude": {
+    "**/learning_source_*": true,
+    "**/dataset": true,
+    "**/slurm_logs": true,
+    "**/.claude": true,
+    "**/.cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.pytest_cache": true,
+    "**/__pycache__": true,
+    "**/runs": true,
+    "**/runs_train_*": true,
+    "**/wandb": true,
+    "**/mlruns": true,
+    "**/outputs": true,
+    "**/checkpoints": true,
+    "**/gpt2-output*": true,
+    "**/node_modules": true,
+    "**/miniconda": true,
+    "**/venv": true,
+    "**/.venv": true
+  },
+
+  // ------------------------------------------------------------
+  // Exclude huge/generated files from Search
+  // ------------------------------------------------------------
+  "search.exclude": {
+    "**/learning_source_*/**": true,
+    "**/dataset/**": true,
+    "**/slurm_logs/**": true,
+    "**/.claude/**": true,
+    "**/.cache/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/.pytest_cache/**": true,
+    "**/__pycache__/**": true,
+    "**/runs/**": true,
+    "**/runs_train_*/**": true,
+    "**/wandb/**": true,
+    "**/mlruns/**": true,
+    "**/outputs/**": true,
+    "**/checkpoints/**": true,
+    "**/gpt2-output*/**": true,
+    "**/node_modules/**": true,
+    "**/miniconda/**": true,
+    "**/venv/**": true,
+    "**/.venv/**": true,
+
+    // Large ML artifacts
+    "**/*.pt": true,
+    "**/*.pth": true,
+    "**/*.ckpt": true,
+    "**/*.safetensors": true,
+    "**/*.onnx": true,
+    "**/*.npy": true,
+    "**/*.npz": true,
+    "**/*.h5": true,
+    "**/*.hdf5": true,
+    "**/*.parquet": true,
+    "**/*.pkl": true,
+    "**/*.pickle": true,
+    "**/*.jsonl": true,
+    "**/*.log": true
+  },
+
+  // ------------------------------------------------------------
+  // Exclude huge/generated files from file watcher
+  // ------------------------------------------------------------
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
-    "**/node_modules/*/**": true,
-    "**/miniconda/**": true,
+
     "**/learning_source_*/**": true,
-    "**/runs_train_*/**": true,
-    "**/gpt2-output*/**": true,
+    "**/dataset/**": true,
+    "**/slurm_logs/**": true,
+    "**/.claude/**": true,
+    "**/.cache/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/.pytest_cache/**": true,
     "**/__pycache__/**": true,
-    "**/.ruff_cache/**": true
+    "**/runs/**": true,
+    "**/runs_train_*/**": true,
+    "**/wandb/**": true,
+    "**/mlruns/**": true,
+    "**/outputs/**": true,
+    "**/checkpoints/**": true,
+    "**/gpt2-output*/**": true,
+    "**/node_modules/**": true,
+    "**/miniconda/**": true,
+    "**/venv/**": true,
+    "**/.venv/**": true,
+
+    // Large ML artifacts
+    "**/*.pt": true,
+    "**/*.pth": true,
+    "**/*.ckpt": true,
+    "**/*.safetensors": true,
+    "**/*.onnx": true,
+    "**/*.npy": true,
+    "**/*.npz": true,
+    "**/*.h5": true,
+    "**/*.hdf5": true,
+    "**/*.parquet": true,
+    "**/*.pkl": true,
+    "**/*.pickle": true,
+    "**/*.jsonl": true,
+    "**/*.log": true
   },
+
+  // ------------------------------------------------------------
+  // Live Server
+  // ------------------------------------------------------------
   "liveServer.settings.port": 5501
 }

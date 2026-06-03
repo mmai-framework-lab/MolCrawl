@@ -79,6 +79,23 @@ conda activate molcrawl
 pip install --no-build-isolation -e .
 ```
 
+#### Offline / restricted-network nodes (optional)
+
+The `molecule_nat_lang` preparation loads the GPT-2 tokenizer via
+`transformers.from_pretrained("gpt2")`, which needs to reach Hugging Face at
+runtime. On nodes that cannot reach `huggingface.co` this fails with a
+connection error. Pre-download the tokenizer once into the directory the
+workflows auto-detect (`assets/tokenizers/gpt2`):
+
+```bash
+huggingface-cli download openai-community/gpt2 \
+  config.json vocab.json merges.txt tokenizer.json tokenizer_config.json \
+  --local-dir assets/tokenizers/gpt2
+```
+
+The `01-/02-molecule_nat_lang` workflow scripts export `GPT2_TOKENIZER_DIR` to
+this path automatically when it exists; otherwise set it manually.
+
 ---
 
 ### 4. Preprocess Raw Data (Download + Tokenize)

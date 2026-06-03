@@ -75,17 +75,41 @@ if [ "$_IS_AMD_NODE" = "true" ]; then
 elif [ -f "$_LOCAL_MINICONDA_PYTHON" ]; then
     PYTHON="$(realpath "$_LOCAL_MINICONDA_PYTHON")"
 else
-    _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null || true)"
-    if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
-        PYTHON="$_MOLCRAWL_PYTHON"
+    # Direct-path probe first (mirrors the molcrawl_rocm branch above). Works on
+    # compute nodes where ``conda`` is not on PATH — ``conda run`` would
+    # otherwise silently fail and we'd fall through to system python without
+    # the project's dependencies.
+    _MOLCRAWL_DIRECT="${MOLCRAWL_PYTHON:-$HOME/miniforge3/envs/molcrawl/bin/python}"
+    if [ -f "$_MOLCRAWL_DIRECT" ]; then
+        PYTHON="$_MOLCRAWL_DIRECT"
     else
-        echo "WARNING: local miniconda and conda env 'molcrawl' not found. Falling back to system python." >&2
-        PYTHON="$(which python3 || which python)"
+        _MOLCRAWL_PYTHON="$(conda run -n molcrawl which python 2>/dev/null || true)"
+        if [ -n "$_MOLCRAWL_PYTHON" ] && [ -f "$_MOLCRAWL_PYTHON" ]; then
+            PYTHON="$_MOLCRAWL_PYTHON"
+        else
+            echo "WARNING: local miniconda and conda env 'molcrawl' not found. Falling back to system python." >&2
+            PYTHON="$(which python3 || which python)"
+        fi
     fi
+    unset _MOLCRAWL_DIRECT
 fi
 export PYTHON
 export PYTHONUNBUFFERED=1
 unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _ROCM_PYTHON _NODE_NAME _IS_AMD_NODE _SCRIPT_DIR_CF
+
+# ---------------------------------------------------------------------------
+# Prefer the conda env's libstdc++ over /lib64/libstdc++.so.6. Some RHEL/Rocky
+# hosts only ship up to GLIBCXX_3.4.29, which breaks scipy / transformers /
+# datasets native extensions built against newer libstdc++ (GLIBCXX_3.4.32+).
+# `conda activate <env>` normally handles this; workflow scripts invoke
+# $PYTHON directly (no activation), so we set it explicitly here.
+# ---------------------------------------------------------------------------
+_PYTHON_LIB_DIR="$(dirname "$PYTHON")/../lib"
+if [ -d "$_PYTHON_LIB_DIR" ]; then
+    _PYTHON_LIB_DIR="$(cd "$_PYTHON_LIB_DIR" && pwd)"
+    export LD_LIBRARY_PATH="${_PYTHON_LIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+unset _PYTHON_LIB_DIR
 
 # Check if LEARNING_SOURCE_DIR environment variable is set
 # Usage: check_learning_source_dir
