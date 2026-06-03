@@ -18,15 +18,17 @@ class RNADataset:
         self.split = split
         self.test_size = test_size
 
-        # Load vocabulary
-        if vocab_file and os.path.exists(vocab_file):
-            with open(vocab_file, "r") as f:
-                self.vocab = json.load(f)
-            self.vocab_size = len(self.vocab)
-        else:
-            # Default RNA vocabulary
-            self.vocab = {"<pad>": 0, "<unk>": 1, "<eos>": 2}
-            self.vocab_size = 3
+        # Load vocabulary. Silently falling back to a 3-token default produced
+        # models with wte=Embedding(3, n_embd) that died at the first forward
+        # pass once the loader fed token ids drawn from the real ~25k-entry
+        # vocabulary — fail loudly instead.
+        if vocab_file is None:
+            raise ValueError("RNADataset requires vocab_file; got None")
+        if not os.path.exists(vocab_file):
+            raise FileNotFoundError(f"Gene vocabulary not found at {vocab_file}")
+        with open(vocab_file, "r") as f:
+            self.vocab = json.load(f)
+        self.vocab_size = len(self.vocab)
 
         # Load dataset - direct arrow file reading to bypass metadata issues
         print(f"📂 Attempting to load data from {data_dir}")

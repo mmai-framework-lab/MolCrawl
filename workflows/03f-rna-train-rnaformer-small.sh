@@ -13,7 +13,7 @@ check_learning_source_dir
 NUM_GPUS=${NUM_GPUS:-1}
 select_multi_gpu "$NUM_GPUS" 10
 # Weights & Biases configuration
-export USE_WANDB=${USE_WANDB:-True}
+export USE_WANDB=${USE_WANDB:-False}
 export WANDB_PROJECT=${WANDB_PROJECT:-rnaformer-transcriptome}
 
 # Training parameters
