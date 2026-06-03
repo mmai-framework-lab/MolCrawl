@@ -115,7 +115,10 @@ def get_census_gene_vocab(version: str):
     import cellxgene_census
 
     with cellxgene_census.open_soma(census_version=version) as census:
-        meta_data = (
+        # Materialise inside the context: tiledbsoma>=1.16 invalidates lazy
+        # readers once the array closes, so .concat() must run before the
+        # `with` block exits (older versions tolerated it outside).
+        gene_list = (
             census["census_data"]["homo_sapiens"]
             .ms["RNA"]
             .var.read(
@@ -123,9 +126,10 @@ def get_census_gene_vocab(version: str):
                     "feature_name",
                 ],
             )
+            .concat()
+            .to_pandas()["feature_name"]
+            .to_list()
         )
-
-    gene_list = meta_data.concat().to_pandas()["feature_name"].to_list()
     return _SimpleGeneVocab(gene_list)
 
 
