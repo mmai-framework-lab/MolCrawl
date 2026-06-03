@@ -16,18 +16,27 @@ dependencies:
   - typing-extensions>=4.14.1
   - dask=2024.2.1
   - matplotlib=3.9.2
+  # cellxgene-census とその依存 (tiledbsoma-py, tiledb-py) は conda-forge 経由で導入する。
+  # PyPI の tiledb 0.29.x には linux-aarch64 wheel が無くソースビルドで失敗するため。
+  - cellxgene-census=1.17.0
+  - tiledbsoma-py>=1.16.2,<2
   - pip:
       - torch==2.8.0
-      - torchtext==0.18.0
-      - torchvision==0.23.0
-      - torchaudio==2.8.0
+      # NOTE: linux-aarch64 では PyPI の汎用 torch==2.8.0 wheel が CPU 専用です。
+      # NVIDIA aarch64 GPU (GB200/Grace 等) で使う場合は env 作成後に追加で:
+      #   pip install --force-reinstall --no-deps \
+      #     --index-url https://download.pytorch.org/whl 'torch==2.8.0+cu129'
       - accelerate==0.34.2
       - ncbi-genome-download==0.3.3
       - joblib==1.4.2
-      - cellxgene_census==1.15.0
+      # cellxgene_census は conda-forge 側で導入 (上記参照)
       - rich==13.8.0
       - transformers==4.45.1
-      - scgpt==0.2.4
+      # transformers の hard dep ではないが prepare_gpt2.py / GuacaMol HF fallback 等で必須
+      - datasets>=2.20,<3.0
+      # scgpt==0.2.4 は torchtext を要求し linux-aarch64 で wheel が無いため除外。
+      # オプショナル機能 (scgpt_tokenization.py の _scbank_export_via_scgpt) を使う場合のみ
+      # 別途: pip install scgpt==0.2.4 --no-deps
       - rdchiral==1.1.0
       - loompy==3.0.8
       - sentencepiece==0.2.0

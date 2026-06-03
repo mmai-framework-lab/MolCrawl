@@ -97,6 +97,20 @@ export PYTHON
 export PYTHONUNBUFFERED=1
 unset _LOCAL_MINICONDA_PYTHON _MOLCRAWL_PYTHON _ROCM_PYTHON _NODE_NAME _IS_AMD_NODE _SCRIPT_DIR_CF
 
+# ---------------------------------------------------------------------------
+# Prefer the conda env's libstdc++ over /lib64/libstdc++.so.6. Some RHEL/Rocky
+# hosts only ship up to GLIBCXX_3.4.29, which breaks scipy / transformers /
+# datasets native extensions built against newer libstdc++ (GLIBCXX_3.4.32+).
+# `conda activate <env>` normally handles this; workflow scripts invoke
+# $PYTHON directly (no activation), so we set it explicitly here.
+# ---------------------------------------------------------------------------
+_PYTHON_LIB_DIR="$(dirname "$PYTHON")/../lib"
+if [ -d "$_PYTHON_LIB_DIR" ]; then
+    _PYTHON_LIB_DIR="$(cd "$_PYTHON_LIB_DIR" && pwd)"
+    export LD_LIBRARY_PATH="${_PYTHON_LIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+unset _PYTHON_LIB_DIR
+
 # Check if LEARNING_SOURCE_DIR environment variable is set
 # Usage: check_learning_source_dir
 check_learning_source_dir() {
