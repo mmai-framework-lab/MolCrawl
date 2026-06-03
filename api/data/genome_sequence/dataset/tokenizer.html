@@ -45,14 +45,30 @@ el.replaceWith(d);
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="molcrawl.data.genome_sequence.dataset.tokenizer.raw_to_parquet"><code class="name flex">
-<span>def <span class="ident">raw_to_parquet</span></span>(<span>output_dir, num_proc=None, batch_size=None)</span>
+<span>def <span class="ident">raw_to_parquet</span></span>(<span>output_dir, num_proc=None, batch_size=None, shard_rows=200000)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def raw_to_parquet(output_dir, num_proc=None, batch_size=None):
+<pre><code class="python">def raw_to_parquet(output_dir, num_proc=None, batch_size=None, shard_rows=200_000):
+    &#34;&#34;&#34;Tokenize the raw_files/ corpus with SentencePiece and write parquet shards.
+
+    The output ``parquet_files/`` was historically a single .parquet file.
+    PyArrow uses int32 offsets for ``list&lt;int32&gt;`` columns, which overflow at
+    ~2 GB of cumulative list bytes — fine for the legacy genome corpus
+    (~85 GB raw → ~26 GB parquet) but it fails on the ambiguity-aware v2
+    corpus (~111 GB raw) with::
+
+        offset overflow while concatenating arrays, consider casting input
+        from ``list&lt;item: int32&gt;`` to ``large_list&lt;item: int32&gt;`` first.
+
+    To avoid the limit and to keep ``prepare_gpt2.py`` simple, we now write
+    ``parquet_files/`` as a *directory* of contiguous shards. The downstream
+    loader globs ``*.parquet`` under it. A legacy single-file
+    ``parquet_files`` (v1) is still readable by the loader as-is.
+    &#34;&#34;&#34;
     from datasets import load_dataset
     import sentencepiece as spm
 
@@ -79,9 +95,35 @@ el.replaceWith(d);
         num_proc=num_proc,
         remove_columns=[&#34;text&#34;],
     )
-    tokenized_datasets.to_parquet(str(Path(output_dir) / &#34;parquet_files&#34;))</code></pre>
+
+    parquet_path = Path(output_dir) / &#34;parquet_files&#34;
+    # If a stale single-file v1 artifact lives at the target path, remove it
+    # so the directory layout can be created without conflict.
+    if parquet_path.exists() and not parquet_path.is_dir():
+        parquet_path.unlink()
+    parquet_path.mkdir(parents=True, exist_ok=True)
+
+    n_rows = len(tokenized_datasets)
+    num_shards = max(1, (n_rows + shard_rows - 1) // shard_rows)
+    print(f&#34;Writing {n_rows:,} rows as {num_shards} parquet shards under {parquet_path}/&#34;)
+    for i in range(num_shards):
+        shard = tokenized_datasets.shard(num_shards=num_shards, index=i, contiguous=True)
+        shard_path = parquet_path / f&#34;shard-{i:05d}-of-{num_shards:05d}.parquet&#34;
+        shard.to_parquet(str(shard_path))</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Tokenize the raw_files/ corpus with SentencePiece and write parquet shards.</p>
+<p>The output <code>parquet_files/</code> was historically a single .parquet file.
+PyArrow uses int32 offsets for <code>list&lt;int32&gt;</code> columns, which overflow at
+~2 GB of cumulative list bytes — fine for the legacy genome corpus
+(~85 GB raw → ~26 GB parquet) but it fails on the ambiguity-aware v2
+corpus (~111 GB raw) with::</p>
+<pre><code>offset overflow while concatenating arrays, consider casting input
+from ``list&lt;item: int32&gt;`` to ``large_list&lt;item: int32&gt;`` first.
+</code></pre>
+<p>To avoid the limit and to keep <code>prepare_gpt2.py</code> simple, we now write
+<code>parquet_files/</code> as a <em>directory</em> of contiguous shards. The downstream
+loader globs <code>*.parquet</code> under it. A legacy single-file
+<code>parquet_files</code> (v1) is still readable by the loader as-is.</p></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.tokenizer.tokenize_function"><code class="name flex">
 <span>def <span class="ident">tokenize_function</span></span>(<span>examples, tokenizer)</span>

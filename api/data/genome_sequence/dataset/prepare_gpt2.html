@@ -107,9 +107,18 @@ el.replaceWith(d);
     from datasets import DatasetDict, load_dataset
     import sentencepiece as spm
 
+    # parquet_files used to be a single .parquet file (v1); the
+    # ambiguity-aware v2 corpus is sharded into a directory of *.parquet
+    # files to dodge PyArrow&#39;s int32 offset overflow. Accept either layout.
+    parquet_path = Path(output_dir) / &#34;parquet_files&#34;
+    if parquet_path.is_dir():
+        data_files = [str(parquet_path / &#34;*.parquet&#34;)]
+    else:
+        data_files = [str(parquet_path)]
+
     data = load_dataset(
         &#34;parquet&#34;,
-        data_files=[str(Path(output_dir) / &#34;parquet_files&#34;)],
+        data_files=data_files,
         cache_dir=str(Path(output_dir) / &#34;hf_cache&#34;),
         split=&#34;train&#34;,
     ).shuffle()
