@@ -3,8 +3,7 @@
 This is a sibling pipeline to :mod:`molcrawl.data.genome_sequence.preparation`,
 which downloads RefSeq via ``ncbi_genome_download``. Use this entry point when a
 specialist has already curated FASTA files outside of the project (e.g. a
-GRCh38 reference with ``chr22`` held out for evaluation, staged under
-``/lustre/home/kojima-t/data/species_links/``).
+GRCh38 reference with ``chr22`` held out for evaluation.
 
 Two modes:
 
