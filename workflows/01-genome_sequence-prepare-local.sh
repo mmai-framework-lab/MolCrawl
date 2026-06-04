@@ -1,21 +1,13 @@
 #!/bin/bash
 
 # Prepare genome_sequence training data from a pre-staged local FASTA
-<<<<<<< HEAD
-=======
-# (e.g. files curated under /lustre/home/kojima-t/data/species_links/).
->>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 #
 # Sibling of 01-genome_sequence-prepare.sh, which downloads via ncbi_genome_download.
 #
 # Usage:
 #   LEARNING_SOURCE_DIR=learning_source_20260518_genome \
 #   bash workflows/01-genome_sequence-prepare-local.sh \
-<<<<<<< HEAD
 #     --input  Homo_sapiens/GCF_000001405.40_GRCh38.p14_genomic_no_chr22.fna.gz \
-=======
-#     --input  /lustre/home/kojima-t/data/species_links/Homo_sapiens/GCF_000001405.40_GRCh38.p14_genomic_no_chr22.fna.gz \
->>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 #     --species homo_sapiens \
 #     --group   vertebrate_mammalian
 #

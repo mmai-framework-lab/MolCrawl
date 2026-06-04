@@ -3,7 +3,10 @@ from pathlib import Path
 from argparse import ArgumentParser
 from functools import partial
 import concurrent.futures
+<<<<<<< HEAD
 import queue
+=======
+>>>>>>> 7c81273 (feat(genome): split FASTA sequences at N runs instead of dropping them)
 import re
 import threading
 import time
@@ -17,6 +20,29 @@ from molcrawl.data.genome_sequence.utils.config import GenomeSequenceConfig
 # fragments. 100 bp is well below typical model context windows (>=1024 bp)
 # while still recovering most chromosome content that the old N-filter lost.
 DEFAULT_MIN_SEGMENT_LEN = 100
+<<<<<<< HEAD
+=======
+
+# Run of one-or-more Ns. Used to split chromosome-scale sequences at assembly
+# gaps so that the surrounding ACGT segments can be kept rather than discarding
+# the entire chromosome.
+_N_RUN_RE = re.compile(r"N+")
+
+
+def _split_at_n_runs(seq: str, min_len: int = DEFAULT_MIN_SEGMENT_LEN) -> Iterator[str]:
+    """Yield uppercase ACGT segments obtained by splitting ``seq`` at N runs.
+
+    Replaces the previous "drop the whole sequence if it contains any N"
+    behaviour, which silently discarded every chromosome-scale assembly entry
+    that carries centromeric/heterochromatic N gaps (~96% of GRCh38 bases were
+    lost). Empty splits and segments shorter than ``min_len`` are filtered out.
+    """
+    upper = seq.upper()
+    for segment in _N_RUN_RE.split(upper):
+        if len(segment) >= min_len:
+            yield segment
+
+>>>>>>> 7c81273 (feat(genome): split FASTA sequences at N runs instead of dropping them)
 
 # Run of one-or-more Ns. Used to split chromosome-scale sequences at assembly
 # gaps so that the surrounding ACGT segments can be kept rather than discarding
