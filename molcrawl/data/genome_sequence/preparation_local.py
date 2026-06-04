@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 """Prepare ``genome_sequence`` training data from pre-staged local FASTA files.
+=======
+"""Prepare ``genome_sequence`` training data from a locally-staged FASTA file.
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 
 This is a sibling pipeline to :mod:`molcrawl.data.genome_sequence.preparation`,
 which downloads RefSeq via ``ncbi_genome_download``. Use this entry point when a
 specialist has already curated FASTA files outside of the project (e.g. a
+<<<<<<< HEAD
 GRCh38 reference with ``chr22`` held out for evaluation.
 
 Two modes:
@@ -31,17 +36,38 @@ Two modes:
     then tokenized with that shared tokenizer.
 
 Download-specific config fields in
+=======
+GRCh38 reference with ``chr22`` held out for evaluation, staged under
+``/lustre/home/kojima-t/data/species_links/``).
+
+Pipeline:
+
+1. **Stage** the input ``*.fna`` or ``*.fna.gz`` into
+   ``${LEARNING_SOURCE_DIR}/genome_sequence/extracted_files/<group>/<species>/``,
+   decompressing gzip on the fly. Then mark Process 1 (download) complete so
+   the rest of the pipeline can resume cleanly via the existing marker logic.
+2. **Process 2** — ``fasta_to_raw``: split FASTA into chunked ``.raw`` files.
+3. **Process 3** — train the SentencePiece BPE tokenizer.
+4. **Process 4** — ``raw_to_parquet``: tokenise into parquet shards.
+5. **Process 5** (optional) — statistics + distribution plot.
+
+The download-specific config fields in
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 :class:`~molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig`
 (``path_species``, ``species_timeout``, ``max_retries``) are ignored here.
 """
 
 from __future__ import annotations
 
+<<<<<<< HEAD
 import concurrent.futures
+=======
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 import gzip
 import logging
 import shutil
 from argparse import ArgumentParser
+<<<<<<< HEAD
 from functools import partial
 from pathlib import Path
 from typing import List, Tuple
@@ -52,6 +78,12 @@ from molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw import (
     parse_fasta_to_raw_sequence,
 )
 from molcrawl.data.genome_sequence.dataset.tokenizer import tokenize_function
+=======
+from pathlib import Path
+
+from molcrawl.core.base import setup_logging
+from molcrawl.core.paths import GENOME_SEQUENCE_DIR
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 from molcrawl.data.genome_sequence.preparation import (
     process2_fasta_to_raw,
     process3_train_tokenizer,
@@ -76,6 +108,7 @@ NGD_GROUPS = (
 )
 
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
@@ -98,6 +131,34 @@ def _decompress_or_copy(src: Path, dst: Path) -> None:
             shutil.copyfileobj(fin, fout, length=64 * 1024 * 1024)
     else:
         shutil.copyfile(src, dst)
+=======
+def stage_local_fasta(input_path: Path, base_dir: Path, species: str, group: str, force: bool = False) -> Path:
+    """Stage a single FASTA into ``extracted_files/<group>/<species>/``.
+
+    Decompresses ``.gz`` on the fly. Idempotent unless ``force`` is set.
+    """
+    target_dir = base_dir / "extracted_files" / group / species
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    if input_path.suffix == ".gz":
+        target = target_dir / input_path.with_suffix("").name
+    else:
+        target = target_dir / input_path.name
+
+    if target.exists() and not force:
+        logger.info("Already staged (use --force to re-stage): %s", target)
+        return target
+
+    if input_path.suffix == ".gz":
+        logger.info("Decompressing %s → %s", input_path, target)
+        with gzip.open(input_path, "rb") as fin, open(target, "wb") as fout:
+            shutil.copyfileobj(fin, fout, length=64 * 1024 * 1024)
+    else:
+        logger.info("Copying %s → %s", input_path, target)
+        shutil.copyfile(input_path, target)
+
+    return target
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
 
 
 def mark_download_complete(base_dir: Path) -> None:
@@ -109,6 +170,7 @@ def mark_download_complete(base_dir: Path) -> None:
     logger.info("Marked download_complete.marker (Process 1 skipped — local FASTA staged).")
 
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # Single-file legacy mode (--input)
 # ---------------------------------------------------------------------------
@@ -363,20 +425,51 @@ def main() -> None:
         type=int,
         default=8,
         help="Parallel workers for --input-dir decompression (default: 8).",
+=======
+def main() -> None:
+    parser = ArgumentParser(
+        description="Prepare genome_sequence training data from a locally-staged FASTA file.",
+    )
+    parser.add_argument("config", help="Path to genome_sequence config yaml.")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to the local FASTA file (.fna or .fna.gz).",
+    )
+    parser.add_argument(
+        "--species",
+        required=True,
+        help="Species directory name under extracted_files/<group>/ (e.g. homo_sapiens).",
+    )
+    parser.add_argument(
+        "--group",
+        required=True,
+        choices=NGD_GROUPS,
+        help="NCBI taxonomic group (mirrors ncbi_genome_download).",
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     )
     parser.add_argument(
         "--force",
         action="store_true",
+<<<<<<< HEAD
         help="Re-stage and re-run downstream processes from scratch.",
+=======
+        help="Re-stage the FASTA and re-run all downstream processes.",
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     )
     parser.add_argument(
         "--skip-stats",
         action="store_true",
+<<<<<<< HEAD
         help="Skip Process 5 (single-file mode only).",
+=======
+        help="Skip Process 5 (statistics and distribution plot).",
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     )
     parser.add_argument(
         "--only-stage",
         action="store_true",
+<<<<<<< HEAD
         help="Only stage the FASTA(s); do not run downstream processes.",
     )
     args = parser.parse_args()
@@ -406,10 +499,22 @@ def main() -> None:
     if not args.species or not args.group:
         raise SystemExit("--input requires both --species and --group.")
 
+=======
+        help="Only stage the FASTA; do not run Process 2-4.",
+    )
+    args = parser.parse_args()
+
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     input_path = Path(args.input).resolve()
     if not input_path.is_file():
         raise SystemExit(f"--input does not point to a file: {input_path}")
 
+<<<<<<< HEAD
+=======
+    cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
+    setup_logging(GENOME_SEQUENCE_DIR)
+
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     base_dir = Path(GENOME_SEQUENCE_DIR + (getattr(cfg, "local_base_dir", "") or ""))
     base_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Using base_dir: %s", base_dir)
@@ -424,20 +529,43 @@ def main() -> None:
         return
 
     base_dir_s = str(base_dir)
+<<<<<<< HEAD
     if not process2_fasta_to_raw(base_dir_s, cfg.num_worker, cfg.max_lines_per_file, args.force):
         raise SystemExit(1)
     if not process3_train_tokenizer(
         base_dir_s, cfg.vocab_size, cfg.max_lines_per_file, cfg.input_sentence_size, args.force,
     ):
         raise SystemExit(1)
+=======
+
+    if not process2_fasta_to_raw(base_dir_s, cfg.num_worker, cfg.max_lines_per_file, args.force):
+        logger.error("Process 2 (FASTA → raw) failed.")
+        raise SystemExit(1)
+
+    if not process3_train_tokenizer(
+        base_dir_s, cfg.vocab_size, cfg.max_lines_per_file, cfg.input_sentence_size, args.force,
+    ):
+        logger.error("Process 3 (tokenizer training) failed.")
+        raise SystemExit(1)
+
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     num_proc_parquet = getattr(cfg, "num_proc_parquet", None) or cfg.num_worker
     parquet_batch_size = getattr(cfg, "parquet_batch_size", None) or 512
     if not process4_raw_to_parquet(
         base_dir_s, num_proc=num_proc_parquet, batch_size=parquet_batch_size, force=args.force,
     ):
+<<<<<<< HEAD
         raise SystemExit(1)
     if not args.skip_stats:
         process5_generate_statistics(base_dir_s, cfg.vocab_size, args.force)
+=======
+        logger.error("Process 4 (raw → parquet) failed.")
+        raise SystemExit(1)
+
+    if not args.skip_stats:
+        process5_generate_statistics(base_dir_s, cfg.vocab_size, args.force)
+
+>>>>>>> 22b5ecd (feat(genome): add preparation pipeline for pre-staged FASTA files)
     logger.info("🎉 Local genome_sequence preparation completed.")
 
 
