@@ -14,7 +14,6 @@
 # MODEL_PATH / MODEL_SLUG / ARCH if you want a different combo.
 
 set -uo pipefail
-cd /lustre/home/matsubara/riken-dataset-fundational-model
 # shellcheck disable=SC1091
 source workflows/common_functions.sh
 

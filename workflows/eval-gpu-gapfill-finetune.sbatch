@@ -17,7 +17,6 @@
 # is busy or runs slower than expected. Resubmittable safely.
 
 set -uo pipefail
-cd /lustre/home/matsubara/riken-dataset-fundational-model
 # shellcheck disable=SC1091
 source workflows/common_functions.sh
 

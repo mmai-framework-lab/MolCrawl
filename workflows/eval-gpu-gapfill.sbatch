@@ -9,7 +9,6 @@
 #SBATCH --error=slurm_logs/eval_gpu_gapfill_%j.log
 
 set -uo pipefail
-cd /lustre/home/matsubara/riken-dataset-fundational-model
 # shellcheck disable=SC1091
 source workflows/common_functions.sh
 

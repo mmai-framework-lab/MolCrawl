@@ -13,7 +13,6 @@
 # from huggingface_hub into ``$HF_HOME`` / ``~/.cache/huggingface/``.
 
 set -uo pipefail
-cd /lustre/home/matsubara/riken-dataset-fundational-model
 # shellcheck disable=SC1091
 source workflows/common_functions.sh
 

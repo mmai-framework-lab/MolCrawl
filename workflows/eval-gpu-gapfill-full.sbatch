@@ -18,11 +18,8 @@
 # the work that remains.
 
 set -uo pipefail
-cd /lustre/home/matsubara/riken-dataset-fundational-model
 # shellcheck disable=SC1091
 source workflows/common_functions.sh
-
-export LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR:-/lustre/home/matsubara/riken-dataset-fundational-model/learning_source_20260316}"
 
 echo "[gpu-gapfill-full] node: $(hostname)"
 echo "[gpu-gapfill-full] Python: $PYTHON"
