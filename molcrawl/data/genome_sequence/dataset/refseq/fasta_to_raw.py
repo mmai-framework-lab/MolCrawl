@@ -3,6 +3,9 @@ from pathlib import Path
 from argparse import ArgumentParser
 from functools import partial
 import concurrent.futures
+import gzip
+import logging
+import os
 import queue
 import re
 import threading
@@ -12,16 +15,32 @@ import rich.progress as pb
 
 from molcrawl.data.genome_sequence.utils.config import GenomeSequenceConfig
 
+logger = logging.getLogger(__name__)
+
 # Minimum length of an ACGT segment (after N-run splitting) to keep. Segments
 # shorter than this are dropped to avoid swamping the corpus with sub-context
 # fragments. 100 bp is well below typical model context windows (>=1024 bp)
 # while still recovering most chromosome content that the old N-filter lost.
 DEFAULT_MIN_SEGMENT_LEN = 100
 
+# Maximum characters written per .raw line. LCM(510, 1024) = 261,120, so a line
+# divides evenly into both BERT (510-nt) and GPT-2 (1024-nt) chunks with zero
+# boundary loss in Phase 3, while bounding per-line memory (~255 KB).
+RAW_LINE_LEN = 261_120
+
 # Run of one-or-more Ns. Used to split chromosome-scale sequences at assembly
 # gaps so that the surrounding ACGT segments can be kept rather than discarding
 # the entire chromosome.
 _N_RUN_RE = re.compile(r"N+")
+
+# Any base that is not a canonical A/C/G/T. Used by the per-accession pipeline to
+# fold N and IUPAC ambiguity codes (R/Y/W/S/K/M/B/D/H/V) to N before splitting,
+# so the single-nucleotide tokenizer in Phase 3 only ever sees A/C/G/T. (The
+# legacy aggregating flow keeps using ``_split_at_n_runs`` unchanged.)
+_NON_ACGT_RE = re.compile(r"[^ACGT]")
+
+# FASTA extensions accepted by the per-accession pipeline (plain or gzip).
+_FASTA_SUFFIXES = (".fna.gz", ".fa.gz", ".fasta.gz", ".fna", ".fa", ".fasta")
 
 
 def _split_at_n_runs(seq: str, min_len: int = DEFAULT_MIN_SEGMENT_LEN) -> Iterator[str]:
@@ -177,6 +196,154 @@ def fasta_to_raw_genome(output_dir: Union[str, Path], num_worker: int, max_lines
     print(f"⌛ Parsing fasta files in {fasta_dir} to raw files in {raw_dir} with {num_worker} workers.")
     raw_dir.mkdir(parents=True, exist_ok=True)
     parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker, max_lines_per_file)
+
+
+# --------------------------------------------------------------------------- #
+# Per-accession pipeline (subset/CSV-driven flow)
+#
+# The functions above aggregate the whole corpus into chunk_<n>_<m>.raw files,
+# which suits the legacy single-corpus flow. For the subset flow we instead
+# emit one .raw per assembly accession so that downloads, raw conversion, and
+# (Phase 3) tokenization stay traceable and independently resumable.
+# --------------------------------------------------------------------------- #
+
+
+def _open_fasta(path: Union[str, Path]):
+    """Open a FASTA file as text, transparently handling gzip (.gz) input."""
+    p = str(path)
+    if p.endswith(".gz"):
+        return gzip.open(p, "rt")
+    return open(p, "r")
+
+
+def _accession_stem(path: Path) -> str:
+    """Strip a FASTA suffix to recover the accession-based file stem."""
+    name = path.name
+    for suf in _FASTA_SUFFIXES:
+        if name.endswith(suf):
+            return name[: -len(suf)]
+    return path.stem
+
+
+def _normalize_and_split(seq: str, min_len: int) -> Iterator[str]:
+    """Uppercase, fold every non-ACGT base to N, then split at N runs.
+
+    Yields ACGT-only segments of length >= ``min_len``. Folding non-ACGT to N
+    means N gaps and sparse IUPAC ambiguity codes are both removed at the split,
+    leaving a pure A/C/G/T alphabet for single-nucleotide tokenization.
+    """
+    normalized = _NON_ACGT_RE.sub("N", seq.upper())
+    for segment in _N_RUN_RE.split(normalized):
+        if len(segment) >= min_len:
+            yield segment
+
+
+def iter_acgt_segments(
+    fasta_path: Union[str, Path],
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+) -> Iterator[str]:
+    """Yield uppercase ACGT-only segments from a plain/gzip FASTA.
+
+    N gaps and IUPAC ambiguity codes are folded to N and removed at the split,
+    so every yielded segment contains only A/C/G/T.
+    """
+    current: List[str] = []
+    with _open_fasta(fasta_path) as fh:
+        for line in fh:
+            line = line.strip()
+            if line.startswith(">"):
+                if current:
+                    yield from _normalize_and_split("".join(current), min_segment_len)
+                    current = []
+            else:
+                current.append(line)
+        if current:
+            yield from _normalize_and_split("".join(current), min_segment_len)
+
+
+def fasta_file_to_raw(
+    fasta_path: Union[str, Path],
+    raw_path: Union[str, Path],
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+    max_line_len: int = RAW_LINE_LEN,
+) -> int:
+    """Convert one FASTA file to a single .raw file (one segment per line).
+
+    Segments longer than ``max_line_len`` are wrapped across multiple lines so
+    that no single line exceeds the limit. Written atomically via a ``.part``
+    file. Returns the number of lines written.
+    """
+    raw_path = Path(raw_path)
+    tmp = raw_path.with_suffix(raw_path.suffix + ".part")
+    n_lines = 0
+    with open(tmp, "w") as out:
+        for seg in iter_acgt_segments(fasta_path, min_segment_len):
+            for i in range(0, len(seg), max_line_len):
+                out.write(seg[i : i + max_line_len])
+                out.write("\n")
+                n_lines += 1
+    os.replace(tmp, raw_path)
+    return n_lines
+
+
+def fasta_to_raw_per_accession(
+    base_dir: Union[str, Path],
+    num_worker: int = 8,
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+    max_line_len: int = RAW_LINE_LEN,
+    force: bool = False,
+) -> bool:
+    """Convert every FASTA in ``base_dir/extracted_files`` to one .raw per accession.
+
+    Output: ``base_dir/raw_files/<accession>.raw``. Already-present non-empty
+    raw files are skipped unless ``force``. Writes ``fasta_to_raw_complete.marker``
+    on success. Returns ``True`` if at least one .raw file exists afterwards.
+    """
+    base_dir = Path(base_dir)
+    fasta_dir = base_dir / "extracted_files"
+    raw_dir = base_dir / "raw_files"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+
+    fasta_files = sorted(
+        p for p in fasta_dir.rglob("*") if p.name.endswith(_FASTA_SUFFIXES)
+    )
+    if not fasta_files:
+        logger.error(f"No FASTA files found in {fasta_dir}")
+        return False
+
+    logger.info(
+        f"FASTA → raw (per-accession): {len(fasta_files)} files, "
+        f"min_segment_len={min_segment_len}, max_line_len={max_line_len}, workers={num_worker}"
+    )
+
+    def _one(fasta_path: Path) -> Tuple[str, int]:
+        stem = _accession_stem(fasta_path)
+        raw_path = raw_dir / f"{stem}.raw"
+        if not force and raw_path.exists() and raw_path.stat().st_size > 0:
+            return stem, -1  # skipped
+        n = fasta_file_to_raw(fasta_path, raw_path, min_segment_len, max_line_len)
+        return stem, n
+
+    total_lines = n_done = n_skip = 0
+    with concurrent.futures.ThreadPoolExecutor(num_worker) as ex:
+        for stem, n in ex.map(_one, fasta_files):
+            if n == -1:
+                n_skip += 1
+            else:
+                n_done += 1
+                total_lines += n
+                if n == 0:
+                    logger.warning(f"{stem}: produced 0 segments (>= {min_segment_len} bp)")
+
+    raw_count = len(list(raw_dir.glob("*.raw")))
+    logger.info(
+        f"FASTA → raw done: converted={n_done} skipped={n_skip} "
+        f"raw_files={raw_count} total_lines={total_lines:,}"
+    )
+    if raw_count == 0:
+        return False
+    (base_dir / "fasta_to_raw_complete.marker").touch()
+    return True
 
 
 if __name__ == "__main__":
