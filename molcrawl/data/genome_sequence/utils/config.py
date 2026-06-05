@@ -63,6 +63,15 @@ class RefSeqPreparationConfig:
     models: Optional[List[str]] = None
     # Verify each downloaded assembly against NCBI md5checksums.txt.
     verify_md5: bool = True
+    # Phase 4 (parquet → training_ready_hf_dataset Arrow / DatasetDict):
+    # held-out split sizing. Hard cap in rows; fractional cap also applied.
+    valid_size: int = 50_000
+    test_size: int = 50_000
+    valid_frac: float = 0.005
+    test_frac: float = 0.005
+    # After Phase 4 succeeds for a model, optionally drop parquet_<model>/ to
+    # reclaim ~0.5–1 TB across 21 subsets. False keeps both for reproducibility.
+    remove_parquet: bool = False
 
 
 @dataclass
