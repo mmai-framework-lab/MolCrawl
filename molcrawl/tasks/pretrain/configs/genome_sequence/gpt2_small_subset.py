@@ -9,8 +9,9 @@ Differences from :mod:`gpt2_small`:
 - Tokenizer is the character-level HF tokenizer; the GPT-2 trainer only
   consults it for ambiguous-token resolution (off by default), so it is here
   mainly for parity and decoding helpers.
-- ``dataset_dir`` points at the subset's ``parquet_gpt2/`` directory; subset
-  comes from the ``GENOME_SUBSET`` env var.
+- ``dataset_dir`` points at the subset's ``training_ready_hf_dataset_gpt2/``
+  Arrow DatasetDict (Phase 6 output); subset comes from the ``GENOME_SUBSET``
+  env var.
 - ``out_dir`` / ``tensorboard_dir`` are suffixed with the subset name.
 """
 
@@ -39,7 +40,7 @@ if not GENOME_SUBSET:
 _subset_suffix = f"-{GENOME_SUBSET}"
 out_dir = get_gpt2_output_path("genome_sequence", "small") + _subset_suffix
 tensorboard_dir = out_dir
-dataset_dir = f"{GENOME_SEQUENCE_DIR}/{GENOME_SUBSET}/parquet_gpt2"
+dataset_dir = f"{GENOME_SEQUENCE_DIR}/{GENOME_SUBSET}/training_ready_hf_dataset_gpt2"
 
 # ---- tokenizer (10-symbol single-nucleotide; trainer barely uses it) ----- #
 _custom_tokenizer_path = get_custom_tokenizer_path("genome_sequence", "bert_single_nuc")
@@ -64,7 +65,11 @@ eval_interval = 1000
 eval_iters = 200
 log_interval = 10
 
-init_from = "resume"
+# "scratch" for first pretraining run; flip to "resume" on subsequent
+# resumes from out_dir/<checkpoint>/. Previously this was hard-coded to
+# "resume" (mirroring the legacy gpt2_small.py), which crashes the trainer
+# on a fresh subset run because no checkpoint exists yet.
+init_from = "scratch"
 always_save_checkpoint = True
 save_checkpoint_steps = None
 max_checkpoints = 5

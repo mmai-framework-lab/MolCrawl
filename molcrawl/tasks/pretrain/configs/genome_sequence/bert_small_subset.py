@@ -8,9 +8,13 @@ Differences from :mod:`bert_small`:
 - Vocab is 10 (A/T/G/C/N + PAD/UNK/CLS/SEP/MASK), not 4096 BPE.
 - Tokenizer is a character-level HF tokenizer built from
   :mod:`molcrawl.data.genome_sequence.utils.single_nuc_tokenizer`.
-- ``dataset_dir`` points at the subset's ``parquet_bert/`` directory; the
-  subset name comes from the ``GENOME_SUBSET`` env var so workflows can
-  switch subsets without editing this file.
+- ``dataset_dir`` points at the subset's ``training_ready_hf_dataset_bert/``
+  Arrow DatasetDict (Phase 6 output); the subset name comes from the
+  ``GENOME_SUBSET`` env var so workflows can switch subsets without
+  editing this file. The genome BERT trainer (``molcrawl/models/bert/main.py``)
+  consumes this via ``load_from_disk`` and indexes as ``dataset["train"]``
+  / ``dataset["test"]`` — pointing at the raw ``parquet_bert/`` directory
+  would crash at startup since that path is not a DatasetDict.
 - ``out_dir`` / ``tensorboard_dir`` are suffixed with the subset name so each
   subset run gets its own checkpoint tree.
 - Dynamic MLM masking via ``DataCollatorForLanguageModeling`` (unchanged from
@@ -42,7 +46,7 @@ if not GENOME_SUBSET:
 model_size = "small"
 _subset_suffix = f"-{GENOME_SUBSET}"
 model_path = get_bert_output_path("genome_sequence", model_size) + _subset_suffix
-dataset_dir = f"{GENOME_SEQUENCE_DIR}/{GENOME_SUBSET}/parquet_bert"
+dataset_dir = f"{GENOME_SEQUENCE_DIR}/{GENOME_SUBSET}/training_ready_hf_dataset_bert"
 
 # ---- tokenizer (10-symbol single-nucleotide, shared across subsets) ------ #
 _custom_tokenizer_path = get_custom_tokenizer_path("genome_sequence", "bert_single_nuc")
@@ -65,15 +69,16 @@ per_device_eval_batch_size = 8
 
 gradient_accumulation_steps = 5 * 16
 
+# ---- performance opt-ins (consumed by bert/main.py via globals().get) ----- #
+# bf16 = bfloat16 mixed precision (Hopper/Blackwell — RIKEN H100/H200 OK).
+# Together with the dataloader flags this roughly halves per-step wallclock
+# on H100/H200 vs the legacy fp32 + 0-worker dataloader defaults.
+bf16 = True
+dataloader_num_workers = 4
+dataloader_pin_memory = True
 
-# The BERT trainer (molcrawl/models/bert/main.py) optionally runs this to add
-# attention_mask to a dataset that lacks one. The subset parquet already ships
-# attention_mask=[1]*512, so this is effectively a no-op safety net.
-def preprocess_function(examples):
-    """Add attention_mask if missing (subset parquet already has it)."""
-    if "input_ids" in examples and "attention_mask" not in examples:
-        pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
-        examples["attention_mask"] = [
-            [1 if t != pad_id else 0 for t in ids] for ids in examples["input_ids"]
-        ]
-    return examples
+# Deliberately no ``preprocess_function``: the Phase 6 Arrow DatasetDict
+# already ships ``input_ids`` + ``attention_mask`` for every row, so defining
+# a config-level ``preprocess_function`` would push ``bert/main.py`` into its
+# ``elif "preprocess_function" in globals():`` branch and trigger a full
+# ``.map()`` over ~95M rows just to re-derive a mask that is already correct.
