@@ -81,3 +81,7 @@ experiments.db-journal
 
 assets/configs/omim_real_data.yaml
 workflows/hugging_face/
+
+# Server-dependent / private launcher scripts (e.g. _gb200.sbatch).
+# Keep them on disk locally without committing them.
+workflows/_*
