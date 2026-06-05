@@ -186,17 +186,60 @@ def raw_file_to_parquets(
 
         for m in models:
             _flush(m)
-    finally:
+
+        # close() writes the footer / page-index metadata; if it fails the file
+        # is structurally invalid (thrift "page header" errors on read). The
+        # previous version swallowed close() exceptions and still promoted the
+        # .part file, which silently corrupted ~33% of the mammal_centered
+        # parquets under Track A / mammal Phase 3 CPU+memory contention. Now
+        # we propagate close() errors and (below) validate before promotion.
+        for m in models:
+            writers[m].close()
+        writers.clear()
+
+        # Post-write thrift validation: re-open and iterate every page. This
+        # catches any case where close() returned success but the footer /
+        # page index is unreadable.
+        for m in models:
+            try:
+                _validate_parquet(tmp_paths[m])
+            except Exception as e:
+                raise RuntimeError(
+                    f"post-write validation failed for {m}={tmp_paths[m]}: {e}"
+                ) from e
+    except BaseException:
+        # Any failure: close stragglers (errors here are secondary) and remove
+        # all .part files so the next run regenerates this accession cleanly.
         for w in writers.values():
             try:
                 w.close()
             except Exception:
                 pass
+        for p in tmp_paths.values():
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                pass
+        raise
 
+    # Only promote .part → final once every model's file is validated.
     for m in models:
         os.replace(tmp_paths[m], out_paths[m])
 
     return accession, counts
+
+
+def _validate_parquet(path: Path) -> None:
+    """Read every batch of ``path`` to surface thrift / page-header corruption.
+
+    Cheap-but-sufficient validator: a thrift footer that points at unreadable
+    pages will raise during ``iter_batches`` long before reaching the end.
+    Used as a post-write integrity check before promoting .part to final.
+    """
+    pf = pq.ParquetFile(str(path))
+    for _ in pf.iter_batches(batch_size=100_000):
+        pass
 
 
 def raw_to_parquet_per_accession(
