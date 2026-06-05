@@ -17,7 +17,11 @@ set -uo pipefail
 # shellcheck disable=SC1091
 source workflows/common_functions.sh
 
-export LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR:-/lustre/home/matsubara/riken-dataset-fundational-model/learning_source_20260316}"
+# Require LEARNING_SOURCE_DIR to be set in the environment (typically by
+# common-env / per-user bashrc). check_learning_source_dir exits with a
+# clear error message if it is unset, instead of silently defaulting to
+# a path that only exists on one developer's machine.
+check_learning_source_dir
 
 # Defaults: protein × gpt2 × medium (the canonical ProteinGym sweep target).
 export MODEL_PATH="${MODEL_PATH:-${LEARNING_SOURCE_DIR}/protein_sequence/gpt2-output/protein_sequence-medium/ckpt.pt}"
