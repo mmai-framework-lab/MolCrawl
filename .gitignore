@@ -44,6 +44,8 @@ zinc15_download_dir
 *.parquet
 *.csv
 *.csv.gz
+# Curated Evo2-derived species subsets (tracked, small, ~5MB total).
+!assets/genome_species_list/subsets/*.csv
 
 build
 *.egg-info
