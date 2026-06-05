@@ -44,6 +44,43 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_file_to_raw"><code class="name flex">
+<span>def <span class="ident">fasta_file_to_raw</span></span>(<span>fasta_path: str | pathlib.Path,<br>raw_path: str | pathlib.Path,<br>min_segment_len: int = 100,<br>max_line_len: int = 261120) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fasta_file_to_raw(
+    fasta_path: Union[str, Path],
+    raw_path: Union[str, Path],
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+    max_line_len: int = RAW_LINE_LEN,
+) -&gt; int:
+    &#34;&#34;&#34;Convert one FASTA file to a single .raw file (one segment per line).
+
+    Segments longer than ``max_line_len`` are wrapped across multiple lines so
+    that no single line exceeds the limit. Written atomically via a ``.part``
+    file. Returns the number of lines written.
+    &#34;&#34;&#34;
+    raw_path = Path(raw_path)
+    tmp = raw_path.with_suffix(raw_path.suffix + &#34;.part&#34;)
+    n_lines = 0
+    with open(tmp, &#34;w&#34;) as out:
+        for seg in iter_acgt_segments(fasta_path, min_segment_len):
+            for i in range(0, len(seg), max_line_len):
+                out.write(seg[i : i + max_line_len])
+                out.write(&#34;\n&#34;)
+                n_lines += 1
+    os.replace(tmp, raw_path)
+    return n_lines</code></pre>
+</details>
+<div class="desc"><p>Convert one FASTA file to a single .raw file (one segment per line).</p>
+<p>Segments longer than <code>max_line_len</code> are wrapped across multiple lines so
+that no single line exceeds the limit. Written atomically via a <code>.part</code>
+file. Returns the number of lines written.</p></div>
+</dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_to_raw_genome"><code class="name flex">
 <span>def <span class="ident">fasta_to_raw_genome</span></span>(<span>output_dir: str | pathlib.Path, num_worker: int, max_lines_per_file: int)</span>
 </code></dt>
@@ -60,6 +97,78 @@ el.replaceWith(d);
     parse_fasta_to_raw_sequence(fasta_dir, raw_dir, num_worker, max_lines_per_file)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_to_raw_per_accession"><code class="name flex">
+<span>def <span class="ident">fasta_to_raw_per_accession</span></span>(<span>base_dir: str | pathlib.Path,<br>num_worker: int = 8,<br>min_segment_len: int = 100,<br>max_line_len: int = 261120,<br>force: bool = False) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fasta_to_raw_per_accession(
+    base_dir: Union[str, Path],
+    num_worker: int = 8,
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+    max_line_len: int = RAW_LINE_LEN,
+    force: bool = False,
+) -&gt; bool:
+    &#34;&#34;&#34;Convert every FASTA in ``base_dir/extracted_files`` to one .raw per accession.
+
+    Output: ``base_dir/raw_files/&lt;accession&gt;.raw``. Already-present non-empty
+    raw files are skipped unless ``force``. Writes ``fasta_to_raw_complete.marker``
+    on success. Returns ``True`` if at least one .raw file exists afterwards.
+    &#34;&#34;&#34;
+    base_dir = Path(base_dir)
+    fasta_dir = base_dir / &#34;extracted_files&#34;
+    raw_dir = base_dir / &#34;raw_files&#34;
+    raw_dir.mkdir(parents=True, exist_ok=True)
+
+    fasta_files = sorted(
+        p for p in fasta_dir.rglob(&#34;*&#34;) if p.name.endswith(_FASTA_SUFFIXES)
+    )
+    if not fasta_files:
+        logger.error(f&#34;No FASTA files found in {fasta_dir}&#34;)
+        return False
+
+    logger.info(
+        f&#34;FASTA → raw (per-accession): {len(fasta_files)} files, &#34;
+        f&#34;min_segment_len={min_segment_len}, max_line_len={max_line_len}, workers={num_worker}&#34;
+    )
+
+    def _one(fasta_path: Path) -&gt; Tuple[str, int]:
+        stem = _accession_stem(fasta_path)
+        raw_path = raw_dir / f&#34;{stem}.raw&#34;
+        if not force and raw_path.exists() and raw_path.stat().st_size &gt; 0:
+            return stem, -1  # skipped
+        n = fasta_file_to_raw(fasta_path, raw_path, min_segment_len, max_line_len)
+        return stem, n
+
+    total_lines = n_done = n_skip = 0
+    with concurrent.futures.ThreadPoolExecutor(num_worker) as ex:
+        for stem, n in ex.map(_one, fasta_files):
+            if n == -1:
+                n_skip += 1
+            else:
+                n_done += 1
+                total_lines += n
+                if n == 0:
+                    logger.warning(f&#34;{stem}: produced 0 segments (&gt;= {min_segment_len} bp)&#34;)
+
+    raw_count = len(list(raw_dir.glob(&#34;*.raw&#34;)))
+    logger.info(
+        f&#34;FASTA → raw done: converted={n_done} skipped={n_skip} &#34;
+        f&#34;raw_files={raw_count} total_lines={total_lines:,}&#34;
+    )
+    if raw_count == 0:
+        return False
+    (base_dir / &#34;fasta_to_raw_complete.marker&#34;).touch()
+    return True</code></pre>
+</details>
+<div class="desc"><p>Convert every FASTA in <code>base_dir/extracted_files</code> to one .raw per accession.</p>
+<p>Output: <code>base_dir/raw_files/&lt;accession&gt;.raw</code>. Already-present non-empty
+raw files are skipped unless <code>force</code>. Writes <code>fasta_to_raw_complete.marker</code>
+on success. Returns <code>True</code> if at least one .raw file exists afterwards.</p></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.get_sequence_from_fasta"><code class="name flex">
 <span>def <span class="ident">get_sequence_from_fasta</span></span>(<span>fasta_filepath: pathlib.Path,<br>max_lines_per_file: int,<br>num_worker: int,<br>sequence_queue: queue.Queue[List[str]]) ‑> None</span>
@@ -89,6 +198,40 @@ el.replaceWith(d);
         sequence_queue.put(sequence_chunk)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.iter_acgt_segments"><code class="name flex">
+<span>def <span class="ident">iter_acgt_segments</span></span>(<span>fasta_path: str | pathlib.Path, min_segment_len: int = 100) ‑> Iterator[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def iter_acgt_segments(
+    fasta_path: Union[str, Path],
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+) -&gt; Iterator[str]:
+    &#34;&#34;&#34;Yield uppercase ACGT-only segments from a plain/gzip FASTA.
+
+    N gaps and IUPAC ambiguity codes are folded to N and removed at the split,
+    so every yielded segment contains only A/C/G/T.
+    &#34;&#34;&#34;
+    current: List[str] = []
+    with _open_fasta(fasta_path) as fh:
+        for line in fh:
+            line = line.strip()
+            if line.startswith(&#34;&gt;&#34;):
+                if current:
+                    yield from _normalize_and_split(&#34;&#34;.join(current), min_segment_len)
+                    current = []
+            else:
+                current.append(line)
+        if current:
+            yield from _normalize_and_split(&#34;&#34;.join(current), min_segment_len)</code></pre>
+</details>
+<div class="desc"><p>Yield uppercase ACGT-only segments from a plain/gzip FASTA.</p>
+<p>N gaps and IUPAC ambiguity codes are folded to N and removed at the split,
+so every yielded segment contains only A/C/G/T.</p></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.iterate_over_chunk_raw_files"><code class="name flex">
 <span>def <span class="ident">iterate_over_chunk_raw_files</span></span>(<span>fasta_filepaths: List[pathlib.Path], num_worker: int, max_lines_per_file: int) ‑> Iterator[list[str]]</span>
@@ -280,8 +423,11 @@ where its assembly gaps fall.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_file_to_raw" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_file_to_raw">fasta_file_to_raw</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_to_raw_genome" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_to_raw_genome">fasta_to_raw_genome</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_to_raw_per_accession" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.fasta_to_raw_per_accession">fasta_to_raw_per_accession</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.get_sequence_from_fasta" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.get_sequence_from_fasta">get_sequence_from_fasta</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.iter_acgt_segments" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.iter_acgt_segments">iter_acgt_segments</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.iterate_over_chunk_raw_files" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.iterate_over_chunk_raw_files">iterate_over_chunk_raw_files</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.parse_fasta_to_raw_sequence" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.parse_fasta_to_raw_sequence">parse_fasta_to_raw_sequence</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.process_chunk" href="#molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw.process_chunk">process_chunk</a></code></li>

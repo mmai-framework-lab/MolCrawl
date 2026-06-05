@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.data.genome_sequence.dataset.refseq.download_by_accession API documentation</title>
+<meta name="description" content="Download exact RefSeq/GenBank assemblies listed in a subset CSV …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.data.genome_sequence.dataset.refseq.download_by_accession</code></h1>
+</header>
+<section id="section-intro">
+<p>Download exact RefSeq/GenBank assemblies listed in a subset CSV.</p>
+<p>Unlike :mod:<code>download_refseq</code> (which resolves <em>species names</em> to "the latest"
+assembly via <code>ncbi_genome_download</code>), this module downloads the <strong>exact</strong>
+assembly identified by <code>assembly_accession</code> / <code>ftp_path</code> in a subset CSV.</p>
+<p>This matters when the species list is derived from an external corpus (e.g. the
+OpenGenome2 / Evo 2 species set): we must fetch the same assembly version that
+the source used, not whatever NCBI currently considers "latest" for that
+species name.</p>
+<p>Input CSV columns used:
+- <code>assembly_accession</code> : e.g. <code>GCA_029851265.1</code> (used for the output name)
+- <code>ftp_path</code>
+: NCBI assembly directory URL, e.g.
+<code>https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/029/851/265/GCA_029851265.1_ASM2985126v1/</code>
+- <code>species_name</code>
+: optional, for logging only</p>
+<p>The genomic FASTA URL is derived from <code>ftp_path</code> following the standard NCBI
+layout <code>&lt;ftp_path&gt;/&lt;asm_dir&gt;_genomic.fna.gz</code>.</p>
+<h2 id="output">Output</h2>
+<p><code>&lt;base_dir&gt;/extracted_files/&lt;assembly_accession&gt;.fna.gz</code></p>
+<p>Re-runs skip assemblies that already downloaded cleanly, so the same command
+can be used to fill gaps after partial failures.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.build_fasta_url"><code class="name flex">
+<span>def <span class="ident">build_fasta_url</span></span>(<span>ftp_path: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_fasta_url(ftp_path: str) -&gt; str:
+    &#34;&#34;&#34;Construct the genomic FASTA URL from an NCBI assembly ``ftp_path``.
+
+    ``ftp_path`` points at the assembly directory; the FASTA file inside is
+    named ``&lt;asm_dir&gt;_genomic.fna.gz`` where ``asm_dir`` is the final path
+    component (``GCA_029851265.1_ASM2985126v1``). ``ftp://`` is upgraded to
+    ``https://`` because the FTP endpoint is unreliable for scripted access.
+    &#34;&#34;&#34;
+    ftp = ftp_path.strip().rstrip(&#34;/&#34;)
+    if ftp.startswith(&#34;ftp://&#34;):
+        ftp = &#34;https://&#34; + ftp[len(&#34;ftp://&#34;):]
+    asm_dir = ftp.rsplit(&#34;/&#34;, 1)[-1]
+    return f&#34;{ftp}/{asm_dir}_genomic.fna.gz&#34;</code></pre>
+</details>
+<div class="desc"><p>Construct the genomic FASTA URL from an NCBI assembly <code>ftp_path</code>.</p>
+<p><code>ftp_path</code> points at the assembly directory; the FASTA file inside is
+named <code>&lt;asm_dir&gt;_genomic.fna.gz</code> where <code>asm_dir</code> is the final path
+component (<code>GCA_029851265.1_ASM2985126v1</code>). <code>ftp://</code> is upgraded to
+<code>https://</code> because the FTP endpoint is unreliable for scripted access.</p></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.build_parser"><code class="name flex">
+<span>def <span class="ident">build_parser</span></span>(<span>) ‑> argparse.ArgumentParser</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_parser() -&gt; argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        description=&#34;Download exact NCBI assemblies listed in a subset CSV (by accession/ftp_path).&#34;,
+    )
+    p.add_argument(&#34;--csv&#34;, required=True, help=&#34;Subset CSV (needs assembly_accession, ftp_path columns).&#34;)
+    p.add_argument(&#34;--output&#34;, &#34;-o&#34;, required=True, help=&#34;Base output dir; FASTA goes to &lt;output&gt;/extracted_files/.&#34;)
+    p.add_argument(&#34;--num-worker&#34;, type=int, default=8)
+    p.add_argument(&#34;--timeout&#34;, type=int, default=DEFAULT_DOWNLOAD_TIMEOUT, help=&#34;Per-file timeout (s).&#34;)
+    p.add_argument(&#34;--max-retries&#34;, type=int, default=DEFAULT_MAX_RETRIES)
+    p.add_argument(&#34;--verify-md5&#34;, action=&#34;store_true&#34;, help=&#34;Verify each file against NCBI md5checksums.txt.&#34;)
+    p.add_argument(
+        &#34;--recheck-existing&#34;,
+        action=&#34;store_true&#34;,
+        help=&#34;Deep-verify already-present files (full gzip decompress) instead of a magic-byte check.&#34;,
+    )
+    p.add_argument(&#34;--limit&#34;, type=int, default=None, help=&#34;Only download the first N rows (smoke test).&#34;)
+    return p</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.download_one"><code class="name flex">
+<span>def <span class="ident">download_one</span></span>(<span>row: dict,<br>extracted_dir: pathlib.Path,<br>timeout: int = 600,<br>max_retries: int = 3,<br>verify_md5: bool = False,<br>recheck_existing: bool = False) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_one(
+    row: dict,
+    extracted_dir: Path,
+    timeout: int = DEFAULT_DOWNLOAD_TIMEOUT,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    verify_md5: bool = False,
+    recheck_existing: bool = False,
+) -&gt; dict:
+    &#34;&#34;&#34;Download a single assembly&#39;s genomic FASTA.
+
+    Returns a dict with ``status`` in {&#34;ok&#34;, &#34;skipped&#34;, &#34;error&#34;} plus details.
+    Writes to a ``.part`` file first and atomically renames on success.
+    &#34;&#34;&#34;
+    accession = row[&#34;assembly_accession&#34;].strip()
+    ftp_path = row[&#34;ftp_path&#34;].strip()
+    species = row.get(&#34;species_name&#34;, &#34;&#34;).strip()
+    url = build_fasta_url(ftp_path)
+    dest = extracted_dir / f&#34;{accession}.fna.gz&#34;
+    tmp = extracted_dir / f&#34;{accession}.fna.gz.part&#34;
+
+    if _is_valid_gzip(dest, deep=recheck_existing):
+        return {&#34;status&#34;: &#34;skipped&#34;, &#34;accession&#34;: accession}
+
+    last_err = &#34;unknown&#34;
+    for attempt in range(1, max_retries + 1):
+        try:
+            n_bytes = 0
+            expected_len = None
+            req = urllib.request.Request(url, headers={&#34;User-Agent&#34;: &#34;molcrawl-genome-fetch&#34;})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                cl = resp.headers.get(&#34;Content-Length&#34;)
+                expected_len = int(cl) if cl is not None else None
+                with open(tmp, &#34;wb&#34;) as out:
+                    while True:
+                        chunk = resp.read(_CHUNK)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+                        n_bytes += len(chunk)
+
+            # Truncation check via Content-Length.
+            if expected_len is not None and n_bytes != expected_len:
+                raise IOError(f&#34;size mismatch: got {n_bytes}, expected {expected_len}&#34;)
+            # Structural check.
+            with open(tmp, &#34;rb&#34;) as fh:
+                if fh.read(2) != _GZIP_MAGIC:
+                    raise IOError(&#34;downloaded file is not gzip&#34;)
+
+            if verify_md5:
+                fasta_filename = url.rsplit(&#34;/&#34;, 1)[-1]
+                expected_md5 = _fetch_expected_md5(ftp_path, fasta_filename, timeout)
+                if expected_md5 is not None:
+                    actual = _md5_of_file(tmp)
+                    if actual != expected_md5:
+                        raise IOError(f&#34;md5 mismatch: got {actual}, expected {expected_md5}&#34;)
+
+            os.replace(tmp, dest)
+            return {&#34;status&#34;: &#34;ok&#34;, &#34;accession&#34;: accession, &#34;bytes&#34;: n_bytes}
+
+        except (urllib.error.URLError, OSError) as e:
+            last_err = str(e)
+            logger.warning(
+                f&#34;[{accession}] download attempt {attempt}/{max_retries} failed: {last_err}&#34;
+            )
+            if tmp.exists():
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
+            if attempt &lt; max_retries:
+                time.sleep(min(30, 2 ** attempt))
+
+    return {
+        &#34;status&#34;: &#34;error&#34;,
+        &#34;accession&#34;: accession,
+        &#34;species_name&#34;: species,
+        &#34;url&#34;: url,
+        &#34;error&#34;: last_err,
+    }</code></pre>
+</details>
+<div class="desc"><p>Download a single assembly's genomic FASTA.</p>
+<p>Returns a dict with <code>status</code> in {"ok", "skipped", "error"} plus details.
+Writes to a <code>.part</code> file first and atomically renames on success.</p></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.download_subset_from_csv"><code class="name flex">
+<span>def <span class="ident">download_subset_from_csv</span></span>(<span>csv_path: str,<br>base_dir: str,<br>num_worker: int = 8,<br>timeout: int = 600,<br>max_retries: int = 3,<br>verify_md5: bool = False,<br>recheck_existing: bool = False,<br>limit: int | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_subset_from_csv(
+    csv_path: str,
+    base_dir: str,
+    num_worker: int = 8,
+    timeout: int = DEFAULT_DOWNLOAD_TIMEOUT,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    verify_md5: bool = False,
+    recheck_existing: bool = False,
+    limit: Optional[int] = None,
+) -&gt; bool:
+    &#34;&#34;&#34;Download every assembly in ``csv_path`` into ``base_dir/extracted_files``.
+
+    Returns ``True`` only if all (non-skipped) assemblies downloaded cleanly.
+    Failures are recorded in ``base_dir/download_failures.csv`` and a
+    ``download_complete.marker`` is written only when there are zero failures,
+    so a re-run picks up exactly the gaps.
+    &#34;&#34;&#34;
+    rows = read_subset_csv(csv_path)
+    if limit is not None:
+        rows = rows[:limit]
+
+    extracted_dir = Path(base_dir) / &#34;extracted_files&#34;
+    extracted_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info(
+        f&#34;Downloading {len(rows)} assemblies from {Path(csv_path).name} &#34;
+        f&#34;→ {extracted_dir} (num_worker={num_worker}, verify_md5={verify_md5})&#34;
+    )
+
+    n_ok = n_skip = 0
+    failures: list[dict] = []
+
+    with ThreadPoolExecutor(max_workers=num_worker) as ex:
+        futures = {
+            ex.submit(
+                download_one, row, extracted_dir, timeout, max_retries, verify_md5, recheck_existing
+            ): row
+            for row in rows
+        }
+        done = 0
+        total = len(futures)
+        for fut in as_completed(futures):
+            res = fut.result()
+            done += 1
+            if res[&#34;status&#34;] == &#34;ok&#34;:
+                n_ok += 1
+            elif res[&#34;status&#34;] == &#34;skipped&#34;:
+                n_skip += 1
+            else:
+                failures.append(res)
+            if done % 50 == 0 or done == total:
+                logger.info(f&#34;  progress {done}/{total} (ok={n_ok} skip={n_skip} fail={len(failures)})&#34;)
+
+    logger.info(&#34;=&#34; * 60)
+    logger.info(&#34;Accession download summary&#34;)
+    logger.info(f&#34;  CSV          : {csv_path}&#34;)
+    logger.info(f&#34;  Total        : {len(rows)}&#34;)
+    logger.info(f&#34;  Downloaded   : {n_ok}&#34;)
+    logger.info(f&#34;  Skipped(have): {n_skip}&#34;)
+    logger.info(f&#34;  Failed       : {len(failures)}&#34;)
+    logger.info(&#34;=&#34; * 60)
+
+    if failures:
+        fail_path = Path(base_dir) / &#34;download_failures.csv&#34;
+        with open(fail_path, &#34;w&#34;, newline=&#34;&#34;) as f:
+            w = csv.DictWriter(f, fieldnames=[&#34;accession&#34;, &#34;species_name&#34;, &#34;url&#34;, &#34;error&#34;])
+            w.writeheader()
+            for fr in failures:
+                w.writerow({k: fr.get(k, &#34;&#34;) for k in w.fieldnames})
+        logger.warning(f&#34;{len(failures)} failures written to {fail_path}; re-run to retry gaps.&#34;)
+        return False
+
+    (Path(base_dir) / &#34;download_complete.marker&#34;).touch()
+    return True</code></pre>
+</details>
+<div class="desc"><p>Download every assembly in <code>csv_path</code> into <code>base_dir/extracted_files</code>.</p>
+<p>Returns <code>True</code> only if all (non-skipped) assemblies downloaded cleanly.
+Failures are recorded in <code>base_dir/download_failures.csv</code> and a
+<code>download_complete.marker</code> is written only when there are zero failures,
+so a re-run picks up exactly the gaps.</p></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main() -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    args = build_parser().parse_args()
+    ok = download_subset_from_csv(
+        csv_path=args.csv,
+        base_dir=args.output,
+        num_worker=args.num_worker,
+        timeout=args.timeout,
+        max_retries=args.max_retries,
+        verify_md5=args.verify_md5,
+        recheck_existing=args.recheck_existing,
+        limit=args.limit,
+    )
+    raise SystemExit(0 if ok else 1)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.read_subset_csv"><code class="name flex">
+<span>def <span class="ident">read_subset_csv</span></span>(<span>csv_path: str) ‑> list[dict]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_subset_csv(csv_path: str) -&gt; list[dict]:
+    &#34;&#34;&#34;Read a subset CSV, returning rows with assembly_accession + ftp_path.&#34;&#34;&#34;
+    with open(csv_path, newline=&#34;&#34;) as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        raise ValueError(f&#34;Subset CSV is empty: {csv_path}&#34;)
+    for col in (&#34;assembly_accession&#34;, &#34;ftp_path&#34;):
+        if col not in rows[0]:
+            raise ValueError(
+                f&#34;Subset CSV {csv_path} is missing required column &#39;{col}&#39;. &#34;
+                f&#34;Available columns: {list(rows[0].keys())}&#34;
+            )
+    return rows</code></pre>
+</details>
+<div class="desc"><p>Read a subset CSV, returning rows with assembly_accession + ftp_path.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq" href="index.html">molcrawl.data.genome_sequence.dataset.refseq</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.build_fasta_url" href="#molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.build_fasta_url">build_fasta_url</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.build_parser" href="#molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.build_parser">build_parser</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.download_one" href="#molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.download_one">download_one</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.download_subset_from_csv" href="#molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.download_subset_from_csv">download_subset_from_csv</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.main" href="#molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.main">main</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.read_subset_csv" href="#molcrawl.data.genome_sequence.dataset.refseq.download_by_accession.read_subset_csv">read_subset_csv</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

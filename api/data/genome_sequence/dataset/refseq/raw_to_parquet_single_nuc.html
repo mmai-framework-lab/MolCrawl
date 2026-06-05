@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc API documentation</title>
+<meta name="description" content="Convert per-accession .raw files into single-nucleotide parquet for BERT/GPT-2 …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc</code></h1>
+</header>
+<section id="section-intro">
+<p>Convert per-accession .raw files into single-nucleotide parquet for BERT/GPT-2.</p>
+<h2 id="pipeline-position">Pipeline Position</h2>
+<p>This is Phase 3 of the subset/Evo2 species flow:</p>
+<pre><code>Phase 1 (download_by_accession)  -&gt;  extracted_files/&lt;acc&gt;.fna.gz
+Phase 2 (fasta_to_raw_per_acc)   -&gt;  raw_files/&lt;acc&gt;.raw         (pure ACGT)
+Phase 3 (this module)            -&gt;  parquet_bert/&lt;acc&gt;.parquet
+                                     parquet_gpt2/&lt;acc&gt;.parquet
+</code></pre>
+<h2 id="tokenizer">Tokenizer</h2>
+<p>Single-nucleotide vocab (size 10): A=0, T=1, G=2, C=3, N=4, PAD=5, UNK=6,
+CLS=7, SEP=8, MASK=9. Raw is already pure ACGT (Phase 2 folds N + IUPAC and
+splits), so in practice only ids 0-3 appear in chunk bodies; UNK is reserved
+defensively.</p>
+<p>Important: this module deliberately does NOT bake MLM masking into the
+parquet. The existing genome BERT trainer uses <code>DataCollatorForLanguageModeling</code>
+to mask dynamically at train time; pre-baking masks would (a) freeze the same
+mask across all epochs (reducing effective data diversity) and (b) double-mask
+on top of the collator. We store only <code>input_ids</code> (+ <code>attention_mask</code> for
+BERT) so training stays dynamic.</p>
+<h2 id="layout">Layout</h2>
+<ul>
+<li>BERT row: <code>input_ids</code> = [CLS, 510 nucleotide ids, SEP] = length 512,
+<code>attention_mask</code> = [1] * 512.</li>
+<li>GPT-2 row: <code>input_ids</code> = 1024 nucleotide ids (no special tokens, causal LM).</li>
+</ul>
+<p>The chunk sizes align with the Phase 2 line cap RAW_LINE_LEN=261,120, so each
+raw line yields exactly 512 BERT chunks or 255 GPT-2 chunks with zero
+boundary loss.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.build_parser"><code class="name flex">
+<span>def <span class="ident">build_parser</span></span>(<span>) ‑> argparse.ArgumentParser</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_parser() -&gt; argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        description=&#34;Convert per-accession .raw to single-nucleotide parquet for BERT/GPT-2.&#34;,
+    )
+    p.add_argument(&#34;--base&#34;, required=True, help=&#34;Subset base dir containing raw_files/.&#34;)
+    p.add_argument(
+        &#34;--models&#34;,
+        nargs=&#34;+&#34;,
+        choices=[&#34;bert&#34;, &#34;gpt2&#34;],
+        default=[&#34;bert&#34;, &#34;gpt2&#34;],
+    )
+    p.add_argument(&#34;--bert-chunk-size&#34;, type=int, default=DEFAULT_BERT_CHUNK)
+    p.add_argument(&#34;--gpt2-chunk-size&#34;, type=int, default=DEFAULT_GPT2_CHUNK)
+    p.add_argument(&#34;--num-worker&#34;, type=int, default=8)
+    p.add_argument(&#34;--batch-rows&#34;, type=int, default=10_000)
+    p.add_argument(&#34;--force&#34;, action=&#34;store_true&#34;)
+    return p</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main() -&gt; None:
+    logging.basicConfig(level=logging.INFO, format=&#34;%(asctime)s %(levelname)s %(message)s&#34;)
+    args = build_parser().parse_args()
+    ok = raw_to_parquet_per_accession(
+        base_dir=args.base,
+        models=tuple(args.models),
+        bert_chunk_size=args.bert_chunk_size,
+        gpt2_chunk_size=args.gpt2_chunk_size,
+        num_worker=args.num_worker,
+        batch_rows=args.batch_rows,
+        force=args.force,
+    )
+    raise SystemExit(0 if ok else 1)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.raw_file_to_parquets"><code class="name flex">
+<span>def <span class="ident">raw_file_to_parquets</span></span>(<span>raw_path: str | pathlib.Path,<br>base_dir: str | pathlib.Path,<br>models: Tuple[str, ...] = ('bert', 'gpt2'),<br>bert_chunk_size: int = 510,<br>gpt2_chunk_size: int = 1024,<br>batch_rows: int = 10000,<br>force: bool = False) ‑> Tuple[str, dict]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def raw_file_to_parquets(
+    raw_path: Union[str, Path],
+    base_dir: Union[str, Path],
+    models: Tuple[str, ...] = (&#34;bert&#34;, &#34;gpt2&#34;),
+    bert_chunk_size: int = DEFAULT_BERT_CHUNK,
+    gpt2_chunk_size: int = DEFAULT_GPT2_CHUNK,
+    batch_rows: int = 10_000,
+    force: bool = False,
+) -&gt; Tuple[str, dict]:
+    &#34;&#34;&#34;Tokenize one .raw file and write one parquet per requested model.
+
+    Single-pass: the raw is read once and chunks are emitted to all requested
+    model writers concurrently. Writes are streamed (ParquetWriter + batched
+    flushes) to bound memory regardless of accession size.
+
+    Returns (accession, counts) where counts[model] is the number of chunk rows
+    written for that model (or -1 if skipped because output already existed).
+    &#34;&#34;&#34;
+    raw_path = Path(raw_path)
+    base_dir = Path(base_dir)
+    accession = raw_path.stem
+    out_paths = _parquet_paths(base_dir, accession, models)
+
+    if not force and all(p.exists() and p.stat().st_size &gt; 0 for p in out_paths.values()):
+        return accession, {m: -1 for m in models}
+
+    for p in out_paths.values():
+        p.parent.mkdir(parents=True, exist_ok=True)
+
+    schemas = {}
+    if &#34;bert&#34; in models:
+        schemas[&#34;bert&#34;] = _bert_schema(bert_chunk_size)
+    if &#34;gpt2&#34; in models:
+        schemas[&#34;gpt2&#34;] = _gpt2_schema(gpt2_chunk_size)
+
+    tmp_paths = {m: p.with_suffix(&#34;.parquet.part&#34;) for m, p in out_paths.items()}
+    writers: Dict[str, pq.ParquetWriter] = {}
+    batches: Dict[str, list] = {m: [] for m in models}
+    counts: Dict[str, int] = {m: 0 for m in models}
+
+    def _flush(m: str) -&gt; None:
+        if not batches[m]:
+            return
+        writers[m].write_table(pa.Table.from_pylist(batches[m], schema=schemas[m]))
+        counts[m] += len(batches[m])
+        batches[m] = []
+
+    try:
+        for m in models:
+            writers[m] = pq.ParquetWriter(str(tmp_paths[m]), schemas[m], compression=&#34;snappy&#34;)
+
+        bert_n = bert_chunk_size
+        gpt2_n = gpt2_chunk_size
+        bert_attn = [1] * (bert_n + 2)  # constant across all BERT rows
+
+        with open(raw_path, &#34;rb&#34;) as fh:
+            for line in fh:
+                # Read the raw line as bytes, drop trailing newline, translate to
+                # token-id bytes in C (one pass over the line).
+                ids = line.rstrip(b&#34;\n&#34;).translate(TRANS_TABLE)
+                L = len(ids)
+
+                if &#34;bert&#34; in models and L &gt;= bert_n:
+                    for i in range(0, L - bert_n + 1, bert_n):
+                        chunk = list(ids[i : i + bert_n])
+                        batches[&#34;bert&#34;].append(
+                            {
+                                &#34;input_ids&#34;: [CLS_ID] + chunk + [SEP_ID],
+                                &#34;attention_mask&#34;: bert_attn,
+                            }
+                        )
+                        if len(batches[&#34;bert&#34;]) &gt;= batch_rows:
+                            _flush(&#34;bert&#34;)
+
+                if &#34;gpt2&#34; in models and L &gt;= gpt2_n:
+                    for i in range(0, L - gpt2_n + 1, gpt2_n):
+                        batches[&#34;gpt2&#34;].append({&#34;input_ids&#34;: list(ids[i : i + gpt2_n])})
+                        if len(batches[&#34;gpt2&#34;]) &gt;= batch_rows:
+                            _flush(&#34;gpt2&#34;)
+
+        for m in models:
+            _flush(m)
+
+        # close() writes the footer / page-index metadata; if it fails the file
+        # is structurally invalid (thrift &#34;page header&#34; errors on read). The
+        # previous version swallowed close() exceptions and still promoted the
+        # .part file, which silently corrupted ~33% of the mammal_centered
+        # parquets under Track A / mammal Phase 3 CPU+memory contention. Now
+        # we propagate close() errors and (below) validate before promotion.
+        for m in models:
+            writers[m].close()
+        writers.clear()
+
+        # Post-write thrift validation: re-open and iterate every page. This
+        # catches any case where close() returned success but the footer /
+        # page index is unreadable.
+        for m in models:
+            try:
+                _validate_parquet(tmp_paths[m])
+            except Exception as e:
+                raise RuntimeError(
+                    f&#34;post-write validation failed for {m}={tmp_paths[m]}: {e}&#34;
+                ) from e
+    except BaseException:
+        # Any failure: close stragglers (errors here are secondary) and remove
+        # all .part files so the next run regenerates this accession cleanly.
+        for w in writers.values():
+            try:
+                w.close()
+            except Exception:
+                pass
+        for p in tmp_paths.values():
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                pass
+        raise
+
+    # Only promote .part → final once every model&#39;s file is validated.
+    for m in models:
+        os.replace(tmp_paths[m], out_paths[m])
+
+    return accession, counts</code></pre>
+</details>
+<div class="desc"><p>Tokenize one .raw file and write one parquet per requested model.</p>
+<p>Single-pass: the raw is read once and chunks are emitted to all requested
+model writers concurrently. Writes are streamed (ParquetWriter + batched
+flushes) to bound memory regardless of accession size.</p>
+<p>Returns (accession, counts) where counts[model] is the number of chunk rows
+written for that model (or -1 if skipped because output already existed).</p></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.raw_to_parquet_per_accession"><code class="name flex">
+<span>def <span class="ident">raw_to_parquet_per_accession</span></span>(<span>base_dir: str | pathlib.Path,<br>models: Tuple[str, ...] = ('bert', 'gpt2'),<br>bert_chunk_size: int = 510,<br>gpt2_chunk_size: int = 1024,<br>num_worker: int = 8,<br>batch_rows: int = 10000,<br>force: bool = False) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def raw_to_parquet_per_accession(
+    base_dir: Union[str, Path],
+    models: Tuple[str, ...] = (&#34;bert&#34;, &#34;gpt2&#34;),
+    bert_chunk_size: int = DEFAULT_BERT_CHUNK,
+    gpt2_chunk_size: int = DEFAULT_GPT2_CHUNK,
+    num_worker: int = 8,
+    batch_rows: int = 10_000,
+    force: bool = False,
+) -&gt; bool:
+    &#34;&#34;&#34;Convert every ``raw_files/*.raw`` under ``base_dir`` to per-accession parquets.
+
+    Output:
+        ``base_dir/parquet_bert/&lt;accession&gt;.parquet``
+        ``base_dir/parquet_gpt2/&lt;accession&gt;.parquet``
+
+    Skips accessions whose target parquets already exist (per model). On a
+    fully-successful run, touches ``raw_to_parquet_complete.marker``.
+    &#34;&#34;&#34;
+    base_dir = Path(base_dir)
+    raw_dir = base_dir / &#34;raw_files&#34;
+    raw_files = sorted(raw_dir.glob(&#34;*.raw&#34;))
+    if not raw_files:
+        logger.error(f&#34;No .raw files found in {raw_dir}&#34;)
+        return False
+
+    logger.info(
+        f&#34;raw → parquet (per-accession, models={list(models)}, &#34;
+        f&#34;bert={bert_chunk_size}, gpt2={gpt2_chunk_size}, workers={num_worker}): &#34;
+        f&#34;{len(raw_files)} accessions&#34;
+    )
+
+    n_done = n_skip = 0
+    total_rows = {m: 0 for m in models}
+
+    def _one(rp: Path):
+        return raw_file_to_parquets(
+            rp, base_dir, models, bert_chunk_size, gpt2_chunk_size, batch_rows, force
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(num_worker) as ex:
+        for _acc, counts in ex.map(_one, raw_files):
+            if all(v == -1 for v in counts.values()):
+                n_skip += 1
+            else:
+                n_done += 1
+                for m, v in counts.items():
+                    if v &gt;= 0:
+                        total_rows[m] += v
+
+    parquet_counts = {m: len(list((base_dir / f&#34;parquet_{m}&#34;).glob(&#34;*.parquet&#34;))) for m in models}
+    rows_str = &#34;, &#34;.join(f&#34;{m}={total_rows[m]:,}&#34; for m in models)
+    files_str = &#34;, &#34;.join(f&#34;{m}={parquet_counts[m]}&#34; for m in models)
+    logger.info(
+        f&#34;raw → parquet done: converted={n_done} skipped={n_skip} &#34;
+        f&#34;files({files_str}) rows({rows_str})&#34;
+    )
+
+    if any(parquet_counts[m] == 0 for m in models):
+        return False
+    (base_dir / &#34;raw_to_parquet_complete.marker&#34;).touch()
+    return True</code></pre>
+</details>
+<div class="desc"><p>Convert every <code>raw_files/*.raw</code> under <code>base_dir</code> to per-accession parquets.</p>
+<h2 id="output">Output</h2>
+<p><code>base_dir/parquet_bert/&lt;accession&gt;.parquet</code>
+<code>base_dir/parquet_gpt2/&lt;accession&gt;.parquet</code></p>
+<p>Skips accessions whose target parquets already exist (per model). On a
+fully-successful run, touches <code>raw_to_parquet_complete.marker</code>.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul>
+<li><a href="#pipeline-position">Pipeline position</a></li>
+<li><a href="#tokenizer">Tokenizer</a></li>
+<li><a href="#layout">Layout</a></li>
+</ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq" href="index.html">molcrawl.data.genome_sequence.dataset.refseq</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.build_parser" href="#molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.build_parser">build_parser</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.main" href="#molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.main">main</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.raw_file_to_parquets" href="#molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.raw_file_to_parquets">raw_file_to_parquets</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.raw_to_parquet_per_accession" href="#molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc.raw_to_parquet_per_accession">raw_to_parquet_per_accession</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
