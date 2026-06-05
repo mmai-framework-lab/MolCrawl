@@ -11,6 +11,7 @@ from molcrawl.core.paths import (
     CLINVAR_DIR,
     CLINVAR_SOURCE_FILE,
     GENOME_SEQUENCE_DIR,
+    PROJECT_ROOT,
     get_refseq_tokenizer_path,
 )
 from molcrawl.core.base import setup_logging
@@ -380,6 +381,383 @@ def process_clinvar_finetune(force: bool = False) -> bool:
         return False
 
 
+# --------------------------------------------------------------------------- #
+# Subset (Evo2 species list) flow
+#
+# A parallel 3-step pipeline driven by a subset CSV (assembly_accession +
+# ftp_path columns). Lives alongside the legacy 4-step BPE pipeline above;
+# selected at runtime by ``--subset NAME``.
+#
+#     <base_dir>/extracted_files/<acc>.fna.gz     ← subset step 1
+#     <base_dir>/raw_files/<acc>.raw              ← subset step 2 (pure ACGT)
+#     <base_dir>/parquet_{bert,gpt2}/<acc>.parquet ← subset step 3
+# --------------------------------------------------------------------------- #
+
+
+def resolve_subset_paths(cfg, subset_name: str) -> str:
+    """Derive ``cfg.path_species`` (CSV) and ``cfg.output_dir`` (base) from a subset name.
+
+    Returns the resolved base_dir. Modifies ``cfg`` in place.
+    """
+    csv_path = Path(PROJECT_ROOT) / "assets" / "genome_species_list" / "subsets" / f"{subset_name}.csv"
+    if not csv_path.exists():
+        raise FileNotFoundError(
+            f"Subset CSV not found: {csv_path}\n"
+            f"Place the subset CSV under assets/genome_species_list/subsets/."
+        )
+    cfg.path_species = str(csv_path)
+    base_dir = f"{GENOME_SEQUENCE_DIR}/{subset_name}"
+    cfg.output_dir = base_dir
+    cfg.subset_name = subset_name
+    logger.info(f"[subset={subset_name}] path_species → {cfg.path_species}")
+    logger.info(f"[subset={subset_name}] output_dir   → {base_dir}")
+    return base_dir
+
+
+def check_subset_progress_status(base_dir, models):
+    """Four-step progress view for the subset flow (download → raw → parquet → arrow)."""
+    download_marker = Path(base_dir) / "download_complete.marker"
+    fasta_to_raw_marker = Path(base_dir) / "fasta_to_raw_complete.marker"
+    raw_to_parquet_marker = Path(base_dir) / "raw_to_parquet_complete.marker"
+    parquet_to_arrow_marker = Path(base_dir) / "parquet_to_arrow_complete.marker"
+
+    raw_files_dir = Path(base_dir) / "raw_files"
+
+    logger.info("=== Subset Pipeline Progress ===")
+    completed = 0
+
+    if download_marker.exists():
+        logger.info("✓ Step 1/4: accession download              - COMPLETED")
+        completed += 1
+    else:
+        logger.info("⏳ Step 1/4: accession download              - PENDING")
+
+    if fasta_to_raw_marker.exists() and raw_files_dir.exists() and any(raw_files_dir.glob("*.raw")):
+        logger.info("✓ Step 2/4: FASTA → raw (single-nucleotide) - COMPLETED")
+        completed += 1
+    else:
+        logger.info("⏳ Step 2/4: FASTA → raw (single-nucleotide) - PENDING")
+
+    parquet_ready = raw_to_parquet_marker.exists() and all(
+        (Path(base_dir) / f"parquet_{m}").exists()
+        and any((Path(base_dir) / f"parquet_{m}").glob("*.parquet"))
+        for m in models
+    )
+    if parquet_ready:
+        logger.info(f"✓ Step 3/4: raw → parquet ({'+'.join(models)})         - COMPLETED")
+        completed += 1
+    else:
+        logger.info(f"⏳ Step 3/4: raw → parquet ({'+'.join(models)})         - PENDING")
+
+    arrow_ready = parquet_to_arrow_marker.exists() and all(
+        (Path(base_dir) / f"training_ready_hf_dataset_{m}" / "dataset_dict.json").exists()
+        for m in models
+    )
+    if arrow_ready:
+        logger.info(f"✓ Step 4/4: parquet → Arrow ({'+'.join(models)})        - COMPLETED")
+        completed += 1
+    else:
+        logger.info(f"⏳ Step 4/4: parquet → Arrow ({'+'.join(models)})        - PENDING")
+
+    logger.info(f"Progress: {completed}/4 steps completed")
+    logger.info("================================")
+    return completed == 4
+
+
+def process1_subset_download(base_dir, csv_path, num_worker, verify_md5=True, force=False):
+    """Subset Step 1: download exact assemblies listed in the subset CSV.
+
+    Uses ``download_subset_from_csv`` (accession-exact, ftp_path-based) instead
+    of the species-name-based legacy downloader.
+    """
+    from molcrawl.data.genome_sequence.dataset.refseq.download_by_accession import (
+        download_subset_from_csv,
+    )
+
+    marker = Path(base_dir) / "download_complete.marker"
+    if not force and marker.exists():
+        logger.info("👉Subset Step1: accession download already completed. Skipping...")
+        return True
+
+    logger.info("👉Subset Step1: downloading exact assemblies from CSV...")
+    logger.info(f" - CSV          : {csv_path}")
+    logger.info(f" - base_dir     : {base_dir}")
+    logger.info(f" - num_worker   : {num_worker}")
+    logger.info(f" - verify_md5   : {verify_md5}")
+    try:
+        return download_subset_from_csv(
+            csv_path=csv_path,
+            base_dir=base_dir,
+            num_worker=num_worker,
+            verify_md5=verify_md5,
+        )
+    except Exception as e:
+        logger.error(f"Subset Step1 (download) failed: {e}")
+        return False
+
+
+def process2_subset_fasta_to_raw(base_dir, num_worker, min_segment_len, force=False):
+    """Subset Step 2: per-accession FASTA → raw (single-nucleotide, gz aware, pure ACGT)."""
+    from molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw import (
+        fasta_to_raw_per_accession,
+    )
+
+    marker = Path(base_dir) / "fasta_to_raw_complete.marker"
+    raw_dir = Path(base_dir) / "raw_files"
+    if (
+        not force
+        and marker.exists()
+        and raw_dir.exists()
+        and any(raw_dir.glob("*.raw"))
+    ):
+        logger.info("👉Subset Step2: FASTA → raw already completed. Skipping...")
+        return True
+
+    logger.info("👉Subset Step2: FASTA → raw (per-accession, ACGT only)...")
+    logger.info(f" - base_dir        : {base_dir}")
+    logger.info(f" - num_worker      : {num_worker}")
+    logger.info(f" - min_segment_len : {min_segment_len}")
+    try:
+        return fasta_to_raw_per_accession(
+            base_dir=base_dir,
+            num_worker=num_worker,
+            min_segment_len=min_segment_len,
+            force=force,
+        )
+    except Exception as e:
+        logger.error(f"Subset Step2 (FASTA → raw) failed: {e}")
+        return False
+
+
+def process3_subset_raw_to_parquet(
+    base_dir,
+    models,
+    bert_chunk_size,
+    gpt2_chunk_size,
+    num_worker,
+    force=False,
+):
+    """Subset Step 3: per-accession raw → single-nucleotide parquet for each model.
+
+    No MLM masking is baked into the parquet — the BERT trainer's dynamic
+    ``DataCollatorForLanguageModeling`` handles masking at train time.
+    """
+    from molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc import (
+        raw_to_parquet_per_accession,
+    )
+
+    marker = Path(base_dir) / "raw_to_parquet_complete.marker"
+    parquet_dirs = [Path(base_dir) / f"parquet_{m}" for m in models]
+    if (
+        not force
+        and marker.exists()
+        and all(d.exists() and any(d.glob("*.parquet")) for d in parquet_dirs)
+    ):
+        logger.info("👉Subset Step3: raw → parquet already completed. Skipping...")
+        return True
+
+    logger.info("👉Subset Step3: raw → parquet (single-nucleotide tokenizer)...")
+    logger.info(f" - base_dir        : {base_dir}")
+    logger.info(f" - models          : {models}")
+    logger.info(f" - bert_chunk_size : {bert_chunk_size}")
+    logger.info(f" - gpt2_chunk_size : {gpt2_chunk_size}")
+    logger.info(f" - num_worker      : {num_worker}")
+    try:
+        return raw_to_parquet_per_accession(
+            base_dir=base_dir,
+            models=tuple(models),
+            bert_chunk_size=bert_chunk_size,
+            gpt2_chunk_size=gpt2_chunk_size,
+            num_worker=num_worker,
+            force=force,
+        )
+    except Exception as e:
+        logger.error(f"Subset Step3 (raw → parquet) failed: {e}")
+        return False
+
+
+def process4_subset_parquet_to_arrow(
+    base_dir,
+    models,
+    valid_size=50_000,
+    test_size=50_000,
+    valid_frac=0.005,
+    test_frac=0.005,
+    remove_parquet=False,
+    force=False,
+):
+    """Subset Step 4: parquet_{model}/ → training_ready_hf_dataset_{model}/ (HF Arrow).
+
+    Converts the per-model snappy parquet produced by Step 3 into the
+    standard HuggingFace ``DatasetDict.save_to_disk()`` layout that
+    ``molcrawl/models/bert/main.py`` (and the GPT-2 trainer) consumes via
+    ``load_from_disk``. The legacy genome trainer indexes the loaded object
+    as ``dataset["train"]`` / ``dataset["test"]`` (or ``["valid"]``), so the
+    output MUST be a DatasetDict — a flat single-split Dataset would crash
+    with ``KeyError: 'train'`` before any training step runs.
+
+    Per model:
+      <base_dir>/parquet_<model>/*.parquet
+        ↓ load_dataset("parquet", ...)  (single Dataset, accession order)
+        ↓ .select() into train / valid / test (no shuffle — Trainer shuffles
+          train at iteration time, and accession-ordered tails of ~50K rows
+          are an unbiased held-out for genome corpora)
+      <base_dir>/training_ready_hf_dataset_<model>/
+        dataset_dict.json
+        train/  valid/  test/
+
+    Args:
+        base_dir       : subset base dir (.../<subset>/).
+        models         : list of model names, e.g. ["bert", "gpt2"].
+        valid_size / test_size : hard caps on held-out split sizes (rows).
+        valid_frac / test_frac : fractional sizing (used when smaller than caps).
+        remove_parquet : drop parquet_<model>/ after successful conversion.
+        force          : overwrite existing Arrow output for a model.
+    """
+    from datasets import DatasetDict, load_dataset
+
+    marker = Path(base_dir) / "parquet_to_arrow_complete.marker"
+
+    all_arrow_done = all(
+        (Path(base_dir) / f"training_ready_hf_dataset_{m}" / "dataset_dict.json").exists()
+        for m in models
+    )
+    if not force and marker.exists() and all_arrow_done:
+        logger.info("👉Subset Step4: parquet → Arrow already completed. Skipping...")
+        return True
+
+    logger.info("👉Subset Step4: parquet → training_ready_hf_dataset (HF Arrow / DatasetDict)...")
+    logger.info(f" - base_dir       : {base_dir}")
+    logger.info(f" - models         : {models}")
+    logger.info(f" - valid/test cap : {valid_size:,} / {test_size:,} rows")
+    logger.info(f" - valid/test frac: {valid_frac} / {test_frac}")
+    logger.info(f" - remove_parquet : {remove_parquet}")
+
+    success = True
+    for model_name in models:
+        parquet_dir = Path(base_dir) / f"parquet_{model_name}"
+        arrow_dir = Path(base_dir) / f"training_ready_hf_dataset_{model_name}"
+
+        if not parquet_dir.exists() or not any(parquet_dir.glob("*.parquet")):
+            logger.error(f"parquet_{model_name}/ missing or empty. Run Step 3 first.")
+            success = False
+            continue
+
+        if not force and (arrow_dir / "dataset_dict.json").exists():
+            logger.info(f" - training_ready_hf_dataset_{model_name}/ already present. Skipping.")
+            continue
+
+        try:
+            parquet_files = sorted(str(p) for p in parquet_dir.glob("*.parquet"))
+            logger.info(
+                f" - {model_name}: {len(parquet_files)} parquet files → "
+                f"training_ready_hf_dataset_{model_name}/"
+            )
+
+            ds = load_dataset(
+                "parquet",
+                data_files={"train": parquet_files},
+                split="train",
+            )
+
+            n_total = len(ds)
+            n_valid = min(valid_size, max(1_000, int(n_total * valid_frac)))
+            n_test = min(test_size, max(1_000, int(n_total * test_frac)))
+            n_train = n_total - n_valid - n_test
+            if n_train <= 0:
+                raise ValueError(
+                    f"{model_name}: dataset too small ({n_total} rows) for "
+                    f"valid={n_valid} + test={n_test}"
+                )
+
+            # No shuffle here — HF Trainer shuffles `train` at iteration time,
+            # and an accession-ordered tail is acceptable as held-out for
+            # genome corpora. .select() is O(1) on memory-mapped Arrow.
+            ds_dict = DatasetDict({
+                "train": ds.select(range(0, n_train)),
+                "valid": ds.select(range(n_train, n_train + n_valid)),
+                "test": ds.select(range(n_train + n_valid, n_total)),
+            })
+
+            arrow_dir.mkdir(parents=True, exist_ok=True)
+            ds_dict.save_to_disk(str(arrow_dir))
+            logger.info(
+                f"   ✓ {model_name}: saved train={n_train:,} valid={n_valid:,} "
+                f"test={n_test:,} (DatasetDict)"
+            )
+
+            if remove_parquet:
+                import shutil
+                shutil.rmtree(str(parquet_dir))
+                logger.info(f"   ✓ removed intermediate parquet_{model_name}/")
+
+        except Exception as e:
+            logger.error(f"parquet → Arrow conversion failed (model={model_name}): {e}")
+            success = False
+
+    if success:
+        marker.touch()
+        logger.info("Subset Step4 (parquet → Arrow) completed.")
+
+    return success
+
+
+def run_subset_flow(cfg, force=False) -> None:
+    """End-to-end subset pipeline (download → raw → parquet) driven by ``cfg``."""
+    base_dir = cfg.output_dir
+    models = list(cfg.models) if cfg.models else ["bert", "gpt2"]
+
+    all_done = check_subset_progress_status(base_dir, models)
+    if all_done and not force:
+        logger.info("All subset steps already completed. Use --force to re-run.")
+        return
+
+    if not process1_subset_download(
+        base_dir=base_dir,
+        csv_path=cfg.path_species,
+        num_worker=cfg.num_worker,
+        verify_md5=getattr(cfg, "verify_md5", True),
+        force=force,
+    ):
+        logger.error("Subset Step1 (download) failed. Stopping.")
+        exit(1)
+
+    if not process2_subset_fasta_to_raw(
+        base_dir=base_dir,
+        num_worker=cfg.num_worker,
+        min_segment_len=getattr(cfg, "min_segment_len", 100),
+        force=force,
+    ):
+        logger.error("Subset Step2 (FASTA → raw) failed. Stopping.")
+        exit(1)
+
+    if not process3_subset_raw_to_parquet(
+        base_dir=base_dir,
+        models=models,
+        bert_chunk_size=getattr(cfg, "bert_chunk_size", 510),
+        gpt2_chunk_size=getattr(cfg, "gpt2_chunk_size", 1024),
+        num_worker=cfg.num_worker,
+        force=force,
+    ):
+        logger.error("Subset Step3 (raw → parquet) failed. Stopping.")
+        exit(1)
+
+    if not process4_subset_parquet_to_arrow(
+        base_dir=base_dir,
+        models=models,
+        valid_size=getattr(cfg, "valid_size", 50_000),
+        test_size=getattr(cfg, "test_size", 50_000),
+        valid_frac=getattr(cfg, "valid_frac", 0.005),
+        test_frac=getattr(cfg, "test_frac", 0.005),
+        remove_parquet=getattr(cfg, "remove_parquet", False),
+        force=force,
+    ):
+        logger.error("Subset Step4 (parquet → Arrow) failed. Stopping.")
+        exit(1)
+
+    logger.info("🎉 Subset pipeline completed.")
+
+
 def main():
     """Main function to orchestrate the genome sequence dataset preparation"""
     parser = ArgumentParser()
@@ -401,6 +779,17 @@ def main():
         action="store_true",
         help="Skip statistics generation and plotting",
     )
+    parser.add_argument(
+        "--subset",
+        default=None,
+        metavar="NAME",
+        help=(
+            "Subset name (e.g. mammal_centered, global_random_seed1). When set, "
+            "path_species and output_dir are derived from "
+            "assets/genome_species_list/subsets/<NAME>.csv, and the 3-step "
+            "single-nucleotide pipeline runs in place of the legacy 4-step BPE flow."
+        ),
+    )
     args = parser.parse_args()
 
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
@@ -412,6 +801,12 @@ def main():
             exit(1)
         if "refseq" not in args.datasets:
             return
+
+    # ── Subset (Evo2 species list) branch ──────────────────────────────────────
+    if args.subset:
+        resolve_subset_paths(cfg, args.subset)
+        run_subset_flow(cfg, force=args.force)
+        return
 
     # ── RefSeq pretraining branch (original pipeline) ─────────────────────────
     # base_dir for heavy processing (specify in config if you want to release to local SSD etc.)

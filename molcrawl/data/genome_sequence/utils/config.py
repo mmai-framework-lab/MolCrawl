@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 from molcrawl.core.paths import GENOME_SEQUENCE_DIR
 from molcrawl.core.config import Config
@@ -46,6 +46,32 @@ class RefSeqPreparationConfig:
     # out of the script so different runs can target different sequence
     # lengths without code edits.
     context_length: int = 1024
+
+    # ── Subset (Evo2 species list) flow ─────────────────────────────────────
+    # When set (typically via the --subset CLI flag), path_species and
+    # output_dir are derived from this name and the 3-step single-nucleotide
+    # pipeline runs (accession-exact download → per-accession raw → per-model
+    # parquet) instead of the legacy 4-step BPE pipeline.
+    subset_name: Optional[str] = None
+    # Phase 2 (fasta_to_raw_per_accession): minimum ACGT segment length to keep.
+    min_segment_len: int = 100
+    # Phase 3 (raw_to_parquet_single_nuc): chunk sizes per model.
+    # 510 ⇒ [CLS]+510+[SEP] = 512 (BERT max_length).
+    bert_chunk_size: int = 510
+    gpt2_chunk_size: int = 1024
+    # Which models to emit parquet for. ``None`` means both ("bert", "gpt2").
+    models: Optional[List[str]] = None
+    # Verify each downloaded assembly against NCBI md5checksums.txt.
+    verify_md5: bool = True
+    # Phase 4 (parquet → training_ready_hf_dataset Arrow / DatasetDict):
+    # held-out split sizing. Hard cap in rows; fractional cap also applied.
+    valid_size: int = 50_000
+    test_size: int = 50_000
+    valid_frac: float = 0.005
+    test_frac: float = 0.005
+    # After Phase 4 succeeds for a model, optionally drop parquet_<model>/ to
+    # reclaim ~0.5–1 TB across 21 subsets. False keeps both for reproducibility.
+    remove_parquet: bool = False
 
 
 @dataclass
