@@ -39,7 +39,7 @@ import concurrent.futures
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, Tuple, Union
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -282,7 +282,7 @@ def raw_to_parquet_per_accession(
         )
 
     with concurrent.futures.ThreadPoolExecutor(num_worker) as ex:
-        for acc, counts in ex.map(_one, raw_files):
+        for _acc, counts in ex.map(_one, raw_files):
             if all(v == -1 for v in counts.values()):
                 n_skip += 1
             else:
