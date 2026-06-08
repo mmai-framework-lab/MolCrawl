@@ -56,7 +56,14 @@ vocab_size = len(tokenizer)  # = 10
 
 # ---- training hyperparameters (mirror bert_small) ------------------------ #
 max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
-learning_rate = 6e-6
+# BERT pretrain learning rate per Devlin et al. (NAACL 2019): 1e-4 with linear
+# warmup of 10,000 steps. The legacy molcrawl genome BERT configs all use 6e-6,
+# but that value is undocumented and not justified by any divergence experience
+# in the git history — it appears to have been the initial value set when the
+# configs were first added (2025-03-25, commit 7fb18024) and was never
+# revisited. We use the literature value here.
+learning_rate = 1e-4
+warmup_steps = 10000
 weight_decay = 1e-1
 max_steps = 60000
 early_stopping = False
