@@ -99,6 +99,10 @@ dtype = (
     "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
 )  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
 compile = False  # use PyTorch 2.0 to compile the model to be faster
+# MFU reference: accelerator bf16 dense peak in TFLOPS, used only to report MFU
+# as a fraction of hardware peak. Default ~ NVIDIA GB200/B200 bf16 dense; set
+# --mfu_peak_tflops=312 for A100, or your measured value for an exact ratio.
+mfu_peak_tflops = 2250
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 if __name__ == "__main__":
@@ -827,7 +831,7 @@ if __name__ == "__main__":
             # scale up to undo the division above, approximating the true total loss (exact would have been a sum)
             lossf = loss.item() * gradient_accumulation_steps
             if local_iter_num >= 5:  # let the training loop settle a bit
-                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)  # type: ignore[union-attr,operator]
+                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt, flops_promised=mfu_peak_tflops * 1e12)  # type: ignore[union-attr,operator]
                 running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
             print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
             if writer is not None:
