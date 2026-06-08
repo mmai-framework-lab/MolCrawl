@@ -417,7 +417,7 @@ def main() -> None:
                 start = int(start_s) if start_s else None
                 end = int(end_s) if end_s else None
             except ValueError as exc:
-                raise SystemExit(f"--species-range must be 'START:END' integers: {exc}")
+                raise SystemExit(f"--species-range must be 'START:END' integers: {exc}") from exc
             full_n = len(pairs)
             pairs = pairs[start:end]
             logger.info(
