@@ -86,7 +86,7 @@ class GenomeSequenceConfig(Config):
 </dd>
 <dt id="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig"><code class="flex name class">
 <span>class <span class="ident">RefSeqPreparationConfig</span></span>
-<span>(</span><span>output_dir: str = 'learning_source_dummy/genome_sequence',<br>path_species: str = 'assets/genome_species_list/filtered_species_refseq',<br>num_worker: int = 16,<br>max_lines_per_file: int = 10000,<br>vocab_size: int = 4096,<br>input_sentence_size: int = 700000,<br>species_timeout: int = 1800,<br>max_retries: int = 2,<br>num_proc_parquet: int | None = None,<br>parquet_batch_size: int | None = None,<br>local_base_dir: str | None = None,<br>number_sample: int | None = None,<br>context_length: int = 1024,<br>subset_name: str | None = None,<br>min_segment_len: int = 100,<br>bert_chunk_size: int = 510,<br>gpt2_chunk_size: int = 1024,<br>models: List[str] | None = None,<br>verify_md5: bool = True,<br>valid_size: int = 50000,<br>test_size: int = 50000,<br>valid_frac: float = 0.005,<br>test_frac: float = 0.005,<br>remove_parquet: bool = False)</span>
+<span>(</span><span>output_dir: str = 'learning_source_dummy/genome_sequence',<br>path_species: str = 'assets/genome_species_list/filtered_species_refseq',<br>num_worker: int = 16,<br>max_lines_per_file: int = 10000,<br>vocab_size: int = 4096,<br>input_sentence_size: int = 700000,<br>max_sentence_length: int = 4192,<br>species_timeout: int = 1800,<br>max_retries: int = 2,<br>num_proc_parquet: int | None = None,<br>parquet_batch_size: int | None = None,<br>local_base_dir: str | None = None,<br>number_sample: int | None = None,<br>context_length: int = 1024,<br>subset_name: str | None = None,<br>min_segment_len: int = 100,<br>bert_chunk_size: int = 510,<br>gpt2_chunk_size: int = 1024,<br>models: List[str] | None = None,<br>verify_md5: bool = True,<br>valid_size: int = 50000,<br>test_size: int = 50000,<br>valid_frac: float = 0.005,<br>test_frac: float = 0.005,<br>remove_parquet: bool = False)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -113,6 +113,13 @@ class RefSeqPreparationConfig:
     # We will sample input_sentence_size randomly from input_sentence_size * 2 number of sequence.
     # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
     input_sentence_size: int = 700000
+
+    # Maximum characters per line fed to the SentencePiece trainer. Lines longer
+    # than this are skipped during training (sentencepiece default: 4192). The
+    # default suits the normal multi-species corpus, where assembly gaps yield
+    # many shorter segments. Raise it when training on few/long sequences (e.g. a
+    # single gapless genome whose chromosomes form very long lines).
+    max_sentence_length: int = 4192
 
     # Per-species download timeout in seconds (default: 30 min)
     # If a species download takes longer than this, the child process is killed.
@@ -161,7 +168,7 @@ class RefSeqPreparationConfig:
     # reclaim ~0.5–1 TB across 21 subsets. False keeps both for reproducibility.
     remove_parquet: bool = False</code></pre>
 </details>
-<div class="desc"><p>RefSeqPreparationConfig(output_dir: str = 'learning_source_dummy/genome_sequence', path_species: str = 'assets/genome_species_list/filtered_species_refseq', num_worker: int = 16, max_lines_per_file: int = 10000, vocab_size: int = 4096, input_sentence_size: int = 700000, species_timeout: int = 1800, max_retries: int = 2, num_proc_parquet: Optional[int] = None, parquet_batch_size: Optional[int] = None, local_base_dir: Optional[str] = None, number_sample: Optional[int] = None, context_length: int = 1024, subset_name: Optional[str] = None, min_segment_len: int = 100, bert_chunk_size: int = 510, gpt2_chunk_size: int = 1024, models: Optional[List[str]] = None, verify_md5: bool = True, valid_size: int = 50000, test_size: int = 50000, valid_frac: float = 0.005, test_frac: float = 0.005, remove_parquet: bool = False)</p></div>
+<div class="desc"><p>RefSeqPreparationConfig(output_dir: str = 'learning_source_dummy/genome_sequence', path_species: str = 'assets/genome_species_list/filtered_species_refseq', num_worker: int = 16, max_lines_per_file: int = 10000, vocab_size: int = 4096, input_sentence_size: int = 700000, max_sentence_length: int = 4192, species_timeout: int = 1800, max_retries: int = 2, num_proc_parquet: Optional[int] = None, parquet_batch_size: Optional[int] = None, local_base_dir: Optional[str] = None, number_sample: Optional[int] = None, context_length: int = 1024, subset_name: Optional[str] = None, min_segment_len: int = 100, bert_chunk_size: int = 510, gpt2_chunk_size: int = 1024, models: Optional[List[str]] = None, verify_md5: bool = True, valid_size: int = 50000, test_size: int = 50000, valid_frac: float = 0.005, test_frac: float = 0.005, remove_parquet: bool = False)</p></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.bert_chunk_size"><code class="name">var <span class="ident">bert_chunk_size</span> : int</code></dt>
@@ -189,6 +196,10 @@ class RefSeqPreparationConfig:
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_retries"><code class="name">var <span class="ident">max_retries</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_sentence_length"><code class="name">var <span class="ident">max_sentence_length</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -293,6 +304,7 @@ class RefSeqPreparationConfig:
 <li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.local_base_dir" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.local_base_dir">local_base_dir</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_lines_per_file" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_lines_per_file">max_lines_per_file</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_retries" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_retries">max_retries</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_sentence_length" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.max_sentence_length">max_sentence_length</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.min_segment_len" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.min_segment_len">min_segment_len</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.models" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.models">models</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.num_proc_parquet" href="#molcrawl.data.genome_sequence.utils.config.RefSeqPreparationConfig.num_proc_parquet">num_proc_parquet</a></code></li>

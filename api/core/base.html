@@ -214,8 +214,13 @@ el.replaceWith(d);
         config = json.load(file)
     logging_file = f&#34;{output_dir}/logging.log&#34;
     config[&#34;handlers&#34;][&#34;file&#34;][&#34;filename&#34;] = logging_file
-    if os.path.exists(logging_file):
+    # Race-safe: a concurrent process may have already removed it (e.g. several
+    # parallel SLURM jobs targeting the same LEARNING_SOURCE_DIR all calling
+    # setup_logging at startup). Swallow the &#34;already gone&#34; case.
+    try:
         os.remove(logging_file)
+    except FileNotFoundError:
+        pass
     logging.config.dictConfig(config=config)</code></pre>
 </details>
 <div class="desc"></div>
