@@ -23,7 +23,7 @@ import os
 import shutil
 import time
 from contextlib import nullcontext
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import torch
@@ -99,6 +99,10 @@ dtype = (
     "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
 )  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
 compile = False  # use PyTorch 2.0 to compile the model to be faster
+# MFU reference: accelerator bf16 dense peak in TFLOPS, used only to report MFU
+# as a fraction of hardware peak. Default ~ NVIDIA GB200/B200 bf16 dense; set
+# --mfu_peak_tflops=312 for A100, or your measured value for an exact ratio.
+mfu_peak_tflops = 2250
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 if __name__ == "__main__":
@@ -135,7 +139,11 @@ if __name__ == "__main__":
     # various inits, derived attributes, I/O setup
     ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?
     if ddp:
-        init_process_group(backend=backend)
+        # Extend the NCCL collective timeout well past the default 10 min: a
+        # rank-0 checkpoint save to Lustre can occasionally stall other ranks
+        # at the next collective long enough to trip the watchdog (observed
+        # killing a 4-GPU run mid-training at a checkpoint boundary).
+        init_process_group(backend=backend, timeout=timedelta(minutes=30))
         ddp_rank = int(os.environ["RANK"])
         ddp_local_rank = int(os.environ["LOCAL_RANK"])
         ddp_world_size = int(os.environ["WORLD_SIZE"])
@@ -664,6 +672,10 @@ if __name__ == "__main__":
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
 
+        # Reset each iteration; the master-only early-stop check below may set
+        # it, then it is broadcast to every rank so they all break together.
+        should_stop = False
+
         # evaluate the loss on train/val sets and write checkpoints
         if iter_num % eval_interval == 0 and master_process:
             losses = estimate_loss()
@@ -701,9 +713,9 @@ if __name__ == "__main__":
                 if early_stopping and early_stopping_counter >= early_stopping_patience:
                     print(f"\nEarly stopping triggered after {early_stopping_counter} evaluations without improvement.")
                     print(f"Best validation loss: {best_val_loss:.4f}")
-                    if ddp:
-                        destroy_process_group()
-                    break
+                    # Defer the break: all ranks must agree (broadcast below), or
+                    # rank 0 leaves and the others hang at the next NCCL collective.
+                    should_stop = True
 
             # Checkpoint saving logic (independent of best model tracking)
             should_save_checkpoint = False
@@ -767,6 +779,20 @@ if __name__ == "__main__":
                 if keep_legacy_ckpt or is_best_model:
                     print(f"saving checkpoint to {out_dir}")
                     torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
+
+        # Early stopping is decided only on rank 0 (evaluation runs there).
+        # Broadcast the decision so every rank breaks on the same iteration;
+        # otherwise non-master ranks block forever on the next collective
+        # (seen as a NCCL watchdog timeout that killed multi-GPU runs at the
+        # stop point). Mirrors how the max_iters termination breaks all ranks.
+        if early_stopping and iter_num % eval_interval == 0:
+            if ddp:
+                _stop = torch.tensor(1 if should_stop else 0, device=device)
+                torch.distributed.broadcast(_stop, src=0)
+                should_stop = bool(_stop.item())
+            if should_stop:
+                break
+
         if iter_num == 0 and eval_only:
             break
 
@@ -805,7 +831,7 @@ if __name__ == "__main__":
             # scale up to undo the division above, approximating the true total loss (exact would have been a sum)
             lossf = loss.item() * gradient_accumulation_steps
             if local_iter_num >= 5:  # let the training loop settle a bit
-                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)  # type: ignore[union-attr,operator]
+                mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt, flops_promised=mfu_peak_tflops * 1e12)  # type: ignore[union-attr,operator]
                 running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
             print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
             if writer is not None:

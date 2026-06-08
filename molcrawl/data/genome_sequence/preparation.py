@@ -220,13 +220,16 @@ def process2_fasta_to_raw(base_dir, num_worker, max_lines_per_file, force=False)
         return False
 
 
-def process3_train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sentence_size, force=False):
+def process3_train_tokenizer(
+    base_dir, vocab_size, max_lines_per_file, input_sentence_size, max_sentence_length=4192, force=False
+):
     """Process 3: Train SentencePiece tokenizer
     Args:
         base_dir (str): Base directory for genome sequence data
         vocab_size (int): Vocabulary size for tokenizer
         max_lines_per_file (int): Maximum lines per file for training
         input_sentence_size (int): Input sentence size for tokenizer
+        max_sentence_length (int): Max characters per line; longer lines are skipped during training
         force (bool): Force retraining even if already completed
     Returns:
         bool: True if successful, False otherwise
@@ -249,8 +252,9 @@ def process3_train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sen
         logger.info(f" - vocab size : {vocab_size}")
         logger.info(f" - max lines per file : {max_lines_per_file}")
         logger.info(f" - input sentence size : {input_sentence_size}")
+        logger.info(f" - max sentence length : {max_sentence_length}")
 
-        train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sentence_size)
+        train_tokenizer(base_dir, vocab_size, max_lines_per_file, input_sentence_size, max_sentence_length)
         train_tokenizer_marker.touch()
         logger.info("Tokenizer training completed.")
         return True
@@ -850,6 +854,7 @@ def main():
         cfg.vocab_size,
         cfg.max_lines_per_file,
         cfg.input_sentence_size,
+        getattr(cfg, "max_sentence_length", 4192),
         args.force,
     )
     if not success:

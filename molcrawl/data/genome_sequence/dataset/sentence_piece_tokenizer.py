@@ -4,7 +4,7 @@ from pathlib import Path
 from molcrawl.data.genome_sequence.utils.config import GenomeSequenceConfig
 
 
-def train_tokenizer(output_dir, vocab_size, max_lines_per_file, input_sentence_size):
+def train_tokenizer(output_dir, vocab_size, max_lines_per_file, input_sentence_size, max_sentence_length=4192):
     import numpy as np
     import sentencepiece as spm
 
@@ -25,6 +25,7 @@ def train_tokenizer(output_dir, vocab_size, max_lines_per_file, input_sentence_s
         max_sentencepiece_length=50,
         split_by_whitespace=False,
         add_dummy_prefix=False,
+        max_sentence_length=max_sentence_length,
     )
 
 
@@ -34,4 +35,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
 
-    train_tokenizer(cfg.output_dir, cfg.vocab_size, cfg.max_lines_per_file, cfg.input_sentence_size)
+    train_tokenizer(
+        cfg.output_dir,
+        cfg.vocab_size,
+        cfg.max_lines_per_file,
+        cfg.input_sentence_size,
+        getattr(cfg, "max_sentence_length", 4192),
+    )

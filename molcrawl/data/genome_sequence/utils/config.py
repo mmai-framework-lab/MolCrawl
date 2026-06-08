@@ -26,6 +26,13 @@ class RefSeqPreparationConfig:
     # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
     input_sentence_size: int = 700000
 
+    # Maximum characters per line fed to the SentencePiece trainer. Lines longer
+    # than this are skipped during training (sentencepiece default: 4192). The
+    # default suits the normal multi-species corpus, where assembly gaps yield
+    # many shorter segments. Raise it when training on few/long sequences (e.g. a
+    # single gapless genome whose chromosomes form very long lines).
+    max_sentence_length: int = 4192
+
     # Per-species download timeout in seconds (default: 30 min)
     # If a species download takes longer than this, the child process is killed.
     species_timeout: int = 30 * 60
