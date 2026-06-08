@@ -40,6 +40,7 @@ from __future__ import annotations
 import concurrent.futures
 import gzip
 import logging
+import os
 import shutil
 from argparse import ArgumentParser
 from functools import partial
@@ -262,7 +263,12 @@ def tokenize_species_to_parquet(
     if not raw_dir.exists() or not any(raw_dir.glob("*.raw")):
         raise RuntimeError(f"No raw files at {raw_dir}; cannot tokenise {species_dir.name}.")
 
-    hf_cache = species_dir / "hf_cache"
+    # Per-process hf_cache so that overlapping parallel jobs (--species-range
+    # fan-out) cannot trample each other's tempfiles. Job A's cleanup used to
+    # rmtree(species_dir/hf_cache) while Job B was still writing tempfiles
+    # inside it, producing a FileNotFoundError on the meet-in-the-middle
+    # species (jobs 18154/18155/18156 on 2026-05-25 hit this exactly).
+    hf_cache = species_dir / f".hf_cache.pid{os.getpid()}"
 
     data = load_dataset(
         "text",
@@ -287,7 +293,8 @@ def tokenize_species_to_parquet(
     )
     tokenized.to_parquet(str(parquet_path))
 
-    # hf_cache is a transient build artefact; the parquet supersedes it.
+    # hf_cache is a transient build artefact; the parquet supersedes it. Only
+    # touch our own PID-suffixed cache so we never reach across processes.
     if hf_cache.exists():
         shutil.rmtree(hf_cache, ignore_errors=True)
 
@@ -379,6 +386,16 @@ def main() -> None:
         action="store_true",
         help="Only stage the FASTA(s); do not run downstream processes.",
     )
+    parser.add_argument(
+        "--species-range",
+        metavar="START:END",
+        help=(
+            "Python-slice subset of the discovered species list (e.g. '65:130'). Only with "
+            "--input-dir. Used to fan out a long batch across multiple SLURM jobs. The shared "
+            "tokenizer must already exist before parallel jobs run; otherwise each job would "
+            "train a different tokenizer from its own slice."
+        ),
+    )
     args = parser.parse_args()
 
     cfg = GenomeSequenceConfig.from_file(args.config).data_preparation
@@ -393,6 +410,20 @@ def main() -> None:
         if not pairs:
             raise SystemExit(f"No species FASTAs discovered under {input_dir}")
         logger.info("Discovered %d species under %s", len(pairs), input_dir)
+
+        if args.species_range:
+            try:
+                start_s, end_s = args.species_range.split(":", 1)
+                start = int(start_s) if start_s else None
+                end = int(end_s) if end_s else None
+            except ValueError as exc:
+                raise SystemExit(f"--species-range must be 'START:END' integers: {exc}")
+            full_n = len(pairs)
+            pairs = pairs[start:end]
+            logger.info(
+                "Applying --species-range %s → %d/%d species selected",
+                args.species_range, len(pairs), full_n,
+            )
 
         if args.only_stage:
             stage_batch(pairs, force=args.force, workers=args.stage_workers)

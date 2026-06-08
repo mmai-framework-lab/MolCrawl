@@ -147,6 +147,11 @@ def setup_logging(output_dir: str, logging_config: str = "assets/logging_config.
         config = json.load(file)
     logging_file = f"{output_dir}/logging.log"
     config["handlers"]["file"]["filename"] = logging_file
-    if os.path.exists(logging_file):
+    # Race-safe: a concurrent process may have already removed it (e.g. several
+    # parallel SLURM jobs targeting the same LEARNING_SOURCE_DIR all calling
+    # setup_logging at startup). Swallow the "already gone" case.
+    try:
         os.remove(logging_file)
+    except FileNotFoundError:
+        pass
     logging.config.dictConfig(config=config)

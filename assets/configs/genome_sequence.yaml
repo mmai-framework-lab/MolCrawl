@@ -9,7 +9,10 @@ data_preparation:
   vocab_size: 4096
   # Number of CPU workers for Process4: raw → parquet conversion.
   # Defaults to num_worker if not specified; set this field to override.
-  num_proc_parquet: 4
+  # Bumped 4 → 8 (2026-05-23) after job 18141 hit --time=24:00:00 having
+  # processed only 35/262 species at ~45 min each. With 256G mem to spare,
+  # higher concurrency in HF datasets.map is the bottleneck.
+  num_proc_parquet: 8
   # Batch size for Process4: raw → parquet conversion.
   # Values between 512 and 4096 are practical. 2048 or higher is fine if memory allows.
   parquet_batch_size: 2048
