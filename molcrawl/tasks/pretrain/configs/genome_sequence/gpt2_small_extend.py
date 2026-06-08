@@ -45,11 +45,20 @@ lr_decay_iters = 150000     # unused when decay_lr=False but kept consistent
 # get_lr(50000) under the new lr_decay_iters=150000 and re-inflate the LR
 # from min_lr (where the 50k run finished) back to roughly 4e-6 — an
 # unintended re-warmup that can destabilise an already-converged model.
-# A constant LR halfway between the previous max (6e-6) and min (6e-7)
-# avoids that jump while still letting the model continue improving.
+#
+# === 2026-05-26 revision ===
+# The first attempt at learning_rate=3e-6 (job 18216) caused a measurable
+# LR shock: val 6.2211 → 6.4911 at the first eval after resume, never
+# recovering before early_stop triggered. The model had cooled to
+# min_lr=6e-7 by iter 50000, so jumping to 3e-6 (5x higher) over-shot
+# the local minimum.
+#
+# Drop to 5e-7 — slightly BELOW the previous min_lr — so the resume
+# acts as a very gentle fine-tune rather than a re-perturbation.
+# Trades convergence speed for stability.
 decay_lr = False
-learning_rate = 3e-6
-min_lr = learning_rate / 10  # ignored when decay_lr=False, kept for API symmetry
+learning_rate = 5e-7
+min_lr = 5e-8                # learning_rate / 10, kept for API symmetry
 warmup_iters = 0             # already warmed up in the original run
 
 # eval stuff (unchanged)
