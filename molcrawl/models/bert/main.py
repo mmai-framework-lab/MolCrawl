@@ -360,6 +360,14 @@ if __name__ == "__main__":
         # checkpoints (HF Trainer 4.45 _load_from_checkpoint requires args.save_safetensors=True
         # to enter the safetensors load branch).
         save_safetensors=True,
+        # Performance opt-ins (read from the per-config globals so existing
+        # configs are unaffected; subset configs can flip these on individually).
+        #   bf16=True                      : bf16 mixed precision on Hopper/Blackwell
+        #   dataloader_num_workers=N       : multi-process input pipeline
+        #   dataloader_pin_memory=True     : pinned CPU buffers for H2D transfer
+        bf16=bool(globals().get("bf16", False)),
+        dataloader_num_workers=int(globals().get("dataloader_num_workers", 0)),
+        dataloader_pin_memory=bool(globals().get("dataloader_pin_memory", False)),
     )
 
     # Check if we should use custom dataset loading (for RNA data)
