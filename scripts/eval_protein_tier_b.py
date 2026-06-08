@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -72,8 +71,8 @@ def accumulate(model, dataset, max_samples: int, device: str, block_size: int = 
 
         tgt_flat = targets[0].tolist()
         loss_flat = loss[0].tolist()
-        for t, l in zip(tgt_flat, loss_flat):
-            sum_per_token[int(t)] += float(l)
+        for t, loss_val in zip(tgt_flat, loss_flat):
+            sum_per_token[int(t)] += float(loss_val)
             cnt_per_token[int(t)] += 1
 
         pos_sum += loss[0].to(torch.float64)
