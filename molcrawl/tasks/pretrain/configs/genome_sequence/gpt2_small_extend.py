@@ -73,3 +73,9 @@ early_stopping_patience = 10
 # Regularisation: keep dropout consistent with the original small run.
 weight_decay = 1e-1
 dropout = 0.1
+
+# Dataset wiring — mirrors gpt2_small.py. ``train.py`` reads ``dataset_params``
+# (not ``dataset_dir``) to instantiate PreparedDataset, and ``dataset`` is the
+# modality string used for ambiguity-aware loss masking dispatch.
+dataset = "genome_sequence"
+dataset_params = {"dataset_dir": dataset_dir}
