@@ -57,9 +57,14 @@ gradient_accumulation_steps = 5 * 8
 
 max_iters = 50000
 lr_decay_iters = 50000
-warmup_iters = 200
-learning_rate = 6e-6
-min_lr = learning_rate / 10
+# GPT-2 pretrain learning rate per Radford et al. (2019) for the 124M model:
+# 6e-4 peak with linear warmup of ~2,000 iters, cosine decay to 10% of peak.
+# Legacy genome GPT-2 configs all use 6e-6, but that value is undocumented
+# (initial commit 2025-03-25, never revisited) and not justified by any
+# divergence experience in the git history. We use the literature value.
+warmup_iters = 2000
+learning_rate = 6e-4
+min_lr = learning_rate / 10  # → 6e-5 (10% of peak per Chinchilla / GPT-2 convention)
 
 eval_interval = 1000
 eval_iters = 200

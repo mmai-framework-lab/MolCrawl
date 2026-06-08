@@ -22,10 +22,15 @@ mask candidates (whose contribution we then strip in post). The "wasted mask
 budget" is at most a few percent in realistic corpora and has no correctness
 impact — the loss still ignores them.
 
-Sentinel value: ``-1`` (not the HF-standard ``-100``) to stay aligned with
-``molcrawl/models/{gpt2,llama}/model.py`` which compute cross-entropy with
-``ignore_index=-1``. If the model side is ever migrated to ``-100``, only the
-``IGNORE_INDEX`` constant below needs to change.
+Sentinel values: the CLM helper (``mask_ambiguous_targets_for_clm``) defaults
+to ``-1`` to stay aligned with ``molcrawl/models/{gpt2,llama}/model.py``,
+which compute cross-entropy with ``ignore_index=-1``. The MLM collator
+(``AmbiguityAwareMLMCollator``) defaults to the HF-standard ``-100``, because
+it feeds ``DataCollatorForLanguageModeling`` output through ``BertForMaskedLM``
+/ ``RobertaForMaskedLM``, both of which compute cross-entropy via HF's
+``ignore_index=-100`` convention. Writing -1 into those labels triggers a
+device-side ``t >= 0 && t < n_classes`` assertion. Both defaults are
+overridable via ``ignore_index=`` on the call site.
 
 See ``docs/_tmp/20260516-spec02-ambiguity-review.md`` for the design review
 and policy rationale.
@@ -43,9 +48,14 @@ except ImportError:  # pragma: no cover - documentation-only environment
     DataCollatorForLanguageModeling = None  # type: ignore[assignment]
 
 
-# The ignore_index used by molcrawl/models/{gpt2,llama}/model.py (cross_entropy).
-# Keep this in sync if the model side ever migrates to HF-standard -100.
+# Default for the CLM helper (mask_ambiguous_targets_for_clm), which feeds
+# molcrawl/models/{gpt2,llama}/model.py cross-entropy (hard-coded
+# ignore_index=-1). The MLM collator uses the HF-standard -100 instead — see
+# the module docstring for the rationale and the per-class override.
 IGNORE_INDEX: int = -1
+# HF-standard ignore index used by BertForMaskedLM / RobertaForMaskedLM and
+# every other transformers loss head that does not explicitly override it.
+HF_IGNORE_INDEX: int = -100
 
 
 # Convenience constants for modality-specific ambiguous tokens.
@@ -92,12 +102,15 @@ def resolve_ambiguous_token_ids(
     ambiguous_tokens: Sequence[str],
     *,
     log: bool = True,
+    ignore_index: int = IGNORE_INDEX,
 ) -> List[int]:
     """Resolve a list of token strings to ids, skipping any that map to unk.
 
     Set ``log=True`` (default) to print which symbols were resolved vs.
     skipped — important visibility, because a typo or a vocab mismatch
-    otherwise silently disables ambiguity handling.
+    otherwise silently disables ambiguity handling. ``ignore_index`` is only
+    used in the log line so the message reflects the value actually written
+    into labels by the caller.
     """
     unk = _unk_token_id(tokenizer)
     resolved: List[int] = []
@@ -111,7 +124,7 @@ def resolve_ambiguous_token_ids(
     if log:
         print(
             f"[ambiguity] resolved {len(resolved)}/{len(ambiguous_tokens)} tokens "
-            f"to ids; ignore_index={IGNORE_INDEX}; missing={missing}"
+            f"to ids; ignore_index={ignore_index}; missing={missing}"
         )
     return resolved
 
@@ -135,6 +148,7 @@ class AmbiguityAwareMLMCollator:
         *,
         mlm: bool = True,
         mlm_probability: float = 0.15,
+        ignore_index: int = HF_IGNORE_INDEX,
         **base_kwargs: Any,
     ) -> None:
         if DataCollatorForLanguageModeling is None:
@@ -147,7 +161,10 @@ class AmbiguityAwareMLMCollator:
             mlm_probability=mlm_probability,
             **base_kwargs,
         )
-        self._ambiguous_ids = resolve_ambiguous_token_ids(tokenizer, ambiguous_tokens)
+        self._ambiguous_ids = resolve_ambiguous_token_ids(
+            tokenizer, ambiguous_tokens, ignore_index=ignore_index
+        )
+        self._ignore_index = int(ignore_index)
         # Expose tokenizer so callers (e.g. HF Trainer) can introspect.
         self.tokenizer = tokenizer
 
@@ -174,7 +191,7 @@ class AmbiguityAwareMLMCollator:
             # IGNORE differs from IGNORE_INDEX.
             ambig_mask |= input_ids == tok_id
 
-        labels[ambig_mask] = IGNORE_INDEX
+        labels[ambig_mask] = self._ignore_index
         batch["labels"] = labels
         return batch
 
@@ -184,11 +201,13 @@ def make_mlm_collator(
     ambiguous_tokens: Sequence[str],
     *,
     mlm_probability: float = 0.15,
+    ignore_index: int = HF_IGNORE_INDEX,
     **base_kwargs: Any,
 ):
     """Factory: return a plain ``DataCollatorForLanguageModeling`` when
     ``ambiguous_tokens`` is empty (no overhead), otherwise an
-    ``AmbiguityAwareMLMCollator``.
+    ``AmbiguityAwareMLMCollator``. ``ignore_index`` defaults to the HF
+    standard (-100) used by ``BertForMaskedLM`` / ``RobertaForMaskedLM``.
     """
     if DataCollatorForLanguageModeling is None:
         raise ImportError("transformers is required for make_mlm_collator")
@@ -201,6 +220,7 @@ def make_mlm_collator(
         ambiguous_tokens=ambiguous_tokens,
         mlm=True,
         mlm_probability=mlm_probability,
+        ignore_index=ignore_index,
         **base_kwargs,
     )
 
