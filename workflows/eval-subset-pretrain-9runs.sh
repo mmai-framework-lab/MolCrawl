@@ -33,7 +33,8 @@ for subset in "${SUBSETS[@]}"; do
             bert) wrapper="${SCRIPT_DIR}/03c-genome_sequence-train-bert-small-subset.sh" ;;
             gpt2) wrapper="${SCRIPT_DIR}/03a-genome_sequence-train-gpt2-small-subset.sh" ;;
         esac
-        cmd="sbatch --gres=gpu:1 --job-name=${subset}-${model}-small \
+        cmd="sbatch --partition=h200-long --gres=gpu:1 \
+              --job-name=${subset}-${model}-small \
               --export=ALL,GENOME_SUBSET=${subset} ${wrapper}"
         if [ "$DRY_RUN" = 1 ]; then
             echo "DRY: $cmd"

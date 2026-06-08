@@ -11,7 +11,13 @@
 #       workflows/03a-genome_sequence-train-gpt2-small-subset.sh
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve workflows/ dir. Under sbatch, ${BASH_SOURCE[0]} points at the SLURM
+# spool copy, so prefer SLURM_SUBMIT_DIR (the cwd at submit time) when set.
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/workflows/common_functions.sh" ]; then
+    SCRIPT_DIR="${SLURM_SUBMIT_DIR}/workflows"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "${SCRIPT_DIR}/common_functions.sh"
 
 check_learning_source_dir
