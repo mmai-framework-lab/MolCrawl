@@ -37,7 +37,10 @@ if not GENOME_SUBSET:
     )
 
 # ---- paths ---------------------------------------------------------------- #
-_subset_suffix = f"-{GENOME_SUBSET}"
+# GPT2_LR_TAG (optional, set during LR sweeps) makes sweep checkpoint dirs
+# distinct so concurrent runs do not overwrite each other. Empty for production.
+_lr_tag = os.environ.get("GPT2_LR_TAG", "")
+_subset_suffix = f"-{GENOME_SUBSET}" + (f"-{_lr_tag}" if _lr_tag else "")
 out_dir = get_gpt2_output_path("genome_sequence", "small") + _subset_suffix
 tensorboard_dir = out_dir
 dataset_dir = f"{GENOME_SEQUENCE_DIR}/{GENOME_SUBSET}/training_ready_hf_dataset_gpt2"
@@ -55,16 +58,19 @@ batch_size = 12
 block_size = 1024  # matches Phase 3 gpt2_chunk_size
 gradient_accumulation_steps = 5 * 8
 
-max_iters = 50000
-lr_decay_iters = 50000
-# GPT-2 pretrain learning rate per Radford et al. (2019) for the 124M model:
-# 6e-4 peak with linear warmup of ~2,000 iters, cosine decay to 10% of peak.
-# Legacy genome GPT-2 configs all use 6e-6, but that value is undocumented
-# (initial commit 2025-03-25, never revisited) and not justified by any
-# divergence experience in the git history. We use the literature value.
-warmup_iters = 2000
-learning_rate = 6e-4
-min_lr = learning_rate / 10  # → 6e-5 (10% of peak per Chinchilla / GPT-2 convention)
+# LR / warmup / max_iters are env-overridable for sweeps, mirroring the BERT
+# subset config. The defaults below follow Radford et al. (2019) for GPT-2 124M
+# (6e-4 peak, ~2k warmup, cosine decay to 10% of peak) — but the parallel BERT
+# sweep showed that the small × vocab=10 × bf16 configuration collapses at the
+# Devlin literature value (BERT 1e-4 → degenerate at ln(4)). By analogy GPT-2
+# at 6e-4 is at high risk of the same failure mode. A 3-LR sweep on
+# mammal_centered (e.g. GPT2_LR ∈ {6e-6, 6e-5, 6e-4}) should land before
+# committing the production default.
+max_iters = int(os.environ.get("GPT2_MAX_ITERS", "50000"))
+lr_decay_iters = max_iters
+warmup_iters = int(os.environ.get("GPT2_WARMUP_ITERS", "2000"))
+learning_rate = float(os.environ.get("GPT2_LR", "6e-4"))
+min_lr = learning_rate / 10  # → 10% of peak per Chinchilla / GPT-2 convention
 
 eval_interval = 1000
 eval_iters = 200

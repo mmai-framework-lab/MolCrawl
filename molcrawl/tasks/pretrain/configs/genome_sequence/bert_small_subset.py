@@ -60,14 +60,18 @@ vocab_size = len(tokenizer)  # = 10
 
 # ---- training hyperparameters (mirror bert_small) ------------------------ #
 max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
-# LR / warmup / max_steps defaults follow the Devlin et al. (NAACL 2019)
-# recipe (1e-4 peak, 10k warmup). Empirically these collapse the small
-# (≈12M) × vocab=10 × bf16 setup to a degenerate near-uniform output at
-# loss ≈ ln(4) — see job 19018 (mammal_centered BERT) for the reference
-# trajectory. The env-var overrides below are how we sweep alternative
-# settings without forking the config. Production defaults will be
-# revisited after the sweep (LR ∈ {1e-5, 3e-5, 5e-5}) lands.
-learning_rate = float(os.environ.get("BERT_LR", "1e-4"))
+# LR sweep over {1e-4, 1e-5, 3e-5, 5e-5} on mammal_centered (jobs 19018 +
+# 19043 / 19044 / 19045) showed:
+#   1e-4 → collapses to loss ≈ ln(4) ≈ 1.39 (degenerate near-uniform output)
+#   5e-5 → plateaus around 1.263 (near-degenerate, no learning signal)
+#   3e-5 → microscopic improvement (Δ=0.006 over 15k iters)
+#   1e-5 → consistent descent 1.56 → 1.256 (Δ=0.31, lowest grad_norm)
+# So 1e-5 is the only value that actually trains this small × vocab=10 × bf16
+# configuration. The Devlin et al. recipe (1e-4 × 10k warmup) targets BERT-base
+# (110M × vocab 30k × NLP) and does not transfer. warmup_steps stays at 10k
+# to follow the literature ratio (warmup ≈ max_steps/6). Override via env for
+# future sweeps (use BERT_LR_TAG to keep checkpoint trees distinct).
+learning_rate = float(os.environ.get("BERT_LR", "1e-5"))
 warmup_steps = int(os.environ.get("BERT_WARMUP_STEPS", "10000"))
 max_steps = int(os.environ.get("BERT_MAX_STEPS", "60000"))
 weight_decay = 1e-1
