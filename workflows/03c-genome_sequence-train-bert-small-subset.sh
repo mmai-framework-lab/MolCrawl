@@ -33,7 +33,9 @@ select_multi_gpu "$NUM_GPUS" 10
 
 LOG_DIR="${LEARNING_SOURCE_DIR}/genome_sequence/logs"
 mkdir -p "$LOG_DIR"
-LOG_FILE="${LOG_DIR}/${GENOME_SUBSET}-bert-small-$(date +%Y-%m-%d_%H-%M-%S).log"
+# BERT_LR_TAG (optional, set during LR sweeps) goes into the filename so
+# concurrent jobs that start in the same second do not race onto the same log.
+LOG_FILE="${LOG_DIR}/${GENOME_SUBSET}-bert-small${BERT_LR_TAG:+-${BERT_LR_TAG}}-$(date +%Y-%m-%d_%H-%M-%S).log"
 
 export GENOME_SUBSET   # required by bert_small_subset.py
 run_training_background "$LOG_FILE" \
