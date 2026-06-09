@@ -33,7 +33,10 @@ for subset in "${SUBSETS[@]}"; do
             bert) wrapper="${SCRIPT_DIR}/03c-genome_sequence-train-bert-small-subset.sh" ;;
             gpt2) wrapper="${SCRIPT_DIR}/03a-genome_sequence-train-gpt2-small-subset.sh" ;;
         esac
-        cmd="sbatch --partition=h200-long --gres=gpu:1 \
+        # --time=2-00:00:00 (48 h) overrides the h200-long DefaultTime of
+        # 24 h; the 60 000-step pretrain at ~1.44 s/it lands at ~24 h and
+        # was clipped by the default for job 19018. Tune via SBATCH_TIME.
+        cmd="sbatch --partition=h200-long --gres=gpu:1 --time=${SBATCH_TIME:-2-00:00:00} \
               --job-name=${subset}-${model}-small \
               --export=ALL,GENOME_SUBSET=${subset} ${wrapper}"
         if [ "$DRY_RUN" = 1 ]; then
