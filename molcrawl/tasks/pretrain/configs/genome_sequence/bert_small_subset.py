@@ -43,8 +43,12 @@ if not GENOME_SUBSET:
     )
 
 # ---- paths ---------------------------------------------------------------- #
+# BERT_LR_TAG (optional): appended to the checkpoint dir so concurrent LR
+# sweeps for the same subset land in distinct trees (e.g. "lr1e-5", "lr3e-5").
+# Leave unset for production runs so the canonical subset path is used.
 model_size = "small"
-_subset_suffix = f"-{GENOME_SUBSET}"
+_lr_tag = os.environ.get("BERT_LR_TAG", "")
+_subset_suffix = f"-{GENOME_SUBSET}" + (f"-{_lr_tag}" if _lr_tag else "")
 model_path = get_bert_output_path("genome_sequence", model_size) + _subset_suffix
 dataset_dir = f"{GENOME_SEQUENCE_DIR}/{GENOME_SUBSET}/training_ready_hf_dataset_bert"
 
@@ -56,16 +60,17 @@ vocab_size = len(tokenizer)  # = 10
 
 # ---- training hyperparameters (mirror bert_small) ------------------------ #
 max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
-# BERT pretrain learning rate per Devlin et al. (NAACL 2019): 1e-4 with linear
-# warmup of 10,000 steps. The legacy molcrawl genome BERT configs all use 6e-6,
-# but that value is undocumented and not justified by any divergence experience
-# in the git history — it appears to have been the initial value set when the
-# configs were first added (2025-03-25, commit 7fb18024) and was never
-# revisited. We use the literature value here.
-learning_rate = 1e-4
-warmup_steps = 10000
+# LR / warmup / max_steps defaults follow the Devlin et al. (NAACL 2019)
+# recipe (1e-4 peak, 10k warmup). Empirically these collapse the small
+# (≈12M) × vocab=10 × bf16 setup to a degenerate near-uniform output at
+# loss ≈ ln(4) — see job 19018 (mammal_centered BERT) for the reference
+# trajectory. The env-var overrides below are how we sweep alternative
+# settings without forking the config. Production defaults will be
+# revisited after the sweep (LR ∈ {1e-5, 3e-5, 5e-5}) lands.
+learning_rate = float(os.environ.get("BERT_LR", "1e-4"))
+warmup_steps = int(os.environ.get("BERT_WARMUP_STEPS", "10000"))
+max_steps = int(os.environ.get("BERT_MAX_STEPS", "60000"))
 weight_decay = 1e-1
-max_steps = 60000
 early_stopping = False
 
 log_interval = 100
