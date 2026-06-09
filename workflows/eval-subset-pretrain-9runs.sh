@@ -1,5 +1,5 @@
 #!/bin/bash
-# Submit 9 subset × 2 model = 18 SLURM jobs for the Evo2 subset pretrain campaign.
+# Submit 9 subset × N model SLURM jobs for the Evo2 subset pretrain campaign.
 #
 # Per Step E plan: mammal_centered (1), eukaryote_matched_random_seed{1..5} (5),
 # global_random_seed{1..3} (3). H200x8 → up to 8 concurrent; the rest queue (PD).
@@ -8,12 +8,18 @@
 #   export LEARNING_SOURCE_DIR=/path/to/learning_source
 #   bash workflows/eval-subset-pretrain-9runs.sh
 #       [--dry-run]   # show sbatch commands without submitting
+#
+# Env knobs:
+#   MODELS       — space-separated list, default "bert gpt2".
+#                   e.g. MODELS=bert bash ... → 9 BERT jobs only.
+#   SBATCH_TIME  — --time value, default 2-00:00:00 (48 h).
 set -e
 
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MODELS=${MODELS:-bert gpt2}
 
 SUBSETS=(
     mammal_centered
@@ -28,7 +34,7 @@ SUBSETS=(
 )
 
 for subset in "${SUBSETS[@]}"; do
-    for model in bert gpt2; do
+    for model in $MODELS; do
         case "$model" in
             bert) wrapper="${SCRIPT_DIR}/03c-genome_sequence-train-bert-small-subset.sh" ;;
             gpt2) wrapper="${SCRIPT_DIR}/03a-genome_sequence-train-gpt2-small-subset.sh" ;;
