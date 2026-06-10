@@ -363,11 +363,16 @@ if __name__ == "__main__":
         # Performance opt-ins (read from the per-config globals so existing
         # configs are unaffected; subset configs can flip these on individually).
         #   bf16=True                      : bf16 mixed precision on Hopper/Blackwell
+        #   tf32=True                      : TF32 matmuls on Ampere+ (GB200/Blackwell)
         #   dataloader_num_workers=N       : multi-process input pipeline
         #   dataloader_pin_memory=True     : pinned CPU buffers for H2D transfer
+        #   ddp_find_unused_parameters     : BERT uses every parameter each step,
+        #                                    so leave False to skip the DDP scan.
         bf16=bool(globals().get("bf16", False)),
+        tf32=bool(globals().get("tf32", False)),
         dataloader_num_workers=int(globals().get("dataloader_num_workers", 0)),
         dataloader_pin_memory=bool(globals().get("dataloader_pin_memory", False)),
+        ddp_find_unused_parameters=bool(globals().get("ddp_find_unused_parameters", False)),
     )
 
     # Check if we should use custom dataset loading (for RNA data)

@@ -337,8 +337,17 @@ if __name__ == "__main__":
         warmup_steps=warmup_steps,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
-        fp16=True,  # Enable mixed precision training
-        dataloader_num_workers=4,
+        # Mixed precision / hardware perf opt-ins (read from per-config globals
+        # so existing configs keep fp16; Ampere+/Blackwell configs can switch to
+        # bf16 + TF32). Requesting bf16 turns fp16 off automatically (HF forbids
+        # both); esm2's lm/contact heads are only partially used per forward, so
+        # configs running under DDP should set ddp_find_unused_parameters=True.
+        fp16=bool(globals().get("fp16", not globals().get("bf16", False))),
+        bf16=bool(globals().get("bf16", False)),
+        tf32=bool(globals().get("tf32", False)),
+        dataloader_num_workers=int(globals().get("dataloader_num_workers", 4)),
+        dataloader_pin_memory=bool(globals().get("dataloader_pin_memory", False)),
+        ddp_find_unused_parameters=bool(globals().get("ddp_find_unused_parameters", False)),
         report_to="wandb" if use_wandb else "none",
         save_total_limit=3,
         load_best_model_at_end=False,
