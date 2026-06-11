@@ -59,17 +59,19 @@ block_size = 1024  # matches Phase 3 gpt2_chunk_size
 gradient_accumulation_steps = 5 * 8
 
 # LR / warmup / max_iters are env-overridable for sweeps, mirroring the BERT
-# subset config. The defaults below follow Radford et al. (2019) for GPT-2 124M
-# (6e-4 peak, ~2k warmup, cosine decay to 10% of peak) — but the parallel BERT
-# sweep showed that the small × vocab=10 × bf16 configuration collapses at the
-# Devlin literature value (BERT 1e-4 → degenerate at ln(4)). By analogy GPT-2
-# at 6e-4 is at high risk of the same failure mode. A 3-LR sweep on
-# mammal_centered (e.g. GPT2_LR ∈ {6e-6, 6e-5, 6e-4}) should land before
-# committing the production default.
+# subset config. A 3-LR pre-check on mammal_centered (jobs 19068 / 19069 /
+# 19070, max_iters=12500, warmup=2500) showed:
+#   6e-4 → step-12000 val_loss=1.199; loss spiked back up around step 6k
+#          (1.14 → 1.33) before recovering — instability from too-high LR
+#   6e-5 → step-12000 val_loss=1.121; monotone descent, no spikes — best
+#   6e-6 → step-12000 val_loss=1.299; descent too slow, near-plateau
+# So 6e-5 is the production default. Same pattern as BERT: the Radford
+# literature value (6e-4) is one decade too high for small × vocab=10 × bf16,
+# but unlike BERT 1e-4 it does not fully collapse — it merely oscillates.
 max_iters = int(os.environ.get("GPT2_MAX_ITERS", "50000"))
 lr_decay_iters = max_iters
 warmup_iters = int(os.environ.get("GPT2_WARMUP_ITERS", "2000"))
-learning_rate = float(os.environ.get("GPT2_LR", "6e-4"))
+learning_rate = float(os.environ.get("GPT2_LR", "6e-5"))
 min_lr = learning_rate / 10  # → 10% of peak per Chinchilla / GPT-2 convention
 
 eval_interval = 1000
