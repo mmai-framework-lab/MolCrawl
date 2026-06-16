@@ -664,6 +664,19 @@ def process4_subset_parquet_to_arrow(
                 split="train",
             )
 
+            # Shuffle the concatenated rows before splitting. Without this the
+            # train/valid/test slices land at fixed accession-ordered offsets,
+            # which means: (a) any subset that includes the alphabetically
+            # last parquet has its entire valid + test 100k rows drawn from
+            # that single tail file, and (b) two subsets sharing that tail file
+            # produce identical valid/test even though their CSV / train rows
+            # differ. Observed concretely with eukaryote seed1/3/4 sharing
+            # GCF_949987535.1 (Balaenoptera acutorostrata, ~987 MiB parquet at
+            # ASCII-tail position) — see
+            # tmp/docs_tmp_local/yigarashi-issue/20260615-seed134-investigation-followup.md.
+            # Fixed seed keeps splits reproducible across reruns.
+            ds = ds.shuffle(seed=42)
+
             n_total = len(ds)
             n_valid = min(valid_size, max(1_000, int(n_total * valid_frac)))
             n_test = min(test_size, max(1_000, int(n_total * test_frac)))
@@ -674,9 +687,6 @@ def process4_subset_parquet_to_arrow(
                     f"valid={n_valid} + test={n_test}"
                 )
 
-            # No shuffle here — HF Trainer shuffles `train` at iteration time,
-            # and an accession-ordered tail is acceptable as held-out for
-            # genome corpora. .select() is O(1) on memory-mapped Arrow.
             ds_dict = DatasetDict({
                 "train": ds.select(range(0, n_train)),
                 "valid": ds.select(range(n_train, n_train + n_valid)),
