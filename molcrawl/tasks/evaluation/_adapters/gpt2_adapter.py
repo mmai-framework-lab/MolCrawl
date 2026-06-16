@@ -94,15 +94,29 @@ class GPT2Adapter(ModelAdapter):
         the encode/decode call shape used by :meth:`_encode`/:meth:`_decode`.
         """
         if modality == "genome_sequence":
-            import sentencepiece as spm
-
             if self.handle.tokenizer_path is None:
                 raise ValueError(
                     "GPT2Adapter requires handle.tokenizer_path for modality "
-                    "'genome_sequence' (pass the SentencePiece model used during training)."
+                    "'genome_sequence'. Either a SentencePiece .model file "
+                    "(legacy BPE 4096-vocab pretrains) or a HF tokenizer "
+                    "directory (single-nucleotide subset pretrains) is accepted."
                 )
-            logger.info("Loading SentencePiece tokenizer from %s", self.handle.tokenizer_path)
-            tok = spm.SentencePieceProcessor(model_file=self.handle.tokenizer_path)
+            # Auto-detect: HF tokenizer dir vs legacy SentencePiece .model file.
+            # Subset BERT/GPT-2 pretrains (single-nucleotide tokenizer, vocab=10)
+            # save an HF tokenizer dir; legacy BPE pretrains use a .model file.
+            from pathlib import Path
+            tok_path = Path(self.handle.tokenizer_path)
+            if tok_path.is_dir() and (
+                (tok_path / "tokenizer.json").exists()
+                or (tok_path / "tokenizer_config.json").exists()
+            ):
+                from transformers import AutoTokenizer
+                logger.info("Loading HF tokenizer from %s", tok_path)
+                tok = AutoTokenizer.from_pretrained(str(tok_path))
+                return tok, int(tok.vocab_size), _TOKENIZER_KIND_HF
+            import sentencepiece as spm
+            logger.info("Loading SentencePiece tokenizer from %s", tok_path)
+            tok = spm.SentencePieceProcessor(model_file=str(tok_path))
             return tok, int(tok.vocab_size()), _TOKENIZER_KIND_SPM
 
         if modality == "compounds":
