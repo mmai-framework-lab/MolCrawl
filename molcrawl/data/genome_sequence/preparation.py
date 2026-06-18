@@ -618,6 +618,8 @@ def process4_subset_parquet_to_arrow(
         remove_parquet : drop parquet_<model>/ after successful conversion.
         force          : overwrite existing Arrow output for a model.
     """
+    import random
+
     from datasets import DatasetDict, load_dataset
 
     marker = Path(base_dir) / "parquet_to_arrow_complete.marker"
@@ -664,19 +666,28 @@ def process4_subset_parquet_to_arrow(
                 split="train",
             )
 
-            # Shuffle the concatenated rows before splitting. Without this the
-            # train/valid/test slices land at fixed accession-ordered offsets,
-            # which means: (a) any subset that includes the alphabetically
-            # last parquet has its entire valid + test 100k rows drawn from
-            # that single tail file, and (b) two subsets sharing that tail file
-            # produce identical valid/test even though their CSV / train rows
-            # differ. Observed concretely with eukaryote seed1/3/4 sharing
-            # GCF_949987535.1 (Balaenoptera acutorostrata, ~987 MiB parquet at
-            # ASCII-tail position) — see
+            # Split membership must be drawn at random across the concatenated
+            # dataset — not by accession-ordered offsets — so that the
+            # alphabetically-last parquet (often a single multi-Gbp eukaryote
+            # like GCF_949987535.1 / Balaenoptera acutorostrata) doesn't end up
+            # supplying the entire valid+test window. See
             # tmp/docs_tmp_local/yigarashi-issue/20260615-seed134-investigation-followup.md.
-            # Fixed seed keeps splits reproducible across reruns.
-            ds = ds.shuffle(seed=42)
-
+            #
+            # Previously this was achieved with `ds = ds.shuffle(seed=42)`
+            # followed by sequential `select(range(...))`. The shuffle is
+            # logically correct but causes `save_to_disk` to read source rows
+            # in random order across the per-parquet caches, which on this
+            # 50–100 GB-per-subset corpus degrades to ~1.5 k examples/sec
+            # (~18 h per subset for one model — extrapolated 2 weeks for
+            # 21 subsets × 2 models).
+            #
+            # Instead, shuffle ONLY the index assignment, then sort the
+            # indices within each split so the actual row reads are
+            # sequential. The contents of train/valid/test are identical to
+            # the shuffle-then-slice scheme (same fixed seed → same random
+            # partition); only the within-split order changes — which is
+            # irrelevant because the Trainer / DataLoader reshuffles per
+            # epoch and valid/test are read in full.
             n_total = len(ds)
             n_valid = min(valid_size, max(1_000, int(n_total * valid_frac)))
             n_test = min(test_size, max(1_000, int(n_total * test_frac)))
@@ -687,10 +698,16 @@ def process4_subset_parquet_to_arrow(
                     f"valid={n_valid} + test={n_test}"
                 )
 
+            shuffled_indices = list(range(n_total))
+            random.Random(42).shuffle(shuffled_indices)
+            train_idx = sorted(shuffled_indices[: n_train])
+            valid_idx = sorted(shuffled_indices[n_train : n_train + n_valid])
+            test_idx  = sorted(shuffled_indices[n_train + n_valid :])
+
             ds_dict = DatasetDict({
-                "train": ds.select(range(0, n_train)),
-                "valid": ds.select(range(n_train, n_train + n_valid)),
-                "test": ds.select(range(n_train + n_valid, n_total)),
+                "train": ds.select(train_idx),
+                "valid": ds.select(valid_idx),
+                "test":  ds.select(test_idx),
             })
 
             arrow_dir.mkdir(parents=True, exist_ok=True)
