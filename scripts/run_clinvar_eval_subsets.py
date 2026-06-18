@@ -210,11 +210,19 @@ def write_results_csv(results: list[dict], out_path: Path) -> None:
             w.writerow(r)
 
 
+# Status values whose AUROC should flow into summary.csv / report.txt.
+# CACHED rows replay a prior successful run's metrics.json — they carry a
+# valid auroc and must aggregate the same as a fresh OK row, otherwise a
+# re-invocation that adds new seeds wipes the earlier seeds out of the
+# summary even though their per-run metrics.json is still on disk.
+_AGGREGATABLE_STATUS = ("OK", "CACHED")
+
+
 def write_summary_csv(results: list[dict], out_path: Path) -> None:
     """Aggregate over seeds → (subset, model) AUROC mean/std/min/max."""
     by_key: dict[tuple[str, str], list[float]] = defaultdict(list)
     for r in results:
-        if r["status"] != "OK" or r["auroc"] is None:
+        if r["status"] not in _AGGREGATABLE_STATUS or r["auroc"] is None:
             continue
         by_key[(r["subset"], r["model_type"])].append(r["auroc"])
     fields = ["subset", "model_type", "n_seeds",
@@ -240,7 +248,7 @@ def write_report_txt(results: list[dict], summary_path: Path, out_path: Path) ->
     by_key: dict[tuple[str, str], list[float]] = defaultdict(list)
     subsets_seen: set[str] = set()
     for r in results:
-        if r["status"] == "OK" and r["auroc"] is not None:
+        if r["status"] in _AGGREGATABLE_STATUS and r["auroc"] is not None:
             by_key[(r["subset"], r["model_type"])].append(r["auroc"])
             subsets_seen.add(r["subset"])
 
@@ -394,11 +402,14 @@ def main() -> int:
                      out_root / "clinvar_auroc_report.txt")
 
     total_min = (time.time() - t_total) / 60.0
-    n_ok = sum(1 for r in results if r["status"] == "OK")
-    n_fail = sum(1 for r in results if r["status"] not in ("OK", "DRY_RUN"))
+    n_ok     = sum(1 for r in results if r["status"] == "OK")
+    n_cached = sum(1 for r in results if r["status"] == "CACHED")
+    n_fail   = sum(1 for r in results
+                   if r["status"] not in ("OK", "CACHED", "DRY_RUN"))
     print()
     print(f"[done] total {total_min:.1f} min")
     print(f"  ok       : {n_ok}")
+    print(f"  cached   : {n_cached}")
     print(f"  failed   : {n_fail}")
     print(f"  results  : {out_root / 'clinvar_auroc_results.csv'}")
     print(f"  summary  : {out_root / 'clinvar_auroc_summary.csv'}")
