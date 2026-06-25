@@ -245,7 +245,11 @@ class HfMlmAdapter(ModelAdapter):
         return ids
 
     def score_likelihood(
-        self, inputs: Sequence[Any], context_length: int = 512, **_: Any
+        self,
+        inputs: Sequence[Any],
+        context_length: int = 512,
+        eval_position_indices: Optional[Sequence[int]] = None,
+        **_: Any,
     ) -> LikelihoodOutput:
         """Return per-sequence mean pseudo-log-likelihoods.
 
@@ -255,6 +259,14 @@ class HfMlmAdapter(ModelAdapter):
         directly). The pre-tokenised path is used by
         ``rna_benchmark`` so that the adapter does not need to re-encode
         cells whose original tokenisation lives in parquet/JSONL.
+
+        ``eval_position_indices``: when given, restrict the PLL
+        averaging to those token positions only — each one is still
+        masked one-at-a-time while the rest of the sequence stays
+        unmasked, so the encoder sees the full context. Special-token
+        positions are still skipped within the chosen set. Used by the
+        ClinVar evaluator to focus the score on the variant window
+        (e.g. ±32 nt around the centre).
         """
         if self.model is None:
             raise RuntimeError("HfMlmAdapter.load() must be called first")
@@ -277,6 +289,11 @@ class HfMlmAdapter(ModelAdapter):
             context_length = min(int(context_length), max(1, int(max_pos) - 2))
 
         mlm_batch_size = int(self.handle.extras.get("bert_mlm_batch", 64))
+        position_filter = (
+            set(int(p) for p in eval_position_indices)
+            if eval_position_indices is not None
+            else None
+        )
 
         likelihoods: List[float] = []
         num_tokens: List[int] = []
@@ -296,6 +313,8 @@ class HfMlmAdapter(ModelAdapter):
                     continue
 
                 positions = [i for i, tok in enumerate(ids) if tok not in special_ids]
+                if position_filter is not None:
+                    positions = [i for i in positions if i in position_filter]
                 if not positions:
                     likelihoods.append(0.0)
                     num_tokens.append(len(ids))

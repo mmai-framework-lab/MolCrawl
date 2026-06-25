@@ -97,6 +97,30 @@ def build_parser() -> argparse.ArgumentParser:
             "always produced."
         ),
     )
+    parser.add_argument(
+        "--score-window-half",
+        type=int,
+        default=None,
+        help=(
+            "When set, the PLL average is restricted to a window of "
+            "±N tokens around the variant centre (the model still "
+            "sees full context). Default = full-sequence average, "
+            "matching the historical behaviour. Sensible value for "
+            "the 128-nt window produced by download_clinvar_sequences "
+            "is 32 (= 65-token window around the variant)."
+        ),
+    )
+    parser.add_argument(
+        "--flank",
+        type=int,
+        default=64,
+        help=(
+            "Position of the variant centre within each input token "
+            "sequence (default 64, matching the upstream window "
+            "extraction in download_clinvar_sequences). Only used when "
+            "--score-window-half is set."
+        ),
+    )
     return parser
 
 
@@ -124,6 +148,8 @@ def main(argv: Optional[list[str]] = None) -> None:
             "seed": args.seed,
             "max_examples": args.max_examples,
             "predictions_preview_count": args.predictions_preview_count,
+            "score_window_half": args.score_window_half,
+            "flank": args.flank,
         },
     )
     result = evaluator.run()

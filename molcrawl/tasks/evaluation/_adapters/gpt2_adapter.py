@@ -249,13 +249,25 @@ class GPT2Adapter(ModelAdapter):
         return self.tokenizer.decode(ids)
 
     def score_likelihood(
-        self, inputs: Sequence[str], context_length: int = 512, **_: Any
+        self,
+        inputs: Sequence[str],
+        context_length: int = 512,
+        eval_position_indices: Optional[Sequence[int]] = None,
+        **_: Any,
     ) -> LikelihoodOutput:
         """Return per-sequence mean log-likelihoods.
 
         The returned ``log_likelihood`` has shape ``(len(inputs),)`` and
         carries mean per-token log-probabilities, mirroring the existing
         clinvar evaluation.
+
+        ``eval_position_indices``: when given, only the listed token
+        positions contribute to the mean (the rest are ignored, but the
+        full sequence is still fed to the model so context is preserved).
+        This lets the ClinVar evaluator focus the score on the variant
+        window (e.g. ±32 nt around the centre) without changing what the
+        autoregressive model actually conditions on. Positions outside
+        ``[0, num_tokens)`` are silently dropped.
         """
         if self.model is None:
             raise RuntimeError("GPT2Adapter.load() must be called first")
@@ -279,13 +291,34 @@ class GPT2Adapter(ModelAdapter):
                     num_tokens.append(len(tokens))
                     continue
                 log_probs = F.log_softmax(logits, dim=-1)
+                # Autoregressive shift: log_probs[..., t, :] predicts ids[..., t+1].
+                # token_log_probs[i] is log p(ids[i+1] | ids[:i+1]) for i in [0, L-2].
                 target_tokens = ids[:, 1:]
                 pred_log_probs = log_probs[:, :-1, :]
                 token_log_probs = pred_log_probs.gather(
                     2, target_tokens.unsqueeze(2)
-                ).squeeze(2)
-                likelihoods.append(float(token_log_probs.mean().item()))
-                num_tokens.append(len(tokens))
+                ).squeeze(2).squeeze(0)  # (L-1,)
+                if eval_position_indices is None:
+                    likelihoods.append(float(token_log_probs.mean().item()))
+                    num_tokens.append(len(tokens))
+                else:
+                    # The score at token_log_probs[i] explains ids[i+1].
+                    # If the caller's "interesting" positions are
+                    # absolute token indices p (e.g. variant locus), the
+                    # autoregressive score that explains ids[p] is at
+                    # index p-1. Clip to [0, L-2] and de-duplicate.
+                    n_pairs = token_log_probs.size(0)
+                    chosen_idx = sorted({
+                        int(p) - 1 for p in eval_position_indices
+                        if 0 < int(p) <= n_pairs
+                    })
+                    if not chosen_idx:
+                        likelihoods.append(0.0)
+                        num_tokens.append(0)
+                        continue
+                    sel = token_log_probs[torch.tensor(chosen_idx, device=self.device)]
+                    likelihoods.append(float(sel.mean().item()))
+                    num_tokens.append(len(chosen_idx))
 
         return LikelihoodOutput(log_likelihood=likelihoods, num_tokens=num_tokens)
 
