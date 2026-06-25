@@ -16,7 +16,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Tabula Sapiens cell-type classification")
     parser.add_argument("--model-path", required=True)
     parser.add_argument("--tokenizer-path", default=None)
-    parser.add_argument("--arch", default="rnaformer")
+    parser.add_argument("--arch", default="gpt2")
     parser.add_argument("--modality", default="rna")
     parser.add_argument("--size", default=None)
     parser.add_argument("--device", default="cuda")

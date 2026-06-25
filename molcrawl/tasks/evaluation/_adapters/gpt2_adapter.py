@@ -180,7 +180,7 @@ class GPT2Adapter(ModelAdapter):
 
         if modality == "rna":
             # The rna gpt2 ckpts share the gene-id vocabulary with the rna
-            # bert / rnaformer ckpts, so an explicit ``--tokenizer-path``
+            # bert ckpts, so an explicit ``--tokenizer-path``
             # pointing at any saved ``custom_tokenizer_*`` dir works. When
             # the caller doesn't pass one, fall back to the bert tokenizer
             # location (the canonical home of the gene-id WordLevel

@@ -41,7 +41,7 @@ directly from CLI arguments:
 from molcrawl.tasks.evaluation._base import ModelHandle
 
 handle = ModelHandle(
-    arch="gpt2",                         # "gpt2" | "bert" | "chemberta2" | "esm2" | "dnabert2" | "rnaformer"
+    arch="gpt2",                         # "gpt2" | "bert" | "chemberta2" | "esm2" | "dnabert2"
     modality="genome_sequence",          # foundation-model family
     model_path="runs_train_gpt2_genome_small/ckpt.pt",
     tokenizer_path="${LEARNING_SOURCE_DIR}/genome_sequence/spm_tokenizer.model",
@@ -269,7 +269,7 @@ The script performs three steps:
 ## 10. Known limitations
 
 - Only the `gpt2` adapter is registered today.  Other architectures
-  (bert, chemberta2, esm2, dnabert2, rnaformer) need adapters before
+  (bert, chemberta2, esm2, dnabert2) need adapters before
   their tasks can run on real data.
 - `contact_prediction` (TAPE), `pfam_hit_rate`
   (protein_foldability), and the ChEBI-20 BLEU / ROUGE metrics rely on

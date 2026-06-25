@@ -30,7 +30,7 @@ RIKENデータセット基盤モデルプロジェクトのデータ準備、モ
 ワークフロースクリプトはいくつかのカテゴリに分類されます：
 
 - **データ準備** (Phase 01-02)：データセットのトークン化とフォーマット変換 - 17スクリプト
-- **モデル学習** (Phase 03a-03g)：GPT-2、BERT、DNABERT-2、ESM-2、RNAformer、ChemBERTa-2 - 46スクリプト
+- **モデル学習** (Phase 03a-03g)：GPT-2、BERT、DNABERT-2、ESM-2、ChemBERTa-2 - 43スクリプト
 - **モデル評価**：可視化を含む包括的な評価 - 9スクリプト
 - **開発・テスト**：デバッグ、一括テスト、検証ツール - 6スクリプト
 - **システムインフラ**：Webサービス、実験トラッキング、ユーティリティ - 4スクリプト
@@ -164,14 +164,6 @@ cd /path/to/riken-dataset-fundational-model
 | `03e-protein_sequence-train-esm2-small.sh`  | タンパク質配列 ESM-2       | Small        |
 | `03e-protein_sequence-train-esm2-medium.sh` | タンパク質配列 ESM-2       | Medium       |
 | `03e-protein_sequence-train-esm2-large.sh`  | タンパク質配列 ESM-2       | Large        |
-
-### フェーズ3f：RNAformer学習
-
-| スクリプト                          | 目的                     | モデルサイズ |
-| ----------------------------------- | ------------------------ | ------------ |
-| `03f-rna-train-rnaformer-small.sh`  | RNA配列 RNAformer        | Small        |
-| `03f-rna-train-rnaformer-medium.sh` | RNA配列 RNAformer        | Medium       |
-| `03f-rna-train-rnaformer-large.sh`  | RNA配列 RNAformer        | Large        |
 
 ### フェーズ3g：ChemBERTa-2学習
 

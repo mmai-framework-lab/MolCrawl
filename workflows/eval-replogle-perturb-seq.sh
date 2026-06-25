@@ -2,12 +2,12 @@
 # Phase 4 - Replogle Perturb-seq evaluation.
 #
 # Required:
-#   MODEL_PATH       - encoder MLM checkpoint (rnaformer / bert rna)
+#   MODEL_PATH       - encoder MLM checkpoint (bert rna)
 #   REPLOGLE_DATA    - path to the (perturbation, baseline, perturbed) CSV
 #                      built by workflows/data/eval-data-replogle-perturb-seq.sh
 #
 # Optional:
-#   ARCH                       - default rnaformer
+#   ARCH                       - default gpt2
 #   TOKENIZER_PATH             - default uses arch+modality fallback
 #   OUTPUT_DIR                 - default experiment_data/eval/replogle_perturb_seq
 #   TEST_FRACTION              - default 0.2 (perturbation-disjoint split)
@@ -25,7 +25,7 @@ source "${SCRIPT_DIR}/common_functions.sh"
 : "${MODEL_PATH:?MODEL_PATH must be set}"
 : "${REPLOGLE_DATA:?REPLOGLE_DATA must be set}"
 
-ARCH="${ARCH:-rnaformer}"
+ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
 RUNTAG="${RUNTAG:-replogle_perturb_seq_default}"
 OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir rna "$MODEL_PATH" "$RUNTAG")}"

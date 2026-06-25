@@ -60,7 +60,7 @@ cat <<EOF
 
 Next step:
   bash workflows/eval-tabula-sapiens.sh \\
-       MODEL_PATH=<rna BERT / rnaformer ckpt> \\
+       MODEL_PATH=<rna BERT ckpt> \\
        JSONL_PATH=${dest_dir}/cells.jsonl \\
        MAX_CELLS=200 BOOTSTRAP=20
 EOF

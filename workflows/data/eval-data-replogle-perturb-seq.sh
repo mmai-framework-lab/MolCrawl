@@ -63,7 +63,7 @@ cat <<EOF
 
 Next step:
   bash workflows/eval-replogle-perturb-seq.sh \\
-       MODEL_PATH=<rnaformer / bert ckpt> \\
+       MODEL_PATH=<bert ckpt> \\
        REPLOGLE_DATA=${dest_dir}/replogle.csv \\
        MAX_EXAMPLES=200 BOOTSTRAP=30
 EOF

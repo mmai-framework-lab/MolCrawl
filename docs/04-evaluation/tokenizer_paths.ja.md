@@ -4,7 +4,7 @@
 
 ## 1. 結論だけ欲しい場合
 
-> **現状の実装範囲（2026-04-23 時点）**: `gpt2` アダプタは `genome_sequence` / `compounds` / `protein_sequence` で動作確認済み。`bert` / `esm2` / `chemberta2` / `dnabert2` / `rnaformer` は単一の `HfMlmAdapter` 実装で扱われ、うち `bert` (`genome_sequence` / `compounds`) 、`dnabert2` (`genome_sequence`) 、`chemberta2` (`compounds`) は end-to-end smoke 確認済み。`esm2` / `rnaformer` は実装上は通るが対応する評価器データ未整備で未検証。`molecule_nat_lang` の GPT-2 は tokenizer 経路は通るが既存 checkpoint の重み起因で生成時に失敗する別問題が残っています。詳細は [§6 既知の TODO](#6-既知の-todo)。
+> **現状の実装範囲（2026-04-23 時点）**: `gpt2` アダプタは `genome_sequence` / `compounds` / `protein_sequence` で動作確認済み。`bert` / `esm2` / `chemberta2` / `dnabert2` /は単一の `HfMlmAdapter` 実装で扱われ、うち `bert` (`genome_sequence` / `compounds`) 、`dnabert2` (`genome_sequence`) 、`chemberta2` (`compounds`) は end-to-end smoke 確認済み。`esm2` /は実装上は通るが対応する評価器データ未整備で未検証。`molecule_nat_lang` の GPT-2 は tokenizer 経路は通るが既存 checkpoint の重み起因で生成時に失敗する別問題が残っています。詳細は [§6 既知の TODO](#6-既知の-todo)。
 
 | modality (foundation) | arch (CLI `--arch`) | `--tokenizer-path` に渡すもの |
 |---|---|---|
@@ -15,7 +15,7 @@
 | `compounds` | `gpt2`, `bert` | `assets/molecules/vocab.txt` |
 | `compounds` | `chemberta2` | HF repo ID または `--model-path` と同じディレクトリ（例: `seyonec/ChemBERTa-zinc-base-v1`） |
 | `rna` | `gpt2`, `bert` | **指定不要**（内蔵 `TranscriptomeTokenizer`）。`--tokenizer-path` を省略 |
-| `rna` | `rnaformer` | HF repo ID または `--model-path` と同じディレクトリ |
+| `rna` || HF repo ID または `--model-path` と同じディレクトリ |
 | `molecule_nat_lang` | `gpt2`, `bert` | **指定不要**（内蔵 `MoleculeNatLangTokenizer` = HF GPT-2 tokenizer） |
 
 ここで言う「内蔵トークナイザ」は、チェックポイントの読み込み時に PyPI 経由でロードされるもので、外部ファイルは必要ありません。その場合は CLI 呼び出しで `--tokenizer-path` オプション自体を外してください（`None` が渡ります）。
@@ -30,7 +30,7 @@
 - **rna (GPT-2 / BERT)**: `molcrawl.rna.dataset.geneformer.tokenizer.TranscriptomeTokenizer`。内部で Geneformer の WordLevel 辞書を構築するのでパス指定不要です。
 - **molecule_nat_lang (GPT-2 / BERT)**: `molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer`（HF の GPT-2 tokenizer ラッパ）。外部ファイル不要。
 
-外部 HuggingFace 系モデル（ChemBERTa-2 / ESM-2 / DNABERT-2 / RNAformer）は、それぞれの PyPI / HF 配布の Auto Tokenizer を使います。`--model-path` が HF のスナップショットディレクトリであれば、同じディレクトリを `--tokenizer-path` に渡せば十分です。
+外部 HuggingFace 系モデル（ChemBERTa-2 / ESM-2 / DNABERT-2）は、それぞれの PyPI / HF 配布の Auto Tokenizer を使います。`--model-path` が HF のスナップショットディレクトリであれば、同じディレクトリを `--tokenizer-path` に渡せば十分です。
 
 ## 3. 各評価タスクでの具体例
 
@@ -142,7 +142,7 @@ python -m molcrawl.tasks.evaluation.chebi20 \
 - `compounds`: 任意。未指定時は `assets/molecules/vocab.txt` を使用。
 - `molecule_nat_lang` / `protein_sequence`: 無視（内蔵 `MoleculeNatLangTokenizer` / `EsmSequenceTokenizer` を使用。指定すると info ログを出して無視）。
 
-`bert` / `esm2` / `chemberta2` / `dnabert2` / `rnaformer` は共通の `HfMlmAdapter` 実装で動作します。tokenizer 解決の優先順位:
+`bert` / `esm2` / `chemberta2` / `dnabert2` /は共通の `HfMlmAdapter` 実装で動作します。tokenizer 解決の優先順位:
 
 1. `--tokenizer-path` を `AutoTokenizer.from_pretrained` で読み込み
 2. checkpoint ディレクトリ同梱の tokenizer ファイル (`tokenizer.json` 等)
@@ -150,7 +150,7 @@ python -m molcrawl.tasks.evaluation.chebi20 \
    - `bert` / `chemberta2` + `compounds` → `CompoundsTokenizer`
    - `bert` + `molecule_nat_lang` → `MoleculeNatLangTokenizer`
    - `bert` / `esm2` + `protein_sequence` → `BertProteinSequenceTokenizer`
-   - `dnabert2` + `genome_sequence` / `rnaformer` + `rna` → `get_custom_tokenizer_path(modality, arch)` 直下の HF tokenizer ディレクトリ
+   - `dnabert2` + `genome_sequence` /+ `rna` → `get_custom_tokenizer_path(modality, arch)` 直下の HF tokenizer ディレクトリ
 
 モデル本体は `AutoModelForMaskedLM.from_pretrained(model_path)` で読み、`config.json` の `architectures` に応じて `BertForMaskedLM` / `EsmForMaskedLM` / `RobertaForMaskedLM` 等が自動選択されます。HfMlmAdapter は MLM 専用なので `generate()` は `NotImplementedError`。生成タスクには `gpt2` を使ってください。
 
@@ -168,10 +168,10 @@ python -m molcrawl.tasks.evaluation.chebi20 \
 
 ## 6. 既知の TODO
 
-adapter レジストリは現在 `gpt2` / `bert` / `esm2` / `chemberta2` / `dnabert2` / `rnaformer` の 6 種類 (`molcrawl/tasks/evaluation/_adapters/__init__.py`)。
+adapter レジストリは現在 `gpt2` / `bert` / `esm2` / `chemberta2` / `dnabert2` /の 6 種類 (`molcrawl/tasks/evaluation/_adapters/__init__.py`)。
 
 - `GPT2Adapter` は modality 分岐で tokenizer を切り替え、`genome_sequence` / `compounds` / `protein_sequence` で smoke 動作確認済み。
-- `HfMlmAdapter` は MLM 系 5 arch 共通の実装。`AutoModelForMaskedLM.from_pretrained` で本体を読み、PLL(pseudo-log-likelihood)で `score_likelihood()` を実装。smoke 動作確認済みは `bert + genome_sequence` / `bert + compounds` / `dnabert2 + genome_sequence` / `chemberta2 + compounds`。残る `esm2` / `rnaformer` は tokenizer load とモデル load は通るが、対応する評価器データが未整備で end-to-end smoke は未実行。`generate()` は MLM なのでサポート外。
+- `HfMlmAdapter` は MLM 系 5 arch 共通の実装。`AutoModelForMaskedLM.from_pretrained` で本体を読み、PLL(pseudo-log-likelihood)で `score_likelihood()` を実装。smoke 動作確認済みは `bert + genome_sequence` / `bert + compounds` / `dnabert2 + genome_sequence` / `chemberta2 + compounds`。残る `esm2` /は tokenizer load とモデル load は通るが、対応する評価器データが未整備で end-to-end smoke は未実行。`generate()` は MLM なのでサポート外。
 
 残っている項目:
 
@@ -179,7 +179,7 @@ adapter レジストリは現在 `gpt2` / `bert` / `esm2` / `chemberta2` / `dnab
 |---|---|---|---|
 | `molecule_nat_lang` | `gpt2` | tokenizer は通るが `model.generate()` 内で `torch.multinomial` が nan/inf で assert。既存 checkpoint (small は vocab 50002 への旧ドリフト、medium は vocab 50257 一致だが forward が nan 出力) 側の問題で、アダプタ層の修正で救える範囲を超えている | 既存 checkpoint の weight 健全性確認、または再訓練 |
 | `rna` | `gpt2` | interface が異質（`TranscriptomeTokenizer` は loom 単位で `encode(str)` を持たない） | RNA 評価系は `encode(text)` 前提のアダプタとは別経路が必要 |
-| `rna` | `bert` / `rnaformer` | HfMlmAdapter 上は動くが、既存 RNA 評価器が `encode(text)` を期待しないデータ(pre-tokenised JSONL)を受け取る設計のため、評価器側との繋ぎが未整備 | RNA 評価器(rna_benchmark / Tabula Sapiens / Replogle)の入力形式を確認し、必要ならアダプタまたは評価器側で tokens 経路を分岐 |
+| `rna` | `bert` /| HfMlmAdapter 上は動くが、既存 RNA 評価器が `encode(text)` を期待しないデータ(pre-tokenised JSONL)を受け取る設計のため、評価器側との繋ぎが未整備 | RNA 評価器(rna_benchmark / Tabula Sapiens / Replogle)の入力形式を確認し、必要ならアダプタまたは評価器側で tokens 経路を分岐 |
 | `protein_sequence` | `esm2` / `bert` | アダプタ・モデルは load 成功するが、評価器データ (ProteinGym は 404、TAPE / DeepLoc データ未ダウンロード) が欠落 | `workflows/data/eval-data-proteingym.sh` の URL 修正 (Zenodo/HF へ移行済み)、TAPE のダウンロード、検証 |
 | `molecule_nat_lang` | `bert` | アダプタは通るが対応する評価器データ (pairs_csv) が未整備 | `RNA_BENCHMARK_SOURCE` 的な project-internal データを stage する手順整備、または別評価器のデータ準備 |
 | `compounds` | `bert` | アダプタは通るが MoleculeNet の bace サブタスクは 403。他サブタスク (bbbp / tox21 / esol など) は smoke 済み | `workflows/data/eval-data-moleculenet.sh` の bace URL 修正または差し替え |

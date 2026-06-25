@@ -15,7 +15,7 @@ The evaluator expects JSONL with rows of the shape::
 For each cell we:
 
 1. Find the top-N highest-expression genes (input format used by the
-   molcrawl rna BERT / rnaformer pretraining pipeline).
+   molcrawl rna BERT pretraining pipeline).
 2. Map gene IDs (``var.feature_id`` / ``var_names``) to the encoder
    tokenizer's vocab — usually keyed by ENSG IDs. Genes outside the
    vocab are dropped per cell.

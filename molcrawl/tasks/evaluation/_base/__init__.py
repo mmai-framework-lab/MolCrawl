@@ -7,7 +7,7 @@ tasks in ``molcrawl.tasks.evaluation.<task>`` build on:
   abstract evaluation loop (``loader -> predict -> metric -> report``).
 * :class:`~molcrawl.tasks.evaluation._base.model_adapter.ModelAdapter` -
   uniform wrapper around GPT-2 / BERT / ChemBERTa-2 / ESM-2 / DNABERT-2 /
-  RNAformer model handles.
+  model handles.
 * :class:`~molcrawl.tasks.evaluation._base.metric_registry.MetricRegistry` -
   registry of reusable metrics (perplexity, classification, regression,
   generation quality).

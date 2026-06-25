@@ -143,10 +143,6 @@ riken-dataset-fundational-model/
 │   │   ├── ESM2_TRAINING_GUIDE.md                   # ESM-2 training guide (English)
 │   │   ├── README_gpn.ja.md                         # GPN (Genomic Pre-trained Network) notes (Japanese)
 │   │   ├── README_gpn.md                            # GPN (Genomic Pre-trained Network) notes (English)
-│   │   ├── RNAFORMER_IMPLEMENTATION_SUMMARY.ja.md   # RNAformer implementation summary (Japanese)
-│   │   ├── RNAFORMER_IMPLEMENTATION_SUMMARY.md      # RNAformer implementation summary (English)
-│   │   ├── RNAFORMER_TRAINING_GUIDE.ja.md           # RNAformer training guide (Japanese)
-│   │   └── RNAFORMER_TRAINING_GUIDE.md              # RNAformer training guide (English)
 │   └── 10-file-tree/
 │       └── FILE_TREE.md                      # (this file) Full repository file tree with descriptions
 │
@@ -327,10 +323,6 @@ riken-dataset-fundational-model/
 │   │   │       ├── molecule_nat_lang_test_config.py  # GPT-2 test config for molecule NL modality
 │   │   │       ├── protein_sequence_test_config.py   # GPT-2 test config for protein sequence modality
 │   │   │       └── rna_test_config.py                # GPT-2 test config for RNA modality
-│   │   └── rnaformer/
-│   │       ├── __init__.py
-│   │       ├── configurator.py               # Builds training configs for RNAformer
-│   │       └── main.py                       # RNAformer training entry point
 │   ├── preparation/                          # Residual generic data-preparation utilities
 │   │   ├── __init__.py
 │   │   ├── convert_parquet_to_arrow.py       # Converts Parquet files to Arrow format
@@ -376,7 +368,6 @@ riken-dataset-fundational-model/
 │   │   │           ├── bert_celltype_{small,medium,large}.py
 │   │   │           ├── gpt2_{small,medium,large,xl}.py
 │   │   │           ├── gpt2_celltype_{small,medium,large,xl}.py
-│   │   │           └── rnaformer.py          # Size selected at runtime
 │   │   ├── evaluation/                       # Benchmarks organized by task — arch-agnostic
 │   │   │   ├── __init__.py
 │   │   │   ├── _adapters/                    # Per-arch model adapters (gpt2, hf_mlm)
@@ -579,9 +570,6 @@ riken-dataset-fundational-model/
     ├── 03e-protein_sequence-train-esm2-large.sh  # ESM-2 Large training: protein sequences
     ├── 03e-protein_sequence-train-esm2-medium.sh # ESM-2 Medium training: protein sequences
     ├── 03e-protein_sequence-train-esm2-small.sh  # ESM-2 Small training: protein sequences
-    ├── 03f-rna-train-rnaformer-large.sh          # RNAformer Large training: RNA
-    ├── 03f-rna-train-rnaformer-medium.sh         # RNAformer Medium training: RNA
-    ├── 03f-rna-train-rnaformer-small.sh          # RNAformer Small training: RNA
     ├── 03g-compounds-train-chemberta2-large.sh   # ChemBERTa-2 Large training: compounds
     ├── 03g-compounds-train-chemberta2-medium.sh  # ChemBERTa-2 Medium training: compounds
     ├── 03g-compounds-train-chemberta2-small.sh   # ChemBERTa-2 Small training: compounds

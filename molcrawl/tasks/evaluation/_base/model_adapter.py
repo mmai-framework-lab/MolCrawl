@@ -2,7 +2,7 @@
 
 The goal of the adapter layer is to isolate evaluation logic from the
 specific architecture (GPT-2 decoder, BERT-style encoder, ChemBERTa-2,
-ESM-2, DNABERT-2, RNAformer).  Each concrete adapter translates between a
+ESM-2, DNABERT-2).  Each concrete adapter translates between a
 task-level request (``predict_labels``, ``embed``, ``score_likelihood``,
 ``generate``) and the underlying model API.
 
@@ -25,7 +25,7 @@ class ModelHandle:
 
     Attributes:
         arch: Architecture tag, one of ``{"gpt2", "bert", "chemberta2",
-            "esm2", "dnabert2", "rnaformer"}``.
+            "esm2", "dnabert2"}``.
         modality: Foundation-model modality, one of ``{"genome_sequence",
             "protein_sequence", "compounds", "rna", "molecule_nat_lang"}``.
         model_path: Absolute path to the checkpoint or model directory.

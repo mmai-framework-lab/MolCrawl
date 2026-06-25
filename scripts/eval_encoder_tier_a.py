@@ -1,8 +1,8 @@
 """Tier A perplexity / accuracy evaluation for encoder (MLM) checkpoints.
 
 Companion to ``molcrawl/models/gpt2/test_checkpoint.py`` — same evaluation
-philosophy but for the BERT / RoBERTa / ESM2 / DNABERT-2 / ChemBERTa-2 /
-RNAformer family. Given a HuggingFace MLM checkpoint and a
+philosophy but for the BERT / RoBERTa / ESM2 / DNABERT-2 / ChemBERTa-2
+family. Given a HuggingFace MLM checkpoint and a
 ``training_ready_hf_dataset`` directory, measures:
 
 * MLM cross-entropy loss on the ``valid`` (or ``test``) split, using
@@ -66,8 +66,6 @@ _TRUSTED_REMOTE_CODE_HINTS = (
     "DNABERT-2",
     "DNABERT2",
     "dnabert-2",
-    "RNAformer",
-    "rnaformer",
     "InstaDeepAI",
     "NucleotideTransformer",
 )
@@ -120,7 +118,6 @@ def load_tokenizer(
         ("bert", "genome_sequence"),
         ("bert", "rna"),
         ("dnabert2", "genome_sequence"),
-        ("rnaformer", "rna"),
     ):
         from molcrawl.core.paths import get_custom_tokenizer_path
 
@@ -259,7 +256,7 @@ def main() -> int:
                                  "compounds", "rna"),
                         help="Modality key for tokenizer fallback.")
     parser.add_argument("--arch", default="bert",
-                        choices=("bert", "roberta", "esm2", "chemberta2", "dnabert2", "rnaformer"),
+                        choices=("bert", "roberta", "esm2", "chemberta2", "dnabert2"),
                         help="Architecture for tokenizer fallback.")
     parser.add_argument("--split", default="valid", choices=("train", "valid", "test"),
                         help="Which split to evaluate on.")

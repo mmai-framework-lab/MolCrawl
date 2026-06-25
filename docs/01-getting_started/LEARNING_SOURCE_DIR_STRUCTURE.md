@@ -169,7 +169,6 @@ rna/hf_cache/                                    molcrawl/data/rna/preparation.p
 rna/training_ready_hf_dataset/                   molcrawl/data/rna/dataset/prepare_gpt2.py                              tokenize_batch_dataset()
 rna/gpt2-output/...                              molcrawl/models/gpt2/train.py                                            training entry (out_dir)
 rna/bert-output/...                              molcrawl/models/bert/main.py                                             TrainingArguments(output_dir=model_path)
-rna/rnaformer-output/...                         molcrawl/models/rnaformer/main.py                                        TrainingArguments(output_dir=model_path)
 rna/logs/                                        workflows/*.sh                                                    mkdir -p ${LEARNING_SOURCE_DIR}/rna/logs
 ```
 

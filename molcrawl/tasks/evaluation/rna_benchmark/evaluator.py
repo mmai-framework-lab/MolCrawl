@@ -9,7 +9,7 @@ reports per-group perplexity + mean log-likelihood.
 - bootstrap 95 % CI on per-group perplexity
 - per-cell predictions log (jsonl + narrative TXT)
 - direct int-list pass-through to the adapter (no string round-trip),
-  enabling rna BERT / rnaformer to score raw token ids straight from
+  enabling rna BERT to score raw token ids straight from
   the parquet pipeline output
 """
 
@@ -152,7 +152,7 @@ class RNABenchmarkEvaluator(BaseEvaluator):
                 "artefacts": artefacts,
                 "notes": (
                     "rna_benchmark scores cells via PLL on the configured MLM "
-                    "(bert / rnaformer). Tokens are passed straight to the adapter "
+                    "(bert). Tokens are passed straight to the adapter "
                     "(no string round-trip), so per-cell perplexity is comparable "
                     "across architectures that share the gene vocabulary. "
                     "Per-group bootstrap CIs use 100 resamples by default."

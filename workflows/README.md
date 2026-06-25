@@ -30,7 +30,7 @@ This directory contains shell scripts for various project operations including d
 The workflow scripts are organized into several categories:
 
 - **Data Preparation** (Phase 01-02): Dataset tokenization and format conversion - 17 scripts
-- **Model Training** (Phase 03a-03g): GPT-2, BERT, DNABERT-2, ESM-2, RNAformer, ChemBERTa-2 - 46 scripts
+- **Model Training** (Phase 03a-03g): GPT-2, BERT, DNABERT-2, ESM-2, ChemBERTa-2 - 43 scripts
 - **Model Evaluation**: Comprehensive evaluation with visualization - 9 scripts
 - **Development & Testing**: Debugging, batch testing, and validation tools - 6 scripts
 - **System Infrastructure**: Web services, experiment tracking, and utilities - 4 scripts
@@ -164,14 +164,6 @@ This section contains **46 training scripts** (Phase 3a: 29, Phase 3b: 1, Phase 
 | `03e-protein_sequence-train-esm2-small.sh`  | Protein sequence ESM-2 | Small      |
 | `03e-protein_sequence-train-esm2-medium.sh` | Protein sequence ESM-2 | Medium     |
 | `03e-protein_sequence-train-esm2-large.sh`  | Protein sequence ESM-2 | Large      |
-
-### Phase 3f: RNAformer Training
-
-| Script                              | Purpose                | Model Size |
-| ----------------------------------- | ---------------------- | ---------- |
-| `03f-rna-train-rnaformer-small.sh`  | RNA sequence RNAformer | Small      |
-| `03f-rna-train-rnaformer-medium.sh` | RNA sequence RNAformer | Medium     |
-| `03f-rna-train-rnaformer-large.sh`  | RNA sequence RNAformer | Large      |
 
 ### Phase 3g: ChemBERTa-2 Training
 
@@ -734,7 +726,7 @@ each evaluator package) have been retired. The current arch-agnostic
 pipeline:
 
 1. Each evaluator lives under `molcrawl/tasks/evaluation/<task>/`.
-2. Architectures (GPT-2 / BERT / ESM-2 / DNABERT-2 / RNAformer /
+2. Architectures (GPT-2 / BERT / ESM-2 / DNABERT-2 /
    ChemBERTa-2) plug in through `molcrawl/tasks/evaluation/_adapters/`.
 3. Data fetches live in `workflows/data/eval-data-<task>.sh`.
 4. Wrapper drivers live in `workflows/eval-<task>.sh`.

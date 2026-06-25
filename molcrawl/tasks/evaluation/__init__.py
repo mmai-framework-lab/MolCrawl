@@ -16,7 +16,7 @@ follows the standard layout described in
 
 The cross-cutting abstractions (base evaluator, model adapters, metric
 registry, report writer) live under ``molcrawl.tasks.evaluation._base``.
-Architecture differences (GPT-2 / BERT / ESM-2 / DNABERT-2 / RNAformer /
+Architecture differences (GPT-2 / BERT / ESM-2 / DNABERT-2 /
 ChemBERTa-2) are absorbed at the model-adapter / CLI level rather than
 by forking each evaluator per architecture.
 """

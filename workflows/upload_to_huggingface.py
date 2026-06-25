@@ -55,7 +55,7 @@ example:
     parser.add_argument(
         "--model-type",
         type=str,
-        choices=["gpt2", "bert", "dnabert2", "esm2", "rnaformer", "chemberta2"],
+        choices=["gpt2", "bert", "dnabert2", "esm2", "chemberta2"],
         help="Model type",
     )
     parser.add_argument("--tokenizer-path", type=str, help="Tokenizer path")
@@ -81,8 +81,6 @@ def detect_model_type(model_path: Path) -> Optional[str]:
             return "bert"
     elif "esm" in path_str:
         return "esm2"
-    elif "rnaformer" in path_str:
-        return "rnaformer"
 
     # Detect model type from config.json
     config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"

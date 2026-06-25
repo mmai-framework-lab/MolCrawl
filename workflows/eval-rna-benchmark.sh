@@ -2,7 +2,7 @@
 # Phase 4 - rna_benchmark evaluation.
 #
 # Required:
-#   MODEL_PATH       - encoder MLM checkpoint (bert / rnaformer)
+#   MODEL_PATH       - encoder MLM checkpoint (bert)
 #   RNA_JSONL        - per-tissue cell JSONL produced by
 #                      `python -m molcrawl.tasks.evaluation.rna_benchmark.prepare_jsonl`
 #

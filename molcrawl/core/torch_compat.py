@@ -31,7 +31,7 @@ import time):
 - ``molcrawl/models/chemberta2/main.py``
 - ``molcrawl/models/dnabert2/main.py``
 - ``molcrawl/models/esm2/main.py``
-- ``molcrawl/models/rnaformer/main.py``
+- ``molcrawl/models/main.py``
 
 GPT-2 (``molcrawl/models/gpt2/train.py``) is unaffected because it does
 not go through HF Trainer's resume path; it manages its own checkpoint

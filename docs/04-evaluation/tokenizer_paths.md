@@ -12,10 +12,10 @@ HuggingFace models.
 > **Current implementation status (as of 2026-04-23)**: the `gpt2`
 > adapter is end-to-end verified for `genome_sequence`, `compounds`,
 > and `protein_sequence`. The `bert` / `esm2` / `chemberta2` /
-> `dnabert2` / `rnaformer` archs share a single `HfMlmAdapter`
+> `dnabert2` /archs share a single `HfMlmAdapter`
 > implementation; `bert` (`genome_sequence` / `compounds`), `dnabert2`
 > (`genome_sequence`), and `chemberta2` (`compounds`) are smoke-verified
-> end-to-end. `esm2` / `rnaformer` load correctly but lack ready
+> end-to-end. `esm2` /load correctly but lack ready
 > evaluator data. `molecule_nat_lang` GPT-2 routes correctly but the
 > existing checkpoints hit a separate model-side issue at generation
 > time. See [§6 Known TODO](#6-known-todo).
@@ -29,7 +29,7 @@ HuggingFace models.
 | `compounds` | `gpt2`, `bert` | `assets/molecules/vocab.txt` |
 | `compounds` | `chemberta2` | HF repo id / same dir as `--model-path` (e.g. `seyonec/ChemBERTa-zinc-base-v1`) |
 | `rna` | `gpt2`, `bert` | **omit the flag** - built-in `TranscriptomeTokenizer` |
-| `rna` | `rnaformer` | HF repo id / same dir as `--model-path` |
+| `rna` || HF repo id / same dir as `--model-path` |
 | `molecule_nat_lang` | `gpt2`, `bert` | **omit the flag** - built-in `MoleculeNatLangTokenizer` (HF GPT-2) |
 
 "Built-in tokenizer" means the class is instantiated from Python (PyPI
@@ -60,8 +60,8 @@ tokenizers:
   `molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer`
   (wraps the HF GPT-2 tokenizer).  No external file.
 
-External HuggingFace models (ChemBERTa-2 / ESM-2 / DNABERT-2 /
-RNAformer) use their own `AutoTokenizer`; pass the same directory (or
+External HuggingFace models (ChemBERTa-2 / ESM-2 / DNABERT-2)
+use their own `AutoTokenizer`; pass the same directory (or
 repo id) to both `--model-path` and `--tokenizer-path`.
 
 ## 3. Per-task examples
@@ -179,7 +179,7 @@ The `gpt2` adapter branches on modality:
   the built-in `MoleculeNatLangTokenizer` / `EsmSequenceTokenizer`
   (if you pass a path it will be logged and dropped).
 
-The `bert` / `esm2` / `chemberta2` / `dnabert2` / `rnaformer` archs
+The `bert` / `esm2` / `chemberta2` / `dnabert2` /archs
 share a single `HfMlmAdapter` implementation. Tokenizer resolution
 order:
 
@@ -189,7 +189,7 @@ order:
    - `bert` / `chemberta2` + `compounds` → `CompoundsTokenizer`
    - `bert` + `molecule_nat_lang` → `MoleculeNatLangTokenizer`
    - `bert` / `esm2` + `protein_sequence` → `BertProteinSequenceTokenizer`
-   - `dnabert2` + `genome_sequence` and `rnaformer` + `rna` →
+   - `dnabert2` + `genome_sequence` and+ `rna` →
      `AutoTokenizer.from_pretrained(get_custom_tokenizer_path(modality, arch))`
 
 The model is loaded via `AutoModelForMaskedLM.from_pretrained`, which
@@ -223,7 +223,7 @@ to both `--tokenizer-path` and `--model-path` (e.g.
 ## 6. Known TODO
 
 The adapter registry now contains `gpt2`, `bert`, `esm2`, `chemberta2`,
-`dnabert2`, and `rnaformer` (`molcrawl/tasks/evaluation/_adapters/__init__.py`).
+`dnabert2`, and(`molcrawl/tasks/evaluation/_adapters/__init__.py`).
 
 - `GPT2Adapter.load()` routes tokenizer loading by modality and is
   smoke-verified for `genome_sequence`, `compounds`, and
@@ -233,7 +233,7 @@ The adapter registry now contains `gpt2`, `bert`, `esm2`, `chemberta2`,
   walks the three-tier tokenizer fallback, and scores sequences as
   pseudo-log-likelihood. Smoke-verified end-to-end for
   `bert + genome_sequence`, `bert + compounds`, `dnabert2 +
-  genome_sequence`, and `chemberta2 + compounds`. `esm2` / `rnaformer`
+  genome_sequence`, and `chemberta2 + compounds`. `esm2`
   load correctly in isolation but have no ready evaluator data to
   verify end-to-end. `generate()` is not supported.
 
@@ -243,7 +243,7 @@ Remaining gaps:
 |---|---|---|---|
 | `molecule_nat_lang` | `gpt2` | tokenizer routes correctly but `model.generate()` trips `torch.multinomial` on nan/inf logits with the existing checkpoints (`-small` has a legacy vocab drift to 50002; `-medium` matches vocab 50257 but the forward still produces nan) — not fixable at the adapter layer | audit the checkpoint weights / retrain |
 | `rna` | `gpt2` | interface mismatch: `TranscriptomeTokenizer` operates on loom files and has no `encode(str)` method | design a separate RNA adapter path (pre-tokenised JSONL) |
-| `rna` | `bert` / `rnaformer` | HfMlmAdapter loads fine, but the existing RNA evaluators expect pre-tokenised cell JSONLs rather than strings to `encode(text)` | decide whether to bridge in the evaluator or add a token-id input path to the adapter |
+| `rna` | `bert` /| HfMlmAdapter loads fine, but the existing RNA evaluators expect pre-tokenised cell JSONLs rather than strings to `encode(text)` | decide whether to bridge in the evaluator or add a token-id input path to the adapter |
 | `protein_sequence` | `esm2` / `bert` | adapter loads, but evaluator data is missing (ProteinGym 404, TAPE not downloaded) | fix `workflows/data/eval-data-proteingym.sh` URL (Zenodo/HF) and stage TAPE |
 | `molecule_nat_lang` | `bert` | adapter loads, but no matching evaluator data is staged (pairs_csv etc.) | stage project-internal pairs_csv or pick a different evaluator |
 | `compounds` | `bert` | bace subtask downloader returns 403; other subtasks (bbbp / tox21 / esol / ...) work | fix `workflows/data/eval-data-moleculenet.sh` bace URL or substitute |

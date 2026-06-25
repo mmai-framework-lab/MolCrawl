@@ -1,8 +1,8 @@
 """Unified HuggingFace MaskedLM adapter.
 
 Handles any HF-format MLM checkpoint produced by ``molcrawl.models.bert``,
-``molcrawl.models.esm2``, ``molcrawl.models.chemberta2``, ``molcrawl.models.dnabert2``, or
-``molcrawl.models.rnaformer``. Weights are loaded through
+``molcrawl.models.esm2``, ``molcrawl.models.chemberta2``, or
+``molcrawl.models.dnabert2``. Weights are loaded through
 ``AutoModelForMaskedLM.from_pretrained``, so the concrete model class
 (``BertForMaskedLM``, ``EsmForMaskedLM``, ``RobertaForMaskedLM``, ...)
 is resolved from the checkpoint's ``config.json``.
@@ -20,7 +20,7 @@ Tokenizer resolution walks three tiers:
    wiring (``CompoundsTokenizer``, ``MoleculeNatLangTokenizer``,
    ``BertProteinSequenceTokenizer``, or the
    ``custom_tokenizer_<arch>/`` directory saved under
-   ``LEARNING_SOURCE_DIR`` for DNABERT-2 and RNAformer).
+   ``LEARNING_SOURCE_DIR`` for DNABERT-2).
 
 ``score_likelihood`` is pseudo-log-likelihood (PLL): every non-special
 position is masked in turn, the MLM head is evaluated, and the mean
@@ -48,7 +48,7 @@ from molcrawl.tasks.evaluation._base.model_adapter import (
 
 logger = logging.getLogger(__name__)
 
-_SUPPORTED_ARCHS = ("bert", "esm2", "chemberta2", "dnabert2", "rnaformer")
+_SUPPORTED_ARCHS = ("bert", "esm2", "chemberta2", "dnabert2")
 
 # HF repos whose canonical loader path ships custom modeling code that
 # AutoModelForMaskedLM can only execute when ``trust_remote_code=True``.
@@ -58,8 +58,6 @@ _TRUSTED_REMOTE_CODE_HINTS = (
     "DNABERT-2",
     "DNABERT2",
     "dnabert-2",
-    "RNAformer",
-    "rnaformer",
     "InstaDeepAI",
     "NucleotideTransformer",
 )
@@ -108,8 +106,8 @@ class HfMlmAdapter(ModelAdapter):
             self.handle.modality,
         )
         # Auto-enable trust_remote_code for community HF models that ship
-        # custom modeling code (DNABERT-2, RNAformer, etc.). The flag can
-        # also be set explicitly via ``extras.trust_remote_code`` or the
+        # custom modeling code (DNABERT-2 etc.). The flag can also be set
+        # explicitly via ``extras.trust_remote_code`` or the
         # ``TRUST_REMOTE_CODE=1`` env var.
         import os
         trust_remote_code = (
@@ -210,7 +208,6 @@ class HfMlmAdapter(ModelAdapter):
             ("bert", "genome_sequence"),
             ("bert", "rna"),
             ("dnabert2", "genome_sequence"),
-            ("rnaformer", "rna"),
         ):
             from transformers import AutoTokenizer
             from molcrawl.core.paths import get_custom_tokenizer_path

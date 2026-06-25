@@ -8,6 +8,6 @@ sure the architecture tags they expect are available via
 """
 
 from . import gpt2_adapter  # noqa: F401  (import registers the adapter)
-from . import hf_mlm_adapter  # noqa: F401  (import registers bert/esm2/chemberta2/dnabert2/rnaformer)
+from . import hf_mlm_adapter  # noqa: F401  (import registers bert/esm2/chemberta2/dnabert2)
 
 __all__ = ["gpt2_adapter", "hf_mlm_adapter"]
