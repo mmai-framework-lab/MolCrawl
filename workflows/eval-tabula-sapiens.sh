@@ -2,12 +2,12 @@
 # Phase 4 - Tabula Sapiens cell-type annotation.
 #
 # Required:
-#   MODEL_PATH       - encoder MLM checkpoint (rnaformer / bert rna)
+#   MODEL_PATH       - encoder MLM checkpoint (bert rna)
 #   TABULA_JSONL     - path to the tokenised-cell JSONL produced by
 #                      workflows/data/eval-data-tabula-sapiens.sh
 #
 # Optional:
-#   ARCH                       - default rnaformer
+#   ARCH                       - default gpt2
 #   TOKENIZER_PATH             - default uses arch+modality fallback
 #   OUTPUT_DIR                 - default experiment_data/eval/tabula_sapiens
 #   TEST_FRACTION              - default 0.2 (random split)
@@ -27,7 +27,7 @@ source "${SCRIPT_DIR}/common_functions.sh"
 : "${MODEL_PATH:?MODEL_PATH must be set}"
 : "${TABULA_JSONL:?TABULA_JSONL must be set}"
 
-ARCH="${ARCH:-rnaformer}"
+ARCH="${ARCH:-gpt2}"
 DEVICE="${DEVICE:-cuda}"
 RUNTAG="${RUNTAG:-tabula_sapiens_default}"
 OUTPUT_DIR="${OUTPUT_DIR:-$(compose_eval_output_dir rna "$MODEL_PATH" "$RUNTAG")}"

@@ -36,7 +36,7 @@ molcrawl/tasks/evaluation/
 from molcrawl.tasks.evaluation._base import ModelHandle
 
 handle = ModelHandle(
-    arch="gpt2",                         # "gpt2" | "bert" | "chemberta2" | "esm2" | "dnabert2" | "rnaformer"
+    arch="gpt2",                         # "gpt2" | "bert" | "chemberta2" | "esm2" | "dnabert2"
     modality="genome_sequence",          # foundation model の系統
     model_path="runs_train_gpt2_genome_small/ckpt.pt",
     tokenizer_path="${LEARNING_SOURCE_DIR}/genome_sequence/spm_tokenizer.model",
@@ -238,6 +238,6 @@ PREVIOUS=docs/evaluation/snapshot_20260415.json \
 
 ## 10. 既知の制約
 
-- `gpt2` 以外のアダプタ（bert, chemberta2, esm2, dnabert2, rnaformer）は未登録です。`ModelAdapter` を継承したアダプタを追加した時点で対応するタスクが実データで動くようになります。
+- `gpt2` 以外のアダプタ（bert, chemberta2, esm2, dnabert2）は未登録です。`ModelAdapter` を継承したアダプタを追加した時点で対応するタスクが実データで動くようになります。
 - `contact_prediction` (TAPE) / `pfam_hit_rate` (protein_foldability) / ChEBI-20 の BLEU / ROUGE は追加の重い依存（PDB, HMMER, `nltk`, `rouge-score`）が要るため、現状は placeholder もしくは NaN フォールバックです。
 - `__main__.py` を直接呼ぶ経路のほかに、設定 YAML をローダー経由で `BaseEvaluator` に渡すランナーはまだ存在しません。必要に応じて小さな `runner.py` を各リポジトリで追加してください。

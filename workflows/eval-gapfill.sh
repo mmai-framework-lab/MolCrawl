@@ -83,7 +83,7 @@ gap_run() {
 resolve_ckpt() {
     local modality="$1" arch="$2" size="$3"
     local out_dir="${LSD}/${modality}/${arch}-output/${modality}-${size}"
-    # Some archs use the arch name (chemberta2 / dnabert2 / esm2 / rnaformer)
+    # Some archs use the arch name (chemberta2 / dnabert2 / esm2 )
     if [[ ! -d "$out_dir" ]]; then
         out_dir="${LSD}/${modality}/${arch}-output/${arch}-${size}"
     fi

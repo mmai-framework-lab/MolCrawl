@@ -223,7 +223,7 @@ def get_custom_tokenizer_path(domain, model_type="bert"):
 
     Args:
         domain (str): domain name ('genome_sequence', 'rna', etc.)
-        model_type (str): model type ('bert', 'rnaformer', 'dnabert2')
+        model_type (str): model type ('bert', 'dnabert2')
 
     Returns:
         str: custom tokenizer directory path

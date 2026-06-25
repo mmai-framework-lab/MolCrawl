@@ -57,7 +57,7 @@ show_usage() {
 オプション:
   --private           プライベートリポジトリとして作成
   --commit-message    コミットメッセージ（デフォルト: "Upload model"）
-  --model-type        モデルタイプ (gpt2, bert, dnabert2, esm2, rnaformer, chemberta2)
+  --model-type        モデルタイプ (gpt2, bert, dnabert2, esm2, chemberta2)
   --tokenizer-path    トークナイザーのパス（省略時はmodel_pathから自動検出）
   --config-path       設定ファイルのパス（省略時はmodel_pathから自動検出）
   --create-model-card モデルカードを自動生成

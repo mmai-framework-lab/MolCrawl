@@ -4,7 +4,7 @@ The training pipeline emits per-tissue parquet shards under
 ``$LEARNING_SOURCE_DIR/rna/parquet_files/<tissue>.<chunk>.parquet``,
 each with two columns:
 
-- ``token`` — list of int16 token ids in the rna BERT / rnaformer vocab
+- ``token`` — list of int16 token ids in the rna BERT vocab
 - ``token_count`` — original cell length
 
 For evaluation we want a small, balanced JSONL where each record is

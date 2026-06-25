@@ -213,7 +213,7 @@ def materialise_replogle_csv(
     zero_vec = json.dumps([0.0] * n_genes)
 
     # Optional HGNC symbol -> ENSG ID mapping. The molcrawl rna BERT and
-    # rnaformer vocabs are keyed by ENSG IDs; without this translation
+    # vocabs are keyed by ENSG IDs; without this translation
     # the encoder treats every perturbation as [UNK].
     if symbol_to_ensg_cache is not None:
         cache_path = Path(symbol_to_ensg_cache)
@@ -295,8 +295,8 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="If set, resolve HGNC symbols to Ensembl gene IDs via the "
         "Ensembl REST API (batched POST /lookup/symbol/homo_sapiens) "
         "and cache to this CSV path. Required when the downstream "
-        "encoder vocab is keyed by ENSG IDs (e.g. molcrawl rna BERT / "
-        "rnaformer); perturbations with no ENSG match are dropped.",
+        "encoder vocab is keyed by ENSG IDs (e.g. molcrawl rna BERT); "
+        "perturbations with no ENSG match are dropped.",
     )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args(argv)

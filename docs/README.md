@@ -66,8 +66,6 @@
 - [ESM-2 Implementation Summary](09-future_models/ESM2_IMPLEMENTATION_SUMMARY.md)
 - [ESM-2 Training Guide](09-future_models/ESM2_TRAINING_GUIDE.md)
 - [GPN-MSA Genome Sequence Training](09-future_models/README_gpn.md)
-- [RNAformer Implementation Summary](09-future_models/RNAFORMER_IMPLEMENTATION_SUMMARY.md)
-- [RNAformer Training Guide](09-future_models/RNAFORMER_TRAINING_GUIDE.md)
 
 ## 10 – File Tree
 

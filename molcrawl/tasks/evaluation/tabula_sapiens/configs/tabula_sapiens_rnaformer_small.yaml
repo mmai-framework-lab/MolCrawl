@@ -1,6 +1,0 @@
-task: tabula_sapiens
-modality: rna
-arch: rnaformer
-size: small
-test_fraction: 0.2
-seed: 0
