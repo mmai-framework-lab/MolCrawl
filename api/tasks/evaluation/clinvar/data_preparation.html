@@ -94,8 +94,15 @@ normalisation so the new evaluator is self-contained.</p>
     &#34;&#34;&#34;Load a ClinVar-derived table from CSV, TSV, or JSON.
 
     The file must expose ``reference_sequence``, ``variant_sequence``, and
-    ``ClinicalSignificance`` columns.  Additional columns are preserved
-    untouched for downstream reporting.
+    ``ClinicalSignificance`` columns.  Additional metadata columns
+    (``vcv_id``, ``review_status``, ``consequence``, ``chrom``, ``pos``,
+    ``ref``, ``alt``) are preserved untouched for downstream reporting,
+    group-aware splitting, and joins against external annotation sources.
+
+    These metadata columns are kept on the DataFrame but never fed to the
+    model: ``ClinVarEvaluator.run_predictions`` whitelists
+    ``reference_sequence`` / ``variant_sequence`` before calling the
+    adapter, so anything else in the frame stays metadata.
     &#34;&#34;&#34;
     file_path = Path(path)
     if not file_path.exists():
@@ -119,20 +126,42 @@ normalisation so the new evaluator is self-contained.</p>
             f&#34;Available: {list(df.columns)}&#34;
         )
 
+    # Surface the presence/absence of the optional metadata columns once at
+    # load time so downstream consumers (group-aware splits, joins against
+    # gnomAD / SpliceAI, drill-downs per consequence) can fail explicitly
+    # if they expected them.
+    optional_metadata = (&#34;vcv_id&#34;, &#34;review_status&#34;, &#34;consequence&#34;)
+    present_meta = [c for c in optional_metadata if c in df.columns]
+    missing_meta = [c for c in optional_metadata if c not in df.columns]
+    if missing_meta:
+        logger.info(
+            &#34;ClinVar metadata columns absent (legacy CSV?): %s. &#34;
+            &#34;Re-generate via download_clinvar_sequences to include them.&#34;,
+            missing_meta,
+        )
+
     df = add_pathogenic_label(df)
     logger.info(
-        &#34;Loaded %d ClinVar variants (pathogenic=%d, benign=%d)&#34;,
+        &#34;Loaded %d ClinVar variants (pathogenic=%d, benign=%d) &#34;
+        &#34;[metadata cols: %s]&#34;,
         len(df),
         int((df[&#34;pathogenic&#34;] == 1).sum()),
         int((df[&#34;pathogenic&#34;] == 0).sum()),
+        present_meta or &#34;none&#34;,
     )
     return df</code></pre>
 </details>
 <div class="desc"><p>Load a ClinVar-derived table from CSV, TSV, or JSON.</p>
 <p>The file must expose <code>reference_sequence</code>, <code>variant_sequence</code>, and
 <code>ClinicalSignificance</code> columns.
-Additional columns are preserved
-untouched for downstream reporting.</p></div>
+Additional metadata columns
+(<code>vcv_id</code>, <code>review_status</code>, <code>consequence</code>, <code>chrom</code>, <code>pos</code>,
+<code>ref</code>, <code>alt</code>) are preserved untouched for downstream reporting,
+group-aware splitting, and joins against external annotation sources.</p>
+<p>These metadata columns are kept on the DataFrame but never fed to the
+model: <code>ClinVarEvaluator.run_predictions</code> whitelists
+<code>reference_sequence</code> / <code>variant_sequence</code> before calling the
+adapter, so anything else in the frame stays metadata.</p></div>
 </dd>
 </dl>
 </section>

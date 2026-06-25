@@ -153,12 +153,26 @@ forking the evaluator.</p>
             stratify_chrom=stratify_chrom,
             seed=seed,
         )
-        # Stash sampling metadata for the report.
+        # Stash sampling metadata for the report. ``sampled_vcv_ids``
+        # records the full list of variants that this run actually
+        # evaluated; every per-variant prediction in predictions.jsonl
+        # references one of these by vcv_id, so the report + JSONL pair
+        # is sufficient to reconstruct exactly which NCBI variants drove
+        # the AUROC. Legacy CSVs without ``vcv_id`` serialise as an
+        # empty list rather than failing.
+        if &#34;vcv_id&#34; in sampled.columns:
+            sampled_vcv_ids = [
+                v for v in sampled[&#34;vcv_id&#34;].tolist() if v is not None
+            ]
+        else:
+            sampled_vcv_ids = []
         self._last_sampling = {
             &#34;n_per_class&#34;: n_per_class,
             &#34;stratify_chrom&#34;: stratify_chrom,
             &#34;seed&#34;: seed,
             &#34;total_rows_in_file&#34;: int(len(df)),
+            &#34;sampled_vcv_ids&#34;: sampled_vcv_ids,
+            &#34;sampled_count&#34;: int(len(sampled)),
         }
         return sampled
 
@@ -170,6 +184,13 @@ forking the evaluator.</p>
                 &#34;which ClinVar requires.&#34;
             )
 
+        # Strict whitelist: only the two sequence columns are converted to
+        # model input here. Every other column on `dataset` — vcv_id,
+        # review_status, consequence, chrom/pos/ref/alt, the pathogenic
+        # label — stays as metadata for downstream reporting / joins /
+        # group-aware splits and is never fed to the adapter. This is the
+        # only place tensors are built for ClinVar, so this is the single
+        # checkpoint that enforces the contract.
         ref_sequences = dataset[&#34;reference_sequence&#34;].astype(str).tolist()
         var_sequences = dataset[&#34;variant_sequence&#34;].astype(str).tolist()
 
@@ -586,12 +607,26 @@ distribution summaries, etc.</p></div>
         stratify_chrom=stratify_chrom,
         seed=seed,
     )
-    # Stash sampling metadata for the report.
+    # Stash sampling metadata for the report. ``sampled_vcv_ids``
+    # records the full list of variants that this run actually
+    # evaluated; every per-variant prediction in predictions.jsonl
+    # references one of these by vcv_id, so the report + JSONL pair
+    # is sufficient to reconstruct exactly which NCBI variants drove
+    # the AUROC. Legacy CSVs without ``vcv_id`` serialise as an
+    # empty list rather than failing.
+    if &#34;vcv_id&#34; in sampled.columns:
+        sampled_vcv_ids = [
+            v for v in sampled[&#34;vcv_id&#34;].tolist() if v is not None
+        ]
+    else:
+        sampled_vcv_ids = []
     self._last_sampling = {
         &#34;n_per_class&#34;: n_per_class,
         &#34;stratify_chrom&#34;: stratify_chrom,
         &#34;seed&#34;: seed,
         &#34;total_rows_in_file&#34;: int(len(df)),
+        &#34;sampled_vcv_ids&#34;: sampled_vcv_ids,
+        &#34;sampled_count&#34;: int(len(sampled)),
     }
     return sampled</code></pre>
 </details>
@@ -613,6 +648,13 @@ distribution summaries, etc.</p></div>
             &#34;which ClinVar requires.&#34;
         )
 
+    # Strict whitelist: only the two sequence columns are converted to
+    # model input here. Every other column on `dataset` — vcv_id,
+    # review_status, consequence, chrom/pos/ref/alt, the pathogenic
+    # label — stays as metadata for downstream reporting / joins /
+    # group-aware splits and is never fed to the adapter. This is the
+    # only place tensors are built for ClinVar, so this is the single
+    # checkpoint that enforces the contract.
     ref_sequences = dataset[&#34;reference_sequence&#34;].astype(str).tolist()
     var_sequences = dataset[&#34;variant_sequence&#34;].astype(str).tolist()
 
