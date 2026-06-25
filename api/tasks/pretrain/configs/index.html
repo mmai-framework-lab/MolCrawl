@@ -42,14 +42,14 @@ el.replaceWith(d);
 <li><code>&lt;modality&gt;</code> is one of <code>compounds</code>, <code>protein_sequence</code>,
 <code>genome_sequence</code>, <code>rna</code>, <code>molecule_nat_lang</code>.</li>
 <li><code>&lt;arch&gt;</code> is one of <code>gpt2</code>, <code>bert</code>, <code>chemberta2</code>, <code>esm2</code>,
-<code>dnabert2</code>, <code>rnaformer</code>.</li>
+<code>dnabert2</code>.</li>
 <li><code>&lt;variant&gt;</code> is an optional dataset or benchmark tag
 (<code>chembl</code>, <code>guacamol</code>, <code>clinvar</code>, <code>proteingym</code>, <code>celltype</code>,
 <code>mol_instructions</code>, &hellip;).</li>
 <li><code>&lt;size&gt;</code> is an optional explicit size suffix
 (<code>small</code> / <code>medium</code> / <code>large</code> / <code>xl</code>). When the model family
 takes its size as a runtime argument (e.g. BERT, ChemBERTa-2, ESM-2,
-DNABERT-2, RNAformer) a single file per variant is provided.</li>
+DNABERT-2) a single file per variant is provided.</li>
 </ul>
 <p>These files are <em>not</em> importable Python modules. They are configuration
 DSLs read at runtime via <code>exec(open(path).read())</code> from each model's

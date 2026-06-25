@@ -45,7 +45,7 @@ reports per-group perplexity + mean log-likelihood.</p>
 <li>bootstrap 95 % CI on per-group perplexity</li>
 <li>per-cell predictions log (jsonl + narrative TXT)</li>
 <li>direct int-list pass-through to the adapter (no string round-trip),
-enabling rna BERT / rnaformer to score raw token ids straight from
+enabling rna BERT to score raw token ids straight from
 the parquet pipeline output</li>
 </ul>
 </section>
@@ -188,7 +188,7 @@ the parquet pipeline output</li>
                 &#34;artefacts&#34;: artefacts,
                 &#34;notes&#34;: (
                     &#34;rna_benchmark scores cells via PLL on the configured MLM &#34;
-                    &#34;(bert / rnaformer). Tokens are passed straight to the adapter &#34;
+                    &#34;(bert). Tokens are passed straight to the adapter &#34;
                     &#34;(no string round-trip), so per-cell perplexity is comparable &#34;
                     &#34;across architectures that share the gene vocabulary. &#34;
                     &#34;Per-group bootstrap CIs use 100 resamples by default.&#34;
@@ -239,7 +239,7 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
             &#34;artefacts&#34;: artefacts,
             &#34;notes&#34;: (
                 &#34;rna_benchmark scores cells via PLL on the configured MLM &#34;
-                &#34;(bert / rnaformer). Tokens are passed straight to the adapter &#34;
+                &#34;(bert). Tokens are passed straight to the adapter &#34;
                 &#34;(no string round-trip), so per-cell perplexity is comparable &#34;
                 &#34;across architectures that share the gene vocabulary. &#34;
                 &#34;Per-group bootstrap CIs use 100 resamples by default.&#34;
