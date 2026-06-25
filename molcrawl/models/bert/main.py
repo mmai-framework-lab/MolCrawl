@@ -221,8 +221,31 @@ if __name__ == "__main__":
             num_attention_heads=18,  # Number of attention heads
             intermediate_size=4608,  # Size of intermediate (feed-forward) layer
         )
+    elif model_size == "xl":
+        # Custom config matching GPT-2 XL scale (n_embd=1600, n_layer=48,
+        # n_head=25). hidden / num_attention_heads = 64 per head,
+        # intermediate = 4 × hidden. ~1.5B params.
+        model_config = BertConfig(
+            vocab_size=meta_vocab_size,
+            max_position_embeddings=max_length,
+            hidden_size=1600,
+            num_hidden_layers=48,
+            num_attention_heads=25,
+            intermediate_size=6400,
+        )
     else:
-        raise ValueError("model_size: {model_size} is not supported choose between small, medium and large")
+        raise ValueError(
+            f"model_size '{model_size}' is not supported. "
+            "Choose: small, medium, large, xl"
+        )
+
+    # Opt-in: enable Flash Attention 2 implementation if the per-config
+    # global ``flash_attention`` is True. Requires the ``flash-attn``
+    # package; falls back to the model's default attention if the
+    # config / hardware combination is unsupported (HF will raise at
+    # ``from_config`` / ``from_pretrained`` time).
+    if globals().get("flash_attention", False):
+        model_config._attn_implementation = "flash_attention_2"
 
     # Determine whether fine-tune checkpoints already exist in model_path
     _has_finetune_ckpt = os.path.exists(model_path) and any(d.startswith("checkpoint-") for d in os.listdir(model_path))
@@ -373,6 +396,21 @@ if __name__ == "__main__":
         dataloader_num_workers=int(globals().get("dataloader_num_workers", 0)),
         dataloader_pin_memory=bool(globals().get("dataloader_pin_memory", False)),
         ddp_find_unused_parameters=bool(globals().get("ddp_find_unused_parameters", False)),
+        # XL-scale opt-ins (defaults preserve existing config behaviour):
+        #   torch_compile=True               : inductor kernel fusion,
+        #                                      ~20-40% speedup after warmup
+        #   optim="adamw_torch_fused"        : fused CUDA AdamW kernel,
+        #                                      ~10-20% optimizer step speedup
+        #   dataloader_persistent_workers=T  : skip per-epoch worker
+        #                                      respawn cost
+        #   ddp_bucket_cap_mb=512            : larger AllReduce buckets
+        #                                      (HF default 25 MB) → better
+        #                                      8-GPU comms efficiency
+        torch_compile=bool(globals().get("torch_compile", False)),
+        torch_compile_backend=str(globals().get("torch_compile_backend", "inductor")),
+        optim=str(globals().get("optim", "adamw_torch")),
+        dataloader_persistent_workers=bool(globals().get("dataloader_persistent_workers", False)),
+        ddp_bucket_cap_mb=int(globals().get("ddp_bucket_cap_mb", 25)),
     )
 
     # Check if we should use custom dataset loading (for RNA data)
