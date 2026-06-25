@@ -7,6 +7,9 @@ and the threshold / confusion-matrix utilities.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -20,6 +23,7 @@ from molcrawl.tasks.evaluation.clinvar.metrics import (
     find_optimal_f1_threshold,
     sensitivity_specificity,
 )
+from molcrawl.tasks.evaluation.clinvar.predictions_log import _write_jsonl
 from molcrawl.tasks.evaluation.clinvar.splits import chromosome_split
 
 
@@ -57,6 +61,112 @@ def test_load_clinvar_missing_columns(tmp_path):
     pd.DataFrame({"x": [1]}).to_csv(src, index=False)
     with pytest.raises(ValueError):
         load_clinvar(str(src))
+
+
+def test_load_clinvar_preserves_metadata_columns(tmp_path):
+    """vcv_id / review_status / consequence must survive the load step."""
+    df_in = _sample_df().assign(
+        vcv_id=[
+            "VCV000000001",
+            "VCV000000002",
+            "VCV000000003",
+            "VCV000000004",
+        ],
+        review_status=[
+            "criteria_provided,_single_submitter",
+            "reviewed_by_expert_panel",
+            "no_assertion_criteria_provided",
+            "criteria_provided,_multiple_submitters,_no_conflicts",
+        ],
+        consequence=[
+            "missense_variant",
+            "synonymous_variant",
+            "intron_variant",
+            "missense_variant",
+        ],
+    )
+    src = tmp_path / "clinvar_with_metadata.csv"
+    df_in.to_csv(src, index=False)
+    df = load_clinvar(str(src))
+    # 3 rows survive (Uncertain significance dropped), but every metadata
+    # column is still on the frame for downstream traceability / joins.
+    assert len(df) == 3
+    for col in ("vcv_id", "review_status", "consequence"):
+        assert col in df.columns, f"{col} must survive load_clinvar"
+    # vcv_id and the canonical NCBI prefix shape are intact.
+    assert df["vcv_id"].iloc[0].startswith("VCV")
+    # The pathogenic label join still works.
+    assert set(df["pathogenic"]) <= {0, 1}
+
+
+def test_load_clinvar_tolerates_legacy_csv_without_metadata(tmp_path):
+    """Old CSVs (pre-vcv_id) still load — metadata cols are just absent."""
+    src = tmp_path / "legacy.csv"
+    _sample_df().to_csv(src, index=False)
+    df = load_clinvar(str(src))
+    assert "vcv_id" not in df.columns
+    assert "reference_sequence" in df.columns  # sequences still load
+
+
+def test_predictions_jsonl_includes_vcv_metadata(tmp_path):
+    """Every per-variant JSONL record carries vcv_id / review_status / consequence."""
+    df = pd.DataFrame(
+        {
+            "vcv_id": ["VCV000000001", "VCV000000002"],
+            "review_status": [
+                "criteria_provided,_single_submitter",
+                "reviewed_by_expert_panel",
+            ],
+            "consequence": ["missense_variant", "synonymous_variant"],
+            "chrom": ["1", "2"],
+            "pos": [100, 200],
+            "ref": ["A", "G"],
+            "alt": ["T", "C"],
+            "reference_sequence": ["AAA", "GGG"],
+            "variant_sequence": ["ATA", "GCG"],
+            "ClinicalSignificance": ["Pathogenic", "Benign"],
+        }
+    )
+    ref_ll = np.array([-1.0, -1.5])
+    var_ll = np.array([-2.0, -1.4])
+    scores = ref_ll - var_ll
+    labels = np.array([1, 0])
+    predicted = np.array([1, 0])
+    correct = np.array([True, True])
+
+    out = tmp_path / "predictions.jsonl"
+    _write_jsonl(
+        out, df, ref_ll, var_ll, scores, labels,
+        threshold=0.0, predicted=predicted, correct=correct,
+    )
+    lines = out.read_text().strip().splitlines()
+    assert len(lines) == 2
+    records = [json.loads(line) for line in lines]
+    for rec, expected_vcv in zip(records, ["VCV000000001", "VCV000000002"]):
+        assert rec["vcv_id"] == expected_vcv
+        assert rec["review_status"] is not None
+        assert rec["consequence"] is not None
+
+
+def test_predictions_jsonl_handles_legacy_rows_without_vcv(tmp_path):
+    """Legacy DataFrames without vcv_id still serialise — fields are null."""
+    df = pd.DataFrame(
+        {
+            "chrom": ["1"], "pos": [100], "ref": ["A"], "alt": ["T"],
+            "reference_sequence": ["AAA"], "variant_sequence": ["ATA"],
+            "ClinicalSignificance": ["Pathogenic"],
+        }
+    )
+    out = tmp_path / "predictions.jsonl"
+    _write_jsonl(
+        out, df,
+        ref_ll=np.array([-1.0]), var_ll=np.array([-2.0]),
+        scores=np.array([1.0]), labels=np.array([1]),
+        threshold=None, predicted=None, correct=None,
+    )
+    rec = json.loads(out.read_text().strip())
+    assert rec["vcv_id"] is None
+    assert rec["chrom"] == "1"  # sequence-side metadata still serialised
 
 
 def test_chromosome_split_partitions_unseen():

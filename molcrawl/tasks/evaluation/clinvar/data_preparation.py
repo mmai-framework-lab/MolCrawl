@@ -31,8 +31,15 @@ def load_clinvar(path: str) -> pd.DataFrame:
     """Load a ClinVar-derived table from CSV, TSV, or JSON.
 
     The file must expose ``reference_sequence``, ``variant_sequence``, and
-    ``ClinicalSignificance`` columns.  Additional columns are preserved
-    untouched for downstream reporting.
+    ``ClinicalSignificance`` columns.  Additional metadata columns
+    (``vcv_id``, ``review_status``, ``consequence``, ``chrom``, ``pos``,
+    ``ref``, ``alt``) are preserved untouched for downstream reporting,
+    group-aware splitting, and joins against external annotation sources.
+
+    These metadata columns are kept on the DataFrame but never fed to the
+    model: ``ClinVarEvaluator.run_predictions`` whitelists
+    ``reference_sequence`` / ``variant_sequence`` before calling the
+    adapter, so anything else in the frame stays metadata.
     """
     file_path = Path(path)
     if not file_path.exists():
@@ -56,12 +63,28 @@ def load_clinvar(path: str) -> pd.DataFrame:
             f"Available: {list(df.columns)}"
         )
 
+    # Surface the presence/absence of the optional metadata columns once at
+    # load time so downstream consumers (group-aware splits, joins against
+    # gnomAD / SpliceAI, drill-downs per consequence) can fail explicitly
+    # if they expected them.
+    optional_metadata = ("vcv_id", "review_status", "consequence")
+    present_meta = [c for c in optional_metadata if c in df.columns]
+    missing_meta = [c for c in optional_metadata if c not in df.columns]
+    if missing_meta:
+        logger.info(
+            "ClinVar metadata columns absent (legacy CSV?): %s. "
+            "Re-generate via download_clinvar_sequences to include them.",
+            missing_meta,
+        )
+
     df = add_pathogenic_label(df)
     logger.info(
-        "Loaded %d ClinVar variants (pathogenic=%d, benign=%d)",
+        "Loaded %d ClinVar variants (pathogenic=%d, benign=%d) "
+        "[metadata cols: %s]",
         len(df),
         int((df["pathogenic"] == 1).sum()),
         int((df["pathogenic"] == 0).sum()),
+        present_meta or "none",
     )
     return df
 
