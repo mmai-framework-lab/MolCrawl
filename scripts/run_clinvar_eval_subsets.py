@@ -44,6 +44,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 from statistics import mean, stdev
+from typing import Optional
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -111,6 +112,8 @@ def run_one(
     context_length: int,
     python_exe: str,
     dry_run: bool,
+    score_window_half: Optional[int] = None,
+    flank: int = 64,
 ) -> dict:
     """Run a single evaluation; return a dict for clinvar_auroc_results.csv."""
     out_dir = out_root / f"{model_type}__{subset}__seed{seed}"
@@ -127,6 +130,9 @@ def run_one(
         "--seed", str(seed),
         "--context-length", str(context_length),
     ]
+    if score_window_half is not None:
+        cmd += ["--score-window-half", str(score_window_half),
+                "--flank", str(flank)]
     if dry_run:
         print("DRY:", " ".join(cmd))
         return {
@@ -320,6 +326,33 @@ def main() -> int:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--context-length", type=int, default=512)
     ap.add_argument(
+        "--score-window-half",
+        type=int,
+        default=None,
+        help=(
+            "Forward to clinvar evaluator: restrict PLL averaging to "
+            "±N tokens around the variant centre (default = full "
+            "sequence). 32 is a sensible value for the 128-nt window "
+            "produced by download_clinvar_sequences."
+        ),
+    )
+    ap.add_argument(
+        "--flank",
+        type=int,
+        default=64,
+        help="Variant centre position (default 64). Only used when --score-window-half is set.",
+    )
+    ap.add_argument(
+        "--out-tag",
+        default=None,
+        help=(
+            "Optional suffix for the analysis output dir, used to keep "
+            "parallel sweeps (e.g. full-vs-window, full-vs-2star) side "
+            "by side instead of overwriting each other. Default = "
+            "'clinvar_evaluation' (unchanged historical layout)."
+        ),
+    )
+    ap.add_argument(
         "--python-exe",
         default=os.environ.get(
             "PYTHON", str(Path.home() / "miniforge3/envs/molcrawl/bin/python")
@@ -339,7 +372,11 @@ def main() -> int:
         clinvar_data = (
             base_dir / "genome_sequence" / "clinvar" / "clinvar_sequences.csv"
         )
-    out_root = base_dir / "genome_sequence" / "analysis" / "clinvar_evaluation"
+    out_dir_name = (
+        f"clinvar_evaluation_{args.out_tag}" if args.out_tag
+        else "clinvar_evaluation"
+    )
+    out_root = base_dir / "genome_sequence" / "analysis" / out_dir_name
     out_root.mkdir(parents=True, exist_ok=True)
 
     if args.subsets:
@@ -385,6 +422,8 @@ def main() -> int:
                     n_per_class=args.n_per_class, device=args.device,
                     context_length=args.context_length,
                     python_exe=args.python_exe, dry_run=args.dry_run,
+                    score_window_half=args.score_window_half,
+                    flank=args.flank,
                 )
                 results.append(r)
                 # Incrementally rewrite the CSV so partial progress isn't lost

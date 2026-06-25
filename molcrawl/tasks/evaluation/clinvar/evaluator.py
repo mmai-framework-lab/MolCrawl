@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -68,6 +68,16 @@ class ClinVarEvaluator(BaseEvaluator):
         )
         self.clinvar_path = clinvar_path
         self.context_length: int = int(self.config.get("context_length", 512))
+        # When set, the adapter only averages PLL over a window of
+        # ``± score_window_half`` tokens around the variant centre
+        # (default = full sequence). The model still sees full context;
+        # only the averaging set is restricted. The centre is taken to
+        # be ``flank`` (default 64), matching the upstream window
+        # extraction in download_clinvar_sequences().
+        self.score_window_half: Optional[int] = self.config.get("score_window_half")
+        if self.score_window_half is not None:
+            self.score_window_half = int(self.score_window_half)
+        self.flank: int = int(self.config.get("flank", 64))
 
     def category(self) -> str:
         return "variant_effect"
@@ -119,11 +129,24 @@ class ClinVarEvaluator(BaseEvaluator):
         ref_sequences = dataset["reference_sequence"].astype(str).tolist()
         var_sequences = dataset["variant_sequence"].astype(str).tolist()
 
+        # Build the window-position list once, shared by ref and var
+        # scoring so the two PLLs are computed over exactly the same
+        # token positions and their difference stays a meaningful score.
+        eval_positions: Optional[List[int]] = None
+        if self.score_window_half is not None:
+            lo = max(0, self.flank - self.score_window_half)
+            hi = self.flank + self.score_window_half + 1  # exclusive
+            eval_positions = list(range(lo, hi))
+
         ref_out = adapter.score_likelihood(
-            ref_sequences, context_length=self.context_length
+            ref_sequences,
+            context_length=self.context_length,
+            eval_position_indices=eval_positions,
         )
         var_out = adapter.score_likelihood(
-            var_sequences, context_length=self.context_length
+            var_sequences,
+            context_length=self.context_length,
+            eval_position_indices=eval_positions,
         )
 
         ref_ll = np.asarray(ref_out.log_likelihood, dtype=float)

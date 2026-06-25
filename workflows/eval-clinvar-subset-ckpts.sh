@@ -16,12 +16,22 @@
 #   sbatch --gres=gpu:1 workflows/eval-clinvar-subset-ckpts.sh   # SLURM
 #
 # Env knobs (passed through to the Python driver):
-#   N_PER_CLASS   — default 200 (lightweight pass; raise to 1000-5000 for final)
-#   SEEDS         — default "1,2,3"
-#   MODELS        — default "bert,gpt2"
-#   SUBSETS       — default "" (auto-detect from existing ckpts)
-#   DEVICE        — default "cuda"
-#   CONTEXT_LEN   — default 512
+#   N_PER_CLASS        — default 200 (lightweight pass; raise to 1000-5000 for final)
+#   SEEDS              — default "1,2,3"
+#   MODELS             — default "bert,gpt2"
+#   SUBSETS            — default "" (auto-detect from existing ckpts)
+#   DEVICE             — default "cuda"
+#   CONTEXT_LEN        — default 512
+#   CLINVAR_DATA       — default unset (uses runner default; lets you point
+#                        at a filtered CSV, e.g. clinvar_sequences_2star.csv)
+#   SCORE_WINDOW_HALF  — default unset (full-sequence average). Set to e.g. 32
+#                        to restrict the PLL average to ±32 tokens around the
+#                        variant centre.
+#   FLANK              — default 64 (only used when SCORE_WINDOW_HALF is set)
+#   OUT_TAG            — default unset → writes to .../clinvar_evaluation/.
+#                        Set to e.g. "n1000" / "2star" / "window32" to write
+#                        to .../clinvar_evaluation_<tag>/ and keep parallel
+#                        sweeps from overwriting each other.
 #
 # ⚠️ SLURM comma-in-value pitfall:
 #   sbatch's `--export=ALL,KEY=value,...` parses commas as the separator
@@ -64,27 +74,46 @@ MODELS=${MODELS:-bert,gpt2}
 SUBSETS=${SUBSETS:-}
 DEVICE=${DEVICE:-cuda}
 CONTEXT_LEN=${CONTEXT_LEN:-512}
+CLINVAR_DATA=${CLINVAR_DATA:-}
+SCORE_WINDOW_HALF=${SCORE_WINDOW_HALF:-}
+FLANK=${FLANK:-64}
+OUT_TAG=${OUT_TAG:-}
 
 LOG_DIR="${LEARNING_SOURCE_DIR}/genome_sequence/logs"
 mkdir -p "$LOG_DIR"
-LOG_FILE="${LOG_DIR}/clinvar-eval-subset-$(date +%Y-%m-%d_%H-%M-%S).log"
+LOG_TAG_SUFFIX=""
+[ -n "$OUT_TAG" ] && LOG_TAG_SUFFIX="-${OUT_TAG}"
+LOG_FILE="${LOG_DIR}/clinvar-eval-subset${LOG_TAG_SUFFIX}-$(date +%Y-%m-%d_%H-%M-%S).log"
 
 EXTRA_ARGS=()
 if [ -n "$SUBSETS" ]; then
     EXTRA_ARGS+=(--subsets "$SUBSETS")
 fi
+if [ -n "$CLINVAR_DATA" ]; then
+    EXTRA_ARGS+=(--clinvar-data "$CLINVAR_DATA")
+fi
+if [ -n "$SCORE_WINDOW_HALF" ]; then
+    EXTRA_ARGS+=(--score-window-half "$SCORE_WINDOW_HALF" --flank "$FLANK")
+fi
+if [ -n "$OUT_TAG" ]; then
+    EXTRA_ARGS+=(--out-tag "$OUT_TAG")
+fi
 
 echo "========================================"
 echo "ClinVar AUROC eval — subset pretrain ckpts"
 echo "========================================"
-echo "GPU:           ${CUDA_VISIBLE_DEVICES}"
-echo "n_per_class:   ${N_PER_CLASS}"
-echo "seeds:         ${SEEDS}"
-echo "models:        ${MODELS}"
-echo "subsets:       ${SUBSETS:-auto-detect}"
-echo "context_len:   ${CONTEXT_LEN}"
-echo "device:        ${DEVICE}"
-echo "log:           ${LOG_FILE}"
+echo "GPU:               ${CUDA_VISIBLE_DEVICES}"
+echo "n_per_class:       ${N_PER_CLASS}"
+echo "seeds:             ${SEEDS}"
+echo "models:            ${MODELS}"
+echo "subsets:           ${SUBSETS:-auto-detect}"
+echo "context_len:       ${CONTEXT_LEN}"
+echo "device:            ${DEVICE}"
+echo "clinvar_data:      ${CLINVAR_DATA:-<runner default>}"
+echo "score_window_half: ${SCORE_WINDOW_HALF:-<full-seq mean>}"
+echo "flank:             ${FLANK}"
+echo "out_tag:           ${OUT_TAG:-<none → clinvar_evaluation/>}"
+echo "log:               ${LOG_FILE}"
 echo
 
 run_training_background "$LOG_FILE" \
