@@ -232,6 +232,22 @@ def download_clinvar_sequences(
     if clin_col is None:
         logger.warning("ClinicalSignificance column not found — available: %s", df.columns.tolist())
 
+    # Metadata columns we preserve from the upstream HF dataset.
+    # These are NOT fed to any model — see the whitelist contract in
+    # ``molcrawl/tasks/evaluation/clinvar/evaluator.py:run_predictions`` and
+    # ``prepare_clinvar`` below, both of which only read
+    # ``reference_sequence`` / ``variant_sequence``. The metadata stays in
+    # the CSV for traceability (one row ↔ one NCBI ClinVar variation page),
+    # for joining against external annotation sources (gnomAD / SpliceAI /
+    # ClinGen), and for group-aware splits downstream.
+    has_id           = "id" in df.columns
+    has_review       = "review_status" in df.columns
+    has_consequence  = "consequence" in df.columns
+    if not has_id:
+        logger.warning(
+            "ClinVar HF dataset lacks an 'id' column — vcv_id will be left empty."
+        )
+
     ref_genome = Fasta(ref_fasta_path)
     mapping = _build_chrom_mapping(ref_genome)
 
@@ -247,8 +263,25 @@ def download_clinvar_sequences(
                 str(row["alt"]),
                 flank=flank,
             )
+            # Format the VCV accession as the canonical NCBI form
+            # ("VCV001164676") so the value resolves directly via
+            # https://www.ncbi.nlm.nih.gov/clinvar/variation/{numeric_id}/
+            # and joins cleanly against ClinVar VCV-keyed exports.
+            vcv_id = None
+            if has_id:
+                try:
+                    vcv_id = f"VCV{int(row['id']):09d}"
+                except (TypeError, ValueError):
+                    vcv_id = None
             records.append(
                 {
+                    "vcv_id": vcv_id,
+                    "review_status": (
+                        row["review_status"] if has_review else None
+                    ),
+                    "consequence": (
+                        row["consequence"] if has_consequence else None
+                    ),
                     "chrom": row["chrom"],
                     "pos": row["pos"],
                     "ref": row["ref"],
@@ -261,7 +294,14 @@ def download_clinvar_sequences(
         except Exception as exc:
             logger.warning("Skipping %s:%s — %s", row.get("chrom"), row.get("pos"), exc)
 
-    pd.DataFrame(records).to_csv(output_file, index=False)
+    # Column order is fixed to keep vcv_id as the first column in the CSV.
+    column_order = [
+        "vcv_id", "review_status", "consequence",
+        "chrom", "pos", "ref", "alt",
+        "reference_sequence", "variant_sequence",
+        "ClinicalSignificance",
+    ]
+    pd.DataFrame(records, columns=column_order).to_csv(output_file, index=False)
     logger.info("Saved %d records to %s", len(records), output_file)
 
 
@@ -336,16 +376,34 @@ def prepare_clinvar(
     # 1. Collect sequences from CSV
     # ------------------------------------------------------------------
     logger.info("Reading ClinVar sequences from %s", source_file)
+    # Strict whitelist: pull only the two sequence columns out of every
+    # row for tokenisation. The CSV also carries vcv_id / review_status /
+    # consequence and the chrom/pos/ref/alt locus, none of which enter
+    # the tokenisation stream — but we still preserve them in a
+    # side-channel ``seq_to_origins`` mapping so the post-split manifest
+    # can record exactly which ClinVar variants ended up in train, valid,
+    # or test. This is the audit trail required to answer "what did this
+    # model see during pre-training" after the fact.
     sequences: List[str] = []
+    seq_to_origins: Dict[str, List[Dict[str, Optional[str]]]] = {}
     with open(source_file, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            origin_meta = {
+                "vcv_id": (row.get("vcv_id") or "").strip() or None,
+                "review_status": (row.get("review_status") or "").strip() or None,
+                "consequence": (row.get("consequence") or "").strip() or None,
+            }
             ref_seq = row.get("reference_sequence", "").strip()
             var_seq = row.get("variant_sequence", "").strip()
             if ref_seq:
-                sequences.append(ref_seq.upper())
+                up = ref_seq.upper()
+                sequences.append(up)
+                seq_to_origins.setdefault(up, []).append({**origin_meta, "kind": "ref"})
             if var_seq:
-                sequences.append(var_seq.upper())
+                up = var_seq.upper()
+                sequences.append(up)
+                seq_to_origins.setdefault(up, []).append({**origin_meta, "kind": "var"})
 
     logger.info("Total sequences collected (before dedup): %d", len(sequences))
 
@@ -373,6 +431,51 @@ def prepare_clinvar(
         len(train_seqs),
         len(val_seqs),
         len(test_seqs),
+    )
+
+    # ------------------------------------------------------------------
+    # 3b. Write the splits manifest — the audit trail for which ClinVar
+    #     variants the resulting ckpt was trained on. One row per
+    #     (vcv_id, sequence kind, split). Same vcv_id can land in
+    #     multiple splits if its ref / var sequences happened to be
+    #     deduplicated separately; same sequence can appear under
+    #     multiple vcv_id origins if two variants share a window after
+    #     uppercasing. Both edge cases are preserved exactly.
+    # ------------------------------------------------------------------
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_dir / "splits_manifest.csv"
+    manifest_rows: List[Dict[str, Optional[str]]] = []
+    for split_name, split_seqs in (
+        ("train", train_seqs), ("valid", val_seqs), ("test", test_seqs)
+    ):
+        for s in split_seqs:
+            origins = seq_to_origins.get(s, [])
+            if not origins:
+                manifest_rows.append({
+                    "split": split_name, "vcv_id": None,
+                    "kind": None, "review_status": None,
+                    "consequence": None,
+                })
+            else:
+                for o in origins:
+                    manifest_rows.append({
+                        "split": split_name,
+                        "vcv_id": o.get("vcv_id"),
+                        "kind": o.get("kind"),
+                        "review_status": o.get("review_status"),
+                        "consequence": o.get("consequence"),
+                    })
+    with manifest_path.open("w", newline="") as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=["split", "vcv_id", "kind", "review_status", "consequence"],
+        )
+        writer.writeheader()
+        writer.writerows(manifest_rows)
+    logger.info(
+        "Wrote splits manifest with %d rows to %s",
+        len(manifest_rows),
+        manifest_path,
     )
 
     raw_split = DatasetDict(

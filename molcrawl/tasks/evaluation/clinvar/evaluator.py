@@ -109,12 +109,26 @@ class ClinVarEvaluator(BaseEvaluator):
             stratify_chrom=stratify_chrom,
             seed=seed,
         )
-        # Stash sampling metadata for the report.
+        # Stash sampling metadata for the report. ``sampled_vcv_ids``
+        # records the full list of variants that this run actually
+        # evaluated; every per-variant prediction in predictions.jsonl
+        # references one of these by vcv_id, so the report + JSONL pair
+        # is sufficient to reconstruct exactly which NCBI variants drove
+        # the AUROC. Legacy CSVs without ``vcv_id`` serialise as an
+        # empty list rather than failing.
+        if "vcv_id" in sampled.columns:
+            sampled_vcv_ids = [
+                v for v in sampled["vcv_id"].tolist() if v is not None
+            ]
+        else:
+            sampled_vcv_ids = []
         self._last_sampling = {
             "n_per_class": n_per_class,
             "stratify_chrom": stratify_chrom,
             "seed": seed,
             "total_rows_in_file": int(len(df)),
+            "sampled_vcv_ids": sampled_vcv_ids,
+            "sampled_count": int(len(sampled)),
         }
         return sampled
 
@@ -126,6 +140,13 @@ class ClinVarEvaluator(BaseEvaluator):
                 "which ClinVar requires."
             )
 
+        # Strict whitelist: only the two sequence columns are converted to
+        # model input here. Every other column on `dataset` — vcv_id,
+        # review_status, consequence, chrom/pos/ref/alt, the pathogenic
+        # label — stays as metadata for downstream reporting / joins /
+        # group-aware splits and is never fed to the adapter. This is the
+        # only place tensors are built for ClinVar, so this is the single
+        # checkpoint that enforces the contract.
         ref_sequences = dataset["reference_sequence"].astype(str).tolist()
         var_sequences = dataset["variant_sequence"].astype(str).tolist()
 

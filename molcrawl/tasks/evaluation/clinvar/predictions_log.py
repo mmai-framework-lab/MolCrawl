@@ -110,8 +110,18 @@ def _write_jsonl(
 
     with path.open("w", encoding="utf-8") as fh:
         for i, row in df.iterrows():
+            # vcv_id / review_status / consequence are emitted when the
+            # upstream CSV carries them (PR feat/clinvar-csv-vcv-metadata).
+            # They are the only stable identifiers tying a scored row back
+            # to the NCBI ClinVar variation page and external annotation
+            # sources, so they belong in every per-variant prediction
+            # record. Legacy CSVs lacking these columns serialise as null
+            # via _value().
             record: Dict[str, Any] = {
                 "index": int(i),
+                "vcv_id": _stringify(_value("vcv_id", row)),
+                "review_status": _stringify(_value("review_status", row)),
+                "consequence": _stringify(_value("consequence", row)),
                 "chrom": _stringify(_value("chrom", row)),
                 "pos": _maybe_int(_value("pos", row)),
                 "ref_allele": _stringify(_value("ref", row)),
