@@ -222,6 +222,14 @@ if __name__ == "__main__":
     else:
         ambiguous_token_ids = []
 
+    # Resolve pad-token id to be excluded from CLM loss. Config may set
+    # ``pad_token_id_for_loss = 0`` (compounds convention) so that pad
+    # positions produced by the batch padder or already baked into the
+    # dataset are ignored during cross_entropy. Default None → no mask
+    # (safe for modalities where the pad id value collides with a real
+    # token, e.g. genome single-nucleotide vocab where id=0 is 'A').
+    pad_token_id_for_loss = globals().get("pad_token_id_for_loss", None)
+
     # RNA data loader - get paths from config if available
     rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
     rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
@@ -280,6 +288,13 @@ def get_batch(split):
     if ambiguous_token_ids:
         from molcrawl.models._collators import mask_ambiguous_targets_for_clm
         y = mask_ambiguous_targets_for_clm(y, ambiguous_token_ids)
+
+    # Zero out CLM loss at pad-token positions (target == pad_token_id_for_loss).
+    # Applied only when config explicitly sets ``pad_token_id_for_loss`` — for
+    # compounds this is 0. Reuses the same helper so ambiguous + pad masks stack.
+    if pad_token_id_for_loss is not None:
+        from molcrawl.models._collators import mask_ambiguous_targets_for_clm
+        y = mask_ambiguous_targets_for_clm(y, [pad_token_id_for_loss])
 
     if device_type == "cuda":
         # pin arrays x,y, which allows us to move them to GPU asynchronously (non_blocking=True)
