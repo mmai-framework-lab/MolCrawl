@@ -26,8 +26,8 @@ block_size = 1024
 gradient_accumulation_steps = 5 * 8  # match effective batch size to other domains
 
 # this makes total number of tokens be 300B
-max_iters = 50000
-lr_decay_iters = 50000
+max_iters = 1754
+lr_decay_iters = 1754
 
 # eval stuff
 eval_interval = 1000
@@ -47,11 +47,11 @@ early_stopping = True
 early_stopping_patience = 5  # stop after 5 consecutive evals without val_loss improvement
 
 # learning rate (reduced from default 6e-4 to match rna/genome_sequence)
-learning_rate = 6e-6
-min_lr = learning_rate / 10
+learning_rate = 0.0002
+min_lr = 2e-05
 
 # regularisation
-weight_decay = 1e-1
+weight_decay = 0.1
 dropout = 0.1
 
 # dataset

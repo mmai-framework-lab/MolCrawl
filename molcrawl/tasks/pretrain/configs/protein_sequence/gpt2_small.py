@@ -21,8 +21,10 @@ block_size = 1024
 gradient_accumulation_steps = 5 * 8
 
 # this makes total number of tokens be 300B
-max_iters = 50000
-lr_decay_iters = 50000
+max_iters = 1754
+lr_decay_iters = 1754
+learning_rate = 6e-4  # GPT-3 ladder small (Phase 2 sweep confirms)
+min_lr = 6e-5  # peak/10
 
 # eval stuff
 eval_interval = 1000
@@ -42,7 +44,7 @@ early_stopping = True
 early_stopping_patience = 5  # Stop if there is no improvement 5 times (5000 steps)
 
 # regularization - suppress overfitting
-weight_decay = 1e-1
+weight_decay = 0.1
 dropout = 0.1  # enable Dropout (default 0.0)
 
 # dataset

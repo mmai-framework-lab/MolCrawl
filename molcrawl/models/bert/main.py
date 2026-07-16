@@ -372,6 +372,11 @@ if __name__ == "__main__":
         warmup_steps=warmup_steps,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
+        # AdamW optimizer settings — production spec (2026-07-08):
+        # betas = (0.9, 0.95) instead of HF default (0.9, 0.999).
+        adam_beta1=0.9,
+        adam_beta2=0.95,
+        max_grad_norm=1.0,  # grad clip = 1.0 (production spec)
         report_to="none",  # Disable wandb integration to prevent artifact bloat
         load_best_model_at_end=early_stopping,  # Load best model at end when early stopping is enabled
         metric_for_best_model="eval_loss",  # Use eval_loss to determine best model

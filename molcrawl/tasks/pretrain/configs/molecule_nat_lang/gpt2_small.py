@@ -27,11 +27,11 @@ block_size = 1024
 gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
-max_iters = 6000
-lr_decay_iters = 6000
-warmup_iters = 200  # how many steps to warm up for
-learning_rate = 6e-6  # max learning rate
-min_lr = learning_rate / 10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+max_iters = 321
+lr_decay_iters = 321
+warmup_iters = 6  # how many steps to warm up for
+learning_rate = 0.0006  # max learning rate
+min_lr = 6e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
 eval_interval = 200
@@ -47,7 +47,7 @@ save_checkpoint_steps = None  # If None, save with eval_interval
 max_checkpoints = 5  # Keep up to 5 checkpoints
 
 # weight decay
-weight_decay = 1e-1
+weight_decay = 0.1
 
 # dataset
 dataset = "molecule_nat_lang"

@@ -27,8 +27,8 @@ block_size = 1024
 gradient_accumulation_steps = 5 * 8  # match effective batch size to other domains
 
 # this makes total number of tokens be 300B
-max_iters = 50000
-lr_decay_iters = 50000
+max_iters = 1754
+lr_decay_iters = 1754
 
 # eval stuff
 eval_interval = 1000
@@ -48,11 +48,11 @@ early_stopping = True
 early_stopping_patience = 10  # increased from 5 to allow more exploration with dropout
 
 # learning rate (increased from 6e-6 to compensate for dropout regularisation)
-learning_rate = 6e-5
-min_lr = learning_rate / 10
+learning_rate = 0.0003
+min_lr = 3e-05
 
 # regularisation
-weight_decay = 1e-1
+weight_decay = 0.1
 dropout = 0.1
 
 # dataset

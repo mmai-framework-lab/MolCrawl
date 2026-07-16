@@ -26,15 +26,18 @@ eos_token_id = tokenizer.eos_token_id  # 13 ([SEP])
 # 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
 batch_size = 2  # max size in koala
 
-block_size = 1024
+block_size = 128
+
+# Enable pad-position CLM loss masking (Phase 0-1). compounds uses pad_id=0.
+pad_token_id_for_loss = 0
 gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
 max_iters = 30000
 lr_decay_iters = 30000
 warmup_iters = 200  # how many steps to warm up for
-learning_rate = 6e-7  # max learning rate
-min_lr = learning_rate / 10  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+learning_rate = 0.00025  # max learning rate
+min_lr = 2.5e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
 eval_interval = 200
@@ -54,7 +57,7 @@ early_stopping = True
 early_stopping_patience = 5
 
 # weight decay
-weight_decay = 1e-1
+weight_decay = 0.1
 
 # dataset
 dataset = "compounds"
