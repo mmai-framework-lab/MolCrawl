@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -99,7 +100,7 @@ def sbatch_submit(sbatch: Path, job_name: str, exports: dict[str, str]) -> str |
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     except subprocess.TimeoutExpired:
-        log("  → sbatch timed out")
+        log(f"  → sbatch timed out")
         return None
     if r.returncode != 0:
         log(f"  → sbatch failed rc={r.returncode}: {r.stderr.strip()}")
@@ -289,7 +290,7 @@ def poll_g2_step4(state: dict) -> None:
 def kick_compounds(state: dict, max_concurrent: int = 2) -> None:
     """Kick compounds jobs in priority order, up to max_concurrent live."""
     cmp = state["compounds"]
-    for key, _wf in COMPOUNDS_WORKFLOWS:
+    for key, wf in COMPOUNDS_WORKFLOWS:
         if key not in cmp:
             cmp[key] = {"phase": "IDLE"}
     # count live
