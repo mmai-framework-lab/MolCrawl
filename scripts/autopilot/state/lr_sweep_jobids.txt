@@ -1,0 +1,15 @@
+# subset LR sweep matrix — kicked 2026-07-15T09:53:06+09:00
+# max_steps=800
+# jobid | arch | subset | lr_tag | lr_value
+22877 | bert | mammal_centered | 5e-5 | 0.00005
+22878 | bert | mammal_centered | 1e-4 | 0.0001
+22879 | bert | mammal_centered | 1e-5 | 0.00001
+22883 | bert | global_random_seed1 | 5e-5 | 0.00005
+22884 | bert | global_random_seed1 | 1e-4 | 0.0001
+22885 | bert | global_random_seed1 | 1e-5 | 0.00001
+22906 | gpt2 | mammal_centered | 6e-5v3 | 0.00006
+22907 | gpt2 | mammal_centered | 6e-4v3 | 0.0006
+22908 | gpt2 | mammal_centered | 3e-4v3 | 0.0003
+22909 | gpt2 | global_random_seed1 | 6e-5v3 | 0.00006
+22910 | gpt2 | global_random_seed1 | 6e-4v3 | 0.0006
+22911 | gpt2 | global_random_seed1 | 3e-4v3 | 0.0003
