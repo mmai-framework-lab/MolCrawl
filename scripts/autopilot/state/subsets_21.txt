@@ -1,0 +1,22 @@
+# charter §「対象: 21 subset」
+mammal_centered
+eukaryote_matched_random_seed1
+eukaryote_matched_random_seed2
+eukaryote_matched_random_seed3
+eukaryote_matched_random_seed4
+eukaryote_matched_random_seed5
+eukaryote_matched_random_seed6
+eukaryote_matched_random_seed7
+eukaryote_matched_random_seed8
+eukaryote_matched_random_seed9
+eukaryote_matched_random_seed10
+global_random_seed1
+global_random_seed2
+global_random_seed3
+global_random_seed4
+global_random_seed5
+global_random_seed6
+global_random_seed7
+global_random_seed8
+global_random_seed9
+global_random_seed10

@@ -17,6 +17,8 @@ __pycache__
 
 # Log files
 *.log
+slurm-*.out
+slurm_logs/
 
 # Data files
 *.arrow
@@ -85,3 +87,10 @@ workflows/hugging_face/
 # Server-dependent / private launcher scripts (e.g. _gb200.sbatch).
 # Keep them on disk locally without committing them.
 workflows/_*
+
+# autopilot runtime state (ephemeral)
+tmp/scripts/autopilot/state/coordinator.pid
+tmp/scripts/autopilot/state/coordinator_state.json
+tmp/scripts/autopilot/state/g2_target.json
+tmp/scripts/autopilot/logs/
+tmp/scripts/autopilot/milestones/
