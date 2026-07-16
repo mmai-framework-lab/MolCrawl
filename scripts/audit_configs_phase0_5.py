@@ -39,9 +39,9 @@ CONFIGS = [
     ("rna",               "bert", "small",  "molcrawl.tasks.pretrain.configs.rna.bert_small"),
     ("rna",               "bert", "medium", "molcrawl.tasks.pretrain.configs.rna.bert_medium"),
     ("rna",               "bert", "large",  "molcrawl.tasks.pretrain.configs.rna.bert_large"),
-    # rna BERT xl: DROPPED per production spec (2026-07-08). BERT ladder stops at large.
+    ("rna",               "bert", "xl",     "molcrawl.tasks.pretrain.configs.rna.bert_xl"),
     ("genome_sequence",   "bert", "small_subset", "molcrawl.tasks.pretrain.configs.genome_sequence.bert_small_subset"),
-    # genome_sequence BERT xl_subset: DROPPED (size 軸ずれ、 subset は small 21 変異のみ).
+    ("genome_sequence",   "bert", "xl_subset",    "molcrawl.tasks.pretrain.configs.genome_sequence.bert_xl_subset"),
     ("genome_sequence",   "gpt2", "small_subset", "molcrawl.tasks.pretrain.configs.genome_sequence.gpt2_small_subset"),
     ("protein_sequence",  "gpt2", "small",  "molcrawl.tasks.pretrain.configs.protein_sequence.gpt2_small"),
     ("protein_sequence",  "gpt2", "medium", "molcrawl.tasks.pretrain.configs.protein_sequence.gpt2_medium"),
@@ -50,7 +50,7 @@ CONFIGS = [
     ("protein_sequence",  "bert", "small",  "molcrawl.tasks.pretrain.configs.protein_sequence.bert_small"),
     ("protein_sequence",  "bert", "medium", "molcrawl.tasks.pretrain.configs.protein_sequence.bert_medium"),
     ("protein_sequence",  "bert", "large",  "molcrawl.tasks.pretrain.configs.protein_sequence.bert_large"),
-    # protein_sequence BERT xl: DROPPED per production spec (BERT ladder stops at large).
+    ("protein_sequence",  "bert", "xl",     "molcrawl.tasks.pretrain.configs.protein_sequence.bert_xl"),
     ("molecule_nat_lang", "gpt2", "small",  "molcrawl.tasks.pretrain.configs.molecule_nat_lang.gpt2_small"),
     ("molecule_nat_lang", "gpt2", "medium", "molcrawl.tasks.pretrain.configs.molecule_nat_lang.gpt2_medium"),
     ("molecule_nat_lang", "gpt2", "large",  "molcrawl.tasks.pretrain.configs.molecule_nat_lang.gpt2_large"),
@@ -58,7 +58,7 @@ CONFIGS = [
     ("molecule_nat_lang", "bert", "small",  "molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_small"),
     ("molecule_nat_lang", "bert", "medium", "molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_medium"),
     ("molecule_nat_lang", "bert", "large",  "molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_large"),
-    # molecule_nat_lang BERT xl: DROPPED per production spec.
+    ("molecule_nat_lang", "bert", "xl",     "molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_xl"),
     ("compounds",         "gpt2", "small",  "molcrawl.tasks.pretrain.configs.compounds.gpt2_small"),
     ("compounds",         "gpt2", "medium", "molcrawl.tasks.pretrain.configs.compounds.gpt2_medium"),
     ("compounds",         "gpt2", "large",  "molcrawl.tasks.pretrain.configs.compounds.gpt2_large"),
@@ -66,7 +66,7 @@ CONFIGS = [
     ("compounds",         "bert", "small",  "molcrawl.tasks.pretrain.configs.compounds.bert_small"),
     ("compounds",         "bert", "medium", "molcrawl.tasks.pretrain.configs.compounds.bert_medium"),
     ("compounds",         "bert", "large",  "molcrawl.tasks.pretrain.configs.compounds.bert_large"),
-    # compounds BERT xl: DROPPED per production spec.
+    ("compounds",         "bert", "xl",     "molcrawl.tasks.pretrain.configs.compounds.bert_xl"),
 ]
 
 # Fields we care about, in display order.

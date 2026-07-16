@@ -33,7 +33,11 @@ model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nat_lang", model_size)
 max_length = 1024
 dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR
-learning_rate = 0.00015
+# Phase 1-5c (2026-07-16): 5e-5 → 3e-5. compounds bert-large retrain at
+# 3e-5 (jobid 22918) completed healthy at min val 0.1766. Boss aligns
+# every modality's BERT large to 3e-5 to skip the coord ladder's
+# 5e-5 → 3e-5 auto-downgrade hop.
+learning_rate = float(os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay = 0.01
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100

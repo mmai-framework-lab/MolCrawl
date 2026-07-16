@@ -29,15 +29,12 @@ block_size = 128
 
 # Enable pad-position CLM loss masking (Phase 0-1). compounds uses pad_id=0.
 pad_token_id_for_loss = 0
-# Phase 1-4: raise grad_accum so global batch = batch × grad_accum × n_GPUs(4) = 2,560
-# per autonomous charter (2026-07-10). Was 5*16=80 → global 640 (0.75 epoch under
-# max_iters=12,415). Now 5*64=320 → global 2,560 (exactly 3 epochs).
-gradient_accumulation_steps = 5 * 64
+gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
-max_iters = 12415
-lr_decay_iters = 12415
-warmup_iters = 249  # how many steps to warm up for
+max_iters = 12124
+lr_decay_iters = 12124
+warmup_iters = 242  # how many steps to warm up for (Phase 1-6 dedup 対応で 249 → 242)
 learning_rate = 0.0002  # max learning rate
 min_lr = 2e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 

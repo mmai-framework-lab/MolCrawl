@@ -1,0 +1,21 @@
+# subset LR sweep matrix — kicked 2026-07-15T09:53:06+09:00
+# max_steps=800
+# jobid | arch | subset | lr_tag | lr_value
+22877 | bert | mammal_centered | 5e-5 | 0.00005
+22878 | bert | mammal_centered | 1e-4 | 0.0001
+22879 | bert | mammal_centered | 1e-5 | 0.00001
+22883 | bert | global_random_seed1 | 5e-5 | 0.00005
+22884 | bert | global_random_seed1 | 1e-4 | 0.0001
+22885 | bert | global_random_seed1 | 1e-5 | 0.00001
+22906 | gpt2 | mammal_centered | 6e-5v3 | 0.00006
+22907 | gpt2 | mammal_centered | 6e-4v3 | 0.0006
+22908 | gpt2 | mammal_centered | 3e-4v3 | 0.0003
+22909 | gpt2 | global_random_seed1 | 6e-5v3 | 0.00006
+22910 | gpt2 | global_random_seed1 | 6e-4v3 | 0.0006
+22911 | gpt2 | global_random_seed1 | 3e-4v3 | 0.0003
+# extended sweep (2026-07-15 boss GO): ~8k iter で spike zone を検証
+# jobid | arch | subset | lr_tag | lr_value
+22914 | bert | mammal_centered | ext-lr1e-4 | 0.0001
+22915 | bert | global_random_seed1 | ext-lr1e-4 | 0.0001
+22916 | gpt2 | mammal_centered | ext-lr6e-4 | 0.0006
+22917 | gpt2 | global_random_seed1 | ext-lr6e-4 | 0.0006

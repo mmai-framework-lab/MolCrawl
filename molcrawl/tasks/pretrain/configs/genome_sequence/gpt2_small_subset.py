@@ -17,6 +17,7 @@ Differences from :mod:`gpt2_small`:
 
 import os
 
+from datasets import load_from_disk as _load
 from transformers import AutoTokenizer
 
 from molcrawl.core.paths import (
@@ -54,27 +55,70 @@ meta_vocab_size = len(tokenizer)  # = 10
 tensorboard = True
 
 # ---- training hyperparameters (mirror gpt2_small) ------------------------ #
-batch_size = 12
-block_size = 1024  # matches Phase 3 gpt2_chunk_size
-gradient_accumulation_steps = 5 * 8
+# Phase 1-5 (2026-07-14): batch/grad_accum aligned to global batch 2,560
+# per charter (per_device 8 × grad_accum 80 × n_GPUs 4 = 2,560). Previous
+# 12 × 40 × 4 = 1,920 was Phase 0 vintage. block_size stays 1024 (matches
+# Phase 3 gpt2_chunk_size, unchanged).
+batch_size = 8
+block_size = 1024
+gradient_accumulation_steps = 5 * 16
 
-# LR / warmup / max_iters are env-overridable for sweeps, mirroring the BERT
-# subset config. A 3-LR pre-check on mammal_centered (jobs 19068 / 19069 /
-# 19070, max_iters=12500, warmup=2500) showed:
-#   6e-4 → step-12000 val_loss=1.199; loss spiked back up around step 6k
-#          (1.14 → 1.33) before recovering — instability from too-high LR
-#   6e-5 → step-12000 val_loss=1.121; monotone descent, no spikes — best
-#   6e-6 → step-12000 val_loss=1.299; descent too slow, near-plateau
-# So 6e-5 is the production default. Same pattern as BERT: the Radford
-# literature value (6e-4) is one decade too high for small × vocab=10 × bf16,
-# but unlike BERT 1e-4 it does not fully collapse — it merely oscillates.
-max_iters = 103548
-lr_decay_iters = 103548
-warmup_iters = 2070
-learning_rate = 0.0006
-min_lr = 6e-05  # → 10% of peak per Chinchilla / GPT-2 convention
+# LR pre-check on the pre-G2 (2026-05) mammal_centered dataset (jobs
+# 19068-19070) showed 6e-4 spiked back up around step 6k and 6e-5 was
+# monotone. That result is documented here for reference; the shipped
+# default follows the 2026-07-09 production spec (GPT-3 ladder: 6e-4 for
+# small). The G2 dataset (contig-split, 83M-window budget) is not identical
+# to the flow that spiked, so revisiting the LR should be a smoke/short-run
+# call rather than a blind rollback. The readiness report flags this so the
+# call is made explicitly before the 42-config run launches.
+# GPT2_LR_TAG env var stays as the escape hatch for sweeps.
+learning_rate = float(os.environ.get("SUBSET_GPT2_LR", "0.0006"))
+min_lr = learning_rate / 10  # → 10% of peak per Chinchilla / GPT-2 convention
 
-eval_interval = 1000
+# Compute-matched schedule from the realized dataset row count (charter
+# Condition 2 output): global batch 2,560 × 3 epochs per subset. Reading
+# via `load_from_disk` is memory-mapped, so this only touches metadata.
+_GLOBAL_BATCH = 2560
+_N_EPOCH = 3
+_ds_for_len = _load(dataset_dir)
+_train_n = len(_ds_for_len["train"])
+max_iters = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
+lr_decay_iters = max_iters
+warmup_iters = max(int(0.02 * max_iters), 100)  # ≈ 2 % of max_iters
+del _ds_for_len
+
+# Smoke-test override for readiness verification only (charter 2026-07-14).
+# `SMOKE_MAX_STEPS=5` forces a short run that exercises the training path
+# without consuming a real epoch. Untouched in production runs.
+_smoke = os.environ.get("SMOKE_MAX_STEPS")
+if _smoke:
+    max_iters = int(_smoke)
+    lr_decay_iters = max_iters
+    warmup_iters = max(int(0.4 * max_iters), 1)
+    # Also shrink eval_interval so a short smoke actually captures several
+    # eval samples (the production 1000 leaves an 800-step smoke with 0-1
+    # evals, breaking downstream aggregation).
+    eval_interval = max(int(max_iters / 5), 50)
+    # SMOKE_WARMUP_ITERS / SMOKE_EVAL_INTERVAL (opt) override the derived
+    # values — used by the 2026-07-15 extended sweep (8000 iter) so we get
+    # production-realistic warmup (~2%) and finer-grained evals for spike
+    # detection around the pre-G2 6k-iter warning point.
+    _smoke_warmup = os.environ.get("SMOKE_WARMUP_ITERS")
+    if _smoke_warmup:
+        warmup_iters = int(_smoke_warmup)
+    _smoke_eval = os.environ.get("SMOKE_EVAL_INTERVAL")
+    if _smoke_eval:
+        eval_interval = int(_smoke_eval)
+
+# Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
+# compute-matched」).  gpt2/train.py reads this via globals().get.
+early_stopping = False
+
+# eval_interval defaults to 1000 for production runs (charter § compute-
+# matched schedule). When SMOKE_MAX_STEPS is set the block above already
+# overrode it to something like max_iters/5, so guard so we don't clobber it.
+if not _smoke:
+    eval_interval = 1000
 eval_iters = 200
 log_interval = 10
 
@@ -99,3 +143,10 @@ dataset_params = {"dataset_dir": dataset_dir}
 bos_token_id = tokenizer.cls_token_id  # 7
 eos_token_id = tokenizer.sep_token_id  # 8
 pad_token_id = tokenizer.pad_token_id  # 5
+
+# Phase 0-1 pad-loss-mask hook: mask CLM loss at pad-token positions so the
+# subset GPT-2 does not waste capacity learning "predict PAD after PAD" in
+# short-genome-window tails. Value must match `pad_token_id` (=5, single-nt
+# vocab). Without this the receiving `train.py` code (commit 17562e81) sees
+# `pad_token_id_for_loss = None` and skips the mask entirely.
+pad_token_id_for_loss = 5

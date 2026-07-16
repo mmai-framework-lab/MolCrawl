@@ -23,6 +23,7 @@ Differences from :mod:`bert_small`:
 
 import os
 
+from datasets import load_from_disk as _load
 from transformers import AutoTokenizer
 
 from molcrawl.core.paths import (
@@ -60,22 +61,49 @@ vocab_size = len(tokenizer)  # = 10
 
 # ---- training hyperparameters (mirror bert_small) ------------------------ #
 max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
-# LR sweep over {1e-4, 1e-5, 3e-5, 5e-5} on mammal_centered (jobs 19018 +
-# 19043 / 19044 / 19045) showed:
-#   1e-4 → collapses to loss ≈ ln(4) ≈ 1.39 (degenerate near-uniform output)
-#   5e-5 → plateaus around 1.263 (near-degenerate, no learning signal)
-#   3e-5 → microscopic improvement (Δ=0.006 over 15k iters)
-#   1e-5 → consistent descent 1.56 → 1.256 (Δ=0.31, lowest grad_norm)
-# So 1e-5 is the only value that actually trains this small × vocab=10 × bf16
-# configuration. The Devlin et al. recipe (1e-4 × 10k warmup) targets BERT-base
-# (110M × vocab 30k × NLP) and does not transfer. warmup_steps stays at 10k
-# to follow the literature ratio (warmup ≈ max_steps/6). Override via env for
-# future sweeps (use BERT_LR_TAG to keep checkpoint trees distinct).
-learning_rate = 0.0001
-warmup_steps = 1553
-max_steps = 77661
+# LR sweep on the pre-G2 (2026-05) mammal_centered dataset (jobs 19018 +
+# 19043-19045) showed 1e-4 collapsed to loss ≈ ln(4) ≈ 1.39 (degenerate
+# near-uniform output) and 1e-5 was the only value that trained. That result
+# is documented here for reference but does NOT drive the current shipped
+# value: the boss's 2026-07-14 reply mandates BERT LR = 1e-4 unified across
+# every modality/size, and the G2 dataset (contig-split, chr22 hold-out,
+# 83M-window budget) is not identical to the old flow that collapsed. The
+# readiness report flags this specifically so the LR call can be revisited
+# before the full 42-config run launches — do not use this file's default
+# blind for another sweep without checking the report.
+# BERT_LR_TAG env var stays as the escape hatch for sweeps (checkpoint dir
+# is suffixed so concurrent LR values do not overwrite each other).
+learning_rate = float(os.environ.get("SUBSET_BERT_LR", "0.0001"))
 weight_decay = 0.01
+# Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
+# compute-matched」). Overriding max_steps / warmup_steps below.
 early_stopping = False
+
+# Compute-matched schedule from the realized dataset row count (charter
+# Condition 2 output): global batch 2,560 × 3 epochs per subset. Reading
+# via `load_from_disk` is memory-mapped, so this only touches metadata.
+_GLOBAL_BATCH = 2560
+_N_EPOCH = 3
+_ds_for_len = _load(dataset_dir)
+_train_n = len(_ds_for_len["train"])
+max_steps = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
+warmup_steps = max(int(0.02 * max_steps), 100)  # ≈ 2 % of max_steps
+del _ds_for_len
+
+# Smoke-test override for readiness verification only (charter 2026-07-14).
+# `SMOKE_MAX_STEPS=5` forces a short run that exercises the training path
+# without consuming a real epoch. Untouched in production runs.
+# `SMOKE_WARMUP_STEPS` (opt) overrides warmup independently — used by the
+# 2026-07-15 extended sweep so 8000-iter runs get a production-realistic
+# warmup (~2%) instead of the default tiny-smoke 40% ratio (which would
+# eat half the extended run).
+_smoke = os.environ.get("SMOKE_MAX_STEPS")
+if _smoke:
+    max_steps = int(_smoke)
+    warmup_steps = max(int(0.4 * max_steps), 1)  # keep warmup proportional
+    _smoke_warmup = os.environ.get("SMOKE_WARMUP_STEPS")
+    if _smoke_warmup:
+        warmup_steps = int(_smoke_warmup)
 
 log_interval = 100
 save_steps = 1000
