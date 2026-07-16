@@ -71,10 +71,10 @@ max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
 # (110M × vocab 30k × NLP) and does not transfer. warmup_steps stays at 10k
 # to follow the literature ratio (warmup ≈ max_steps/6). Override via env for
 # future sweeps (use BERT_LR_TAG to keep checkpoint trees distinct).
-learning_rate = float(os.environ.get("BERT_LR", "1e-5"))
-warmup_steps = int(os.environ.get("BERT_WARMUP_STEPS", "10000"))
-max_steps = int(os.environ.get("BERT_MAX_STEPS", "60000"))
-weight_decay = 1e-1
+learning_rate = 0.0001
+warmup_steps = 1553
+max_steps = 77661
+weight_decay = 0.01
 early_stopping = False
 
 log_interval = 100

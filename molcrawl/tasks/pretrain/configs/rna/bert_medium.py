@@ -34,15 +34,15 @@ tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 
-max_steps: int = 60000
+max_steps: int  = 49366
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # early_stopping_patience: int = 3  # N/A when early_stopping = Falsevement
 model_size: str = "medium"  # Choose between small, medium or large
 model_path: str = get_bert_output_path("rna", model_size)
 max_length: int = 1024
 dataset_dir: str = CELLXGENE_DATASET_DIR
-learning_rate: float = 6e-6
-weight_decay: float = 1e-1
+learning_rate: float  = 0.0001
+weight_decay: float  = 0.01
 log_interval: int = 100
 save_steps: int = 100  # Save checkpoint every 100 steps instead of default 1000
 

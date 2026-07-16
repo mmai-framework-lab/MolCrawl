@@ -68,11 +68,11 @@ gradient_accumulation_steps = 5 * 8
 # So 6e-5 is the production default. Same pattern as BERT: the Radford
 # literature value (6e-4) is one decade too high for small × vocab=10 × bf16,
 # but unlike BERT 1e-4 it does not fully collapse — it merely oscillates.
-max_iters = int(os.environ.get("GPT2_MAX_ITERS", "50000"))
-lr_decay_iters = max_iters
-warmup_iters = int(os.environ.get("GPT2_WARMUP_ITERS", "2000"))
-learning_rate = float(os.environ.get("GPT2_LR", "6e-5"))
-min_lr = learning_rate / 10  # → 10% of peak per Chinchilla / GPT-2 convention
+max_iters = 103548
+lr_decay_iters = 103548
+warmup_iters = 2070
+learning_rate = 0.0006
+min_lr = 6e-05  # → 10% of peak per Chinchilla / GPT-2 convention
 
 eval_interval = 1000
 eval_iters = 200
@@ -87,7 +87,7 @@ always_save_checkpoint = True
 save_checkpoint_steps = None
 max_checkpoints = 5
 
-weight_decay = 1e-1
+weight_decay = 0.1
 
 dataset = "genome_sequence"
 dataset_params = {"dataset_dir": dataset_dir}
