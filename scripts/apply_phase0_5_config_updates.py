@@ -126,25 +126,30 @@ def patch_config(modality: str, arch: str, size: str, rel_path: str, subset_suff
     # 1. learning_rate
     lr_new = LR_GPT2[size] if arch == "gpt2" else LR_BERT[size]
     src, ok = _replace_var(src, "learning_rate", _fmt_lr(lr_new))
-    if ok: changes.append(f"learning_rate = {_fmt_lr(lr_new)}")
+    if ok:
+        changes.append(f"learning_rate = {_fmt_lr(lr_new)}")
 
     # 2. min_lr = learning_rate / 10
     min_lr = lr_new / 10
     src, ok = _replace_var(src, "min_lr", _fmt_lr(min_lr))
-    if ok: changes.append(f"min_lr = {_fmt_lr(min_lr)}")
+    if ok:
+        changes.append(f"min_lr = {_fmt_lr(min_lr)}")
 
     # 3. max_iters / max_steps (skip compounds, deferred to Phase 1-3)
     if modality != "compounds":
         target = MAX_ITERS[modality][arch]
         if arch == "gpt2":
             src, ok = _replace_var(src, "max_iters", str(target))
-            if ok: changes.append(f"max_iters = {target}")
+            if ok:
+                changes.append(f"max_iters = {target}")
             # lr_decay_iters = max_iters is a common nanoGPT idiom; keep aligned
             src, ok = _replace_var(src, "lr_decay_iters", str(target))
-            if ok: changes.append(f"lr_decay_iters = {target}")
+            if ok:
+                changes.append(f"lr_decay_iters = {target}")
         else:
             src, ok = _replace_var(src, "max_steps", str(target))
-            if ok: changes.append(f"max_steps = {target}")
+            if ok:
+                changes.append(f"max_steps = {target}")
 
     # 4. warmup ≈ 2% of max_iters
     if modality != "compounds":
@@ -152,24 +157,29 @@ def patch_config(modality: str, arch: str, size: str, rel_path: str, subset_suff
         warmup = max(1, int(target * 0.02))
         if arch == "gpt2":
             src, ok = _replace_var(src, "warmup_iters", str(warmup))
-            if ok: changes.append(f"warmup_iters = {warmup}")
+            if ok:
+                changes.append(f"warmup_iters = {warmup}")
         else:
             src, ok = _replace_var(src, "warmup_steps", str(warmup))
-            if ok: changes.append(f"warmup_steps = {warmup}")
+            if ok:
+                changes.append(f"warmup_steps = {warmup}")
 
     # 5. weight_decay
     wd = WD_BERT if arch == "bert" else WD_GPT2
     src, ok = _replace_var(src, "weight_decay", str(wd))
-    if ok: changes.append(f"weight_decay = {wd}")
+    if ok:
+        changes.append(f"weight_decay = {wd}")
 
     # 6. compounds seq_len = 128
     if modality == "compounds":
         if arch == "gpt2":
             src, ok = _replace_var(src, "block_size", str(COMPOUNDS_SEQ_LEN))
-            if ok: changes.append(f"block_size = {COMPOUNDS_SEQ_LEN}")
+            if ok:
+                changes.append(f"block_size = {COMPOUNDS_SEQ_LEN}")
         else:
             src, ok = _replace_var(src, "max_length", str(COMPOUNDS_SEQ_LEN))
-            if ok: changes.append(f"max_length = {COMPOUNDS_SEQ_LEN}")
+            if ok:
+                changes.append(f"max_length = {COMPOUNDS_SEQ_LEN}")
 
     # 7. compounds GPT-2: set pad_token_id_for_loss = 0 to enable pad masking in
     #    train.py (Phase 0-1). Insert near existing dataset_dir / config globals.
