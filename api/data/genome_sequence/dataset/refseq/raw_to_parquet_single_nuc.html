@@ -189,9 +189,18 @@ boundary loss.</p>
 
         with open(raw_path, &#34;rb&#34;) as fh:
             for line in fh:
-                # Read the raw line as bytes, drop trailing newline, translate to
-                # token-id bytes in C (one pass over the line).
-                ids = line.rstrip(b&#34;\n&#34;).translate(TRANS_TABLE)
+                # Each raw line is ``&lt;contig_id&gt;\t&lt;sequence&gt;`` (F2-a). Split off
+                # the contig id, then translate the sequence bytes to token-id
+                # bytes in C (one pass). Lines with no tab are treated as the
+                # legacy format (contig id unknown) for backward compatibility.
+                raw = line.rstrip(b&#34;\n&#34;)
+                contig_b, sep, seq_b = raw.partition(b&#34;\t&#34;)
+                if sep:
+                    contig_id = contig_b.decode(&#34;ascii&#34;, &#34;replace&#34;)
+                    ids = seq_b.translate(TRANS_TABLE)
+                else:
+                    contig_id = &#34;&#34;
+                    ids = raw.translate(TRANS_TABLE)
                 L = len(ids)
 
                 if &#34;bert&#34; in models and L &gt;= bert_n:
@@ -201,6 +210,8 @@ boundary loss.</p>
                             {
                                 &#34;input_ids&#34;: [CLS_ID] + chunk + [SEP_ID],
                                 &#34;attention_mask&#34;: bert_attn,
+                                &#34;accession&#34;: accession,
+                                &#34;contig_id&#34;: contig_id,
                             }
                         )
                         if len(batches[&#34;bert&#34;]) &gt;= batch_rows:
@@ -208,7 +219,13 @@ boundary loss.</p>
 
                 if &#34;gpt2&#34; in models and L &gt;= gpt2_n:
                     for i in range(0, L - gpt2_n + 1, gpt2_n):
-                        batches[&#34;gpt2&#34;].append({&#34;input_ids&#34;: list(ids[i : i + gpt2_n])})
+                        batches[&#34;gpt2&#34;].append(
+                            {
+                                &#34;input_ids&#34;: list(ids[i : i + gpt2_n]),
+                                &#34;accession&#34;: accession,
+                                &#34;contig_id&#34;: contig_id,
+                            }
+                        )
                         if len(batches[&#34;gpt2&#34;]) &gt;= batch_rows:
                             _flush(&#34;gpt2&#34;)
 

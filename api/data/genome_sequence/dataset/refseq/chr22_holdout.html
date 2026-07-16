@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.data.genome_sequence.dataset.refseq API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout API documentation</title>
+<meta name="description" content="chr22 hold-out for the subset flow (F2-b) …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,42 +33,121 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.data.genome_sequence.dataset.refseq</code></h1>
+<h1 class="title">Module <code>molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout</code></h1>
 </header>
 <section id="section-intro">
+<p>chr22 hold-out for the subset flow (F2-b).</p>
+<p>ClinVar / gnomAD variant-effect evaluation uses human chromosome 22. To keep
+that evaluation uncontaminated, the human assembly must enter the pretraining
+corpus with chr22 removed. The mammalian-RefSeq <code>preparation_local.py</code> flow
+already prefers a <code>*_no_chr22</code> FASTA (<code>find_species_inputs</code>); the subset /
+<code>download_by_accession</code> flow had no equivalent. This module supplies it,
+<strong>keyed on the assembly accession</strong> (not the subset name) so the substitution
+fires in whichever subset the human genome is drawn into.</p>
+<p>The chr22-excluded FASTA itself is produced by the upstream preprocessing tool
+(<code>bin/run_preprocess_excl_chr22.sh</code> / <code>preprocess_fasta.py</code>); this module
+only decides when to use it and stages it into <code>extracted_files/</code>.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout" href="chr22_holdout.html">molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout</a></code></dt>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_holdout_fasta"><code class="name flex">
+<span>def <span class="ident">find_holdout_fasta</span></span>(<span>holdout_pool_dir: str | pathlib.Path) ‑> pathlib.Path | None</span>
+</code></dt>
 <dd>
-<div class="desc"><p>chr22 hold-out for the subset flow (F2-b) …</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_holdout_fasta(holdout_pool_dir: Union[str, Path]) -&gt; Optional[Path]:
+    &#34;&#34;&#34;Return a ``*_no_chr22.fna[.gz]`` FASTA from ``holdout_pool_dir``, if any.&#34;&#34;&#34;
+    pool = Path(holdout_pool_dir)
+    if not pool.exists():
+        return None
+    candidates = sorted(
+        p
+        for p in pool.rglob(&#34;*&#34;)
+        if _HOLDOUT_MARKER in p.name
+        and p.name.endswith((&#34;.fna&#34;, &#34;.fna.gz&#34;, &#34;.fa&#34;, &#34;.fa.gz&#34;, &#34;.fasta&#34;, &#34;.fasta.gz&#34;))
+        and p.is_file()
+    )
+    return candidates[0] if candidates else None</code></pre>
+</details>
+<div class="desc"><p>Return a <code>*_no_chr22.fna[.gz]</code> FASTA from <code>holdout_pool_dir</code>, if any.</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession" href="download_by_accession.html">molcrawl.data.genome_sequence.dataset.refseq.download_by_accession</a></code></dt>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.is_chr22_holdout_accession"><code class="name flex">
+<span>def <span class="ident">is_chr22_holdout_accession</span></span>(<span>accession: str) ‑> bool</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Download exact RefSeq/GenBank assemblies listed in a subset CSV …</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_chr22_holdout_accession(accession: str) -&gt; bool:
+    &#34;&#34;&#34;True if ``accession`` is the human assembly that needs chr22 held out.&#34;&#34;&#34;
+    return str(accession).strip() == HUMAN_CHR22_ACCESSION</code></pre>
+</details>
+<div class="desc"><p>True if <code>accession</code> is the human assembly that needs chr22 held out.</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.data.genome_sequence.dataset.refseq.download_full_refseq" href="download_full_refseq.html">molcrawl.data.genome_sequence.dataset.refseq.download_full_refseq</a></code></dt>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.stage_chr22_holdout"><code class="name flex">
+<span>def <span class="ident">stage_chr22_holdout</span></span>(<span>extracted_dir: str | pathlib.Path,<br>accession: str,<br>holdout_pool_dir: str | pathlib.Path,<br>force: bool = False) ‑> pathlib.Path | None</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.data.genome_sequence.dataset.refseq.download_refseq" href="download_refseq.html">molcrawl.data.genome_sequence.dataset.refseq.download_refseq</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw" href="fasta_to_raw.html">molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc" href="raw_to_parquet_single_nuc.html">molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc</a></code></dt>
-<dd>
-<div class="desc"><p>Convert per-accession .raw files into single-nucleotide parquet for BERT/GPT-2 …</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stage_chr22_holdout(
+    extracted_dir: Union[str, Path],
+    accession: str,
+    holdout_pool_dir: Union[str, Path],
+    force: bool = False,
+) -&gt; Optional[Path]:
+    &#34;&#34;&#34;Stage the chr22-excluded FASTA as ``extracted_dir/&lt;accession&gt;.fna.gz``.
+
+    For the human accession, symlinks (or copies) the ``*_no_chr22`` FASTA over
+    the accession&#39;s slot in ``extracted_files/`` so Phase 2 reads the chr22-free
+    genome. No-op and returns ``None`` for any other accession or when no
+    hold-out FASTA is available. Returns the staged path on success.
+    &#34;&#34;&#34;
+    if not is_chr22_holdout_accession(accession):
+        return None
+    holdout = find_holdout_fasta(holdout_pool_dir)
+    if holdout is None:
+        logger.warning(
+            &#34;chr22 hold-out requested for %s but no *_no_chr22 FASTA found in %s&#34;,
+            accession,
+            holdout_pool_dir,
+        )
+        return None
+
+    extracted_dir = Path(extracted_dir)
+    extracted_dir.mkdir(parents=True, exist_ok=True)
+    suffix = &#34;.fna.gz&#34; if str(holdout).endswith(&#34;.gz&#34;) else &#34;.fna&#34;
+    target = extracted_dir / f&#34;{accession}{suffix}&#34;
+    if target.exists() or target.is_symlink():
+        if not force:
+            return target
+        target.unlink()
+    # Also drop any full-genome slot for this accession so Phase 2 can&#39;t pick it.
+    for other in extracted_dir.glob(f&#34;{accession}.*&#34;):
+        if other != target:
+            other.unlink()
+    os.symlink(os.path.realpath(holdout), target)
+    logger.info(&#34;chr22 hold-out: staged %s -&gt; %s&#34;, holdout, target)
+    return target</code></pre>
+</details>
+<div class="desc"><p>Stage the chr22-excluded FASTA as <code>extracted_dir/&lt;accession&gt;.fna.gz</code>.</p>
+<p>For the human accession, symlinks (or copies) the <code>*_no_chr22</code> FASTA over
+the accession's slot in <code>extracted_files/</code> so Phase 2 reads the chr22-free
+genome. No-op and returns <code>None</code> for any other accession or when no
+hold-out FASTA is available. Returns the staged path on success.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -80,17 +159,14 @@ el.replaceWith(d);
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl.data.genome_sequence.dataset" href="../index.html">molcrawl.data.genome_sequence.dataset</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq" href="index.html">molcrawl.data.genome_sequence.dataset.refseq</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout" href="chr22_holdout.html">molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout</a></code></li>
-<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_by_accession" href="download_by_accession.html">molcrawl.data.genome_sequence.dataset.refseq.download_by_accession</a></code></li>
-<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_full_refseq" href="download_full_refseq.html">molcrawl.data.genome_sequence.dataset.refseq.download_full_refseq</a></code></li>
-<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.download_refseq" href="download_refseq.html">molcrawl.data.genome_sequence.dataset.refseq.download_refseq</a></code></li>
-<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw" href="fasta_to_raw.html">molcrawl.data.genome_sequence.dataset.refseq.fasta_to_raw</a></code></li>
-<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc" href="raw_to_parquet_single_nuc.html">molcrawl.data.genome_sequence.dataset.refseq.raw_to_parquet_single_nuc</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_holdout_fasta" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_holdout_fasta">find_holdout_fasta</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.is_chr22_holdout_accession" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.is_chr22_holdout_accession">is_chr22_holdout_accession</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.stage_chr22_holdout" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.stage_chr22_holdout">stage_chr22_holdout</a></code></li>
 </ul>
 </li>
 </ul>
