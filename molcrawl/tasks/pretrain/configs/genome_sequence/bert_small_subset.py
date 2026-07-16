@@ -90,6 +90,14 @@ max_steps = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
 warmup_steps = max(int(0.02 * max_steps), 100)  # ≈ 2 % of max_steps
 del _ds_for_len
 
+# Smoke-test override for readiness verification only (charter 2026-07-14).
+# `SMOKE_MAX_STEPS=5` forces a short run that exercises the training path
+# without consuming a real epoch. Untouched in production runs.
+_smoke = os.environ.get("SMOKE_MAX_STEPS")
+if _smoke:
+    max_steps = int(_smoke)
+    warmup_steps = max(int(0.4 * max_steps), 1)  # keep warmup proportional
+
 log_interval = 100
 save_steps = 1000
 

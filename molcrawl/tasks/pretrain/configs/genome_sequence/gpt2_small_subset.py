@@ -87,6 +87,15 @@ lr_decay_iters = max_iters
 warmup_iters = max(int(0.02 * max_iters), 100)  # ≈ 2 % of max_iters
 del _ds_for_len
 
+# Smoke-test override for readiness verification only (charter 2026-07-14).
+# `SMOKE_MAX_STEPS=5` forces a short run that exercises the training path
+# without consuming a real epoch. Untouched in production runs.
+_smoke = os.environ.get("SMOKE_MAX_STEPS")
+if _smoke:
+    max_iters = int(_smoke)
+    lr_decay_iters = max_iters
+    warmup_iters = max(int(0.4 * max_iters), 1)
+
 # Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
 # compute-matched」).  gpt2/train.py reads this via globals().get.
 early_stopping = False

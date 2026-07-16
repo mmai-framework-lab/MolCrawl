@@ -50,6 +50,15 @@ PARK_LOG = MILESTONES_DIR / "park_log.md"
 
 SUBSETS_FILE = STATE_DIR / "subsets_21.txt"
 
+# Where compounds train.sh writes its per-run log (matches
+# workflows/03[ac]-compounds-train-*.sh).
+LEARNING_SOURCE_DIR = os.environ.get(
+    "LEARNING_SOURCE_DIR",
+    "/lustre/home/matsubara/learning_source_20260710_autopilot_v2",
+)
+COMPOUNDS_LOG_DIR = Path(LEARNING_SOURCE_DIR) / "compounds" / "logs"
+GENOME_LOG_DIR = Path(LEARNING_SOURCE_DIR) / "genome_sequence" / "logs"
+
 # charter §「対象は G2 → compounds/subset small → rna → mammal」
 # 実運用: compounds は data 準備済ですぐ回せる → G2 と並列で kick、
 # genome subset small 21 subset は G2 完了後、 mammal size axis は subset の後。
@@ -65,6 +74,13 @@ COMPOUNDS_WORKFLOWS = [
     ("gpt2-xl", "03a-compounds-train-gpt2-xl.sh"),
 ]
 
+# Subset training workflows (charter § genome subset small = 論文中核).
+# One workflow key per (arch, subset). Wrappers pass GENOME_SUBSET via env.
+SUBSET_TRAINING_ARCHS = [
+    ("bert", "03c-genome_sequence-train-bert-small-subset.sh"),
+    ("gpt2", "03a-genome_sequence-train-gpt2-small-subset.sh"),
+]
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat()
@@ -76,6 +92,8 @@ def load_state() -> dict:
             "created_at": now_iso(),
             "genome_g2": {"phase": "IDLE", "subsets": {}},
             "compounds": {},
+            "bert_large_retrain": {"phase": "IDLE"},
+            "subset_training": {"enabled": False, "runs": {}},
             "park": [],
         }
     return json.loads(STATE_JSON.read_text())
@@ -141,6 +159,34 @@ def milestone(name: str, body: str) -> None:
     p = MILESTONES_DIR / f"{name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
     p.write_text(body)
     log(f"MILESTONE: {p.name}")
+
+
+def check_run_diverged(log_glob: str) -> tuple[bool, str]:
+    """Run the divergence detector on the newest log matching `log_glob`.
+
+    Charter §「発散 park」 rule: even for SLURM COMPLETED runs, compare
+    final val loss / best. Returns (diverged, message).
+    """
+    py = os.environ.get(
+        "MOLCRAWL_PYTHON",
+        "/lustre/home/matsubara/miniforge3/envs/molcrawl/bin/python",
+    )
+    detector = ANALYZERS_DIR / "parse_train_log_for_divergence.py"
+    from glob import glob
+    matches = sorted(glob(log_glob))
+    if not matches:
+        return (False, f"no log matching {log_glob}")
+    latest = matches[-1]  # newest
+    try:
+        r = subprocess.run(
+            [py, str(detector), latest, "--last-vs-best"],
+            capture_output=True, text=True, timeout=120,
+        )
+    except Exception as e:
+        return (False, f"detector error: {e}")
+    if r.returncode == 1:
+        return (True, r.stdout.strip() or "diverged")
+    return (False, r.stdout.strip() or "healthy")
 
 
 # ── genome G2 pipeline ─────────────────────────────────────────────────────
@@ -322,18 +368,192 @@ def poll_compounds(state: dict) -> None:
         if e.get("phase") in ("QUEUED", "RUNNING"):
             st = sacct_state(e["jobid"])
             if st == "COMPLETED":
-                e["phase"] = "DONE"
-                milestone(
-                    f"compounds-{key}-done",
-                    f"# compounds {key} 完了 (autopilot)\n\n"
-                    f"作成: {now_iso()}\n\nSLURM jobid: {e['jobid']}\nworkflow: {e['workflow']}\n",
-                )
+                # charter §「発散 park」rule: post-COMPLETED last-vs-best check.
+                # Matches log filename produced by workflows/03[ac]-compounds-train-*.sh:
+                #   compounds-train-<arch>-<size>-YYYY-MM-DD_HH-MM-SS.log
+                log_glob = str(COMPOUNDS_LOG_DIR / f"compounds-train-{key}-*.log")
+                diverged, msg = check_run_diverged(log_glob)
+                if diverged:
+                    e["phase"] = "PARKED_DIVERGED"
+                    park(state, f"compounds:{key}",
+                         f"COMPLETED but divergence detected: {msg}")
+                    milestone(
+                        f"compounds-{key}-parked-diverged",
+                        f"# compounds {key} 発散 park (autopilot)\n\n"
+                        f"作成: {now_iso()}\n\nSLURM jobid: {e['jobid']}\n"
+                        f"detector: {msg}\n",
+                    )
+                else:
+                    e["phase"] = "DONE"
+                    milestone(
+                        f"compounds-{key}-done",
+                        f"# compounds {key} 完了 (autopilot)\n\n"
+                        f"作成: {now_iso()}\n\nSLURM jobid: {e['jobid']}\n"
+                        f"workflow: {e['workflow']}\ndivergence check: {msg}\n",
+                    )
             elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
                 e["phase"] = "PARKED"
                 park(state, f"compounds:{key}", f"SLURM state={st} — see log")
             elif st == "RUNNING":
                 e["phase"] = "RUNNING"
             # else keep current
+    save_state(state)
+
+
+# ── bert-large retrain (Phase 1-5 LR=1e-4 rerun) ───────────────────────────
+
+
+def kick_bert_large_retrain(state: dict) -> None:
+    """Kick a fresh compounds bert-large run with the Phase 1-5 config
+    (LR 1e-4). Guarded so it only fires when explicitly enabled — set
+    ``state['bert_large_retrain']['enabled'] = True`` after readiness GO.
+    """
+    r = state.setdefault("bert_large_retrain", {"phase": "IDLE"})
+    if not r.get("enabled"):
+        return
+    if r.get("phase") != "IDLE":
+        return
+    jobid = sbatch_submit(
+        SBATCH_DIR / "compounds_train.sbatch",
+        job_name="cmp-bert-large-retrain",
+        exports={
+            "WORKFLOW": "03c-compounds-train-bert-large.sh",
+            "NUM_GPUS": "4",
+            # Fresh output tree so we don't clobber the 07-13 diverged ckpts.
+            "LEARNING_SOURCE_DIR":
+                "/lustre/home/matsubara/learning_source_20260710_autopilot_v2_bertlarge_retrain",
+        },
+    )
+    if jobid is None:
+        park(state, "bert_large_retrain", "sbatch submit failed")
+        r["phase"] = "PARKED"
+    else:
+        r["phase"] = "QUEUED"
+        r["jobid"] = jobid
+    save_state(state)
+
+
+def poll_bert_large_retrain(state: dict) -> None:
+    r = state.get("bert_large_retrain", {})
+    if r.get("phase") not in ("QUEUED", "RUNNING"):
+        return
+    st = sacct_state(r["jobid"])
+    if st == "COMPLETED":
+        # Same divergence check as compounds — this is the whole point.
+        log_glob = str(
+            Path("/lustre/home/matsubara/learning_source_20260710_autopilot_v2_bertlarge_retrain")
+            / "compounds" / "logs" / "compounds-train-bert-large-*.log"
+        )
+        diverged, msg = check_run_diverged(log_glob)
+        if diverged:
+            r["phase"] = "PARKED_DIVERGED"
+            park(state, "bert_large_retrain",
+                 f"retrain also diverged: {msg}")
+        else:
+            r["phase"] = "DONE"
+            milestone(
+                "bert-large-retrain-done",
+                f"# compounds bert-large retrain 完了 (LR 1e-4)\n\n"
+                f"作成: {now_iso()}\nSLURM jobid: {r['jobid']}\n{msg}\n",
+            )
+    elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
+        r["phase"] = "PARKED"
+        park(state, "bert_large_retrain", f"SLURM state={st}")
+    elif st == "RUNNING":
+        r["phase"] = "RUNNING"
+    save_state(state)
+
+
+# ── subset training (21 subset × 2 arch = 42 run) ──────────────────────────
+
+
+def _subset_keys() -> list[str]:
+    return [ln.strip() for ln in SUBSETS_FILE.read_text().splitlines()
+            if ln.strip() and not ln.startswith("#")]
+
+
+def kick_subset_training(state: dict, max_concurrent: int = 4) -> None:
+    """Kick 21 subset × 2 arch = 42 runs, guarded by explicit enable flag.
+
+    The user (or a `readiness_go.py` script) sets
+    ``state['subset_training']['enabled'] = True`` after the readiness
+    report is approved. Until then this is a no-op.
+    """
+    sub = state.setdefault("subset_training", {"enabled": False, "runs": {}})
+    if not sub.get("enabled"):
+        return
+
+    runs = sub["runs"]
+    # Prime IDLE entries for every (arch, subset) pair we haven't seen.
+    subsets = _subset_keys()
+    for arch, wf in SUBSET_TRAINING_ARCHS:
+        for s in subsets:
+            key = f"{arch}-{s}"
+            if key not in runs:
+                runs[key] = {"phase": "IDLE", "arch": arch, "subset": s, "workflow": wf}
+
+    live = [k for k, v in runs.items() if v.get("phase") in ("QUEUED", "RUNNING")]
+    for key, e in runs.items():
+        if len(live) >= max_concurrent:
+            break
+        if e.get("phase") != "IDLE":
+            continue
+        jobid = sbatch_submit(
+            SBATCH_DIR / "subset_train.sbatch",
+            job_name=f"sub-{key}",
+            exports={
+                "WORKFLOW": e["workflow"],
+                "GENOME_SUBSET": e["subset"],
+                "NUM_GPUS": "4",
+                # subset training reads from the G2 output tree.
+                "LEARNING_SOURCE_DIR":
+                    "/lustre/home/matsubara/learning_source_20260710_genome_v2",
+            },
+        )
+        if jobid is None:
+            park(state, f"subset:{key}", "sbatch submit failed")
+            e["phase"] = "PARKED"
+            continue
+        e["phase"] = "QUEUED"
+        e["jobid"] = jobid
+        live.append(key)
+    save_state(state)
+
+
+def poll_subset_training(state: dict) -> None:
+    sub = state.get("subset_training", {"enabled": False, "runs": {}})
+    runs = sub.get("runs", {})
+    for key, e in runs.items():
+        if e.get("phase") not in ("QUEUED", "RUNNING"):
+            continue
+        st = sacct_state(e["jobid"])
+        if st == "COMPLETED":
+            arch = e["arch"]
+            subset = e["subset"]
+            # workflows/03[ac]-genome_sequence-train-<arch>-small-subset.sh writes to
+            # $LEARNING_SOURCE_DIR/genome_sequence/logs/<subset>-<arch>-small-*.log
+            log_glob = str(
+                Path("/lustre/home/matsubara/learning_source_20260710_genome_v2")
+                / "genome_sequence" / "logs" / f"{subset}-{arch}-small-*.log"
+            )
+            diverged, msg = check_run_diverged(log_glob)
+            if diverged:
+                e["phase"] = "PARKED_DIVERGED"
+                park(state, f"subset:{key}",
+                     f"COMPLETED but divergence: {msg}")
+            else:
+                e["phase"] = "DONE"
+                milestone(
+                    f"subset-{key}-done",
+                    f"# subset {key} 完了 (autopilot)\n\n"
+                    f"作成: {now_iso()}\nSLURM jobid: {e['jobid']}\n"
+                    f"divergence check: {msg}\n",
+                )
+        elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
+            e["phase"] = "PARKED"
+            park(state, f"subset:{key}", f"SLURM state={st}")
+        elif st == "RUNNING":
+            e["phase"] = "RUNNING"
     save_state(state)
 
 
@@ -350,6 +570,12 @@ def one_tick(state: dict) -> None:
     # Compounds (parallel, priority-ordered)
     kick_compounds(state)
     poll_compounds(state)
+    # bert-large retrain (gated by state['bert_large_retrain']['enabled'])
+    kick_bert_large_retrain(state)
+    poll_bert_large_retrain(state)
+    # Subset training (gated by state['subset_training']['enabled'])
+    kick_subset_training(state)
+    poll_subset_training(state)
 
 
 def main() -> int:
