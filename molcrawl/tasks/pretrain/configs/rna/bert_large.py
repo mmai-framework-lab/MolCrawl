@@ -41,7 +41,10 @@ model_size: str = "large"  # Choose between small, medium or large
 model_path: str = get_bert_output_path("rna", model_size)
 max_length: int = 1024
 dataset_dir: str = CELLXGENE_DATASET_DIR
-learning_rate: float  = 0.00015
+# Phase 1-5 (2026-07-14): 1.5e-4 → 1e-4 unified across every modality's
+# BERT large (compounds autopilot diverged at 1.5e-4). Devlin et al. keep
+# 1e-4 across sizes.
+learning_rate: float  = 0.0001
 weight_decay: float  = 0.01
 log_interval: int = 100
 save_steps: int = 100  # Save checkpoint every 100 steps instead of default 1000

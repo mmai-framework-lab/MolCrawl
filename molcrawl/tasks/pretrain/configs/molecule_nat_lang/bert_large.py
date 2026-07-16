@@ -33,7 +33,10 @@ model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nat_lang", model_size)
 max_length = 1024
 dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR
-learning_rate = 0.00015
+# Phase 1-5 (2026-07-14): 1.5e-4 → 1e-4 unified across every modality's
+# BERT large (compounds autopilot diverged at 1.5e-4). Devlin et al. keep
+# 1e-4 across sizes.
+learning_rate = 0.0001
 weight_decay = 0.01
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100

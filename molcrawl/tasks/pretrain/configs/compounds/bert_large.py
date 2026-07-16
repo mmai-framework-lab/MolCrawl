@@ -15,7 +15,13 @@ model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 128
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
-learning_rate = 0.00015
+# Phase 1-5 (2026-07-14): 1.5e-4 → 1e-4 unified across every modality's
+# BERT large. bert-large (compounds) on autopilot Phase 1-4 diverged
+# (val loss 2.49 → 4.37 over 12,412 steps); the only variable that
+# differed from bert_small / bert_medium (which converged fine) was this
+# LR. The GPT-3 ladder ("larger model, larger LR") does not transfer to
+# BERT pretraining — Devlin et al. keep 1e-4 across sizes. Aligning here.
+learning_rate = 0.0001
 weight_decay = 0.01
 log_interval = 100
 
