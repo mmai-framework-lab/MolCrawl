@@ -1,0 +1,14 @@
+# gitleaks configuration for MolCrawl
+#
+# Keep gitleaks' built-in ruleset, but add repo-specific allowlist entries so
+# that non-secret genomic identifiers are not flagged as generic API keys.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "MolCrawl false positives (non-secret domain identifiers)"
+regexes = [
+  # NCBI GenBank / RefSeq genome assembly accessions (e.g. GCA_002686355.1,
+  # GCF_000001405.40). High-entropy but fully public identifiers, not secrets.
+  '''GC[AF]_\d+\.\d+''',
+]

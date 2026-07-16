@@ -75,6 +75,18 @@ _BERT_SCHEMA_CACHE: Dict[int, pa.Schema] = {}
 _GPT2_SCHEMA_CACHE: Dict[int, pa.Schema] = {}
 
 
+# Per-window provenance columns (F2-a): ``accession`` identifies the assembly,
+# ``contig_id`` the source FASTA record (chromosome / scaffold). Together they
+# let Step 4 hold out whole contigs so a genome's adjacent windows never span
+# train and eval. Plain strings in Arrow; ParquetWriter dictionary-encodes them
+# on disk by default (each accession parquet has only a handful of distinct
+# values), so the stored cost is a small dictionary plus one index per row.
+_PROV_FIELDS = [
+    ("accession", pa.string()),
+    ("contig_id", pa.string()),
+]
+
+
 def _bert_schema(chunk_size: int) -> pa.Schema:
     n = chunk_size + 2  # +CLS +SEP
     if n not in _BERT_SCHEMA_CACHE:
@@ -82,6 +94,7 @@ def _bert_schema(chunk_size: int) -> pa.Schema:
             [
                 ("input_ids", pa.list_(pa.int32(), n)),
                 ("attention_mask", pa.list_(pa.int8(), n)),
+                *_PROV_FIELDS,
             ]
         )
     return _BERT_SCHEMA_CACHE[n]
@@ -90,7 +103,7 @@ def _bert_schema(chunk_size: int) -> pa.Schema:
 def _gpt2_schema(chunk_size: int) -> pa.Schema:
     if chunk_size not in _GPT2_SCHEMA_CACHE:
         _GPT2_SCHEMA_CACHE[chunk_size] = pa.schema(
-            [("input_ids", pa.list_(pa.int32(), chunk_size))]
+            [("input_ids", pa.list_(pa.int32(), chunk_size)), *_PROV_FIELDS]
         )
     return _GPT2_SCHEMA_CACHE[chunk_size]
 
@@ -161,9 +174,18 @@ def raw_file_to_parquets(
 
         with open(raw_path, "rb") as fh:
             for line in fh:
-                # Read the raw line as bytes, drop trailing newline, translate to
-                # token-id bytes in C (one pass over the line).
-                ids = line.rstrip(b"\n").translate(TRANS_TABLE)
+                # Each raw line is ``<contig_id>\t<sequence>`` (F2-a). Split off
+                # the contig id, then translate the sequence bytes to token-id
+                # bytes in C (one pass). Lines with no tab are treated as the
+                # legacy format (contig id unknown) for backward compatibility.
+                raw = line.rstrip(b"\n")
+                contig_b, sep, seq_b = raw.partition(b"\t")
+                if sep:
+                    contig_id = contig_b.decode("ascii", "replace")
+                    ids = seq_b.translate(TRANS_TABLE)
+                else:
+                    contig_id = ""
+                    ids = raw.translate(TRANS_TABLE)
                 L = len(ids)
 
                 if "bert" in models and L >= bert_n:
@@ -173,6 +195,8 @@ def raw_file_to_parquets(
                             {
                                 "input_ids": [CLS_ID] + chunk + [SEP_ID],
                                 "attention_mask": bert_attn,
+                                "accession": accession,
+                                "contig_id": contig_id,
                             }
                         )
                         if len(batches["bert"]) >= batch_rows:
@@ -180,7 +204,13 @@ def raw_file_to_parquets(
 
                 if "gpt2" in models and L >= gpt2_n:
                     for i in range(0, L - gpt2_n + 1, gpt2_n):
-                        batches["gpt2"].append({"input_ids": list(ids[i : i + gpt2_n])})
+                        batches["gpt2"].append(
+                            {
+                                "input_ids": list(ids[i : i + gpt2_n]),
+                                "accession": accession,
+                                "contig_id": contig_id,
+                            }
+                        )
                         if len(batches["gpt2"]) >= batch_rows:
                             _flush("gpt2")
 
