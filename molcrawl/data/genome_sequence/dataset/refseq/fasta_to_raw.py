@@ -247,18 +247,50 @@ def iter_acgt_segments(
     N gaps and IUPAC ambiguity codes are folded to N and removed at the split,
     so every yielded segment contains only A/C/G/T.
     """
+    for _contig, seg in iter_acgt_segments_with_contig(fasta_path, min_segment_len):
+        yield seg
+
+
+def _contig_id_from_header(header_line: str) -> str:
+    """Extract the contig id (first whitespace token) from a FASTA ``>`` header.
+
+    ``>NC_000022.11 Homo sapiens chromosome 22, GRCh38 ...`` -> ``NC_000022.11``.
+    Tabs are stripped defensively so the id can never collide with the ``\\t``
+    field separator used in the raw file.
+    """
+    token = header_line[1:].strip().split()[0] if header_line[1:].strip() else ""
+    return token.replace("\t", "_")
+
+
+def iter_acgt_segments_with_contig(
+    fasta_path: Union[str, Path],
+    min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
+) -> Iterator[Tuple[str, str]]:
+    """Yield ``(contig_id, segment)`` pairs from a plain/gzip FASTA.
+
+    ``contig_id`` is the source FASTA record id (first token of the ``>``
+    header) that each ACGT segment was extracted from. This is what lets the
+    downstream split hold out whole contigs/chromosomes (F2-a) instead of
+    scattering a genome's adjacent windows across train/eval. N gaps and IUPAC
+    ambiguity codes are folded to N and removed at the split, so every yielded
+    segment contains only A/C/G/T.
+    """
     current: List[str] = []
+    contig_id = ""
     with _open_fasta(fasta_path) as fh:
         for line in fh:
             line = line.strip()
             if line.startswith(">"):
                 if current:
-                    yield from _normalize_and_split("".join(current), min_segment_len)
+                    for seg in _normalize_and_split("".join(current), min_segment_len):
+                        yield contig_id, seg
                     current = []
+                contig_id = _contig_id_from_header(line)
             else:
                 current.append(line)
         if current:
-            yield from _normalize_and_split("".join(current), min_segment_len)
+            for seg in _normalize_and_split("".join(current), min_segment_len):
+                yield contig_id, seg
 
 
 def fasta_file_to_raw(
@@ -267,18 +299,23 @@ def fasta_file_to_raw(
     min_segment_len: int = DEFAULT_MIN_SEGMENT_LEN,
     max_line_len: int = RAW_LINE_LEN,
 ) -> int:
-    """Convert one FASTA file to a single .raw file (one segment per line).
+    """Convert one FASTA file to a single .raw file, one segment per line.
 
-    Segments longer than ``max_line_len`` are wrapped across multiple lines so
-    that no single line exceeds the limit. Written atomically via a ``.part``
-    file. Returns the number of lines written.
+    Format (F2-a, contig-aware): each line is ``<contig_id>\\t<sequence>``.
+    Storing the source contig id per line lets Phase 3 stamp every window with
+    its contig so the split can hold out whole contigs/chromosomes. Segments
+    longer than ``max_line_len`` are wrapped across multiple lines (the contig
+    id is repeated on each wrapped line) so no single line exceeds the limit.
+    Written atomically via a ``.part`` file. Returns the number of lines written.
     """
     raw_path = Path(raw_path)
     tmp = raw_path.with_suffix(raw_path.suffix + ".part")
     n_lines = 0
     with open(tmp, "w") as out:
-        for seg in iter_acgt_segments(fasta_path, min_segment_len):
+        for contig_id, seg in iter_acgt_segments_with_contig(fasta_path, min_segment_len):
             for i in range(0, len(seg), max_line_len):
+                out.write(contig_id)
+                out.write("\t")
                 out.write(seg[i : i + max_line_len])
                 out.write("\n")
                 n_lines += 1

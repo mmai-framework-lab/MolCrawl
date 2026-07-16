@@ -580,6 +580,108 @@ def process3_subset_raw_to_parquet(
         return False
 
 
+def _contig_unit_split(
+    accessions,
+    contigs,
+    valid_size=50_000,
+    test_size=50_000,
+    valid_frac=0.005,
+    test_frac=0.005,
+    target_total_windows=None,
+    seed=42,
+):
+    """Assign window indices to train/valid/test by whole (accession, contig).
+
+    Returns ``(train_idx, valid_idx, test_idx, stats)`` where each ``*_idx`` is
+    a sorted list of row indices and ``stats`` carries group / window counts.
+    All windows of one (accession, contig_id) group go to the same split, so
+    the resulting splits are disjoint at contig granularity (no adjacent-window
+    leak). ``target_total_windows`` (F2-c) drops whole groups first.
+    """
+    import random as _random
+
+    acc = np.asarray(accessions, dtype=object).astype("U")
+    con = np.asarray(contigs, dtype=object).astype("U")
+    # Combined group key; \x1f (unit separator) cannot occur in an accession or
+    # a FASTA contig id, so join/split is unambiguous.
+    keys = np.char.add(np.char.add(acc, "\x1f"), con)
+    uniq, inv, counts = np.unique(keys, return_inverse=True, return_counts=True)
+    n_groups = len(uniq)
+    n_total = int(counts.sum())
+
+    order = list(range(n_groups))
+    _random.Random(seed).shuffle(order)
+
+    # F2-c: drop whole groups (seeded order) until kept <= target.
+    keep = np.ones(n_groups, dtype=bool)
+    if target_total_windows is not None and n_total > target_total_windows:
+        running = n_total
+        for g in order:
+            if running <= target_total_windows:
+                break
+            keep[g] = False
+            running -= int(counts[g])
+    n_kept = int(counts[keep].sum())
+
+    n_valid = min(valid_size, max(1_000, int(n_kept * valid_frac)))
+    n_test = min(test_size, max(1_000, int(n_kept * test_frac)))
+
+    # 0=train, 1=valid, 2=test, -1=dropped (F2-c).
+    assign = np.zeros(n_groups, dtype=np.int8)
+    assign[~keep] = -1
+    nv = nt = 0
+    for g in order:
+        if not keep[g]:
+            continue
+        c = int(counts[g])
+        if nv + c <= n_valid:
+            assign[g] = 1
+            nv += c
+        elif nt + c <= n_test:
+            assign[g] = 2
+            nt += c
+        # else: stays train
+    row_assign = assign[inv]
+    train_idx = np.nonzero(row_assign == 0)[0].tolist()
+    valid_idx = np.nonzero(row_assign == 1)[0].tolist()
+    test_idx = np.nonzero(row_assign == 2)[0].tolist()
+
+    stats = {
+        "n_groups": n_groups,
+        "n_total_windows": n_total,
+        "n_kept_windows": n_kept,
+        "n_dropped_groups": int((~keep).sum()),
+        "valid_target": n_valid,
+        "test_target": n_test,
+    }
+    return train_idx, valid_idx, test_idx, stats
+
+
+def verify_contig_split_disjoint(ds_dict) -> dict:
+    """Assert no (accession, contig_id) group is shared across splits.
+
+    Returns ``{'ok': bool, 'shared': [...], 'per_split_groups': {...}}``. Used
+    by the F2 verify gate (verify②: train and val/test are contig-disjoint).
+    """
+    group_sets = {}
+    for split in ("train", "valid", "test"):
+        if split not in ds_dict:
+            continue
+        d = ds_dict[split]
+        pairs = set(zip(d["accession"], d["contig_id"]))
+        group_sets[split] = pairs
+    shared = set()
+    splits = list(group_sets)
+    for i in range(len(splits)):
+        for j in range(i + 1, len(splits)):
+            shared |= group_sets[splits[i]] & group_sets[splits[j]]
+    return {
+        "ok": len(shared) == 0,
+        "shared": sorted(shared),
+        "per_split_groups": {s: len(g) for s, g in group_sets.items()},
+    }
+
+
 def process4_subset_parquet_to_arrow(
     base_dir,
     models,
@@ -589,6 +691,8 @@ def process4_subset_parquet_to_arrow(
     test_frac=0.005,
     remove_parquet=False,
     force=False,
+    target_total_windows=None,
+    split_seed=42,
 ):
     """Subset Step 4: parquet_{model}/ → training_ready_hf_dataset_{model}/ (HF Arrow).
 
@@ -600,15 +704,25 @@ def process4_subset_parquet_to_arrow(
     output MUST be a DatasetDict — a flat single-split Dataset would crash
     with ``KeyError: 'train'`` before any training step runs.
 
-    Per model:
-      <base_dir>/parquet_<model>/*.parquet
-        ↓ load_dataset("parquet", ...)  (single Dataset, accession order)
-        ↓ .select() into train / valid / test (no shuffle — Trainer shuffles
-          train at iteration time, and accession-ordered tails of ~50K rows
-          are an unbiased held-out for genome corpora)
-      <base_dir>/training_ready_hf_dataset_<model>/
-        dataset_dict.json
-        train/  valid/  test/
+    Split (F2-a, contig-unit)
+    -------------------------
+    Held-out membership is assigned by **whole (accession, contig_id) group**,
+    not by window offset. Every window of a given chromosome / scaffold lands
+    entirely in one split, so a genome's adjacent windows can never straddle
+    train and eval (the old ``random.Random(42)`` per-window shuffle leaked
+    neighbouring context). A species with several contigs still appears in both
+    train and eval — only its *contigs* are partitioned — which keeps the
+    composition-comparison independent variable intact. Groups are visited in a
+    seeded shuffle and packed into valid then test with a fits-in-remaining rule
+    (skip-and-continue), so val/test draw a little from many contigs/species
+    rather than being dominated by one large one.
+
+    F2-c trim
+    ---------
+    When ``target_total_windows`` is set and the subset exceeds it, whole groups
+    are dropped (contig granularity, seeded order) until the kept window count
+    is at or just below the target — equalising realized budget across subsets
+    without breaking the contig-disjoint split.
 
     Args:
         base_dir       : subset base dir (.../<subset>/).
@@ -617,9 +731,9 @@ def process4_subset_parquet_to_arrow(
         valid_frac / test_frac : fractional sizing (used when smaller than caps).
         remove_parquet : drop parquet_<model>/ after successful conversion.
         force          : overwrite existing Arrow output for a model.
+        target_total_windows : F2-c realized-window budget; ``None`` = no trim.
+        split_seed     : seed for the group shuffle / trim order.
     """
-    import random
-
     from datasets import DatasetDict, load_dataset
 
     marker = Path(base_dir) / "parquet_to_arrow_complete.marker"
@@ -666,43 +780,38 @@ def process4_subset_parquet_to_arrow(
                 split="train",
             )
 
-            # Split membership must be drawn at random across the concatenated
-            # dataset — not by accession-ordered offsets — so that the
-            # alphabetically-last parquet (often a single multi-Gbp eukaryote
-            # like GCF_949987535.1 / Balaenoptera acutorostrata) doesn't end up
-            # supplying the entire valid+test window. See
-            # tmp/docs_tmp_local/yigarashi-issue/20260615-seed134-investigation-followup.md.
-            #
-            # Previously this was achieved with `ds = ds.shuffle(seed=42)`
-            # followed by sequential `select(range(...))`. The shuffle is
-            # logically correct but causes `save_to_disk` to read source rows
-            # in random order across the per-parquet caches, which on this
-            # 50–100 GB-per-subset corpus degrades to ~1.5 k examples/sec
-            # (~18 h per subset for one model — extrapolated 2 weeks for
-            # 21 subsets × 2 models).
-            #
-            # Instead, shuffle ONLY the index assignment, then sort the
-            # indices within each split so the actual row reads are
-            # sequential. The contents of train/valid/test are identical to
-            # the shuffle-then-slice scheme (same fixed seed → same random
-            # partition); only the within-split order changes — which is
-            # irrelevant because the Trainer / DataLoader reshuffles per
-            # epoch and valid/test are read in full.
-            n_total = len(ds)
-            n_valid = min(valid_size, max(1_000, int(n_total * valid_frac)))
-            n_test = min(test_size, max(1_000, int(n_total * test_frac)))
-            n_train = n_total - n_valid - n_test
-            if n_train <= 0:
-                raise ValueError(
-                    f"{model_name}: dataset too small ({n_total} rows) for "
-                    f"valid={n_valid} + test={n_test}"
-                )
+            # F2-a contig-unit split. Group every window by its
+            # (accession, contig_id) provenance (stamped in Phase 3) and hold
+            # out whole groups, so adjacent windows of one chromosome/scaffold
+            # never straddle train and eval. Groups are shuffled with a fixed
+            # seed and packed into valid then test with a fits-in-remaining rule
+            # (skip-and-continue) so the held-out sets draw a little from many
+            # contigs/species. F2-c trims whole groups to a realized-window
+            # budget before assignment.
+            for col in ("accession", "contig_id"):
+                if col not in ds.column_names:
+                    raise ValueError(
+                        f"{model_name}: parquet lacks '{col}' column — regenerate "
+                        f"Phase 2/3 with the contig-aware pipeline (F2-a)."
+                    )
 
-            shuffled_indices = list(range(n_total))
-            random.Random(42).shuffle(shuffled_indices)
-            train_idx = sorted(shuffled_indices[: n_train])
-            valid_idx = sorted(shuffled_indices[n_train : n_train + n_valid])
-            test_idx  = sorted(shuffled_indices[n_train + n_valid :])
+            train_idx, valid_idx, test_idx, stats = _contig_unit_split(
+                accessions=ds["accession"],
+                contigs=ds["contig_id"],
+                valid_size=valid_size,
+                test_size=test_size,
+                valid_frac=valid_frac,
+                test_frac=test_frac,
+                target_total_windows=target_total_windows,
+                seed=split_seed,
+            )
+            n_train, n_valid, n_test = len(train_idx), len(valid_idx), len(test_idx)
+            if n_train <= 0 or n_valid <= 0 or n_test <= 0:
+                raise ValueError(
+                    f"{model_name}: contig-unit split produced an empty split "
+                    f"(train={n_train} valid={n_valid} test={n_test}); dataset "
+                    f"has {stats['n_groups']} contig groups — too few to split."
+                )
 
             ds_dict = DatasetDict({
                 "train": ds.select(train_idx),
@@ -714,7 +823,10 @@ def process4_subset_parquet_to_arrow(
             ds_dict.save_to_disk(str(arrow_dir))
             logger.info(
                 f"   ✓ {model_name}: saved train={n_train:,} valid={n_valid:,} "
-                f"test={n_test:,} (DatasetDict)"
+                f"test={n_test:,} over {stats['n_groups']:,} contigs "
+                f"(kept {stats['n_kept_windows']:,}/{stats['n_total_windows']:,} "
+                f"windows; dropped {stats['n_dropped_groups']:,} groups for F2-c) "
+                f"(DatasetDict)"
             )
 
             if remove_parquet:
