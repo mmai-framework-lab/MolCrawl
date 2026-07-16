@@ -143,3 +143,10 @@ dataset_params = {"dataset_dir": dataset_dir}
 bos_token_id = tokenizer.cls_token_id  # 7
 eos_token_id = tokenizer.sep_token_id  # 8
 pad_token_id = tokenizer.pad_token_id  # 5
+
+# Phase 0-1 pad-loss-mask hook: mask CLM loss at pad-token positions so the
+# subset GPT-2 does not waste capacity learning "predict PAD after PAD" in
+# short-genome-window tails. Value must match `pad_token_id` (=5, single-nt
+# vocab). Without this the receiving `train.py` code (commit 17562e81) sees
+# `pad_token_id_for_loss = None` and skips the mask entirely.
+pad_token_id_for_loss = 5
