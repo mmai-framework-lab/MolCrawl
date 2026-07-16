@@ -210,6 +210,20 @@ def combine_all(raw_data_path: str, save_path: str):
     df.reset_index(drop=True, inplace=True)
     df["mol_weight"] = df["mol_weight"] / 100.0
 
+    # De-duplicate by canonical SMILES. Different source parquets overlap
+    # (ChEMBL vs PubChemQC, ZINC-QM9 mix vs ZINC20 5M sample, etc.) and
+    # historical builds carried ~67k duplicate rows into training_ready.
+    # Keep the first occurrence to preserve deterministic ordering under
+    # the fixed df_list assembly order.
+    n_before = len(df)
+    df = df.drop_duplicates(subset="smiles", keep="first").reset_index(drop=True)
+    n_after = len(df)
+    logging.info(
+        "dedup: %d rows before, %d rows after (%d duplicates removed)",
+        n_before, n_after, n_before - n_after,
+    )
+    assert df["smiles"].duplicated().sum() == 0, "dedup post-condition failed"
+
     logging.info(df.head())
     logging.info("saving")
     logging.info("Combined len: {}".format(len(df)))
