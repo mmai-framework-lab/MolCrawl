@@ -23,6 +23,7 @@ Differences from :mod:`bert_small`:
 
 import os
 
+from datasets import load_from_disk as _load
 from transformers import AutoTokenizer
 
 from molcrawl.core.paths import (
@@ -83,7 +84,6 @@ early_stopping = False
 # via `load_from_disk` is memory-mapped, so this only touches metadata.
 _GLOBAL_BATCH = 2560
 _N_EPOCH = 3
-from datasets import load_from_disk as _load
 _ds_for_len = _load(dataset_dir)
 _train_n = len(_ds_for_len["train"])
 max_steps = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH

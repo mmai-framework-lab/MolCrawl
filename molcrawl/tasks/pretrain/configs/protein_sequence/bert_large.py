@@ -3,6 +3,7 @@
 # $ python bert/main.py bert/configs/protein_sequence_large.py
 
 
+import os as _os
 from typing import Any, Dict, List
 
 import torch
@@ -77,7 +78,6 @@ dataset_dir = UNIPROT_DATASET_DIR
 # 3e-5 (jobid 22918) completed healthy at min val 0.1766. Boss aligns
 # every modality's BERT large to 3e-5 to skip the coord ladder's
 # 5e-5 → 3e-5 auto-downgrade hop.
-import os as _os
 learning_rate = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay = 0.01
 log_interval = 100

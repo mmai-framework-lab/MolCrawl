@@ -2,6 +2,7 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
+import os as _os
 from typing import Dict, List
 
 # config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
@@ -45,7 +46,6 @@ dataset_dir: str = CELLXGENE_DATASET_DIR
 # 3e-5 (jobid 22918) completed healthy at min val 0.1766. Boss aligns
 # every modality's BERT large to 3e-5 to skip the coord ladder's
 # 5e-5 → 3e-5 auto-downgrade hop.
-import os as _os
 learning_rate: float = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay: float  = 0.01
 log_interval: int = 100

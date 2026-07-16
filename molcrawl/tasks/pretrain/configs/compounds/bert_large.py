@@ -3,6 +3,8 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 
+import os as _os
+
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
 
@@ -25,7 +27,6 @@ dataset_dir = COMPOUNDS_DATASET_DIR_BERT
 # get downgraded again by the same coord ladder, so we skip that hop.
 # Env override SUBSET_BERT_LARGE_LR still works for the ladder logic if
 # a future attempt needs to try higher or lower.
-import os as _os
 learning_rate = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay = 0.01
 log_interval = 100

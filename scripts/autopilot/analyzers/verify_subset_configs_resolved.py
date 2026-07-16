@@ -80,7 +80,7 @@ def main() -> int:
         "# 42 subset config resolved 値 (readiness 用オフライン検証)",
         "",
         f"検証時刻: {os.popen('date -Iseconds').read().strip()}",
-        f"検証対象: 21 subset × 2 arch = 42 config",
+        "検証対象: 21 subset × 2 arch = 42 config",
         f"eval 成功: **{len(rows)}/42**  |  eval エラー: {len(errs)}",
         "",
         f"- global_batch == 2560: **{n_ok_gb}/{len(rows)}** {'✅' if n_ok_gb == len(rows) else '⚠️'}",
