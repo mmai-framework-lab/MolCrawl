@@ -17,13 +17,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-REPO = Path("/lustre/home/matsubara/riken-dataset-fundational-model")
-sys.path.insert(0, str(REPO))
-
 import torch
 import torch.nn.functional as F
 
 from molcrawl.models._collators import mask_ambiguous_targets_for_clm
+
+REPO = Path("/lustre/home/matsubara/riken-dataset-fundational-model")
+sys.path.insert(0, str(REPO))
 
 PAD_ID = 0
 VOCAB = 10  # tiny toy vocab
@@ -116,7 +116,7 @@ def main() -> int:
     print("Summary:")
     print(f"  - Without fix: all {batch*T} positions contribute to loss (including {n_pad_targets} pad).")
     print(f"  - With fix (pad_id_for_loss=0): only {n_real_targets} real positions contribute.")
-    print(f"  - Fix is a no-op when pad id is not present in targets (safe for genome A=0 case).")
+    print("  - Fix is a no-op when pad id is not present in targets (safe for genome A=0 case).")
     return 0
 
 
