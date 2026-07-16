@@ -8,8 +8,8 @@ from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
-max_steps = 12412
-warmup_steps = 249  # ≈ 2 % of max_steps (production spec 2026-07-09)
+max_steps = 12122
+warmup_steps = 242  # ≈ 2 % of max_steps (production spec 2026-07-09、 Phase 1-6 dedup 対応で 249 → 242)
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)

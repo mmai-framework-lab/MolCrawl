@@ -26,9 +26,9 @@ pad_token_id_for_loss = 0
 gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
-max_iters = 12415
-lr_decay_iters = 12415
-warmup_iters = 249  # how many steps to warm up for
+max_iters = 12124
+lr_decay_iters = 12124
+warmup_iters = 242  # how many steps to warm up for (Phase 1-6 dedup 対応で 249 → 242)
 learning_rate = 0.0006  # max learning rate
 min_lr = 6e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
