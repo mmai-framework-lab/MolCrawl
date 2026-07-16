@@ -41,12 +41,12 @@ model_size: str = "large"  # Choose between small, medium or large
 model_path: str = get_bert_output_path("rna", model_size)
 max_length: int = 1024
 dataset_dir: str = CELLXGENE_DATASET_DIR
-# Phase 1-5b (2026-07-15): 1e-4 → 5e-5. compounds bert-large retrain at
-# 1e-4 (jobid 22889) reproduced the 07-13 divergence pattern; boss aligns
-# every modality's BERT large to 5e-5 (BERT-large 340M sits below 1e-4's
-# safe range — ALBERT/RoBERTa use 3e-5..5e-5 at this size).
+# Phase 1-5c (2026-07-16): 5e-5 → 3e-5. compounds bert-large retrain at
+# 3e-5 (jobid 22918) completed healthy at min val 0.1766. Boss aligns
+# every modality's BERT large to 3e-5 to skip the coord ladder's
+# 5e-5 → 3e-5 auto-downgrade hop.
 import os as _os
-learning_rate: float = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00005"))
+learning_rate: float = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay: float  = 0.01
 log_interval: int = 100
 save_steps: int = 100  # Save checkpoint every 100 steps instead of default 1000

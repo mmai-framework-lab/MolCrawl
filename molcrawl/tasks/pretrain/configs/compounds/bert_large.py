@@ -15,18 +15,18 @@ model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 128
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
-# Phase 1-5b (2026-07-15): 1e-4 → 5e-5. The first retrain at 1e-4
-# (jobid 22889) reproduced the 07-13 divergence: val_loss stuck at
-# 2.5x for 8 evals (identical to 07-13 pre-divergence pattern) while
-# small/medium at the SAME LR descended to 0.8x by eval 4. Model-size
-# LR sensitivity for BERT-large (340M) — ALBERT/RoBERTa land in
-# 3e-5..5e-5 for large, 1e-4 is a base-size value. 5e-5 unified across
-# every modality's BERT large (compounds / protein / rna / mol_nl).
-# Env override SUBSET_BERT_LARGE_LR keeps the LR-ladder auto-downgrade
-# (5e-5 → 3e-5 → 1e-5) machinery working without editing this file
-# between attempts.
+# Phase 1-5c (2026-07-16): 5e-5 → 3e-5. The 22913 (5e-5) attempt was
+# auto-aborted by the early-plateau detector at eval 6 (val=1.79 > 1.5
+# threshold), then 22918 (3e-5) COMPLETED healthy with min val 0.1766
+# — matching bert-small 0.176 / bert-medium 0.144. Boss's 2026-07-16
+# reply promotes 3e-5 to the unified default across every modality's
+# BERT large (compounds / protein / rna / mol_nl) because it's the
+# empirically-attested convergent value at 340M scale; 5e-5 would just
+# get downgraded again by the same coord ladder, so we skip that hop.
+# Env override SUBSET_BERT_LARGE_LR still works for the ladder logic if
+# a future attempt needs to try higher or lower.
 import os as _os
-learning_rate = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00005"))
+learning_rate = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay = 0.01
 log_interval = 100
 

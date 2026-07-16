@@ -563,12 +563,17 @@ def _subset_keys() -> list[str]:
             if ln.strip() and not ln.startswith("#")]
 
 
-def kick_subset_training(state: dict, max_concurrent: int = 4) -> None:
+def kick_subset_training(state: dict, max_concurrent: int = 10) -> None:
     """Kick 21 subset × 2 arch = 42 runs, guarded by explicit enable flag.
 
     The user (or a `readiness_go.py` script) sets
     ``state['subset_training']['enabled'] = True`` after the readiness
     report is approved. Until then this is a no-op.
+
+    Boss reply 2026-07-16: 4 → 10 concurrent so we saturate the newly
+    provisioned H200 fleet (24 current + 16 pending = 40 → 10 × 4 = 40 GPU).
+    Excess submissions queue at SLURM level as Resources when the extra
+    16 GPU come online.
     """
     sub = state.setdefault("subset_training", {"enabled": False, "runs": {}})
     if not sub.get("enabled"):
