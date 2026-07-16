@@ -114,7 +114,7 @@ def main() -> int:
     Path(args.out_state).write_text(json.dumps(state, indent=2))
 
     lines = [
-        f"# G2 target 確定 (charter §「実測 → 最小 → trim」)",
+        "# G2 target 確定 (charter §「実測 → 最小 → trim」)",
         "",
         f"作成: {state['generated_at']}",
         f"model: {args.model} (bert/gpt2 は window 単位で等価、bert で代表)",
