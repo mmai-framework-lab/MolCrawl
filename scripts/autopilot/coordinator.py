@@ -1,0 +1,386 @@
+"""autopilot coordinator — 4 day autonomous driver.
+
+Runs in nohup on a login node. Polls SLURM state periodically, advances the
+pipeline, writes milestone markdown, parks anything that requires human
+judgment. Idempotent: state.json is the source of truth, so if the coordinator
+is killed and restarted it resumes from the last recorded state.
+
+charter §「自律判断ルール」を encode:
+- realized 窓数 → aggregate_realized_windows.py (中央値近傍で target 決定)
+- 発散検知 → parse_train_log_for_divergence.py (val_loss NaN or 単調悪化)
+- 発散 run は park + skip、 他 modality は続行
+- OpenGenome2 全データ学習は絶対に起動しない
+
+State machine (per pipeline):
+    genome_g2:
+      IDLE -> STEPS1_3_QUEUED -> STEPS1_3_DONE ->
+      TARGET_DECIDED -> STEP4_QUEUED -> STEP4_DONE -> DONE
+    compounds_train (per config):
+      IDLE -> QUEUED -> RUNNING -> DONE|PARKED
+    (rna/protein/mol_nl/mammal: similar, kicked in order of priority)
+
+Usage:
+    nohup python3 -u tmp/scripts/autopilot/coordinator.py \\
+        > tmp/scripts/autopilot/logs/coordinator.log 2>&1 &
+    disown
+
+Or bootstrap via ``bash tmp/scripts/autopilot/kickoff.sh``.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path("/lustre/home/matsubara/riken-dataset-fundational-model")
+AUTOPILOT = ROOT / "tmp" / "scripts" / "autopilot"
+STATE_DIR = AUTOPILOT / "state"
+LOGS_DIR = AUTOPILOT / "logs"
+MILESTONES_DIR = AUTOPILOT / "milestones"
+SBATCH_DIR = AUTOPILOT / "sbatch"
+ANALYZERS_DIR = AUTOPILOT / "analyzers"
+
+STATE_JSON = STATE_DIR / "coordinator_state.json"
+PARK_LOG = MILESTONES_DIR / "park_log.md"
+
+SUBSETS_FILE = STATE_DIR / "subsets_21.txt"
+
+# charter §「対象は G2 → compounds/subset small → rna → mammal」
+# 実運用: compounds は data 準備済ですぐ回せる → G2 と並列で kick、
+# genome subset small 21 subset は G2 完了後、 mammal size axis は subset の後。
+# rna, protein, mol_nl は既存 data が使える範囲で並行。
+
+COMPOUNDS_WORKFLOWS = [
+    ("bert-small", "03c-compounds-train-bert-small.sh"),
+    ("gpt2-small", "03a-compounds-train-gpt2-small.sh"),
+    ("bert-medium", "03c-compounds-train-bert-medium.sh"),
+    ("gpt2-medium", "03a-compounds-train-gpt2-medium.sh"),
+    ("bert-large", "03c-compounds-train-bert-large.sh"),
+    ("gpt2-large", "03a-compounds-train-gpt2-large.sh"),
+    ("gpt2-xl", "03a-compounds-train-gpt2-xl.sh"),
+]
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).astimezone().isoformat()
+
+
+def load_state() -> dict:
+    if not STATE_JSON.exists():
+        return {
+            "created_at": now_iso(),
+            "genome_g2": {"phase": "IDLE", "subsets": {}},
+            "compounds": {},
+            "park": [],
+        }
+    return json.loads(STATE_JSON.read_text())
+
+
+def save_state(state: dict) -> None:
+    state["updated_at"] = now_iso()
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    STATE_JSON.write_text(json.dumps(state, indent=2))
+
+
+def log(msg: str) -> None:
+    print(f"[{now_iso()}] {msg}", flush=True)
+
+
+def sbatch_submit(sbatch: Path, job_name: str, exports: dict[str, str]) -> str | None:
+    """Submit an sbatch script, return SLURM JOBID (str) or None on failure."""
+    export_str = ",".join(f"{k}={v}" for k, v in exports.items())
+    cmd = ["sbatch", "--parsable", f"--job-name={job_name}",
+           f"--export=ALL,{export_str}", str(sbatch)]
+    log(f"submit: {' '.join(cmd)}")
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        log("  → sbatch timed out")
+        return None
+    if r.returncode != 0:
+        log(f"  → sbatch failed rc={r.returncode}: {r.stderr.strip()}")
+        return None
+    jobid = r.stdout.strip().split(";")[0].strip()
+    log(f"  → JOBID {jobid}")
+    return jobid
+
+
+def sacct_state(jobid: str) -> str:
+    """Return SLURM job state via sacct (COMPLETED / FAILED / RUNNING / PENDING / ...)."""
+    try:
+        r = subprocess.run(
+            ["sacct", "-j", jobid, "-n", "-o", "State", "-P", "-X"],
+            capture_output=True, text=True, timeout=30,
+        )
+    except Exception as e:
+        log(f"sacct error for {jobid}: {e}")
+        return "UNKNOWN"
+    lines = [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+    if not lines:
+        return "UNKNOWN"
+    # first line is the batch step; may include suffixes like " CANCELLED+"
+    return lines[0].split()[0]
+
+
+def park(state: dict, item: str, reason: str) -> None:
+    entry = {"at": now_iso(), "item": item, "reason": reason}
+    state["park"].append(entry)
+    PARK_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with PARK_LOG.open("a") as f:
+        f.write(f"- [{entry['at']}] **{item}** — {reason}\n")
+    log(f"PARK: {item} — {reason}")
+
+
+def milestone(name: str, body: str) -> None:
+    MILESTONES_DIR.mkdir(parents=True, exist_ok=True)
+    p = MILESTONES_DIR / f"{name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
+    p.write_text(body)
+    log(f"MILESTONE: {p.name}")
+
+
+# ── genome G2 pipeline ─────────────────────────────────────────────────────
+
+
+def kick_g2_steps1_3(state: dict) -> None:
+    g2 = state["genome_g2"]
+    if g2["phase"] != "IDLE":
+        return
+    subsets = [ln.strip() for ln in SUBSETS_FILE.read_text().splitlines()
+               if ln.strip() and not ln.startswith("#")]
+    for s in subsets:
+        jobid = sbatch_submit(
+            SBATCH_DIR / "genome_g2_subset_steps1_3.sbatch",
+            job_name=f"g2-{s}",
+            exports={"SUBSET": s},
+        )
+        if jobid is None:
+            park(state, f"g2:{s}", "sbatch submit failed at IDLE → STEPS1_3")
+            continue
+        g2["subsets"][s] = {"phase": "STEPS1_3_QUEUED", "jobid_1_3": jobid}
+    g2["phase"] = "STEPS1_3_QUEUED"
+    save_state(state)
+
+
+def poll_g2_steps1_3(state: dict) -> None:
+    g2 = state["genome_g2"]
+    if g2["phase"] != "STEPS1_3_QUEUED":
+        return
+    all_done = True
+    for s, ss in g2["subsets"].items():
+        if ss["phase"] == "STEPS1_3_QUEUED":
+            st = sacct_state(ss["jobid_1_3"])
+            if st == "COMPLETED":
+                ss["phase"] = "STEPS1_3_DONE"
+            elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
+                ss["phase"] = "STEPS1_3_FAILED"
+                park(state, f"g2:{s}", f"steps 1-3 SLURM state={st}")
+            elif st in ("RUNNING", "PENDING", "COMPLETING", "REQUEUED"):
+                all_done = False
+            else:
+                all_done = False  # UNKNOWN — poll again next tick
+        elif ss["phase"] == "STEPS1_3_FAILED":
+            pass  # parked
+        else:
+            pass  # done
+    if all_done:
+        g2["phase"] = "STEPS1_3_DONE"
+        milestone(
+            "g2-steps1_3-complete",
+            f"# G2 steps 1-3 完了 (autopilot)\n\n"
+            f"作成: {now_iso()}\n\n"
+            + "\n".join(
+                f"- {s}: {ss['phase']} (jobid={ss.get('jobid_1_3')})"
+                for s, ss in g2["subsets"].items()
+            ),
+        )
+    save_state(state)
+
+
+def decide_g2_target(state: dict) -> None:
+    g2 = state["genome_g2"]
+    if g2["phase"] != "STEPS1_3_DONE":
+        return
+    py = os.environ.get("MOLCRAWL_PYTHON", "/lustre/home/matsubara/miniforge3/envs/molcrawl/bin/python")
+    lsd = os.environ.get(
+        "LEARNING_SOURCE_DIR",
+        "/lustre/home/matsubara/learning_source_20260710_genome_v2",
+    )
+    out_state = STATE_DIR / "g2_target.json"
+    out_report = MILESTONES_DIR / "g2-target-decided.md"
+    cmd = [
+        py, str(ANALYZERS_DIR / "aggregate_realized_windows.py"),
+        "--learning-source", lsd,
+        "--subsets-file", str(SUBSETS_FILE),
+        "--model", "bert",
+        "--out-state", str(out_state),
+        "--out-report", str(out_report),
+    ]
+    log(f"decide target: {' '.join(cmd)}")
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+    if r.returncode != 0:
+        park(state, "g2:target", f"aggregate_realized_windows exit {r.returncode}: {r.stderr[:400]}")
+        save_state(state)
+        return
+    tgt = json.loads(out_state.read_text())
+    g2["target_total_windows"] = tgt["target_total_windows"]
+    g2["phase"] = "TARGET_DECIDED"
+    save_state(state)
+
+
+def kick_g2_step4(state: dict) -> None:
+    g2 = state["genome_g2"]
+    if g2["phase"] != "TARGET_DECIDED":
+        return
+    target = str(g2["target_total_windows"])
+    for s, ss in g2["subsets"].items():
+        if ss["phase"] != "STEPS1_3_DONE":
+            continue
+        jobid = sbatch_submit(
+            SBATCH_DIR / "genome_g2_subset_step4.sbatch",
+            job_name=f"g2-split-{s}",
+            exports={"SUBSET": s, "TARGET_TOTAL_WINDOWS": target},
+        )
+        if jobid is None:
+            park(state, f"g2:{s}", "sbatch submit failed at TARGET_DECIDED → STEP4")
+            continue
+        ss["phase"] = "STEP4_QUEUED"
+        ss["jobid_4"] = jobid
+    g2["phase"] = "STEP4_QUEUED"
+    save_state(state)
+
+
+def poll_g2_step4(state: dict) -> None:
+    g2 = state["genome_g2"]
+    if g2["phase"] != "STEP4_QUEUED":
+        return
+    all_done = True
+    for s, ss in g2["subsets"].items():
+        if ss["phase"] == "STEP4_QUEUED":
+            st = sacct_state(ss["jobid_4"])
+            if st == "COMPLETED":
+                ss["phase"] = "STEP4_DONE"
+            elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
+                ss["phase"] = "STEP4_FAILED"
+                park(state, f"g2:{s}", f"step4 SLURM state={st}")
+            else:
+                all_done = False
+    if all_done:
+        g2["phase"] = "STEP4_DONE"
+        milestone(
+            "g2-step4-complete",
+            f"# G2 step 4 完了 (autopilot)\n\n"
+            f"作成: {now_iso()}\n\n"
+            f"target_total_windows: {g2.get('target_total_windows')}\n\n"
+            + "\n".join(
+                f"- {s}: {ss['phase']} (jobid={ss.get('jobid_4')})"
+                for s, ss in g2["subsets"].items()
+            ),
+        )
+    save_state(state)
+
+
+# ── compounds pipeline ─────────────────────────────────────────────────────
+
+
+def kick_compounds(state: dict, max_concurrent: int = 2) -> None:
+    """Kick compounds jobs in priority order, up to max_concurrent live."""
+    cmp = state["compounds"]
+    for key, _wf in COMPOUNDS_WORKFLOWS:
+        if key not in cmp:
+            cmp[key] = {"phase": "IDLE"}
+    # count live
+    live = [k for k, v in cmp.items() if v.get("phase") in ("QUEUED", "RUNNING")]
+    for key, wf in COMPOUNDS_WORKFLOWS:
+        if len(live) >= max_concurrent:
+            break
+        e = cmp[key]
+        if e.get("phase") == "IDLE":
+            jobid = sbatch_submit(
+                SBATCH_DIR / "compounds_train.sbatch",
+                job_name=f"cmp-{key}",
+                exports={"WORKFLOW": wf, "NUM_GPUS": "4"},
+            )
+            if jobid is None:
+                park(state, f"compounds:{key}", "sbatch submit failed")
+                e["phase"] = "PARKED"
+                continue
+            e["phase"] = "QUEUED"
+            e["jobid"] = jobid
+            e["workflow"] = wf
+            live.append(key)
+    save_state(state)
+
+
+def poll_compounds(state: dict) -> None:
+    cmp = state["compounds"]
+    for key, e in cmp.items():
+        if e.get("phase") in ("QUEUED", "RUNNING"):
+            st = sacct_state(e["jobid"])
+            if st == "COMPLETED":
+                e["phase"] = "DONE"
+                milestone(
+                    f"compounds-{key}-done",
+                    f"# compounds {key} 完了 (autopilot)\n\n"
+                    f"作成: {now_iso()}\n\nSLURM jobid: {e['jobid']}\nworkflow: {e['workflow']}\n",
+                )
+            elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
+                e["phase"] = "PARKED"
+                park(state, f"compounds:{key}", f"SLURM state={st} — see log")
+            elif st == "RUNNING":
+                e["phase"] = "RUNNING"
+            # else keep current
+    save_state(state)
+
+
+# ── main loop ──────────────────────────────────────────────────────────────
+
+
+def one_tick(state: dict) -> None:
+    # G2 pipeline advancement
+    kick_g2_steps1_3(state)
+    poll_g2_steps1_3(state)
+    decide_g2_target(state)
+    kick_g2_step4(state)
+    poll_g2_step4(state)
+    # Compounds (parallel, priority-ordered)
+    kick_compounds(state)
+    poll_compounds(state)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--tick-seconds", type=int, default=300,
+                    help="poll interval (default 300s)")
+    ap.add_argument("--max-ticks", type=int, default=None,
+                    help="stop after N ticks (default: run forever)")
+    ap.add_argument("--once", action="store_true",
+                    help="run one tick and exit (for cron/testing)")
+    args = ap.parse_args()
+
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    MILESTONES_DIR.mkdir(parents=True, exist_ok=True)
+
+    log(f"coordinator start, pid={os.getpid()}, tick={args.tick_seconds}s")
+
+    ticks = 0
+    while True:
+        try:
+            state = load_state()
+            one_tick(state)
+        except Exception as e:
+            import traceback
+            log(f"tick error: {e}\n{traceback.format_exc()}")
+        ticks += 1
+        if args.once or (args.max_ticks and ticks >= args.max_ticks):
+            log(f"coordinator exit after {ticks} tick(s)")
+            return 0
+        time.sleep(args.tick_seconds)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
