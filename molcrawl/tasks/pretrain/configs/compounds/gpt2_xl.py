@@ -4,14 +4,14 @@
 
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.core.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_GPT2, get_gpt2_output_path
 
 # EX-Large-Sized GPT2 Model
 n_layer = 48
 n_head = 25
 n_embd = 1600
 
-dataset_dir = COMPOUNDS_DATASET_DIR
+dataset_dir = COMPOUNDS_DATASET_DIR_GPT2
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("compounds", "xl")
@@ -32,9 +32,9 @@ pad_token_id_for_loss = 0
 gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
-max_iters = 30000
-lr_decay_iters = 30000
-warmup_iters = 200  # how many steps to warm up for
+max_iters = 12415
+lr_decay_iters = 12415
+warmup_iters = 249  # how many steps to warm up for
 learning_rate = 0.0002  # max learning rate
 min_lr = 2e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 

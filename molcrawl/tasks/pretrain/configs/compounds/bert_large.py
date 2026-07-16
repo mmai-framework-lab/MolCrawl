@@ -4,16 +4,17 @@
 
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.core.paths import COMPOUNDS_DATASET_DIR, get_bert_output_path
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
-max_steps = 60000
+max_steps = 12412
+warmup_steps = 249  # ≈ 2 % of max_steps (production spec 2026-07-09)
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 128
-dataset_dir = COMPOUNDS_DATASET_DIR
+dataset_dir = COMPOUNDS_DATASET_DIR_BERT
 learning_rate = 0.00015
 weight_decay = 0.01
 log_interval = 100

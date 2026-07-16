@@ -72,7 +72,18 @@ UNIPROT_DATASET_DIR = PROTEIN_SEQUENCE_DIR + "/training_ready_hf_dataset"
 REFSEQ_DATASET_DIR = GENOME_SEQUENCE_DIR + "/training_ready_hf_dataset"
 CELLXGENE_DATASET_DIR = RNA_DATASET_DIR + "/training_ready_hf_dataset"
 MOLECULE_NAT_LANG_DATASET_DIR = MOLECULE_NAT_LANG_DIR + "/training_ready_hf_dataset"
+# Legacy compounds training_ready (3月版 build, pre-Phase 1-2).
+# Retained for backwards compatibility with fine-tune / eval jobs that resume
+# from checkpoints trained on the old dataset. Do NOT use for new pretraining.
 COMPOUNDS_DATASET_DIR = COMPOUNDS_DIR + "/organix13/compounds/training_ready_hf_dataset"
+
+# Phase 1-2 (2026-07-09) compounds training_ready.
+# seq_len=128 with filter (truncation forbidden), 1 molecule = 1 row,
+# BERT and GPT-2 variants share the same molecule → split assignment (seed=42).
+# Set LEARNING_SOURCE_DIR=/lustre/home/matsubara/learning_source_20260708_compounds
+# so these resolve to the Phase 1-2 output tree.
+COMPOUNDS_DATASET_DIR_BERT = COMPOUNDS_DIR + "/organix13/training_ready_hf_dataset_bert"
+COMPOUNDS_DATASET_DIR_GPT2 = COMPOUNDS_DIR + "/organix13/training_ready_hf_dataset_gpt2"
 MOL_INSTRUCTIONS_DIR = MOLECULE_NAT_LANG_DIR + "/mol_instructions"
 MOL_INSTRUCTIONS_DATASET_DIR = MOL_INSTRUCTIONS_DIR + "/training_ready_hf_dataset"
 MOL_INSTRUCTIONS_SOURCE_DIR = MOL_INSTRUCTIONS_DIR + "/zjunlp_Mol-Instructions"
