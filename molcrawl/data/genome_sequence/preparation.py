@@ -580,9 +580,9 @@ def process3_subset_raw_to_parquet(
         return False
 
 
-def _contig_unit_split(
-    accessions,
-    contigs,
+def _assign_contig_groups(
+    sorted_keys,
+    counts,
     valid_size=50_000,
     test_size=50_000,
     valid_frac=0.005,
@@ -590,23 +590,20 @@ def _contig_unit_split(
     target_total_windows=None,
     seed=42,
 ):
-    """Assign window indices to train/valid/test by whole (accession, contig).
+    """Core (accession, contig) group → split assignment.
 
-    Returns ``(train_idx, valid_idx, test_idx, stats)`` where each ``*_idx`` is
-    a sorted list of row indices and ``stats`` carries group / window counts.
-    All windows of one (accession, contig_id) group go to the same split, so
-    the resulting splits are disjoint at contig granularity (no adjacent-window
-    leak). ``target_total_windows`` (F2-c) drops whole groups first.
+    Shared by both the in-memory and the streaming split so their numeric
+    results are identical by construction. ``sorted_keys`` are the
+    ``accession\\x1fcontig_id`` group keys in the SAME lexicographic order
+    ``np.unique`` produces (Python ``sorted`` matches it for these ASCII keys),
+    so the seeded shuffle visits the identical group order; ``counts[i]`` is the
+    window count of ``sorted_keys[i]``. Returns ``(code_by_key, stats)`` where
+    ``code_by_key[key]`` is 0=train / 1=valid / 2=test / -1=dropped (F2-c).
     """
     import random as _random
 
-    acc = np.asarray(accessions, dtype=object).astype("U")
-    con = np.asarray(contigs, dtype=object).astype("U")
-    # Combined group key; \x1f (unit separator) cannot occur in an accession or
-    # a FASTA contig id, so join/split is unambiguous.
-    keys = np.char.add(np.char.add(acc, "\x1f"), con)
-    uniq, inv, counts = np.unique(keys, return_inverse=True, return_counts=True)
-    n_groups = len(uniq)
+    n_groups = len(sorted_keys)
+    counts = np.asarray(counts, dtype=np.int64)
     n_total = int(counts.sum())
 
     order = list(range(n_groups))
@@ -641,11 +638,8 @@ def _contig_unit_split(
             assign[g] = 2
             nt += c
         # else: stays train
-    row_assign = assign[inv]
-    train_idx = np.nonzero(row_assign == 0)[0].tolist()
-    valid_idx = np.nonzero(row_assign == 1)[0].tolist()
-    test_idx = np.nonzero(row_assign == 2)[0].tolist()
 
+    code_by_key = {k: int(assign[i]) for i, k in enumerate(sorted_keys)}
     stats = {
         "n_groups": n_groups,
         "n_total_windows": n_total,
@@ -654,6 +648,134 @@ def _contig_unit_split(
         "valid_target": n_valid,
         "test_target": n_test,
     }
+    return code_by_key, stats
+
+
+def _contig_unit_split(
+    accessions,
+    contigs,
+    valid_size=50_000,
+    test_size=50_000,
+    valid_frac=0.005,
+    test_frac=0.005,
+    target_total_windows=None,
+    seed=42,
+):
+    """Reference in-memory contig-unit split (oracle for the streaming path).
+
+    Builds the full window → group map with ``np.unique`` — simple and exact,
+    but its all-window key array + sort peaks ~24 GB at 87M windows, so the
+    production pipeline calls :func:`_contig_unit_split_streaming` instead. Kept
+    for small inputs and as the equivalence oracle. Returns
+    ``(train_idx, valid_idx, test_idx, stats)`` where each ``*_idx`` is a sorted
+    int64 array of row indices; all windows of one (accession, contig_id) group
+    share a split, so the splits are contig-disjoint. ``target_total_windows``
+    (F2-c) drops whole groups first.
+    """
+    acc = np.asarray(accessions, dtype=object).astype("U")
+    con = np.asarray(contigs, dtype=object).astype("U")
+    # Combined group key; \x1f (unit separator) cannot occur in an accession or
+    # a FASTA contig id, so join/split is unambiguous.
+    keys = np.char.add(np.char.add(acc, "\x1f"), con)
+    uniq, inv, counts = np.unique(keys, return_inverse=True, return_counts=True)
+
+    code_by_key, stats = _assign_contig_groups(
+        uniq.tolist(), counts, valid_size, test_size, valid_frac, test_frac,
+        target_total_windows, seed,
+    )
+    assign = np.fromiter(
+        (code_by_key[k] for k in uniq.tolist()), dtype=np.int8, count=len(uniq)
+    )
+    row_assign = assign[inv]
+    train_idx = np.nonzero(row_assign == 0)[0]
+    valid_idx = np.nonzero(row_assign == 1)[0]
+    test_idx = np.nonzero(row_assign == 2)[0]
+    return train_idx, valid_idx, test_idx, stats
+
+
+def _contig_unit_split_streaming(
+    parquet_files,
+    valid_size=50_000,
+    test_size=50_000,
+    valid_frac=0.005,
+    test_frac=0.005,
+    target_total_windows=None,
+    seed=42,
+):
+    """Streaming contig-unit split — memory-bounded equivalent of the oracle.
+
+    Two passes over the parquet files, never materialising an all-window key
+    array (the in-memory ``np.unique`` peaked ~24 GB at 87M windows; here the
+    dominant term is the per (accession, contig) count dict, groups << windows).
+
+    Pass 1 accumulates the window count of every (accession, contig_id) group;
+    Pass 2 re-scans and scatters each window's split code into an int8 row map.
+    Row indices are global offsets into ``parquet_files`` read in the given
+    order — which MUST be the same order the caller feeds ``load_dataset``
+    (sorted path list) — so the returned indices address the resulting ``ds``
+    exactly as the in-memory implementation would. Accession is taken from each
+    file's stem (the writer names every parquet ``<accession>.parquet`` and
+    stamps the ``accession`` column to match), so only ``contig_id`` is read.
+
+    Returns ``(train_idx, valid_idx, test_idx, stats)`` — sorted int64 arrays and
+    the same ``stats`` dict as :func:`_contig_unit_split`.
+    """
+    import pyarrow.parquet as pq
+
+    files = [str(p) for p in parquet_files]
+
+    # Pass 1: per (accession, contig_id) window counts.
+    group_counts: dict = {}
+    file_nrows = []
+    for path in files:
+        acc = Path(path).stem
+        con_np = (
+            pq.read_table(path, columns=["contig_id"])
+            .column("contig_id")
+            .to_numpy(zero_copy_only=False)
+        )
+        file_nrows.append(len(con_np))
+        uniq_c, cnt_c = np.unique(con_np, return_counts=True)
+        for c, n in zip(uniq_c.tolist(), cnt_c.tolist()):
+            key = acc + "\x1f" + c
+            group_counts[key] = group_counts.get(key, 0) + int(n)
+
+    # Same lexicographic group order as np.unique (ASCII keys) → identical
+    # seeded shuffle → identical assignment as the in-memory oracle.
+    sorted_keys = sorted(group_counts)
+    counts = [group_counts[k] for k in sorted_keys]
+    code_by_key, stats = _assign_contig_groups(
+        sorted_keys, counts, valid_size, test_size, valid_frac, test_frac,
+        target_total_windows, seed,
+    )
+
+    # Pass 2: scatter split codes into a global int8 row map (n_total bytes).
+    n_total = stats["n_total_windows"]
+    row_assign = np.empty(n_total, dtype=np.int8)
+    off = 0
+    for path, nrows in zip(files, file_nrows):
+        acc = Path(path).stem
+        con_np = (
+            pq.read_table(path, columns=["contig_id"])
+            .column("contig_id")
+            .to_numpy(zero_copy_only=False)
+        )
+        uniq_c, inv = np.unique(con_np, return_inverse=True)
+        lut = np.fromiter(
+            (code_by_key[acc + "\x1f" + c] for c in uniq_c.tolist()),
+            dtype=np.int8,
+            count=len(uniq_c),
+        )
+        row_assign[off:off + nrows] = lut[inv]
+        off += nrows
+    if off != n_total:
+        raise RuntimeError(
+            f"streaming split row count drift: scattered {off} != counted {n_total}"
+        )
+
+    train_idx = np.nonzero(row_assign == 0)[0]
+    valid_idx = np.nonzero(row_assign == 1)[0]
+    test_idx = np.nonzero(row_assign == 2)[0]
     return train_idx, valid_idx, test_idx, stats
 
 
@@ -795,9 +917,15 @@ def process4_subset_parquet_to_arrow(
                         f"Phase 2/3 with the contig-aware pipeline (F2-a)."
                     )
 
-            train_idx, valid_idx, test_idx, stats = _contig_unit_split(
-                accessions=ds["accession"],
-                contigs=ds["contig_id"],
+            # Streaming split: derive the group assignment directly from the
+            # parquet files (two cheap single-column passes) instead of
+            # materialising ds["accession"]/ds["contig_id"] and np.unique-ing
+            # all windows (~24 GB peak at 87M windows). parquet_files is the
+            # same sorted list fed to load_dataset above, so the returned row
+            # indices address ``ds`` identically. Numerically equal to the
+            # in-memory _contig_unit_split (shared assignment core).
+            train_idx, valid_idx, test_idx, stats = _contig_unit_split_streaming(
+                parquet_files=parquet_files,
                 valid_size=valid_size,
                 test_size=test_size,
                 valid_frac=valid_frac,
