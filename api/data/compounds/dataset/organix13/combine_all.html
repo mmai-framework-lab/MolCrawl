@@ -253,6 +253,20 @@ el.replaceWith(d);
     df.reset_index(drop=True, inplace=True)
     df[&#34;mol_weight&#34;] = df[&#34;mol_weight&#34;] / 100.0
 
+    # De-duplicate by canonical SMILES. Different source parquets overlap
+    # (ChEMBL vs PubChemQC, ZINC-QM9 mix vs ZINC20 5M sample, etc.) and
+    # historical builds carried ~67k duplicate rows into training_ready.
+    # Keep the first occurrence to preserve deterministic ordering under
+    # the fixed df_list assembly order.
+    n_before = len(df)
+    df = df.drop_duplicates(subset=&#34;smiles&#34;, keep=&#34;first&#34;).reset_index(drop=True)
+    n_after = len(df)
+    logging.info(
+        &#34;dedup: %d rows before, %d rows after (%d duplicates removed)&#34;,
+        n_before, n_after, n_before - n_after,
+    )
+    assert df[&#34;smiles&#34;].duplicated().sum() == 0, &#34;dedup post-condition failed&#34;
+
     logging.info(df.head())
     logging.info(&#34;saving&#34;)
     logging.info(&#34;Combined len: {}&#34;.format(len(df)))
