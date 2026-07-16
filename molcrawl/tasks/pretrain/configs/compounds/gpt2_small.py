@@ -3,9 +3,9 @@
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
-from molcrawl.core.paths import COMPOUNDS_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_GPT2, get_gpt2_output_path
 
-dataset_dir = COMPOUNDS_DATASET_DIR
+dataset_dir = COMPOUNDS_DATASET_DIR_GPT2
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("compounds", "small")
@@ -26,9 +26,9 @@ pad_token_id_for_loss = 0
 gradient_accumulation_steps = 5 * 16
 
 # this makes total number of tokens be 300B
-max_iters = 6000
-lr_decay_iters = 6000
-warmup_iters = 200  # how many steps to warm up for
+max_iters = 12415
+lr_decay_iters = 12415
+warmup_iters = 249  # how many steps to warm up for
 learning_rate = 0.0006  # max learning rate
 min_lr = 6e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
