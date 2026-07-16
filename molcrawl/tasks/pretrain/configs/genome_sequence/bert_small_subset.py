@@ -93,10 +93,17 @@ del _ds_for_len
 # Smoke-test override for readiness verification only (charter 2026-07-14).
 # `SMOKE_MAX_STEPS=5` forces a short run that exercises the training path
 # without consuming a real epoch. Untouched in production runs.
+# `SMOKE_WARMUP_STEPS` (opt) overrides warmup independently — used by the
+# 2026-07-15 extended sweep so 8000-iter runs get a production-realistic
+# warmup (~2%) instead of the default tiny-smoke 40% ratio (which would
+# eat half the extended run).
 _smoke = os.environ.get("SMOKE_MAX_STEPS")
 if _smoke:
     max_steps = int(_smoke)
     warmup_steps = max(int(0.4 * max_steps), 1)  # keep warmup proportional
+    _smoke_warmup = os.environ.get("SMOKE_WARMUP_STEPS")
+    if _smoke_warmup:
+        warmup_steps = int(_smoke_warmup)
 
 log_interval = 100
 save_steps = 1000

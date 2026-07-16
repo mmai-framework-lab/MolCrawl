@@ -99,6 +99,16 @@ if _smoke:
     # eval samples (the production 1000 leaves an 800-step smoke with 0-1
     # evals, breaking downstream aggregation).
     eval_interval = max(int(max_iters / 5), 50)
+    # SMOKE_WARMUP_ITERS / SMOKE_EVAL_INTERVAL (opt) override the derived
+    # values — used by the 2026-07-15 extended sweep (8000 iter) so we get
+    # production-realistic warmup (~2%) and finer-grained evals for spike
+    # detection around the pre-G2 6k-iter warning point.
+    _smoke_warmup = os.environ.get("SMOKE_WARMUP_ITERS")
+    if _smoke_warmup:
+        warmup_iters = int(_smoke_warmup)
+    _smoke_eval = os.environ.get("SMOKE_EVAL_INTERVAL")
+    if _smoke_eval:
+        eval_interval = int(_smoke_eval)
 
 # Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
 # compute-matched」).  gpt2/train.py reads this via globals().get.
