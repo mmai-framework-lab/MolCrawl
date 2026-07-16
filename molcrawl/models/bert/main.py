@@ -166,7 +166,7 @@ if __name__ == "__main__":
     max_length = 1024
     dataset_dir = ""
     learning_rate = 6e-6
-    weight_decay = 1e-1
+    weight_decay = 1e-2  # BERT default (production spec 2026-07-08). Applied 2D-only via _WeightDecayNoEmbedTrainer.
     warmup_steps = 200
     max_steps = 60000
     batch_size = 10
@@ -597,7 +597,26 @@ if __name__ == "__main__":
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=early_stopping_patience))
         print(f"📋 Added EarlyStoppingCallback (patience={early_stopping_patience})")
 
-    trainer = Trainer(
+    # HF Trainer's default get_decay_parameter_names excludes bias and LayerNorm
+    # from the weight-decay group but INCLUDES nn.Embedding.weight (word_embeddings,
+    # position_embeddings, token_type_embeddings for BERT). Production spec (2026-07-08)
+    # requires weight decay be applied to 2D matmul weights only — bias, LayerNorm
+    # and embeddings all get wd=0. Subclass Trainer to also drop embedding names.
+    import torch as _torch
+
+    class _WeightDecayNoEmbedTrainer(Trainer):
+        """Trainer that additionally excludes nn.Embedding.weight from weight decay."""
+
+        def get_decay_parameter_names(self, model):
+            names = super().get_decay_parameter_names(model)
+            embedding_names = set()
+            for module_name, module in model.named_modules():
+                if isinstance(module, _torch.nn.Embedding):
+                    for pn, _ in module.named_parameters(recurse=False):
+                        embedding_names.add(f"{module_name}.{pn}" if module_name else pn)
+            return [n for n in names if n not in embedding_names]
+
+    trainer = _WeightDecayNoEmbedTrainer(
         model=model,
         args=training_args,
         data_collator=data_collator,
