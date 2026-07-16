@@ -54,8 +54,7 @@ def patch_bert(name: str) -> dict:
         ("dataset_dir", "COMPOUNDS_DATASET_DIR_BERT"),
     ]:
         src, ok = _replace_var(src, var, str(val))
-        if ok:
-            changes.append(f"{var} = {val}")
+        if ok: changes.append(f"{var} = {val}")
 
     # Update the import to include the new BERT-specific constant.
     if "COMPOUNDS_DATASET_DIR_BERT" not in orig:
@@ -84,8 +83,7 @@ def patch_gpt2(name: str) -> dict:
         ("dataset_dir", "COMPOUNDS_DATASET_DIR_GPT2"),
     ]:
         src, ok = _replace_var(src, var, str(val))
-        if ok:
-            changes.append(f"{var} = {val}")
+        if ok: changes.append(f"{var} = {val}")
 
     if "COMPOUNDS_DATASET_DIR_GPT2" not in orig:
         src = re.sub(
