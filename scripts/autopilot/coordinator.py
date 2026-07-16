@@ -179,7 +179,7 @@ def check_run_diverged(log_glob: str) -> tuple[bool, str]:
     latest = matches[-1]  # newest
     try:
         r = subprocess.run(
-            [py, str(detector), latest, "--last-vs-best"],
+            [py, str(detector), latest, "--last-vs-best", "--collapse-check"],
             capture_output=True, text=True, timeout=120,
         )
     except Exception as e:

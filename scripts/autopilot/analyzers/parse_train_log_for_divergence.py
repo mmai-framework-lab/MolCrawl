@@ -71,6 +71,26 @@ def main() -> int:
                          "degrade-ratio. Use this on COMPLETED runs to catch bert-large-"
                          "style divergence where the schedule ran to the end but val loss "
                          "walked away from its best value.")
+    # charter 2026-07-14 reply §「collapse 判定」: pre-G2 で BERT 1e-4 が
+    # ln(4)≈1.386 に collapse する事象 (degenerate near-uniform output) を、
+    # 「low & flat」 パターンとして検出する。 上向き発散だけを見る --last-vs-best
+    # では見逃す (loss は低いから healthy に見える) → 縮退モデルの量産を防ぐ。
+    ap.add_argument("--collapse-check", action="store_true",
+                    help="also fire when the last --collapse-window val losses are ALL "
+                         "within [collapse-target ± collapse-tolerance] AND vary by less "
+                         "than collapse-flat-span across the window (i.e. loss is low "
+                         "and flat near a plateau).")
+    ap.add_argument("--collapse-window", type=int, default=5,
+                    help="how many consecutive last evals to require flat (default 5)")
+    ap.add_argument("--collapse-target", type=float, default=1.386,
+                    help="collapse plateau value; default 1.386 ≈ ln(4) = uniform "
+                         "prediction over ACGT (single-nt vocab).")
+    ap.add_argument("--collapse-tolerance", type=float, default=0.15,
+                    help="max |loss - target| for a sample to count as 'near plateau' "
+                         "(default 0.15 → [1.236, 1.536] around ln(4)).")
+    ap.add_argument("--collapse-flat-span", type=float, default=0.05,
+                    help="max (max - min) across the collapse window for it to count "
+                         "as flat (default 0.05).")
     args = ap.parse_args()
 
     text = Path(args.log_file).read_text(errors="replace")
@@ -103,6 +123,22 @@ def main() -> int:
                 f"final vs best: last={last:.4f} vs best={best:.4f} "
                 f"(ratio {last/best:.2f} > {args.degrade_ratio})"
             )
+
+    # collapse: last N evals all near a plateau AND flat.
+    if args.collapse_check and len(post_warmup) >= args.collapse_window:
+        window = post_warmup[-args.collapse_window:]
+        window = [v for v in window if v == v]  # skip NaN
+        if len(window) == args.collapse_window:
+            near = all(abs(v - args.collapse_target) <= args.collapse_tolerance for v in window)
+            flat = (max(window) - min(window)) <= args.collapse_flat_span
+            if near and flat:
+                reasons.append(
+                    f"collapse: last {args.collapse_window} evals "
+                    f"= [{min(window):.4f}..{max(window):.4f}] near target "
+                    f"{args.collapse_target} (span {max(window)-min(window):.4f} <= "
+                    f"{args.collapse_flat_span}, |mean-target|={abs(sum(window)/len(window)-args.collapse_target):.3f} "
+                    f"<= {args.collapse_tolerance})"
+                )
 
     if reasons:
         print("[DIVERGENCE]", "; ".join(reasons))
