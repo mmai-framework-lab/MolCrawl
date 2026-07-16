@@ -41,10 +41,12 @@ model_size: str = "large"  # Choose between small, medium or large
 model_path: str = get_bert_output_path("rna", model_size)
 max_length: int = 1024
 dataset_dir: str = CELLXGENE_DATASET_DIR
-# Phase 1-5 (2026-07-14): 1.5e-4 → 1e-4 unified across every modality's
-# BERT large (compounds autopilot diverged at 1.5e-4). Devlin et al. keep
-# 1e-4 across sizes.
-learning_rate: float  = 0.0001
+# Phase 1-5b (2026-07-15): 1e-4 → 5e-5. compounds bert-large retrain at
+# 1e-4 (jobid 22889) reproduced the 07-13 divergence pattern; boss aligns
+# every modality's BERT large to 5e-5 (BERT-large 340M sits below 1e-4's
+# safe range — ALBERT/RoBERTa use 3e-5..5e-5 at this size).
+import os as _os
+learning_rate: float = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00005"))
 weight_decay: float  = 0.01
 log_interval: int = 100
 save_steps: int = 100  # Save checkpoint every 100 steps instead of default 1000

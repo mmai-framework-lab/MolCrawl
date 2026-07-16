@@ -400,28 +400,95 @@ def poll_compounds(state: dict) -> None:
     save_state(state)
 
 
-# ── bert-large retrain (Phase 1-5 LR=1e-4 rerun) ───────────────────────────
+# ── bert-large retrain (Phase 1-5b LR-ladder auto-downgrade) ───────────────
+
+
+# charter 2026-07-15 reply §「早期 abort ルール」: LR ladder for bert-large.
+# Start at 5e-5 (2026-07-15 replacement for the 1e-4 that plateaued),
+# downgrade automatically if early plateau is detected. Match the LR values
+# the config's env override accepts.
+BERT_LARGE_LR_LADDER = [0.00005, 0.00003, 0.00001]  # 5e-5 → 3e-5 → 1e-5
+BERT_LARGE_LR_TAGS = ["lr5e-5", "lr3e-5", "lr1e-5"]
+
+# By eval 6, val_loss must be well below the 2.5x plateau (small/medium at
+# LR 1e-4 reached 0.6-0.7 by eval 6; anything > 1.5 is the failure pattern).
+EARLY_PLATEAU_MIN_EVALS = 6
+EARLY_PLATEAU_THRESHOLD = 1.5
+
+
+def _read_val_losses(log_path: Path) -> list[float]:
+    """Same regex pair as the divergence detector — kept inline to avoid a
+    subprocess call every tick."""
+    import re
+    text = log_path.read_text(errors="replace")
+    losses: list[float] = []
+    nano = re.compile(r"(?<![a-z_])val[_ ]loss\s+([\d.]+|nan)", re.IGNORECASE)
+    hf = re.compile(r"['\"]eval_loss['\"]\s*:\s*([\d.]+|nan)", re.IGNORECASE)
+    for line in text.splitlines():
+        m = nano.search(line) or hf.search(line)
+        if m:
+            v = m.group(1)
+            losses.append(float("nan") if v.lower() == "nan" else float(v))
+    return losses
+
+
+def check_early_plateau(log_glob: str) -> tuple[str, str]:
+    """Return ('plateau', msg) if by eval N the val loss is still above
+    threshold; ('early', msg) if not enough evals yet; ('descending', msg)
+    if the run is behaving.
+    """
+    from glob import glob
+    matches = sorted(glob(log_glob))
+    if not matches:
+        return ("early", "no log yet")
+    log = Path(matches[-1])
+    losses = _read_val_losses(log)
+    if len(losses) < EARLY_PLATEAU_MIN_EVALS:
+        return ("early", f"only {len(losses)} evals so far, need ≥ {EARLY_PLATEAU_MIN_EVALS}")
+    at_check = losses[EARLY_PLATEAU_MIN_EVALS - 1]
+    if at_check > EARLY_PLATEAU_THRESHOLD:
+        return ("plateau",
+                f"eval {EARLY_PLATEAU_MIN_EVALS} val_loss = {at_check:.4f} "
+                f"> {EARLY_PLATEAU_THRESHOLD}; trajectory {losses[:EARLY_PLATEAU_MIN_EVALS]}")
+    return ("descending", f"eval {EARLY_PLATEAU_MIN_EVALS} val_loss = {at_check:.4f} ≤ {EARLY_PLATEAU_THRESHOLD}")
+
+
+def _bert_large_lr_output_dir(lr_tag: str) -> str:
+    """Per-LR-attempt output dir so consecutive attempts don't clobber each other."""
+    return f"/lustre/home/matsubara/learning_source_20260710_autopilot_v2_bertlarge_retrain_{lr_tag}"
+
+
+def _bert_large_log_glob(lr_tag: str) -> str:
+    return f"{_bert_large_lr_output_dir(lr_tag)}/compounds/logs/compounds-train-bert-large-*.log"
 
 
 def kick_bert_large_retrain(state: dict) -> None:
-    """Kick a fresh compounds bert-large run with the Phase 1-5 config
-    (LR 1e-4). Guarded so it only fires when explicitly enabled — set
-    ``state['bert_large_retrain']['enabled'] = True`` after readiness GO.
-    """
+    """Kick a fresh compounds bert-large run at the current LR-ladder step.
+    Gated by state['bert_large_retrain']['enabled']. On IDLE + enabled,
+    submits with the current-ladder LR (default: first ladder step = 5e-5)."""
     r = state.setdefault("bert_large_retrain", {"phase": "IDLE"})
     if not r.get("enabled"):
         return
     if r.get("phase") != "IDLE":
         return
+    lr_idx = r.get("lr_idx", 0)
+    if lr_idx >= len(BERT_LARGE_LR_LADDER):
+        r["phase"] = "PARKED_LR_LADDER_EXHAUSTED"
+        park(state, "bert_large_retrain",
+             f"LR ladder {BERT_LARGE_LR_LADDER} exhausted, all plateaued")
+        save_state(state)
+        return
+    lr = BERT_LARGE_LR_LADDER[lr_idx]
+    tag = BERT_LARGE_LR_TAGS[lr_idx]
+    out_dir = _bert_large_lr_output_dir(tag)
     jobid = sbatch_submit(
         SBATCH_DIR / "compounds_train.sbatch",
-        job_name="cmp-bert-large-retrain",
+        job_name=f"cmp-bert-large-{tag}",
         exports={
             "WORKFLOW": "03c-compounds-train-bert-large.sh",
             "NUM_GPUS": "4",
-            # Fresh output tree so we don't clobber the 07-13 diverged ckpts.
-            "LEARNING_SOURCE_DIR":
-                "/lustre/home/matsubara/learning_source_20260710_autopilot_v2_bertlarge_retrain",
+            "LEARNING_SOURCE_DIR": out_dir,
+            "SUBSET_BERT_LARGE_LR": str(lr),
         },
     )
     if jobid is None:
@@ -430,6 +497,9 @@ def kick_bert_large_retrain(state: dict) -> None:
     else:
         r["phase"] = "QUEUED"
         r["jobid"] = jobid
+        r["current_lr"] = lr
+        r["current_tag"] = tag
+        r["out_dir"] = out_dir
     save_state(state)
 
 
@@ -439,28 +509,49 @@ def poll_bert_large_retrain(state: dict) -> None:
         return
     st = sacct_state(r["jobid"])
     if st == "COMPLETED":
-        # Same divergence check as compounds — this is the whole point.
-        log_glob = str(
-            Path("/lustre/home/matsubara/learning_source_20260710_autopilot_v2_bertlarge_retrain")
-            / "compounds" / "logs" / "compounds-train-bert-large-*.log"
-        )
+        log_glob = _bert_large_log_glob(r["current_tag"])
         diverged, msg = check_run_diverged(log_glob)
         if diverged:
             r["phase"] = "PARKED_DIVERGED"
             park(state, "bert_large_retrain",
-                 f"retrain also diverged: {msg}")
+                 f"retrain at LR={r['current_lr']} diverged: {msg}")
         else:
             r["phase"] = "DONE"
             milestone(
                 "bert-large-retrain-done",
-                f"# compounds bert-large retrain 完了 (LR 1e-4)\n\n"
-                f"作成: {now_iso()}\nSLURM jobid: {r['jobid']}\n{msg}\n",
+                f"# compounds bert-large retrain 完了\n\n"
+                f"作成: {now_iso()}\nLR: {r['current_lr']} ({r['current_tag']})\n"
+                f"SLURM jobid: {r['jobid']}\n{msg}\n",
             )
     elif st in ("FAILED", "TIMEOUT", "CANCELLED", "OUT_OF_MEMORY", "NODE_FAIL"):
         r["phase"] = "PARKED"
-        park(state, "bert_large_retrain", f"SLURM state={st}")
+        park(state, "bert_large_retrain", f"SLURM state={st} at LR={r.get('current_lr')}")
     elif st == "RUNNING":
         r["phase"] = "RUNNING"
+        # charter 2026-07-15 reply §「早期 abort」: auto-cancel + LR downgrade
+        # if eval N shows the same plateau as the 1e-4 attempt.
+        # Only trigger once we've observed enough evals (early-return otherwise).
+        # `notified_plateau_at` tracks the previous jobid we already handled so
+        # we don't fire twice for the same run.
+        if r.get("notified_plateau_at") == r["jobid"]:
+            return
+        log_glob = _bert_large_log_glob(r["current_tag"])
+        verdict, msg = check_early_plateau(log_glob)
+        if verdict == "plateau":
+            log(f"bert-large early plateau at LR {r['current_lr']}: {msg}")
+            # Cancel current run, note the downgrade, requeue as IDLE for
+            # the next tick (which advances to the next ladder step).
+            subprocess.run(["scancel", r["jobid"]], capture_output=True, timeout=30)
+            history = r.setdefault("ladder_history", [])
+            history.append({
+                "jobid": r["jobid"], "lr": r["current_lr"],
+                "reason": "early plateau", "detail": msg, "at": now_iso(),
+            })
+            park(state, "bert_large_retrain",
+                 f"auto-kill @ LR={r['current_lr']}: {msg}")
+            r["notified_plateau_at"] = r["jobid"]
+            r["lr_idx"] = r.get("lr_idx", 0) + 1
+            r["phase"] = "IDLE"
     save_state(state)
 
 

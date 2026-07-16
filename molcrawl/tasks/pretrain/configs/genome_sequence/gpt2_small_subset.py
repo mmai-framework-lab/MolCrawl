@@ -95,12 +95,20 @@ if _smoke:
     max_iters = int(_smoke)
     lr_decay_iters = max_iters
     warmup_iters = max(int(0.4 * max_iters), 1)
+    # Also shrink eval_interval so a short smoke actually captures several
+    # eval samples (the production 1000 leaves an 800-step smoke with 0-1
+    # evals, breaking downstream aggregation).
+    eval_interval = max(int(max_iters / 5), 50)
 
 # Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
 # compute-matched」).  gpt2/train.py reads this via globals().get.
 early_stopping = False
 
-eval_interval = 1000
+# eval_interval defaults to 1000 for production runs (charter § compute-
+# matched schedule). When SMOKE_MAX_STEPS is set the block above already
+# overrode it to something like max_iters/5, so guard so we don't clobber it.
+if not _smoke:
+    eval_interval = 1000
 eval_iters = 200
 log_interval = 10
 

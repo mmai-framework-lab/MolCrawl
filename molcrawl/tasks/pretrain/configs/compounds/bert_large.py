@@ -15,13 +15,18 @@ model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 128
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
-# Phase 1-5 (2026-07-14): 1.5e-4 → 1e-4 unified across every modality's
-# BERT large. bert-large (compounds) on autopilot Phase 1-4 diverged
-# (val loss 2.49 → 4.37 over 12,412 steps); the only variable that
-# differed from bert_small / bert_medium (which converged fine) was this
-# LR. The GPT-3 ladder ("larger model, larger LR") does not transfer to
-# BERT pretraining — Devlin et al. keep 1e-4 across sizes. Aligning here.
-learning_rate = 0.0001
+# Phase 1-5b (2026-07-15): 1e-4 → 5e-5. The first retrain at 1e-4
+# (jobid 22889) reproduced the 07-13 divergence: val_loss stuck at
+# 2.5x for 8 evals (identical to 07-13 pre-divergence pattern) while
+# small/medium at the SAME LR descended to 0.8x by eval 4. Model-size
+# LR sensitivity for BERT-large (340M) — ALBERT/RoBERTa land in
+# 3e-5..5e-5 for large, 1e-4 is a base-size value. 5e-5 unified across
+# every modality's BERT large (compounds / protein / rna / mol_nl).
+# Env override SUBSET_BERT_LARGE_LR keeps the LR-ladder auto-downgrade
+# (5e-5 → 3e-5 → 1e-5) machinery working without editing this file
+# between attempts.
+import os as _os
+learning_rate = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00005"))
 weight_decay = 0.01
 log_interval = 100
 
