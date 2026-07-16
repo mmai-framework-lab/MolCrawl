@@ -286,10 +286,21 @@ class GPT(nn.Module):
         param_dict = {pn: p for pn, p in self.named_parameters()}
         # filter out those that do not require grad
         param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
-        # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
-        # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        # create optim groups. Weight decay applies to 2D weight tensors
+        # (matmul params) but NOT to bias / LayerNorm / embedding weights.
+        # nanoGPT parameter names carrying embeddings: transformer.wte.weight
+        # (token embedding) and transformer.wpe.weight (positional embedding).
+        # Both are dim=2 tensors, so the historical ``p.dim() >= 2`` rule alone
+        # would incorrectly place them in the decay group.
+        def _is_embedding_name(pn: str) -> bool:
+            return "wte" in pn or "wpe" in pn
+
+        decay_params, nodecay_params = [], []
+        for pn, p in param_dict.items():
+            if p.dim() >= 2 and not _is_embedding_name(pn):
+                decay_params.append(p)
+            else:
+                nodecay_params.append(p)
         optim_groups = [
             {"params": decay_params, "weight_decay": weight_decay},
             {"params": nodecay_params, "weight_decay": 0.0},
