@@ -122,15 +122,21 @@ el.replaceWith(d);
         {&#34;train&#34;: tokenized_datasets[&#34;train&#34;], &#34;valid&#34;: valid_test_split[&#34;train&#34;], &#34;test&#34;: valid_test_split[&#34;test&#34;]}
     )
 
+    if _RNA_TOKENIZE_NPROC &gt; 1:
+        print(f&#34;Tokenize maps using num_proc={_RNA_TOKENIZE_NPROC}&#34;)
     concatenated_dataset = tokenized_datasets.map(
         partial(concatenate_texts, eos_token_id=0),
         batched=True,
         batch_size=context_length * 100,
         remove_columns=[&#34;token&#34;, &#34;token_count&#34;],
+        num_proc=_RNA_TOKENIZE_NPROC,
     )
 
     chunked_dataset = concatenated_dataset.map(
-        partial(create_chunks, context_length=context_length), batched=True, batch_size=context_length * 10
+        partial(create_chunks, context_length=context_length),
+        batched=True,
+        batch_size=context_length * 10,
+        num_proc=_RNA_TOKENIZE_NPROC,
     )
 
     path_dataset = str(Path(output_dir) / &#34;training_ready_hf_dataset&#34;)
