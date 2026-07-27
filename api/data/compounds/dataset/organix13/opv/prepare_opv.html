@@ -298,9 +298,14 @@ mode (str, optional): open mode for the file stream</p></div>
         **kwargs
     &#34;&#34;&#34;
 
-    train_url = &#34;https://data.nrel.gov/system/files/236/1712697052-mol_train.csv.gz&#34;
-    valid_url = &#34;https://data.nrel.gov/system/files/236/1712697052-mol_valid.csv.gz&#34;
-    test_url = &#34;https://data.nrel.gov/system/files/236/1712697052-mol_test.csv.gz&#34;
+    # The OPV data portal moved from data.nrel.gov to data.nlr.gov (the whole
+    # nrel.gov domain went DNS-dark 2026-07). Same submission (236), same file
+    # paths, byte-identical files — the md5s below were re-verified against
+    # data.nlr.gov on 2026-07-27 (train/valid/test all MATCH).
+    _OPV_DL = &#34;https://data.nlr.gov/system/files/236/1712697052-&#34;
+    train_url = _OPV_DL + &#34;mol_train.csv.gz&#34;
+    valid_url = _OPV_DL + &#34;mol_valid.csv.gz&#34;
+    test_url = _OPV_DL + &#34;mol_test.csv.gz&#34;
     train_md5 = &#34;16e439b7411ea0a8d3a56ba4802b61b1&#34;
     valid_md5 = &#34;3aa2ac62015932ca84661feb5d29adda&#34;
     test_md5 = &#34;bad072224f0755478f0729476ca99a33&#34;
