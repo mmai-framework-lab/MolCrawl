@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 from functools import partial
@@ -20,6 +21,11 @@ else:
 # from transformers import AutoTokenizer
 from molcrawl.data.rna.utils.config import RnaConfig
 
+# Opt-in parallelism for the concatenate/chunk maps. Default 1 keeps the
+# original single-process behaviour and byte-identical packing. On machines
+# with a tight walltime, set RNA_TOKENIZE_NPROC>1 to parallelize (packing then
+# differs only at shard boundaries, which is fine for LM pretraining).
+_RNA_TOKENIZE_NPROC = max(1, int(os.environ.get("RNA_TOKENIZE_NPROC", "1") or "1"))
 
 def concatenate_texts(examples, eos_token_id):
     concatenated_ids = []
@@ -73,15 +79,21 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
         {"train": tokenized_datasets["train"], "valid": valid_test_split["train"], "test": valid_test_split["test"]}
     )
 
+    if _RNA_TOKENIZE_NPROC > 1:
+        print(f"Tokenize maps using num_proc={_RNA_TOKENIZE_NPROC}")
     concatenated_dataset = tokenized_datasets.map(
         partial(concatenate_texts, eos_token_id=0),
         batched=True,
         batch_size=context_length * 100,
         remove_columns=["token", "token_count"],
+        num_proc=_RNA_TOKENIZE_NPROC,
     )
 
     chunked_dataset = concatenated_dataset.map(
-        partial(create_chunks, context_length=context_length), batched=True, batch_size=context_length * 10
+        partial(create_chunks, context_length=context_length),
+        batched=True,
+        batch_size=context_length * 10,
+        num_proc=_RNA_TOKENIZE_NPROC,
     )
 
     path_dataset = str(Path(output_dir) / "training_ready_hf_dataset")
