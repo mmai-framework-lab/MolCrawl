@@ -191,9 +191,14 @@ class OPV:
         **kwargs
     """
 
-    train_url = "https://data.nrel.gov/system/files/236/1712697052-mol_train.csv.gz"
-    valid_url = "https://data.nrel.gov/system/files/236/1712697052-mol_valid.csv.gz"
-    test_url = "https://data.nrel.gov/system/files/236/1712697052-mol_test.csv.gz"
+    # The OPV data portal moved from data.nrel.gov to data.nlr.gov (the whole
+    # nrel.gov domain went DNS-dark 2026-07). Same submission (236), same file
+    # paths, byte-identical files — the md5s below were re-verified against
+    # data.nlr.gov on 2026-07-27 (train/valid/test all MATCH).
+    _OPV_DL = "https://data.nlr.gov/system/files/236/1712697052-"
+    train_url = _OPV_DL + "mol_train.csv.gz"
+    valid_url = _OPV_DL + "mol_valid.csv.gz"
+    test_url = _OPV_DL + "mol_test.csv.gz"
     train_md5 = "16e439b7411ea0a8d3a56ba4802b61b1"
     valid_md5 = "3aa2ac62015932ca84661feb5d29adda"
     test_md5 = "bad072224f0755478f0729476ca99a33"
