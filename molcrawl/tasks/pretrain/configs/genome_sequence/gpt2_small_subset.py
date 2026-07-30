@@ -129,9 +129,15 @@ log_interval = 10
 init_from = "scratch"
 always_save_checkpoint = True
 save_checkpoint_steps = None
-max_checkpoints = 5
+# Phase 7 (2026-07-22): allow env override to retain more ckpts during LR-fix
+# pilots so the best-val ckpt (typically at step 5k-13k for divergent runs)
+# is not evicted by the 50k+-step schedule. Default 5 preserved.
+max_checkpoints = int(os.environ.get("SUBSET_GPT2_MAX_CKPT", "5"))
 
-weight_decay = 0.1
+# Phase 7 (2026-07-22): env override for weight_decay to support LR-fix pilot
+# where BERT-equivalent wd=0.01 is being tested (per boss GO in
+# reply-gpt2-lr-fix-and-seed10-smoke.md §A). Default 0.1 preserved (charter §3.5).
+weight_decay = float(os.environ.get("SUBSET_GPT2_WD", "0.1"))
 
 dataset = "genome_sequence"
 dataset_params = {"dataset_dir": dataset_dir}
