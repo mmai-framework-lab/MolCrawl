@@ -97,11 +97,16 @@ def pick_canonical(rows: list[dict], modality: str, arch: str, size: str,
     best = None
     best_idx = 99
     for r in rows:
-        if r["modality"] != modality: continue
-        if r["arch"] != arch: continue
-        if r["size"] != size: continue
-        if r["variant"] != variant: continue
-        if r["source_dir"] not in PRIORITY: continue
+        if r["modality"] != modality:
+            continue
+        if r["arch"] != arch:
+            continue
+        if r["size"] != size:
+            continue
+        if r["variant"] != variant:
+            continue
+        if r["source_dir"] not in PRIORITY:
+            continue
         i = PRIORITY.index(r["source_dir"])
         if i < best_idx:
             best, best_idx = r, i
@@ -111,8 +116,10 @@ def pick_canonical(rows: list[dict], modality: str, arch: str, size: str,
 def pick_subset(rows: list[dict], subset: str, arch: str) -> Optional[dict]:
     """For genome subset campaign, variant == subset name (with full prefix)."""
     for r in rows:
-        if r["source_dir"] != SUBSET_SRC: continue
-        if r["arch"] != arch: continue
+        if r["source_dir"] != SUBSET_SRC:
+            continue
+        if r["arch"] != arch:
+            continue
         if r["variant"] == subset:
             return r
     return None

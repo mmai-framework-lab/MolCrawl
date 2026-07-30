@@ -18,7 +18,6 @@ canonical source 優先(20260520_uncapped → 20260316 → 20260407 → 20260302
 from __future__ import annotations
 
 import csv
-import math
 from pathlib import Path
 from collections import OrderedDict
 

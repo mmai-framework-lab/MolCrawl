@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -76,7 +75,8 @@ def main() -> int:
     from molcrawl.tasks.evaluation._base.model_adapter import ModelHandle
     from molcrawl.tasks.evaluation._adapters.hf_mlm_adapter import HfMlmAdapter
 
-    torch.manual_seed(args.seed); np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Use the adapter's 3-tier tokenizer resolution + model load

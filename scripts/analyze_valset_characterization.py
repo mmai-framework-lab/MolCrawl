@@ -16,10 +16,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import sys
 import time
-from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
@@ -426,11 +424,11 @@ def _build_findings(rows: list[dict]) -> list[str]:
     glb = [s for s in SUBSETS if s.startswith("global_random_seed")]
     mam = ["mammal_centered"]
 
-    out.append(f"  - GPT-2 val の entropy_mean 平均:")
+    out.append("  - GPT-2 val の entropy_mean 平均:")
     out.append(f"      mammal:    {avg(mam, 'gpt2', 'val', 'entropy_mean'):.4f}")
     out.append(f"      eukaryote: {avg(euk, 'gpt2', 'val', 'entropy_mean'):.4f}")
     out.append(f"      global:    {avg(glb, 'gpt2', 'val', 'entropy_mean'):.4f}")
-    out.append(f"  - GPT-2 val の low_entropy_rate_1.0 平均:")
+    out.append("  - GPT-2 val の low_entropy_rate_1.0 平均:")
     out.append(f"      mammal:    {avg(mam, 'gpt2', 'val', 'low_entropy_rate_1.0'):.4f}")
     out.append(f"      eukaryote: {avg(euk, 'gpt2', 'val', 'low_entropy_rate_1.0'):.4f}")
     out.append(f"      global:    {avg(glb, 'gpt2', 'val', 'low_entropy_rate_1.0'):.4f}")

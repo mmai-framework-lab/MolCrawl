@@ -127,7 +127,6 @@ def heuristic_class(smi: str) -> tuple[str, dict]:
     Returns (class_label, {'heavy_atoms': int, 'ring_count': int, 'max_ring_size': int, 'aromatic_rings': int, 'oh_count': int})
     """
     from rdkit import Chem
-    from rdkit.Chem import AllChem, rdMolDescriptors, Descriptors
 
     m = Chem.MolFromSmiles(smi)
     if m is None:
@@ -198,7 +197,7 @@ def analyse_long(long_smiles: dict) -> dict:
         for ex in examples:
             by_class.setdefault(ex["class"], []).append(ex)
         rep = []
-        for cls, exs in by_class.items():
+        for _cls, exs in by_class.items():
             # take shortest, median-ish, longest
             exs_sorted = sorted(exs, key=lambda x: x["length"])
             picks = [exs_sorted[0], exs_sorted[len(exs_sorted) // 2], exs_sorted[-1]]
