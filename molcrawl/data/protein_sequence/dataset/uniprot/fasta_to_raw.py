@@ -41,6 +41,10 @@ def iterate_over_chunk_raw_files(fasta_filepaths: List[Path], max_lines_per_file
         if len(sequence_chunk) == max_lines_per_file:
             yield sequence_chunk
             sequence_chunk = []
+    # Flush the final partial chunk. Without this, the last < max_lines_per_file
+    # sequences were silently dropped (e.g. 94,121 / 38,794,121 UniRef50 clusters).
+    if sequence_chunk:
+        yield sequence_chunk
 
 
 def write_chunk_file(path_file, chunk_sequence: list[str]):
@@ -61,9 +65,14 @@ def parse_fasta_to_raw_sequence(fasta_dir, raw_dir, max_lines_per_file: int) -> 
     fasta_filepaths = [path for path in Path(fasta_dir).iterdir() if path.suffix == ".fasta"]
     print(f"Found {len(fasta_filepaths)} FASTA files in {fasta_dir}.")
     chunk_content_iterator = iterate_over_chunk_raw_files(fasta_filepaths, max_lines_per_file=max_lines_per_file)
-    for i, chunks in rich.progress.track(enumerate(chunk_content_iterator), "Reading and splitting fasta file in chunks..."):
-        path_chunk = Path(raw_dir) / f"chunk_{max_lines_per_file * i}_{max_lines_per_file * (i + 1)}.raw"
+    # Name chunk files by ACTUAL cumulative sequence counts so the final partial
+    # chunk carries a correct (not range-padded) name.
+    start = 0
+    for chunks in rich.progress.track(chunk_content_iterator, "Reading and splitting fasta file in chunks..."):
+        end = start + len(chunks)
+        path_chunk = Path(raw_dir) / f"chunk_{start}_{end}.raw"
         write_chunk_file(path_chunk, chunks)
+        start = end
 
 
 def fasta_to_raw_protein(dataset: str, output_dir: Union[str, Path], max_lines_per_file: int):
