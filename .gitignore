@@ -74,6 +74,7 @@ temp/*
 gpt2-output*/
 custom_tokenizer*/
 learning_source*/
+learning_source*
 experiments_data/
 experiments_data
 
@@ -94,3 +95,28 @@ tmp/scripts/autopilot/state/coordinator_state.json
 tmp/scripts/autopilot/state/g2_target.json
 tmp/scripts/autopilot/logs/
 tmp/scripts/autopilot/milestones/
+
+# --- 2026-07-29 case-X cleanup (personal / session-scoped artifacts) ---
+# Personal working memos (session-scoped, matsubara↔boss handoffs, self-notes)
+tmp/docs_tmp_local/
+tmp/archives/
+tmp/figures/
+tmp/*.tar.gz
+tmp/metrics_summary.md
+tmp/organix13_36pct_loss_investigation_*/
+tmp/organix13_length_survey_*/
+tmp/rna_bert_tabula_sapiens_smoke_*/
+tmp/token_count_survey_*/
+
+# Claude Code session state
+.claude/
+
+# User chat logs
+chatlogs/
+
+# Ad-hoc / one-off workspace dirs
+temp_compounds/
+ncbi-result.txt
+
+# Autopilot ephemeral state backups
+tmp/scripts/autopilot/state/coordinator_state.json.bak_*

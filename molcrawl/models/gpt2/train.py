@@ -311,6 +311,7 @@ def get_batch(split):
 if __name__ == "__main__":
     iter_num = 0
     best_val_loss = 1e9
+    best_val_step = None  # step at which best_val_loss was recorded (charter § 1.1 protect)
     early_stopping_counter = 0  # count eval intervals without improvement
 
     if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
@@ -449,6 +450,7 @@ if __name__ == "__main__":
                 # Reset training counters — we are fine-tuning, not resuming
                 iter_num = 0
                 best_val_loss = 1e9
+                best_val_step = None
                 early_stopping_counter = 0
                 print("Pretraining weights loaded. Starting fine-tuning from iter 0.")
         else:
@@ -470,6 +472,7 @@ if __name__ == "__main__":
             model.load_state_dict(state_dict)
             iter_num = checkpoint["iter_num"]
             best_val_loss = checkpoint["best_val_loss"]
+            best_val_step = checkpoint.get("best_val_step")  # may be None for older ckpts
             early_stopping_counter = checkpoint.get("early_stopping_counter", 0)
     elif init_from.startswith("gpt2"):
         print(f"Initializing from OpenAI GPT-2 weights: {init_from}")
@@ -572,7 +575,7 @@ def convert_nanogpt_to_hf_state_dict(model_state, model_args):
 
 
 def save_checkpoint_hf(
-    model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0
+    model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0, best_val_step=None
 ):
     """
     Save checkpoint in HuggingFace Transformers compatible format.
@@ -626,6 +629,7 @@ def save_checkpoint_hf(
         "model_args": model_args,
         "iter_num": iter_num,
         "best_val_loss": val_loss,
+        "best_val_step": best_val_step,
         "early_stopping_counter": early_stopping_counter,
         "config": config,
     }
@@ -647,8 +651,14 @@ def save_checkpoint_hf(
     print(f"Checkpoint saved to {checkpoint_dir} (HuggingFace compatible format)")
 
 
-def cleanup_old_checkpoints(base_dir, max_checkpoints):
-    """Remove old checkpoints, keeping only the most recent max_checkpoints"""
+def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None):
+    """Remove old checkpoints, keeping only the most recent max_checkpoints.
+
+    ``protect_step`` (optional): step number of a checkpoint that must NOT be
+    deleted even if it falls outside the max_checkpoints window (used to preserve
+    the best-val checkpoint for downstream evaluation; charter § 1.1 comparability
+    rule requires subset comparison at best-val ckpt).
+    """
     if max_checkpoints is None:
         return
 
@@ -668,8 +678,11 @@ def cleanup_old_checkpoints(base_dir, max_checkpoints):
 
     checkpoints.sort(reverse=True)  # Sort by step, newest first
 
-    # Remove old checkpoints
+    # Remove old checkpoints, but PROTECT the best-val step (if provided)
     for _step, ckpt_dir in checkpoints[max_checkpoints:]:
+        if protect_step is not None and _step == protect_step:
+            # Best-val ckpt: skip deletion to preserve for downstream evaluation
+            continue
         print(f"Removing old checkpoint: {ckpt_dir}")
         shutil.rmtree(ckpt_dir, ignore_errors=True)
 
@@ -720,6 +733,7 @@ if __name__ == "__main__":
             if losses["val"] < best_val_loss:
                 # Validation loss improved
                 best_val_loss = losses["val"]
+                best_val_step = iter_num  # protect this ckpt from FIFO eviction (charter § 1.1)
                 early_stopping_counter = 0
                 is_best_model = True
             else:
@@ -769,6 +783,7 @@ if __name__ == "__main__":
                         config,
                         checkpoint_dir,
                         early_stopping_counter,
+                        best_val_step=best_val_step,
                     )
 
                     # Log checkpoint to wandb as artifact BEFORE cleanup
@@ -787,8 +802,10 @@ if __name__ == "__main__":
                         artifact.add_dir(checkpoint_dir)
                         wandb_run.log_artifact(artifact)
 
-                    # Cleanup old checkpoints AFTER wandb upload
-                    cleanup_old_checkpoints(out_dir, max_checkpoints)
+                    # Cleanup old checkpoints AFTER wandb upload.
+                    # Protect best-val step from FIFO eviction (charter § 1.1
+                    # comparability rule: subset比較は best-val ckpt で評価).
+                    cleanup_old_checkpoints(out_dir, max_checkpoints, protect_step=best_val_step)
 
                 # Also save legacy ckpt.pt for backward compatibility (or best model)
                 if keep_legacy_ckpt or is_best_model:

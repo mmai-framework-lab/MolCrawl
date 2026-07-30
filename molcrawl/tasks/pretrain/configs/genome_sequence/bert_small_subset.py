@@ -105,6 +105,16 @@ if _smoke:
     if _smoke_warmup:
         warmup_steps = int(_smoke_warmup)
 
+# Phase 7 diagnostic (2026-07-22): time-box override for the seed10 NODE_FAIL
+# investigation. Unlike SMOKE_MAX_STEPS (which switches to the smoke code path
+# with 40% warmup and small eval intervals), HARD_MAX_STEPS_OVERRIDE keeps
+# ALL production-path calculations (warmup_steps ~2%, eval_interval, etc.)
+# and only truncates the final max_steps. Purpose: exercise the exact same
+# startup / early-training path as production but bound wall-time.
+_hard_override = os.environ.get("HARD_MAX_STEPS_OVERRIDE")
+if _hard_override and not _smoke:
+    max_steps = int(_hard_override)
+
 log_interval = 100
 save_steps = 1000
 
