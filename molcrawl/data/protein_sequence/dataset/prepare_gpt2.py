@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import os
 from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
+
+# Opt-in parallelism for the per-sequence tokenize map. Default 1 keeps the
+# original single-process behaviour; set PROTEIN_TOKENIZE_NPROC>1 to parallelize
+# the char-level ESM tokenization of the (tens of millions of) UniRef sequences.
+_PROT_TOKENIZE_NPROC = max(1, int(os.environ.get("PROTEIN_TOKENIZE_NPROC", "1") or "1"))
 
 # add project root to path（utilsetc.)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -60,6 +66,33 @@ def create_chunks(examples: Dict[str, List[int]], context_length: int) -> Dict[s
     return {"input_ids": input_ids}
 
 
+def pack_split_stream(tokenized_split, eos_token_id: int, context_length: int):
+    """Return a zero-arg generator that packs one split into fixed-length blocks.
+
+    Output is byte-identical to a single global concatenate+chunk (the old
+    ``batch_size=-1`` path): the split is one continuous EOS-joined token stream
+    sliced into ``context_length`` blocks with a single trailing remainder
+    (< context_length) dropped. Memory is O(context_length) — it never
+    materialises the whole corpus, so it is safe on full UniRef50.
+    """
+
+    def gen():
+        buf: List[int] = []
+        pos = 0
+        for row in tokenized_split:
+            buf.extend(row["input_ids"])
+            buf.append(eos_token_id)
+            while len(buf) - pos >= context_length:
+                yield {"input_ids": buf[pos : pos + context_length]}
+                pos += context_length
+            if pos >= 1_000_000:  # compact occasionally to bound memory
+                del buf[:pos]
+                pos = 0
+        # trailing remainder (< context_length) is dropped — matches batch_size=-1
+
+    return gen
+
+
 def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample: Optional[int]) -> None:
     """Tokenize and chunk the protein corpus into fixed-length samples.
 
@@ -103,23 +136,27 @@ def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample
         partial(tokenize_function, tokenizer=tokenizer),
         batched=True,
         remove_columns=["text"],
+        num_proc=_PROT_TOKENIZE_NPROC,
     )
 
-    concatenated_dataset = tokenized_datasets.map(
-        partial(concatenate_texts, eos_token_id=tokenizer.eos_token_id),
-        batched=True,
-        batch_size=-1,
-    )
+    # Pack via a streaming carry-over generator (see pack_split_stream): the old
+    # batch_size=-1 concat+chunk OOMs on full UniRef50, and any bounded batch_size
+    # would silently change packing at every batch boundary. This is byte-identical
+    # to batch_size=-1 with O(context_length) memory.
+    from datasets import Dataset
 
-    chunked_dataset = concatenated_dataset.map(
-        partial(create_chunks, context_length=context_length),
-        batched=True,
-        batch_size=-1,
+    packed = DatasetDict(
+        {
+            split: Dataset.from_generator(
+                pack_split_stream(tokenized_datasets[split], tokenizer.eos_token_id, context_length)
+            )
+            for split in tokenized_datasets
+        }
     )
 
     path_dataset: str = str(path_output / "training_ready_hf_dataset")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
-    chunked_dataset.save_to_disk(path_dataset)
+    packed.save_to_disk(path_dataset)
 
 
 if __name__ == "__main__":
