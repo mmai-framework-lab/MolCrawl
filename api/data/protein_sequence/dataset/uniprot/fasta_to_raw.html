@@ -77,7 +77,11 @@ el.replaceWith(d);
         sequence_chunk.append(sequence)
         if len(sequence_chunk) == max_lines_per_file:
             yield sequence_chunk
-            sequence_chunk = []</code></pre>
+            sequence_chunk = []
+    # Flush the final partial chunk. Without this, the last &lt; max_lines_per_file
+    # sequences were silently dropped (e.g. 94,121 / 38,794,121 UniRef50 clusters).
+    if sequence_chunk:
+        yield sequence_chunk</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -102,9 +106,14 @@ el.replaceWith(d);
     fasta_filepaths = [path for path in Path(fasta_dir).iterdir() if path.suffix == &#34;.fasta&#34;]
     print(f&#34;Found {len(fasta_filepaths)} FASTA files in {fasta_dir}.&#34;)
     chunk_content_iterator = iterate_over_chunk_raw_files(fasta_filepaths, max_lines_per_file=max_lines_per_file)
-    for i, chunks in rich.progress.track(enumerate(chunk_content_iterator), &#34;Reading and splitting fasta file in chunks...&#34;):
-        path_chunk = Path(raw_dir) / f&#34;chunk_{max_lines_per_file * i}_{max_lines_per_file * (i + 1)}.raw&#34;
-        write_chunk_file(path_chunk, chunks)</code></pre>
+    # Name chunk files by ACTUAL cumulative sequence counts so the final partial
+    # chunk carries a correct (not range-padded) name.
+    start = 0
+    for chunks in rich.progress.track(chunk_content_iterator, &#34;Reading and splitting fasta file in chunks...&#34;):
+        end = start + len(chunks)
+        path_chunk = Path(raw_dir) / f&#34;chunk_{start}_{end}.raw&#34;
+        write_chunk_file(path_chunk, chunks)
+        start = end</code></pre>
 </details>
 <div class="desc"><p>Parses FASTA file and writes the sequences to raw files, splitting them into chunks if necessary.</p>
 <p>Parameters:

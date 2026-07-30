@@ -86,6 +86,47 @@ el.replaceWith(d);
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.data.protein_sequence.dataset.prepare_gpt2.pack_split_stream"><code class="name flex">
+<span>def <span class="ident">pack_split_stream</span></span>(<span>tokenized_split, eos_token_id: int, context_length: int)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pack_split_stream(tokenized_split, eos_token_id: int, context_length: int):
+    &#34;&#34;&#34;Return a zero-arg generator that packs one split into fixed-length blocks.
+
+    Output is byte-identical to a single global concatenate+chunk (the old
+    ``batch_size=-1`` path): the split is one continuous EOS-joined token stream
+    sliced into ``context_length`` blocks with a single trailing remainder
+    (&lt; context_length) dropped. Memory is O(context_length) — it never
+    materialises the whole corpus, so it is safe on full UniRef50.
+    &#34;&#34;&#34;
+
+    def gen():
+        buf: List[int] = []
+        pos = 0
+        for row in tokenized_split:
+            buf.extend(row[&#34;input_ids&#34;])
+            buf.append(eos_token_id)
+            while len(buf) - pos &gt;= context_length:
+                yield {&#34;input_ids&#34;: buf[pos : pos + context_length]}
+                pos += context_length
+            if pos &gt;= 1_000_000:  # compact occasionally to bound memory
+                del buf[:pos]
+                pos = 0
+        # trailing remainder (&lt; context_length) is dropped — matches batch_size=-1
+
+    return gen</code></pre>
+</details>
+<div class="desc"><p>Return a zero-arg generator that packs one split into fixed-length blocks.</p>
+<p>Output is byte-identical to a single global concatenate+chunk (the old
+<code>batch_size=-1</code> path): the split is one continuous EOS-joined token stream
+sliced into <code>context_length</code> blocks with a single trailing remainder
+(&lt; context_length) dropped. Memory is O(context_length) — it never
+materialises the whole corpus, so it is safe on full UniRef50.</p></div>
+</dd>
 <dt id="molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset"><code class="name flex">
 <span>def <span class="ident">tokenize_batch_dataset</span></span>(<span>path_output: Path, context_length: int, number_sample: Optional[int]) ‑> None</span>
 </code></dt>
@@ -137,23 +178,27 @@ el.replaceWith(d);
         partial(tokenize_function, tokenizer=tokenizer),
         batched=True,
         remove_columns=[&#34;text&#34;],
+        num_proc=_PROT_TOKENIZE_NPROC,
     )
 
-    concatenated_dataset = tokenized_datasets.map(
-        partial(concatenate_texts, eos_token_id=tokenizer.eos_token_id),
-        batched=True,
-        batch_size=-1,
-    )
+    # Pack via a streaming carry-over generator (see pack_split_stream): the old
+    # batch_size=-1 concat+chunk OOMs on full UniRef50, and any bounded batch_size
+    # would silently change packing at every batch boundary. This is byte-identical
+    # to batch_size=-1 with O(context_length) memory.
+    from datasets import Dataset
 
-    chunked_dataset = concatenated_dataset.map(
-        partial(create_chunks, context_length=context_length),
-        batched=True,
-        batch_size=-1,
+    packed = DatasetDict(
+        {
+            split: Dataset.from_generator(
+                pack_split_stream(tokenized_datasets[split], tokenizer.eos_token_id, context_length)
+            )
+            for split in tokenized_datasets
+        }
     )
 
     path_dataset: str = str(path_output / &#34;training_ready_hf_dataset&#34;)
     print(f&#34;Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py-&gt;dataset_dir parameter.&#34;)
-    chunked_dataset.save_to_disk(path_dataset)</code></pre>
+    packed.save_to_disk(path_dataset)</code></pre>
 </details>
 <div class="desc"><p>Tokenize and chunk the protein corpus into fixed-length samples.</p>
 <p><code>number_sample</code> semantics:
@@ -201,6 +246,7 @@ behaviour when set to 50000).</p></div>
 <ul class="">
 <li><code><a title="molcrawl.data.protein_sequence.dataset.prepare_gpt2.concatenate_texts" href="#molcrawl.data.protein_sequence.dataset.prepare_gpt2.concatenate_texts">concatenate_texts</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.dataset.prepare_gpt2.create_chunks" href="#molcrawl.data.protein_sequence.dataset.prepare_gpt2.create_chunks">create_chunks</a></code></li>
+<li><code><a title="molcrawl.data.protein_sequence.dataset.prepare_gpt2.pack_split_stream" href="#molcrawl.data.protein_sequence.dataset.prepare_gpt2.pack_split_stream">pack_split_stream</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset" href="#molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_batch_dataset">tokenize_batch_dataset</a></code></li>
 <li><code><a title="molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_function" href="#molcrawl.data.protein_sequence.dataset.prepare_gpt2.tokenize_function">tokenize_function</a></code></li>
 </ul>
