@@ -1,0 +1,768 @@
+{
+  "created_at": "2026-07-10T18:55:57.741979+09:00",
+  "genome_g2": {
+    "phase": "STEP4_DONE",
+    "subsets": {
+      "mammal_centered": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22462",
+        "jobid_4": "22490"
+      },
+      "eukaryote_matched_random_seed1": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22463",
+        "jobid_4": "22491"
+      },
+      "eukaryote_matched_random_seed2": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22464",
+        "jobid_4": "22492"
+      },
+      "eukaryote_matched_random_seed3": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22465",
+        "jobid_4": "22493"
+      },
+      "eukaryote_matched_random_seed4": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22466",
+        "jobid_4": "22494"
+      },
+      "eukaryote_matched_random_seed5": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22467",
+        "jobid_4": "22495"
+      },
+      "eukaryote_matched_random_seed6": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22468",
+        "jobid_4": "22496"
+      },
+      "eukaryote_matched_random_seed7": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22469",
+        "jobid_4": "22497"
+      },
+      "eukaryote_matched_random_seed8": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22470",
+        "jobid_4": "22498"
+      },
+      "eukaryote_matched_random_seed9": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22471",
+        "jobid_4": "22499"
+      },
+      "eukaryote_matched_random_seed10": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22472",
+        "jobid_4": "22500"
+      },
+      "global_random_seed1": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22473",
+        "jobid_4": "22501"
+      },
+      "global_random_seed2": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22474",
+        "jobid_4": "22502"
+      },
+      "global_random_seed3": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22475",
+        "jobid_4": "22503"
+      },
+      "global_random_seed4": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22476",
+        "jobid_4": "22504"
+      },
+      "global_random_seed5": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22477",
+        "jobid_4": "22505"
+      },
+      "global_random_seed6": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22478",
+        "jobid_4": "22506"
+      },
+      "global_random_seed7": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22479",
+        "jobid_4": "22507"
+      },
+      "global_random_seed8": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22480",
+        "jobid_4": "22508"
+      },
+      "global_random_seed9": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22481",
+        "jobid_4": "22509"
+      },
+      "global_random_seed10": {
+        "phase": "STEP4_DONE",
+        "jobid_1_3": "22482",
+        "jobid_4": "22510"
+      }
+    },
+    "target_total_windows": 83000000
+  },
+  "compounds": {
+    "bert-small": {
+      "phase": "DONE",
+      "prev_park_jobid": "22483",
+      "prev_phase": "PARKED",
+      "jobid": "22632",
+      "workflow": "03c-compounds-train-bert-small.sh"
+    },
+    "gpt2-small": {
+      "phase": "DONE",
+      "prev_park_jobid": "22484",
+      "prev_phase": "PARKED",
+      "jobid": "22633",
+      "workflow": "03a-compounds-train-gpt2-small.sh"
+    },
+    "bert-medium": {
+      "phase": "DONE",
+      "prev_park_jobid": "22485",
+      "prev_phase": "PARKED",
+      "jobid": "22636",
+      "workflow": "03c-compounds-train-bert-medium.sh"
+    },
+    "gpt2-medium": {
+      "phase": "DONE",
+      "prev_park_jobid": "22486",
+      "prev_phase": "PARKED",
+      "jobid": "22648",
+      "workflow": "03a-compounds-train-gpt2-medium.sh"
+    },
+    "bert-large": {
+      "phase": "PARKED_DIVERGED",
+      "prev_park_jobid": "22487",
+      "prev_phase": "PARKED",
+      "jobid": "22679",
+      "workflow": "03c-compounds-train-bert-large.sh",
+      "note": "post-hoc detected: val loss 2.49\u21924.37 monotone degrade (07-14 \u691c\u51fa\u5668\u5c0e\u5165\u6642\u306b\u8a02\u6b63)"
+    },
+    "gpt2-large": {
+      "phase": "DONE",
+      "prev_park_jobid": "22488",
+      "prev_phase": "PARKED",
+      "jobid": "22680",
+      "workflow": "03a-compounds-train-gpt2-large.sh"
+    },
+    "gpt2-xl": {
+      "phase": "DONE",
+      "prev_park_jobid": "22489",
+      "prev_phase": "PARKED",
+      "jobid": "22685",
+      "workflow": "03a-compounds-train-gpt2-xl.sh"
+    }
+  },
+  "park": [
+    {
+      "at": "2026-07-10T20:53:04.814270+09:00",
+      "item": "compounds:bert-small",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-10T20:58:04.987097+09:00",
+      "item": "compounds:gpt2-small",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-10T21:03:05.145805+09:00",
+      "item": "compounds:bert-medium",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-10T21:08:05.299793+09:00",
+      "item": "compounds:gpt2-medium",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-10T21:13:05.386008+09:00",
+      "item": "compounds:bert-large",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-10T21:18:05.503096+09:00",
+      "item": "compounds:gpt2-large",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-10T21:23:05.640868+09:00",
+      "item": "compounds:gpt2-xl",
+      "reason": "SLURM state=FAILED \u2014 see log"
+    },
+    {
+      "at": "2026-07-15T09:48:56.401489+09:00",
+      "item": "bert_large_retrain",
+      "reason": "SLURM state=FAILED"
+    },
+    {
+      "at": "2026-07-15T12:08:29.879347+09:00",
+      "item": "bert_large_retrain",
+      "reason": "SLURM state=CANCELLED"
+    },
+    {
+      "at": "2026-07-15T12:18:07.873680+09:00",
+      "item": "bert_large_retrain",
+      "reason": "SLURM state=FAILED at LR=5e-05"
+    },
+    {
+      "at": "2026-07-15T13:19:35.556972+09:00",
+      "item": "bert_large_retrain",
+      "reason": "auto-kill @ LR=5e-05: eval 6 val_loss = 1.7856 > 1.5; trajectory [2.5037784576416016, 2.4267337322235107, 2.4146907329559326, 2.3129897117614746, 2.092714786529541, 1.7855943441390991]"
+    },
+    {
+      "at": "2026-07-21T13:17:04.308779+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed1",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] collapse: last 5 evals = [1.3131..1.3157] near target 1.386 (span 0.0026 <= 0.05, |mean-target|=0.072 <= 0.15)"
+    },
+    {
+      "at": "2026-07-21T14:42:06.949051+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed2",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] final vs best: last=1.7563 vs best=1.1763 (ratio 1.49 > 1.3)"
+    },
+    {
+      "at": "2026-07-21T18:37:13.549364+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed4",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] final vs best: last=1.5725 vs best=1.1862 (ratio 1.33 > 1.3)"
+    },
+    {
+      "at": "2026-07-21T23:52:22.575668+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed6",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] collapse: last 5 evals = [1.3024..1.3125] near target 1.386 (span 0.0101 <= 0.05, |mean-target|=0.080 <= 0.15)"
+    },
+    {
+      "at": "2026-07-22T04:52:31.473961+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed8",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] val_loss degrading: first_3=1.2690 \u2192 last_3=1.7648 (ratio 1.39); final vs best: last=1.8792 vs best=1.1553 (ratio 1.63 > 1.3)"
+    },
+    {
+      "at": "2026-07-22T04:57:31.716603+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed7",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] collapse: last 5 evals = [1.3060..1.3114] near target 1.386 (span 0.0054 <= 0.05, |mean-target|=0.078 <= 0.15)"
+    },
+    {
+      "at": "2026-07-22T09:52:41.079582+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed10",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] collapse: last 5 evals = [1.3120..1.3184] near target 1.386 (span 0.0064 <= 0.05, |mean-target|=0.070 <= 0.15)"
+    },
+    {
+      "at": "2026-07-22T09:57:41.298688+09:00",
+      "item": "subset:gpt2-eukaryote_matched_random_seed9",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] collapse: last 5 evals = [1.3104..1.3424] near target 1.386 (span 0.0320 <= 0.05, |mean-target|=0.067 <= 0.15)"
+    },
+    {
+      "at": "2026-07-22T10:55:34.935326+09:00",
+      "item": "subset:gpt2-global_random_seed6",
+      "reason": "boss GO 2026-07-22: LR fix pilot pending, block coord auto-kick for this GPT-2 subset until new config confirmed"
+    },
+    {
+      "at": "2026-07-22T10:55:34.935326+09:00",
+      "item": "subset:gpt2-global_random_seed7",
+      "reason": "boss GO 2026-07-22: LR fix pilot pending, block coord auto-kick for this GPT-2 subset until new config confirmed"
+    },
+    {
+      "at": "2026-07-22T10:55:34.935326+09:00",
+      "item": "subset:gpt2-global_random_seed8",
+      "reason": "boss GO 2026-07-22: LR fix pilot pending, block coord auto-kick for this GPT-2 subset until new config confirmed"
+    },
+    {
+      "at": "2026-07-22T10:55:34.935326+09:00",
+      "item": "subset:gpt2-global_random_seed9",
+      "reason": "boss GO 2026-07-22: LR fix pilot pending, block coord auto-kick for this GPT-2 subset until new config confirmed"
+    },
+    {
+      "at": "2026-07-22T10:55:34.935326+09:00",
+      "item": "subset:gpt2-global_random_seed10",
+      "reason": "boss GO 2026-07-22: LR fix pilot pending, block coord auto-kick for this GPT-2 subset until new config confirmed"
+    },
+    {
+      "at": "2026-07-22T10:57:38.842492+09:00",
+      "item": "subset:gpt2-global_random_seed3",
+      "reason": "boss GO 2026-07-22: cancelled, LR fix pilot pending"
+    },
+    {
+      "at": "2026-07-22T10:57:38.842492+09:00",
+      "item": "subset:gpt2-global_random_seed4",
+      "reason": "boss GO 2026-07-22: cancelled, LR fix pilot pending"
+    },
+    {
+      "at": "2026-07-22T10:57:38.842492+09:00",
+      "item": "subset:gpt2-global_random_seed5",
+      "reason": "boss GO 2026-07-22: cancelled, LR fix pilot pending"
+    },
+    {
+      "at": "2026-07-22T10:57:38.842492+09:00",
+      "item": "subset:bert-eukaryote_matched_random_seed10",
+      "reason": "boss GO 2026-07-22: 2\u9023\u7d9a NODE_FAIL, awaiting manual smoke diagnosis"
+    },
+    {
+      "at": "2026-07-22T11:12:43.634977+09:00",
+      "item": "subset:gpt2-global_random_seed2",
+      "reason": "COMPLETED but divergence: [DIVERGENCE] final vs best: last=1.6179 vs best=1.2126 (ratio 1.33 > 1.3)"
+    }
+  ],
+  "updated_at": "2026-07-23T10:53:08.605257+09:00",
+  "notes": [
+    {
+      "at": "2026-07-12T17:32:00+09:00",
+      "note": "compounds all 7 PARKED (FileNotFoundError: training_ready dataset missing from autopilot v2 tree). Symlinked Phase 1-2 dataset in, reset all compounds to IDLE for re-submission on next tick."
+    },
+    {
+      "at": "2026-07-14T14:00:00+09:00",
+      "note": "Phase 1-5 migration: bert-large DONE \u2192 PARKED_DIVERGED (post-hoc detector); added bert_large_retrain + subset_training slots (gated by 'enabled' flag)."
+    },
+    {
+      "at": "2026-07-15T09:43:54.258642+09:00",
+      "note": "enable_flags.sh bert_large: bert_large_retrain.enabled: False \u2192 True"
+    },
+    {
+      "at": "2026-07-15T09:58:07.822556+09:00",
+      "note": "bert_large_retrain jobid 22876 FAILED (dataset symlink missing in new LSD); symlinked training_ready into new LSD, reset to IDLE for re-submission."
+    },
+    {
+      "at": "2026-07-15T12:13:05.730161+09:00",
+      "note": "Phase 1-5b: 4 modality BERT-large LR 1e-4 \u2192 5e-5 unified. bert_large_retrain state reset with lr_idx=0 (ladder [5e-5, 3e-5, 1e-5])."
+    },
+    {
+      "at": "2026-07-15T17:57:39.742575+09:00",
+      "note": "enable_flags.sh subset: subset_training.enabled: False \u2192 True"
+    },
+    {
+      "at": "2026-07-16T10:05:14.043764+09:00",
+      "note": "seed8, seed9 h200 PENDING \u3092 kill\u3001 mi300x-long \u3078\u79fb\u9001 (gpu04 8 GPU \u6e80\u8f09)"
+    },
+    {
+      "at": "2026-07-16T10:31:57.317599+09:00",
+      "note": "seed8/seed9 mi300x \u2192 h200 revert (charter \u00a7 42 \u672c h200 homogeneous \u6b7b\u5b88\u3001 mi300x/h200 hardware \u5dee\u304c subset \u9593 val \u5dee signal \u3092 confound \u3057\u306a\u3044\u3088\u3046)\u3002 boss reply 07-16\u3002 mi300x \u306f smoke/diagnostics \u5c02\u7528\u3002"
+    },
+    {
+      "at": "2026-07-16T14:18:48.323814+09:00",
+      "note": "compounds 7 config re-training on v3 dataset: STANDBY. Trigger conditions per boss 07-16 reply: (1) H200 16-\u53f0 expansion reflected in SLURM (h200 partition MaxNodes > 3 or new partition) \u2192 kick compounds parallel on new capacity, subset stays 24-GPU untouched; OR (2) subset 42 \u5168 COMPLETED (~5.8 \u65e5\u5f8c) \u2192 kick compounds on freed h200. mi300x is NOT used (28\u00d7 penalty confirmed by 22986 smoke). state.compounds is all DONE/PARKED_DIVERGED (no IDLE) so coord will not auto-kick anything. Actual kick will be manual (sbatch \u00d7 7 with LEARNING_SOURCE_DIR=..._compounds_v3, LR: bert-large 3e-5, others spec) or via new coord state field added at trigger time."
+    },
+    {
+      "at": "2026-07-21T09:51+09:00",
+      "by": "matsubara",
+      "event": "bert-eukaryote_matched_random_seed10 re-submitted as jobid 23121 after boss GO (NODE_FAIL 23030 was infra transient)"
+    },
+    {
+      "at": "2026-07-22T10:55:34.935326+09:00",
+      "by": "matsubara",
+      "event": "paused 5 GPT-2 subsets pending LR fix pilot (boss GO reply-gpt2-lr-fix-and-seed10-smoke.md A B-2)"
+    },
+    {
+      "at": "2026-07-22T10:57:38.842492+09:00",
+      "by": "matsubara",
+      "event": "paused 3 more GPT-2 subsets (cancelled) + BERT seed10 -> PARKED_NEEDS_SMOKE"
+    },
+    {
+      "at": "2026-07-22T11:20:47.342558+09:00",
+      "by": "matsubara",
+      "event": "BERT seed10 3rd retry as jobid 23170 with BERT_LR_TAG=retry3v1 after smoke succeeded (boss GO 2026-07-22)"
+    }
+  ],
+  "bert_large_retrain": {
+    "phase": "DONE",
+    "enabled": true,
+    "lr_idx": 1,
+    "ladder_history": [
+      {
+        "jobid": "22889",
+        "lr": 0.0001,
+        "reason": "early plateau (07-13 pattern match)",
+        "note": "manual kill after boss decision; new ladder starts at 5e-5",
+        "at": "2026-07-15T11:38:00+09:00"
+      },
+      {
+        "jobid": "22912",
+        "lr": 5e-05,
+        "reason": "symlink-race FAILED (race with 12:16 symlink creation)",
+        "note": "not an LR-ladder event; state reset to IDLE without advancing lr_idx",
+        "at": "2026-07-15T12:16:00+09:00"
+      },
+      {
+        "jobid": "22913",
+        "lr": 5e-05,
+        "reason": "early plateau",
+        "detail": "eval 6 val_loss = 1.7856 > 1.5; trajectory [2.5037784576416016, 2.4267337322235107, 2.4146907329559326, 2.3129897117614746, 2.092714786529541, 1.7855943441390991]",
+        "at": "2026-07-15T13:19:35.556943+09:00"
+      }
+    ],
+    "prev_park_jobid": "22889",
+    "jobid": "22918",
+    "current_lr": 3e-05,
+    "current_tag": "lr3e-5",
+    "out_dir": "/lustre/home/matsubara/learning_source_20260710_autopilot_v2_bertlarge_retrain_lr3e-5",
+    "prev_park_jobid_22912": "22912",
+    "notified_plateau_at": "22913"
+  },
+  "subset_training": {
+    "enabled": true,
+    "runs": {
+      "bert-mammal_centered": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "mammal_centered",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22930"
+      },
+      "bert-eukaryote_matched_random_seed1": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed1",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22931"
+      },
+      "bert-eukaryote_matched_random_seed2": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed2",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22932"
+      },
+      "bert-eukaryote_matched_random_seed3": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed3",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22933"
+      },
+      "bert-eukaryote_matched_random_seed4": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed4",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22974"
+      },
+      "bert-eukaryote_matched_random_seed5": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed5",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22975"
+      },
+      "bert-eukaryote_matched_random_seed6": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed6",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22976"
+      },
+      "bert-eukaryote_matched_random_seed7": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed7",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22977"
+      },
+      "bert-eukaryote_matched_random_seed8": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed8",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22983",
+        "prev_h200_jobid": "22978",
+        "mi300x_kill_jobid": "22981",
+        "reverted_to_h200": true
+      },
+      "bert-eukaryote_matched_random_seed9": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed9",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "22984",
+        "prev_h200_jobid": "22979",
+        "mi300x_kill_jobid": "22982",
+        "reverted_to_h200": true
+      },
+      "bert-eukaryote_matched_random_seed10": {
+        "phase": "SUBMITTED",
+        "arch": "bert",
+        "subset": "eukaryote_matched_random_seed10",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23170",
+        "prev_jobid_node_fail": "23030",
+        "resubmitted_at": "2026-07-21T09:51+09:00",
+        "resubmit_reason": "boss GO for infra transient NODE_FAIL recovery (reply-seed10-resubmit-and-infra-autoretry.md)",
+        "prev_phase_before_smoke_park": "SUBMITTED",
+        "node_fail_history": [
+          {
+            "jobid": "23030",
+            "node": "gpu03",
+            "elapsed": "1m26s",
+            "at": "2026-07-18T06:16:21+09:00"
+          },
+          {
+            "jobid": "23121",
+            "node": "gpu01",
+            "elapsed": "1m37s",
+            "at": "2026-07-21T23:43:39+09:00"
+          },
+          {
+            "smoke_jobid": "23165",
+            "smoke_result": "COMPLETED_NO_CRASH_REPRODUCED",
+            "smoke_elapsed": "4:46",
+            "smoke_at": "2026-07-22T11:05-11:09+09:00"
+          }
+        ],
+        "park_at": "2026-07-22T10:57:38.842492+09:00",
+        "park_reason": "boss GO 2026-07-22: 2 consecutive NODE_FAIL on different nodes = subset-specific, needs manual smoke to pinpoint startup crash (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7B)",
+        "bert_lr_tag": "retry3v1",
+        "resubmit_reason_v3": "boss GO 2026-07-22: smoke completed successfully on gpu01 (23121 death node), no crash reproduced -> judged as transient hardware. Retry 3 with BERT_LR_TAG=retry3v1 for audit dir separation (charter \u00a7 2.1). If 3rd fail -> charter \u00a7 4.3 subset\u56fa\u6709\u78ba\u5b9a -> 20/21.",
+        "resubmit_at_v3": "2026-07-22T11:20:47.342558+09:00",
+        "prev_phase": "PARKED_NEEDS_SMOKE"
+      },
+      "bert-global_random_seed1": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed1",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23031"
+      },
+      "bert-global_random_seed2": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed2",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23041"
+      },
+      "bert-global_random_seed3": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed3",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23046"
+      },
+      "bert-global_random_seed4": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed4",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23051"
+      },
+      "bert-global_random_seed5": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed5",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23052"
+      },
+      "bert-global_random_seed6": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed6",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23055"
+      },
+      "bert-global_random_seed7": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed7",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23063"
+      },
+      "bert-global_random_seed8": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed8",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23071"
+      },
+      "bert-global_random_seed9": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed9",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23072"
+      },
+      "bert-global_random_seed10": {
+        "phase": "DONE",
+        "arch": "bert",
+        "subset": "global_random_seed10",
+        "workflow": "03c-genome_sequence-train-bert-small-subset.sh",
+        "jobid": "23073"
+      },
+      "gpt2-mammal_centered": {
+        "phase": "DONE",
+        "arch": "gpt2",
+        "subset": "mammal_centered",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23075"
+      },
+      "gpt2-eukaryote_matched_random_seed1": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed1",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23093"
+      },
+      "gpt2-eukaryote_matched_random_seed2": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed2",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23116"
+      },
+      "gpt2-eukaryote_matched_random_seed3": {
+        "phase": "DONE",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed3",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23117"
+      },
+      "gpt2-eukaryote_matched_random_seed4": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed4",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23118"
+      },
+      "gpt2-eukaryote_matched_random_seed5": {
+        "phase": "DONE",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed5",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23119"
+      },
+      "gpt2-eukaryote_matched_random_seed6": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed6",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23120"
+      },
+      "gpt2-eukaryote_matched_random_seed7": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed7",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23123"
+      },
+      "gpt2-eukaryote_matched_random_seed8": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed8",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23124"
+      },
+      "gpt2-eukaryote_matched_random_seed9": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed9",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23125"
+      },
+      "gpt2-eukaryote_matched_random_seed10": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "eukaryote_matched_random_seed10",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23148"
+      },
+      "gpt2-global_random_seed1": {
+        "phase": "DONE",
+        "arch": "gpt2",
+        "subset": "global_random_seed1",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23149"
+      },
+      "gpt2-global_random_seed2": {
+        "phase": "PARKED_DIVERGED",
+        "arch": "gpt2",
+        "subset": "global_random_seed2",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23150"
+      },
+      "gpt2-global_random_seed3": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed3",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23158",
+        "prev_phase_before_lrfix": "RUNNING",
+        "prev_jobid_cancelled": "23158",
+        "park_at": "2026-07-22T10:57:38.842492+09:00",
+        "park_reason": "boss GO 2026-07-22: cancelled + paused pending LR fix pilot (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A B-2)"
+      },
+      "gpt2-global_random_seed4": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed4",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23159",
+        "prev_phase_before_lrfix": "RUNNING",
+        "prev_jobid_cancelled": "23159",
+        "park_at": "2026-07-22T10:57:38.842492+09:00",
+        "park_reason": "boss GO 2026-07-22: cancelled + paused pending LR fix pilot (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A B-2)"
+      },
+      "gpt2-global_random_seed5": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed5",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23160",
+        "prev_phase_before_lrfix": "RUNNING",
+        "prev_jobid_cancelled": "23160",
+        "park_at": "2026-07-22T10:57:38.842492+09:00",
+        "park_reason": "boss GO 2026-07-22: cancelled + paused pending LR fix pilot (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A B-2)"
+      },
+      "gpt2-global_random_seed6": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed6",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23161",
+        "prev_phase_before_lrfix": "QUEUED",
+        "park_at": "2026-07-22T10:55:34.935326+09:00",
+        "park_reason": "boss GO 2026-07-22: pause pending GPT-2 subset kick, awaiting LR fix pilot outcome (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A depending on pilot)"
+      },
+      "gpt2-global_random_seed7": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed7",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23162",
+        "prev_phase_before_lrfix": "QUEUED",
+        "park_at": "2026-07-22T10:55:34.935326+09:00",
+        "park_reason": "boss GO 2026-07-22: pause pending GPT-2 subset kick, awaiting LR fix pilot outcome (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A depending on pilot)"
+      },
+      "gpt2-global_random_seed8": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed8",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23163",
+        "prev_phase_before_lrfix": "QUEUED",
+        "park_at": "2026-07-22T10:55:34.935326+09:00",
+        "park_reason": "boss GO 2026-07-22: pause pending GPT-2 subset kick, awaiting LR fix pilot outcome (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A depending on pilot)"
+      },
+      "gpt2-global_random_seed9": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed9",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "jobid": "23164",
+        "prev_phase_before_lrfix": "QUEUED",
+        "park_at": "2026-07-22T10:55:34.935326+09:00",
+        "park_reason": "boss GO 2026-07-22: pause pending GPT-2 subset kick, awaiting LR fix pilot outcome (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A depending on pilot)"
+      },
+      "gpt2-global_random_seed10": {
+        "phase": "PARKED_LR_FIX_PENDING",
+        "arch": "gpt2",
+        "subset": "global_random_seed10",
+        "workflow": "03a-genome_sequence-train-gpt2-small-subset.sh",
+        "prev_phase_before_lrfix": "IDLE",
+        "park_at": "2026-07-22T10:55:34.935326+09:00",
+        "park_reason": "boss GO 2026-07-22: pause pending GPT-2 subset kick, awaiting LR fix pilot outcome (reply-gpt2-lr-fix-and-seed10-smoke.md \u00a7A depending on pilot)"
+      }
+    }
+  }
+}
