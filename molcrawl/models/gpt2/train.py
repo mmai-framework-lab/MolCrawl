@@ -20,6 +20,7 @@ import glob
 import json
 import math
 import os
+import random
 import shutil
 import time
 from contextlib import nullcontext
@@ -103,6 +104,12 @@ compile = False  # use PyTorch 2.0 to compile the model to be faster
 # as a fraction of hardware peak. Default ~ NVIDIA GB200/B200 bf16 dense; set
 # --mfu_peak_tflops=312 for A100, or your measured value for an exact ratio.
 mfu_peak_tflops = 2250
+# Training seed (base). Overridden by the configurator when a config file sets
+# `seed = N`. Consumed below to seed torch / torch.cuda / numpy / Python
+# random; per-rank offset (seed + ddp_rank) is applied so DDP ranks still draw
+# distinct mini-batches. 1337 kept as the base to match the historical value
+# used before the config-level seed was introduced.
+seed = 1337
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 if __name__ == "__main__":
@@ -197,7 +204,14 @@ if __name__ == "__main__":
         )
         print(f"Wandb initialized: {wandb_run.url}")
 
-    torch.manual_seed(1337 + seed_offset)
+    # Full seed control (boss directive 2026-08-03). Config `seed` overrides
+    # the 1337 default via the configurator; per-rank offset preserves the
+    # DDP behaviour of distinct mini-batches per rank.
+    _rank_seed = seed + seed_offset
+    torch.manual_seed(_rank_seed)
+    torch.cuda.manual_seed_all(_rank_seed)
+    np.random.seed(_rank_seed)
+    random.seed(_rank_seed)
     torch.backends.cuda.matmul.allow_tf32 = True  # allow tf32 on matmul
     torch.backends.cudnn.allow_tf32 = True  # allow tf32 on cudnn
     device_type = "cuda" if "cuda" in device else "cpu"  # for later use in torch.autocast

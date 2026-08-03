@@ -175,6 +175,11 @@ if __name__ == "__main__":
     per_device_eval_batch_size = 8
     log_interval = 100
     save_steps = 1000  # Default value, can be overridden in config
+    # Training seed (base). Each config file overrides this via the configurator
+    # (per-config sequential seed). Consumed by HF TrainingArguments below
+    # (seed= + data_seed=), which seeds model init, dataloader shuffling, and
+    # data sampling. HF Trainer's default is 42 — keeping that as the base.
+    seed = 42
     # -----------------------------------------------------------------------------
     config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
     # Handle configurator path (support repo-root invocation and direct invocation)
@@ -372,6 +377,11 @@ if __name__ == "__main__":
         warmup_steps=warmup_steps,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
+        # Training seed from config (per-config sequential value, boss directive
+        # 2026-08-03). data_seed=seed keeps DataLoader shuffling in lockstep so
+        # a rerun with the same config reproduces both weight init and batch order.
+        seed=seed,
+        data_seed=seed,
         # AdamW optimizer settings — production spec (2026-07-08):
         # betas = (0.9, 0.95) instead of HF default (0.9, 0.999).
         adam_beta1=0.9,
