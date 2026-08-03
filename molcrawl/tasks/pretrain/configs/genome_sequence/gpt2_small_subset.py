@@ -156,3 +156,8 @@ pad_token_id = tokenizer.pad_token_id  # 5
 # vocab). Without this the receiving `train.py` code (commit 17562e81) sees
 # `pad_token_id_for_loss = None` and skips the mask entirely.
 pad_token_id_for_loss = 5
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 45
