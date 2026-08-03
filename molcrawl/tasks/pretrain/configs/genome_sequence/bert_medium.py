@@ -66,3 +66,8 @@ def preprocess_function(examples):
         examples["attention_mask"] = attention_masks
 
     return examples
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 33

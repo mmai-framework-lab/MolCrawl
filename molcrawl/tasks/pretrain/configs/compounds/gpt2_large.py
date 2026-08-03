@@ -70,3 +70,8 @@ start_instruction = 12
 eos_token = 12  # eos
 
 dataset_params = {"dataset_dir": dataset_dir}
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 19

@@ -67,3 +67,8 @@ dataset_params = {
 bos_token_id = 0
 eos_token_id = 2
 pad_token_id = 1
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 94

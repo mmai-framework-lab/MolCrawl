@@ -88,3 +88,8 @@ dropout = 0.1
 # modality string used for ambiguity-aware loss masking dispatch.
 dataset = "genome_sequence"
 dataset_params = {"dataset_dir": dataset_dir}
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 44

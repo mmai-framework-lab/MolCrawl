@@ -136,3 +136,8 @@ dataloader_pin_memory = True
 # a config-level ``preprocess_function`` would push ``bert/main.py`` into its
 # ``elif "preprocess_function" in globals():`` branch and trigger a full
 # ``.map()`` over ~95M rows just to re-derive a mask that is already correct.
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 35
