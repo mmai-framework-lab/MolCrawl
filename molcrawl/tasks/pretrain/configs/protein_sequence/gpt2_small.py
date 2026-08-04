@@ -14,11 +14,13 @@ out_dir = get_gpt2_output_path("protein_sequence", "small")
 tokenizer = Tokenizer()
 meta_vocab_size = tokenizer.vocab_size
 
-# these make the total batch size be ~0.5M
-# 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 12
+# Effective global batch = 2560 sequences (spec, unified across modalities/archs;
+# see tmp/protein-global-batch-analysis-2026-08-04.md). For GPT-2/nanoGPT the
+# effective batch = batch_size * gradient_accumulation_steps and is GPU-count-
+# independent (train.py does grad_accum //= world_size). 16 * 160 = 2560.
+batch_size = 16
 block_size = 1024
-gradient_accumulation_steps = 5 * 8
+gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
 # this makes total number of tokens be 300B
 max_iters = 1754
