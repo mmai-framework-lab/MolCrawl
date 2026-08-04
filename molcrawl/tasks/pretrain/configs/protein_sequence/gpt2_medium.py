@@ -20,7 +20,7 @@ out_dir = get_gpt2_output_path("protein_sequence", "medium")
 tokenizer = Tokenizer()
 meta_vocab_size = tokenizer.vocab_size
 
-# Effective global batch = 2560 sequences (spec, unified across modalities/archs;
+# Effective global batch = 2560 sequences (spec; protein GPT-2 applied first, other modalities/archs to follow;
 # see tmp/protein-global-batch-analysis-2026-08-04.md). GPT-2 effective batch =
 # batch_size * gradient_accumulation_steps, GPU-count-independent. 16 * 160 = 2560.
 batch_size = 16
