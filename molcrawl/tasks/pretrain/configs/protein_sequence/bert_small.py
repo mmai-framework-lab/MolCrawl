@@ -67,13 +67,13 @@ class ProteinSequenceDataCollator(DataCollatorForLanguageModeling):
 data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_probability=0.2)
 
 # Training configuration
-max_steps = 1316
+max_steps = 11177  # 3 epochs of train at global batch 2560 = floor(3*9,538,464/2560)
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("protein_sequence", model_size)
 max_length = 1024
 dataset_dir = UNIPROT_DATASET_DIR
-learning_rate = 0.0001
+learning_rate = 0.0003  # P8: measured best for bert-small at global batch 2560 (2026-08-04)
 weight_decay = 0.01
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100

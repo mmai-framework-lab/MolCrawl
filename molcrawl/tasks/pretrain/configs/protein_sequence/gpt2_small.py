@@ -14,7 +14,7 @@ out_dir = get_gpt2_output_path("protein_sequence", "small")
 tokenizer = Tokenizer()
 meta_vocab_size = tokenizer.vocab_size
 
-# Effective global batch = 2560 sequences (spec, unified across modalities/archs;
+# Effective global batch = 2560 sequences (spec; protein GPT-2 applied first, other modalities/archs to follow;
 # see tmp/protein-global-batch-analysis-2026-08-04.md). For GPT-2/nanoGPT the
 # effective batch = batch_size * gradient_accumulation_steps and is GPU-count-
 # independent (train.py does grad_accum //= world_size). 16 * 160 = 2560.
@@ -22,10 +22,12 @@ batch_size = 16
 block_size = 1024
 gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
-# this makes total number of tokens be 300B
-max_iters = 1754
-lr_decay_iters = 1754
-learning_rate = 6e-4  # GPT-3 ladder small (Phase 2 sweep confirms)
+# 3 epochs of the train split at global batch 2560:
+# floor(3 * 9,538,464 train blocks / 2560) = 11,177 iters (~29.3B tokens processed).
+max_iters = 11177
+lr_decay_iters = 11177
+warmup_iters = 224  # ~2% of max_iters (compounds convention); < max_iters so LR reaches peak
+learning_rate = 6e-4  # per-size ladder small; re-confirmed best at global batch 2560 (2026-08-04)
 min_lr = 6e-5  # peak/10
 
 # eval stuff
