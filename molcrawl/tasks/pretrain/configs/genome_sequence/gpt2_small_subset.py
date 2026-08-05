@@ -55,13 +55,27 @@ meta_vocab_size = len(tokenizer)  # = 10
 tensorboard = True
 
 # ---- training hyperparameters (mirror gpt2_small) ------------------------ #
-# Phase 1-5 (2026-07-14): batch/grad_accum aligned to global batch 2,560
-# per charter (per_device 8 × grad_accum 80 × n_GPUs 4 = 2,560). Previous
-# 12 × 40 × 4 = 1,920 was Phase 0 vintage. block_size stays 1024 (matches
-# Phase 3 gpt2_chunk_size, unchanged).
+# Effective global batch = 2560 sequences (spec, unified across modalities/archs;
+# batch_size * gradient_accumulation_steps, GPU-count-independent because
+# train.py does `grad_accum //= world_size`). Matches the protein GPT-2 fix.
+#
+# The previous 8 × (5 * 16) = 8 × 80 was written as if grad_accum were
+# per-device, and the stale comment claimed "per_device 8 × grad_accum 80 ×
+# n_GPUs 4 = 2,560". Under nanoGPT semantics that yielded an effective global
+# batch of 640 (measured: "tokens per iteration will be: 655,360" = 640 × 1024),
+# i.e. 4x below spec, which left GPT-2 at 0.75 epoch while BERT (HF Trainer,
+# per-device semantics) ran the intended 3 epochs — breaking the compute-matched
+# cross-arch comparison the 42-run charter is built on.
+#
+# max_iters below already assumes _GLOBAL_BATCH = 2560, so it needs no change.
+# The 8/320 split is an operational choice, not the spec: only the product is
+# fixed. protein already varies it by size (small 8 × 320, medium 16 × 160). A
+# larger micro-batch shortens wall-clock at the same effective batch, which
+# matters where a scheduler caps job duration, so re-probe throughput and adjust
+# the split before launching production.
 batch_size = 8
 block_size = 1024
-gradient_accumulation_steps = 5 * 16
+gradient_accumulation_steps = 320  # 8 * 320 = 2560 seq global batch
 
 # LR pre-check on the pre-G2 (2026-05) mammal_centered dataset (jobs
 # 19068-19070) showed 6e-4 spiked back up around step 6k and 6e-5 was
