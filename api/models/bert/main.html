@@ -42,6 +42,42 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.models.bert.main.resolve_eval_split"><code class="name flex">
+<span>def <span class="ident">resolve_eval_split</span></span>(<span>available, requested='valid')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resolve_eval_split(available, requested=DEFAULT_EVAL_SPLIT):
+    &#34;&#34;&#34;Pick the split that feeds ``Trainer.eval_dataset``.
+
+    That dataset drives ``metric_for_best_model`` and ``load_best_model_at_end``,
+    so whatever is returned here is the split the best checkpoint is selected on.
+    It defaults to ``valid`` to keep ``test`` held out for final reporting; a
+    config may set ``eval_split_name`` to pin a different split explicitly.
+
+    Precedence: the requested split, then ``valid``, then ``test``. Returns
+    ``None`` when the dataset carries none of them.
+    &#34;&#34;&#34;
+    available = set(available)
+    for name in (requested, DEFAULT_EVAL_SPLIT, &#34;test&#34;):
+        if name and name in available:
+            return name
+    return None</code></pre>
+</details>
+<div class="desc"><p>Pick the split that feeds <code>Trainer.eval_dataset</code>.</p>
+<p>That dataset drives <code>metric_for_best_model</code> and <code>load_best_model_at_end</code>,
+so whatever is returned here is the split the best checkpoint is selected on.
+It defaults to <code>valid</code> to keep <code>test</code> held out for final reporting; a
+config may set <code>eval_split_name</code> to pin a different split explicitly.</p>
+<p>Precedence: the requested split, then <code>valid</code>, then <code>test</code>. Returns
+<code>None</code> when the dataset carries none of them.</p></div>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -183,6 +219,11 @@ el.replaceWith(d);
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="molcrawl.models.bert" href="index.html">molcrawl.models.bert</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.models.bert.main.resolve_eval_split" href="#molcrawl.models.bert.main.resolve_eval_split">resolve_eval_split</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
