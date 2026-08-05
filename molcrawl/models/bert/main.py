@@ -22,6 +22,26 @@ from molcrawl.core.torch_compat import enable_full_torch_load
 
 enable_full_torch_load()
 
+DEFAULT_EVAL_SPLIT = "valid"
+
+
+def resolve_eval_split(available, requested=DEFAULT_EVAL_SPLIT):
+    """Pick the split that feeds ``Trainer.eval_dataset``.
+
+    That dataset drives ``metric_for_best_model`` and ``load_best_model_at_end``,
+    so whatever is returned here is the split the best checkpoint is selected on.
+    It defaults to ``valid`` to keep ``test`` held out for final reporting; a
+    config may set ``eval_split_name`` to pin a different split explicitly.
+
+    Precedence: the requested split, then ``valid``, then ``test``. Returns
+    ``None`` when the dataset carries none of them.
+    """
+    available = set(available)
+    for name in (requested, DEFAULT_EVAL_SPLIT, "test"):
+        if name and name in available:
+            return name
+    return None
+
 
 class RNADatasetForBERT:
     """Custom dataset class for loading RNA data"""
@@ -456,6 +476,11 @@ if __name__ == "__main__":
 
         dataset_path = Path(dataset_dir)
 
+        # Split used for eval → best-checkpoint selection. ``valid`` by default so
+        # ``test`` stays held out for final reporting; override per config with
+        # ``eval_split_name`` when a run must evaluate on something else.
+        eval_split_name = str(globals().get("eval_split_name", DEFAULT_EVAL_SPLIT))
+
         # Try new multi-dataset loader first (for compounds)
         train_dataset = None
         test_dataset = None
@@ -487,7 +512,10 @@ if __name__ == "__main__":
                     dataset_dict = loader.load_datasets(combine=True)
 
                     train_dataset = dataset_dict.get("train")
-                    test_dataset = dataset_dict.get("valid") or dataset_dict.get("test")
+                    eval_split = resolve_eval_split(dataset_dict.keys(), eval_split_name)
+                    test_dataset = dataset_dict.get(eval_split) if eval_split else None
+                    if eval_split:
+                        print(f"📏 Eval split (best-checkpoint selection): {eval_split}")
 
                     if train_dataset and test_dataset:
                         print(f"✓ Loaded combined datasets: train={len(train_dataset)}, test={len(test_dataset)}")
@@ -508,19 +536,22 @@ if __name__ == "__main__":
             if train_arrow.exists():
                 print(f"Loading from arrow format: {train_arrow}")
                 train_dataset = load_from_disk(str(train_arrow))
-                # Try test first, fall back to valid
-                if test_arrow.exists():
-                    test_dataset = load_from_disk(str(test_arrow))
-                elif valid_arrow.exists():
-                    test_dataset = load_from_disk(str(valid_arrow))
-                else:
-                    raise FileNotFoundError(f"No test or valid split found in {dataset_path}")
+                arrow_by_split = {"valid": valid_arrow, "test": test_arrow}
+                present = [name for name, path in arrow_by_split.items() if path.exists()]
+                eval_split = resolve_eval_split(present, eval_split_name)
+                if eval_split is None:
+                    raise FileNotFoundError(f"No valid or test split found in {dataset_path}")
+                print(f"📏 Eval split (best-checkpoint selection): {eval_split}")
+                test_dataset = load_from_disk(str(arrow_by_split[eval_split]))
             else:
                 # Fall back to standard format
                 dataset = load_from_disk(dataset_dir)
                 train_dataset = dataset["train"]
-            test_split_name = "test" if "test" in dataset else "valid"
-            test_dataset = dataset[test_split_name]
+                eval_split = resolve_eval_split(dataset.keys(), eval_split_name)
+                if eval_split is None:
+                    raise FileNotFoundError(f"No valid or test split found in {dataset_dir}")
+                print(f"📏 Eval split (best-checkpoint selection): {eval_split}")
+                test_dataset = dataset[eval_split]
 
         # Limit test dataset size for faster evaluation
         if len(test_dataset) > 10000:
