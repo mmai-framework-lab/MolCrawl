@@ -1,6 +1,5 @@
-# config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
-# launch as the following (e.g. in a screen session) and wait ~5 days:
-# $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
+# compounds GPT-2 medium — packed 1024 ladder (v4 data, 2026-08-05)
+# launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/gpt2/train.py <this config>
 
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
@@ -18,44 +17,42 @@ out_dir = get_gpt2_output_path("compounds", "medium")
 
 tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 meta_vocab_size = tokenizer.vocab_size
-eos_token_id = tokenizer.eos_token_id  # 13 ([SEP])
+eos_token_id = tokenizer.eos_token_id  # 13 ([SEP]) — the molecule separator in packed blocks
 
-# these make the total batch size be ~0.5M
-# 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 2  # max size in koala
+# nanoGPT divides gradient_accumulation_steps by the DDP world size, so the
+# effective global batch = batch_size * gradient_accumulation_steps and is
+# GPU-count-independent. 16 * 160 = 2560 seq (same convention as protein).
+# The previous "batch x grad_accum x n_GPUs(4) = 2,560" comment was wrong for
+# nanoGPT semantics: 2 * 320 was an effective 640, not 2,560.
+batch_size = 16
+block_size = 1024
+gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
-block_size = 128
-
-# Enable pad-position CLM loss masking (Phase 0-1). compounds uses pad_id=0.
-pad_token_id_for_loss = 0
-# Phase 1-4: raise grad_accum so global batch = batch × grad_accum × n_GPUs(4) = 2,560
-# per autonomous charter (2026-07-10). Was 5*16=80 → global 640 (0.75 epoch under
-# max_iters=12,415). Now 5*64=320 → global 2,560 (exactly 3 epochs).
-gradient_accumulation_steps = 5 * 64
-
-# this makes total number of tokens be 300B
-max_iters = 12124
-lr_decay_iters = 12124
-warmup_iters = 242  # how many steps to warm up for (Phase 1-6 dedup 対応で 249 → 242)
+# v4 packed data (2026-08-05): train = 398,917 blocks x 1024, no padding.
+# 10 epochs at global batch 2560 = floor(10 * 398,917 / 2560) = 1,558 iters.
+max_iters = 1558
+lr_decay_iters = 1558
+warmup_iters = 31  # ~2% of max_iters; must stay < max_iters so LR reaches peak
 learning_rate = 0.0003  # max learning rate
 min_lr = 3e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
-# eval stuff
-eval_interval = 200
+# eval stuff — ~31 eval points over the run; log_interval != eval_interval so the
+# reported dt/MFU is not polluted by eval time.
+eval_interval = 50
 eval_iters = 200
-log_interval = 200
+log_interval = 10
 
 # init from checkpoint
-init_from = "resume"  # 'scratch' or 'resume' - resume from checkpoint by default
+init_from = "scratch"  # v4 packed ladder starts fresh; no v3 checkpoint is compatible
 
 # checkpoint management
 always_save_checkpoint = True  # Save regularly regardless of validation loss
 save_checkpoint_steps = None  # If None, save with eval_interval
 max_checkpoints = 5  # Keep up to 5 checkpoints
 
-# early stopping
-early_stopping = True
-early_stopping_patience = 5
+# early stopping — OFF for pretraining: the ladder is compute-matched, every size
+# runs the full schedule (spec 2026-07-31 §2; matches bert_*.py early_stopping=False).
+early_stopping = False
 
 # weight decay
 weight_decay = 0.1
