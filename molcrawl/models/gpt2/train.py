@@ -351,6 +351,7 @@ if __name__ == "__main__":
     )  # start with model_args from command line
 
     checkpoint = None  # Initialize checkpoint variable
+    _resume_ckpt_dir = None  # dir the resume checkpoint came from (for per-rank RNG)
 
     if init_from == "scratch":
         # init a new model from scratch
@@ -388,6 +389,7 @@ if __name__ == "__main__":
                 print(f"Found HuggingFace format checkpoint at step {latest_step}")
                 checkpoint = torch.load(latest_ckpt_path, map_location=device)
                 checkpoint_loaded = True
+                _resume_ckpt_dir = os.path.dirname(latest_ckpt_path)
 
         # Fall back to legacy ckpt.pt
         if not checkpoint_loaded:
@@ -509,6 +511,28 @@ if __name__ == "__main__":
     optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
     if init_from == "resume" and checkpoint is not None:
         optimizer.load_state_dict(checkpoint["optimizer"])
+
+        # Restore RNG so a chained run continues the same streams instead of
+        # replaying from `seed + rank`. Prefer this rank's own file; fall back
+        # to the state embedded in the checkpoint, which is the saving rank's
+        # (correct for single-process runs). Checkpoints predating this carry
+        # neither, and then we keep the previous behaviour rather than fail.
+        _rank = ddp_rank if ddp else 0
+        _rng_restored = False
+        if _resume_ckpt_dir:
+            _rng_file = rank_rng_path(_resume_ckpt_dir, _rank)
+            if os.path.exists(_rng_file):
+                _rng_restored = restore_rng_state(torch.load(_rng_file, map_location="cpu"))
+        if not _rng_restored:
+            _rng_restored = restore_rng_state(checkpoint.get("rng_state"))
+            if _rng_restored and ddp and ddp_world_size > 1:
+                print(
+                    f"[rank {_rank}] WARNING: no per-rank RNG in {_resume_ckpt_dir or 'checkpoint'}; "
+                    "restored the saving rank's state. Data order will not match an uninterrupted run."
+                )
+        if not _rng_restored:
+            print(f"[rank {_rank}] WARNING: checkpoint carries no RNG state; reseeding from config seed.")
+
     checkpoint = None  # free up memory
 
     # compile the model
@@ -588,6 +612,50 @@ def convert_nanogpt_to_hf_state_dict(model_state, model_args):
     return hf_state_dict
 
 
+def capture_rng_state():
+    """Snapshot every RNG that affects training, for exact resume.
+
+    Without this a resumed run diverges from an uninterrupted one even with a
+    fixed seed, because the streams restart at ``seed + rank`` instead of
+    continuing. ``get_batch`` draws its indices from ``np.random``, so numpy is
+    what governs data order; torch/cuda cover dropout and any other sampling.
+    """
+    return {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+    }
+
+
+def restore_rng_state(state):
+    """Restore a snapshot from :func:`capture_rng_state`; tolerate old checkpoints.
+
+    Returns True if anything was restored. Checkpoints written before this was
+    added simply carry no state, in which case the run continues from the
+    freshly seeded streams (the previous behaviour) rather than failing.
+    """
+    if not state:
+        return False
+    if state.get("python") is not None:
+        random.setstate(state["python"])
+    if state.get("numpy") is not None:
+        np.random.set_state(state["numpy"])
+    if state.get("torch") is not None:
+        torch.set_rng_state(state["torch"].cpu())
+    cuda_state = state.get("cuda")
+    if cuda_state is not None and torch.cuda.is_available():
+        # Only restore when the device count matches; a different topology
+        # would otherwise raise deep inside torch.
+        if len(cuda_state) == torch.cuda.device_count():
+            torch.cuda.set_rng_state_all([s.cpu() for s in cuda_state])
+    return True
+
+
+def rank_rng_path(checkpoint_dir, rank):
+    return os.path.join(checkpoint_dir, f"rng_state_{rank}.pth")
+
+
 def save_checkpoint_hf(
     model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0, best_val_step=None
 ):
@@ -646,6 +714,10 @@ def save_checkpoint_hf(
         "best_val_step": best_val_step,
         "early_stopping_counter": early_stopping_counter,
         "config": config,
+        # Saving process only; ranks write their own rng_state_{rank}.pth
+        # alongside this file. Kept here so single-process runs resume exactly
+        # without depending on the per-rank files.
+        "rng_state": capture_rng_state(),
     }
     torch.save(training_state, os.path.join(checkpoint_dir, "training_state.bin"))
 
@@ -760,19 +832,22 @@ if __name__ == "__main__":
                     # rank 0 leaves and the others hang at the next NCCL collective.
                     should_stop = True
 
-            # Checkpoint saving logic (independent of best model tracking)
-            should_save_checkpoint = False
-
-            # Determine if we should save based on configured strategy
-            if always_save_checkpoint:
+            # Checkpoint saving logic (independent of best model tracking).
+            # These reasons are additive, not exclusive: setting
+            # save_checkpoint_steps asks for periodic checkpoints *in addition
+            # to* the best-val one, so it must not suppress the best-val save.
+            # (When these were chained with elif, enabling save_checkpoint_steps
+            # silently dropped every improvement that did not land on a
+            # multiple of the interval, defeating the best-ckpt protection that
+            # subset comparison depends on.)
+            should_save_checkpoint = (
                 # Save at every eval_interval
-                should_save_checkpoint = True
-            elif save_checkpoint_steps is not None:
-                # Save at specific step intervals
-                should_save_checkpoint = iter_num % save_checkpoint_steps == 0
-            elif is_best_model:
-                # Default: only save when validation improves
-                should_save_checkpoint = True
+                always_save_checkpoint
+                # Save at specific step intervals (periodic, for resume/chaining)
+                or (save_checkpoint_steps is not None and iter_num % save_checkpoint_steps == 0)
+                # Save when validation improves
+                or is_best_model
+            )
 
             if should_save_checkpoint and iter_num > 0:
                 checkpoint = {
@@ -783,6 +858,7 @@ if __name__ == "__main__":
                     "best_val_loss": best_val_loss,
                     "early_stopping_counter": early_stopping_counter,
                     "config": config,
+                    "rng_state": capture_rng_state(),
                 }
 
                 # Save in Hugging Face format
@@ -825,6 +901,34 @@ if __name__ == "__main__":
                 if keep_legacy_ckpt or is_best_model:
                     print(f"saving checkpoint to {out_dir}")
                     torch.save(checkpoint, os.path.join(out_dir, "ckpt.pt"))
+
+        # Per-rank RNG for the periodic checkpoints a chained run resumes from.
+        # Every rank draws its own batches from its own np.random stream, so
+        # rank 0's state alone cannot restore the others.
+        #
+        # The condition is recomputed here rather than reusing the decision
+        # above because that one lives under `master_process` and also depends
+        # on is_best_model, which only rank 0 knows. Periodic saves are a pure
+        # function of iter_num, so every rank agrees without communicating --
+        # deliberately avoiding a new collective on the eval path, which is
+        # where the NCCL watchdog stalls noted above have shown up.
+        # Mirrors the schedule-driven arms of the decision above -- both
+        # always_save_checkpoint and save_checkpoint_steps are configuration,
+        # so they hold identically on every rank. The is_best_model arm is
+        # excluded because only rank 0 can evaluate it; best-val checkpoints
+        # are what comparison reads, not what chaining resumes from.
+        if (
+            save_hf_checkpoints
+            and iter_num > 0
+            and iter_num % eval_interval == 0
+            and (
+                always_save_checkpoint
+                or (save_checkpoint_steps is not None and iter_num % save_checkpoint_steps == 0)
+            )
+        ):
+            _ckpt_dir = os.path.join(out_dir, f"checkpoint-{iter_num}")
+            os.makedirs(_ckpt_dir, exist_ok=True)  # rank 0 may not have created it yet
+            torch.save(capture_rng_state(), rank_rng_path(_ckpt_dir, ddp_rank if ddp else 0))
 
         # Early stopping is decided only on rank 0 (evaluation runs there).
         # Broadcast the decision so every rank breaks on the same iteration;
