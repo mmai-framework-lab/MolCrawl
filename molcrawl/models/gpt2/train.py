@@ -112,6 +112,53 @@ mfu_peak_tflops = 2250
 seed = 1337
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
+# RNG helpers. Defined here, ahead of the first `if __name__` block, because
+# the resume path in the second one calls them: this module runs top to
+# bottom, so a definition placed after that block is not bound yet when it
+# executes (NameError on resume, which CI caught as F821/used-before-def).
+def capture_rng_state():
+    """Snapshot every RNG that affects training, for exact resume.
+
+    Without this a resumed run diverges from an uninterrupted one even with a
+    fixed seed, because the streams restart at ``seed + rank`` instead of
+    continuing. ``get_batch`` draws its indices from ``np.random``, so numpy is
+    what governs data order; torch/cuda cover dropout and any other sampling.
+    """
+    return {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+    }
+
+
+def restore_rng_state(state):
+    """Restore a snapshot from :func:`capture_rng_state`; tolerate old checkpoints.
+
+    Returns True if anything was restored. Checkpoints written before this was
+    added simply carry no state, in which case the run continues from the
+    freshly seeded streams (the previous behaviour) rather than failing.
+    """
+    if not state:
+        return False
+    if state.get("python") is not None:
+        random.setstate(state["python"])
+    if state.get("numpy") is not None:
+        np.random.set_state(state["numpy"])
+    if state.get("torch") is not None:
+        torch.set_rng_state(state["torch"].cpu())
+    cuda_state = state.get("cuda")
+    if cuda_state is not None and torch.cuda.is_available():
+        # Only restore when the device count matches; a different topology
+        # would otherwise raise deep inside torch.
+        if len(cuda_state) == torch.cuda.device_count():
+            torch.cuda.set_rng_state_all([s.cpu() for s in cuda_state])
+    return True
+
+
+def rank_rng_path(checkpoint_dir, rank):
+    return os.path.join(checkpoint_dir, f"rng_state_{rank}.pth")
+
 if __name__ == "__main__":
     # Handle configurator path (support repo-root invocation and direct invocation)
     _this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -610,50 +657,6 @@ def convert_nanogpt_to_hf_state_dict(model_state, model_args):
             hf_state_dict[key] = value
 
     return hf_state_dict
-
-
-def capture_rng_state():
-    """Snapshot every RNG that affects training, for exact resume.
-
-    Without this a resumed run diverges from an uninterrupted one even with a
-    fixed seed, because the streams restart at ``seed + rank`` instead of
-    continuing. ``get_batch`` draws its indices from ``np.random``, so numpy is
-    what governs data order; torch/cuda cover dropout and any other sampling.
-    """
-    return {
-        "python": random.getstate(),
-        "numpy": np.random.get_state(),
-        "torch": torch.get_rng_state(),
-        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
-    }
-
-
-def restore_rng_state(state):
-    """Restore a snapshot from :func:`capture_rng_state`; tolerate old checkpoints.
-
-    Returns True if anything was restored. Checkpoints written before this was
-    added simply carry no state, in which case the run continues from the
-    freshly seeded streams (the previous behaviour) rather than failing.
-    """
-    if not state:
-        return False
-    if state.get("python") is not None:
-        random.setstate(state["python"])
-    if state.get("numpy") is not None:
-        np.random.set_state(state["numpy"])
-    if state.get("torch") is not None:
-        torch.set_rng_state(state["torch"].cpu())
-    cuda_state = state.get("cuda")
-    if cuda_state is not None and torch.cuda.is_available():
-        # Only restore when the device count matches; a different topology
-        # would otherwise raise deep inside torch.
-        if len(cuda_state) == torch.cuda.device_count():
-            torch.cuda.set_rng_state_all([s.cpu() for s in cuda_state])
-    return True
-
-
-def rank_rng_path(checkpoint_dir, rank):
-    return os.path.join(checkpoint_dir, f"rng_state_{rank}.pth")
 
 
 def save_checkpoint_hf(
