@@ -57,7 +57,7 @@ allele, and writes the legacy schema CSV the evaluator already understands.</p>
 <p>Why Ensembl REST instead of a local FASTA: the GRCh37 reference is ~3 GB
 to download and pyfaidx-index, but Ensembl serves <code>/sequence/region/...</code>
 free with a 55,000 req/hr limit, which is plenty for the 100s-of-rows
-subsample used by the evaluator's 足固め mode.
+subsample used by the evaluator's consolidation mode.
 If the user wants a much
 larger run, a local FASTA path is straightforward to bolt on.</p>
 </section>
