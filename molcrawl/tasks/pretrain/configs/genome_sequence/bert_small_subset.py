@@ -75,8 +75,8 @@ max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
 # is suffixed so concurrent LR values do not overwrite each other).
 learning_rate = float(os.environ.get("SUBSET_BERT_LR", "0.0001"))
 weight_decay = 0.01
-# Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
-# compute-matched」). Overriding max_steps / warmup_steps below.
+# Fixed-schedule comparison run (charter §: comparison runs use
+# early_stopping OFF and are compute-matched). Overriding max_steps / warmup_steps below.
 early_stopping = False
 
 # Compute-matched schedule from the realized dataset row count (charter

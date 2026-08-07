@@ -6,7 +6,7 @@ primary signal, with the F1-optimal threshold-based metrics retained as
 a secondary block (same-set-fitted, per the zero-shot variant-effect
 convention).
 
-What 足固め mode adds on top of the basic flow:
+What consolidation mode adds on top of the basic flow:
 
 - Reproducible class-balanced sampling (optionally tier-stratified)
   via :func:`splits.sample_cosmic` so the dataset's tier-3-dominated

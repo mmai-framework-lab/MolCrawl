@@ -359,7 +359,7 @@ def prepare_clinvar(
         if not fasta_path.exists() and Path(str(fasta_path) + ".gz").exists():
             fasta_path = Path(str(fasta_path) + ".gz")
         if not fasta_path.exists():
-            # FASTA が未存在の場合は NCBI FTP から自動ダウンロードする
+            # Download the FASTA from the NCBI FTP when it is not present locally
             logger.info(
                 "GRCh38 reference FASTA not found at %s — downloading from NCBI FTP …",
                 fasta_path,

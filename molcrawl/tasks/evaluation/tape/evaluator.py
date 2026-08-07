@@ -1,6 +1,6 @@
 """Evaluator that dispatches to one TAPE sub-task at a time.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - task-aware stratified subsample (class-balanced for classification,
   quantile-binned for regression) replacing ``df.head(max_examples)``.

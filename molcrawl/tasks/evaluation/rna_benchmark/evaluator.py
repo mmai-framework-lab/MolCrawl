@@ -3,7 +3,7 @@
 Scores cell sequences with :meth:`ModelAdapter.score_likelihood` and
 reports per-group perplexity + mean log-likelihood.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - reproducible per-group subsampling
 - bootstrap 95 % CI on per-group perplexity

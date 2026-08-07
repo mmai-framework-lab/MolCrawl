@@ -72,7 +72,7 @@ UNIPROT_DATASET_DIR = PROTEIN_SEQUENCE_DIR + "/training_ready_hf_dataset"
 REFSEQ_DATASET_DIR = GENOME_SEQUENCE_DIR + "/training_ready_hf_dataset"
 CELLXGENE_DATASET_DIR = RNA_DATASET_DIR + "/training_ready_hf_dataset"
 MOLECULE_NAT_LANG_DATASET_DIR = MOLECULE_NAT_LANG_DIR + "/training_ready_hf_dataset"
-# Legacy compounds training_ready (3月版 build, pre-Phase 1-2).
+# Legacy compounds training_ready (March build, pre-Phase 1-2).
 # Retained for backwards compatibility with fine-tune / eval jobs that resume
 # from checkpoints trained on the old dataset. Do NOT use for new pretraining.
 COMPOUNDS_DATASET_DIR = COMPOUNDS_DIR + "/organix13/compounds/training_ready_hf_dataset"

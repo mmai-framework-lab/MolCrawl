@@ -1,6 +1,6 @@
 """Tabula Sapiens cell-type classification evaluator.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - class-balanced subsample over ``cell_type`` (replaces unbounded
   ``max_cells`` head-clipping).

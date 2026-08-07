@@ -419,14 +419,15 @@ if __name__ == "__main__":
         adam_beta2=float(globals().get("adam_beta2", 0.95)),
         max_grad_norm=1.0,  # grad clip = 1.0 (production spec)
         report_to="none",  # Disable wandb integration to prevent artifact bloat
-        # charter § 1.1 comparability rule: subset比較は best-val ckpt で評価
-        # → load_best_model_at_end=True (early_stopping と独立に常に有効化)、
-        # これで save_total_limit の FIFO 削除から best-val ckpt が保護される。
-        # 2026-07-24 boss GO (reply-0724-bestckpt-retention-flag.md) に基づく修正。
+        # charter § 1.1 comparability rule: subsets are compared on the best-val
+        # checkpoint, so load_best_model_at_end stays on independently of
+        # early_stopping. That also shields the best-val checkpoint from
+        # save_total_limit's FIFO eviction.
+        # Boss GO 2026-07-24 (reply-0724-bestckpt-retention-flag.md).
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",  # Use eval_loss to determine best model
         greater_is_better=False,  # Lower loss is better
-        save_total_limit=5,  # Keep only the 5 most recent checkpoints (best は上記で保護)
+        save_total_limit=5,  # Keep the 5 most recent checkpoints (best is protected above)
         # save_safetensors=True is the HF default; tied weights are restored
         # at resume time by molcrawl.core.utils.trainer_utils.install_tie_weights_on_resume.
         # Setting this to False would break resume from existing safetensors-only

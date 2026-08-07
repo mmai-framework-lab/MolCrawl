@@ -3,7 +3,7 @@
 For each sub-task: embed train sequences, fit a logistic-regression
 probe, score the test split (or dev when test is missing).
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - per-split class-balanced subsample (replaces df.head(max_examples)
   so rare classes — especially in covid_variants and splice — survive

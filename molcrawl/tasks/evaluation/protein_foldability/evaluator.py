@@ -2,7 +2,7 @@
 
 Generates protein sequences from a decoder, strips non-standard
 characters, and reports distributional indicators against the
-reference corpus. The 足固め upgrade adds:
+reference corpus. The consolidation upgrade adds:
 
 - reproducible sampling (torch.manual_seed before the adapter call)
 - pre-computed reference set + AA distribution (avoids re-scanning
