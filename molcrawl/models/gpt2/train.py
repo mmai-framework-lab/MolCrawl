@@ -897,7 +897,7 @@ if __name__ == "__main__":
 
                     # Cleanup old checkpoints AFTER wandb upload.
                     # Protect best-val step from FIFO eviction (charter § 1.1
-                    # comparability rule: subset比較は best-val ckpt で評価).
+                    # comparability rule: subsets are compared on the best-val ckpt).
                     cleanup_old_checkpoints(out_dir, max_checkpoints, protect_step=best_val_step)
 
                 # Also save legacy ckpt.pt for backward compatibility (or best model)

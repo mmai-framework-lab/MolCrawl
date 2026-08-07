@@ -1,6 +1,6 @@
 """Held-out evaluator for ChEMBL scaffold splits.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - length-stratified subsample (replaces ``df.head(max_examples)`` so
   the held-out evaluation no longer over-represents short / early-id

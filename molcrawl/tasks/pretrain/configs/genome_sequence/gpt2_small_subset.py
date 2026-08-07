@@ -124,8 +124,8 @@ if _smoke:
     if _smoke_eval:
         eval_interval = int(_smoke_eval)
 
-# Fixed-schedule comparison run (charter §「比較系は early_stopping OFF、
-# compute-matched」).  gpt2/train.py reads this via globals().get.
+# Fixed-schedule comparison run (charter §: comparison runs use
+# early_stopping OFF and are compute-matched).  gpt2/train.py reads this via globals().get.
 early_stopping = False
 
 # eval_interval defaults to 1000 for production runs (charter § compute-

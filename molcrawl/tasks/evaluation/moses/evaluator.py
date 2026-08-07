@@ -2,7 +2,7 @@
 
 The MOSES protocol asks the model to free-generate ``num_samples``
 SMILES and reports validity / uniqueness / novelty / internal_diversity
-against a reference set. The 足固め upgrade adds:
+against a reference set. The consolidation upgrade adds:
 
 - reproducible sampling via a torch seed before the adapter call
 - bootstrap 95 % CIs over validity / uniqueness / novelty

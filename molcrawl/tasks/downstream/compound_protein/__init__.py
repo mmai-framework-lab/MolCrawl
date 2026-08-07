@@ -13,7 +13,7 @@ will host:
 - a shared evaluation harness for binding prediction, target retrieval,
   binding affinity, novelty, and cross-family generalization
 
-Implementation is tracked by the plan in CLAUDE.md § 実装プロセス and is
+Implementation is tracked by the plan in CLAUDE.md § Implementation process and is
 intentionally deferred to a later PR; this skeleton exists so the
 ``tasks/downstream`` layer has a concrete shape before the first
 content lands.

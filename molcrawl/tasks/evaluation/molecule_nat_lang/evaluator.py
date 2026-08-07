@@ -1,6 +1,6 @@
 """Evaluator for molecule-natural-language pair scoring.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - combined-length-stratified subsample (replaces df.head(max_examples))
 - bootstrap 95 % CI on perplexity

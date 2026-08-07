@@ -2,7 +2,7 @@
 
 Implements the standard ProteinGym protocol — score =
 LL(mutant) − LL(wildtype), correlated against the experimental DMS
-score. The足固め upgrade promotes the continuous ranking metrics
+score. The consolidation upgrade promotes the continuous ranking metrics
 (Spearman / Pearson) to primary and adds bootstrap 95 % CIs,
 per-class (functional / non-functional) score-distribution
 diagnostics, and a per-variant prediction dump (JSONL +

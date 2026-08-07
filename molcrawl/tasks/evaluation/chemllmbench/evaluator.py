@@ -1,6 +1,6 @@
 """ChemLLMBench evaluator - one sub-task per run.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - reproducible random subsample (replaces ``examples[:max_examples]``)
 - per-prompt predictions log (jsonl + correct/wrong narrative TXT)

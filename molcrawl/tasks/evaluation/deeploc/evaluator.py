@@ -1,6 +1,6 @@
 """DeepLoc 2.0 subcellular localisation evaluator.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - class-balanced subsample (replaces ``df.head(max_examples)`` so
   rare classes — Peroxisome, Lysosome — survive into the test split)

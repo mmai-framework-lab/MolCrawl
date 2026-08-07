@@ -12,7 +12,7 @@ top of the RNA encoder. The evaluator wires that here:
 4. Report mean per-perturbation Spearman / Pearson on the held-out
    test split, with bootstrap CIs.
 
-足固め upgrade adds:
+consolidation upgrade adds:
 
 - delta-strength-aware subsample (replaces ``df.head(max_examples)``
   so the train+test slice contains both strong and weak KO effects).
