@@ -187,6 +187,12 @@ if __name__ == "__main__":
     dataset_dir = ""
     learning_rate = 6e-6
     weight_decay = 1e-2  # BERT default (production spec 2026-07-08). Applied 2D-only via _WeightDecayNoEmbedTrainer.
+    # AdamW betas. (0.9, 0.95) is the GPT-2-side production spec (2026-07-08) that
+    # was carried over to BERT; MLM's own literature uses 0.999. Declared here so
+    # the configurator accepts a per-config / CLI override — the default is
+    # unchanged, so no existing run moves without an explicit opt-in.
+    adam_beta1 = 0.9
+    adam_beta2 = 0.95
     warmup_steps = 200
     max_steps = 60000
     batch_size = 10
@@ -404,8 +410,13 @@ if __name__ == "__main__":
         data_seed=seed,
         # AdamW optimizer settings — production spec (2026-07-08):
         # betas = (0.9, 0.95) instead of HF default (0.9, 0.999).
-        adam_beta1=0.9,
-        adam_beta2=0.95,
+        # 2026-08-06: made config-overridable while investigating the MLM stall.
+        # beta2=0.95 comes from the GPT-2 side; MLM's own literature uses 0.999,
+        # and a CPU A/B on 64 packed compounds blocks measured 0.815 (0.999) vs
+        # 1.293 (0.95) after 400 steps at lr 1e-3. Default is unchanged so no
+        # existing run's behaviour moves without an explicit config opt-in.
+        adam_beta1=float(globals().get("adam_beta1", 0.9)),
+        adam_beta2=float(globals().get("adam_beta2", 0.95)),
         max_grad_norm=1.0,  # grad clip = 1.0 (production spec)
         report_to="none",  # Disable wandb integration to prevent artifact bloat
         # charter § 1.1 comparability rule: subset比較は best-val ckpt で評価
@@ -654,7 +665,16 @@ if __name__ == "__main__":
     # and embeddings all get wd=0. Subclass Trainer to also drop embedding names.
     import torch as _torch
 
-    class _WeightDecayNoEmbedTrainer(Trainer):
+    # Split the MLM eval by position type (investigation of 2026-08-06). A single
+    # eval_loss is diluted by the 10% of positions whose answer is visible in the
+    # input, which hid a run that had learned no context at all. Judge on
+    # eval_loss_mask instead.
+    from molcrawl.models.bert._mlm_diagnostics import (
+        CollapseDetectionCallback,
+        MlmBreakdownMixin,
+    )
+
+    class _WeightDecayNoEmbedTrainer(MlmBreakdownMixin, Trainer):
         """Trainer that additionally excludes nn.Embedding.weight from weight decay."""
 
         def get_decay_parameter_names(self, model):
@@ -666,6 +686,22 @@ if __name__ == "__main__":
                         embedding_names.add(f"{module_name}.{pn}" if module_name else pn)
             return [n for n in names if n not in embedding_names]
 
+    # A collapsed run never recovers, so stop it once detected. The threshold is
+    # modality-specific (2.395 for compounds packed); stopping only engages when a
+    # config sets ``degenerate_loss_threshold``.
+    _degenerate_threshold = globals().get("degenerate_loss_threshold", None)
+    callbacks.append(
+        CollapseDetectionCallback(
+            degenerate_threshold=_degenerate_threshold,
+            patience=int(globals().get("degenerate_patience", 3)),
+        )
+    )
+    if _degenerate_threshold:
+        print(
+            f"Collapse detection on: stop once eval_loss_mask stays above "
+            f"{_degenerate_threshold}"
+        )
+
     trainer = _WeightDecayNoEmbedTrainer(
         model=model,
         args=training_args,
@@ -674,6 +710,15 @@ if __name__ == "__main__":
         eval_dataset=test_dataset,
         callbacks=callbacks if callbacks else None,
     )
+    # The breakdown needs the [MASK] id; without it the extra metrics are skipped.
+    # actual_tokenizer is absent when a config brings its own collator, so fall
+    # back to the config's tokenizer and then to its inner tokenizer.
+    _tok_for_mask = globals().get("actual_tokenizer") or globals().get("tokenizer")
+    if _tok_for_mask is not None and not hasattr(_tok_for_mask, "mask_token_id"):
+        _tok_for_mask = getattr(_tok_for_mask, "tokenizer", None)
+    trainer.mlm_mask_token_id = getattr(_tok_for_mask, "mask_token_id", None)
+    if trainer.mlm_mask_token_id is None:
+        print("WARNING: no mask_token_id found — the eval breakdown (eval_loss_mask) is disabled")
 
     # Resume from checkpoint by default if available
     # Check if checkpoints exist in output directory
