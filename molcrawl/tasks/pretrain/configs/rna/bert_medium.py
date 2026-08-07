@@ -2,8 +2,6 @@
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
 
-from typing import Dict, List
-
 # config for training GPT-2 (124M) down to very nice loss of ~2.85 on 1 node of 8X A100 40GB
 # launch as the following (e.g. in a screen session) and wait ~5 days:
 # $ torchrun --standalone --nproc_per_node=8 train.py config/train_gpt2.py
@@ -34,7 +32,12 @@ tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 
-max_steps: int  = 49366
+# 3 epochs of the train split at global batch 2560:
+# floor(3 * 34,407,040 train blocks / 2560) = 40,320 steps.
+# NOTE: unlike GPT-2/nanoGPT, HF Trainer's effective batch is GPU-count-dependent
+# (per_device 8 * grad_accum 80 * world_size), so 2560 only holds on 4 GPUs.
+# Running on a different GPU count requires rescaling gradient_accumulation_steps.
+max_steps: int = 40320
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # early_stopping_patience: int = 3  # N/A when early_stopping = Falsevement
 model_size: str = "medium"  # Choose between small, medium or large
@@ -50,32 +53,13 @@ batch_size: int = 8
 per_device_eval_batch_size: int = 8
 gradient_accumulation_steps: int = 5 * 16
 
-# Parallel preprocessing for attention_mask creation
-preprocess_num_proc: int = 18
-
-
-# Add preprocessing function to create attention_mask
-def preprocess_function(examples: Dict[str, List[List[int]]]) -> Dict[str, List[List[int]]]:
-    """Add attention_mask and token_type_ids to the dataset"""
-    if "input_ids" in examples:
-        # Create attention_mask: 1 for real tokens, 0 for padding
-        attention_masks: List[List[int]] = []
-        token_type_ids_list: List[List[int]] = []
-        for input_ids in examples["input_ids"]:
-            # Assuming pad_token_id is tokenizer.pad_token_id or 0
-            pad_token_id: int = (
-                tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
-            )
-            attention_mask = [1 if token_id != pad_token_id else 0 for token_id in input_ids]
-            attention_masks.append(attention_mask)
-            # Add token_type_ids (all zeros for single segment)
-            token_type_ids_list.append([0] * len(input_ids))
-
-        examples["attention_mask"] = attention_masks
-        examples["token_type_ids"] = token_type_ids_list
-
-    return examples
-
+# No preprocess_function here on purpose. training_ready packs cells end-to-end and
+# truncates to whole 1024-token blocks, so the data contains no padding at all —
+# attention_mask would be all ones and token_type_ids all zeros, exactly what the
+# model assumes when they are absent. The old preprocess_function derived the mask
+# from `token_id != 0`, which instead zeroed out the EOS separators (id 0, 0.051%
+# of positions), hiding them from attention, and it ran a .map() over all
+# 34,407,040 train rows to do it.
 
 # Special Tokens
 eos_token: int = 0  # eos

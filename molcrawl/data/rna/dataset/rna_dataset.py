@@ -4,7 +4,27 @@ RNA Transcriptome Dataset
 
 import os
 import json
+import pickle
 from pathlib import Path
+
+
+def load_gene_vocab(vocab_file):
+    """Load a {gene: token_id} mapping from a .json or .pkl vocabulary file.
+
+    The Geneformer token space the RNA corpus is tokenized in ships as
+    ``geneformer/token_dictionary.pkl``; the CellxGene census gene-symbol list
+    written next to the data is a ``.json``. Both are valid inputs, so accept
+    either rather than forcing a derived copy in the other format.
+    """
+    if vocab_file is None:
+        raise ValueError("vocab_file is required; got None")
+    if not os.path.exists(vocab_file):
+        raise FileNotFoundError(f"Gene vocabulary not found at {vocab_file}")
+    if str(vocab_file).endswith(".pkl"):
+        with open(vocab_file, "rb") as f:
+            return pickle.load(f)
+    with open(vocab_file, "r") as f:
+        return json.load(f)
 
 
 class RNADataset:
@@ -22,12 +42,7 @@ class RNADataset:
         # models with wte=Embedding(3, n_embd) that died at the first forward
         # pass once the loader fed token ids drawn from the real ~25k-entry
         # vocabulary — fail loudly instead.
-        if vocab_file is None:
-            raise ValueError("RNADataset requires vocab_file; got None")
-        if not os.path.exists(vocab_file):
-            raise FileNotFoundError(f"Gene vocabulary not found at {vocab_file}")
-        with open(vocab_file, "r") as f:
-            self.vocab = json.load(f)
+        self.vocab = load_gene_vocab(vocab_file)
         self.vocab_size = len(self.vocab)
 
         # Load dataset - direct arrow file reading to bypass metadata issues
