@@ -1,0 +1,186 @@
+"""Diagnostics for MLM pretraining.
+
+Background (investigation of 2026-08-06):
+
+``DataCollatorForLanguageModeling`` replaces 80% of the selected positions with
+``[MASK]``, 10% with a random token, and leaves the remaining 10% **unchanged**.
+That last 10% has the answer sitting in the input, so the model can copy it —
+measured at loss 0.029 on a run whose ``[MASK]`` positions scored 2.453. A single
+blended ``eval_loss`` therefore reads 2.13 for a model that has learned almost no
+context, which is how a total training failure went unnoticed.
+
+Scoring is split by position type here, and a run is judged on the ``[MASK]``
+positions alone. Reference points for the compounds packed data:
+
+    unigram 2.635 / degenerate (unigram + copy) 2.395 / left-neighbour table 2.066
+
+A run whose ``[MASK]`` loss never drops below the degenerate 2.395 has not learned
+context and can be treated as failed.
+
+Collapse into that degenerate solution is also **unrecoverable**: lowering the
+learning rate, redoing warmup and rebuilding the optimizer for 800 further steps
+moved the loss by 0.0005. A collapsed run only burns GPU time, so it is stopped.
+"""
+
+from __future__ import annotations
+
+import torch
+
+try:
+    from transformers import TrainerCallback
+except ImportError:  # documentation-only environments
+    TrainerCallback = object  # type: ignore[assignment,misc]
+
+IGNORE_INDEX = -100
+
+
+def split_mlm_loss(logits, labels, input_ids, mask_token_id):
+    """Aggregate the MLM loss separately for each type of scored position.
+
+    Returns ``(sums, counts)``, both keyed by ``"mask"`` / ``"copy"`` / ``"random"``.
+    Sums and counts rather than means, so distributed ranks can be combined.
+
+    - ``mask``   : input is ``[MASK]``; the model must infer from context.
+    - ``copy``   : the answer is still in the input (the 10% left unchanged).
+    - ``random`` : the input was replaced with a random token.
+    """
+    scored = labels != IGNORE_INDEX
+    if not bool(scored.any()):
+        zero = {k: 0.0 for k in ("mask", "copy", "random")}
+        return zero, {k: 0 for k in ("mask", "copy", "random")}
+
+    flat_logits = logits[scored]
+    flat_labels = labels[scored]
+    flat_inputs = input_ids[scored]
+    ce = torch.nn.functional.cross_entropy(
+        flat_logits.float(), flat_labels, reduction="none"
+    )
+
+    is_mask = flat_inputs == mask_token_id
+    is_copy = (~is_mask) & (flat_inputs == flat_labels)
+    is_random = (~is_mask) & (flat_inputs != flat_labels)
+
+    sums, counts = {}, {}
+    for name, sel in (("mask", is_mask), ("copy", is_copy), ("random", is_random)):
+        sums[name] = float(ce[sel].sum()) if bool(sel.any()) else 0.0
+        counts[name] = int(sel.sum())
+    return sums, counts
+
+
+class MlmBreakdownMixin:
+    """Trainer mixin that reports the per-position-type eval breakdown.
+
+    ``prediction_step`` accumulates the split losses and ``evaluate`` adds
+    ``eval_loss_mask`` / ``eval_loss_copy`` / ``eval_loss_random`` to the returned
+    metrics and to the logs. ``eval_loss`` itself is left as HF computes it, so
+    comparisons with earlier runs still hold.
+    """
+
+    mlm_mask_token_id: int | None = None
+
+    def _reset_mlm_breakdown(self):
+        self._mlm_sums = {k: 0.0 for k in ("mask", "copy", "random")}
+        self._mlm_counts = {k: 0 for k in ("mask", "copy", "random")}
+
+    def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+        out = super().prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+        if self.mlm_mask_token_id is None:
+            return out
+        labels = inputs.get("labels")
+        input_ids = inputs.get("input_ids")
+        if labels is None or input_ids is None:
+            return out
+        if not hasattr(self, "_mlm_sums"):
+            self._reset_mlm_breakdown()
+        with torch.no_grad():
+            logits = model(
+                input_ids=input_ids, attention_mask=inputs.get("attention_mask")
+            ).logits
+            sums, counts = split_mlm_loss(logits, labels, input_ids, self.mlm_mask_token_id)
+        for k in sums:
+            self._mlm_sums[k] += sums[k]
+            self._mlm_counts[k] += counts[k]
+        return out
+
+    def evaluate(self, *args, **kwargs):
+        self._reset_mlm_breakdown()
+        metrics = super().evaluate(*args, **kwargs)
+        prefix = kwargs.get("metric_key_prefix", "eval")
+        extra = {}
+        for k in ("mask", "copy", "random"):
+            n = self._mlm_counts.get(k, 0)
+            if n:
+                extra[f"{prefix}_loss_{k}"] = self._mlm_sums[k] / n
+        if extra:
+            metrics.update(extra)
+            self.log(extra)
+        return metrics
+
+
+class CollapseDetectionCallback(TrainerCallback):
+    """Detect collapse into the degenerate solution and stop training.
+
+    Collapse is unrecoverable, so continuing only wastes compute. Two signals:
+
+    1. The first logged ``grad_norm`` exceeding ``max_grad_norm`` by
+       ``grad_norm_factor`` — the signature of a warmup-starved start (6.4 on the
+       run that collapsed, 2.5 on the one that survived). This only **warns**:
+       deep models can start large and still recover.
+    2. ``eval_loss_mask`` staying above the degenerate threshold for ``patience``
+       consecutive evaluations. This **stops** training.
+
+    ``degenerate_threshold`` is modality-specific — roughly the unigram entropy of
+    the maskable tokens scaled by the non-copy fraction; 2.395 for compounds
+    packed. Stopping is disabled when it is not set.
+    """
+
+    def __init__(self, degenerate_threshold=None, patience=3, grad_norm_factor=3.0):
+        self.degenerate_threshold = degenerate_threshold
+        self.patience = patience
+        self.grad_norm_factor = grad_norm_factor
+        self._over = 0
+        self._warned_grad = False
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs is None or self._warned_grad:
+            return control
+        gn = logs.get("grad_norm")
+        if gn is None:
+            return control
+        self._warned_grad = True
+        limit = args.max_grad_norm * self.grad_norm_factor
+        if gn > limit:
+            print(
+                f"WARNING: first grad_norm={gn:.3f} exceeds clip={args.max_grad_norm} "
+                f"by more than {self.grad_norm_factor}x. That is what a warmup-starved "
+                f"start looks like (6.4 on the run that collapsed, 2.5 on the one that "
+                f"survived) — watch eval_loss_mask.",
+                flush=True,
+            )
+        return control
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        if not self.degenerate_threshold or not metrics:
+            return control
+        value = metrics.get("eval_loss_mask")
+        if value is None:
+            return control
+        if value > self.degenerate_threshold:
+            self._over += 1
+            print(
+                f"WARNING: eval_loss_mask={value:.4f} is above the degenerate "
+                f"threshold {self.degenerate_threshold} ({self._over}/{self.patience})",
+                flush=True,
+            )
+            if self._over >= self.patience:
+                print(
+                    "STOPPING: the run has collapsed into the degenerate solution. "
+                    "No recovery from this state has been observed — lowering the LR, "
+                    "redoing warmup and rebuilding the optimizer for 800 steps moved "
+                    "the loss by 0.0005.",
+                    flush=True,
+                )
+                control.should_training_stop = True
+        else:
+            self._over = 0
+        return control
