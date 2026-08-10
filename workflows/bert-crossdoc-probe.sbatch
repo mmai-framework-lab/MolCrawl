@@ -25,6 +25,9 @@ set -e
 : "${TAG:?}" "${DATA:?}" "${STEPS:?}" "${WARM:?}" "${EVERY:?}"
 : "${LEARNING_SOURCE_DIR:?export LEARNING_SOURCE_DIR before submitting}"
 LR="${LR:-1e-4}"
+MAXLEN="${MAXLEN:-128}"
+# Extra flags, e.g. EXTRA="--document_masking=True" to confine attention per document.
+EXTRA="${EXTRA:-}"
 TORCHRUN="${TORCHRUN:-torchrun}"
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
 OUT="${OUT_DIR:-${LEARNING_SOURCE_DIR}/runs/crossdoc-${TAG}}"
@@ -35,12 +38,13 @@ export PYTHONUNBUFFERED=1 WANDB_MODE=offline HF_HUB_OFFLINE=1 HF_DATASETS_OFFLIN
 cd "${REPO}"; mkdir -p "${OUT}" "${HF_DATASETS_CACHE}" workflows/slurm-logs
 echo "=== crossdoc probe [${TAG}] ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "data=${DATA}"
-echo "seq 128 | LR=${LR} | warmup=${WARM} | steps=${STEPS} | global batch 8x80x4 = 2560"
+echo "extra=${EXTRA:-none}"
+echo "seq ${MAXLEN} | LR=${LR} | warmup=${WARM} | steps=${STEPS} | global batch 8x80x4 = 2560"
 echo "code: $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 "${TORCHRUN}" --standalone --nproc_per_node=4 \
   molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py \
-  --model_path="${OUT}" --dataset_dir="${DATA}" --max_length=128 \
+  --model_path="${OUT}" --dataset_dir="${DATA}" --max_length=${MAXLEN} \
   --learning_rate=${LR} --warmup_steps=${WARM} --max_steps=${STEPS} \
-  --log_interval=${EVERY} --save_steps=${STEPS}
+  --log_interval=${EVERY} --save_steps=${STEPS} ${EXTRA}
 echo "=== rc=$? @ $(date -Is) ==="
