@@ -43,6 +43,41 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="molcrawl.data.rna.dataset.rna_dataset.load_gene_vocab"><code class="name flex">
+<span>def <span class="ident">load_gene_vocab</span></span>(<span>vocab_file)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_gene_vocab(vocab_file):
+    &#34;&#34;&#34;Load a {gene: token_id} mapping from a .json or .pkl vocabulary file.
+
+    The Geneformer token space the RNA corpus is tokenized in ships as
+    ``geneformer/token_dictionary.pkl``; the CellxGene census gene-symbol list
+    written next to the data is a ``.json``. Both are valid inputs, so accept
+    either rather than forcing a derived copy in the other format.
+    &#34;&#34;&#34;
+    if vocab_file is None:
+        raise ValueError(&#34;vocab_file is required; got None&#34;)
+    if not os.path.exists(vocab_file):
+        raise FileNotFoundError(f&#34;Gene vocabulary not found at {vocab_file}&#34;)
+    if str(vocab_file).endswith(&#34;.pkl&#34;):
+        with open(vocab_file, &#34;rb&#34;) as f:
+            return pickle.load(f)
+    with open(vocab_file, &#34;r&#34;) as f:
+        return json.load(f)</code></pre>
+</details>
+<div class="desc"><p>Load a {gene: token_id} mapping from a .json or .pkl vocabulary file.</p>
+<p>The Geneformer token space the RNA corpus is tokenized in ships as
+<code>geneformer/token_dictionary.pkl</code>; the CellxGene census gene-symbol list
+written next to the data is a <code>.json</code>. Both are valid inputs, so accept
+either rather than forcing a derived copy in the other format.</p></div>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -71,12 +106,7 @@ el.replaceWith(d);
         # models with wte=Embedding(3, n_embd) that died at the first forward
         # pass once the loader fed token ids drawn from the real ~25k-entry
         # vocabulary — fail loudly instead.
-        if vocab_file is None:
-            raise ValueError(&#34;RNADataset requires vocab_file; got None&#34;)
-        if not os.path.exists(vocab_file):
-            raise FileNotFoundError(f&#34;Gene vocabulary not found at {vocab_file}&#34;)
-        with open(vocab_file, &#34;r&#34;) as f:
-            self.vocab = json.load(f)
+        self.vocab = load_gene_vocab(vocab_file)
         self.vocab_size = len(self.vocab)
 
         # Load dataset - direct arrow file reading to bypass metadata issues
@@ -239,6 +269,11 @@ el.replaceWith(d);
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="molcrawl.data.rna.dataset" href="index.html">molcrawl.data.rna.dataset</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.data.rna.dataset.rna_dataset.load_gene_vocab" href="#molcrawl.data.rna.dataset.rna_dataset.load_gene_vocab">load_gene_vocab</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
