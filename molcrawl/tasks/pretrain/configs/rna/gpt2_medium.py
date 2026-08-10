@@ -1,7 +1,7 @@
 import os
 
 
-from molcrawl.core.paths import CELLXGENE_DATASET_DIR, RNA_DATASET_DIR, get_gpt2_output_path
+from molcrawl.core.paths import CELLXGENE_DATASET_DIR, PROJECT_ROOT, get_gpt2_output_path
 from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 # Medium-Sized GPT2 Model
@@ -18,16 +18,19 @@ tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("rna", "medium")
 out_dir = get_gpt2_output_path("rna", "medium")
 
-# these make the total batch size be ~0.5M
-# 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 12
+# Effective global batch = 2560 sequences (spec; same value as protein/genome/
+# compounds so the modalities stay compute-matched). For GPT-2/nanoGPT the
+# effective batch = batch_size * gradient_accumulation_steps and is GPU-count-
+# independent (train.py does grad_accum //= world_size). 16 * 160 = 2560.
+batch_size = 16
 block_size = 1024
-gradient_accumulation_steps = 5 * 8
+gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
-# this makes total number of tokens be 300B
-max_iters = 65821
-lr_decay_iters = 65821
-warmup_iters = 1316  # how many steps to warm up for
+# 3 epochs of the train split at global batch 2560:
+# floor(3 * 34,407,040 train blocks / 2560) = 40,320 iters (~105.7B tokens processed).
+max_iters = 40320
+lr_decay_iters = 40320
+warmup_iters = 806  # ~2% of max_iters (compounds convention); < max_iters so LR reaches peak
 learning_rate = 0.0003  # max learning rate
 min_lr = 3e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
@@ -56,7 +59,14 @@ dataset = "rna"
 
 # RNA specific parameters
 rna_data_dir = CELLXGENE_DATASET_DIR
-rna_vocab_file = os.path.join(RNA_DATASET_DIR, "gene_vocab.json")
+# Geneformer token space (25,426: <pad>=0, <mask>=1, then Ensembl gene IDs) — the
+# vocabulary training_ready is actually tokenized in (verified max token id 25,401).
+# NOT rna/gene_vocab.json, which is the CellxGene census gene-symbol list (60,664,
+# written for stats only); train.py derives the model vocab_size from this file via
+# RNADataset, so pointing at the census list built GPT-2 with 58% unreachable rows.
+rna_vocab_file = os.path.join(
+    PROJECT_ROOT, "molcrawl", "data", "rna", "dataset", "geneformer", "token_dictionary.pkl"
+)
 
 dataset_params = {"dataset_dir": CELLXGENE_DATASET_DIR}
 
