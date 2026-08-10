@@ -388,6 +388,26 @@ if __name__ == "__main__":
     else:
         print("⏰ Early stopping disabled")
 
+    # Resolve compilation before building TrainingArguments. HF turns compilation
+    # on whenever a backend (or mode) is set at all:
+    #     if (torch_compile_mode is not None or torch_compile_backend is not None) \
+    #             and not torch_compile: torch_compile = True
+    # so passing `str(globals().get("torch_compile_backend", "inductor"))`
+    # unconditionally -- as this did from 2026-06-25 -- always produced a non-None
+    # string and forced compilation on. The `torch_compile=False` default below it
+    # was dead, and BERT compiled with inductor on every run of every modality,
+    # with no way to turn it off from a config.
+    #
+    # Keep the backend None unless compilation is actually asked for, so the
+    # declared default is honoured and `torch_compile=True` remains the opt-in.
+    _torch_compile = bool(globals().get("torch_compile", False))
+    _torch_compile_backend = globals().get("torch_compile_backend")
+    if _torch_compile_backend is None and _torch_compile:
+        _torch_compile_backend = "inductor"
+    if _torch_compile_backend is not None:
+        _torch_compile_backend = str(_torch_compile_backend)
+    print(f"🛠️  torch.compile: {'ON (' + str(_torch_compile_backend) + ')' if _torch_compile else 'OFF'}")
+
     training_args = TrainingArguments(
         output_dir=model_path,  # output directory to where save model checkpoint
         logging_strategy="steps",  # log every `logging_steps`
@@ -457,8 +477,8 @@ if __name__ == "__main__":
         #   ddp_bucket_cap_mb=512            : larger AllReduce buckets
         #                                      (HF default 25 MB) → better
         #                                      8-GPU comms efficiency
-        torch_compile=bool(globals().get("torch_compile", False)),
-        torch_compile_backend=str(globals().get("torch_compile_backend", "inductor")),
+        torch_compile=_torch_compile,
+        torch_compile_backend=_torch_compile_backend,
         optim=str(globals().get("optim", "adamw_torch")),
         dataloader_persistent_workers=bool(globals().get("dataloader_persistent_workers", False)),
         ddp_bucket_cap_mb=int(globals().get("ddp_bucket_cap_mb", 25)),
