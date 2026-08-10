@@ -47,7 +47,22 @@ dataset_dir: str = CELLXGENE_DATASET_DIR
 learning_rate: float  = 0.0001
 weight_decay: float  = 0.01
 log_interval: int = 100
-save_steps: int = 100  # Save checkpoint every 100 steps instead of default 1000
+save_steps: int = 1000  # protein convention; 100 meant ~400 saves over 40,320 steps
+
+# 10 % of max_steps, against the 2 % used elsewhere. The MLM stall investigation
+# (tmp/bert-mlm-stall-report-2026-08-06.md) traces the collapse of deep post-LN
+# BERT to too short a warmup — the original BERT-large took 10,000 steps, and
+# compounds cannot get near that because its whole run is 1,558 steps. RNA's
+# 40,320 steps make a real warmup affordable, so it carries the 10 % arm of that
+# test (boss decision 2026-08-07, Q3/Q6).
+warmup_steps: int = 4032
+
+# Stop a run that never gets below the point where it is only reproducing the
+# token marginal. Modality-specific: RNA's unigram baseline is 9.372 nats,
+# measured held-out over 62M tokens — compounds (2.595) and protein (2.906) are
+# an order of magnitude away, so their thresholds do not transfer. Judged on
+# eval_loss_mask, not the blended eval_loss.
+degenerate_loss_threshold: float = 9.3
 
 batch_size: int = 8
 per_device_eval_batch_size: int = 8
