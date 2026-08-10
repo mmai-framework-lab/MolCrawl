@@ -193,6 +193,12 @@ if __name__ == "__main__":
     # unchanged, so no existing run moves without an explicit opt-in.
     adam_beta1 = 0.9
     adam_beta2 = 0.95
+    # Collapse detection (see models/bert/_mlm_diagnostics). Declared here so the
+    # configurator accepts --degenerate_loss_threshold from the command line;
+    # None keeps the detector inert, which is the behaviour every current config
+    # already has.
+    degenerate_loss_threshold = None
+    degenerate_patience = 3
     warmup_steps = 200
     max_steps = 60000
     batch_size = 10
