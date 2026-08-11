@@ -37,19 +37,14 @@ import sys
 
 import pyarrow.compute as pc
 from datasets import load_from_disk
+from molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout import (
+    HELDOUT_CONTIG_PREFIXES,
+    find_heldout_contigs,
+)
 
 # v2 markers. Pre-v2 exports carry only `input_ids`.
 V2_COLUMNS = ("accession", "contig_id")
 REQUIRED_SPLITS = ("train", "valid", "test")
-
-# Human GRCh38 RefSeq accessions held out from pretraining. These prefixes are
-# globally unique to human, so a prefix match cannot collide with other species.
-EXCLUDED_CONTIG_PREFIXES = {
-    "chr21": "NC_000021",
-    "chr22": "NC_000022",
-    "chrX": "NC_000023",
-    "chrY": "NC_000024",
-}
 
 SUBSETS = (
     ["mammal_centered"]
@@ -95,12 +90,10 @@ def check(source_dir, subset, model, deep=True):
         if not deep:
             continue
         contigs = _distinct_contigs(dsd[name])
-        for label, prefix in sorted(EXCLUDED_CONTIG_PREFIXES.items()):
-            hits = sorted(c for c in contigs if c.startswith(prefix))
-            if hits:
-                failures.append(
-                    f"{path}[{name}]: {label} ({prefix}) present: {hits[:5]}"
-                )
+        for label, hits in find_heldout_contigs(contigs).items():
+            failures.append(
+                f"{path}[{name}]: {label} ({HELDOUT_CONTIG_PREFIXES[label]}) present: {hits[:5]}"
+            )
     return failures
 
 
