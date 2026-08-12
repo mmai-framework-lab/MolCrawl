@@ -193,6 +193,10 @@ if __name__ == "__main__":
     # unchanged, so no existing run moves without an explicit opt-in.
     adam_beta1 = 0.9
     adam_beta2 = 0.95
+    # Confine attention to one document inside a packed block (see
+    # models/_collators/document_masking). Declared so the configurator accepts it.
+    document_masking = False
+    reset_position_ids = True
     # Collapse detection (see models/bert/_mlm_diagnostics). Declared here so the
     # configurator accepts --degenerate_loss_threshold from the command line;
     # None keeps the detector inert, which is the behaviour every current config
@@ -385,6 +389,25 @@ if __name__ == "__main__":
         data_collator = make_mlm_collator(
             actual_tokenizer, ambiguous_tokens=_ambig, mlm_probability=0.2
         )
+
+        # Packed blocks concatenate ~25 unrelated documents, and nothing stops a
+        # masked token from attending across those boundaries. Opt in per config to
+        # confine attention to the document a position belongs to.
+        if bool(globals().get("document_masking", False)):
+            from molcrawl.models._collators import DocumentMaskingCollator
+
+            _sep_id = getattr(actual_tokenizer, "sep_token_id", None)
+            if _sep_id is None:
+                raise ValueError(
+                    "document_masking=True needs the tokenizer to expose sep_token_id "
+                    "(the separator packing wrote between documents)."
+                )
+            data_collator = DocumentMaskingCollator(
+                data_collator,
+                separator_id=_sep_id,
+                reset_position_ids=bool(globals().get("reset_position_ids", True)),
+            )
+            print(f"Document masking on: attention confined per document (separator id {_sep_id})")
 
     # Early stopping configuration
     early_stopping = globals().get("early_stopping", True)  # Enable by default

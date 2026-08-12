@@ -1,5 +1,11 @@
 """Shared data collators for MolCrawl pretraining."""
 
+from molcrawl.models._collators.document_masking import (
+    DocumentMaskingCollator,
+    document_attention_mask,
+    document_ids,
+    document_position_ids,
+)
 from molcrawl.models._collators.ambiguity_aware_collator import (
     GENOME_AMBIGUOUS_TOKENS,
     PROTEIN_AMBIGUOUS_TOKENS,
@@ -12,6 +18,10 @@ from molcrawl.models._collators.ambiguity_aware_collator import (
 )
 
 __all__ = [
+    "DocumentMaskingCollator",
+    "document_attention_mask",
+    "document_ids",
+    "document_position_ids",
     "GENOME_AMBIGUOUS_TOKENS",
     "PROTEIN_AMBIGUOUS_TOKENS",
     "AmbiguityAwareMLMCollator",
