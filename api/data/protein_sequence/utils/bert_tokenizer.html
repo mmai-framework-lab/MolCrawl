@@ -98,7 +98,13 @@ Wrap the ESM tokenizer in a format compatible with BERT learning</p>
         # Ensure pad_token is set for BERT compatibility
         if not hasattr(self, &#34;pad_token&#34;) or self.pad_token is None:
             self.pad_token = self.unk_token
-            self.pad_token_id = self.unk_token_id</code></pre>
+            self.pad_token_id = self.unk_token_id
+        # The packing pipeline writes &lt;eos&gt; between concatenated proteins in a 1024
+        # block. Expose it as sep_token so document_masking can locate per-document
+        # boundaries (it requires tokenizer.sep_token_id). Harmless otherwise: the
+        # separator is only consumed by the DocumentMaskingCollator.
+        if getattr(self, &#34;sep_token&#34;, None) is None and getattr(self, &#34;eos_token&#34;, None) is not None:
+            self.sep_token = self.eos_token</code></pre>
 </details>
 <div class="desc"><p>ESM tokenizer modified for BERT training compatibility</p>
 <p>This class wraps the original EsmSequenceTokenizer to make it compatible
