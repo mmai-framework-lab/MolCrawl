@@ -24,6 +24,10 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 SUBSET="${1:?usage: submit-genome-chain.sh <subset> [links] [micro_batch] [grad_accum]}"
+
+# Same fast fail as submit-genome-production.sh: catch a missing corpus root
+# before queueing links that would each abort on startup.
+: "${GENOME_SOURCE_ROOT:?set GENOME_SOURCE_ROOT to the learning_source root holding genome_sequence/}"
 LINKS="${2:-3}"
 MB="${3:-}"
 GA="${4:-}"
