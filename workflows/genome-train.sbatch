@@ -71,6 +71,18 @@ if [ "${STAGE}" = "1" ]; then
     DST="${LOCAL_ROOT}/genome_sequence/${GENOME_SUBSET}"
     echo "=== staging ${SPLIT} to local NVMe ==="
     mkdir -p "${DST}"
+
+    # Pointing LEARNING_SOURCE_DIR at the staged copy moves every path derived
+    # from it, including the tokenizer's. The config builds that on demand when
+    # missing, so on a fresh local root all four ranks race to create the same
+    # files and some lose. Copy the 16 KB tokenizer across so there is nothing
+    # to build. (Observed as four subsets dying ~4 min in while the rest ran:
+    # whether a rank wins the race is timing, which is why it looked random.)
+    for aux in custom_tokenizer_bert_single_nuc; do
+        [ -d "${SRC_ROOT}/genome_sequence/${aux}" ] && \
+            cp -r "${SRC_ROOT}/genome_sequence/${aux}" "${LOCAL_ROOT}/genome_sequence/" || true
+    done
+
     t0=$(date +%s)
     cp -r "${SRC_ROOT}/genome_sequence/${GENOME_SUBSET}/${SPLIT}" "${DST}/" || {
         echo "staging failed; refusing to fall back to Lustre silently"; exit 1; }
