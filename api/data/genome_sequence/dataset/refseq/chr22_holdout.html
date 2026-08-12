@@ -55,6 +55,58 @@ only decides when to use it and stages it into <code>extracted_files/</code>.</p
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.assert_no_heldout_contigs"><code class="name flex">
+<span>def <span class="ident">assert_no_heldout_contigs</span></span>(<span>contig_ids, where='')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def assert_no_heldout_contigs(contig_ids, where=&#34;&#34;):
+    &#34;&#34;&#34;Raise if any held-out human chromosome appears in ``contig_ids``.
+
+    Note this can only speak for data that carries ``contig_id`` at all: exports
+    predating the contig-unit split have no such column, and there the check
+    passes without having verified anything. Establish the schema first (see
+    scripts/verify_genome_training_source.py) rather than relying on this alone.
+    &#34;&#34;&#34;
+    found = find_heldout_contigs(contig_ids)
+    if found:
+        detail = &#34;; &#34;.join(f&#34;{name}: {ids[:5]}&#34; for name, ids in found.items())
+        raise ValueError(f&#34;held-out chromosome(s) present{&#39; in &#39; + where if where else &#39;&#39;} -- {detail}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Raise if any held-out human chromosome appears in <code>contig_ids</code>.</p>
+<p>Note this can only speak for data that carries <code>contig_id</code> at all: exports
+predating the contig-unit split have no such column, and there the check
+passes without having verified anything. Establish the schema first (see
+scripts/verify_genome_training_source.py) rather than relying on this alone.</p></div>
+</dd>
+<dt id="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_heldout_contigs"><code class="name flex">
+<span>def <span class="ident">find_heldout_contigs</span></span>(<span>contig_ids)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_heldout_contigs(contig_ids):
+    &#34;&#34;&#34;Return {chromosome: [matching contig ids]} for held-out chromosomes present.
+
+    Empty means the corpus is clean. Intended as a gate over a prepared split&#39;s
+    ``contig_id`` column, which is why it takes ids rather than a dataset.
+    &#34;&#34;&#34;
+    found = {}
+    for name, prefix in sorted(HELDOUT_CONTIG_PREFIXES.items()):
+        hits = sorted(c for c in contig_ids if str(c).startswith(prefix))
+        if hits:
+            found[name] = hits
+    return found</code></pre>
+</details>
+<div class="desc"><p>Return {chromosome: [matching contig ids]} for held-out chromosomes present.</p>
+<p>Empty means the corpus is clean. Intended as a gate over a prepared split's
+<code>contig_id</code> column, which is why it takes ids rather than a dataset.</p></div>
+</dd>
 <dt id="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_holdout_fasta"><code class="name flex">
 <span>def <span class="ident">find_holdout_fasta</span></span>(<span>holdout_pool_dir: str | pathlib.Path) ‑> pathlib.Path | None</span>
 </code></dt>
@@ -164,6 +216,8 @@ hold-out FASTA is available. Returns the staged path on success.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.assert_no_heldout_contigs" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.assert_no_heldout_contigs">assert_no_heldout_contigs</a></code></li>
+<li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_heldout_contigs" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_heldout_contigs">find_heldout_contigs</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_holdout_fasta" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.find_holdout_fasta">find_holdout_fasta</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.is_chr22_holdout_accession" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.is_chr22_holdout_accession">is_chr22_holdout_accession</a></code></li>
 <li><code><a title="molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.stage_chr22_holdout" href="#molcrawl.data.genome_sequence.dataset.refseq.chr22_holdout.stage_chr22_holdout">stage_chr22_holdout</a></code></li>
