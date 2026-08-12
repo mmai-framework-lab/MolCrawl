@@ -32,8 +32,19 @@ from torch.distributed import destroy_process_group, init_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from molcrawl.core.dataset import PreparedDataset
-from molcrawl.models.gpt2.model import GPT, GPTConfig
+
+# Checkpoints carry RNG state, and numpy's includes arrays that torch >= 2.6
+# refuses to unpickle under its new weights_only=True default. Restore the old
+# default before any resume reads one. See molcrawl/core/torch_compat; the BERT
+# and RoBERTa trainers already do the same.
+from molcrawl.core.torch_compat import enable_full_torch_load
 from molcrawl.data.rna.dataset.rna_dataset import RNADataset
+from molcrawl.models.gpt2.model import GPT, GPTConfig
+
+# Call after the imports, not between them, so nothing here trips E402. Order
+# does not matter beyond running before the first torch.load, which happens
+# inside the training entry point far below.
+enable_full_torch_load()
 
 dataset_params: dict[str, object] = {}
 # -----------------------------------------------------------------------------
