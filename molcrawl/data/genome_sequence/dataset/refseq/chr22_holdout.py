@@ -29,7 +29,56 @@ HUMAN_CHR22_ACCESSION = "GCF_000001405.40"
 # no chr22 window survived).
 CHR22_CONTIG_IDS = frozenset({"NC_000022.11"})
 
+# Every human chromosome the downstream evaluation expects to be unseen, not
+# just the one this module can substitute a FASTA for.
+#
+# The two are not the same set, and the difference is worth stating plainly:
+# the FASTA-substitution path below handles chr22 only, because the upstream
+# preprocessing tool emits a `_no_chr22` file and nothing wider. chr21/X/Y are
+# absent from the prepared corpus by a different route, so nothing here enforces
+# them. Verified 2026-08-05: no window from any of the four survives in either
+# the intermediate parquet or the training_ready splits of all 21 subsets.
+#
+# Matched by prefix rather than exact id so an assembly patch bump (the trailing
+# version, e.g. NC_000022.11 -> .12) cannot silently slip past the check. These
+# accessions are unique to human, so a prefix cannot collide with another
+# species.
+HELDOUT_CONTIG_PREFIXES = {
+    "chr21": "NC_000021",
+    "chr22": "NC_000022",
+    "chrX": "NC_000023",
+    "chrY": "NC_000024",
+}
+
 _HOLDOUT_MARKER = "_no_chr22"
+
+
+def find_heldout_contigs(contig_ids):
+    """Return {chromosome: [matching contig ids]} for held-out chromosomes present.
+
+    Empty means the corpus is clean. Intended as a gate over a prepared split's
+    ``contig_id`` column, which is why it takes ids rather than a dataset.
+    """
+    found = {}
+    for name, prefix in sorted(HELDOUT_CONTIG_PREFIXES.items()):
+        hits = sorted(c for c in contig_ids if str(c).startswith(prefix))
+        if hits:
+            found[name] = hits
+    return found
+
+
+def assert_no_heldout_contigs(contig_ids, where=""):
+    """Raise if any held-out human chromosome appears in ``contig_ids``.
+
+    Note this can only speak for data that carries ``contig_id`` at all: exports
+    predating the contig-unit split have no such column, and there the check
+    passes without having verified anything. Establish the schema first (see
+    scripts/verify_genome_training_source.py) rather than relying on this alone.
+    """
+    found = find_heldout_contigs(contig_ids)
+    if found:
+        detail = "; ".join(f"{name}: {ids[:5]}" for name, ids in found.items())
+        raise ValueError(f"held-out chromosome(s) present{' in ' + where if where else ''} -- {detail}")
 
 
 def is_chr22_holdout_accession(accession: str) -> bool:
