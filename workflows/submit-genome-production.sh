@@ -69,8 +69,20 @@ submitted=0
 skipped=0
 for subset in "${SUBSETS[@]}"; do
     out="learning_source_genome_runs/${MODEL}-small-${subset}"
+    job="mc-gen-${MODEL}-${subset}"
+
     if [ -f "${out}/.run_complete" ]; then
         echo "  [done]  ${subset}  ($(cat "${out}/.run_complete"))"
+        skipped=$((skipped + 1))
+        continue
+    fi
+
+    # Skip what is already queued or running. Two jobs for one subset would
+    # write the same out_dir and corrupt each other's checkpoints, so this is a
+    # correctness guard, not just a courtesy -- and it is what makes rerunning
+    # the sweep to pick up stragglers safe while others are still going.
+    if running=$(squeue -h -u "$(id -un)" -n "${job}" -o "%i" 2>/dev/null) && [ -n "${running}" ]; then
+        echo "  [busy]  ${subset}  (job $(echo "${running}" | tr '\n' ' ' | sed 's/ $//'))"
         skipped=$((skipped + 1))
         continue
     fi
