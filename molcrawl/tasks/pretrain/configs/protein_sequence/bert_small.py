@@ -69,6 +69,13 @@ data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_p
 # Training configuration
 max_steps = 11177  # 3 epochs of train at global batch 2560 = floor(3*9,538,464/2560)
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
+# MLM collapse fix: packing concatenates ~3-5 proteins per 1024 block; without
+# masking, attention leaks across those documents. Confine attention per document.
+document_masking = True
+# Collapse detector threshold: protein unigram baseline (H=2.894 nats over 22 amino
+# acids) scaled by the non-copy fraction (~0.909, matching compounds' 2.635->2.395).
+# Provisional; to be confirmed against the compounds session's exact method.
+degenerate_loss_threshold = 2.63
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("protein_sequence", model_size)
 max_length = 1024

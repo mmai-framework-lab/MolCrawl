@@ -23,6 +23,12 @@ class BertProteinSequenceTokenizer(EsmSequenceTokenizer):
         if not hasattr(self, "pad_token") or self.pad_token is None:
             self.pad_token = self.unk_token
             self.pad_token_id = self.unk_token_id
+        # The packing pipeline writes <eos> between concatenated proteins in a 1024
+        # block. Expose it as sep_token so document_masking can locate per-document
+        # boundaries (it requires tokenizer.sep_token_id). Harmless otherwise: the
+        # separator is only consumed by the DocumentMaskingCollator.
+        if getattr(self, "sep_token", None) is None and getattr(self, "eos_token", None) is not None:
+            self.sep_token = self.eos_token
 
 
 def create_bert_protein_tokenizer(**kwargs) -> BertProteinSequenceTokenizer:
