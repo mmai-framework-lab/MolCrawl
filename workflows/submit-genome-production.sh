@@ -36,6 +36,13 @@ MODEL="${1:?usage: submit-genome-production.sh <gpt2|bert> [subset ...]}"
 shift || true
 case "${MODEL}" in gpt2|bert) ;; *) echo "model must be gpt2 or bert" >&2; exit 1 ;; esac
 
+# Check the corpus root here rather than letting each job discover it. The jobs
+# do abort on their own, but by then 21 of them have been queued and will fail
+# one after another; catching it once costs nothing and queues nothing.
+: "${GENOME_SOURCE_ROOT:?set GENOME_SOURCE_ROOT to the learning_source root holding genome_sequence/}"
+[ -d "${GENOME_SOURCE_ROOT}/genome_sequence" ] || {
+    echo "GENOME_SOURCE_ROOT=${GENOME_SOURCE_ROOT} has no genome_sequence/ under it" >&2; exit 1; }
+
 ALL_SUBSETS=(
     mammal_centered
     eukaryote_matched_random_seed{1,2,3,4,5,6,7,8,9,10}
