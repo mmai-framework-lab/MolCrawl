@@ -64,6 +64,13 @@ echo "=== schedule pinned to production: warmup=${PROD_WARMUP} decay=${PROD_MAX_
 echo "########## staging to local NVMe ##########"
 mkdir -p "${DST}"
 t0=$(date +%s)
+mkdir -p "${LOCAL_ROOT}/genome_sequence"
+# The config builds the tokenizer on demand when it is missing, and staging
+# repoints LEARNING_SOURCE_DIR, so on a fresh local root all four ranks race to
+# create it. Copy the 16 KB tokenizer across so there is nothing to build.
+for aux in custom_tokenizer_bert_single_nuc; do
+    [ -d "${GENOME_SOURCE_ROOT:?}/genome_sequence/${aux}" ] && cp -r "${GENOME_SOURCE_ROOT:?}/genome_sequence/${aux}" "${LOCAL_ROOT}/genome_sequence/" || true
+done
 cp -r "${SRC}/training_ready_hf_dataset_gpt2" "${DST}/" || { echo "stage failed"; exit 1; }
 echo "=== staged in $(( $(date +%s) - t0 )) s ==="
 
