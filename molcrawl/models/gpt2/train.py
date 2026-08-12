@@ -38,7 +38,7 @@ from molcrawl.core.dataset import PreparedDataset
 # default before any resume reads one. See molcrawl/core/torch_compat; the BERT
 # and RoBERTa trainers already do the same.
 from molcrawl.core.torch_compat import enable_full_torch_load
-from molcrawl.data.rna.dataset.rna_dataset import RNADataset
+from molcrawl.data.rna.dataset.rna_dataset import RNABinDataset, RNADataset
 from molcrawl.models.gpt2.model import GPT, GPTConfig
 
 # Call after the imports, not between them, so nothing here trips E402. Order
@@ -306,10 +306,25 @@ if __name__ == "__main__":
     rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
     rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
 
+    # Packed uint16 memmap of the same splits, when the config points at one.
+    # Opt-in and explicit rather than auto-detected, so the log and the config
+    # together say which storage a run read. Only RNA reaches this.
+    rna_bin_dir = globals().get("rna_bin_dir", None)
+
     # Use RNADataset if dataset is "rna", otherwise use PreparedDataset
     if dataset == "rna":
-        training_data = RNADataset(rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1)
-        test_data = RNADataset(rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1)
+        if rna_bin_dir:
+            training_data = RNABinDataset(rna_bin_dir, split="train", vocab_file=rna_vocab_file)
+            test_data = RNABinDataset(rna_bin_dir, split="valid", vocab_file=rna_vocab_file)
+        else:
+            # mypy pins these to the first branch's RNABinDataset; the two loaders
+            # are duck-typed siblings, not a hierarchy, so the reassignment is fine.
+            training_data = RNADataset(  # type: ignore[assignment]
+                rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1
+            )
+            test_data = RNADataset(  # type: ignore[assignment]
+                rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1
+            )
         # Set vocab size from the RNA dataset
         meta_vocab_size = training_data.vocab_size
     else:
