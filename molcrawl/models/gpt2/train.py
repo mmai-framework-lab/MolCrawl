@@ -33,7 +33,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from molcrawl.core.dataset import PreparedDataset
 from molcrawl.models.gpt2.model import GPT, GPTConfig
-from molcrawl.data.rna.dataset.rna_dataset import RNADataset
+from molcrawl.data.rna.dataset.rna_dataset import RNABinDataset, RNADataset
 
 dataset_params: dict[str, object] = {}
 # -----------------------------------------------------------------------------
@@ -295,10 +295,19 @@ if __name__ == "__main__":
     rna_data_dir = globals().get("rna_data_dir", "path-to-rna-parquet")
     rna_vocab_file = globals().get("rna_vocab_file", "path-to-rna-vocab")
 
+    # Packed uint16 memmap of the same splits, when the config points at one.
+    # Opt-in and explicit rather than auto-detected, so the log and the config
+    # together say which storage a run read. Only RNA reaches this.
+    rna_bin_dir = globals().get("rna_bin_dir", None)
+
     # Use RNADataset if dataset is "rna", otherwise use PreparedDataset
     if dataset == "rna":
-        training_data = RNADataset(rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1)
-        test_data = RNADataset(rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1)
+        if rna_bin_dir:
+            training_data = RNABinDataset(rna_bin_dir, split="train", vocab_file=rna_vocab_file)
+            test_data = RNABinDataset(rna_bin_dir, split="valid", vocab_file=rna_vocab_file)
+        else:
+            training_data = RNADataset(rna_data_dir, split="train", vocab_file=rna_vocab_file, test_size=0.1)
+            test_data = RNADataset(rna_data_dir, split="valid", vocab_file=rna_vocab_file, test_size=0.1)
         # Set vocab size from the RNA dataset
         meta_vocab_size = training_data.vocab_size
     else:

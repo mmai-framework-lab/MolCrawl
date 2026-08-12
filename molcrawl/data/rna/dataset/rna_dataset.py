@@ -27,6 +27,84 @@ def load_gene_vocab(vocab_file):
         return json.load(f)
 
 
+class RNABinDataset:
+    """An RNA split backed by a flat uint16 memmap instead of Arrow.
+
+    Same rows, same order, same dtype as :class:`RNADataset` — row i of the
+    ``.bin`` is row i of the split — so a given index draws the same block and
+    training is unaffected. Only the storage differs.
+
+    Why it exists: fetching a 16-row micro-batch out of the Arrow-backed
+    HuggingFace dataset costs ~175 ms on a compute node with four ranks reading
+    concurrently, i.e. 11 ms for an 8 KB row. That is read latency, not
+    bandwidth, and it left RNA GPT-2 spending 85 % of every iteration waiting on
+    data at ~2 % MFU (job 19223). A flat memmap turns the same fetch into an
+    offset read the page cache can handle, measured 6.3x faster across all four
+    ranks (job 19237). Every other modality already reads a flat array.
+
+    Build the files with ``scripts``-side ``rna_pack_to_bin.py``; each split is
+    ``<split>.bin`` plus a ``<split>.json`` describing rows, block and dtype.
+    """
+
+    _SPLIT_ALIASES = {"val": "valid"}
+
+    def __init__(self, bin_dir, split="train", vocab_file=None):
+        import numpy as np
+
+        split = self._SPLIT_ALIASES.get(split, split)
+        self.bin_dir = bin_dir
+        self.split = split
+
+        self.vocab = load_gene_vocab(vocab_file)
+        self.vocab_size = len(self.vocab)
+
+        meta_path = Path(bin_dir) / f"{split}.json"
+        bin_path = Path(bin_dir) / f"{split}.bin"
+        if not meta_path.exists() or not bin_path.exists():
+            raise FileNotFoundError(
+                f"packed RNA split not found: expected {bin_path} and {meta_path}"
+            )
+        meta = json.loads(meta_path.read_text())
+        if meta.get("dtype") != "uint16":
+            raise ValueError(f"unsupported dtype {meta.get('dtype')!r} in {meta_path}")
+
+        self.rows = int(meta["rows"])
+        self.block = int(meta["block"])
+        expected = self.rows * self.block * 2
+        actual = bin_path.stat().st_size
+        if actual != expected:
+            # A truncated pack would otherwise surface as silently wrong tokens
+            # in the tail of the split.
+            raise ValueError(
+                f"{bin_path} is {actual} bytes, expected {expected} "
+                f"({self.rows} rows x {self.block} x uint16)"
+            )
+        if int(meta.get("max_token_id", 0)) >= self.vocab_size:
+            raise ValueError(
+                f"max_token_id {meta['max_token_id']} does not fit vocabulary of "
+                f"{self.vocab_size}"
+            )
+
+        self._arr = np.memmap(bin_path, dtype=np.uint16, mode="r",
+                              shape=(self.rows, self.block))
+        print(f"📦 RNA memmap {split}: {self.rows:,} rows x {self.block} "
+              f"({actual/1e9:.2f} GB) from {bin_path}")
+
+    def __len__(self):
+        return self.rows
+
+    def __getitem__(self, idx):
+        import numpy as np
+        import torch
+
+        return torch.from_numpy(np.asarray(self._arr[idx], dtype=np.int64))
+
+    # Deliberately no batched-fetch helper here. Collapsing get_batch's per-row
+    # lookups is a separate change, and landing both at once would make it
+    # impossible to attribute the speed-up to either. Storage first; revisit
+    # batching only if the memmap alone does not close the gap.
+
+
 class RNADataset:
     """RNA Transcriptome Dataset"""
 

@@ -1,7 +1,7 @@
 import os
 
 
-from molcrawl.core.paths import CELLXGENE_DATASET_DIR, PROJECT_ROOT, get_gpt2_output_path
+from molcrawl.core.paths import CELLXGENE_DATASET_DIR, PROJECT_ROOT, RNA_DATASET_DIR, get_gpt2_output_path
 from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
 
 # EX-Large-Sized GPT2 Model
@@ -59,6 +59,14 @@ dataset = "rna"
 
 # RNA specific parameters
 rna_data_dir = CELLXGENE_DATASET_DIR
+
+# Packed uint16 memmap of the same splits (built by rna_pack_to_bin.py).
+# Identical rows in identical order — index i is index i — so this changes
+# storage only, not the data or the sampling. Fetching a micro-batch out of
+# Arrow costs ~175 ms with four ranks reading concurrently, which left RNA
+# GPT-2 at ~2 % MFU with 85 % of each iteration waiting on data (job 19223).
+# Comment this out to fall back to the Arrow path.
+rna_bin_dir = RNA_DATASET_DIR + "/training_ready_bin"
 # Geneformer token space (25,426: <pad>=0, <mask>=1, then Ensembl gene IDs) — the
 # vocabulary training_ready is actually tokenized in (verified max token id 25,401).
 # NOT rna/gene_vocab.json, which is the CellxGene census gene-symbol list (60,664,
