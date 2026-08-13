@@ -31,6 +31,13 @@ check_vocab_size(meta_vocab_size)
 # 8 * 80 * 4 GPU = 2560 — REQUIRES the fixed 4-GPU launch).
 # 3 * 318,118 train blocks / 2560 = 372.8 -> 373 steps.
 max_steps = 373
+# MLM collapse fix: packing concatenates ~10 documents per 1024 block (measured
+# 10.26 EOS per block on the train split); without masking, attention leaks across
+# those documents and the run stalls at the unigram level. Confine attention per
+# document. Requires the tokenizer to expose EOS as sep_token (see
+# data/molecule_nat_lang/utils/tokenizer.py).
+document_masking = True
+
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nat_lang", model_size)
