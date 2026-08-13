@@ -356,19 +356,20 @@ if __name__ == "__main__":
     # ambiguity-aware default. The wrapper falls back to a plain
     # DataCollatorForLanguageModeling when no ambiguous tokens are configured
     # for the modality (compounds / rna / molecule_nat_lang).
+    # Resolve the underlying tokenizer up front. Both the default-collator branch and
+    # the document-masking wrap further down need it, and a config that supplies its
+    # own data_collator otherwise never reaches this resolution.
+    tokenizer_obj = globals().get("tokenizer", None)
+    # If tokenizer is a wrapper class (like MoleculeNatLangTokenizer), extract the actual tokenizer
+    if tokenizer_obj is not None and hasattr(tokenizer_obj, "tokenizer"):
+        actual_tokenizer = tokenizer_obj.tokenizer
+    else:
+        actual_tokenizer = tokenizer_obj
+
     if "data_collator" in globals():
         print("Using custom data collator from config")
         # data_collator is already defined in the config file
     else:
-        # Get the tokenizer from globals
-        tokenizer_obj = globals().get("tokenizer", None)
-
-        # If tokenizer is a wrapper class (like MoleculeNatLangTokenizer), extract the actual tokenizer
-        if tokenizer_obj is not None and hasattr(tokenizer_obj, "tokenizer"):
-            actual_tokenizer = tokenizer_obj.tokenizer
-        else:
-            actual_tokenizer = tokenizer_obj
-
         # Verify we have a valid tokenizer
         if actual_tokenizer is None:
             raise ValueError("No tokenizer found in config. Please define 'tokenizer' in your config file.")
@@ -390,24 +391,27 @@ if __name__ == "__main__":
             actual_tokenizer, ambiguous_tokens=_ambig, mlm_probability=0.2
         )
 
-        # Packed blocks concatenate ~25 unrelated documents, and nothing stops a
-        # masked token from attending across those boundaries. Opt in per config to
-        # confine attention to the document a position belongs to.
-        if bool(globals().get("document_masking", False)):
-            from molcrawl.models._collators import DocumentMaskingCollator
+    # Packed blocks concatenate multiple unrelated documents, and nothing stops a
+    # masked token from attending across those boundaries. Confine attention to the
+    # document a position belongs to. This MUST wrap whichever collator we ended up
+    # with: a config that supplies its own data_collator (protein, …) previously
+    # skipped masking entirely because this block lived inside the else branch above,
+    # so the packed run silently collapsed.
+    if bool(globals().get("document_masking", False)):
+        from molcrawl.models._collators import DocumentMaskingCollator
 
-            _sep_id = getattr(actual_tokenizer, "sep_token_id", None)
-            if _sep_id is None:
-                raise ValueError(
-                    "document_masking=True needs the tokenizer to expose sep_token_id "
-                    "(the separator packing wrote between documents)."
-                )
-            data_collator = DocumentMaskingCollator(
-                data_collator,
-                separator_id=_sep_id,
-                reset_position_ids=bool(globals().get("reset_position_ids", True)),
+        _sep_id = getattr(actual_tokenizer, "sep_token_id", None)
+        if _sep_id is None:
+            raise ValueError(
+                "document_masking=True needs the tokenizer to expose sep_token_id "
+                "(the separator packing wrote between documents)."
             )
-            print(f"Document masking on: attention confined per document (separator id {_sep_id})")
+        data_collator = DocumentMaskingCollator(
+            data_collator,
+            separator_id=_sep_id,
+            reset_position_ids=bool(globals().get("reset_position_ids", True)),
+        )
+        print(f"Document masking on: attention confined per document (separator id {_sep_id})")
 
     # Early stopping configuration
     early_stopping = globals().get("early_stopping", True)  # Enable by default
