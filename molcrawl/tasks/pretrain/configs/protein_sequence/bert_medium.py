@@ -72,9 +72,10 @@ early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # MLM collapse fix: packing concatenates ~3-5 proteins per 1024 block; without
 # masking, attention leaks across those documents. Confine attention per document.
 document_masking = True
-# Collapse detector threshold: protein unigram baseline (H=2.894 nats over 22 amino
-# acids) scaled by the non-copy fraction (~0.909, matching compounds' 2.635->2.395).
-# Provisional; to be confirmed against the compounds session's exact method.
+# Collapse detector threshold: protein's own [MASK] unigram baseline
+# (H=2.8947 nats over 24 amino acids, measured on a 20k packed-block sample) scaled
+# by the non-copy fraction, the same method as compounds (unigram 2.635 -> degenerate
+# 2.395, ratio 0.9089). 2.8947 * 0.9089 = 2.631.
 degenerate_loss_threshold = 2.63
 model_size = "medium"  # Choose between small, medium or large
 model_path = get_bert_output_path("protein_sequence", model_size)
