@@ -293,8 +293,19 @@ class MoleculeNatLangTokenizer(TrainableTokenizer):
                 vocab = self.tokenizer.get_vocab()
                 eos_token = getattr(self.tokenizer, "eos_token", "<eos>")
 
-                self.tokenizer.sep_token = "<unk>" if "<unk>" in vocab else eos_token
+                # sep_token must be the token the packer actually wrote between
+                # documents: prepare_gpt2 concatenates examples and cuts the stream
+                # into 1024-token blocks, using EOS as the delimiter. document_masking
+                # locates per-document boundaries via tokenizer.sep_token_id, so
+                # pointing sep_token at "<unk>" made it a silent no-op — measured on
+                # the packed train split, EOS occurs 10.26 times per block and "<unk>"
+                # zero times, so the whole block was treated as one document. Same
+                # reasoning as the protein tokenizer, which exposes its EOS as sep.
+                self.tokenizer.sep_token = eos_token
                 self.tokenizer.cls_token = "<unk>" if "<unk>" in vocab else eos_token
+                # mask_token stays distinct from the separator: the MLM collator writes
+                # it into masked positions, and reusing EOS there would fabricate
+                # document boundaries at every mask.
                 self.tokenizer.mask_token = "<unk>" if "<unk>" in vocab else eos_token
 
         self.prompter = GeneralPrompter(get_chat_content)
