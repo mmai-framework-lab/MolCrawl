@@ -27,7 +27,10 @@ tokenizer = Tokenizer()
 meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8
 check_vocab_size(meta_vocab_size)
 
-max_steps = 321
+# 3 epochs of the train split at effective global batch 2560 (HF Trainer:
+# 8 * 80 * 4 GPU = 2560 — REQUIRES the fixed 4-GPU launch).
+# 3 * 318,118 train blocks / 2560 = 372.8 -> 373 steps.
+max_steps = 373
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nat_lang", model_size)

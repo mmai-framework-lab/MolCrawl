@@ -19,17 +19,23 @@ tokenizer = Tokenizer()
 meta_vocab_size = tokenizer.vocab_size
 check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 
-# these make the total batch size be ~0.5M
-# 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 8  # max size in koala
+# Effective global batch = 2560 sequences (spec; same value as protein/genome/
+# rna/compounds so the modalities stay compute-matched). For GPT-2/nanoGPT the
+# effective batch = batch_size * gradient_accumulation_steps and is GPU-count-
+# independent (train.py does grad_accum //= world_size). 16 * 160 = 2560.
+batch_size = 16
 
 block_size = 1024
-gradient_accumulation_steps = 5 * 16
+gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
-# this makes total number of tokens be 300B
-max_iters = 321
-lr_decay_iters = 321
-warmup_iters = 6  # how many steps to warm up for
+# 3 epochs of the train split at global batch 2560:
+# 3 * 318,118 train blocks / 2560 = 372.8 -> 373 iters (~978M tokens processed).
+# The old value 321 predated the 2560 fix and was only 2.58 epochs; measured
+# empirically via HF Trainer's own epoch counter in the BERT smoke (job 15429,
+# epoch=1.61 at 200 steps).
+max_iters = 373
+lr_decay_iters = 373
+warmup_iters = 7  # ~2% of max_iters (compounds convention); < max_iters so LR reaches peak
 learning_rate = 0.0006  # max learning rate
 min_lr = 6e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 

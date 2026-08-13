@@ -24,17 +24,22 @@ tokenizer = Tokenizer()
 meta_vocab_size = tokenizer.vocab_size
 check_vocab_size(meta_vocab_size, expected=EXPECTED_VOCAB_SIZE_GPT2)
 
-# these make the total batch size be ~0.5M
-# 12 batch size * 1024 block size * 5 gradaccum * 8 GPUs = 491,520
-batch_size = 2  # max size in koala
+# Effective global batch = 2560 sequences (spec; same value as protein/genome/
+# rna/compounds so the modalities stay compute-matched). For GPT-2/nanoGPT the
+# effective batch = batch_size * gradient_accumulation_steps, GPU-count-
+# independent. 4 * 640 = 2560 (small micro-batch for GPU memory on the 1.56B
+# model; smoke-verify no OOM before the production run).
+batch_size = 4
 
 block_size = 1024
-gradient_accumulation_steps = 5 * 16
+gradient_accumulation_steps = 640  # 4 * 640 = 2560 seq global batch
 
-# training
-max_iters = 321
-lr_decay_iters = 321
-warmup_iters = 6  # how many steps to warm up for
+# 3 epochs of the train split at global batch 2560:
+# 3 * 318,118 train blocks / 2560 = 372.8 -> 373 iters (~978M tokens processed).
+# Same iter count as every other mol_nl size, so the ladder is compute-matched.
+max_iters = 373
+lr_decay_iters = 373
+warmup_iters = 7  # ~2% of max_iters (compounds convention); < max_iters so LR reaches peak
 learning_rate = 0.0002  # max learning rate
 min_lr = 2e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 

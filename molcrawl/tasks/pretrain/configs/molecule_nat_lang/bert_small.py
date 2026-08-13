@@ -27,7 +27,13 @@ tokenizer = Tokenizer()
 meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8
 check_vocab_size(meta_vocab_size)
 
-max_steps = 321
+# 3 epochs of the train split at effective global batch 2560. BERT runs under HF
+# Trainer, where the effective batch is batch_size * grad_accum * world_size, so
+# 8 * 80 * 4 GPU = 2560 — this REQUIRES the fixed 4-GPU launch (unlike GPT-2,
+# whose nanoGPT effective batch is GPU-count-independent).
+# 3 * 318,118 train blocks / 2560 = 372.8 -> 373 steps. Verified empirically:
+# HF reported epoch=1.61 at 200 steps in the smoke (job 15429).
+max_steps = 373
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("molecule_nat_lang", model_size)
