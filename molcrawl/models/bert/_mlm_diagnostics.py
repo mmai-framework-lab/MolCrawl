@@ -127,32 +127,60 @@ class CollapseDetectionCallback(TrainerCallback):
        run that collapsed, 2.5 on the one that survived). This only **warns**:
        deep models can start large and still recover.
     2. ``eval_loss_mask`` staying above the degenerate threshold for ``patience``
-       consecutive evaluations. This **stops** training.
+       consecutive evaluations, once past ``grace_steps``. This **stops** training.
 
     ``degenerate_threshold`` is modality-specific — roughly the unigram entropy of
     the maskable tokens scaled by the non-copy fraction; 2.395 for compounds
     packed. Stopping is disabled when it is not set.
+
+    **Why the grace period.** MLM does not descend from the start: it sits at the
+    degenerate level and then breaks out. Measured plateaus are 1,500-2,000 steps
+    (compounds seq 128, mol_nl) and 2,750 steps (compounds packed with document
+    masking). ``patience`` alone cannot express that, because it counts evaluations
+    and the eval interval differs per config — at protein's ``log_interval=100`` the
+    old default of 3 fired after 300 steps, a tenth of the way into a plateau every
+    healthy run has to cross. ``grace_steps`` is in optimizer steps, so it means the
+    same thing whatever the eval cadence, and defaults past the longest plateau
+    observed with margin.
     """
 
-    def __init__(self, degenerate_threshold=None, patience=3, grad_norm_factor=3.0):
+    #: Optimizer steps before the degenerate check starts counting. Longest observed
+    #: plateau is 2,750 steps; this leaves ~1.8x margin.
+    DEFAULT_GRACE_STEPS = 5000
+
+    def __init__(
+        self,
+        degenerate_threshold=None,
+        patience=5,
+        grad_norm_factor=3.0,
+        grace_steps=DEFAULT_GRACE_STEPS,
+    ):
         self.degenerate_threshold = degenerate_threshold
         self.patience = patience
         self.grad_norm_factor = grad_norm_factor
+        self.grace_steps = grace_steps
         self._over = 0
         self._warned_grad = False
         self._last_checked_step = None
+        self._stopped = False
 
     def _check_degenerate(self, value, state, control):
         """Count consecutive evals above the threshold and stop once patience runs out.
 
-        Guarded by ``global_step`` so an eval seen through both hooks is counted once.
+        Guarded by ``global_step`` so an eval seen through both hooks is counted once,
+        and by ``grace_steps`` so the plateau every healthy run crosses is not read as
+        collapse.
         """
-        if not self.degenerate_threshold or value is None:
+        if not self.degenerate_threshold or value is None or self._stopped:
             return control
         step = getattr(state, "global_step", None) if state is not None else None
         if step is not None and step == self._last_checked_step:
             return control
         self._last_checked_step = step
+
+        if self.grace_steps and step is not None and step < self.grace_steps:
+            # Still inside the plateau every healthy run has to cross.
+            return control
 
         if value > self.degenerate_threshold:
             self._over += 1
@@ -170,6 +198,7 @@ class CollapseDetectionCallback(TrainerCallback):
                     flush=True,
                 )
                 control.should_training_stop = True
+                self._stopped = True
         else:
             self._over = 0
         return control
