@@ -202,7 +202,13 @@ if __name__ == "__main__":
     # None keeps the detector inert, which is the behaviour every current config
     # already has.
     degenerate_loss_threshold = None
-    degenerate_patience = 3
+    # Consecutive evaluations above the threshold before stopping, and the number of
+    # optimizer steps to let pass first. MLM plateaus at the degenerate level for
+    # 1,500-2,750 steps before breaking out, so the grace period is what keeps a
+    # healthy run alive; patience alone counts evaluations and means different step
+    # counts at different log_interval values.
+    degenerate_patience = 5
+    degenerate_grace_steps = 5000
     warmup_steps = 200
     max_steps = 60000
     batch_size = 10
@@ -747,7 +753,8 @@ if __name__ == "__main__":
     callbacks.append(
         CollapseDetectionCallback(
             degenerate_threshold=_degenerate_threshold,
-            patience=int(globals().get("degenerate_patience", 3)),
+            patience=int(globals().get("degenerate_patience", 5)),
+            grace_steps=int(globals().get("degenerate_grace_steps", 5000)),
         )
     )
     if _degenerate_threshold:

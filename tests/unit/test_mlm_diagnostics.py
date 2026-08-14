@@ -116,7 +116,7 @@ def test_collapse_callback_fires_through_the_real_hook_order():
     never fired for any modality until it did (protein sat 25 evals above its 2.63
     threshold without one warning).
     """
-    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=2)
+    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=2, grace_steps=0)
     control = _control()
 
     for i, step in enumerate((100, 200), start=1):
@@ -129,7 +129,7 @@ def test_collapse_callback_fires_through_the_real_hook_order():
 
 def test_collapse_callback_counts_an_eval_once_across_both_hooks():
     """A single eval must not count twice when both hooks carry the metric."""
-    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=2)
+    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=2, grace_steps=0)
     control = _control()
 
     cb.on_evaluate(_args(), _state(100), control, metrics={"eval_loss_mask": 2.88})
@@ -142,9 +142,69 @@ def test_collapse_callback_counts_an_eval_once_across_both_hooks():
 
 def test_grad_norm_warning_does_not_shadow_the_eval_check():
     """The old on_log returned early forever once grad_norm had been seen."""
-    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=1)
+    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=1, grace_steps=0)
     control = _control()
 
     cb.on_log(_args(), _state(1), control, logs={"grad_norm": 4.8})
     cb.on_log(_args(), _state(100), control, logs={"eval_loss_mask": 2.88})
     assert control.should_training_stop is True
+
+
+def test_grace_period_protects_the_plateau_every_healthy_run_crosses():
+    """MLM sits at the degenerate level before breaking out.
+
+    Measured plateaus: 1,500-2,000 steps (compounds seq 128, mol_nl) and 2,750
+    steps (compounds packed with document masking). Stopping inside that window
+    kills runs that were about to learn — which is what the old 3-eval default did
+    at protein's log_interval=100, i.e. after 300 steps.
+    """
+    cb = CollapseDetectionCallback(degenerate_threshold=2.395, patience=3, grace_steps=5000)
+    control = _control()
+
+    # A run plateauing at the degenerate level right through the observed window.
+    for step in range(100, 3000, 100):
+        cb.on_evaluate(_args(), _state(step), control, metrics={"eval_loss_mask": 2.60})
+    assert control.should_training_stop is False
+
+
+def test_stops_once_past_the_grace_period():
+    cb = CollapseDetectionCallback(degenerate_threshold=2.395, patience=3, grace_steps=5000)
+    control = _control()
+
+    for step in (5000, 5100, 5200):
+        cb.on_evaluate(_args(), _state(step), control, metrics={"eval_loss_mask": 2.60})
+    assert control.should_training_stop is True
+
+
+def test_grace_period_can_be_disabled():
+    cb = CollapseDetectionCallback(degenerate_threshold=2.395, patience=2, grace_steps=0)
+    control = _control()
+
+    cb.on_evaluate(_args(), _state(100), control, metrics={"eval_loss_mask": 2.60})
+    cb.on_evaluate(_args(), _state(200), control, metrics={"eval_loss_mask": 2.60})
+    assert control.should_training_stop is True
+
+
+def test_breakout_during_grace_leaves_the_counter_clean():
+    """A run that plateaus, breaks out, then wobbles must not carry stale counts."""
+    cb = CollapseDetectionCallback(degenerate_threshold=2.395, patience=3, grace_steps=5000)
+    control = _control()
+
+    for step in range(100, 5000, 100):  # plateau, ignored
+        cb.on_evaluate(_args(), _state(step), control, metrics={"eval_loss_mask": 2.60})
+    cb.on_evaluate(_args(), _state(5000), control, metrics={"eval_loss_mask": 1.20})  # learning
+    cb.on_evaluate(_args(), _state(5100), control, metrics={"eval_loss_mask": 2.60})
+    cb.on_evaluate(_args(), _state(5200), control, metrics={"eval_loss_mask": 2.60})
+    assert control.should_training_stop is False  # only 2 consecutive, patience is 3
+
+
+def test_stop_is_announced_once(capsys):
+    """Training stops at a boundary, so later evals must not re-announce it."""
+    cb = CollapseDetectionCallback(degenerate_threshold=2.395, patience=1, grace_steps=0)
+    control = _control()
+
+    for step in (100, 200, 300):
+        cb.on_evaluate(_args(), _state(step), control, metrics={"eval_loss_mask": 2.60})
+
+    assert control.should_training_stop is True
+    assert capsys.readouterr().out.count("STOPPING") == 1
