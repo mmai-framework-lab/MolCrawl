@@ -28,6 +28,13 @@ model_path = get_bert_output_path("molecule_nat_lang_mol_instructions", model_si
 pretrain_model_path = get_bert_output_path("molecule_nat_lang", model_size)
 
 max_length = 1024
+# Mol-Instructions is packed the same way as the mol_nl pretraining corpus:
+# examples are EOS-joined and cut into 1024-token blocks, measured at 4.52 EOS
+# (~5.5 documents) per block. Without masking, attention leaks across those
+# documents and MLM stalls at the unigram level. It also keeps the fine-tune
+# consistent with the pretraining checkpoint this config resumes from, which
+# now carries document_masking=True.
+document_masking = True
 dataset_dir = MOL_INSTRUCTIONS_DATASET_DIR
 
 # Fine-tuning hyper-parameters (lower LR and fewer steps than pretraining)
