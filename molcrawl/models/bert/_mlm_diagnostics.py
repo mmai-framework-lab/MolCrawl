@@ -140,31 +140,20 @@ class CollapseDetectionCallback(TrainerCallback):
         self.grad_norm_factor = grad_norm_factor
         self._over = 0
         self._warned_grad = False
+        self._last_checked_step = None
 
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        if logs is None or self._warned_grad:
-            return control
-        gn = logs.get("grad_norm")
-        if gn is None:
-            return control
-        self._warned_grad = True
-        limit = args.max_grad_norm * self.grad_norm_factor
-        if gn > limit:
-            print(
-                f"WARNING: first grad_norm={gn:.3f} exceeds clip={args.max_grad_norm} "
-                f"by more than {self.grad_norm_factor}x. That is what a warmup-starved "
-                f"start looks like (6.4 on the run that collapsed, 2.5 on the one that "
-                f"survived) — watch eval_loss_mask.",
-                flush=True,
-            )
-        return control
+    def _check_degenerate(self, value, state, control):
+        """Count consecutive evals above the threshold and stop once patience runs out.
 
-    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
-        if not self.degenerate_threshold or not metrics:
+        Guarded by ``global_step`` so an eval seen through both hooks is counted once.
+        """
+        if not self.degenerate_threshold or value is None:
             return control
-        value = metrics.get("eval_loss_mask")
-        if value is None:
+        step = getattr(state, "global_step", None) if state is not None else None
+        if step is not None and step == self._last_checked_step:
             return control
+        self._last_checked_step = step
+
         if value > self.degenerate_threshold:
             self._over += 1
             print(
@@ -184,3 +173,38 @@ class CollapseDetectionCallback(TrainerCallback):
         else:
             self._over = 0
         return control
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs is None:
+            return control
+
+        if not self._warned_grad:
+            gn = logs.get("grad_norm")
+            if gn is not None:
+                self._warned_grad = True
+                limit = args.max_grad_norm * self.grad_norm_factor
+                if gn > limit:
+                    print(
+                        f"WARNING: first grad_norm={gn:.3f} exceeds clip={args.max_grad_norm} "
+                        f"by more than {self.grad_norm_factor}x. That is what a warmup-starved "
+                        f"start looks like (6.4 on the run that collapsed, 2.5 on the one that "
+                        f"survived) — watch eval_loss_mask.",
+                        flush=True,
+                    )
+
+        # The breakdown reaches the callbacks here, not through on_evaluate.
+        # Trainer.evaluate() fires on_evaluate with its own metrics dict and only
+        # then returns it, so MlmBreakdownMixin.evaluate() — which adds
+        # eval_loss_mask to the returned dict afterwards — is too late for that
+        # hook. The mixin's own log(extra) call is the first point at which a
+        # callback can see the value.
+        if "eval_loss_mask" in logs:
+            control = self._check_degenerate(logs.get("eval_loss_mask"), state, control)
+        return control
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        # Kept so the detector still works if the metric ever lands in the eval
+        # metrics before this hook runs; the step guard stops it double counting.
+        if not metrics:
+            return control
+        return self._check_degenerate(metrics.get("eval_loss_mask"), state, control)

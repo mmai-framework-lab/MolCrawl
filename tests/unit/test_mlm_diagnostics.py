@@ -92,3 +92,59 @@ def test_collapse_callback_is_inert_without_threshold():
     for _ in range(10):
         cb.on_evaluate(None, None, control, metrics={"eval_loss_mask": 9.9})
     assert control.should_training_stop is False
+
+
+def _control():
+    return type("C", (), {"should_training_stop": False})()
+
+
+def _state(step):
+    return type("S", (), {"global_step": step})()
+
+
+def _args():
+    return type("A", (), {"max_grad_norm": 1.0})()
+
+
+def test_collapse_callback_fires_through_the_real_hook_order():
+    """Trainer.evaluate() fires on_evaluate BEFORE the breakdown is added.
+
+    MlmBreakdownMixin.evaluate() appends eval_loss_mask to the dict that
+    super().evaluate() returns, but Trainer.evaluate() has already handed its own
+    metrics to on_evaluate by then. The value only reaches a callback through the
+    mixin's log(extra) call, so the detector has to work from on_log — it silently
+    never fired for any modality until it did (protein sat 25 evals above its 2.63
+    threshold without one warning).
+    """
+    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=2)
+    control = _control()
+
+    for i, step in enumerate((100, 200), start=1):
+        # what Trainer.evaluate() passes: no breakdown key yet
+        cb.on_evaluate(_args(), _state(step), control, metrics={"eval_loss": 1.9})
+        # what MlmBreakdownMixin.evaluate() logs immediately afterwards
+        cb.on_log(_args(), _state(step), control, logs={"eval_loss_mask": 2.88})
+        assert control.should_training_stop is (i == 2), f"eval {i} at step {step}"
+
+
+def test_collapse_callback_counts_an_eval_once_across_both_hooks():
+    """A single eval must not count twice when both hooks carry the metric."""
+    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=2)
+    control = _control()
+
+    cb.on_evaluate(_args(), _state(100), control, metrics={"eval_loss_mask": 2.88})
+    cb.on_log(_args(), _state(100), control, logs={"eval_loss_mask": 2.88})
+    assert control.should_training_stop is False  # one eval, not two
+
+    cb.on_log(_args(), _state(200), control, logs={"eval_loss_mask": 2.88})
+    assert control.should_training_stop is True
+
+
+def test_grad_norm_warning_does_not_shadow_the_eval_check():
+    """The old on_log returned early forever once grad_norm had been seen."""
+    cb = CollapseDetectionCallback(degenerate_threshold=2.63, patience=1)
+    control = _control()
+
+    cb.on_log(_args(), _state(1), control, logs={"grad_norm": 4.8})
+    cb.on_log(_args(), _state(100), control, logs={"eval_loss_mask": 2.88})
+    assert control.should_training_stop is True
