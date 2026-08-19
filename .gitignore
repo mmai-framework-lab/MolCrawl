@@ -89,24 +89,11 @@ workflows/hugging_face/
 # Keep them on disk locally without committing them.
 workflows/_*
 
-# autopilot runtime state (ephemeral)
-tmp/scripts/autopilot/state/coordinator.pid
-tmp/scripts/autopilot/state/coordinator_state.json
-tmp/scripts/autopilot/state/g2_target.json
-tmp/scripts/autopilot/logs/
-tmp/scripts/autopilot/milestones/
-
-# --- 2026-07-29 case-X cleanup (personal / session-scoped artifacts) ---
-# Personal working memos (session-scoped, matsubara↔boss handoffs, self-notes)
-tmp/docs_tmp_local/
-tmp/archives/
-tmp/figures/
-tmp/*.tar.gz
-tmp/metrics_summary.md
-tmp/organix13_36pct_loss_investigation_*/
-tmp/organix13_length_survey_*/
-tmp/rna_bert_tabula_sapiens_smoke_*/
-tmp/token_count_survey_*/
+# Scratch workspace. Session-scoped notes, HuggingFace caches, autopilot runtime
+# state and one-off survey output all live here; none of it is ever committed.
+# Supersedes the per-subdirectory rules that had accumulated for this directory.
+# Internal milestone reports are kept outside the repository, in ../report/.
+tmp/
 
 # Claude Code session state
 .claude/
@@ -117,6 +104,3 @@ chatlogs/
 # Ad-hoc / one-off workspace dirs
 temp_compounds/
 ncbi-result.txt
-
-# Autopilot ephemeral state backups
-tmp/scripts/autopilot/state/coordinator_state.json.bak_*
