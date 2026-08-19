@@ -62,6 +62,18 @@ OVERRIDES+=(--model_path="${OUT}")
 mkdir -p "${OUT}"
 
 echo "=== rna bert-${SIZE} ${SMOKE_MAX_STEPS:+SMOKE max_steps=${SMOKE_MAX_STEPS}} @ $(date -Is) on ${SLURMD_NODENAME} ==="
+# A run can outlive the checkout it started from: production takes days, resume
+# resubmits later, and REPO is a worktree someone may switch in between. Pass
+# EXPECT_COMMIT to refuse to start on anything else rather than silently
+# continuing a run on different code.
+if [ -n "${EXPECT_COMMIT:-}" ]; then
+  ACTUAL=$(git -C "${REPO}" rev-parse --short HEAD)
+  if [ "${ACTUAL}" != "${EXPECT_COMMIT}" ]; then
+    echo "FATAL: ${REPO} is at ${ACTUAL}, expected ${EXPECT_COMMIT}" >&2
+    exit 1
+  fi
+  echo "commit guard: ${ACTUAL} == ${EXPECT_COMMIT}"
+fi
 echo "repo:   ${REPO}"
 echo "branch: $(git -C "${REPO}" rev-parse --abbrev-ref HEAD)  head: $(git -C "${REPO}" rev-parse --short HEAD)"
 "${MAIN}"/miniconda/bin/python -c "import molcrawl; print('molcrawl from:', molcrawl.__file__)"
