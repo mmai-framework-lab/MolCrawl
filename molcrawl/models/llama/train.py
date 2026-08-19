@@ -31,8 +31,14 @@ from torch.distributed import destroy_process_group, init_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from molcrawl.core.dataset import PreparedDataset
+from molcrawl.core.torch_compat import enable_full_torch_load
 from molcrawl.models.llama.model import GPT, GPTConfig
 from molcrawl.data.rna.dataset.rna_dataset import RNADataset
+
+# Same resume defect as gpt2/train.py: torch >= 2.6 refuses to unpickle the
+# numpy RNG state in our checkpoints unless weights_only=False. Latent here —
+# llama has not been resumed yet — but the load sites are identical.
+enable_full_torch_load()
 
 dataset_params: dict[str, object] = {}
 # -----------------------------------------------------------------------------
