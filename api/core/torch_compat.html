@@ -66,10 +66,16 @@ import time):</p>
 <li><code>molcrawl/models/dnabert2/main.py</code></li>
 <li><code>molcrawl/models/esm2/main.py</code></li>
 <li><code>molcrawl/models/main.py</code></li>
+<li><code>molcrawl/models/gpt2/train.py</code></li>
+<li><code>molcrawl/models/llama/train.py</code></li>
 </ul>
-<p>GPT-2 (<code>molcrawl/models/gpt2/train.py</code>) is unaffected because it does
-not go through HF Trainer's resume path; it manages its own checkpoint
-load with explicit <code>weights_only=False</code> semantics.</p>
+<p>The last two do not go through HF Trainer, but they are affected all the
+same and for the same reason: they save <code>numpy.random.get_state()</code> into
+each checkpoint for exact resume, and their <code>torch.load</code> calls pass only
+<code>map_location</code>. This docstring previously claimed GPT-2 loaded "with
+explicit <code>weights_only=False</code> semantics" — it never did, and the gap
+only surfaced when RNA gpt2-xl became the first run long enough to need a
+resume (job 28851, 2026-08-17).</p>
 </section>
 <section>
 </section>
