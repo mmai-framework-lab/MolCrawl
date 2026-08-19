@@ -25,7 +25,12 @@
 #SBATCH --error=/data1/rkp00024/matsubara/MolCrawl/workflows/slurm-logs/%x-%j.out
 set -e
 
-REPO="/data1/rkp00024/matsubara/MolCrawl"
+# Code and data are separate: REPO is the checkout to run (a worktree when
+# testing a branch), MAIN holds the conda env, the learning source and the
+# log directory. Pinning both to the same path silently ran whatever branch
+# the shared checkout happened to be on.
+MAIN="/data1/rkp00024/matsubara/MolCrawl"
+REPO="${REPO:-$MAIN}"
 SIZE="${SIZE:?SIZE is required (small|medium|large|xl)}"
 TAG="${TAG:-smoke}"
 CONFIG="molcrawl/tasks/pretrain/configs/rna/gpt2_${SIZE}.py"
@@ -33,20 +38,20 @@ CONFIG="molcrawl/tasks/pretrain/configs/rna/gpt2_${SIZE}.py"
 # Training reads training_ready through a symlink in this tree; logs and
 # checkpoints are the only things written here, so the b200prep original stays
 # untouched.
-export LEARNING_SOURCE_DIR="${REPO}/learning_source_20260803_rna_train"
+export LEARNING_SOURCE_DIR="${MAIN}/learning_source_20260803_rna_train"
 
 # Keep caches and temporaries off $HOME (quota) — they all go under /data1.
-export HF_HOME="${REPO}/tmp/hf-rna"
-export HF_DATASETS_CACHE="${REPO}/tmp/hf-rna/datasets"
-export XDG_CACHE_HOME="${REPO}/tmp/hf-rna/xdg"
-export TMPDIR="${REPO}/tmp/hf-rna/tmp"
-export LD_LIBRARY_PATH="${REPO}/miniconda/lib:${LD_LIBRARY_PATH:-}"
+export HF_HOME="${MAIN}/tmp/hf-rna"
+export HF_DATASETS_CACHE="${MAIN}/tmp/hf-rna/datasets"
+export XDG_CACHE_HOME="${MAIN}/tmp/hf-rna/xdg"
+export TMPDIR="${MAIN}/tmp/hf-rna/tmp"
+export LD_LIBRARY_PATH="${MAIN}/miniconda/lib:${LD_LIBRARY_PATH:-}"
 export PYTHONUNBUFFERED=1 WANDB_MODE=offline HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 \
        TOKENIZERS_PARALLELISM=false TORCHDYNAMO_DISABLE=1
 
 cd "${REPO}"
 export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
-mkdir -p "${REPO}/workflows/slurm-logs" "${HF_DATASETS_CACHE}" "${XDG_CACHE_HOME}" "${TMPDIR}"
+mkdir -p "${MAIN}/workflows/slurm-logs" "${HF_DATASETS_CACHE}" "${XDG_CACHE_HOME}" "${TMPDIR}"
 
 # --compile=False: no Triton on these nodes. Everything else comes from the
 # config; the only other overrides are output paths and the smoke schedule.
@@ -58,14 +63,16 @@ if [ -n "${SMOKE_MAX_ITERS:-}" ]; then
               --max_iters="${SMOKE_MAX_ITERS}" --lr_decay_iters="${SMOKE_MAX_ITERS}"
               --warmup_iters="${WARM}" --eval_interval=50)
 else
-  OUT="$(./miniconda/bin/python -c "
+  OUT="$("${MAIN}"/miniconda/bin/python -c "
 from molcrawl.core.paths import get_gpt2_output_path
 print(get_gpt2_output_path('rna', '${SIZE}'))")"
 fi
 mkdir -p "${OUT}"
 
 echo "=== rna gpt2-${SIZE} ${SMOKE_MAX_ITERS:+SMOKE max_iters=${SMOKE_MAX_ITERS}} @ $(date -Is) on ${SLURMD_NODENAME} ==="
+echo "repo:   ${REPO}"
 echo "branch: $(git -C "${REPO}" rev-parse --abbrev-ref HEAD)  head: $(git -C "${REPO}" rev-parse --short HEAD)"
+"${MAIN}"/miniconda/bin/python -c "import molcrawl; print('molcrawl from:', molcrawl.__file__)"
 echo "config: ${CONFIG}"
 echo "data:   ${LEARNING_SOURCE_DIR}/rna/training_ready_hf_dataset"
 echo "out:    ${OUT}"
@@ -75,7 +82,7 @@ nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 #   "number of parameters: 104.48M"      gpt2-small at vocab 25,426 (131.54M = vocab fix missing)
 #   "tokens per iteration will be: 2,621,440"   = 2560 x 1024, invariant to GPU count
 rc=0
-./miniconda/bin/torchrun --standalone --nproc_per_node=4 \
+"${MAIN}"/miniconda/bin/torchrun --standalone --nproc_per_node=4 \
   molcrawl/models/gpt2/train.py "${CONFIG}" "${OVERRIDES[@]}" || rc=$?
 echo "=== rc=${rc} @ $(date -Is) ==="
 ls -d "${OUT}"/checkpoint-* 2>/dev/null | tail -3
