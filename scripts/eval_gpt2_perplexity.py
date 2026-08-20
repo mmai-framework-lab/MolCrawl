@@ -3,18 +3,22 @@
 Two reasons to score a split here rather than read the number off the training log:
 
 * **Deterministic and complete.** ``train.py`` estimates val loss from
-  ``eval_iters`` batches drawn *with replacement* (``get_batch``), and
-  ``eval_iters`` counts batches, not sequences. A ladder that shrinks
-  ``batch_size`` for the larger models therefore evaluates them on fewer
-  sequences, and ``best_val`` — a minimum over eval points — picks up a
-  selection bias that grows with that noise. This script walks the whole split
-  once, so the sizes are comparable.
+  ``eval_iters`` batches drawn *with replacement* (``get_batch``), so every eval
+  point carries sampling noise, and ``best_val`` — a minimum over ~32 such points —
+  sits below the value it estimates by an amount that grows with that noise.
+  ``eval_sequences`` equalises how many sequences each ladder size averages over,
+  but the noise and the minimum-selection bias remain. This script walks the whole
+  split once, so neither applies.
 * **test stays held out.** Checkpoints are selected on valid, so scoring test
   here is the first time test is touched.
 
-Scoring mirrors training: the same causal shift over the same blocks, so the
-numbers sit on the same scale as the val losses in the run logs. Perplexity is
-exp of the mean token loss.
+Scoring mirrors training: the same causal shift over the same blocks, **and the same
+targets excluded from the loss** — ``get_batch`` blanks ambiguous tokens (protein X B
+Z, genome N and the IUPAC codes) and, where the config sets it, pad positions, and
+``GPT.forward`` passes ``ignore_index``. Scoring without those exclusions would put
+protein and genome on a different scale from their own training logs, so this script
+refuses to run rather than quietly produce such a number. Perplexity is exp of the
+mean loss over the tokens that are scored.
 
 Usage:
     LEARNING_SOURCE_DIR=<dir> python scripts/eval_gpt2_perplexity.py \
@@ -50,6 +54,66 @@ DATASET_DIR_CONSTANTS = {
 }
 MODALITIES = sorted(set(DATASET_DIR_CONSTANTS) | {"rna"})
 
+# RNABinDataset needs the same Geneformer token dictionary the RNA configs point at
+# (configs/rna/gpt2_*.py). It raises on None, so leaving this unset would turn the
+# documented invocation into a bare ValueError.
+DEFAULT_RNA_VOCAB = Path(__file__).resolve().parents[1] / (
+    "molcrawl/data/rna/dataset/geneformer/token_dictionary.pkl"
+)
+
+
+def build_tokenizer(modality: str, genome_tokenizer_model: str | None):
+    """The tokenizer whose ids the modality's ambiguous-token list refers to.
+
+    Only needed where that list is non-empty, i.e. protein and genome.
+    """
+    if modality == "protein_sequence":
+        from molcrawl.data.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+
+        return EsmSequenceTokenizer()
+    if modality == "genome_sequence":
+        import sentencepiece as spm
+
+        from molcrawl.core.paths import get_refseq_tokenizer_path
+
+        model_file = genome_tokenizer_model or get_refseq_tokenizer_path()
+        if not Path(model_file).exists():
+            raise SystemExit(
+                f"genome tokenizer model not found at {model_file}; pass "
+                "--genome-tokenizer-model. It is needed to blank N and the IUPAC "
+                "codes from the loss, exactly as training does."
+            )
+        return spm.SentencePieceProcessor(model_file=str(model_file))
+    return None
+
+
+def resolve_ignored_target_ids(modality: str, genome_tokenizer_model: str | None, pad_token_id: int | None):
+    """Target ids training excludes from the CLM loss, so scoring can exclude them too.
+
+    get_batch blanks ambiguous tokens and, when the config sets it, the pad id;
+    GPT.forward then passes ignore_index. Scoring without the same exclusions would
+    not be on the scale of the run's own val losses.
+    """
+    from molcrawl.models._collators import (
+        ambiguous_tokens_for_modality,
+        resolve_ambiguous_token_ids,
+    )
+
+    ids = []
+    tokens = ambiguous_tokens_for_modality(modality)
+    if tokens:
+        tokenizer = build_tokenizer(modality, genome_tokenizer_model)
+        if tokenizer is None:
+            raise SystemExit(
+                f"{modality} excludes {tokens} from the training loss, but this script "
+                "has no tokenizer for it, so the number would not be comparable to the "
+                "run's val losses."
+            )
+        ids = list(resolve_ambiguous_token_ids(tokenizer, tokens))
+    if pad_token_id is not None:
+        ids.append(int(pad_token_id))
+    return ids
+
 
 def load_model(ckpt_path: Path, device: str):
     from molcrawl.models.gpt2.model import GPT, GPTConfig
@@ -75,7 +139,15 @@ def open_split(args):
         bin_dir = args.rna_bin_dir or os.environ.get("RNA_BIN_DIR")
         if not bin_dir:
             raise SystemExit("--modality rna needs --rna-bin-dir (or RNA_BIN_DIR)")
-        ds = RNABinDataset(bin_dir, split=args.split, vocab_file=args.rna_vocab_file)
+        if args.dataset_dir:
+            raise SystemExit("--dataset-dir does not apply to --modality rna; use --rna-bin-dir")
+        vocab_file = args.rna_vocab_file or DEFAULT_RNA_VOCAB
+        if not Path(vocab_file).exists():
+            # Checked here so it fails next to --rna-bin-dir rather than as a bare
+            # ValueError from inside the dataset.
+            raise SystemExit(f"RNA gene vocabulary not found at {vocab_file}; pass --rna-vocab-file")
+        logger.info("rna vocabulary: %s", vocab_file)
+        ds = RNABinDataset(bin_dir, split=args.split, vocab_file=str(vocab_file))
 
         def fetch(start: int, stop: int):
             return torch.stack([ds[i] for i in range(start, stop)])
@@ -100,9 +172,12 @@ def open_split(args):
 
 
 @torch.no_grad()
-def score_split(model, fetch, n_rows: int, device: str, max_blocks: int = 0) -> tuple[float, int]:
-    """Mean token loss over the split, plus the number of scored tokens."""
-    n = n_rows if not max_blocks else min(n_rows, max_blocks)
+def score_split(model, fetch, n_rows: int, device: str, max_sequences: int = 0, ignored_ids=()) -> tuple[float, int, int]:
+    """Mean loss over the scored targets, the count of them, and sequences read."""
+    from molcrawl.models._collators import mask_ambiguous_targets_for_clm
+    from molcrawl.models._collators.ambiguity_aware_collator import IGNORE_INDEX
+
+    n = n_rows if not max_sequences else min(n_rows, max_sequences)
     total_loss, total_tokens = 0.0, 0
     for start in range(0, n, BATCH_BLOCKS):
         stop = min(start + BATCH_BLOCKS, n)
@@ -111,13 +186,19 @@ def score_split(model, fetch, n_rows: int, device: str, max_blocks: int = 0) -> 
         # Training never hit this because get_batch pins the batch first, and
         # pin_memory returns a contiguous copy.
         x, y = block[:, :-1].contiguous(), block[:, 1:].contiguous()
+        if ignored_ids:
+            # Same helper get_batch uses, so the excluded positions match exactly.
+            y = mask_ambiguous_targets_for_clm(y, ignored_ids).contiguous()
         _, loss = model(x, y)
-        tokens = y.numel()
+        # cross_entropy averages over the kept targets only, so weight by those.
+        tokens = int((y != IGNORE_INDEX).sum()) if ignored_ids else y.numel()
+        if not tokens:
+            continue
         total_loss += float(loss) * tokens
         total_tokens += tokens
         if start and start % (BATCH_BLOCKS * 200) == 0:
             logger.info("    %d/%d sequences, running loss %.4f", stop, n, total_loss / total_tokens)
-    return total_loss / total_tokens, total_tokens
+    return total_loss / total_tokens, total_tokens, n
 
 
 def main() -> int:
@@ -127,7 +208,23 @@ def main() -> int:
     parser.add_argument("--split", default="test", help="valid or test")
     parser.add_argument("--dataset-dir", default=None, help="override the modality's dataset dir")
     parser.add_argument("--rna-bin-dir", default=None, help="dir holding <split>.bin/<split>.json")
-    parser.add_argument("--rna-vocab-file", default=None)
+    parser.add_argument(
+        "--rna-vocab-file",
+        default=None,
+        help=f"Geneformer token dictionary; defaults to the one the configs use ({DEFAULT_RNA_VOCAB})",
+    )
+    parser.add_argument(
+        "--genome-tokenizer-model",
+        default=None,
+        help="SentencePiece model for genome, needed to exclude N/IUPAC from the loss as training does",
+    )
+    parser.add_argument(
+        "--pad-token-id-for-loss",
+        type=int,
+        default=None,
+        help="Must match the training config; compounds sets 0. Excluded from the loss like training does",
+    )
+    parser.add_argument("--output-name", default=None, help="JSON filename; defaults to <modality>_<split>_perplexity.json")
     parser.add_argument(
         "--checkpoint-template",
         default=None,
@@ -138,7 +235,7 @@ def main() -> int:
             "rather than the 'ex-large' the path helper normalises to."
         ),
     )
-    parser.add_argument("--max-blocks", type=int, default=0, help="0 scores the whole split")
+    parser.add_argument("--max-sequences", type=int, default=0, help="0 scores the whole split")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
@@ -148,23 +245,44 @@ def main() -> int:
 
     from molcrawl.core.paths import get_gpt2_output_path
 
-    fetch, n_rows = open_split(args)
-
-    results = {}
+    # Resolve checkpoints first: opening the split reads a multi-GB dataset, and with
+    # nothing to score that work buys an empty table.
+    checkpoints = {}
     for size in args.sizes:
         if args.checkpoint_template:
             ckpt_path = Path(args.checkpoint_template.format(size=size))
         else:
             ckpt_path = Path(get_gpt2_output_path(args.modality, size)) / "ckpt.pt"
-        if not ckpt_path.exists():
+        if ckpt_path.exists():
+            checkpoints[size] = ckpt_path
+        else:
             logger.warning("%s: no checkpoint at %s, skipping", size, ckpt_path)
-            continue
+    if not checkpoints:
+        raise SystemExit(f"no checkpoints found for sizes {args.sizes}")
+
+    ignored_ids = resolve_ignored_target_ids(
+        args.modality, args.genome_tokenizer_model, args.pad_token_id_for_loss
+    )
+    logger.info(
+        "targets excluded from the loss: %s%s",
+        ignored_ids or "none",
+        "" if ignored_ids else " (this modality excludes nothing during training either)",
+    )
+
+    fetch, n_rows = open_split(args)
+
+    results = {}
+    for size, ckpt_path in checkpoints.items():
         logger.info("%s: loading %s", size, ckpt_path)
         model, ckpt, model_args = load_model(ckpt_path, args.device)
-        loss, tokens = score_split(model, fetch, n_rows, args.device, args.max_blocks)
+        loss, tokens, sequences_scored = score_split(
+            model, fetch, n_rows, args.device, args.max_sequences, ignored_ids
+        )
         results[size] = {
             "loss": loss,
             "perplexity": math.exp(loss),
+            "checkpoint": str(ckpt_path),
+            "sequences_scored": sequences_scored,
             "tokens_scored": tokens,
             "checkpoint_iter": ckpt.get("iter_num"),
             "best_val_loss": float(ckpt.get("best_val_loss", float("nan"))),
@@ -191,11 +309,15 @@ def main() -> int:
         payload = {
             "modality": args.modality,
             "split": args.split,
-            "sequences": n_rows,
+            "sequences_in_split": n_rows,
+            # Excluded from the loss, matching get_batch. Recorded because the number
+            # is only comparable to a val loss produced with the same exclusions.
+            "ignored_target_ids": ignored_ids,
             "results": results,
         }
-        (out / f"{args.modality}_{args.split}_perplexity.json").write_text(json.dumps(payload, indent=2))
-        logger.info("wrote %s", out / f"{args.modality}_{args.split}_perplexity.json")
+        name = args.output_name or f"{args.modality}_{args.split}_perplexity.json"
+        (out / name).write_text(json.dumps(payload, indent=2))
+        logger.info("wrote %s", out / name)
     return 0
 
 

@@ -10,7 +10,7 @@
 # login node). Pass TESTS to narrow the selection:
 #
 #   sbatch --export=ALL,TESTS="tests/unit/test_pack_order.py" workflows/unit-tests.sbatch
-set -e
+set -eo pipefail
 TESTS="${TESTS:-tests/unit}"
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
 export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
@@ -20,5 +20,8 @@ cd "${REPO}"; mkdir -p workflows/slurm-logs
 echo "=== unit tests ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "tests: ${TESTS}"
 echo "code : $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
-"${REPO}/miniconda/bin/python" -m pytest ${TESTS} -q
-echo "=== rc=$? @ $(date -Is) ==="
+"${REPO}/miniconda/bin/python" -m pytest ${TESTS} -q && rc=0 || rc=$?
+# Taken explicitly: under `set -e` a trailing $? can only ever be 0, and a failing
+# pytest would otherwise leave nothing at the end of the log.
+echo "=== rc=${rc} @ $(date -Is) ==="
+exit "${rc}"
