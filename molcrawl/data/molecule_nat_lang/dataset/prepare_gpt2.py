@@ -40,6 +40,10 @@ def create_chunks(examples, context_length):
     return {"input_ids": input_ids}
 
 
+# Seed for the pre-packing shuffle. Fixed so a rebuild produces the same blocks.
+PACK_ORDER_SEED = 43
+
+
 def tokenize_batch_dataset(parquet_path, context_length, number_sample):
     """Tokenize and chunk the molecule-natural-language corpus.
 
@@ -89,6 +93,18 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
 
     tokenizer = MoleculeNatLangTokenizer()
 
+    # Shuffle each split before the examples are concatenated into one stream. The
+    # source parquet is grouped (SMolInstruct is organised by task), so packing it
+    # as-is fills every 1,024-token block with ~10 instruction pairs of the same
+    # kind and keeps that grouping for the whole run. The cost is block homogeneity:
+    # GPT-2 attends causally across the whole block with no document mask, so an
+    # example can look back at near-duplicates of itself. Shuffling only changes
+    # which examples share a block, never which split an example is in. Seeded so a
+    # rebuild reproduces the same blocks.
+    tokenize_dataset = DatasetDict(
+        {split: ds.shuffle(seed=PACK_ORDER_SEED) for split, ds in tokenize_dataset.items()}
+    )
+
     concatenated_dataset = tokenize_dataset.map(
         partial(concatenate_texts, eos_token_id=tokenizer.tokenizer.eos_token_id),
         batched=True,
@@ -102,7 +118,11 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
         batch_size=-1,
     )
 
-    path_dataset = str(Path(parquet_path).parent / "training_ready_hf_dataset")
+    # MOLNL_OUT_SUFFIX keeps a rebuild from overwriting the data the finished runs
+    # used. Any rebuild that changes what the blocks contain (the pre-packing
+    # shuffle above) has to write elsewhere and have the config repointed.
+    out_suffix = os.environ.get("MOLNL_OUT_SUFFIX", "")
+    path_dataset = str(Path(parquet_path).parent / f"training_ready_hf_dataset{out_suffix}")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     chunked_dataset.save_to_disk(path_dataset)
 

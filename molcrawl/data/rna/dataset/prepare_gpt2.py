@@ -27,6 +27,12 @@ from molcrawl.data.rna.utils.config import RnaConfig
 # differs only at shard boundaries, which is fine for LM pretraining).
 _RNA_TOKENIZE_NPROC = max(1, int(os.environ.get("RNA_TOKENIZE_NPROC", "1") or "1"))
 
+# Seed for the shuffle that runs before the split and before packing. It was
+# unseeded, so neither the split membership nor the block contents could be
+# reproduced from a rebuild — which also meant the seed fixation added for the
+# training configs stopped at the data boundary.
+PREP_SHUFFLE_SEED = 42
+
 def concatenate_texts(examples, eos_token_id):
     concatenated_ids = []
     for input_ids in examples["token"]:
@@ -68,7 +74,7 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
         data_dir=str(Path(output_dir) / "parquet_files"),
         cache_dir=str(Path(output_dir) / "hf_cache"),
         split="train",
-    ).shuffle()
+    ).shuffle(seed=PREP_SHUFFLE_SEED)
 
     if number_sample is not None and number_sample > 0:
         data = data.select(range(min(number_sample, len(data))))

@@ -11,6 +11,12 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 # the char-level ESM tokenization of the (tens of millions of) UniRef sequences.
 _PROT_TOKENIZE_NPROC = max(1, int(os.environ.get("PROTEIN_TOKENIZE_NPROC", "1") or "1"))
 
+# Seed for the shuffle that runs before the split and before packing. It was
+# unseeded, so neither the split membership nor the block contents could be
+# reproduced from a rebuild — which also meant the seed fixation added for the
+# training configs stopped at the data boundary.
+PREP_SHUFFLE_SEED = 42
+
 # add project root to path（utilsetc.)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -120,7 +126,7 @@ def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample
         "text",
         data_files={"train": [str(p) for p in raw_files]},
         split="train",
-    ).shuffle()
+    ).shuffle(seed=PREP_SHUFFLE_SEED)
 
     if number_sample is not None and number_sample > 0:
         data = data.select(range(min(number_sample, len(data))))
