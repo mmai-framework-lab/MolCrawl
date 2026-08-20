@@ -126,7 +126,13 @@ Example:
 - `eval_interval`:
   evaluation frequency (iterations)
 - `eval_iters`:
-  number of evaluation batches
+  number of evaluation batches. Ignored when `eval_sequences` is set, and passing
+  `--eval_iters` alongside it is an error rather than a silent override
+- `eval_sequences`:
+  number of validation sequences per eval point (`eval_iters` is derived from it and
+  `batch_size`). Prefer this whenever runs of different `batch_size` are compared —
+  a shared `eval_iters` gives the larger models a smaller validation sample, and
+  `best_val_loss`, a minimum over eval points, then favours the noisier run
 - `log_interval`:
   logging frequency (iterations)
 

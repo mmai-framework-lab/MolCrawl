@@ -136,7 +136,13 @@
 - `eval_interval`:
   評価頻度（イテレーション単位）
 - `eval_iters`:
-  評価に使うバッチ数
+  評価に使うバッチ数。`eval_sequences` を設定した場合は無視される。併用して
+  `--eval_iters` を渡すと、黙って捨てずにエラーになる
+- `eval_sequences`:
+  1 評価点あたりの検証系列数（`eval_iters` は本項と `batch_size` から導出される）。
+  `batch_size` が異なる run どうしを比較するときは必ずこちらを使う。`eval_iters` を
+  共通にすると大きいモデルほど検証標本が小さくなり、評価点の最小値である
+  `best_val_loss` がノイズの大きい run に有利になる
 - `log_interval`:
   ログ出力頻度（イテレーション単位）
 

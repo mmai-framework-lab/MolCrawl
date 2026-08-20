@@ -22,6 +22,7 @@ import math
 import os
 import random
 import shutil
+import sys
 import time
 from contextlib import nullcontext
 from datetime import datetime, timedelta
@@ -130,6 +131,15 @@ mfu_peak_tflops = 2250
 # used before the config-level seed was introduced.
 seed = 1337
 # -----------------------------------------------------------------------------
+
+
+def resolve_eval_iters(eval_sequences, batch_size):
+    """Batches needed to cover ``eval_sequences`` sequences at ``batch_size``.
+
+    Rounds up, so the sample is never smaller than asked for, and never returns 0.
+    """
+    return max(1, -(-int(eval_sequences) // int(batch_size)))
+
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 # RNG helpers. Defined here, ahead of the first `if __name__` block, because
 # the resume path in the second one calls them: this module runs top to
@@ -198,7 +208,15 @@ if __name__ == "__main__":
     # Only the master process evaluates, so the count is per-rank: eval_iters
     # batches of batch_size sequences.
     if eval_sequences is not None:
-        eval_iters = max(1, -(-int(eval_sequences) // batch_size))
+        if any(a.startswith("--eval_iters=") for a in sys.argv[1:]):
+            # Honouring eval_sequences would throw the explicit flag away silently.
+            raise SystemExit(
+                "--eval_iters conflicts with eval_sequences, which derives eval_iters "
+                f"from batch_size (config sets eval_sequences={eval_sequences}). Pass "
+                "--eval_sequences=... instead, or --eval_sequences=None to set "
+                "eval_iters directly."
+            )
+        eval_iters = resolve_eval_iters(eval_sequences, batch_size)
         # config_keys is snapshotted before the config file runs, and the default
         # is None (not int/float/bool/str), so both keys need recording by hand.
         config["eval_sequences"] = int(eval_sequences)
