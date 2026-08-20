@@ -22,6 +22,7 @@ import math
 import os
 import random
 import shutil
+import sys
 import time
 from contextlib import nullcontext
 from datetime import datetime, timedelta
@@ -68,6 +69,14 @@ out_dir = "out-gpt2"
 eval_interval = 2000
 log_interval = 1
 eval_iters = 200
+# Number of validation sequences one eval point should average over. eval_iters
+# counts *batches*, so a ladder that shrinks batch_size for the larger models
+# also shrinks their validation sample: at batch_size 16/16/8/4 the same
+# eval_iters=200 gives 3200/3200/1600/800 sequences, so the big models get a
+# noisier val curve and — because best_val is a minimum over eval points — a
+# larger downward selection bias. Set this instead of eval_iters to compare
+# sizes on equal footing; eval_iters is then derived from batch_size.
+eval_sequences = None
 eval_only = False  # if True, script exits right after the first eval
 always_save_checkpoint = False  # if True, always save a checkpoint after each eval
 init_from = "scratch"  # 'scratch' or 'resume' or 'gpt2*'
@@ -122,6 +131,15 @@ mfu_peak_tflops = 2250
 # used before the config-level seed was introduced.
 seed = 1337
 # -----------------------------------------------------------------------------
+
+
+def resolve_eval_iters(eval_sequences, batch_size):
+    """Batches needed to cover ``eval_sequences`` sequences at ``batch_size``.
+
+    Rounds up, so the sample is never smaller than asked for, and never returns 0.
+    """
+    return max(1, -(-int(eval_sequences) // int(batch_size)))
+
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 # RNG helpers. Defined here, ahead of the first `if __name__` block, because
 # the resume path in the second one calls them: this module runs top to
@@ -184,6 +202,38 @@ if __name__ == "__main__":
     exec(open(configurator_path).read())  # overrides from command line or config file
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
     # -----------------------------------------------------------------------------
+
+    # Derive eval_iters from eval_sequences so every ladder size averages its val
+    # loss over the same number of sequences (see the eval_sequences comment above).
+    # Only the master process evaluates, so the count is per-rank: eval_iters
+    # batches of batch_size sequences.
+    if eval_sequences is not None:
+        _eval_iters_flags = [a for a in sys.argv[1:] if a.startswith("--eval_iters=")]
+        if _eval_iters_flags:
+            # Honouring eval_sequences would throw the explicit flag away silently.
+            # The escape hatch is the equivalent sequence count, not --eval_sequences=None:
+            # the configurator refuses to override an int the config already set with None,
+            # so clearing it from the command line is not possible.
+            _requested = _eval_iters_flags[-1].split("=", 1)[1]
+            try:
+                _equivalent = f"--eval_sequences={int(_requested) * batch_size}"
+            except ValueError:
+                _equivalent = "--eval_sequences=<sequences>"
+            raise SystemExit(
+                f"{_eval_iters_flags[-1]} conflicts with eval_sequences, which derives eval_iters "
+                f"from batch_size (the config sets eval_sequences={eval_sequences}). Pass "
+                f"{_equivalent} for the same sample at batch_size={batch_size}, or drop "
+                "eval_sequences from the config file to set eval_iters directly."
+            )
+        eval_iters = resolve_eval_iters(eval_sequences, batch_size)
+        # config_keys is snapshotted before the config file runs, and the default
+        # is None (not int/float/bool/str), so both keys need recording by hand.
+        config["eval_sequences"] = int(eval_sequences)
+        config["eval_iters"] = eval_iters
+        print(
+            f"eval_sequences={eval_sequences} with batch_size={batch_size} "
+            f"-> eval_iters={eval_iters} ({eval_iters * batch_size} sequences per eval point)"
+        )
 
     # create folder if it doesn't exist
     os.makedirs(out_dir, exist_ok=True)

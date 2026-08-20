@@ -30,7 +30,12 @@ min_lr = 6e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinc
 
 # eval stuff
 eval_interval = 1000
-eval_iters = 200
+# eval_sequences fixes the *number of validation sequences* per eval point instead of
+# the number of batches, so every ladder size averages its val loss over the same
+# 3,200 sequences. batch_size shrinks with model size, so a shared eval_iters would
+# give the large models a 2-4x smaller val sample. train.py derives eval_iters from
+# this and batch_size, so setting eval_iters here as well would be dead config.
+eval_sequences = 3200
 log_interval = 10
 
 # init from checkpoint
