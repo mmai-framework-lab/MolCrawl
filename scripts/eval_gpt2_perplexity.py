@@ -1,16 +1,33 @@
-"""Held-out perplexity for the compounds GPT-2 ladder.
+"""Deterministic held-out loss / perplexity for a GPT-2 size ladder.
 
-The compounds plan asks for MoleculeNet plus "test split perplexity". The ladder
-selected checkpoints on valid, so test never fed model selection and is reportable
-as held out.
+Two reasons to score a split here rather than read the number off the training log:
 
-Scoring mirrors what training did — the same causal shift over the same packed
-1024-token blocks — so the number sits on the same scale as the val losses in the
-run logs. Perplexity is exp of the mean token loss.
+* **Deterministic and complete.** ``train.py`` estimates val loss from
+  ``eval_iters`` batches drawn *with replacement* (``get_batch``), so every eval
+  point carries sampling noise, and ``best_val`` — a minimum over those points — sits
+  below the value it estimates by an amount that grows with that noise. How many
+  points it is a minimum over depends on the modality: ~31 for compounds, ~11 for
+  protein. ``eval_sequences`` equalises how many sequences each ladder size averages
+  over, but the noise and the minimum-selection bias remain. This script walks the
+  whole split once, so neither applies.
+* **test stays held out.** Checkpoints are selected on valid, so scoring test
+  here is the first time test is touched.
+
+Scoring mirrors training: the same causal shift over the same blocks, **and the same
+targets excluded from the loss** — ``get_batch`` blanks ambiguous tokens (protein X B
+Z, genome N and the IUPAC codes) and, where the config sets it, pad positions, and
+``GPT.forward`` passes ``ignore_index``. Scoring without those exclusions would put
+protein and genome on a different scale from their own training logs, so this script
+refuses to run rather than quietly produce such a number. Perplexity is exp of the
+mean loss over the tokens that are scored.
 
 Usage:
     LEARNING_SOURCE_DIR=<dir> python scripts/eval_gpt2_perplexity.py \
-        --sizes small medium large ex-large --split test
+        --modality compounds --sizes small medium large ex-large --split test
+
+    # RNA reads the flat uint16 memmap the training runs use
+    LEARNING_SOURCE_DIR=<dir> python scripts/eval_gpt2_perplexity.py \
+        --modality rna --rna-bin-dir <dir with valid.bin/valid.json> --split valid
 """
 from __future__ import annotations
 
@@ -28,11 +45,137 @@ logger = logging.getLogger("gpt2_perplexity")
 
 BATCH_BLOCKS = 16
 
+# Modality -> the paths constant holding its GPT-2 training_ready dataset. RNA is
+# absent on purpose: its runs read a flat memmap, so it needs --rna-bin-dir.
+DATASET_DIR_CONSTANTS = {
+    "compounds": "COMPOUNDS_DATASET_DIR_GPT2",
+    "protein_sequence": "UNIPROT_DATASET_DIR",
+    "molecule_nat_lang": "MOLECULE_NAT_LANG_DATASET_DIR",
+    "genome_sequence": "REFSEQ_DATASET_DIR",
+}
+MODALITIES = sorted(set(DATASET_DIR_CONSTANTS) | {"rna"})
 
-def load_model(ckpt_path: Path, device: str):
+# RNABinDataset needs the same Geneformer token dictionary the RNA configs point at
+# (configs/rna/gpt2_*.py). It raises on None, so leaving this unset would turn the
+# documented invocation into a bare ValueError.
+DEFAULT_RNA_VOCAB = Path(__file__).resolve().parents[1] / (
+    "molcrawl/data/rna/dataset/geneformer/token_dictionary.pkl"
+)
+
+
+def checkpoint_path_for(modality: str, size: str, template: str | None) -> Path:
+    """Where a ladder wrote its checkpoint for one size.
+
+    Without a template this goes through get_gpt2_output_path, which normalises "xl"
+    to "ex-large"; a template takes the size verbatim, which is what the protein
+    ladder needs since it wrote runs/ladder-gpt2-xl.
+    """
+    from molcrawl.core.paths import get_gpt2_output_path
+
+    if template:
+        return Path(template.format(size=size))
+    return Path(get_gpt2_output_path(modality, size)) / "ckpt.pt"
+
+
+def check_modality_matches(ckpt, modality: str, ckpt_path: Path, *, strict: bool = True) -> str | None:
+    """The modality a checkpoint was trained on, compared with the one being scored.
+
+    train.py stores the resolved config, whose ``dataset`` key is the modality string,
+    so a checkpoint scored against another modality's split can be caught rather than
+    producing a plausible-looking number. Matters most with --checkpoint-template,
+    where the path carries no modality.
+
+    Returns the recorded value either way, so a run that deliberately crosses the two
+    still records what it scored. ``strict=False`` downgrades the mismatch to a
+    warning, which is what --allow-modality-mismatch and a --dataset-dir override do:
+    scoring the chembl ladder as ``--modality compounds`` against the chembl directory
+    is a legitimate combination that the plain comparison cannot tell from a mistake.
+    """
+    trained_on = (ckpt.get("config") or {}).get("dataset")
+    if trained_on and trained_on != modality:
+        message = (
+            f"{ckpt_path} was trained on {trained_on!r} but --modality is {modality!r}"
+        )
+        if strict:
+            raise SystemExit(
+                message + "; scoring it against this split would compare unrelated "
+                "things. Pass the matching --modality, or --allow-modality-mismatch "
+                "if this is deliberate."
+            )
+        logger.warning("%s; scoring anyway, and excluding what %r excluded", message, trained_on)
+    return trained_on
+
+
+def build_tokenizer(modality: str, genome_tokenizer_model: str | None):
+    """The tokenizer whose ids the modality's ambiguous-token list refers to.
+
+    Only needed where that list is non-empty, i.e. protein and genome.
+    """
+    if modality == "protein_sequence":
+        from molcrawl.data.protein_sequence.dataset.tokenizer import EsmSequenceTokenizer
+
+        return EsmSequenceTokenizer()
+    if modality == "genome_sequence":
+        from molcrawl.core.paths import get_refseq_tokenizer_path
+
+        # The path check comes before the import on purpose: sentencepiece is an
+        # optional dependency (environment.yaml pins it, CI does not install it), and
+        # "you forgot --genome-tokenizer-model" should not depend on having it.
+        model_file = genome_tokenizer_model or get_refseq_tokenizer_path()
+        if not Path(model_file).exists():
+            raise SystemExit(
+                f"genome tokenizer model not found at {model_file}; pass "
+                "--genome-tokenizer-model. It is needed to blank N and the IUPAC "
+                "codes from the loss, exactly as training does."
+            )
+        try:
+            import sentencepiece as spm
+        except ModuleNotFoundError as exc:
+            raise SystemExit(
+                "sentencepiece is needed to resolve genome's N and IUPAC ids the way "
+                "training resolved them (environment.yaml pins 0.2.0); install it, or "
+                "score a modality that excludes nothing."
+            ) from exc
+        return spm.SentencePieceProcessor(model_file=str(model_file))
+    return None
+
+
+def resolve_ignored_target_ids(modality: str, genome_tokenizer_model: str | None, pad_token_id: int | None):
+    """Target ids training excludes from the CLM loss, so scoring can exclude them too.
+
+    get_batch blanks ambiguous tokens and, when the config sets it, the pad id;
+    GPT.forward then passes ignore_index. Scoring without the same exclusions would
+    not be on the scale of the run's own val losses.
+    """
+    from molcrawl.models._collators import (
+        ambiguous_tokens_for_modality,
+        resolve_ambiguous_token_ids,
+    )
+
+    ids = []
+    tokens = ambiguous_tokens_for_modality(modality)
+    if tokens:
+        tokenizer = build_tokenizer(modality, genome_tokenizer_model)
+        if tokenizer is None:
+            raise SystemExit(
+                f"{modality} excludes {tokens} from the training loss, but this script "
+                "has no tokenizer for it, so the number would not be comparable to the "
+                "run's val losses."
+            )
+        ids = list(resolve_ambiguous_token_ids(tokenizer, tokens))
+    if pad_token_id is not None:
+        ids.append(int(pad_token_id))
+    return ids
+
+
+def build_model(ckpt, device: str):
+    """Build the model from an already-loaded checkpoint.
+
+    Separate from reading the file so the checkpoint's own metadata can be inspected
+    before anything is built or moved onto the device.
+    """
     from molcrawl.models.gpt2.model import GPT, GPTConfig
 
-    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     args = ckpt["model_args"]
     model = GPT(GPTConfig(**args))
     state = ckpt["model"]
@@ -42,35 +185,124 @@ def load_model(ckpt_path: Path, device: str):
             state = {k[len(prefix):] if k.startswith(prefix) else k: v for k, v in state.items()}
     model.load_state_dict(state)
     model.to(device).eval()
-    return model, ckpt, args
+    return model, args
+
+
+def open_split(args):
+    """Return (fetch, n_rows) where fetch(start, stop) gives a (rows, block) int64 tensor."""
+    if args.modality == "rna":
+        from molcrawl.data.rna.dataset.rna_dataset import RNABinDataset
+
+        bin_dir = args.rna_bin_dir or os.environ.get("RNA_BIN_DIR")
+        if not bin_dir:
+            raise SystemExit("--modality rna needs --rna-bin-dir (or RNA_BIN_DIR)")
+        if args.dataset_dir:
+            raise SystemExit("--dataset-dir does not apply to --modality rna; use --rna-bin-dir")
+        vocab_file = args.rna_vocab_file or DEFAULT_RNA_VOCAB
+        if not Path(vocab_file).exists():
+            # Checked here so it fails next to --rna-bin-dir rather than as a bare
+            # ValueError from inside the dataset.
+            raise SystemExit(f"RNA gene vocabulary not found at {vocab_file}; pass --rna-vocab-file")
+        logger.info("rna vocabulary: %s", vocab_file)
+        ds = RNABinDataset(bin_dir, split=args.split, vocab_file=str(vocab_file))
+
+        def fetch(start: int, stop: int):
+            return torch.stack([ds[i] for i in range(start, stop)])
+
+        return fetch, len(ds)
+
+    from datasets import load_from_disk
+
+    if args.dataset_dir:
+        dataset_dir = args.dataset_dir
+    else:
+        from molcrawl.core import paths
+
+        dataset_dir = getattr(paths, DATASET_DIR_CONSTANTS[args.modality])
+    ds = load_from_disk(dataset_dir)[args.split]
+    logger.info("%s %s split: %d sequences from %s", args.modality, args.split, len(ds), dataset_dir)
+
+    def fetch(start: int, stop: int):
+        return torch.tensor(ds[start:stop]["input_ids"], dtype=torch.long)
+
+    return fetch, len(ds)
 
 
 @torch.no_grad()
-def score_split(model, dataset, device: str, max_blocks: int = 0) -> tuple[float, int]:
-    """Mean token loss over the split, plus the number of scored tokens."""
-    n = len(dataset) if not max_blocks else min(len(dataset), max_blocks)
+def score_split(model, fetch, n_rows: int, device: str, max_sequences: int = 0, ignored_ids=()) -> tuple[float, int, int]:
+    """Mean loss over the scored targets, the count of them, and sequences read."""
+    from molcrawl.models._collators import mask_ambiguous_targets_for_clm
+    from molcrawl.models._collators.ambiguity_aware_collator import IGNORE_INDEX
+
+    n = n_rows if not max_sequences else min(n_rows, max_sequences)
     total_loss, total_tokens = 0.0, 0
     for start in range(0, n, BATCH_BLOCKS):
         stop = min(start + BATCH_BLOCKS, n)
-        block = torch.tensor(dataset[start:stop]["input_ids"], dtype=torch.long, device=device)
+        block = fetch(start, stop).to(device)
         # GPT.forward calls targets.view(-1), which rejects a non-contiguous slice.
         # Training never hit this because get_batch pins the batch first, and
         # pin_memory returns a contiguous copy.
         x, y = block[:, :-1].contiguous(), block[:, 1:].contiguous()
+        if ignored_ids:
+            # Same helper get_batch uses, so the excluded positions match exactly.
+            y = mask_ambiguous_targets_for_clm(y, ignored_ids).contiguous()
         _, loss = model(x, y)
-        tokens = y.numel()
+        # cross_entropy averages over the kept targets only, so weight by those.
+        tokens = int((y != IGNORE_INDEX).sum()) if ignored_ids else y.numel()
+        if not tokens:
+            continue
         total_loss += float(loss) * tokens
         total_tokens += tokens
         if start and start % (BATCH_BLOCKS * 200) == 0:
-            logger.info("    %d/%d blocks, running loss %.4f", stop, n, total_loss / total_tokens)
-    return total_loss / total_tokens, total_tokens
+            logger.info("    %d/%d sequences, running loss %.4f", stop, n, total_loss / total_tokens)
+    return total_loss / total_tokens, total_tokens, n
 
 
 def main() -> int:
-    parser = ArgumentParser(description="Held-out perplexity for the compounds GPT-2 ladder")
+    parser = ArgumentParser(description="Deterministic held-out perplexity for a GPT-2 ladder")
+    parser.add_argument("--modality", default="compounds", choices=MODALITIES)
     parser.add_argument("--sizes", nargs="+", default=["small", "medium", "large", "ex-large"])
-    parser.add_argument("--split", default="test")
-    parser.add_argument("--max-blocks", type=int, default=0, help="0 scores the whole split")
+    parser.add_argument("--split", default="test", help="valid or test")
+    parser.add_argument("--dataset-dir", default=None, help="override the modality's dataset dir")
+    parser.add_argument("--rna-bin-dir", default=None, help="dir holding <split>.bin/<split>.json")
+    parser.add_argument(
+        "--rna-vocab-file",
+        default=None,
+        help=f"Geneformer token dictionary; defaults to the one the configs use ({DEFAULT_RNA_VOCAB})",
+    )
+    parser.add_argument(
+        "--genome-tokenizer-model",
+        default=None,
+        help="SentencePiece model for genome, needed to exclude N/IUPAC from the loss as training does",
+    )
+    parser.add_argument(
+        "--pad-token-id-for-loss",
+        type=int,
+        default=None,
+        help=(
+            "Pass only when the run's config sets pad_token_id_for_loss, and pass that "
+            "value. In this repo only configs/genome_sequence/gpt2_small_subset.py does "
+            "(= 5); the GPT-2 ladders do not. Passing it otherwise excludes targets "
+            "training scored, which is the scale mismatch this script exists to avoid"
+        ),
+    )
+    parser.add_argument("--output-name", default=None, help="JSON filename; defaults to <modality>_<split>_perplexity.json")
+    parser.add_argument(
+        "--allow-modality-mismatch",
+        action="store_true",
+        help="Score a checkpoint whose config names a different modality than --modality",
+    )
+    parser.add_argument(
+        "--checkpoint-template",
+        default=None,
+        help=(
+            "Path pattern with a {size} placeholder, for ladders that do not sit at "
+            "get_gpt2_output_path. The protein ladder is one: its runs wrote "
+            ".../protein_sequence/runs/ladder-gpt2-{size}/ckpt.pt, and it uses 'xl' "
+            "rather than the 'ex-large' the path helper normalises to."
+        ),
+    )
+    parser.add_argument("--max-sequences", type=int, default=0, help="0 scores the whole split")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
@@ -78,32 +310,72 @@ def main() -> int:
     if not os.environ.get("LEARNING_SOURCE_DIR"):
         raise SystemExit("LEARNING_SOURCE_DIR is not set")
 
-    from datasets import load_from_disk
+    # Resolve checkpoints first: opening the split reads a multi-GB dataset, and with
+    # nothing to score that work buys an empty table.
+    checkpoints = {}
+    for size in args.sizes:
+        ckpt_path = checkpoint_path_for(args.modality, size, args.checkpoint_template)
+        if ckpt_path.exists():
+            checkpoints[size] = ckpt_path
+        else:
+            logger.warning("%s: no checkpoint at %s, skipping", size, ckpt_path)
+    if not checkpoints:
+        raise SystemExit(f"no checkpoints found for sizes {args.sizes}")
 
-    from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_GPT2, get_gpt2_output_path
+    # train.py looks its ambiguous-token list up by the config's `dataset` string, and
+    # that string is finer-grained than --modality: `protein_sequence_proteingym` gets
+    # an empty list, so its ladder trained with X B Z scored. Deriving the exclusions
+    # from the checkpoint keeps scoring aligned with whatever the run actually did,
+    # including the variants --modality has no name for.
+    # A mismatch is only advisory when the caller has said the crossing is intended.
+    strict = not (args.allow_modality_mismatch or args.dataset_dir)
+    exclusions: dict[str, list] = {}
 
-    dataset = load_from_disk(COMPOUNDS_DATASET_DIR_GPT2)[args.split]
-    logger.info("%s split: %d blocks", args.split, len(dataset))
+    # Opened on the first checkpoint that passes the check, so a mismatch costs
+    # neither the dataset read nor a model build.
+    opened: dict[str, object] = {}
+
+    def split():
+        if not opened:
+            fetch, n_rows = open_split(args)
+            opened["fetch"], opened["n_rows"] = fetch, n_rows
+        return opened["fetch"], opened["n_rows"]
 
     results = {}
-    for size in args.sizes:
-        ckpt_path = Path(get_gpt2_output_path("compounds", size)) / "ckpt.pt"
-        if not ckpt_path.exists():
-            logger.warning("%s: no checkpoint at %s, skipping", size, ckpt_path)
-            continue
+    for size, ckpt_path in checkpoints.items():
         logger.info("%s: loading %s", size, ckpt_path)
-        model, ckpt, model_args = load_model(ckpt_path, args.device)
-        loss, tokens = score_split(model, dataset, args.device, args.max_blocks)
+        ckpt = torch.load(ckpt_path, map_location=args.device, weights_only=False)
+        trained_on = check_modality_matches(ckpt, args.modality, ckpt_path, strict=strict)
+        scored_as = trained_on or args.modality
+        if scored_as not in exclusions:
+            exclusions[scored_as] = resolve_ignored_target_ids(
+                scored_as, args.genome_tokenizer_model, args.pad_token_id_for_loss
+            )
+            logger.info(
+                "targets excluded from the loss for %s: %s",
+                scored_as, exclusions[scored_as] or "none (training excluded nothing either)",
+            )
+        ignored_ids = exclusions[scored_as]
+        model, model_args = build_model(ckpt, args.device)
+        fetch, n_rows = split()
+        loss, tokens, sequences_scored = score_split(
+            model, fetch, n_rows, args.device, args.max_sequences, ignored_ids
+        )
         results[size] = {
             "loss": loss,
             "perplexity": math.exp(loss),
+            "checkpoint": str(ckpt_path),
+            "trained_on": trained_on,
+            "scored_as": scored_as,
+            "ignored_target_ids": ignored_ids,
+            "sequences_scored": sequences_scored,
             "tokens_scored": tokens,
             "checkpoint_iter": ckpt.get("iter_num"),
             "best_val_loss": float(ckpt.get("best_val_loss", float("nan"))),
             "params_millions": sum(p.numel() for p in model.parameters()) / 1e6,
         }
         logger.info(
-            "%s: %s loss %.4f, perplexity %.3f (val %.4f at iter %s)",
+            "%s: %s loss %.4f, perplexity %.3f (logged best_val %.4f at iter %s)",
             size, args.split, loss, results[size]["perplexity"],
             results[size]["best_val_loss"], results[size]["checkpoint_iter"],
         )
@@ -111,17 +383,26 @@ def main() -> int:
         if args.device.startswith("cuda"):
             torch.cuda.empty_cache()
 
-    print(f"\n{'size':10s} {'params(M)':>10s} {'val loss':>9s} {args.split + ' loss':>10s} {'perplexity':>11s}")
+    header = f"{'size':10s} {'params(M)':>10s} {'logged best_val':>16s} {args.split + ' loss':>12s} {'perplexity':>11s}"
+    print(f"\n{header}")
     for size, r in results.items():
-        print(f"{size:10s} {r['params_millions']:>10.1f} {r['best_val_loss']:>9.4f} "
-              f"{r['loss']:>10.4f} {r['perplexity']:>11.3f}")
+        print(f"{size:10s} {r['params_millions']:>10.1f} {r['best_val_loss']:>16.4f} "
+              f"{r['loss']:>12.4f} {r['perplexity']:>11.3f}")
 
     if args.output_dir:
         out = Path(args.output_dir)
         out.mkdir(parents=True, exist_ok=True)
-        payload = {"split": args.split, "blocks": len(dataset), "results": results}
-        (out / f"{args.split}_perplexity.json").write_text(json.dumps(payload, indent=2))
-        logger.info("wrote %s", out / f"{args.split}_perplexity.json")
+        payload = {
+            "modality": args.modality,
+            "split": args.split,
+            "sequences_in_split": opened.get("n_rows"),
+            # Exclusions are per checkpoint (see `scored_as` in each result), because
+            # the config string they are looked up by is finer-grained than --modality.
+            "results": results,
+        }
+        name = args.output_name or f"{args.modality}_{args.split}_perplexity.json"
+        (out / name).write_text(json.dumps(payload, indent=2))
+        logger.info("wrote %s", out / name)
     return 0
 
 
