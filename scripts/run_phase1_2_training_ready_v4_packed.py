@@ -16,18 +16,27 @@ Differences from v3 that matter for the research numbers:
     row counts this script reports.
 
 GPT-2 and BERT read byte-identical data (``input_ids`` only, matching the protein
-training_ready layout), but both directories are written so the existing config
-paths (``COMPOUNDS_DATASET_DIR_GPT2`` / ``_BERT``) keep working unchanged.
+training_ready layout), and with ``PREP_OUT_SUFFIX`` unset both directories are written
+where the existing config paths (``COMPOUNDS_DATASET_DIR_GPT2`` / ``_BERT``) already
+point, so those configs keep working unchanged.
 
 Split assignment reuses v3's ``default_rng(42)`` draw over the input parquet order,
 so a molecule present in both builds lands in the same split.  Packing is done
-*after* splitting, so no block ever straddles a split boundary.
+*after* splitting, so no block ever straddles a split boundary.  Within a split the
+molecules are permuted before packing (``PACK_ORDER_SEED``) so a block is not a run
+of consecutive parquet rows; see the constant for why that matters.
 
 Required env:
   MOLCRAWL_REPO  -> repo root (for assets/molecules/vocab.txt).  Default: this repo.
   ORGANIX13_DIR  -> {LEARNING_SOURCE_DIR}/compounds/organix13 (input + output root).
 Optional env:
   V4_LIMIT       -> only process the first N SMILES (dry run / validation).
+  PACK_ORDER     -> "shuffled" (default) or "source". "source" reproduces the
+                    2026-08-05 v4 build, which concatenated in parquet order.
+  PREP_OUT_SUFFIX-> appended to both output dir names, and read by the prep modules
+                    for the other modalities too. Set it for any rebuild that is not
+                    meant to replace the data the finished runs used, e.g.
+                    PREP_OUT_SUFFIX=_shuffled -> training_ready_hf_dataset_gpt2_shuffled.
   V4_WORKERS     -> tokenizer worker processes (default 16).
 """
 from __future__ import annotations
@@ -50,17 +59,43 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("phase1_2_v4")
 
 REPO = Path(os.environ.get("MOLCRAWL_REPO", "/data1/rkp00024/matsubara/MolCrawl"))
-sys.path.insert(0, str(REPO))
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
 _ORG = Path(os.environ["ORGANIX13_DIR"])
 INPUT_PARQUET = _ORG / "OrganiX13.parquet"
-OUT_BERT = _ORG / "training_ready_hf_dataset_bert"
-OUT_GPT2 = _ORG / "training_ready_hf_dataset_gpt2"
+# Output suffix, shared with the prep modules under molcrawl/data so that one
+# variable covers a rebuild of every modality. A second name here would mean a
+# five-modality rebuild that sets only the shared one silently overwrites compounds
+# while the other four are safely diverted — the worst arrangement, because the
+# four that worked make the fifth look safe too.
+OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
+OUT_BERT = _ORG / f"training_ready_hf_dataset_bert{OUT_SUFFIX}"
+OUT_GPT2 = _ORG / f"training_ready_hf_dataset_gpt2{OUT_SUFFIX}"
 
 CONTEXT_LENGTH = 1024
 PAD_ID = 0            # never appears in v4 output; kept for the verify assertion
 SEP_ID = 13           # CompoundsTokenizer.eos_token_id — the molecule separator
 SPLIT_SEED = 42       # same draw as v3 so split membership is stable
+# Order the molecules are concatenated in before the stream is cut into blocks.
+# The parquet is not in random order (the first million rows top out at 68 tokens
+# against 128 for the whole file), so packing it as-is puts ~26 mutually similar
+# molecules in every block and keeps them there for the whole run.
+#
+# The cost is block homogeneity, not batch diversity: get_batch redraws the rows
+# every iteration, so a batch is still a random sample of blocks. What is fixed is
+# which molecules share a block — and GPT-2 attends causally over the whole block
+# with no document mask (models/gpt2/model.py: attn_mask=None, is_causal=True), so
+# in a homogeneous block a molecule can look back at near-copies of itself.
+#
+# Permuting the split first removes that correlation; set PACK_ORDER=source to
+# reproduce the 2026-08-05 v4 build byte for byte.
+PACK_ORDER = os.environ.get("PACK_ORDER", "shuffled")
+if PACK_ORDER not in ("shuffled", "source"):
+    # Checked here rather than at the packing step: a typo would otherwise surface
+    # only after tokenising 13M SMILES across 16 processes.
+    raise SystemExit(f"PACK_ORDER must be 'shuffled' or 'source', got {PACK_ORDER!r}")
+PACK_ORDER_SEED = 43
 CHUNK = 5000
 
 # Ladder settings the configs must match (see tmp/compounds-reply-to-decision-2026-08-05.md).
@@ -147,6 +182,23 @@ def _write_dataset_dict(out_dir: Path) -> None:
     )
 
 
+def _split_order(idx, split_code):
+    """Order one split's molecules for packing.
+
+    Permutes within the split only: membership stays exactly as the SPLIT_SEED draw
+    assigned it, so this changes which molecules share a block, never which split a
+    molecule is in. A per-split offset keeps the three splits from sharing a
+    permutation. PACK_ORDER=source returns the parquet order untouched.
+
+    The permuted order reads ``all_ids_flat`` randomly instead of sequentially, which
+    costs cache misses across a multi-GB array; the Python loop in _pack_split
+    dominates, but a rebuild may still take longer than the source-order one did.
+    """
+    if PACK_ORDER == "source":
+        return idx
+    return np.random.default_rng(PACK_ORDER_SEED + split_code).permutation(idx)
+
+
 def _pack_split(idx, raw_lens, row_start, row_end, all_ids_flat):
     """Concatenate the split's molecules with [SEP] and cut into 1024-token blocks."""
     n_mol = len(idx)
@@ -222,8 +274,9 @@ def build_and_save(smi_arr):
 
     logger.info("[step 3/4] pack into %d-token blocks and save (per split)", CONTEXT_LENGTH)
     summary = {}
+    logger.info("  packing order: %s (seed %d)", PACK_ORDER, PACK_ORDER_SEED)
     for split_code, split_name in [(0, "train"), (1, "valid"), (2, "test")]:
-        idx = np.where(valid_mask & (split_ids == split_code))[0]
+        idx = _split_order(np.where(valid_mask & (split_ids == split_code))[0], split_code)
         t0 = time.time()
         blocks, stream_len, remainder = _pack_split(idx, raw_lens, row_start, row_end, all_ids_flat)
         logger.info(

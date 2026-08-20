@@ -40,6 +40,16 @@ def create_chunks(examples, context_length):
     return {"input_ids": input_ids}
 
 
+# Seed for the pre-packing shuffle and for the smoke-test subsample below. Fixed so
+# a rebuild produces the same blocks.
+PACK_ORDER_SEED = 43
+
+# Appended to the output directory name. Empty writes the production path the config
+# points at; set it for any rebuild that is not meant to replace the data the
+# finished runs used.
+PREP_OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
+
+
 def tokenize_batch_dataset(parquet_path, context_length, number_sample):
     """Tokenize and chunk the molecule-natural-language corpus.
 
@@ -65,22 +75,23 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
         raise KeyError("Neither 'valid' nor 'validation' split found in dataset")
 
     if number_sample is not None and number_sample > 0:
+        rng = np.random.default_rng(PACK_ORDER_SEED)
         tokenize_dataset["train"] = tokenize_dataset["train"].select(
-            np.random.choice(
+            rng.choice(
                 len(tokenize_dataset["train"]),
                 min(int(number_sample * 0.8), len(tokenize_dataset["train"])),
                 replace=False,
             )
         )
         tokenize_dataset["valid"] = tokenize_dataset["valid"].select(
-            np.random.choice(
+            rng.choice(
                 len(tokenize_dataset["valid"]),
                 min(int(number_sample * 0.1), len(tokenize_dataset["valid"])),
                 replace=False,
             )
         )
         tokenize_dataset["test"] = tokenize_dataset["test"].select(
-            np.random.choice(
+            rng.choice(
                 len(tokenize_dataset["test"]),
                 min(int(number_sample * 0.1), len(tokenize_dataset["test"])),
                 replace=False,
@@ -88,6 +99,16 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
         )
 
     tokenizer = MoleculeNatLangTokenizer()
+
+    # Shuffle each split before the examples are concatenated into one stream. The
+    # source parquet is grouped (SMolInstruct is organised by task), so packing it
+    # as-is fills every 1,024-token block with ~10 instruction pairs of the same
+    # kind and keeps that grouping for the whole run. The cost is block homogeneity:
+    # GPT-2 attends causally across the whole block with no document mask, so an
+    # example can look back at near-duplicates of itself. Shuffling only changes
+    # which examples share a block, never which split an example is in. Seeded so a
+    # rebuild reproduces the same blocks.
+    tokenize_dataset = tokenize_dataset.shuffle(seed=PACK_ORDER_SEED)
 
     concatenated_dataset = tokenize_dataset.map(
         partial(concatenate_texts, eos_token_id=tokenizer.tokenizer.eos_token_id),
@@ -102,7 +123,7 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
         batch_size=-1,
     )
 
-    path_dataset = str(Path(parquet_path).parent / "training_ready_hf_dataset")
+    path_dataset = str(Path(parquet_path).parent / f"training_ready_hf_dataset{PREP_OUT_SUFFIX}")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     chunked_dataset.save_to_disk(path_dataset)
 
