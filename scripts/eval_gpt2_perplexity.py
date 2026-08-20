@@ -7,7 +7,8 @@ Two reasons to score a split here rather than read the number off the training l
   point carries sampling noise, and ``best_val`` — a minimum over ~32 such points —
   sits below the value it estimates by an amount that grows with that noise.
   ``eval_sequences`` equalises how many sequences each ladder size averages over,
-  but the noise and the minimum-selection bias remain. This script walks the whole
+  but the noise and the minimum-selection bias remain. How many points that minimum
+  is taken over is per modality — ~31 for compounds, ~11 for protein. This script walks the whole
   split once, so neither applies.
 * **test stays held out.** Checkpoints are selected on valid, so scoring test
   here is the first time test is touched.
@@ -60,6 +61,38 @@ MODALITIES = sorted(set(DATASET_DIR_CONSTANTS) | {"rna"})
 DEFAULT_RNA_VOCAB = Path(__file__).resolve().parents[1] / (
     "molcrawl/data/rna/dataset/geneformer/token_dictionary.pkl"
 )
+
+
+def checkpoint_path_for(modality: str, size: str, template: str | None) -> Path:
+    """Where a ladder wrote its checkpoint for one size.
+
+    Without a template this goes through get_gpt2_output_path, which normalises "xl"
+    to "ex-large"; a template takes the size verbatim, which is what the protein
+    ladder needs since it wrote runs/ladder-gpt2-xl.
+    """
+    from molcrawl.core.paths import get_gpt2_output_path
+
+    if template:
+        return Path(template.format(size=size))
+    return Path(get_gpt2_output_path(modality, size)) / "ckpt.pt"
+
+
+def check_modality_matches(ckpt, modality: str, ckpt_path: Path) -> str | None:
+    """Compare the modality the checkpoint was trained on with the one being scored.
+
+    train.py stores the resolved config, whose ``dataset`` key is the modality string,
+    so a checkpoint scored against another modality's split can be caught rather than
+    producing a plausible-looking number. Matters most with --checkpoint-template,
+    where the path carries no modality.
+    """
+    trained_on = (ckpt.get("config") or {}).get("dataset")
+    if trained_on and trained_on != modality:
+        raise SystemExit(
+            f"{ckpt_path} was trained on {trained_on!r} but --modality is {modality!r}; "
+            "scoring it against this split would compare unrelated things. Pass the "
+            "matching --modality, or --allow-modality-mismatch if this is deliberate."
+        )
+    return trained_on
 
 
 def build_tokenizer(modality: str, genome_tokenizer_model: str | None):
@@ -222,9 +255,19 @@ def main() -> int:
         "--pad-token-id-for-loss",
         type=int,
         default=None,
-        help="Must match the training config; compounds sets 0. Excluded from the loss like training does",
+        help=(
+            "Pass only when the run's config sets pad_token_id_for_loss, and pass that "
+            "value. In this repo only configs/genome_sequence/gpt2_small_subset.py does "
+            "(= 5); the GPT-2 ladders do not. Passing it otherwise excludes targets "
+            "training scored, which is the scale mismatch this script exists to avoid"
+        ),
     )
     parser.add_argument("--output-name", default=None, help="JSON filename; defaults to <modality>_<split>_perplexity.json")
+    parser.add_argument(
+        "--allow-modality-mismatch",
+        action="store_true",
+        help="Score a checkpoint whose config names a different modality than --modality",
+    )
     parser.add_argument(
         "--checkpoint-template",
         default=None,
@@ -243,16 +286,11 @@ def main() -> int:
     if not os.environ.get("LEARNING_SOURCE_DIR"):
         raise SystemExit("LEARNING_SOURCE_DIR is not set")
 
-    from molcrawl.core.paths import get_gpt2_output_path
-
     # Resolve checkpoints first: opening the split reads a multi-GB dataset, and with
     # nothing to score that work buys an empty table.
     checkpoints = {}
     for size in args.sizes:
-        if args.checkpoint_template:
-            ckpt_path = Path(args.checkpoint_template.format(size=size))
-        else:
-            ckpt_path = Path(get_gpt2_output_path(args.modality, size)) / "ckpt.pt"
+        ckpt_path = checkpoint_path_for(args.modality, size, args.checkpoint_template)
         if ckpt_path.exists():
             checkpoints[size] = ckpt_path
         else:
@@ -275,6 +313,7 @@ def main() -> int:
     for size, ckpt_path in checkpoints.items():
         logger.info("%s: loading %s", size, ckpt_path)
         model, ckpt, model_args = load_model(ckpt_path, args.device)
+        trained_on = None if args.allow_modality_mismatch else check_modality_matches(ckpt, args.modality, ckpt_path)
         loss, tokens, sequences_scored = score_split(
             model, fetch, n_rows, args.device, args.max_sequences, ignored_ids
         )
@@ -282,6 +321,7 @@ def main() -> int:
             "loss": loss,
             "perplexity": math.exp(loss),
             "checkpoint": str(ckpt_path),
+            "trained_on": trained_on,
             "sequences_scored": sequences_scored,
             "tokens_scored": tokens,
             "checkpoint_iter": ckpt.get("iter_num"),
