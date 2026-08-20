@@ -89,6 +89,11 @@ workflows/hugging_face/
 # Keep them on disk locally without committing them.
 workflows/_*
 
+# Job output. Every sbatch in workflows/ writes here via --output=%x-%j.out, so it
+# grows unboundedly next to the launchers it belongs to (389 MB / 769 files at the
+# time of writing) and a broad `git add workflows` sweeps all of it into a commit.
+workflows/slurm-logs/
+
 # Scratch workspace. Session-scoped notes, HuggingFace caches, autopilot runtime
 # state and one-off survey output all live here; none of it is ever committed.
 # Supersedes the per-subdirectory rules that had accumulated for this directory.
