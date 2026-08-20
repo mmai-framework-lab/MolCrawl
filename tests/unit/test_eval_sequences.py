@@ -61,4 +61,4 @@ def test_ladder_configs_do_not_also_set_eval_iters():
         for size in SIZES:
             path = CONFIG_ROOT / modality / f"gpt2_{size}.py"
             lines = path.read_text(encoding="utf-8").splitlines()
-            assert not [l for l in lines if l.startswith("eval_iters")], path
+            assert not [line for line in lines if line.startswith("eval_iters")], path
