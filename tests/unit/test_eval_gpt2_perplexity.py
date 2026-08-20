@@ -116,45 +116,104 @@ def test_a_checkpoint_from_another_modality_is_refused(script):
     assert script.check_modality_matches(ckpt, "protein_sequence", pathlib.Path("/x/ckpt.pt")) == "protein_sequence"
 
 
+def test_an_allowed_mismatch_still_records_what_it_scored(script):
+    """The mismatch case is where trained_on matters most, so it must not go missing."""
+    ckpt = {"config": {"dataset": "protein_sequence"}}
+    got = script.check_modality_matches(ckpt, "compounds", pathlib.Path("/x/ckpt.pt"), strict=False)
+    assert got == "protein_sequence"
+
+
+def test_exclusions_follow_the_config_string_not_the_modality_flag(script):
+    """`protein_sequence_proteingym` trained without the X B Z mask; scoring must match.
+
+    train.py looks the list up by the config's `dataset` string, and
+    MODALITY_TO_AMBIGUOUS has no entry for the proteingym variant, so it resolves to
+    nothing. Excluding protein's tokens for it would be the mismatch in reverse.
+    """
+    assert script.resolve_ignored_target_ids("protein_sequence_proteingym", None, None) == []
+    assert script.resolve_ignored_target_ids("protein_sequence", None, None) != []
+
+
+def test_the_variant_config_strings_are_real():
+    """Guards the premise of the test above against the configs being renamed."""
+    root = pathlib.Path(__file__).resolve().parents[2] / "molcrawl/tasks/pretrain/configs"
+    seen = {
+        line.split(" = ", 1)[1].strip().strip('"')
+        for path in root.rglob("gpt2_*.py")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("dataset = ")
+    }
+    assert "protein_sequence_proteingym" in seen
+    assert seen - set(script_modalities()), "variants beyond --modality should exist"
+
+
+def script_modalities():
+    return {"compounds", "protein_sequence", "rna", "molecule_nat_lang", "genome_sequence"}
+
+
 def test_a_checkpoint_without_a_recorded_modality_is_allowed(script):
     """Older checkpoints predate the stored config; refusing them would help nobody."""
     assert script.check_modality_matches({}, "compounds", pathlib.Path("/x/ckpt.pt")) is None
 
 
-def test_loss_is_weighted_by_kept_targets_not_row_size(script):
-    """cross_entropy averages over kept targets, so the weight must count those.
+def test_loss_is_weighted_by_kept_targets_across_batches(script):
+    """cross_entropy averages over kept targets, so the running weight must count those.
 
-    Weighting by y.numel() instead would under-weight a batch whose targets are mostly
-    excluded, which is exactly the case ambiguous tokens and padding produce.
+    Within a single batch the two weightings agree (loss*w/w), so this spans two
+    batches with different exclusion rates - which is where weighting by y.numel()
+    actually produces a different mean.
     """
     import torch
     from molcrawl.models._collators.ambiguity_aware_collator import IGNORE_INDEX
 
-    AMBIGUOUS = 7
+    AMBIGUOUS, SEQ = 7, 8
+    per_row = SEQ - 1  # targets after the causal shift
 
     class StubModel:
         """Returns what GPT.forward returns: cross_entropy with ignore_index=-1."""
 
         def __call__(self, x, y):
-            # One logit per class, constant, so the loss depends only on which targets survive.
             logits = torch.zeros(y.shape[0], y.shape[1], 16)
-            logits[..., 1] = 2.0  # class 1 is the confident prediction
+            logits[..., 1] = 4.0  # class 1 is cheap, anything else is expensive
             loss = torch.nn.functional.cross_entropy(
                 logits.view(-1, 16), y.reshape(-1), ignore_index=IGNORE_INDEX
             )
             return logits, loss
 
-    # Row 0 is all class 1 (low loss); row 1 is all the ambiguous token.
-    rows = torch.tensor([[1] * 8, [AMBIGUOUS] * 8])
+    # Batch 1 (16 rows): class 1 throughout, nothing excluded -> cheap loss.
+    # Batch 2 (16 rows): class 2 for the first half, ambiguous after -> expensive loss
+    #                    over 3 of the 7 targets per row.
+    batch1 = torch.tensor([[1] * SEQ] * script.BATCH_BLOCKS)
+    batch2 = torch.tensor([[2, 2, 2, 2, AMBIGUOUS, AMBIGUOUS, AMBIGUOUS, AMBIGUOUS]] * script.BATCH_BLOCKS)
+    rows = torch.cat([batch1, batch2])
 
     def fetch(start, stop):
         return rows[start:stop]
 
-    kept_loss, kept_tokens, _ = script.score_split(StubModel(), fetch, 2, "cpu", 0, [AMBIGUOUS])
-    all_loss, all_tokens, _ = script.score_split(StubModel(), fetch, 2, "cpu", 0, ())
+    got, kept_tokens, sequences = script.score_split(
+        StubModel(), fetch, len(rows), "cpu", 0, [AMBIGUOUS]
+    )
+    assert sequences == 2 * script.BATCH_BLOCKS
 
-    # Only row 0's targets survive the exclusion: 1 row x 7 shifted positions.
-    assert kept_tokens == 7
-    assert all_tokens == 14
-    # With the ambiguous row dropped the mean is over the confident targets alone.
-    assert kept_loss < all_loss
+    # Per-batch losses, to build both weightings by hand.
+    model = StubModel()
+    from molcrawl.models._collators import mask_ambiguous_targets_for_clm
+
+    losses, kept = [], []
+    for batch in (batch1, batch2):
+        x, y = batch[:, :-1].contiguous(), batch[:, 1:].contiguous()
+        y = mask_ambiguous_targets_for_clm(y, [AMBIGUOUS]).contiguous()
+        losses.append(float(model(x, y)[1]))
+        kept.append(int((y != IGNORE_INDEX).sum()))
+
+    assert kept == [script.BATCH_BLOCKS * per_row, script.BATCH_BLOCKS * 3]
+    assert kept_tokens == sum(kept)
+
+    by_kept = (losses[0] * kept[0] + losses[1] * kept[1]) / sum(kept)
+    numel = script.BATCH_BLOCKS * per_row
+    by_numel = (losses[0] * numel + losses[1] * numel) / (2 * numel)
+
+    assert got == pytest.approx(by_kept, rel=1e-6)
+    # The regression this guards: the two weightings must not coincide here, or the
+    # test would pass with either.
+    assert abs(by_kept - by_numel) > 0.05, (by_kept, by_numel)

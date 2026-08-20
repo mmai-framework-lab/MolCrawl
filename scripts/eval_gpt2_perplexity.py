@@ -4,12 +4,12 @@ Two reasons to score a split here rather than read the number off the training l
 
 * **Deterministic and complete.** ``train.py`` estimates val loss from
   ``eval_iters`` batches drawn *with replacement* (``get_batch``), so every eval
-  point carries sampling noise, and ``best_val`` — a minimum over ~32 such points —
-  sits below the value it estimates by an amount that grows with that noise.
-  ``eval_sequences`` equalises how many sequences each ladder size averages over,
-  but the noise and the minimum-selection bias remain. How many points that minimum
-  is taken over is per modality — ~31 for compounds, ~11 for protein. This script walks the whole
-  split once, so neither applies.
+  point carries sampling noise, and ``best_val`` — a minimum over those points — sits
+  below the value it estimates by an amount that grows with that noise. How many
+  points it is a minimum over depends on the modality: ~31 for compounds, ~11 for
+  protein. ``eval_sequences`` equalises how many sequences each ladder size averages
+  over, but the noise and the minimum-selection bias remain. This script walks the
+  whole split once, so neither applies.
 * **test stays held out.** Checkpoints are selected on valid, so scoring test
   here is the first time test is touched.
 
@@ -77,21 +77,32 @@ def checkpoint_path_for(modality: str, size: str, template: str | None) -> Path:
     return Path(get_gpt2_output_path(modality, size)) / "ckpt.pt"
 
 
-def check_modality_matches(ckpt, modality: str, ckpt_path: Path) -> str | None:
-    """Compare the modality the checkpoint was trained on with the one being scored.
+def check_modality_matches(ckpt, modality: str, ckpt_path: Path, *, strict: bool = True) -> str | None:
+    """The modality a checkpoint was trained on, compared with the one being scored.
 
     train.py stores the resolved config, whose ``dataset`` key is the modality string,
     so a checkpoint scored against another modality's split can be caught rather than
     producing a plausible-looking number. Matters most with --checkpoint-template,
     where the path carries no modality.
+
+    Returns the recorded value either way, so a run that deliberately crosses the two
+    still records what it scored. ``strict=False`` downgrades the mismatch to a
+    warning, which is what --allow-modality-mismatch and a --dataset-dir override do:
+    scoring the chembl ladder as ``--modality compounds`` against the chembl directory
+    is a legitimate combination that the plain comparison cannot tell from a mistake.
     """
     trained_on = (ckpt.get("config") or {}).get("dataset")
     if trained_on and trained_on != modality:
-        raise SystemExit(
-            f"{ckpt_path} was trained on {trained_on!r} but --modality is {modality!r}; "
-            "scoring it against this split would compare unrelated things. Pass the "
-            "matching --modality, or --allow-modality-mismatch if this is deliberate."
+        message = (
+            f"{ckpt_path} was trained on {trained_on!r} but --modality is {modality!r}"
         )
+        if strict:
+            raise SystemExit(
+                message + "; scoring it against this split would compare unrelated "
+                "things. Pass the matching --modality, or --allow-modality-mismatch "
+                "if this is deliberate."
+            )
+        logger.warning("%s; scoring anyway, and excluding what %r excluded", message, trained_on)
     return trained_on
 
 
@@ -148,10 +159,14 @@ def resolve_ignored_target_ids(modality: str, genome_tokenizer_model: str | None
     return ids
 
 
-def load_model(ckpt_path: Path, device: str):
+def build_model(ckpt, device: str):
+    """Build the model from an already-loaded checkpoint.
+
+    Separate from reading the file so the checkpoint's own metadata can be inspected
+    before anything is built or moved onto the device.
+    """
     from molcrawl.models.gpt2.model import GPT, GPTConfig
 
-    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     args = ckpt["model_args"]
     model = GPT(GPTConfig(**args))
     state = ckpt["model"]
@@ -161,7 +176,7 @@ def load_model(ckpt_path: Path, device: str):
             state = {k[len(prefix):] if k.startswith(prefix) else k: v for k, v in state.items()}
     model.load_state_dict(state)
     model.to(device).eval()
-    return model, ckpt, args
+    return model, args
 
 
 def open_split(args):
@@ -298,22 +313,42 @@ def main() -> int:
     if not checkpoints:
         raise SystemExit(f"no checkpoints found for sizes {args.sizes}")
 
-    ignored_ids = resolve_ignored_target_ids(
-        args.modality, args.genome_tokenizer_model, args.pad_token_id_for_loss
-    )
-    logger.info(
-        "targets excluded from the loss: %s%s",
-        ignored_ids or "none",
-        "" if ignored_ids else " (this modality excludes nothing during training either)",
-    )
+    # train.py looks its ambiguous-token list up by the config's `dataset` string, and
+    # that string is finer-grained than --modality: `protein_sequence_proteingym` gets
+    # an empty list, so its ladder trained with X B Z scored. Deriving the exclusions
+    # from the checkpoint keeps scoring aligned with whatever the run actually did,
+    # including the variants --modality has no name for.
+    # A mismatch is only advisory when the caller has said the crossing is intended.
+    strict = not (args.allow_modality_mismatch or args.dataset_dir)
+    exclusions: dict[str, list] = {}
 
-    fetch, n_rows = open_split(args)
+    # Opened on the first checkpoint that passes the check, so a mismatch costs
+    # neither the dataset read nor a model build.
+    opened: dict[str, object] = {}
+
+    def split():
+        if not opened:
+            fetch, n_rows = open_split(args)
+            opened["fetch"], opened["n_rows"] = fetch, n_rows
+        return opened["fetch"], opened["n_rows"]
 
     results = {}
     for size, ckpt_path in checkpoints.items():
         logger.info("%s: loading %s", size, ckpt_path)
-        model, ckpt, model_args = load_model(ckpt_path, args.device)
-        trained_on = None if args.allow_modality_mismatch else check_modality_matches(ckpt, args.modality, ckpt_path)
+        ckpt = torch.load(ckpt_path, map_location=args.device, weights_only=False)
+        trained_on = check_modality_matches(ckpt, args.modality, ckpt_path, strict=strict)
+        scored_as = trained_on or args.modality
+        if scored_as not in exclusions:
+            exclusions[scored_as] = resolve_ignored_target_ids(
+                scored_as, args.genome_tokenizer_model, args.pad_token_id_for_loss
+            )
+            logger.info(
+                "targets excluded from the loss for %s: %s",
+                scored_as, exclusions[scored_as] or "none (training excluded nothing either)",
+            )
+        ignored_ids = exclusions[scored_as]
+        model, model_args = build_model(ckpt, args.device)
+        fetch, n_rows = split()
         loss, tokens, sequences_scored = score_split(
             model, fetch, n_rows, args.device, args.max_sequences, ignored_ids
         )
@@ -322,6 +357,8 @@ def main() -> int:
             "perplexity": math.exp(loss),
             "checkpoint": str(ckpt_path),
             "trained_on": trained_on,
+            "scored_as": scored_as,
+            "ignored_target_ids": ignored_ids,
             "sequences_scored": sequences_scored,
             "tokens_scored": tokens,
             "checkpoint_iter": ckpt.get("iter_num"),
@@ -349,10 +386,9 @@ def main() -> int:
         payload = {
             "modality": args.modality,
             "split": args.split,
-            "sequences_in_split": n_rows,
-            # Excluded from the loss, matching get_batch. Recorded because the number
-            # is only comparable to a val loss produced with the same exclusions.
-            "ignored_target_ids": ignored_ids,
+            "sequences_in_split": opened.get("n_rows"),
+            # Exclusions are per checkpoint (see `scored_as` in each result), because
+            # the config string they are looked up by is finer-grained than --modality.
             "results": results,
         }
         name = args.output_name or f"{args.modality}_{args.split}_perplexity.json"
