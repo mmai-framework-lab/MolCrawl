@@ -16,7 +16,7 @@ Differences from v3 that matter for the research numbers:
     row counts this script reports.
 
 GPT-2 and BERT read byte-identical data (``input_ids`` only, matching the protein
-training_ready layout), and with ``V4_OUT_SUFFIX`` unset both directories are written
+training_ready layout), and with ``PREP_OUT_SUFFIX`` unset both directories are written
 where the existing config paths (``COMPOUNDS_DATASET_DIR_GPT2`` / ``_BERT``) already
 point, so those configs keep working unchanged.
 
@@ -33,9 +33,10 @@ Optional env:
   V4_LIMIT       -> only process the first N SMILES (dry run / validation).
   PACK_ORDER     -> "shuffled" (default) or "source". "source" reproduces the
                     2026-08-05 v4 build, which concatenated in parquet order.
-  V4_OUT_SUFFIX  -> appended to both output dir names. Set it for any rebuild that
-                    is not meant to replace the data the finished runs used, e.g.
-                    V4_OUT_SUFFIX=_shuffled -> training_ready_hf_dataset_gpt2_shuffled.
+  PREP_OUT_SUFFIX-> appended to both output dir names, and read by the prep modules
+                    for the other modalities too. Set it for any rebuild that is not
+                    meant to replace the data the finished runs used, e.g.
+                    PREP_OUT_SUFFIX=_shuffled -> training_ready_hf_dataset_gpt2_shuffled.
   V4_WORKERS     -> tokenizer worker processes (default 16).
 """
 from __future__ import annotations
@@ -58,15 +59,17 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("phase1_2_v4")
 
 REPO = Path(os.environ.get("MOLCRAWL_REPO", "/data1/rkp00024/matsubara/MolCrawl"))
-sys.path.insert(0, str(REPO))
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
 _ORG = Path(os.environ["ORGANIX13_DIR"])
 INPUT_PARQUET = _ORG / "OrganiX13.parquet"
-# Output suffix. Empty writes the production paths the configs point at, which
-# would overwrite the data the completed ladder trained on — so a rebuild that
-# changes what the blocks contain (see PACK_ORDER) must set this and repoint the
-# config, not clobber the old build.
-OUT_SUFFIX = os.environ.get("V4_OUT_SUFFIX", "")
+# Output suffix, shared with the prep modules under molcrawl/data so that one
+# variable covers a rebuild of every modality. A second name here would mean a
+# five-modality rebuild that sets only the shared one silently overwrites compounds
+# while the other four are safely diverted — the worst arrangement, because the
+# four that worked make the fifth look safe too.
+OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
 OUT_BERT = _ORG / f"training_ready_hf_dataset_bert{OUT_SUFFIX}"
 OUT_GPT2 = _ORG / f"training_ready_hf_dataset_gpt2{OUT_SUFFIX}"
 

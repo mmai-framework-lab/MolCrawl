@@ -34,7 +34,6 @@ PREP_SHUFFLE_SEED = 42
 PREP_OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
 
 
-
 def tokenize_function(examples, tokenizer):
     return {"input_ids": tokenizer.encode(examples["text"]).ids}
 
