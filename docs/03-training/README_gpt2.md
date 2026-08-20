@@ -127,7 +127,10 @@ Example:
   evaluation frequency (iterations)
 - `eval_iters`:
   number of evaluation batches. Ignored when `eval_sequences` is set, and passing
-  `--eval_iters` alongside it is an error rather than a silent override
+  `--eval_iters` alongside it is an error rather than a silent override. To shrink the
+  eval of such a run, pass `--eval_sequences=<eval_iters * batch_size>` for the same
+  sample; `eval_sequences` cannot be cleared from the command line, so setting
+  `eval_iters` directly means removing `eval_sequences` from the config file
 - `eval_sequences`:
   number of validation sequences per eval point (`eval_iters` is derived from it and
   `batch_size`). Prefer this whenever runs of different `batch_size` are compared —

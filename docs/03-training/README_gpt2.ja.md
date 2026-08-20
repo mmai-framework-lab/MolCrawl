@@ -137,7 +137,10 @@
   評価頻度（イテレーション単位）
 - `eval_iters`:
   評価に使うバッチ数。`eval_sequences` を設定した場合は無視される。併用して
-  `--eval_iters` を渡すと、黙って捨てずにエラーになる
+  `--eval_iters` を渡すと、黙って捨てずにエラーになる。その run の評価を小さくしたい
+  場合は、同じ標本数になる `--eval_sequences=<eval_iters * batch_size>` を渡す。
+  `eval_sequences` はコマンドラインからは解除できないため、`eval_iters` を直接
+  指定したい場合は config ファイルから `eval_sequences` を外す
 - `eval_sequences`:
   1 評価点あたりの検証系列数（`eval_iters` は本項と `batch_size` から導出される）。
   `batch_size` が異なる run どうしを比較するときは必ずこちらを使う。`eval_iters` を

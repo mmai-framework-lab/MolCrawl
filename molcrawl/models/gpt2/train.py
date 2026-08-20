@@ -208,13 +208,22 @@ if __name__ == "__main__":
     # Only the master process evaluates, so the count is per-rank: eval_iters
     # batches of batch_size sequences.
     if eval_sequences is not None:
-        if any(a.startswith("--eval_iters=") for a in sys.argv[1:]):
+        _eval_iters_flags = [a for a in sys.argv[1:] if a.startswith("--eval_iters=")]
+        if _eval_iters_flags:
             # Honouring eval_sequences would throw the explicit flag away silently.
+            # The escape hatch is the equivalent sequence count, not --eval_sequences=None:
+            # the configurator refuses to override an int the config already set with None,
+            # so clearing it from the command line is not possible.
+            _requested = _eval_iters_flags[-1].split("=", 1)[1]
+            try:
+                _equivalent = f"--eval_sequences={int(_requested) * batch_size}"
+            except ValueError:
+                _equivalent = "--eval_sequences=<sequences>"
             raise SystemExit(
-                "--eval_iters conflicts with eval_sequences, which derives eval_iters "
-                f"from batch_size (config sets eval_sequences={eval_sequences}). Pass "
-                "--eval_sequences=... instead, or --eval_sequences=None to set "
-                "eval_iters directly."
+                f"{_eval_iters_flags[-1]} conflicts with eval_sequences, which derives eval_iters "
+                f"from batch_size (the config sets eval_sequences={eval_sequences}). Pass "
+                f"{_equivalent} for the same sample at batch_size={batch_size}, or drop "
+                "eval_sequences from the config file to set eval_iters directly."
             )
         eval_iters = resolve_eval_iters(eval_sequences, batch_size)
         # config_keys is snapshotted before the config file runs, and the default
