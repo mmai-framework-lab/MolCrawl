@@ -11,11 +11,17 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 # the char-level ESM tokenization of the (tens of millions of) UniRef sequences.
 _PROT_TOKENIZE_NPROC = max(1, int(os.environ.get("PROTEIN_TOKENIZE_NPROC", "1") or "1"))
 
-# Seed for the shuffle that runs before the split and before packing. It was
-# unseeded, so neither the split membership nor the block contents could be
-# reproduced from a rebuild — which also meant the seed fixation added for the
-# training configs stopped at the data boundary.
+# Seed for the shuffle and the train/valid/test draw. Both were unseeded, so neither
+# the split membership nor the block contents could be reproduced from a rebuild,
+# which left the seed fixation added for the training configs stopping at the data
+# boundary.
 PREP_SHUFFLE_SEED = 42
+
+# Appended to the output directory name. Empty writes the production path the
+# configs point at; set it for any rebuild that is not meant to replace the data the
+# finished runs used. Seeding the draw above changes split membership, so a rebuild
+# is not interchangeable with the current data and must not overwrite it.
+PREP_OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
 
 # add project root to path（utilsetc.)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -130,8 +136,8 @@ def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample
 
     if number_sample is not None and number_sample > 0:
         data = data.select(range(min(number_sample, len(data))))
-    raw_datasets = data.train_test_split(test_size=0.2)
-    valid_test_split = raw_datasets["test"].train_test_split(test_size=0.5)
+    raw_datasets = data.train_test_split(test_size=0.2, seed=PREP_SHUFFLE_SEED)
+    valid_test_split = raw_datasets["test"].train_test_split(test_size=0.5, seed=PREP_SHUFFLE_SEED)
     raw_datasets = DatasetDict(
         {"train": raw_datasets["train"], "valid": valid_test_split["train"], "test": valid_test_split["test"]}
     )
@@ -160,7 +166,7 @@ def tokenize_batch_dataset(path_output: Path, context_length: int, number_sample
         }
     )
 
-    path_dataset: str = str(path_output / "training_ready_hf_dataset")
+    path_dataset: str = str(path_output / f"training_ready_hf_dataset{PREP_OUT_SUFFIX}")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     packed.save_to_disk(path_dataset)
 

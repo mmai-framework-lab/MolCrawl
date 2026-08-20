@@ -16,8 +16,9 @@ Differences from v3 that matter for the research numbers:
     row counts this script reports.
 
 GPT-2 and BERT read byte-identical data (``input_ids`` only, matching the protein
-training_ready layout), but both directories are written so the existing config
-paths (``COMPOUNDS_DATASET_DIR_GPT2`` / ``_BERT``) keep working unchanged.
+training_ready layout), and with ``V4_OUT_SUFFIX`` unset both directories are written
+where the existing config paths (``COMPOUNDS_DATASET_DIR_GPT2`` / ``_BERT``) already
+point, so those configs keep working unchanged.
 
 Split assignment reuses v3's ``default_rng(42)`` draw over the input parquet order,
 so a molecule present in both builds lands in the same split.  Packing is done
@@ -87,6 +88,10 @@ SPLIT_SEED = 42       # same draw as v3 so split membership is stable
 # Permuting the split first removes that correlation; set PACK_ORDER=source to
 # reproduce the 2026-08-05 v4 build byte for byte.
 PACK_ORDER = os.environ.get("PACK_ORDER", "shuffled")
+if PACK_ORDER not in ("shuffled", "source"):
+    # Checked here rather than at the packing step: a typo would otherwise surface
+    # only after tokenising 13M SMILES across 16 processes.
+    raise SystemExit(f"PACK_ORDER must be 'shuffled' or 'source', got {PACK_ORDER!r}")
 PACK_ORDER_SEED = 43
 CHUNK = 5000
 
@@ -174,6 +179,23 @@ def _write_dataset_dict(out_dir: Path) -> None:
     )
 
 
+def _split_order(idx, split_code):
+    """Order one split's molecules for packing.
+
+    Permutes within the split only: membership stays exactly as the SPLIT_SEED draw
+    assigned it, so this changes which molecules share a block, never which split a
+    molecule is in. A per-split offset keeps the three splits from sharing a
+    permutation. PACK_ORDER=source returns the parquet order untouched.
+
+    The permuted order reads ``all_ids_flat`` randomly instead of sequentially, which
+    costs cache misses across a multi-GB array; the Python loop in _pack_split
+    dominates, but a rebuild may still take longer than the source-order one did.
+    """
+    if PACK_ORDER == "source":
+        return idx
+    return np.random.default_rng(PACK_ORDER_SEED + split_code).permutation(idx)
+
+
 def _pack_split(idx, raw_lens, row_start, row_end, all_ids_flat):
     """Concatenate the split's molecules with [SEP] and cut into 1024-token blocks."""
     n_mol = len(idx)
@@ -249,17 +271,9 @@ def build_and_save(smi_arr):
 
     logger.info("[step 3/4] pack into %d-token blocks and save (per split)", CONTEXT_LENGTH)
     summary = {}
-    if PACK_ORDER not in ("shuffled", "source"):
-        raise SystemExit(f"PACK_ORDER must be 'shuffled' or 'source', got {PACK_ORDER!r}")
     logger.info("  packing order: %s (seed %d)", PACK_ORDER, PACK_ORDER_SEED)
     for split_code, split_name in [(0, "train"), (1, "valid"), (2, "test")]:
-        idx = np.where(valid_mask & (split_ids == split_code))[0]
-        if PACK_ORDER == "shuffled":
-            # Permute within the split only: split membership stays exactly as the
-            # SPLIT_SEED draw assigned it, so this changes which molecules share a
-            # block, never which split a molecule is in. A per-split seed keeps the
-            # three splits from sharing a permutation.
-            idx = np.random.default_rng(PACK_ORDER_SEED + split_code).permutation(idx)
+        idx = _split_order(np.where(valid_mask & (split_ids == split_code))[0], split_code)
         t0 = time.time()
         blocks, stream_len, remainder = _pack_split(idx, raw_lens, row_start, row_end, all_ids_flat)
         logger.info(

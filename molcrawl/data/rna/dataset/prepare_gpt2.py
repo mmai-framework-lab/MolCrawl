@@ -27,11 +27,17 @@ from molcrawl.data.rna.utils.config import RnaConfig
 # differs only at shard boundaries, which is fine for LM pretraining).
 _RNA_TOKENIZE_NPROC = max(1, int(os.environ.get("RNA_TOKENIZE_NPROC", "1") or "1"))
 
-# Seed for the shuffle that runs before the split and before packing. It was
-# unseeded, so neither the split membership nor the block contents could be
-# reproduced from a rebuild — which also meant the seed fixation added for the
-# training configs stopped at the data boundary.
+# Seed for the shuffle and the train/valid/test draw. Both were unseeded, so neither
+# the split membership nor the block contents could be reproduced from a rebuild,
+# which left the seed fixation added for the training configs stopping at the data
+# boundary.
 PREP_SHUFFLE_SEED = 42
+
+# Appended to the output directory name. Empty writes the production path the
+# configs point at; set it for any rebuild that is not meant to replace the data the
+# finished runs used. Seeding the draw above changes split membership, so a rebuild
+# is not interchangeable with the current data and must not overwrite it.
+PREP_OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
 
 def concatenate_texts(examples, eos_token_id):
     concatenated_ids = []
@@ -79,8 +85,8 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
     if number_sample is not None and number_sample > 0:
         data = data.select(range(min(number_sample, len(data))))
 
-    tokenized_datasets = data.train_test_split(test_size=0.2)
-    valid_test_split = tokenized_datasets["test"].train_test_split(test_size=0.5)
+    tokenized_datasets = data.train_test_split(test_size=0.2, seed=PREP_SHUFFLE_SEED)
+    valid_test_split = tokenized_datasets["test"].train_test_split(test_size=0.5, seed=PREP_SHUFFLE_SEED)
     tokenized_datasets = DatasetDict(
         {"train": tokenized_datasets["train"], "valid": valid_test_split["train"], "test": valid_test_split["test"]}
     )
@@ -102,7 +108,7 @@ def tokenize_batch_dataset(output_dir, context_length, number_sample):
         num_proc=_RNA_TOKENIZE_NPROC,
     )
 
-    path_dataset = str(Path(output_dir) / "training_ready_hf_dataset")
+    path_dataset = str(Path(output_dir) / f"training_ready_hf_dataset{PREP_OUT_SUFFIX}")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     chunked_dataset.save_to_disk(path_dataset)
 

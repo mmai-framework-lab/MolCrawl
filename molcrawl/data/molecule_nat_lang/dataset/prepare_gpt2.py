@@ -40,8 +40,14 @@ def create_chunks(examples, context_length):
     return {"input_ids": input_ids}
 
 
-# Seed for the pre-packing shuffle. Fixed so a rebuild produces the same blocks.
+# Seed for the pre-packing shuffle and for the smoke-test subsample below. Fixed so
+# a rebuild produces the same blocks.
 PACK_ORDER_SEED = 43
+
+# Appended to the output directory name. Empty writes the production path the config
+# points at; set it for any rebuild that is not meant to replace the data the
+# finished runs used.
+PREP_OUT_SUFFIX = os.environ.get("PREP_OUT_SUFFIX", "")
 
 
 def tokenize_batch_dataset(parquet_path, context_length, number_sample):
@@ -69,22 +75,23 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
         raise KeyError("Neither 'valid' nor 'validation' split found in dataset")
 
     if number_sample is not None and number_sample > 0:
+        rng = np.random.default_rng(PACK_ORDER_SEED)
         tokenize_dataset["train"] = tokenize_dataset["train"].select(
-            np.random.choice(
+            rng.choice(
                 len(tokenize_dataset["train"]),
                 min(int(number_sample * 0.8), len(tokenize_dataset["train"])),
                 replace=False,
             )
         )
         tokenize_dataset["valid"] = tokenize_dataset["valid"].select(
-            np.random.choice(
+            rng.choice(
                 len(tokenize_dataset["valid"]),
                 min(int(number_sample * 0.1), len(tokenize_dataset["valid"])),
                 replace=False,
             )
         )
         tokenize_dataset["test"] = tokenize_dataset["test"].select(
-            np.random.choice(
+            rng.choice(
                 len(tokenize_dataset["test"]),
                 min(int(number_sample * 0.1), len(tokenize_dataset["test"])),
                 replace=False,
@@ -101,9 +108,7 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
     # example can look back at near-duplicates of itself. Shuffling only changes
     # which examples share a block, never which split an example is in. Seeded so a
     # rebuild reproduces the same blocks.
-    tokenize_dataset = DatasetDict(
-        {split: ds.shuffle(seed=PACK_ORDER_SEED) for split, ds in tokenize_dataset.items()}
-    )
+    tokenize_dataset = tokenize_dataset.shuffle(seed=PACK_ORDER_SEED)
 
     concatenated_dataset = tokenize_dataset.map(
         partial(concatenate_texts, eos_token_id=tokenizer.tokenizer.eos_token_id),
@@ -118,11 +123,7 @@ def tokenize_batch_dataset(parquet_path, context_length, number_sample):
         batch_size=-1,
     )
 
-    # MOLNL_OUT_SUFFIX keeps a rebuild from overwriting the data the finished runs
-    # used. Any rebuild that changes what the blocks contain (the pre-packing
-    # shuffle above) has to write elsewhere and have the config repointed.
-    out_suffix = os.environ.get("MOLNL_OUT_SUFFIX", "")
-    path_dataset = str(Path(parquet_path).parent / f"training_ready_hf_dataset{out_suffix}")
+    path_dataset = str(Path(parquet_path).parent / f"training_ready_hf_dataset{PREP_OUT_SUFFIX}")
     print(f"Saving dataset to: {path_dataset}. Match this path to the train_gpt2_config.py->dataset_dir parameter.")
     chunked_dataset.save_to_disk(path_dataset)
 
