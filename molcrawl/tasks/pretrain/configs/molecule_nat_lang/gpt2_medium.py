@@ -46,6 +46,11 @@ min_lr = 3e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinc
 # eval stuff
 eval_interval = 200
 eval_iters = 200
+# eval_sequences fixes the *number of validation sequences* per eval point instead of
+# the number of batches, so every ladder size averages its val loss over the same
+# 3,200 sequences. batch_size shrinks with model size, so the old shared
+# eval_iters=200 gave the large models a 2-4x smaller val sample.
+eval_sequences = 3200
 log_interval = 200
 
 # init from checkpoint

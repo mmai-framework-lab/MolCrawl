@@ -68,6 +68,14 @@ out_dir = "out-gpt2"
 eval_interval = 2000
 log_interval = 1
 eval_iters = 200
+# Number of validation sequences one eval point should average over. eval_iters
+# counts *batches*, so a ladder that shrinks batch_size for the larger models
+# also shrinks their validation sample: at batch_size 16/16/8/4 the same
+# eval_iters=200 gives 3200/3200/1600/800 sequences, so the big models get a
+# noisier val curve and — because best_val is a minimum over eval points — a
+# larger downward selection bias. Set this instead of eval_iters to compare
+# sizes on equal footing; eval_iters is then derived from batch_size.
+eval_sequences = None
 eval_only = False  # if True, script exits right after the first eval
 always_save_checkpoint = False  # if True, always save a checkpoint after each eval
 init_from = "scratch"  # 'scratch' or 'resume' or 'gpt2*'
@@ -184,6 +192,21 @@ if __name__ == "__main__":
     exec(open(configurator_path).read())  # overrides from command line or config file
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
     # -----------------------------------------------------------------------------
+
+    # Derive eval_iters from eval_sequences so every ladder size averages its val
+    # loss over the same number of sequences (see the eval_sequences comment above).
+    # Only the master process evaluates, so the count is per-rank: eval_iters
+    # batches of batch_size sequences.
+    if eval_sequences is not None:
+        eval_iters = max(1, -(-int(eval_sequences) // batch_size))
+        # config_keys is snapshotted before the config file runs, and the default
+        # is None (not int/float/bool/str), so both keys need recording by hand.
+        config["eval_sequences"] = int(eval_sequences)
+        config["eval_iters"] = eval_iters
+        print(
+            f"eval_sequences={eval_sequences} with batch_size={batch_size} "
+            f"-> eval_iters={eval_iters} ({eval_iters * batch_size} sequences per eval point)"
+        )
 
     # create folder if it doesn't exist
     os.makedirs(out_dir, exist_ok=True)
