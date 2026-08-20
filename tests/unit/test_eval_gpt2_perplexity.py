@@ -7,6 +7,7 @@ these pin the resolution of what to exclude and the pieces around it.
 """
 import importlib.util
 import pathlib
+import sys
 
 import pytest
 
@@ -92,6 +93,19 @@ def test_genome_refuses_without_a_tokenizer_model(script, tmp_path):
     missing = tmp_path / "nope.model"
     with pytest.raises(SystemExit, match="genome tokenizer model"):
         script.resolve_ignored_target_ids("genome_sequence", str(missing), None)
+
+
+def test_the_refusal_path_does_not_need_sentencepiece(script, tmp_path, monkeypatch):
+    """CI installs no sentencepiece, so importing it first turned this into an error.
+
+    environment.yaml pins the library for the cluster, but the unit-test job does not
+    install it, and a missing tokenizer model has to report itself either way. Setting
+    the module to None makes `import sentencepiece` raise however the environment is
+    set up, so this pins the ordering rather than the installed package set.
+    """
+    monkeypatch.setitem(sys.modules, "sentencepiece", None)
+    with pytest.raises(SystemExit, match="genome tokenizer model"):
+        script.resolve_ignored_target_ids("genome_sequence", str(tmp_path / "nope.model"), None)
 
 
 def test_checkpoint_template_takes_the_size_verbatim(script):

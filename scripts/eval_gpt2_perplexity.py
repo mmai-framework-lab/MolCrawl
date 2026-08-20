@@ -116,10 +116,11 @@ def build_tokenizer(modality: str, genome_tokenizer_model: str | None):
 
         return EsmSequenceTokenizer()
     if modality == "genome_sequence":
-        import sentencepiece as spm
-
         from molcrawl.core.paths import get_refseq_tokenizer_path
 
+        # The path check comes before the import on purpose: sentencepiece is an
+        # optional dependency (environment.yaml pins it, CI does not install it), and
+        # "you forgot --genome-tokenizer-model" should not depend on having it.
         model_file = genome_tokenizer_model or get_refseq_tokenizer_path()
         if not Path(model_file).exists():
             raise SystemExit(
@@ -127,6 +128,14 @@ def build_tokenizer(modality: str, genome_tokenizer_model: str | None):
                 "--genome-tokenizer-model. It is needed to blank N and the IUPAC "
                 "codes from the loss, exactly as training does."
             )
+        try:
+            import sentencepiece as spm
+        except ModuleNotFoundError as exc:
+            raise SystemExit(
+                "sentencepiece is needed to resolve genome's N and IUPAC ids the way "
+                "training resolved them (environment.yaml pins 0.2.0); install it, or "
+                "score a modality that excludes nothing."
+            ) from exc
         return spm.SentencePieceProcessor(model_file=str(model_file))
     return None
 
