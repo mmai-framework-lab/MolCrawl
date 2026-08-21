@@ -142,18 +142,6 @@ ax.set_xlim(0, 72000)
 ax.set_title("(b) later spikes tend to leave a larger reversal", fontsize=11.5, color=INK, loc="left", pad=9)
 ax.set_xlabel("step of the run's largest spike", fontsize=9.5, color=INK2)
 ax.set_ylabel("size of that spike (val − running min)", fontsize=9.5, color=INK2)
-ax.text(
-    0.015,
-    0.03,
-    "18 of 21 runs spike by ≥0.02 at some point.\n"
-    "Rank correlation with the final reversal: spike step +0.515, steps left −0.443, spike size +0.218 (n=21).\n"
-    "Caveat: one repeat of identical settings gave reversals 0.0013 and 0.0760, so gaps of that size are not\n"
-    "separable from run-to-run variation. Read this panel as a tendency, not a mechanism.",
-    transform=ax.transAxes,
-    fontsize=8.2,
-    color=INK2,
-    va="bottom",
-)
 ax.legend(
     frameon=False,
     fontsize=9,
@@ -171,6 +159,18 @@ fig.suptitle(
     ha="left",
     y=0.98,
 )
-fig.tight_layout(rect=[0, 0, 1, 0.93])
+fig.text(
+    0.008,
+    0.018,
+    "(b) 18 of 21 runs spike by ≥0.02 at some point. Rank correlation with the final reversal: "
+    "spike step +0.515, steps left −0.443, spike size +0.218 (n=21).\n"
+    "Caveat: one repeat of identical settings gave reversals 0.0013 and 0.0760, so gaps of that size are not separable "
+    "from run-to-run variation. Read (b) as a tendency, not a mechanism.",
+    fontsize=8.6,
+    color=INK2,
+    ha="left",
+    va="bottom",
+)
+fig.tight_layout(rect=[0, 0.075, 1, 0.93])
 fig.savefig("tmp/figs/b21-val-curves.png", dpi=170, facecolor=SURFACE)
 print("saved tmp/figs/b21-val-curves.png")
