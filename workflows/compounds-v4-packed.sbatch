@@ -21,6 +21,22 @@ export V4_WORKERS=16
 cd "${REPO}"
 echo "=== compounds v4 packed build ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "input : ${ORGANIX13_DIR}/OrganiX13.parquet"
-echo "output: ${ORGANIX13_DIR}/training_ready_hf_dataset_{gpt2,bert}"
-"${REPO}/miniconda/bin/python" scripts/run_phase1_2_training_ready_v4_packed.py
-echo "=== rc=$? @ $(date -Is) ==="
+echo "output: ${ORGANIX13_DIR}/training_ready_hf_dataset_{gpt2,bert}${PREP_OUT_SUFFIX}"
+echo "order : ${PACK_ORDER:-shuffled}"
+
+# Refuse to write over an existing build. The finished ladders trained on what is
+# already at these paths, and a rebuild that changes block contents cannot be undone.
+# Set PREP_OUT_SUFFIX to write elsewhere, then rename deliberately.
+for d in "${ORGANIX13_DIR}/training_ready_hf_dataset_gpt2${PREP_OUT_SUFFIX}" \
+         "${ORGANIX13_DIR}/training_ready_hf_dataset_bert${PREP_OUT_SUFFIX}"; do
+  if [ -e "${d}" ]; then
+    echo "refusing to overwrite existing build: ${d}"
+    echo "set PREP_OUT_SUFFIX to a fresh name, or move the existing one aside first"
+    exit 1
+  fi
+done
+
+"${REPO}/miniconda/bin/python" scripts/run_phase1_2_training_ready_v4_packed.py && rc=0 || rc=$?
+# Taken explicitly: under `set -e` a trailing $? could only ever print 0.
+echo "=== rc=${rc} @ $(date -Is) ==="
+exit "${rc}"
