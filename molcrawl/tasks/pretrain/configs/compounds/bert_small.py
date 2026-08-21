@@ -18,6 +18,11 @@ model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 1024  # packed blocks; sets BertConfig.max_position_embeddings
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
+# The compounds sets are packed in source-parquet order, so the split's leading rows
+# are shorter and easier than the split as a whole. Draw the eval subset at random
+# instead. Off by default in main.py because protein / RNA / genome shuffle in prep and
+# gain nothing from it.
+eval_subset_random = True
 learning_rate = 0.0001
 weight_decay = 0.01
 log_interval = 50  # = eval_steps -> ~31 eval points over the run

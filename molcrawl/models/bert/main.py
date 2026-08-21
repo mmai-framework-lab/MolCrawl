@@ -25,6 +25,45 @@ enable_full_torch_load()
 DEFAULT_EVAL_SPLIT = "valid"
 
 
+EVAL_SUBSET_ROWS = 10000
+# Deliberately not the training seed. Every config carries its own (compounds BERT is
+# 7 / 8 / 9, protein 77 / 78 / 82), so drawing the eval sample with it would hand each
+# ladder size a different set of rows - the cross-size measurement mismatch this
+# sampling exists to avoid. One fixed value keeps every run on the same rows.
+EVAL_SUBSET_SEED = 42
+
+
+def subsample_eval_split(dataset, random_sample=False, seed=EVAL_SUBSET_SEED, rows: int = EVAL_SUBSET_ROWS):
+    """Cut the eval split down to ``rows``, from the front or at random.
+
+    Evaluating the whole split at every eval point is too slow, so a subset stands in
+    for it. Taking the *first* rows only represents the split when the split is in
+    random order:
+
+    - protein, RNA and genome shuffle in prep, so their leading rows already are a
+      random sample and ``random_sample`` buys them nothing - it would only move the
+      number by resampling noise and break continuity with everything measured so far.
+    - the compounds sets are written in source-parquet order, whose first million rows
+      top out at 68 tokens against 128 for the whole file. A leading slice of that is
+      shorter and easier than the split it stands for, so the reported loss sits below
+      the split's own value.
+
+    Hence opt-in per config rather than a global switch. Where it is on, the sample is
+    drawn with EVAL_SUBSET_SEED rather than the run's training seed, so every eval
+    point and every ladder size sees the same rows, and the model sits on the same
+    footing as the MLM baselines (unigram, degenerate, neighbour look-up), which were
+    measured on a random sample all along.
+    """
+    if len(dataset) <= rows:
+        return dataset
+    if not random_sample:
+        print(f"📊 Eval on the first {rows} rows of {len(dataset)}")
+        return dataset.select(range(rows))
+    sampled = dataset.shuffle(seed=seed).select(range(rows))
+    print(f"📊 Eval on a random {rows}-row sample of {len(dataset)} (seed {seed})")
+    return sampled
+
+
 def resolve_eval_split(available, requested=DEFAULT_EVAL_SPLIT):
     """Pick the split that feeds ``Trainer.eval_dataset``.
 
@@ -193,6 +232,13 @@ if __name__ == "__main__":
     # unchanged, so no existing run moves without an explicit opt-in.
     adam_beta1 = 0.9
     adam_beta2 = 0.95
+    # Draw the eval subset at random instead of taking the split's first rows. Off by
+    # default: it is only a correction for splits written in source order (compounds,
+    # molecule_nat_lang), and turning it on elsewhere just moves the number by
+    # resampling noise. The seed is separate from `seed` on purpose - see
+    # EVAL_SUBSET_SEED. Both declared so the configurator accepts overrides.
+    eval_subset_random = False
+    eval_subset_seed = EVAL_SUBSET_SEED
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
     document_masking = False
@@ -537,10 +583,7 @@ if __name__ == "__main__":
         train_dataset = train_data_loader.get_dataset()
         test_dataset = test_data_loader.get_dataset()
 
-        # Limit test dataset size for faster evaluation
-        if len(test_dataset) > 10000:
-            test_dataset = test_dataset.select(range(10000))
-            print("📊 Limited test dataset to 10000 samples for faster evaluation")
+        test_dataset = subsample_eval_split(test_dataset, eval_subset_random, eval_subset_seed)
     else:
         print("📂 Using standard HuggingFace dataset loading")
         from pathlib import Path
@@ -624,10 +667,7 @@ if __name__ == "__main__":
                 print(f"📏 Eval split (best-checkpoint selection): {eval_split}")
                 test_dataset = dataset[eval_split]
 
-        # Limit test dataset size for faster evaluation
-        if len(test_dataset) > 10000:
-            test_dataset = test_dataset.select(range(10000))
-            print("📊 Limited test dataset to 10000 samples for faster evaluation")
+        test_dataset = subsample_eval_split(test_dataset, eval_subset_random, eval_subset_seed)
 
     # Apply preprocessing for RNA data if using custom dataset
     if "use_custom_rna_dataset" in globals() and globals().get("use_custom_rna_dataset", False):

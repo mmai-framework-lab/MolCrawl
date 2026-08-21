@@ -93,9 +93,17 @@ class MlmBreakdownMixin:
         if not hasattr(self, "_mlm_sums"):
             self._reset_mlm_breakdown()
         with torch.no_grad():
-            logits = model(
-                input_ids=input_ids, attention_mask=inputs.get("attention_mask")
-            ).logits
+            # Forward with everything the collator supplied except the labels, so this
+            # runs the model the way training ran it. Naming input_ids and
+            # attention_mask alone used to drop position_ids, which DocumentMaskingCollator
+            # resets per document: the model then saw 0..N-1 across a packed block it had
+            # been trained to read per molecule, and the reported [MASK] loss came out
+            # about six times too high. Measured on the W3 checkpoint: 0.141 with
+            # position_ids, 0.869 without, against 0.871 in that run's own log - while
+            # HF's own eval_loss, which does forward properly, stayed at 0.129. The two
+            # numbers in that log could never have been true at once.
+            forward_inputs = {k: v for k, v in inputs.items() if k != "labels"}
+            logits = model(**forward_inputs).logits
             sums, counts = split_mlm_loss(logits, labels, input_ids, self.mlm_mask_token_id)
         for k in sums:
             self._mlm_sums[k] += sums[k]

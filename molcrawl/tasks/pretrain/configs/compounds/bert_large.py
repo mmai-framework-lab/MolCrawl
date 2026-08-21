@@ -20,6 +20,11 @@ model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 1024  # packed blocks; sets BertConfig.max_position_embeddings
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
+# The compounds sets are packed in source-parquet order, so the split's leading rows
+# are shorter and easier than the split as a whole. Draw the eval subset at random
+# instead. Off by default in main.py because protein / RNA / genome shuffle in prep and
+# gain nothing from it.
+eval_subset_random = True
 # Phase 1-5c (2026-07-16): 5e-5 → 3e-5. The 22913 (5e-5) attempt was
 # auto-aborted by the early-plateau detector at eval 6 (val=1.79 > 1.5
 # threshold), then 22918 (3e-5) COMPLETED healthy with min val 0.1766
