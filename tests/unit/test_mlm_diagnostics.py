@@ -6,11 +6,14 @@ trivially copied, which pulls the average down. These tests pin the split so tha
 regression cannot creep back.
 """
 
+from types import SimpleNamespace
+
 import torch
 
 from molcrawl.models.bert._mlm_diagnostics import (
     IGNORE_INDEX,
     CollapseDetectionCallback,
+    MlmBreakdownMixin,
     split_mlm_loss,
 )
 
@@ -208,3 +211,76 @@ def test_stop_is_announced_once(capsys):
 
     assert control.should_training_stop is True
     assert capsys.readouterr().out.count("STOPPING") == 1
+
+
+class _RecordingModel:
+    """Captures what the breakdown forward was given."""
+
+    def __init__(self, vocab=16, seq=8):
+        self.seen = None
+        self.vocab, self.seq = vocab, seq
+
+    def __call__(self, **kwargs):
+        import torch
+
+        self.seen = dict(kwargs)
+        rows = kwargs["input_ids"].shape[0]
+        return SimpleNamespace(logits=torch.zeros(rows, self.seq, self.vocab))
+
+
+class _BareTrainer:
+    """Stands in for the HF Trainer half of the mixin."""
+
+    def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+        return (None, None, None)
+
+
+class _Breakdown(MlmBreakdownMixin, _BareTrainer):
+    pass
+
+
+def test_the_breakdown_forward_gets_everything_the_collator_supplied():
+    """position_ids must reach the model, or a document-masked run is scored wrongly.
+
+    DocumentMaskingCollator resets position_ids per document. Forwarding only
+    input_ids and attention_mask left the model reading 0..N-1 across a packed block
+    it was trained to read per molecule, which inflated the reported [MASK] loss about
+    six-fold - 0.869 against 0.141 on the W3 checkpoint - while HF's own eval_loss,
+    computed by a proper forward, stayed at 0.129.
+    """
+    import torch
+
+    trainer = _Breakdown()
+    trainer.mlm_mask_token_id = 4
+    model = _RecordingModel()
+    inputs = {
+        "input_ids": torch.tensor([[1, 4, 3, 4, 2, 5, 6, 7]]),
+        "attention_mask": torch.ones(1, 8, 8, dtype=torch.long),
+        "position_ids": torch.tensor([[0, 1, 2, 0, 1, 2, 3, 4]]),
+        "labels": torch.tensor([[-100, 9, -100, 8, -100, -100, -100, -100]]),
+    }
+    trainer.prediction_step(model, inputs, prediction_loss_only=True)
+
+    assert "position_ids" in model.seen, "position_ids were dropped again"
+    assert torch.equal(model.seen["position_ids"], inputs["position_ids"])
+    assert torch.equal(model.seen["attention_mask"], inputs["attention_mask"])
+    assert "labels" not in model.seen, "labels must not go into the forward"
+
+
+def test_an_arm_without_position_ids_still_works():
+    """1-molecule-per-row runs supply none; the forward must not require them."""
+    import torch
+
+    trainer = _Breakdown()
+    trainer.mlm_mask_token_id = 4
+    model = _RecordingModel()
+    trainer.prediction_step(
+        model,
+        {
+            "input_ids": torch.tensor([[1, 4, 3, 4, 2, 5, 6, 7]]),
+            "attention_mask": torch.ones(1, 8, dtype=torch.long),
+            "labels": torch.tensor([[-100, 9, -100, 8, -100, -100, -100, -100]]),
+        },
+        prediction_loss_only=True,
+    )
+    assert "position_ids" not in model.seen

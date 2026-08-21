@@ -45,6 +45,11 @@ def main() -> int:
         default="random",
         help="random reproduces the new slice; head reproduces the number a run reported before it",
     )
+    parser.add_argument(
+        "--drop-position-ids",
+        action="store_true",
+        help="reproduce the diagnostic forward in _mlm_diagnostics, which omits position_ids",
+    )
     parser.add_argument("--label", default=None)
     parser.add_argument("--output", default=None)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -72,7 +77,7 @@ def main() -> int:
     if args.document_masking:
         from molcrawl.models._collators import DocumentMaskingCollator
 
-        collator = DocumentMaskingCollator(collator, sep_token_id=actual.sep_token_id)
+        collator = DocumentMaskingCollator(collator, separator_id=actual.sep_token_id)
         logger.info("document masking on")
 
     model = AutoModelForMaskedLM.from_pretrained(args.checkpoint).to(args.device).eval()
@@ -89,6 +94,8 @@ def main() -> int:
             batch = collator([rows[i] for i in range(start, min(start + BATCH_ROWS, len(rows)))])
             batch = {k: v.to(args.device) for k, v in batch.items()}
             labels = batch.pop("labels")
+            if args.drop_position_ids:
+                batch.pop("position_ids", None)
             logits = model(**batch).logits
             s, c = split_mlm_loss(logits, labels, batch["input_ids"], mask_id)
             for k in sums:
