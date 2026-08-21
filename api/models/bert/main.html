@@ -77,6 +77,63 @@ config may set <code>eval_split_name</code> to pin a different split explicitly.
 <p>Precedence: the requested split, then <code>valid</code>, then <code>test</code>. Returns
 <code>None</code> when the dataset carries none of them.</p></div>
 </dd>
+<dt id="molcrawl.models.bert.main.subsample_eval_split"><code class="name flex">
+<span>def <span class="ident">subsample_eval_split</span></span>(<span>dataset, random_sample=False, seed=42, rows: int = 10000)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def subsample_eval_split(dataset, random_sample=False, seed=EVAL_SUBSET_SEED, rows: int = EVAL_SUBSET_ROWS):
+    &#34;&#34;&#34;Cut the eval split down to ``rows``, from the front or at random.
+
+    Evaluating the whole split at every eval point is too slow, so a subset stands in
+    for it. Taking the *first* rows only represents the split when the split is in
+    random order:
+
+    - protein, RNA and genome shuffle in prep, so their leading rows already are a
+      random sample and ``random_sample`` buys them nothing - it would only move the
+      number by resampling noise and break continuity with everything measured so far.
+    - the compounds sets are written in source-parquet order, whose first million rows
+      top out at 68 tokens against 128 for the whole file. A leading slice of that is
+      shorter and easier than the split it stands for, so the reported loss sits below
+      the split&#39;s own value.
+
+    Hence opt-in per config rather than a global switch. Where it is on, the sample is
+    drawn with EVAL_SUBSET_SEED rather than the run&#39;s training seed, so every eval
+    point and every ladder size sees the same rows, and the model sits on the same
+    footing as the MLM baselines (unigram, degenerate, neighbour look-up), which were
+    measured on a random sample all along.
+    &#34;&#34;&#34;
+    if len(dataset) &lt;= rows:
+        return dataset
+    if not random_sample:
+        print(f&#34;📊 Eval on the first {rows} rows of {len(dataset)}&#34;)
+        return dataset.select(range(rows))
+    sampled = dataset.shuffle(seed=seed).select(range(rows))
+    print(f&#34;📊 Eval on a random {rows}-row sample of {len(dataset)} (seed {seed})&#34;)
+    return sampled</code></pre>
+</details>
+<div class="desc"><p>Cut the eval split down to <code>rows</code>, from the front or at random.</p>
+<p>Evaluating the whole split at every eval point is too slow, so a subset stands in
+for it. Taking the <em>first</em> rows only represents the split when the split is in
+random order:</p>
+<ul>
+<li>protein, RNA and genome shuffle in prep, so their leading rows already are a
+random sample and <code>random_sample</code> buys them nothing - it would only move the
+number by resampling noise and break continuity with everything measured so far.</li>
+<li>the compounds sets are written in source-parquet order, whose first million rows
+top out at 68 tokens against 128 for the whole file. A leading slice of that is
+shorter and easier than the split it stands for, so the reported loss sits below
+the split's own value.</li>
+</ul>
+<p>Hence opt-in per config rather than a global switch. Where it is on, the sample is
+drawn with EVAL_SUBSET_SEED rather than the run's training seed, so every eval
+point and every ladder size sees the same rows, and the model sits on the same
+footing as the MLM baselines (unigram, degenerate, neighbour look-up), which were
+measured on a random sample all along.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -224,6 +281,7 @@ config may set <code>eval_split_name</code> to pin a different split explicitly.
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.models.bert.main.resolve_eval_split" href="#molcrawl.models.bert.main.resolve_eval_split">resolve_eval_split</a></code></li>
+<li><code><a title="molcrawl.models.bert.main.subsample_eval_split" href="#molcrawl.models.bert.main.subsample_eval_split">subsample_eval_split</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
