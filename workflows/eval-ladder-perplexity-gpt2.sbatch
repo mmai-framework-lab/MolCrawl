@@ -37,10 +37,15 @@ export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1 HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
 cd "${REPO}"; mkdir -p "${OUT}" workflows/slurm-logs
 
+# A git worktree holds only tracked files, so the interpreter is not inside it. Point
+# PYTHON at the main checkout's miniconda when running from one.
+PYTHON="${PYTHON:-${REPO}/miniconda/bin/python}"
+[ -x "${PYTHON}" ] || { echo "no interpreter at ${PYTHON}; export PYTHON=<main checkout>/miniconda/bin/python"; exit 1; }
+
 echo "=== ${MODALITY} GPT-2 ${SPLIT} perplexity ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "sizes: ${SIZES} | split=${SPLIT} | max_sequences=${MAX_SEQUENCES}"
 echo "code : $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
-"${REPO}/miniconda/bin/python" scripts/eval_gpt2_perplexity.py \
+"${PYTHON}" scripts/eval_gpt2_perplexity.py \
   --modality "${MODALITY}" --sizes ${SIZES} --split "${SPLIT}" \
   --max-sequences "${MAX_SEQUENCES}" --output-dir "${OUT}" \
   ${RNA_BIN_DIR:+--rna-bin-dir "${RNA_BIN_DIR}"} \
