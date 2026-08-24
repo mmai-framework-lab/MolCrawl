@@ -13,7 +13,14 @@ n_layer = 24
 n_head = 16
 n_embd = 1024
 
-dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR
+# Shuffled rebuild (PACK_ORDER_SEED=43). The original corpus was written in source
+# order: measured JS divergence between the head and the middle of train was 0.16449
+# against a 0.00101 sampling floor, i.e. 163x. After the rebuild it is 0.00096 — at
+# the floor. Content is unchanged (325,752,832 tokens and 3,267,172 documents in both);
+# only the grouping into 1024-token blocks differs.
+# Written to a new name so the canonical path still serves the finished runs and the
+# eval scripts that hard-code it (decision 2026-08-21, option b).
+dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR + "_shuffled"
 
 tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_gpt2_output_path("molecule_nat_lang", "medium")
