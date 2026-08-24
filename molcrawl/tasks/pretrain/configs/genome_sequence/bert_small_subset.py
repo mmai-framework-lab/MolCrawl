@@ -73,6 +73,42 @@ max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
 # blind for another sweep without checking the report.
 # BERT_LR_TAG env var stays as the escape hatch for sweeps (checkpoint dir
 # is suffixed so concurrent LR values do not overwrite each other).
+#
+# 2026-08-24 -- the pre-G2 result above did NOT reproduce on G2. Nothing above
+# is removed; this is what was measured on top of it.
+#
+# Three levels were run on mammal_centered for 8,000 steps (jobs 35233 / 35234
+# / 35235), keeping the schedule at its production shape -- max_steps stayed at
+# the derived 111,230 and the run was stopped from outside, so the LR at the
+# stop step was still 94.7% of peak. A schedule compressed into 8,000 steps
+# would have tested something else entirely.
+#
+#   eval_loss_mask   best    final   crossed 1.3703   improvement 6k->8k
+#     1e-4         1.2095   1.2118        step 300          +0.0330
+#     3e-5         1.3308   1.3308        step 400          +0.0072
+#     1e-5         1.3502   1.3513        step 700          -0.0010
+#
+# 1e-4 is clearly best and 1e-5 is the one that stalls -- it sits 0.019 below
+# the degenerate line from step 2,000 to 8,000 without moving. That is the
+# opposite of the pre-G2 reading.
+#
+# Judgement was on eval_loss_mask and eval_loss_random. eval_loss_copy falls to
+# ~0.22 at every level because the answer is visible in the input, so it is not
+# evidence of learning; eval_loss_random is where the levels separate (1e-4
+# 1.683 against 1.858 and 1.880). The overall eval_loss does preserve the
+# ranking here, but its absolute level cannot be read against a mask-based
+# degenerate line.
+#
+# Why the reversal happened is NOT established. The old logs are unavailable:
+# the job numbers cited above belong to a different machine, and 19018 on this
+# cluster is an unrelated 2026-08-10 job. Note also that the per-position
+# breakdown did not exist until 2026-08-07 (PR #102), three months after the
+# pre-G2 sweep, so that sweep can only have judged on the overall loss. That
+# alone does not explain the reversal, though: a run reported at ~1.39 is at or
+# above the degenerate level on either metric, i.e. genuinely stuck rather than
+# mis-measured. The dataset difference this comment already names -- contig
+# split, chr22 hold-out, 83M-window budget -- remains the more likely cause,
+# and it is untested.
 learning_rate = float(os.environ.get("SUBSET_BERT_LR", "0.0001"))
 weight_decay = 0.01
 # Fixed-schedule comparison run (charter §: comparison runs use
@@ -118,10 +154,30 @@ if _hard_override and not _smoke:
 log_interval = 100
 save_steps = 1000
 
-batch_size = 8
+# Micro-batch shape. HF treats BOTH of these as per-device, so the effective
+# global batch is batch_size * gradient_accumulation_steps * world_size. At the
+# 4 GPUs this config is run on that is 160 * 4 * 4 = 2,560, the same total the
+# schedule above is derived from -- so the gradient is unchanged and only
+# execution speed differs.
+#
+# The previous 8 * 80 split every step into 80 micro-steps of 8 sequences, i.e.
+# 8 * 512 = 4,096 tokens per forward pass, about 1/80 of what genome GPT-2 does.
+# Measured on one node with the shipped setting run first and last as a control
+# (job 35232, 40 steps per arm): 8x80 3.033 s/step, 40x16 0.733, 160x4 0.533,
+# 320x2 0.533, control 8x80 2.933. 160 is where it saturates, so the smaller of
+# the two tied settings is taken.
+#
+# Those absolute numbers are short-run and cache-warm; they rank the settings
+# but do not transfer to a full run. See the 2026-08-24 report for the long-run
+# figures.
+#
+# NOTE: because both factors are per-device, this pair is only correct at
+# world_size 4. Running on 8 GPUs would give a global batch of 5,120 and break
+# the max_steps derivation above.
+batch_size = 160
 per_device_eval_batch_size = 8
 
-gradient_accumulation_steps = 5 * 16
+gradient_accumulation_steps = 4
 
 # ---- performance opt-ins (consumed by bert/main.py via globals().get) ----- #
 # bf16 = bfloat16 mixed precision (Hopper/Blackwell — RIKEN H100/H200 OK).
