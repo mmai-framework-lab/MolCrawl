@@ -178,6 +178,21 @@ class CollapseDetectionCallback(TrainerCallback):
         Guarded by ``global_step`` so an eval seen through both hooks is counted once,
         and by ``grace_steps`` so the plateau every healthy run crosses is not read as
         collapse.
+
+        A level threshold cannot tell a stalled run from a merely slow one, which
+        is why genome leaves this off. Measured there over 8,000 steps
+        (2026-08-24, jobs 35233 / 35234 / 35235), all three learning rates cross
+        the degenerate line early -- 1e-4 at step 300, 3e-5 at 400, 1e-5 at 700 --
+        so crossing it says nothing. Afterwards 1e-5 does not move at all while
+        3e-5 keeps improving, yet at step 5,000 they sit only 0.008 apart
+        (1.3510 against 1.3430): any threshold that catches the stalled one also
+        catches the slow one.
+
+        What separates them is the slope, not the level. Improvement from step
+        6,000 to 8,000 was +0.0330 (1e-4), +0.0072 (3e-5), -0.0010 (1e-5) --
+        ordered, and unambiguous. This detector only reads levels, so acting on
+        that would mean changing what it consumes. Recorded here as the input for
+        whoever next revisits it.
         """
         if not self.degenerate_threshold or value is None or self._stopped:
             return control
