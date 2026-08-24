@@ -77,10 +77,10 @@ axT.set_ylim(1.05, 1.97)
 axT.set_xlim(0, 60000)
 axT.set_title("Full range — base swings up to 1.91", fontsize=11, color=INK, loc="left", pad=8)
 axT.set_ylabel("val loss", fontsize=9.5, color=INK2)
-axT.legend(frameon=False, fontsize=8.5, labelcolor=INK, loc="upper right", ncol=2, columnspacing=1.6)
+axT.legend(frameon=False, fontsize=8.5, labelcolor=INK, loc="upper left", borderaxespad=0.9)
 axT.annotate(
     "base — final 1.6853",
-    (6000, 1.79),
+    (30000, 1.77),
     fontsize=9.5,
     color=S2,
     fontweight="bold",
@@ -115,7 +115,7 @@ axB.annotate(
     bbox=dict(fc=SURFACE, ec="none", alpha=0.9, pad=2),
 )
 axB.text(
-    0.30,
+    0.20,
     0.62,
     "(c) reaches the same 6e-4 peak as base but leaves it by step 1,802 and stays stable,\n"
     "so a high peak is not on its own fatal. Which schedule is best is a separate question:\n"
@@ -147,6 +147,6 @@ fig.text(
     ha="left",
     va="top",
 )
-fig.tight_layout(rect=[0, 0, 1, 0.925])
+fig.subplots_adjust(left=0.085, right=0.865, top=0.880, bottom=0.075, hspace=0.13)
 fig.savefig("tmp/figs/schedule-comparison.png", dpi=170, facecolor=SURFACE)
 print("saved tmp/figs/schedule-comparison.png")
