@@ -9,6 +9,11 @@ tensorboard = True
 tensorboard_dir = get_llama_output_path("molecule_nat_lang", "small")
 out_dir = get_llama_output_path("molecule_nat_lang", "small")
 
+# Deliberately NOT the _shuffled corpus the rest of mol_nl moved to. This config
+# resumes an existing checkpoint (init_from="resume", out_dir is the finished
+# run's tree), and that checkpoint was trained on the source-order corpus.
+# Swapping the data underneath a resume would change the data condition partway
+# through a single run, which no reading of the result could untangle.
 dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR
 
 tokenizer = Tokenizer()
