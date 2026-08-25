@@ -63,12 +63,19 @@ save_steps: int = 1000  # protein convention; 100 meant ~400 saves over 40,320 s
 # test (boss decision 2026-08-07, Q3/Q6).
 warmup_steps: int = 4032
 
-# Stop a run that never gets below the point where it is only reproducing the
-# token marginal. Modality-specific: RNA's unigram baseline is 9.372 nats,
-# measured held-out over 62M tokens — compounds (2.595) and protein (2.906) are
-# an order of magnitude away, so their thresholds do not transfer. Judged on
-# eval_loss_mask, not the blended eval_loss.
-degenerate_loss_threshold: float = 9.3
+# Collapse detection is deliberately OFF for RNA. The threshold was 9.3, drawn
+# just under the 9.372-nat unigram baseline — but crossing that line is not
+# evidence that a run has learned anything. genome's probe made the point: a
+# 1e-5 run crossed the degenerate line at step 700 and then learned nothing for
+# the next 7,300. The cross-modality rule is to leave detection off until a
+# breakout has actually been observed for the modality, and RNA has never had a
+# BERT run at all — neither its breakout nor its plateau length is measured.
+# Judge these runs by watching the slope of val, not by a level.
+#   Aug 2026: the signal that separated stalled from merely slow on genome was
+#   the slope, not the level — over the last 2,000 steps a healthy run improved
+#   by +0.0330, a slow one by +0.0072, a stalled one by -0.0010. The detector
+#   only looks at levels, so using the slope would mean changing it; noted here
+#   for whoever next touches CollapseDetectionCallback.
 
 batch_size: int = 8
 per_device_eval_batch_size: int = 8
