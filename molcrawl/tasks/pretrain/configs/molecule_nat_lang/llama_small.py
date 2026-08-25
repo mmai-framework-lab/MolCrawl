@@ -11,7 +11,12 @@ tensorboard = True  # log training metrics to tensorboard
 tensorboard_dir = get_llama_output_path("molecule_nat_lang", "small")
 out_dir = get_llama_output_path("molecule_nat_lang", "small")
 
-dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR
+# Shuffled rebuild, the same corpus the GPT-2 ladder switched to in #143. The
+# original was written in source order: JS divergence between the head and the
+# middle of train measured 0.16449 against a 0.00101 sampling floor, and the
+# rebuild brings it to 0.00096. Content is identical (325,752,832 tokens,
+# 3,267,172 documents); only the grouping into 1024-token blocks differs.
+dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR + "_shuffled"
 
 tokenizer = Tokenizer()
 # GPT-2 tokenizer (vocab_size=50257) — nanoGPT configs use the raw size.
