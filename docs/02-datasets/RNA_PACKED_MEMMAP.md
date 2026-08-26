@@ -39,7 +39,16 @@ done
 
 CPU-bound, sequential reads, no decision points — safe to leave unattended. The
 production build (job 19238) took **3 h 38 min** for all three splits at ~3,300
-rows/s. Add `--limit N` to pack only the first N rows for a trial.
+rows/s. Add `--limit N` to pack only the first N rows for a trial — **give a trial
+its own `--out`**, not the production directory.
+
+The writer refuses to replace a build that is already at `--out`; `--overwrite`
+forces it, and there is no undo. Take that refusal seriously, because nothing
+after it will catch the mistake: a re-run rewrites `<split>.json` along with
+`<split>.bin`, so rows, block, dtype and `max_token_id` still agree and
+`RNABinDataset` opens the replacement without a word. The guards it applies on
+open catch a build that is missing or truncated, not one that was quietly
+rebuilt from something else.
 
 Output, one pair per split:
 

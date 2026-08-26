@@ -38,7 +38,12 @@ reads — safe to leave unattended)::
         python scripts/rna_pack_to_bin.py --dataset <hf_dataset> --split $s --out <dir>
     done
 
-``--limit N`` packs only the first N rows, for a trial build.
+``--limit N`` packs only the first N rows, for a trial build. Point it at a
+fresh ``--out`` — a build already at that path is what the finished ladders
+trained on, and the writer refuses to replace one unless ``--overwrite`` says
+to. That refusal is the only protection there is: a re-run rewrites the sidecar
+JSON along with the ``.bin``, so the pair stays self-consistent and every check
+RNABinDataset makes on open still passes.
 """
 
 import argparse
@@ -51,16 +56,35 @@ import numpy as np
 UINT16_MAX = 65535
 
 
-def pack(dataset_dir, split, out_dir, limit=None, chunk=20000):
+def pack(dataset_dir, split, out_dir, limit=None, chunk=20000, overwrite=False):
+    out_dir = Path(out_dir)
+    bin_path = out_dir / f"{split}.bin"
+    meta_path = out_dir / f"{split}.json"
+
+    # Refuse to write over a build that is already there. The RNA ladders trained
+    # on whatever is at these paths, a rebuild that changes block contents cannot
+    # be undone, and nothing downstream would notice: the JSON is rewritten with
+    # the .bin, so rows/block/dtype/max_token_id keep agreeing and RNABinDataset
+    # opens the replacement without complaint. A --limit trial aimed at the
+    # production directory is the easy way to lose 3 h 38 min of packing and the
+    # corpus it came from. Checked before the dataset load so it fails in a
+    # second rather than after opening 329 GB of Arrow.
+    if not overwrite:
+        for path in (bin_path, meta_path):
+            if path.exists():
+                raise SystemExit(
+                    f"refusing to overwrite existing build: {path}\n"
+                    "point --out at a fresh directory, move the existing build "
+                    "aside, or pass --overwrite deliberately"
+                )
+
     from datasets import load_from_disk
 
     ds = load_from_disk(str(dataset_dir))[split]
     n = len(ds) if limit is None else min(limit, len(ds))
     block = len(ds[0]["input_ids"])
 
-    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    bin_path = out_dir / f"{split}.bin"
 
     arr = np.memmap(bin_path, dtype=np.uint16, mode="w+", shape=(n, block))
     t0 = time.time()
@@ -93,7 +117,7 @@ def pack(dataset_dir, split, out_dir, limit=None, chunk=20000):
         "source": str(dataset_dir),
         "bytes": bin_path.stat().st_size,
     }
-    (out_dir / f"{split}.json").write_text(json.dumps(meta, indent=2))
+    meta_path.write_text(json.dumps(meta, indent=2))
     print(f"wrote {bin_path} ({meta['bytes']/1e9:.2f} GB) in {time.time()-t0:.1f}s")
     print(json.dumps(meta, indent=2))
     return meta
@@ -105,5 +129,7 @@ if __name__ == "__main__":
     p.add_argument("--split", default="train")
     p.add_argument("--out", required=True)
     p.add_argument("--limit", type=int, default=None)
+    p.add_argument("--overwrite", action="store_true",
+                   help="replace an existing build at --out (destructive, not reversible)")
     a = p.parse_args()
-    pack(a.dataset, a.split, a.out, a.limit)
+    pack(a.dataset, a.split, a.out, a.limit, overwrite=a.overwrite)
