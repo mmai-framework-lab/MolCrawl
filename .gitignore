@@ -101,7 +101,10 @@ workflows/slurm-logs/
 tmp/
 
 # Claude Code session state
-.claude/
+.claude/*
+# Skills are shared repo config and must be tracked; settings.local.json and the
+# worktrees/ scratch under here are not.
+!.claude/skills/
 
 # User chat logs
 chatlogs/
