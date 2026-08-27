@@ -73,11 +73,13 @@ early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # MLM collapse fix: packing concatenates ~3-5 proteins per 1024 block; without
 # masking, attention leaks across those documents. Confine attention per document.
 document_masking = True
-# Collapse detector threshold: protein's own [MASK] unigram baseline
-# (H=2.8947 nats over 24 amino acids, measured on a 20k packed-block sample) scaled
-# by the non-copy fraction, the same method as compounds (unigram 2.635 -> degenerate
-# 2.395, ratio 0.9089). 2.8947 * 0.9089 = 2.631.
-degenerate_loss_threshold = 2.63
+# Collapse detector OFF for protein (boss decision 2026-08-26). The threshold was the
+# analytical [MASK] unigram baseline (H=2.8947 over 24 amino acids * 0.9089 non-copy
+# ratio = 2.631) and is itself clean, but a fixed level-line stop cannot tell a slowly
+# descending run from a stalled one, so it would kill a healthy slow-descent run before
+# it crosses. Same conclusion reached for genome, where it was turned off. Hold large
+# until the small recipe (fixed optimizer + re-measured LR) is settled.
+degenerate_loss_threshold = None
 model_size = "large"  # Choose between small, medium or large
 model_path = get_bert_output_path("protein_sequence", model_size)
 max_length = 1024
