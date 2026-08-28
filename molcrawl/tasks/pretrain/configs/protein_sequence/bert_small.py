@@ -72,16 +72,25 @@ early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # MLM collapse fix: packing concatenates ~3-5 proteins per 1024 block; without
 # masking, attention leaks across those documents. Confine attention per document.
 document_masking = True
-# Collapse detector threshold: protein's own [MASK] unigram baseline
-# (H=2.8947 nats over 24 amino acids, measured on a 20k packed-block sample) scaled
-# by the non-copy fraction, the same method as compounds (unigram 2.635 -> degenerate
-# 2.395, ratio 0.9089). 2.8947 * 0.9089 = 2.631.
-degenerate_loss_threshold = 2.63
+# Collapse detector OFF for protein (boss decision 2026-08-26). The threshold was the
+# analytical [MASK] unigram baseline (H=2.8947 over 24 amino acids * 0.9089 non-copy
+# ratio = 2.631) and is itself clean, but a fixed level-line stop cannot tell a slowly
+# descending run from a stalled one: the fixed-optimizer run (beta2=0.999) descends at
+# ~0.12/epoch and sits above 2.63 until ~epoch 1.8, so the detector would kill a healthy
+# run before it crosses. Same conclusion reached for genome, where it was turned off.
+degenerate_loss_threshold = None
 model_size = "small"  # Choose between small, medium or large
 model_path = get_bert_output_path("protein_sequence", model_size)
 max_length = 1024
 dataset_dir = UNIPROT_DATASET_DIR
-learning_rate = 0.0003  # P8: measured best for bert-small at global batch 2560 (2026-08-04)
+# INVALID as a "best LR" (boss note 2026-08-26): the value below was measured under the
+# collapsed optimizer (adam_beta2=0.95, warmup=200, GPT-2 spec) where every LR merely
+# collapsed to the unigram marginal, so 3e-4 was the least-bad collapse, not a real
+# optimum. The root cause of the collapse was that optimizer setting; under the fixed
+# optimizer (adam_beta2=0.999, warmup=2000) the best LR must be RE-MEASURED before this
+# recipe is trusted (runs 44835 @3e-4 and the 4e-4 twin are that re-measurement). Value
+# kept, not deleted, so the provenance stays visible.
+learning_rate = 0.0003  # P8: measured best for bert-small at global batch 2560 (2026-08-04) -- see note above; measured under the collapsed optimizer
 weight_decay = 0.01
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100
