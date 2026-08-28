@@ -564,6 +564,10 @@ if __name__ == "__main__":
         #                                      8-GPU comms efficiency
         torch_compile=_torch_compile,
         torch_compile_backend=_torch_compile_backend,
+        # Ground truth for tokens consumed. HF leaves this off by default, which
+        # is why num_input_tokens_seen reads 0 in every run so far. Opt-in per
+        # config until the forward-pass cost is measured.
+        include_num_input_tokens_seen=bool(globals().get("include_num_input_tokens_seen", False)),
         optim=str(globals().get("optim", "adamw_torch")),
         dataloader_persistent_workers=bool(globals().get("dataloader_persistent_workers", False)),
         ddp_bucket_cap_mb=int(globals().get("ddp_bucket_cap_mb", 25)),
