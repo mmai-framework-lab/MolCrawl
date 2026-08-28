@@ -119,7 +119,12 @@ early_stopping = False
 # Condition 2 output): global batch 2,560 × 3 epochs per subset. Reading
 # via `load_from_disk` is memory-mapped, so this only touches metadata.
 _GLOBAL_BATCH = 2560
-_N_EPOCH = 3
+# SUBSET_BERT_EPOCHS lets a saturation probe run a longer schedule without
+# editing this file. It must change the schedule, not just the length: resuming
+# a finished 3-epoch run adds steps at an LR that has already decayed to zero,
+# which measures "does low LR keep helping" rather than "were 3 epochs enough".
+# genome GPT-2 hit exactly that trap once (STEPS_MULT scaled the decay too).
+_N_EPOCH = int(os.environ.get("SUBSET_BERT_EPOCHS", "3"))
 _ds_for_len = _load(dataset_dir)
 _train_n = len(_ds_for_len["train"])
 max_steps = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
@@ -151,8 +156,20 @@ _hard_override = os.environ.get("HARD_MAX_STEPS_OVERRIDE")
 if _hard_override and not _smoke:
     max_steps = int(_hard_override)
 
-log_interval = 100
+# Evaluation and saving share an interval so every saved checkpoint carries a
+# score and can be ranked -- see models/bert/_checkpoint_retention. 1,000 gives
+# ~110 eval points across a 3-epoch run, which is the resolution the plateau is
+# read at, and drops evaluation from 16.3% of wall time (measured across the 21
+# production runs: 1,044 evals x 8.08 s) to under 2%.
+log_interval = 1000
 save_steps = 1000
+
+# judge_on defaults to eval_loss_mask in bert/main.py, and metric_for_best_model
+# and checkpoint retention both follow it, so nothing is restated here.
+# The degenerate line for this modality: GC-41% unigram entropy. A 5-step run
+# measured 1.3703, and ln(4)=1.3863 is the uniform bound. Recorded so a run
+# carries its own reference rather than needing one computed externally.
+degenerate_baseline = 1.3703
 
 # Micro-batch shape. HF treats BOTH of these as per-device, so the effective
 # global batch is batch_size * gradient_accumulation_steps * world_size. At the
