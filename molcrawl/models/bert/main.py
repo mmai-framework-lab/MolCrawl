@@ -238,6 +238,17 @@ if __name__ == "__main__":
     # resampling noise. The seed is separate from `seed` on purpose - see
     # EVAL_SUBSET_SEED. Both declared so the configurator accepts overrides.
     eval_subset_random = False
+    # Declared so the configurator accepts --include_num_input_tokens_seen from
+    # the command line. HF leaves it off, which is why num_input_tokens_seen has
+    # read 0 in every run; the forward-pass cost is measured before it is turned
+    # on anywhere near production.
+    include_num_input_tokens_seen = False
+    # The metric everything downstream is judged on. metric_for_best_model and the
+    # checkpoint retention both default to it, so the three cannot drift apart --
+    # that drift is what put HF's marker on a different checkpoint from the adopted
+    # one in 9 of the 21 genome BERT runs.
+    judge_on = "eval_loss_mask"
+    metric_for_best_model = None  # None => follow judge_on
     eval_subset_seed = EVAL_SUBSET_SEED
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
@@ -534,9 +545,24 @@ if __name__ == "__main__":
         # save_total_limit's FIFO eviction.
         # Boss GO 2026-07-24 (reply-0724-bestckpt-retention-flag.md).
         load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",  # Use eval_loss to determine best model
+        # Select on the metric we judge on. eval_loss averages over every position
+        # including the ~10% whose answer is visible in the input, where loss falls
+        # to ~0.22 whether or not the model has learned anything; eval_loss_mask is
+        # the [MASK] positions alone. In the 21 genome BERT runs the two picked
+        # different checkpoints in 9 of them.
+        #
+        # Downgraded to eval_loss further below if the breakdown turns out to be
+        # unavailable -- HF raises KeyError when metric_for_best_model names a key
+        # the eval metrics do not carry.
+        metric_for_best_model=str(globals().get("metric_for_best_model") or judge_on),
         greater_is_better=False,  # Lower loss is better
-        save_total_limit=5,  # Keep the 5 most recent checkpoints (best is protected above)
+        # Retention is handled by BestNCheckpointRetention (models/bert/_checkpoint_retention),
+        # which keeps the best N by the metric we judge on plus the newest few.
+        # save_total_limit would prune oldest-first alongside it, so it is off.
+        # Set `checkpoint_retention = False` in a config to fall back to the old
+        # FIFO behaviour.
+        save_total_limit=(None if bool(globals().get("checkpoint_retention", True))
+                          else int(globals().get("save_total_limit", 5))),
         # save_safetensors=True is the HF default; tied weights are restored
         # at resume time by molcrawl.core.utils.trainer_utils.install_tie_weights_on_resume.
         # Setting this to False would break resume from existing safetensors-only
@@ -811,6 +837,27 @@ if __name__ == "__main__":
             f"{_degenerate_threshold}"
         )
 
+    if bool(globals().get("checkpoint_retention", True)):
+        from molcrawl.models.bert._checkpoint_retention import BestNCheckpointRetention
+
+        _keep_best = int(globals().get("checkpoint_keep_best", 10))
+        _keep_latest = int(globals().get("checkpoint_keep_latest", 1))
+        _rank_on = str(globals().get("checkpoint_metric") or judge_on)
+        callbacks.append(
+            BestNCheckpointRetention(
+                metric=_rank_on, keep_best=_keep_best, keep_latest=_keep_latest,
+            )
+        )
+        print(f"📦 Checkpoint retention: best {_keep_best} by {_rank_on} + newest {_keep_latest}")
+        # A checkpoint can only be ranked if its step also carried an eval, which
+        # holds whenever save_steps is a multiple of the eval interval -- not only
+        # when they are equal. Every config in the repo satisfies that today
+        # (100/1000, 50/100, 100/5000); warn on the case that actually breaks.
+        if log_interval <= 0 or save_steps % log_interval != 0:
+            print(f"⚠️  save_steps={save_steps} is not a multiple of the eval interval "
+                  f"{log_interval}. Saved checkpoints that miss an eval cannot be ranked "
+                  f"and are only held by keep_latest.")
+
     trainer = _WeightDecayNoEmbedTrainer(
         model=model,
         args=training_args,
@@ -828,6 +875,15 @@ if __name__ == "__main__":
     trainer.mlm_mask_token_id = getattr(_tok_for_mask, "mask_token_id", None)
     if trainer.mlm_mask_token_id is None:
         print("WARNING: no mask_token_id found — the eval breakdown (eval_loss_mask) is disabled")
+        # Without the breakdown those keys never reach the eval metrics, and HF
+        # raises KeyError at the first save. Fall back rather than fail.
+        if training_args.metric_for_best_model in ("eval_loss_mask", "eval_loss_copy", "eval_loss_random"):
+            print(f"   metric_for_best_model={training_args.metric_for_best_model} is unavailable; "
+                  f"falling back to eval_loss")
+            training_args.metric_for_best_model = "eval_loss"
+        for _cb in (callbacks or []):
+            if getattr(_cb, "metric", None) in ("eval_loss_mask", "eval_loss_copy", "eval_loss_random"):
+                _cb.metric = "eval_loss"
 
     # Resume from checkpoint by default if available
     # Check if checkpoints exist in output directory
@@ -868,15 +924,12 @@ if __name__ == "__main__":
                 "retention": (
                     {
                         "mode": "best-n-plus-latest",
-                        "metric": str(globals().get("checkpoint_metric", "eval_loss_mask")),
+                        "metric": str(globals().get("checkpoint_metric") or globals().get("judge_on", "eval_loss_mask")),
                         "keep_best": int(globals().get("checkpoint_keep_best", 10)),
                         "keep_latest": int(globals().get("checkpoint_keep_latest", 1)),
                     }
-                    # Default False until the retention callback lands; until then
-                    # save_total_limit's FIFO is what actually runs, and the manifest
-                    # has to say so rather than describe a mode that is not in effect.
-                    if bool(globals().get("checkpoint_retention", False))
-                    else {"mode": "save_total_limit-fifo", "save_total_limit": training_args.save_total_limit}
+                    if bool(globals().get("checkpoint_retention", True))
+                    else {"mode": "save_total_limit-fifo"}
                 ),
                 "collapse_detection": {
                     "degenerate_loss_threshold": _threshold,
