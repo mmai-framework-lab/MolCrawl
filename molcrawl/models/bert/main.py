@@ -439,8 +439,12 @@ if __name__ == "__main__":
             f"Using {'AmbiguityAwareMLMCollator' if _ambig else 'DataCollatorForLanguageModeling'} "
             f"(modality={_modality!r}, ambiguous_tokens={_ambig})"
         )
+        # Named rather than inlined so run_manifest.json can report the value
+        # that was actually used. It is 0.2 here, not the HF default of 0.15.
+        mlm_probability_effective = 0.2
         data_collator = make_mlm_collator(
-            actual_tokenizer, ambiguous_tokens=_ambig, mlm_probability=0.2
+            actual_tokenizer, ambiguous_tokens=_ambig,
+            mlm_probability=mlm_probability_effective,
         )
 
     # Packed blocks concatenate multiple unrelated documents, and nothing stops a
@@ -843,6 +847,75 @@ if __name__ == "__main__":
     else:
         print(f"ℹ️  Output directory {model_path} does not exist")
         print("   Starting training from scratch...")
+
+    # One human-readable file per run recording what the run actually is. The
+    # batch composition and the selection metric otherwise live only in
+    # training_args.bin (a pickle), and the data provenance, masking and eval
+    # subset live only in the config that produced the run.
+    try:
+        from molcrawl.models.bert._run_manifest import write_manifest
+
+        _resumed_step = (
+            int(os.path.basename(resume_checkpoint).split("-")[1]) if resume_checkpoint else None
+        )
+        _threshold = globals().get("degenerate_loss_threshold", None)
+        write_manifest(
+            model_path,
+            training_args,
+            config={
+                "max_steps_source": globals().get("max_steps_source", "config-derived"),
+                "epochs_planned": globals().get("_N_EPOCH"),
+                "retention": (
+                    {
+                        "mode": "best-n-plus-latest",
+                        "metric": str(globals().get("checkpoint_metric", "eval_loss_mask")),
+                        "keep_best": int(globals().get("checkpoint_keep_best", 10)),
+                        "keep_latest": int(globals().get("checkpoint_keep_latest", 1)),
+                    }
+                    # Default False until the retention callback lands; until then
+                    # save_total_limit's FIFO is what actually runs, and the manifest
+                    # has to say so rather than describe a mode that is not in effect.
+                    if bool(globals().get("checkpoint_retention", False))
+                    else {"mode": "save_total_limit-fifo", "save_total_limit": training_args.save_total_limit}
+                ),
+                "collapse_detection": {
+                    "degenerate_loss_threshold": _threshold,
+                    "degenerate_patience": int(globals().get("degenerate_patience", 5)),
+                    "degenerate_grace_steps": int(globals().get("degenerate_grace_steps", 5000)),
+                    "enabled": bool(_threshold),
+                },
+            },
+            data={
+                "dataset_dir": globals().get("dataset_dir"),
+                "rows": {"train": len(train_dataset), "eval": len(test_dataset)},
+                # The arrow row count, not dataset_info.json -- those disagree on
+                # this tree by 100,000 rows on train and by orders of magnitude on
+                # valid/test.
+                "rows_from": "arrow (len of the loaded split)",
+                "learning_source_dir": os.environ.get("LEARNING_SOURCE_DIR"),
+                "staged_to_local_nvme": os.environ.get("LEARNING_SOURCE_DIR", "").startswith("/tmp"),
+            },
+            objective={
+                "task": "mlm",
+                "mlm_probability": globals().get("mlm_probability_effective"),
+                "collator": type(data_collator).__name__,
+                "seq_len": globals().get("max_length"),
+                "vocab_size": globals().get("vocab_size"),
+            },
+            evaluation={
+                "rows": len(test_dataset),
+                "subset_random": bool(globals().get("eval_subset_random", False)),
+                "subset_seed": globals().get("eval_subset_seed"),
+                "metrics": ["eval_loss", "eval_loss_mask", "eval_loss_copy", "eval_loss_random"],
+                "judge_on": str(globals().get("judge_on", "eval_loss_mask")),
+                "degenerate_baseline": globals().get("degenerate_baseline"),
+                "seq_len": globals().get("max_length"),
+            },
+            resumed_from_step=_resumed_step,
+        )
+        print(f"📝 Wrote {model_path}/run_manifest.json")
+    except Exception as _e:  # never let bookkeeping stop a run
+        print(f"⚠️  Could not write run_manifest.json: {_e}")
 
     # Train with or without checkpoint
     # If resume_checkpoint is None, training starts from scratch
