@@ -51,11 +51,35 @@ STAGE="${STAGE:-1}"
 SUBSET="${GENOME_SUBSET}"
 CONFIG=molcrawl/tasks/pretrain/configs/genome_sequence/bert_small_subset.py
 
-OUT="$PWD/learning_source_genome_runs/bert-small-${SUBSET}"
+# The output root is stated rather than inherited from wherever this was
+# submitted. A worktree has its own gitignored learning_source_genome_runs, so
+# $PWD silently sends a production run somewhere that is meant to be disposable.
+# RUN_TAG keeps a probe from colliding with the production directory of the same
+# subset -- the 512 and 1,024 builds of a subset share a name otherwise.
+RUNS_ROOT="${RUNS_ROOT:-$PWD/learning_source_genome_runs}"
+OUT="${RUNS_ROOT}/bert-small-${SUBSET}${RUN_TAG:+-${RUN_TAG}}"
+echo "=== outputs: ${OUT} ==="
 DONE="${OUT}/.run_complete"
 LOCAL_ROOT=/tmp/genome-bert-${SLURM_JOB_ID:-0}
 
 [ -f "${DONE}" ] && { echo "=== ${SUBSET} already complete -- nothing to do ==="; exit 0; }
+
+# A run that would resume into a finished tree it was not meant to touch. The
+# 512 and 1,024 builds of a subset share a directory name unless RUN_TAG
+# separates them, and main.py resumes from whatever checkpoints it finds, so a
+# mismatched window would silently continue someone else's run.
+if [ -d "${OUT}" ] && ls -d "${OUT}"/checkpoint-* >/dev/null 2>&1; then
+    _seen=$(ls "${OUT}"/checkpoint-*/run_manifest.json 2>/dev/null | head -1)
+    _len=$("${PYROOT:-.}/miniconda/bin/python" -c "
+import json,sys
+try: print(json.load(open('${OUT}/run_manifest.json'))['batch']['seq_len'])
+except Exception: print('')" 2>/dev/null)
+    if [ -n "${_len}" ] && [ "${_len}" != "${SUBSET_BERT_MAX_LENGTH:-512}" ]; then
+        echo "REFUSING: ${OUT} holds a run at seq_len ${_len}, this one is ${SUBSET_BERT_MAX_LENGTH:-512}." >&2
+        echo "          Set RUN_TAG so the two do not share a directory." >&2
+        exit 1
+    fi
+fi
 
 export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1
 export TOKENIZERS_PARALLELISM=false
