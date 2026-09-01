@@ -28,6 +28,20 @@ So this writes the derived values, not just the raw ones:
     a reader later cannot tell whether the detector was armed.
 ``data.rows_from``
     arrow vs dataset_info.json, since those disagree on this tree.
+``placement.*``
+    How many nodes and GPUs the scheduler actually handed out, beside the
+    ``world_size`` the processes actually saw. GPUs are requested with ``--gpus=N``
+    and the scheduler decides the node placement, so a request for 4 can arrive as
+    2 nodes with 2 each. A launcher that hard-codes ``--nproc_per_node`` then runs
+    on one node only, and ``world_size`` -- the multiplier in the effective batch --
+    silently halves. ``placement.world_size_matches_allocation`` is that check,
+    resolved at run time rather than left to be reconstructed from ``sacct`` later.
+
+HF prints its own ``***** Running training *****`` banner with most of these
+numbers, but at ``logger.info``, and transformers defaults to WARNING. Nothing in
+this tree raises it, so across 855 job logs the banner appears zero times. The
+values are echoed to stdout here instead of turning INFO on globally, which would
+change the log volume of every running job to get six lines.
 """
 
 import json
@@ -83,6 +97,35 @@ TRACKED_ENV = (
 )
 
 
+def _placement(world):
+    """What the scheduler handed out, and whether the processes saw all of it."""
+    def _int(name):
+        try:
+            return int(os.environ[name])
+        except (KeyError, ValueError, TypeError):
+            return None
+
+    nodes = _int("SLURM_JOB_NUM_NODES") or _int("SLURM_NNODES")
+    # --gpus=N sets SLURM_GPUS; SLURM_GPUS_ON_NODE counts only this node's share.
+    gpus_total = _int("SLURM_GPUS")
+    gpus_here = _int("SLURM_GPUS_ON_NODE")
+    if gpus_total is None and gpus_here is not None and nodes is not None:
+        gpus_total = gpus_here * nodes
+
+    return {
+        "nodes": nodes,
+        "nodelist": os.environ.get("SLURM_JOB_NODELIST"),
+        "gpus_allocated": gpus_total,
+        "gpus_on_this_node": gpus_here,
+        "world_size": world,
+        # None when the allocation is unknown (not a SLURM job): unknown is not a
+        # mismatch, and reporting False here would cry wolf on every local run.
+        "world_size_matches_allocation": (
+            None if gpus_total is None else gpus_total == world
+        ),
+    }
+
+
 def write_manifest(output_dir, args, *, config, data, objective, evaluation,
                    resolved=None, defaults=None, resumed_from_step=None):
     """Write ``run_manifest.json`` into ``output_dir`` and return the dict.
@@ -97,6 +140,7 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
     accum = int(getattr(args, "gradient_accumulation_steps", 1) or 1)
     world = int(getattr(args, "world_size", 1) or 1)
     seq_len = evaluation.get("seq_len") or objective.get("seq_len")
+    placement = _placement(world)
 
     manifest = {
         "written": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -107,6 +151,7 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
             "output_dir": os.path.abspath(output_dir),
             "resumed_from_step": resumed_from_step,
         },
+        "placement": placement,
         "data": data,
         "batch": {
             "per_device_train_batch_size": per_device,
