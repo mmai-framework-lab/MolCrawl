@@ -981,6 +981,37 @@ if __name__ == "__main__":
         _dirty = dirty_tree_warning(_manifest["run"]["git"])
         if _dirty:
             print(f"⚠️  {_dirty}")
+
+        # Echo the measured values into the log as well. HF writes its own
+        # "***** Running training *****" banner carrying most of them, but at
+        # logger.info while transformers defaults to WARNING, so across 855 job
+        # logs on this tree it appears zero times -- the numbers were never
+        # recoverable from a finished run. Turning INFO on globally would get
+        # this block by changing the log volume of every running job, so
+        # they are printed here instead. The manifest is the record; this is so
+        # a run that fails before writing one still says what it was.
+        _b, _p = _manifest["batch"], _manifest["placement"]
+        print("=== measured at run time (not read from the config) ===")
+        print(f"    nodes / nodelist        : {_p['nodes']} / {_p['nodelist']}")
+        print(f"    GPUs allocated          : {_p['gpus_allocated']}"
+              f" (this node: {_p['gpus_on_this_node']})")
+        print(f"    world_size (seen)       : {_b['world_size']}")
+        print(f"    per_device x grad_accum : {_b['per_device_train_batch_size']}"
+              f" x {_b['gradient_accumulation_steps']}")
+        print(f"    effective global batch  : {_b['effective_global_batch']}")
+        print(f"    tokens per step         : {_b['tokens_per_step']}")
+        print(f"    train rows read         : {len(train_dataset)}")
+        print(f"    max_steps               : {_manifest['schedule']['max_steps']}")
+        if _p["world_size_matches_allocation"] is False:
+            # The processes are not driving every GPU the job is being charged
+            # for, so the effective batch is not what the schedule was derived
+            # from. Loud, but not fatal: killing a run over a launcher flag would
+            # be worse than letting it finish with the mismatch on the record.
+            print(f"⚠️  world_size {_b['world_size']} does not match the"
+                  f" {_p['gpus_allocated']} GPUs allocated: the effective batch is"
+                  f" {_b['effective_global_batch']}, not"
+                  f" {_b['per_device_train_batch_size'] * _b['gradient_accumulation_steps'] * _p['gpus_allocated']}."
+                  " Check the launcher's --nproc_per_node against the allocation.")
     except Exception as _e:  # never let bookkeeping stop a run
         print(f"⚠️  Could not write run_manifest.json: {_e}")
 
