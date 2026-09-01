@@ -389,6 +389,16 @@ def main() -> int:
         print(f"{size:10s} {r['params_millions']:>10.1f} {r['best_val_loss']:>16.4f} "
               f"{r['loss']:>12.4f} {r['perplexity']:>11.3f}")
 
+    if args.output_dir is None and args.output_name is not None:
+        # --output-name alone writes nothing: the JSON block below is gated on
+        # --output-dir. Silent, because the summary table above still prints, so a
+        # run looks successful and leaves no file. Say so rather than let the next
+        # caller find out by looking for the file afterwards.
+        logger.warning(
+            "--output-name %s is ignored without --output-dir; no JSON was written",
+            args.output_name,
+        )
+
     if args.output_dir:
         out = Path(args.output_dir)
         out.mkdir(parents=True, exist_ok=True)
