@@ -34,21 +34,65 @@ import json
 import os
 from datetime import datetime, timezone
 
+from molcrawl.models._provenance import (
+    dirty_tree_warning,
+    environment,
+    git_state,
+    value_sources,
+)
+
 MANIFEST = "run_manifest.json"
 
+__all__ = ["MANIFEST", "TRACKED", "TRACKED_ENV", "dirty_tree_warning", "note_resume", "write_manifest"]
 
-def _git_commit():
-    try:
-        import subprocess
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                              capture_output=True, text=True, timeout=5).stdout.strip() or None
-    except Exception:
-        return None
+# Values whose provenance has mattered, reported with the default they would have
+# had. HF splits these across TrainingArguments and the module globals, so the
+# names are taken from whichever the configurator actually resolves.
+TRACKED = (
+    "learning_rate",
+    "per_device_train_batch_size",
+    "gradient_accumulation_steps",
+    "max_length",
+    "max_steps",
+    "warmup_steps",
+    "weight_decay",
+    "save_steps",
+    "eval_steps",
+    "seed",
+    "judge_on",
+    "checkpoint_metric",
+    "degenerate_loss_threshold",
+    "document_masking",
+)
+
+# Read by the BERT configs. LEARNING_SOURCE_DIR, GENOME_SUBSET and
+# HARD_MAX_STEPS_OVERRIDE are in _provenance.COMMON_ENV.
+#
+# SUBSET_BERT_EPOCHS is the one that has already gone unrecorded: genome's
+# bert_small_subset.py derives max_steps from it, and the 9-epoch saturation run
+# was launched by setting it -- a fact the run itself does not carry.
+TRACKED_ENV = (
+    "SUBSET_BERT_LR",
+    "SUBSET_BERT_LARGE_LR",
+    "SUBSET_BERT_EPOCHS",
+    "SUBSET_BERT_MAX_CKPT",
+    "BERT_LR_TAG",
+    "SMOKE_MAX_STEPS",
+    "SMOKE_WARMUP_STEPS",
+    "SMOKE_EVAL_INTERVAL",
+)
 
 
 def write_manifest(output_dir, args, *, config, data, objective, evaluation,
-                   resumed_from_step=None):
-    """Write ``run_manifest.json`` into ``output_dir`` and return the dict."""
+                   resolved=None, defaults=None, resumed_from_step=None):
+    """Write ``run_manifest.json`` into ``output_dir`` and return the dict.
+
+    ``config`` is the curated dict the caller assembles (retention, collapse
+    detection, epoch planning). ``resolved`` and ``defaults`` are main.py's whole
+    globals snapshot after and before the configurator, which is what ``sources``
+    is derived from -- the two are separate because only the second pair can say
+    whether a value was chosen or merely inherited.
+    """
     per_device = int(getattr(args, "per_device_train_batch_size", 0) or 0)
     accum = int(getattr(args, "gradient_accumulation_steps", 1) or 1)
     world = int(getattr(args, "world_size", 1) or 1)
@@ -59,7 +103,7 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
         "run": {
             "job_id": os.environ.get("SLURM_JOB_ID"),
             "node": os.environ.get("SLURMD_NODENAME") or os.uname().nodename,
-            "commit": _git_commit(),
+            "git": git_state(),
             "output_dir": os.path.abspath(output_dir),
             "resumed_from_step": resumed_from_step,
         },
@@ -99,6 +143,8 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
             "seed": getattr(args, "seed", None),
             "data_seed": getattr(args, "data_seed", None),
         },
+        "sources": value_sources(resolved or {}, defaults or {}, TRACKED),
+        "env": environment(TRACKED_ENV),
     }
 
     os.makedirs(output_dir, exist_ok=True)
