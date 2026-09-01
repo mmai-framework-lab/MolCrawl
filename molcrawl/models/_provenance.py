@@ -17,6 +17,14 @@ run never wrote down:
     anything is saved there is one number and no history. genome's production 21
     ran at learning_rate 1e-4 against a 6e-4 default, and it took opening 384
     checkpoints in 2026-08 to find that out.
+``placement``
+    GPUs are asked for with ``--gpus=N`` and the scheduler decides the node
+    placement, so a request for 4 can arrive as 2 nodes with 2 each. Both
+    launchers hard-code ``--nproc_per_node`` with ``--standalone`` and no
+    ``MASTER_ADDR``, so they would drive one node only. What that costs differs
+    by framework -- HF multiplies the effective batch by ``world_size`` and
+    nanoGPT divides the accumulation by it -- but neither run said how many GPUs
+    it was actually driving, so neither could be checked afterwards.
 ``environment``
     The overrides live in environment variables that neither ``ckpt.pt`` nor
     ``training_args.bin`` has ever carried. ``SUBSET_BERT_EPOCHS`` sets the epoch
@@ -43,6 +51,38 @@ COMMON_ENV = (
     "GENOME_SUBSET",
     "HARD_MAX_STEPS_OVERRIDE",
 )
+
+
+def placement(world: int) -> Dict[str, Any]:
+    """What the scheduler handed out, beside what the processes actually saw.
+
+    ``world_size_matches_allocation`` is ``None``, not ``False``, when the
+    allocation is unknown: outside SLURM there is nothing to disagree with, and
+    ``False`` there would warn on every local run.
+    """
+    def _int(name: str) -> Optional[int]:
+        try:
+            return int(os.environ[name])
+        except (KeyError, ValueError, TypeError):
+            return None
+
+    nodes = _int("SLURM_JOB_NUM_NODES") or _int("SLURM_NNODES")
+    # --gpus=N sets SLURM_GPUS; SLURM_GPUS_ON_NODE counts only this node's share.
+    gpus_total = _int("SLURM_GPUS")
+    gpus_here = _int("SLURM_GPUS_ON_NODE")
+    if gpus_total is None and gpus_here is not None and nodes is not None:
+        gpus_total = gpus_here * nodes
+
+    return {
+        "nodes": nodes,
+        "nodelist": os.environ.get("SLURM_JOB_NODELIST"),
+        "gpus_allocated": gpus_total,
+        "gpus_on_this_node": gpus_here,
+        "world_size": world,
+        "world_size_matches_allocation": (
+            None if gpus_total is None else gpus_total == world
+        ),
+    }
 
 
 def _git(*args: str) -> str:

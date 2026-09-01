@@ -52,6 +52,7 @@ from molcrawl.models._provenance import (
     dirty_tree_warning,
     environment,
     git_state,
+    placement as _placement,
     value_sources,
 )
 
@@ -95,35 +96,6 @@ TRACKED_ENV = (
     "SMOKE_WARMUP_STEPS",
     "SMOKE_EVAL_INTERVAL",
 )
-
-
-def _placement(world):
-    """What the scheduler handed out, and whether the processes saw all of it."""
-    def _int(name):
-        try:
-            return int(os.environ[name])
-        except (KeyError, ValueError, TypeError):
-            return None
-
-    nodes = _int("SLURM_JOB_NUM_NODES") or _int("SLURM_NNODES")
-    # --gpus=N sets SLURM_GPUS; SLURM_GPUS_ON_NODE counts only this node's share.
-    gpus_total = _int("SLURM_GPUS")
-    gpus_here = _int("SLURM_GPUS_ON_NODE")
-    if gpus_total is None and gpus_here is not None and nodes is not None:
-        gpus_total = gpus_here * nodes
-
-    return {
-        "nodes": nodes,
-        "nodelist": os.environ.get("SLURM_JOB_NODELIST"),
-        "gpus_allocated": gpus_total,
-        "gpus_on_this_node": gpus_here,
-        "world_size": world,
-        # None when the allocation is unknown (not a SLURM job): unknown is not a
-        # mismatch, and reporting False here would cry wolf on every local run.
-        "world_size_matches_allocation": (
-            None if gpus_total is None else gpus_total == world
-        ),
-    }
 
 
 def write_manifest(output_dir, args, *, config, data, objective, evaluation,

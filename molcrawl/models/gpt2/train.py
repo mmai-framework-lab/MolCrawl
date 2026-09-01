@@ -944,6 +944,26 @@ if __name__ == "__main__":
             _dirty = dirty_tree_warning(_manifest["run"]["git"])
             if _dirty:
                 print(f"⚠️  {_dirty}")
+            _p = _manifest["placement"]
+            print("=== measured at run time (not read from the config) ===")
+            print(f"    nodes / nodelist       : {_p['nodes']} / {_p['nodelist']}")
+            print(f"    GPUs allocated         : {_p['gpus_allocated']}"
+                  f" (this node: {_p['gpus_on_this_node']})")
+            print(f"    world_size (seen)      : {ddp_world_size}")
+            print(f"    effective global batch : {_manifest['batch']['effective_global_batch']}"
+                  " (GPU-independent)")
+            print(f"    tokens per iteration   : {tokens_per_iter}")
+            if _p["world_size_matches_allocation"] is False:
+                # Unlike HF, the effective batch here does not move: the
+                # accumulation is divided by the world size, so a smaller world
+                # just does more accumulation per rank and trains the same run.
+                # What it costs is wall time on GPUs the job is being charged for
+                # and not driving.
+                print(f"⚠️  world_size {ddp_world_size} does not match the"
+                      f" {_p['gpus_allocated']} GPUs allocated. The effective batch is"
+                      " unaffected, but"
+                      f" {_p['gpus_allocated'] - ddp_world_size} allocated GPU(s) are idle."
+                      " Check the launcher's --nproc_per_node against the allocation.")
         except Exception as _e:  # never let bookkeeping stop a run
             print(f"⚠️  Could not write run_manifest.json: {_e}")
 
