@@ -141,6 +141,12 @@ def resolve_eval_iters(eval_sequences, batch_size):
     return max(1, -(-int(eval_sequences) // int(batch_size)))
 
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
+# The same names *before* the configurator runs. run_manifest.json reports the
+# resolved value beside this, so "the run took the default" is written down
+# rather than inferred from the two happening to match. Snapshotted here because
+# a config file, an env var read inside one, and --key=value all overwrite these
+# globals in place, leaving no trace of what they replaced.
+config_defaults = {k: globals()[k] for k in config_keys}
 # RNG helpers. Defined here, ahead of the first `if __name__` block, because
 # the resume path in the second one calls them: this module runs top to
 # bottom, so a definition placed after that block is not bound yet when it
@@ -859,6 +865,92 @@ if __name__ == "__main__":
     local_iter_num = 0  # number of iterations in the lifetime of this process
     raw_model = model.module if ddp else model  # unwrap DDP container if needed
     running_mfu = -1.0
+
+    # One human-readable file per run recording what the run actually is. ckpt.pt
+    # carries the same numbers, but as a pickle that needs torch and an unpickling
+    # shim to open, and it carries only the resolved values: not which corpus was
+    # read (dataset_dir comes from the environment), not whether a value was the
+    # default or an override, and not whether the tree was clean. See
+    # _run_manifest.py for the three times that has cost us.
+    if master_process:
+        try:
+            from molcrawl.models.gpt2._run_manifest import write_manifest
+
+            _train_rows = len(training_data) if training_data is not None else None
+            _eval_rows = len(test_data) if test_data is not None else None
+            _manifest = write_manifest(
+                out_dir,
+                config,
+                config_defaults,
+                data={
+                    "modality": dataset,
+                    # The directory, not just the modality name. This is the field
+                    # whose absence made genome's epoch arithmetic unrecoverable.
+                    "dataset_dir": (dataset_params or {}).get("dataset_dir"),
+                    "rna_bin_dir": globals().get("rna_bin_dir"),
+                    "rows": {"train": _train_rows, "eval": _eval_rows},
+                    "rows_from": "len() of the loaded split, not dataset_info.json",
+                    "learning_source_dir": os.environ.get("LEARNING_SOURCE_DIR"),
+                    "staged_to_local_nvme": str(
+                        os.environ.get("LEARNING_SOURCE_DIR", "")
+                    ).startswith("/tmp"),
+                },
+                batch={
+                    "batch_size": batch_size,
+                    # Pre-division: train.py divides the configured accumulation by
+                    # the world size, so config[] holds the value as written and the
+                    # global below is GPU-independent.
+                    "gradient_accumulation_steps_configured": config.get(
+                        "gradient_accumulation_steps"
+                    ),
+                    "gradient_accumulation_steps_per_rank": gradient_accumulation_steps,
+                    "world_size": ddp_world_size,
+                    "block_size": block_size,
+                },
+                schedule={
+                    "max_iters": max_iters,
+                    "warmup_iters": warmup_iters,
+                    "lr_decay_iters": lr_decay_iters,
+                    "decay_lr": decay_lr,
+                    "learning_rate": learning_rate,
+                    "min_lr": min_lr,
+                    "weight_decay": weight_decay,
+                    "grad_clip": grad_clip,
+                },
+                objective={
+                    "task": "clm",
+                    "seq_len": block_size,
+                    "vocab_size": globals().get("meta_vocab_size"),
+                    "ambiguous_token_ids_excluded_from_loss": list(ambiguous_token_ids),
+                    "pad_token_id_for_loss": pad_token_id_for_loss,
+                },
+                evaluation={
+                    "eval_interval": eval_interval,
+                    "eval_iters": eval_iters,
+                    "eval_sequences": globals().get("eval_sequences"),
+                    "eval_sequences_seen": eval_iters * batch_size,
+                    "judge_on": "val loss (mean cross-entropy, nats/token)",
+                },
+                selection={
+                    "always_save_checkpoint": always_save_checkpoint,
+                    "max_checkpoints": max_checkpoints,
+                    "early_stopping": early_stopping,
+                    "init_from": init_from,
+                },
+                seed={"seed": seed, "per_rank_offset": "seed + ddp_rank"},
+                resumed_from_iter=iter_num if init_from == "resume" else None,
+            )
+            print(f"📝 Wrote {out_dir}/run_manifest.json")
+            if _manifest["run"]["git"]["dirty"]:
+                print(
+                    "⚠️  Working tree had uncommitted changes at launch: this run is "
+                    f"NOT reproducible from commit {_manifest['run']['git']['commit']}. "
+                    f"{len(_manifest['run']['git']['dirty_files'])} file(s) differ; "
+                    "they are listed in run_manifest.json."
+                )
+        except Exception as _e:  # never let bookkeeping stop a run
+            print(f"⚠️  Could not write run_manifest.json: {_e}")
+
     while True:
         # determine and set the learning rate for this iteration
         lr = get_lr(iter_num) if decay_lr else learning_rate
