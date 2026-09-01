@@ -10,12 +10,7 @@ import os
 
 import pytest
 
-from molcrawl.models.gpt2._run_manifest import (
-    MANIFEST,
-    note_resume,
-    value_sources,
-    write_manifest,
-)
+from molcrawl.models.gpt2._run_manifest import MANIFEST, note_resume, write_manifest
 
 DEFAULTS = {
     "learning_rate": 6e-4,
@@ -85,8 +80,13 @@ def test_an_overridden_value_names_the_default_it_replaced(tmp_path):
     assert "indistinguishable" in learning_rate["resolved_by"]
 
 
-def test_sources_skips_keys_the_config_does_not_carry():
-    assert value_sources({"learning_rate": 1e-4}, DEFAULTS).keys() == {"learning_rate"}
+def test_only_the_nanogpt_values_are_tracked(tmp_path):
+    """value_sources itself is covered in test_run_provenance; this is the list."""
+    sources = _write(tmp_path)["sources"]
+
+    assert "gradient_accumulation_steps" in sources
+    assert "max_iters" in sources
+    assert "max_steps" not in sources  # that is the HF name
 
 
 def test_the_dataset_directory_is_recorded_not_only_the_modality(tmp_path):

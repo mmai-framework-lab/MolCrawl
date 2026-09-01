@@ -874,7 +874,7 @@ if __name__ == "__main__":
     # _run_manifest.py for the three times that has cost us.
     if master_process:
         try:
-            from molcrawl.models.gpt2._run_manifest import write_manifest
+            from molcrawl.models.gpt2._run_manifest import dirty_tree_warning, write_manifest
 
             _train_rows = len(training_data) if training_data is not None else None
             _eval_rows = len(test_data) if test_data is not None else None
@@ -941,13 +941,9 @@ if __name__ == "__main__":
                 resumed_from_iter=iter_num if init_from == "resume" else None,
             )
             print(f"📝 Wrote {out_dir}/run_manifest.json")
-            if _manifest["run"]["git"]["dirty"]:
-                print(
-                    "⚠️  Working tree had uncommitted changes at launch: this run is "
-                    f"NOT reproducible from commit {_manifest['run']['git']['commit']}. "
-                    f"{len(_manifest['run']['git']['dirty_files'])} file(s) differ; "
-                    "they are listed in run_manifest.json."
-                )
+            _dirty = dirty_tree_warning(_manifest["run"]["git"])
+            if _dirty:
+                print(f"⚠️  {_dirty}")
         except Exception as _e:  # never let bookkeeping stop a run
             print(f"⚠️  Could not write run_manifest.json: {_e}")
 

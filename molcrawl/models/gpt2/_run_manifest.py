@@ -40,10 +40,18 @@ each one came from:
 
 import json
 import os
-import subprocess
 from datetime import datetime, timezone
 
+from molcrawl.models._provenance import (
+    dirty_tree_warning,
+    environment,
+    git_state,
+    value_sources,
+)
+
 MANIFEST = "run_manifest.json"
+
+__all__ = ["MANIFEST", "TRACKED", "TRACKED_ENV", "dirty_tree_warning", "note_resume", "write_manifest"]
 
 # Values whose provenance has mattered. Each is reported with the default it
 # would have had, so "the run took the default" is stated rather than implied.
@@ -62,10 +70,9 @@ TRACKED = (
     "eval_iters",
 )
 
-# Read by the configs, never recorded by the run until now.
+# Read by the nanoGPT configs. LEARNING_SOURCE_DIR and GENOME_SUBSET are in
+# _provenance.COMMON_ENV, since the BERT configs read them too.
 TRACKED_ENV = (
-    "LEARNING_SOURCE_DIR",
-    "GENOME_SUBSET",
     "SUBSET_GPT2_LR",
     "SUBSET_GPT2_WD",
     "SUBSET_GPT2_MAX_CKPT",
@@ -74,54 +81,6 @@ TRACKED_ENV = (
     "SMOKE_WARMUP_ITERS",
     "SMOKE_EVAL_INTERVAL",
 )
-
-
-def _git(*args):
-    try:
-        out = subprocess.run(("git",) + args, capture_output=True, text=True, timeout=10)
-        return out.stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return ""
-
-
-def git_state():
-    """Commit, plus whether the tree that produced this run had uncommitted changes.
-
-    A commit hash alone does not say the run came from that commit: an edited
-    working tree runs happily and records the hash it was based on.
-    """
-    dirty = _git("status", "--porcelain")
-    return {
-        "commit": _git("rev-parse", "--short", "HEAD") or None,
-        "branch": _git("rev-parse", "--abbrev-ref", "HEAD") or None,
-        "dirty": bool(dirty),
-        "dirty_files": [line[3:] for line in dirty.splitlines()][:50],
-    }
-
-
-def value_sources(config, defaults):
-    """For each tracked value: what it is, whether it is the default, what the default was.
-
-    ``defaults`` is train.py's globals snapshotted before the configurator runs.
-    That separates "the config or an argument set this" from "nothing touched
-    it", which is the distinction ``ckpt.pt`` loses. It does not separate a
-    config file from an environment variable from ``--key=value``: all three
-    land in the same globals by the time we can look. ``resolved_by`` says so
-    rather than guessing.
-    """
-    sources = {}
-    for key in TRACKED:
-        if key not in config:
-            continue
-        value, default = config[key], defaults.get(key)
-        same = value == default
-        sources[key] = {
-            "value": value,
-            "from": "default" if same else "overridden",
-            "default": default,
-            "resolved_by": None if same else "config file, env var or --key=value (indistinguishable)",
-        }
-    return sources
 
 
 def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objective,
@@ -160,8 +119,8 @@ def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objectiv
         "eval": evaluation,
         "selection": selection,
         "seed": seed,
-        "sources": value_sources(config, defaults),
-        "env": {k: os.environ[k] for k in TRACKED_ENV if k in os.environ},
+        "sources": value_sources(config, defaults, TRACKED),
+        "env": environment(TRACKED_ENV),
     }
 
     os.makedirs(out_dir, exist_ok=True)

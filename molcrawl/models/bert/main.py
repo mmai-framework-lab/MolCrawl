@@ -281,6 +281,12 @@ if __name__ == "__main__":
     seed = 42
     # -----------------------------------------------------------------------------
     config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
+    # The same names *before* the configurator runs. run_manifest.json reports the
+    # resolved value beside this, so "the run took the default" is written down
+    # rather than inferred from the two happening to match. Snapshotted here
+    # because a config file, an env var read inside one, and --key=value all
+    # overwrite these globals in place, leaving no trace of what they replaced.
+    config_defaults = {k: globals()[k] for k in config_keys}
     # Handle configurator path (support repo-root invocation and direct invocation)
     _this_dir = os.path.dirname(os.path.abspath(__file__))
     if os.path.exists(os.path.join(_this_dir, "configurator.py")):
@@ -909,13 +915,13 @@ if __name__ == "__main__":
     # training_args.bin (a pickle), and the data provenance, masking and eval
     # subset live only in the config that produced the run.
     try:
-        from molcrawl.models.bert._run_manifest import write_manifest
+        from molcrawl.models.bert._run_manifest import dirty_tree_warning, write_manifest
 
         _resumed_step = (
             int(os.path.basename(resume_checkpoint).split("-")[1]) if resume_checkpoint else None
         )
         _threshold = globals().get("degenerate_loss_threshold", None)
-        write_manifest(
+        _manifest = write_manifest(
             model_path,
             training_args,
             config={
@@ -964,9 +970,17 @@ if __name__ == "__main__":
                 "degenerate_baseline": globals().get("degenerate_baseline"),
                 "seq_len": globals().get("max_length"),
             },
+            # The whole globals snapshot, after the configurator and before it.
+            # sources is derived from the pair: the curated `config` above cannot
+            # say whether a value was chosen or inherited.
+            resolved=config,
+            defaults=config_defaults,
             resumed_from_step=_resumed_step,
         )
         print(f"📝 Wrote {model_path}/run_manifest.json")
+        _dirty = dirty_tree_warning(_manifest["run"]["git"])
+        if _dirty:
+            print(f"⚠️  {_dirty}")
     except Exception as _e:  # never let bookkeeping stop a run
         print(f"⚠️  Could not write run_manifest.json: {_e}")
 
