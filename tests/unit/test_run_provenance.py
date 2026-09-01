@@ -13,6 +13,7 @@ from molcrawl.models._provenance import (
     dirty_tree_warning,
     environment,
     git_state,
+    placement,
     value_sources,
 )
 
@@ -121,3 +122,43 @@ def test_both_trainers_expose_the_same_provenance_surface(module):
     # COMMON_ENV is added by environment(); duplicating it per trainer would let
     # the two drift apart.
     assert not set(manifest.TRACKED_ENV) & set(COMMON_ENV)
+
+
+def test_placement_is_none_not_false_when_there_is_no_allocation(monkeypatch):
+    """Outside SLURM nothing disagrees; False would warn on every local run."""
+    for name in ("SLURM_JOB_NUM_NODES", "SLURM_NNODES", "SLURM_GPUS",
+                 "SLURM_GPUS_ON_NODE", "SLURM_JOB_NODELIST"):
+        monkeypatch.delenv(name, raising=False)
+
+    assert placement(1)["world_size_matches_allocation"] is None
+
+
+def test_placement_catches_a_world_smaller_than_the_allocation(monkeypatch):
+    """4 processes against 8 allocated GPUs: the case this exists to name."""
+    monkeypatch.setenv("SLURM_JOB_NUM_NODES", "2")
+    monkeypatch.setenv("SLURM_GPUS", "8")
+    monkeypatch.setenv("SLURM_GPUS_ON_NODE", "4")
+
+    got = placement(4)
+    assert got["gpus_allocated"] == 8
+    assert got["world_size_matches_allocation"] is False
+
+
+def test_placement_infers_the_total_when_only_the_per_node_count_is_set(monkeypatch):
+    """--gres forms leave SLURM_GPUS unset, so the total has to be reconstructed."""
+    monkeypatch.delenv("SLURM_GPUS", raising=False)
+    monkeypatch.setenv("SLURM_JOB_NUM_NODES", "2")
+    monkeypatch.setenv("SLURM_GPUS_ON_NODE", "4")
+
+    assert placement(8)["world_size_matches_allocation"] is True
+
+
+@pytest.mark.parametrize(
+    "module",
+    ["molcrawl.models.gpt2._run_manifest", "molcrawl.models.bert._run_manifest"],
+)
+def test_both_trainers_record_the_placement_they_got(module):
+    """One trainer knowing what it ran on and the other not is the drift this prevents."""
+    import importlib
+
+    assert callable(importlib.import_module(module)._placement)

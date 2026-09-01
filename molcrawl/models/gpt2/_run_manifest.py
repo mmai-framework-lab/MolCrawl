@@ -46,6 +46,7 @@ from molcrawl.models._provenance import (
     dirty_tree_warning,
     environment,
     git_state,
+    placement as _placement,
     value_sources,
 )
 
@@ -101,6 +102,7 @@ def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objectiv
             "out_dir": os.path.abspath(out_dir),
             "resumed_from_iter": resumed_from_iter,
         },
+        "placement": _placement(int(batch.get("world_size") or 1)),
         "data": data,
         "batch": {
             "batch_size": micro,
