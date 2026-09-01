@@ -970,6 +970,7 @@ if __name__ == "__main__":
             training_args,
             config={
                 "max_steps_source": globals().get("max_steps_source", "config-derived"),
+                "expected_global_batch": globals().get("expected_global_batch"),
                 "epochs_planned": globals().get("_N_EPOCH"),
                 "retention": (
                     {

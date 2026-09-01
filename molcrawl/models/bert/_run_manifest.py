@@ -63,6 +63,12 @@ __all__ = ["MANIFEST", "TRACKED", "TRACKED_ENV", "dirty_tree_warning", "note_res
 # Values whose provenance has mattered, reported with the default they would have
 # had. HF splits these across TrainingArguments and the module globals, so the
 # names are taken from whichever the configurator actually resolves.
+#
+# Only names main.py already defines can go here. config_keys is snapshotted
+# before the config file is exec'd, so a key a config introduces -- rather than
+# overrides -- is in neither the resolved nor the defaults dict, and sources would
+# silently skip it. expected_global_batch is such a key, and is recorded in the
+# batch block instead, where its value is the point rather than its provenance.
 TRACKED = (
     "learning_rate",
     "per_device_train_batch_size",
@@ -112,6 +118,7 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
     accum = int(getattr(args, "gradient_accumulation_steps", 1) or 1)
     world = int(getattr(args, "world_size", 1) or 1)
     seq_len = evaluation.get("seq_len") or objective.get("seq_len")
+    expected = config.get("expected_global_batch")
     placement = _placement(world)
 
     manifest = {
@@ -130,6 +137,16 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
             "gradient_accumulation_steps": accum,
             "world_size": world,
             "effective_global_batch": per_device * accum * world,
+            # What the config said max_steps was derived from, beside what the run
+            # actually got. main.py refuses to start when they disagree, so a
+            # manifest that carries both says the check ran and what it compared --
+            # not just that nothing complained. None means the config declared
+            # nothing and no check was made, which is a different statement from
+            # a check that passed.
+            "expected_global_batch": expected,
+            "matches_expected_global_batch": (
+                None if expected is None else int(expected) == per_device * accum * world
+            ),
             "seq_len": seq_len,
             "tokens_per_step": (per_device * accum * world * seq_len) if seq_len else None,
         },
