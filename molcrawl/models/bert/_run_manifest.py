@@ -52,6 +52,7 @@ from molcrawl.models._provenance import (
     dirty_tree_warning,
     environment,
     git_state,
+    introduced_values,
     placement as _placement,
     value_sources,
 )
@@ -110,7 +111,8 @@ TRACKED_ENV = (
 
 
 def write_manifest(output_dir, args, *, config, data, objective, evaluation,
-                   resolved=None, defaults=None, resumed_from_step=None):
+                   resolved=None, defaults=None, introduced=None,
+                   configurator_path=None, resumed_from_step=None):
     """Write ``run_manifest.json`` into ``output_dir`` and return the dict.
 
     ``config`` is the curated dict the caller assembles (retention, collapse
@@ -183,6 +185,11 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
             "data_seed": getattr(args, "data_seed", None),
         },
         "sources": value_sources(resolved or {}, defaults or {}, TRACKED),
+        # Scalars the config file added rather than overrode. Separate from
+        # sources because there is no default to compare them against, and not
+        # filtered against what is reported elsewhere -- an exclusion list is one
+        # more list to forget to update, and a duplicated value costs nothing.
+        "introduced": introduced_values(resolved or {}, introduced or {}, configurator_path),
         "env": environment(TRACKED_ENV),
     }
 

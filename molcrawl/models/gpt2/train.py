@@ -207,6 +207,16 @@ if __name__ == "__main__":
         configurator_path = "configurator.py"
     exec(open(configurator_path).read())  # overrides from command line or config file
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
+    # The same filter again, now that the config file has run. What it adds are
+    # names a config *introduced* rather than overrode -- eos_token_id,
+    # pad_token_id and bos_token_id among them -- which sources cannot report
+    # because there is no default to compare against. Kept out of `config` so the
+    # dict saved into ckpt.pt and sent to wandb is unchanged.
+    config_introduced = {
+        k: v
+        for k, v in globals().items()
+        if not k.startswith("_") and isinstance(v, (int, float, bool, str))
+    }
     # -----------------------------------------------------------------------------
 
     # Derive eval_iters from eval_sequences so every ladder size averages its val
@@ -923,6 +933,13 @@ if __name__ == "__main__":
                     "vocab_size": globals().get("meta_vocab_size"),
                     "ambiguous_token_ids_excluded_from_loss": list(ambiguous_token_ids),
                     "pad_token_id_for_loss": pad_token_id_for_loss,
+                    # Set by 47, 35 and 35 configs respectively and carried by no
+                    # manifest until now. Which id marks a boundary is not a
+                    # detail: RNA's cell boundary is token 0, the same id as its
+                    # pad, and that collision lived only in the prep script.
+                    "eos_token_id": globals().get("eos_token_id"),
+                    "pad_token_id": globals().get("pad_token_id"),
+                    "bos_token_id": globals().get("bos_token_id"),
                 },
                 evaluation={
                     "eval_interval": eval_interval,
@@ -938,6 +955,8 @@ if __name__ == "__main__":
                     "init_from": init_from,
                 },
                 seed={"seed": seed, "per_rank_offset": "seed + ddp_rank"},
+                introduced=config_introduced,
+                configurator_path=configurator_path,
                 resumed_from_iter=iter_num if init_from == "resume" else None,
             )
             print(f"📝 Wrote {out_dir}/run_manifest.json")

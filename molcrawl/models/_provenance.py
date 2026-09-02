@@ -30,6 +30,14 @@ run never wrote down:
     ``training_args.bin`` has ever carried. ``SUBSET_BERT_EPOCHS`` sets the epoch
     count genome's BERT schedule is derived from; the 9-epoch run used it and
     said so nowhere.
+``introduced_values``
+    ``value_sources`` can only report names the trainer itself declares, because
+    ``config_keys`` is snapshotted before the config file runs. A name a config
+    *introduces* is in neither the resolved dict nor the defaults, so it is
+    skipped in silence -- ``expected_global_batch`` (#164) is one, and so are
+    ``eos_token_id``, ``pad_token_id`` and ``bos_token_id``, which 47, 35 and 35
+    configs set and no manifest has ever carried. RNA's cell boundary is token 0,
+    the same id as its pad; that fact lived only in the prep script.
 
 Each trainer passes its own names -- the values worth tracking and the variables
 its configs read differ -- but the shape of the answer should not.
@@ -167,3 +175,73 @@ def environment(extra: Iterable[str] = ()) -> Dict[str, str]:
     """
     names = list(COMMON_ENV) + list(extra)
     return {name: os.environ[name] for name in names if name in os.environ}
+
+
+def configurator_locals(configurator_path: str) -> frozenset:
+    """The names configurator.py binds in the namespace it is exec'd into.
+
+    ``exec(open(configurator_path).read())`` runs at module level, so the
+    configurator's own loop variables -- ``arg``, ``key``, ``val`` and the rest --
+    become globals indistinguishable from anything a config file set. They are
+    read out of its source rather than listed here, because a hard-coded list is
+    exactly the kind that stops matching: TRACKED carried three names main.py had
+    never declared until a test was written to hold the two in step.
+    """
+    import ast
+
+    names = set()
+
+    def walk(body):
+        for node in body:
+            if isinstance(node, ast.Assign):
+                targets = node.targets
+            elif isinstance(node, ast.AnnAssign):
+                targets = [node.target]
+            elif isinstance(node, ast.For):
+                targets = [node.target]
+                walk(node.body)
+                walk(node.orelse)
+            elif isinstance(node, (ast.If, ast.While, ast.Try, ast.With)):
+                for attr in ("body", "orelse", "finalbody", "handlers"):
+                    walk(getattr(node, attr, []) or [])
+                continue
+            elif isinstance(node, ast.ExceptHandler):
+                walk(node.body)
+                continue
+            else:
+                continue
+            for target in targets:
+                for sub in ast.walk(target):
+                    if isinstance(sub, ast.Name):
+                        names.add(sub.id)
+
+    try:
+        walk(ast.parse(open(configurator_path).read()).body)
+    except (OSError, SyntaxError):
+        return frozenset()
+    return frozenset(names)
+
+
+def introduced_values(
+    before: Iterable[str],
+    after: Mapping[str, Any],
+    configurator_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Scalars a config file added, which value_sources cannot see.
+
+    ``before`` is the trainer's ``config_keys``, taken before the configurator
+    ran; ``after`` is the same filter applied to globals once it has. What is left
+    is what a config introduced rather than overrode -- there is no default to
+    compare against, which is why these are reported separately from ``sources``
+    instead of being folded into it with a null default.
+
+    Names the configurator itself binds are removed. Known names are *not*: an
+    exclusion list of things already reported elsewhere would be one more list to
+    forget to update, and a value appearing twice costs nothing.
+    """
+    excluded = configurator_locals(configurator_path) if configurator_path else frozenset()
+    return {
+        name: value
+        for name, value in sorted(after.items())
+        if name not in set(before) and name not in excluded
+    }
