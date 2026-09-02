@@ -46,8 +46,25 @@ def convert_split(ds, cache_dir, batch_size=2000, workers=8):
         }
 
     os.makedirs(cache_dir, exist_ok=True)
+    # Name the types. map infers from the Python lists it is handed and lands on
+    # int64, which doubles the file for ids that never exceed 9: 401 GiB against
+    # the 223 GiB the same rows take at int32, and 3.7 TiB across 21 subsets. It
+    # also drops the fixed length the source declares, leaving a variable-length
+    # sequence where every row happens to be the same size. Both the GPT-2 source
+    # and the 512 build are int32 with a declared length; matching them keeps the
+    # builds comparable as files and lets a reader see the window length without
+    # opening a row.
+    from datasets import Features, Sequence, Value
+
+    body = ds.features["input_ids"]
+    length = (getattr(body, "length", -1) or -1) + 2  # [CLS] and [SEP]
+    features = Features({
+        **{k: v for k, v in ds.features.items() if k not in ("input_ids", "attention_mask")},
+        "input_ids": Sequence(Value("int32"), length=length),
+        "attention_mask": Sequence(Value("int8"), length=length),
+    })
     return ds.map(_wrap, batched=True, batch_size=batch_size, num_proc=workers,
-                  desc="wrapping",
+                  desc="wrapping", features=features,
                   cache_file_name=os.path.join(cache_dir, "wrapped.arrow"))
 
 
