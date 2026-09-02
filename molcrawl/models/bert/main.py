@@ -299,6 +299,16 @@ if __name__ == "__main__":
         configurator_path = "configurator.py"
     exec(open(configurator_path).read())  # overrides from command line or config file
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
+    # The same filter again, now that the config file has run. What it adds are
+    # names a config *introduced* rather than overrode -- expected_global_batch,
+    # degenerate_baseline, the dataloader settings -- which sources cannot report
+    # because there is no default to compare against. Kept out of `config` so
+    # nothing that already reads it changes.
+    config_introduced = {
+        k: v
+        for k, v in globals().items()
+        if not k.startswith("_") and isinstance(v, (int, float, bool, str))
+    }
     # -----------------------------------------------------------------------------
 
     if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
@@ -1005,6 +1015,19 @@ if __name__ == "__main__":
                 "collator": type(data_collator).__name__,
                 "seq_len": globals().get("max_length"),
                 "vocab_size": globals().get("vocab_size"),
+                # Which id marks a boundary is not a detail. RNA packs cells into
+                # 1,024-token blocks separated by token 0 -- the same id as its
+                # pad -- while document masking keys on sep_token_id, which the
+                # tokenizer resolves to 25428, a value the data never contains.
+                # That mismatch lived only in the prep script and the tokenizer.
+                # _tok_for_mask, not actual_tokenizer: a config that brings its
+                # own collator never sets the latter, and the manifest write is
+                # wrapped, so a NameError here would degrade to "could not write"
+                # rather than to a missing field.
+                "sep_token_id": getattr(_tok_for_mask, "sep_token_id", None),
+                "pad_token_id": getattr(_tok_for_mask, "pad_token_id", None),
+                "mask_token_id": getattr(_tok_for_mask, "mask_token_id", None),
+                "cls_token_id": getattr(_tok_for_mask, "cls_token_id", None),
             },
             evaluation={
                 "rows": len(test_dataset),
@@ -1020,6 +1043,8 @@ if __name__ == "__main__":
             # say whether a value was chosen or inherited.
             resolved=config,
             defaults=config_defaults,
+            introduced=config_introduced,
+            configurator_path=configurator_path,
             resumed_from_step=_resumed_step,
         )
         print(f"📝 Wrote {model_path}/run_manifest.json")

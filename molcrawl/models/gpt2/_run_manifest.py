@@ -46,6 +46,7 @@ from molcrawl.models._provenance import (
     dirty_tree_warning,
     environment,
     git_state,
+    introduced_values,
     placement as _placement,
     value_sources,
 )
@@ -85,7 +86,8 @@ TRACKED_ENV = (
 
 
 def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objective,
-                   evaluation, selection, seed, resumed_from_iter=None):
+                   evaluation, selection, seed, introduced=None,
+                   configurator_path=None, resumed_from_iter=None):
     """Write ``run_manifest.json`` into ``out_dir`` and return the dict."""
     micro = int(batch.get("batch_size") or 0)
     accum = int(batch.get("gradient_accumulation_steps_configured") or 0)
@@ -122,6 +124,11 @@ def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objectiv
         "selection": selection,
         "seed": seed,
         "sources": value_sources(config, defaults, TRACKED),
+        # Scalars the config file added rather than overrode. Separate from
+        # sources because there is no default to compare them against, and not
+        # filtered against what is reported elsewhere -- an exclusion list is one
+        # more list to forget to update, and a duplicated value costs nothing.
+        "introduced": introduced_values(config, introduced or {}, configurator_path),
         "env": environment(TRACKED_ENV),
     }
 
