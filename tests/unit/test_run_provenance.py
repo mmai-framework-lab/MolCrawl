@@ -10,9 +10,11 @@ import pytest
 from molcrawl.models._provenance import (
     COMMON_ENV,
     MAX_DIRTY_FILES,
+    configurator_locals,
     dirty_tree_warning,
     environment,
     git_state,
+    introduced_values,
     placement,
     value_sources,
 )
@@ -162,3 +164,62 @@ def test_both_trainers_record_the_placement_they_got(module):
     import importlib
 
     assert callable(importlib.import_module(module)._placement)
+
+
+# --- introduced_values: what value_sources structurally cannot see -----------
+
+
+def test_a_name_the_config_added_is_reported():
+    """eos_token_id is set by 47 configs and no trainer declares it."""
+    before = ["learning_rate", "max_steps"]
+    after = {"learning_rate": 1e-4, "max_steps": 100, "eos_token_id": 0}
+
+    assert introduced_values(before, after) == {"eos_token_id": 0}
+
+
+def test_a_name_the_config_merely_overrode_is_not_reported():
+    """Those belong to sources, which can say what they replaced."""
+    assert introduced_values(["learning_rate"], {"learning_rate": 1e-4}) == {}
+
+
+def test_names_already_reported_elsewhere_are_not_excluded():
+    """An exclusion list is one more list to forget to update (cf. TRACKED)."""
+    result = introduced_values([], {"expected_global_batch": 2560, "dataset_dir": "/ls"})
+
+    assert result == {"dataset_dir": "/ls", "expected_global_batch": 2560}
+
+
+def test_the_configurators_own_locals_are_dropped(tmp_path):
+    """exec runs it at module level, so `arg` and `key` become globals too."""
+    configurator = tmp_path / "configurator.py"
+    configurator.write_text(
+        "import sys\n"
+        "for arg in sys.argv[1:]:\n"
+        "    config_file = arg\n"
+        "    key, val = arg.split('=')\n"
+        "    try:\n"
+        "        attempt = 1\n"
+        "    except ValueError:\n"
+        "        attempt = 2\n"
+    )
+    after = {
+        "arg": "--lr=1", "key": "lr", "val": "1", "config_file": "c.py",
+        "attempt": 1, "eos_token_id": 0,
+    }
+
+    assert introduced_values([], after, str(configurator)) == {"eos_token_id": 0}
+
+
+def test_the_real_configurator_binds_the_names_we_expect():
+    """Read from source, so the set cannot drift out of step with the file."""
+    names = configurator_locals("molcrawl/models/gpt2/configurator.py")
+
+    assert {"arg", "config_file", "key", "val", "attempt"} <= names
+
+
+def test_an_unreadable_configurator_excludes_nothing_rather_than_failing():
+    assert configurator_locals("/nonexistent/configurator.py") == frozenset()
+
+
+def test_the_result_is_ordered_so_manifests_diff_cleanly():
+    assert list(introduced_values([], {"z": 1, "a": 2, "m": 3})) == ["a", "m", "z"]

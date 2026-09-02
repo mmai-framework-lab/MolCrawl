@@ -117,7 +117,24 @@ def test_missing_resolved_and_defaults_do_not_break_the_write(tmp_path):
     )
 
     assert manifest["sources"] == {}
+    assert manifest["introduced"] == {}
     assert manifest["batch"]["effective_global_batch"] == 2560
+
+
+def test_a_value_the_config_introduced_lands_in_introduced_not_sources(tmp_path):
+    """expected_global_batch and degenerate_baseline have no default to match."""
+    manifest = write_manifest(
+        str(tmp_path), Args(),
+        config={}, data={}, objective={"seq_len": 512}, evaluation={},
+        resolved=dict(DEFAULTS), defaults=DEFAULTS,
+        introduced={**DEFAULTS, "expected_global_batch": 2560, "degenerate_baseline": 1.3703},
+    )
+
+    assert manifest["introduced"] == {
+        "degenerate_baseline": 1.3703,
+        "expected_global_batch": 2560,
+    }
+    assert "expected_global_batch" not in manifest["sources"]
 
 
 def test_resume_appends_history_without_losing_the_rest(tmp_path):

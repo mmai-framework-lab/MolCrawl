@@ -89,6 +89,19 @@ def test_only_the_nanogpt_values_are_tracked(tmp_path):
     assert "max_steps" not in sources  # that is the HF name
 
 
+def test_a_value_the_config_introduced_lands_in_introduced_not_sources(tmp_path):
+    """eos_token_id has no default to compare against, so sources cannot hold it."""
+    manifest = write_manifest(
+        str(tmp_path), DEFAULTS, DEFAULTS,
+        data={}, batch={"batch_size": 1, "gradient_accumulation_steps_configured": 1},
+        schedule={}, objective={}, evaluation={}, selection={}, seed={},
+        introduced={**DEFAULTS, "eos_token_id": 0, "bos_token_id": 1},
+    )
+
+    assert manifest["introduced"] == {"bos_token_id": 1, "eos_token_id": 0}
+    assert "eos_token_id" not in manifest["sources"]
+
+
 def test_the_dataset_directory_is_recorded_not_only_the_modality(tmp_path):
     """ckpt.pt says "genome_sequence"; that does not identify a corpus."""
     manifest = _write(
