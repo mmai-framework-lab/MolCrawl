@@ -307,6 +307,26 @@ def main() -> int:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
+    # --output-name alone writes nothing: the JSON block at the end is gated on
+    # --output-dir, while the summary table still prints and the exit code stays 0.
+    # A run that names a file it never wrote looks like a run that succeeded, and
+    # the absence only turns up when someone goes looking. It cost a GPU run here,
+    # and then cost more than that: the missing file left an older result in place,
+    # and three sizes were reported from it before anyone noticed.
+    #
+    # Refused rather than warned. A warning reaches whoever reads the log; the
+    # incident above is what happens when nobody does. Refusing here costs the
+    # seconds before any checkpoint is opened, where warning costs the whole run.
+    # Passing neither is untouched -- printing the table without saving is a
+    # legitimate way to use this, and only naming a file with nowhere to put it is
+    # a request that cannot be honoured.
+    if args.output_dir is None and args.output_name is not None:
+        parser.error(
+            f"--output-name {args.output_name} needs --output-dir: without it no "
+            "JSON is written and the run would exit 0 having saved nothing. "
+            "Add --output-dir, or drop --output-name to print the table only."
+        )
+
     if not os.environ.get("LEARNING_SOURCE_DIR"):
         raise SystemExit("LEARNING_SOURCE_DIR is not set")
 
@@ -388,16 +408,6 @@ def main() -> int:
     for size, r in results.items():
         print(f"{size:10s} {r['params_millions']:>10.1f} {r['best_val_loss']:>16.4f} "
               f"{r['loss']:>12.4f} {r['perplexity']:>11.3f}")
-
-    if args.output_dir is None and args.output_name is not None:
-        # --output-name alone writes nothing: the JSON block below is gated on
-        # --output-dir. Silent, because the summary table above still prints, so a
-        # run looks successful and leaves no file. Say so rather than let the next
-        # caller find out by looking for the file afterwards.
-        logger.warning(
-            "--output-name %s is ignored without --output-dir; no JSON was written",
-            args.output_name,
-        )
 
     if args.output_dir:
         out = Path(args.output_dir)
