@@ -964,6 +964,13 @@ if __name__ == "__main__":
         print(f"ℹ️  Output directory {model_path} does not exist")
         print("   Starting training from scratch...")
 
+    # model_path defaults to a location derived from LEARNING_SOURCE_DIR, so a
+    # run that does not override it writes checkpoints into the corpus it reads.
+    # Checked before training rather than at the first save.
+    from molcrawl.core.output_guard import assert_output_dir
+
+    assert_output_dir(model_path, what="model_path")
+
     # One human-readable file per run recording what the run actually is. The
     # batch composition and the selection metric otherwise live only in
     # training_args.bin (a pickle), and the data provenance, masking and eval
