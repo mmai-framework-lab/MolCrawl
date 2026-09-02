@@ -69,19 +69,24 @@ __all__ = ["MANIFEST", "TRACKED", "TRACKED_ENV", "dirty_tree_warning", "note_res
 # overrides -- is in neither the resolved nor the defaults dict, and sources would
 # silently skip it. expected_global_batch is such a key, and is recorded in the
 # batch block instead, where its value is the point rather than its provenance.
+#
+# The list shipped three names that were never declared and so were never
+# reported: per_device_train_batch_size and eval_steps, which exist only on
+# TrainingArguments, and checkpoint_metric, which configs introduce. Nothing was
+# lost -- all three are in batch and selection already -- but the entries read as
+# coverage while providing none. test_tracked_names_are_declared now holds the
+# list and main.py in step, so the next one fails at CI rather than at a manifest
+# nobody thought to check.
 TRACKED = (
     "learning_rate",
-    "per_device_train_batch_size",
     "gradient_accumulation_steps",
     "max_length",
     "max_steps",
     "warmup_steps",
     "weight_decay",
     "save_steps",
-    "eval_steps",
     "seed",
     "judge_on",
-    "checkpoint_metric",
     "degenerate_loss_threshold",
     "document_masking",
 )
