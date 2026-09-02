@@ -130,3 +130,47 @@ def test_resume_appends_history_without_losing_the_rest(tmp_path):
     assert manifest["run"]["resumed_from_step"] == 60000
     assert manifest["batch"]["effective_global_batch"] == 2560
     assert manifest["sources"]["seed"]["from"] == "default"
+
+
+def _batch(tmp_path, *, pd, ga, ws, config):
+    class _A(Args):
+        per_device_train_batch_size = pd
+        gradient_accumulation_steps = ga
+        world_size = ws
+
+    return write_manifest(
+        str(tmp_path), _A(), config=config, data={},
+        objective={"task": "mlm", "seq_len": 1024}, evaluation={"seq_len": 1024},
+    )["batch"]
+
+
+def test_the_declared_batch_and_the_verdict_are_both_recorded(tmp_path):
+    """A manifest carrying only the actual batch cannot say a check ran."""
+    got = _batch(tmp_path, pd=8, ga=80, ws=4, config={"expected_global_batch": 2560})
+
+    assert got["effective_global_batch"] == 2560
+    assert got["expected_global_batch"] == 2560
+    assert got["matches_expected_global_batch"] is True
+
+
+def test_a_deliberate_deviation_is_recorded_rather_than_waved_through(tmp_path):
+    """--expected_global_batch=640 on a one-GPU smoke run has to leave a trace."""
+    got = _batch(tmp_path, pd=8, ga=80, ws=1, config={"expected_global_batch": 640})
+
+    assert got["expected_global_batch"] == 640
+    assert got["effective_global_batch"] == 640
+
+
+def test_no_declaration_is_distinguishable_from_a_check_that_passed(tmp_path):
+    """None must not read as agreement; no check was made at all."""
+    got = _batch(tmp_path, pd=8, ga=80, ws=4, config={})
+
+    assert got["expected_global_batch"] is None
+    assert got["matches_expected_global_batch"] is None
+
+
+def test_a_decomposition_change_that_preserves_the_product_still_matches(tmp_path):
+    """160x4 and 8x80 are the same run to declare; only throughput differs."""
+    got = _batch(tmp_path, pd=160, ga=4, ws=4, config={"expected_global_batch": 2560})
+
+    assert got["matches_expected_global_batch"] is True

@@ -61,6 +61,13 @@ per_device_eval_batch_size = 8
 
 gradient_accumulation_steps = 5 * 16
 
+# The number max_steps was derived from, stated so the run can check it rather
+# than assume it. main.py multiplies per_device x grad_accum x world_size at
+# startup and refuses to train if the product differs: under HF the effective
+# batch moves with the GPU count, and a 4-GPU request that the scheduler splits
+# across 2 nodes would silently train at 1,280.
+expected_global_batch = 2560
+
 
 # Add preprocessing function to create attention_mask
 def preprocess_function(examples):
