@@ -60,7 +60,14 @@ tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 vocab_size = len(tokenizer)  # = 10
 
 # ---- training hyperparameters (mirror bert_small) ------------------------ #
-max_length = 512  # = [CLS] + 510 nucleotides + [SEP] (matches Phase 3 chunking)
+# Window length. It must match the data: the length is baked into the parquet
+# schema and the arrow features, so this is not a free knob -- pointing a 1,024
+# config at the 512 arrow (or the reverse) mismatches the position embeddings
+# against the rows. SUBSET_BERT_MAX_LENGTH goes with a LEARNING_SOURCE_DIR built
+# at the same length.
+#   512  = [CLS] + 510 + [SEP]   (matches Phase 3 chunking, bert_chunk_size 510)
+#   1024 = [CLS] + 1022 + [SEP]  (the rebuild, bert_chunk_size 1022)
+max_length = int(os.environ.get("SUBSET_BERT_MAX_LENGTH", "512"))
 # LR sweep on the pre-G2 (2026-05) mammal_centered dataset (jobs 19018 +
 # 19043-19045) showed 1e-4 collapsed to loss ≈ ln(4) ≈ 1.39 (degenerate
 # near-uniform output) and 1e-5 was the only value that trained. That result
