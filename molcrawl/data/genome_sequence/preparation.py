@@ -533,6 +533,19 @@ def process2_subset_fasta_to_raw(base_dir, num_worker, min_segment_len, force=Fa
         return False
 
 
+def _guard_base_dir(base_dir, step):
+    """Stop a step that would write into the tree its inputs came from.
+
+    Every step below writes markers and datasets under ``base_dir``. When that
+    is the shared corpus -- group-readable and owned by whoever prepared it --
+    the write fails partway through the step, or worse succeeds and leaves
+    generated files among the inputs. Checked once, up front, by name.
+    """
+    from molcrawl.core.output_guard import assert_output_dir
+
+    assert_output_dir(base_dir, what=f"{step} output")
+
+
 def process3_subset_raw_to_parquet(
     base_dir,
     models,
@@ -550,6 +563,7 @@ def process3_subset_raw_to_parquet(
         raw_to_parquet_per_accession,
     )
 
+    _guard_base_dir(base_dir, "Subset Step3")
     marker = Path(base_dir) / "raw_to_parquet_complete.marker"
     parquet_dirs = [Path(base_dir) / f"parquet_{m}" for m in models]
     if (
@@ -856,6 +870,7 @@ def process4_subset_parquet_to_arrow(
         target_total_windows : F2-c realized-window budget; ``None`` = no trim.
         split_seed     : seed for the group shuffle / trim order.
     """
+    _guard_base_dir(base_dir, "Subset Step4")
     from datasets import DatasetDict, load_dataset
 
     marker = Path(base_dir) / "parquet_to_arrow_complete.marker"
