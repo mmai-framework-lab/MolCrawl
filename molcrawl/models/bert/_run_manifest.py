@@ -52,6 +52,7 @@ from molcrawl.models._provenance import (
     dirty_tree_warning,
     environment,
     git_state,
+    introduced_values,
     placement as _placement,
     value_sources,
 )
@@ -69,19 +70,24 @@ __all__ = ["MANIFEST", "TRACKED", "TRACKED_ENV", "dirty_tree_warning", "note_res
 # overrides -- is in neither the resolved nor the defaults dict, and sources would
 # silently skip it. expected_global_batch is such a key, and is recorded in the
 # batch block instead, where its value is the point rather than its provenance.
+#
+# The list shipped three names that were never declared and so were never
+# reported: per_device_train_batch_size and eval_steps, which exist only on
+# TrainingArguments, and checkpoint_metric, which configs introduce. Nothing was
+# lost -- all three are in batch and selection already -- but the entries read as
+# coverage while providing none. test_tracked_names_are_declared now holds the
+# list and main.py in step, so the next one fails at CI rather than at a manifest
+# nobody thought to check.
 TRACKED = (
     "learning_rate",
-    "per_device_train_batch_size",
     "gradient_accumulation_steps",
     "max_length",
     "max_steps",
     "warmup_steps",
     "weight_decay",
     "save_steps",
-    "eval_steps",
     "seed",
     "judge_on",
-    "checkpoint_metric",
     "degenerate_loss_threshold",
     "document_masking",
 )
@@ -105,7 +111,8 @@ TRACKED_ENV = (
 
 
 def write_manifest(output_dir, args, *, config, data, objective, evaluation,
-                   resolved=None, defaults=None, resumed_from_step=None):
+                   resolved=None, defaults=None, introduced=None,
+                   configurator_path=None, resumed_from_step=None):
     """Write ``run_manifest.json`` into ``output_dir`` and return the dict.
 
     ``config`` is the curated dict the caller assembles (retention, collapse
@@ -178,6 +185,11 @@ def write_manifest(output_dir, args, *, config, data, objective, evaluation,
             "data_seed": getattr(args, "data_seed", None),
         },
         "sources": value_sources(resolved or {}, defaults or {}, TRACKED),
+        # Scalars the config file added rather than overrode. Separate from
+        # sources because there is no default to compare them against, and not
+        # filtered against what is reported elsewhere -- an exclusion list is one
+        # more list to forget to update, and a duplicated value costs nothing.
+        "introduced": introduced_values(resolved or {}, introduced or {}, configurator_path),
         "env": environment(TRACKED_ENV),
     }
 
