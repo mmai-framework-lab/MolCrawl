@@ -82,6 +82,7 @@ def materialise_tabula_jsonl(
     max_cells: Optional[int] = None,
     cell_type_field: str = "cell_type",
     tissue_field: str = "tissue",
+    cell_id_field: str = "soma_joinid",
     seed: int = 42,
 ) -> dict:
     import anndata as ad
@@ -154,6 +155,21 @@ def materialise_tabula_jsonl(
         logger.info("Subsampled to %d cells (seed=%d)", adata.n_obs, seed)
 
     cell_types = adata.obs[cell_type_field].astype(str).tolist()
+    # Downstream analysis joins the model's embeddings back to a count matrix
+    # (scIB, the HVG and scVI controls). The join has to be on an identifier
+    # carried per row: rows are skipped when a cell has no gene in the vocab, so
+    # line number and cell index are not the same sequence.
+    cell_ids_from_obs_column = bool(cell_id_field) and cell_id_field in adata.obs.columns
+    if cell_ids_from_obs_column:
+        cell_ids = adata.obs[cell_id_field].astype(str).tolist()
+    else:
+        cell_ids = adata.obs_names.astype(str).tolist()
+        logger.warning(
+            "No %s column in obs; falling back to obs_names for cell_id. "
+            "obs_names are assigned per study, so they do not identify a cell "
+            "across datasets.",
+            cell_id_field,
+        )
     tissues = (
         adata.obs[tissue_field].astype(str).tolist()
         if tissue_field in adata.obs.columns
@@ -198,6 +214,7 @@ def materialise_tabula_jsonl(
                 skipped += 1
                 continue
             rec = {
+                "cell_id": cell_ids[i],
                 "tokens": tok_ids,
                 "cell_type": cell_types[i],
                 "tissue": tissues[i],
@@ -215,6 +232,7 @@ def materialise_tabula_jsonl(
         "n_known_genes": n_known,
         "n_total_genes": len(gene_token_ids),
         "top_n_genes_per_cell": top_n_genes_per_cell,
+        "cell_id_field": cell_id_field if cell_ids_from_obs_column else "obs_names",
     }
     logger.info("Wrote %s", summary)
     return summary
@@ -247,6 +265,13 @@ def main(argv: Optional[List[str]] = None) -> None:
     parser.add_argument("--max-cells", type=int, default=None)
     parser.add_argument("--cell-type-field", default="cell_type")
     parser.add_argument("--tissue-field", default="tissue")
+    parser.add_argument(
+        "--cell-id-field",
+        default="soma_joinid",
+        help="obs column written to each record as cell_id, for joining the "
+        "embeddings back to a count matrix. Falls back to obs_names when the "
+        "column is absent.",
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args(argv)
 
@@ -259,6 +284,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         max_cells=args.max_cells,
         cell_type_field=args.cell_type_field,
         tissue_field=args.tissue_field,
+        cell_id_field=args.cell_id_field,
         seed=args.seed,
     )
 
