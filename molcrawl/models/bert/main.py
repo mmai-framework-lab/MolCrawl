@@ -609,6 +609,50 @@ if __name__ == "__main__":
         ddp_bucket_cap_mb=int(globals().get("ddp_bucket_cap_mb", 25)),
     )
 
+    # A run whose effective global batch is not the one the schedule was derived
+    # from is not the model it claims to be, and cannot be compared with the rest
+    # of its ladder. Under HF the effective batch is
+    # per_device x grad_accum x world_size, so it moves with the GPU count, and
+    # GPUs are asked for with --gpus=N while the scheduler decides the placement:
+    # a request for 4 can arrive as 2 nodes with 2 each, and the launchers here
+    # hard-code --nproc_per_node with --standalone and no MASTER_ADDR, so they
+    # would drive one node and half the batch.
+    #
+    # placement.world_size_matches_allocation records that after the fact, which
+    # is the right treatment for it -- an allocation that disagrees with the world
+    # can be deliberate, and a run that says so can be re-labelled later. This is
+    # the other half and a different kind of event: the batch itself is not what
+    # the config declared, so the run is not usable as that generation of the
+    # model at all. Failing at startup costs nothing; finding out afterwards costs
+    # up to the time limit.
+    #
+    # Only checked when the config states the number, so configs that have not
+    # declared one are unaffected. A declared config run on a different GPU count
+    # on purpose -- a smoke test on one card -- passes the intended value at launch
+    # (--expected_global_batch=640), which keeps the deviation explicit and lands it
+    # in the manifest rather than being waved through by a silent default.
+    _declared = globals().get("expected_global_batch")
+    if _declared is not None:
+        _actual = (
+            training_args.per_device_train_batch_size
+            * training_args.gradient_accumulation_steps
+            * training_args.world_size
+        )
+        if int(_declared) != _actual:
+            raise SystemExit(
+                f"effective global batch is {_actual}"
+                f" ({training_args.per_device_train_batch_size}"
+                f" x {training_args.gradient_accumulation_steps}"
+                f" x world_size {training_args.world_size}),"
+                f" but the config declares expected_global_batch={int(_declared)}."
+                " The schedule was derived from the declared value, so this run"
+                " would not be comparable with the rest of its ladder."
+                " Check the launcher's --nproc_per_node against the allocation,"
+                " or update the config if the change is intended."
+            )
+        print(f"✅ effective global batch {_actual} matches the declared"
+              f" expected_global_batch")
+
     # Check if we should use custom dataset loading (for RNA data)
     if "use_custom_rna_dataset" in globals() and use_custom_rna_dataset:
         print("🧬 Using custom RNA dataset loader")
@@ -926,6 +970,7 @@ if __name__ == "__main__":
             training_args,
             config={
                 "max_steps_source": globals().get("max_steps_source", "config-derived"),
+                "expected_global_batch": globals().get("expected_global_batch"),
                 "epochs_planned": globals().get("_N_EPOCH"),
                 "retention": (
                     {
