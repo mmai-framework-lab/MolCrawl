@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.core API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.core.output_guard API documentation</title>
+<meta name="description" content="Keep generated files out of the tree the inputs come from …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,51 +33,131 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.core</code></h1>
+<h1 class="title">Module <code>molcrawl.core.output_guard</code></h1>
 </header>
 <section id="section-intro">
+<p>Keep generated files out of the tree the inputs come from.</p>
+<p>The genome data lives under another user's directory, group-readable and not
+writable by us, and the same is true of any shared corpus another workstream
+prepares. That arrangement has already stopped two mistakes &ndash; a rebuild aimed at
+the wrong root, and a run that would have written next to the production data &ndash;
+so it is worth keeping. What it does not do is make the mistakes visible: a
+write into a read-only tree fails somewhere in the middle of a job, with a
+PermissionError from whatever library happened to try it.</p>
+<p>Three places can send output into an input tree:</p>
+<ul>
+<li><code>preparation.py</code> writes markers, parquet and arrow under whatever
+<code>base_dir</code> it is handed</li>
+<li><code>datasets.map</code> puts its cache shards beside the dataset being read unless
+<code>cache_file_name</code> says otherwise &ndash; this is the one that failed</li>
+<li><code>core.paths</code> derives <code>model_path</code> from <code>LEARNING_SOURCE_DIR</code>, so a run
+that does not override it writes checkpoints into the corpus</li>
+</ul>
+<p>Check the destination up front instead, and say which input it collides with.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.core.base" href="base.html">molcrawl.core.base</a></code></dt>
+<dt id="molcrawl.core.output_guard.assert_output_dir"><code class="name flex">
+<span>def <span class="ident">assert_output_dir</span></span>(<span>path, extra_roots=(), what='output')</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def assert_output_dir(path, extra_roots=(), what=&#34;output&#34;):
+    &#34;&#34;&#34;Refuse an output path that lands in an input tree or cannot be written.
+
+    Raises before any work starts, naming the input tree it collided with, so
+    the failure is a sentence rather than a PermissionError from three libraries
+    down.
+    &#34;&#34;&#34;
+    dest = _resolve(path)
+    for root in input_roots(extra_roots):
+        if is_inside(dest, root):
+            raise ValueError(
+                f&#34;{what} would be written inside an input tree.\n&#34;
+                f&#34;  {what}: {dest}\n&#34;
+                f&#34;  input : {root}\n&#34;
+                f&#34;Point it at a directory this project owns.&#34;
+            )
+
+    probe = dest
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not os.access(probe, os.W_OK):
+        raise ValueError(
+            f&#34;{what} is not writable.\n&#34;
+            f&#34;  {what}: {dest}\n&#34;
+            f&#34;  blocked at: {probe} (owner {probe.owner()})&#34;
+        )
+    return dest</code></pre>
+</details>
+<div class="desc"><p>Refuse an output path that lands in an input tree or cannot be written.</p>
+<p>Raises before any work starts, naming the input tree it collided with, so
+the failure is a sentence rather than a PermissionError from three libraries
+down.</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.core.config" href="config.html">molcrawl.core.config</a></code></dt>
+<dt id="molcrawl.core.output_guard.input_roots"><code class="name flex">
+<span>def <span class="ident">input_roots</span></span>(<span>extra=())</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def input_roots(extra=()):
+    &#34;&#34;&#34;The input trees this process was pointed at, from the usual env vars.&#34;&#34;&#34;
+    roots = [os.environ[k] for k in SOURCE_ROOT_ENV if os.environ.get(k)]
+    roots.extend(str(e) for e in extra if e)
+    return [_resolve(r) for r in roots]</code></pre>
+</details>
+<div class="desc"><p>The input trees this process was pointed at, from the usual env vars.</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.core.dataset" href="dataset.html">molcrawl.core.dataset</a></code></dt>
+<dt id="molcrawl.core.output_guard.is_inside"><code class="name flex">
+<span>def <span class="ident">is_inside</span></span>(<span>path, root)</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_inside(path, root):
+    &#34;&#34;&#34;True when ``path`` is ``root`` or sits under it.&#34;&#34;&#34;
+    path, root = _resolve(path), _resolve(root)
+    return path == root or root in path.parents</code></pre>
+</details>
+<div class="desc"><p>True when <code>path</code> is <code>root</code> or sits under it.</p></div>
 </dd>
-<dt><code class="name"><a title="molcrawl.core.output_guard" href="output_guard.html">molcrawl.core.output_guard</a></code></dt>
+<dt id="molcrawl.core.output_guard.map_cache_path"><code class="name flex">
+<span>def <span class="ident">map_cache_path</span></span>(<span>dest_dir, name='map-cache')</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Keep generated files out of the tree the inputs come from …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.paths" href="paths.html">molcrawl.core.paths</a></code></dt>
-<dd>
-<div class="desc"><p>Define constants for path settings used throughout the project</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.torch_compat" href="torch_compat.html">molcrawl.core.torch_compat</a></code></dt>
-<dd>
-<div class="desc"><p>Compatibility shim for <code>torch &gt;= 2.6</code> with HuggingFace Trainer resume …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.tracking" href="tracking/index.html">molcrawl.core.tracking</a></code></dt>
-<dd>
-<div class="desc"><p>Experiment Tracking System
-A module that centrally manages the execution status, results, and logs of each process</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.utils" href="utils/index.html">molcrawl.core.utils</a></code></dt>
-<dd>
-<div class="desc"><p>Shared utility package.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def map_cache_path(dest_dir, name=&#34;map-cache&#34;):
+    &#34;&#34;&#34;A cache location for ``datasets.map`` that is beside the OUTPUT.
+
+    ``map`` defaults to writing beside the input, which fails on a read-only
+    corpus and pollutes it when it does not. Callers pass the result as
+    ``cache_file_name``.
+    &#34;&#34;&#34;
+    cache = _resolve(dest_dir).parent / f&#34;{_resolve(dest_dir).name}.{name}&#34;
+    return cache</code></pre>
+</details>
+<div class="desc"><p>A cache location for <code>datasets.map</code> that is beside the OUTPUT.</p>
+<p><code>map</code> defaults to writing beside the input, which fails on a read-only
+corpus and pollutes it when it does not. Callers pass the result as
+<code>cache_file_name</code>.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -89,19 +169,15 @@ A module that centrally manages the execution status, results, and logs of each 
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl" href="../index.html">molcrawl</a></code></li>
+<li><code><a title="molcrawl.core" href="index.html">molcrawl.core</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.core.base" href="base.html">molcrawl.core.base</a></code></li>
-<li><code><a title="molcrawl.core.config" href="config.html">molcrawl.core.config</a></code></li>
-<li><code><a title="molcrawl.core.dataset" href="dataset.html">molcrawl.core.dataset</a></code></li>
-<li><code><a title="molcrawl.core.output_guard" href="output_guard.html">molcrawl.core.output_guard</a></code></li>
-<li><code><a title="molcrawl.core.paths" href="paths.html">molcrawl.core.paths</a></code></li>
-<li><code><a title="molcrawl.core.torch_compat" href="torch_compat.html">molcrawl.core.torch_compat</a></code></li>
-<li><code><a title="molcrawl.core.tracking" href="tracking/index.html">molcrawl.core.tracking</a></code></li>
-<li><code><a title="molcrawl.core.utils" href="utils/index.html">molcrawl.core.utils</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.core.output_guard.assert_output_dir" href="#molcrawl.core.output_guard.assert_output_dir">assert_output_dir</a></code></li>
+<li><code><a title="molcrawl.core.output_guard.input_roots" href="#molcrawl.core.output_guard.input_roots">input_roots</a></code></li>
+<li><code><a title="molcrawl.core.output_guard.is_inside" href="#molcrawl.core.output_guard.is_inside">is_inside</a></code></li>
+<li><code><a title="molcrawl.core.output_guard.map_cache_path" href="#molcrawl.core.output_guard.map_cache_path">map_cache_path</a></code></li>
 </ul>
 </li>
 </ul>
