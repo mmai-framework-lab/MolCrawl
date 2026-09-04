@@ -93,6 +93,13 @@ min_lr = learning_rate / 10  # → 10% of peak per Chinchilla / GPT-2 convention
 # Condition 2 output): global batch 2,560 × 3 epochs per subset. Reading
 # via `load_from_disk` is memory-mapped, so this only touches metadata.
 _GLOBAL_BATCH = 2560
+
+# What the schedule below was derived from, stated so train.py can check it.
+# nanoGPT's effective batch does not move with the GPU count, so the failure it
+# guards against is quieter: batch_size and gradient_accumulation_steps get
+# edited apart and their product stops matching. This config trained at 640 for
+# exactly that reason before 4974f55.
+expected_global_batch = _GLOBAL_BATCH
 _N_EPOCH = 3
 _ds_for_len = _load(dataset_dir)
 _train_n = len(_ds_for_len["train"])

@@ -92,6 +92,9 @@ early_stopping_patience = 10  # number of eval_intervals to wait before stopping
 # data
 dataset = "openwebtext"
 gradient_accumulation_steps = 5 * 8  # used to simulate larger batch sizes
+# Declared so the configurator accepts --expected_global_batch, and so a config
+# can state the batch its schedule assumes. None means unchecked.
+expected_global_batch = None
 batch_size = 12  # if gradient_accumulation_steps > 1, this is the micro-batch size
 block_size = 1024
 # model
@@ -293,6 +296,43 @@ if __name__ == "__main__":
         ddp_world_size = 1
     tokens_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size * block_size
     print(f"tokens per iteration will be: {tokens_per_iter:,}")
+
+    # The effective global batch, checked against what the config says it should
+    # be. Unlike HF this number does not move with the GPU count -- the
+    # accumulation is divided by the world size and multiplied back -- so what
+    # goes wrong is simpler and quieter: batch_size and
+    # gradient_accumulation_steps are edited separately and their product stops
+    # being the number the schedule was derived from.
+    #
+    # That has happened twice. genome trained at 640 against an intended 2,560
+    # (8 x 80), and protein's LR pilots at 480 (12 x 40). Both were found by
+    # reading "tokens per iteration" out of a log afterwards; neither run
+    # stopped, and the genome one only surfaced because the number was checked
+    # against the charter by hand.
+    #
+    # Only checked when the config states the number, so configs that have not
+    # declared one are unaffected. A run that means to deviate passes the
+    # intended value at launch (--expected_global_batch=640), which keeps the
+    # deviation explicit and puts it in the manifest.
+    _declared_global_batch = globals().get("expected_global_batch")
+    if _declared_global_batch is not None:
+        _effective = gradient_accumulation_steps * ddp_world_size * batch_size
+        if int(_declared_global_batch) != _effective:
+            raise SystemExit(
+                f"effective global batch is {_effective} sequences"
+                f" (batch_size {batch_size}"
+                f" x gradient_accumulation_steps {gradient_accumulation_steps}"
+                f" x world_size {ddp_world_size}),"
+                f" but the config declares expected_global_batch"
+                f"={int(_declared_global_batch)}."
+                " The schedule was derived from the declared value, so this run"
+                " would not be comparable with the rest of its ladder."
+                " Fix batch_size x gradient_accumulation_steps in the config,"
+                " or pass --expected_global_batch if the change is intended."
+            )
+        if master_process:
+            print(f"✅ effective global batch {_effective} matches the declared"
+                  f" expected_global_batch")
 
     if master_process:
         os.makedirs(out_dir, exist_ok=True)
