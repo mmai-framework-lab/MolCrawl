@@ -214,6 +214,15 @@ per_device_eval_batch_size = 8
 
 gradient_accumulation_steps = 4
 
+# What the schedule above was derived from, stated so bert/main.py can check it.
+# _GLOBAL_BATCH feeds the max_steps arithmetic but nothing compares it against
+# the placement a run actually gets, and both factors here are per-device: the
+# effective total moves with the GPU count. genome GPT-2 trained at 640 while
+# every document said 2,560 for exactly that reason. Declaring the number turns
+# a wrong allocation into a startup failure instead of a run that is not
+# comparable with the rest of its ladder.
+expected_global_batch = _GLOBAL_BATCH
+
 # ---- performance opt-ins (consumed by bert/main.py via globals().get) ----- #
 # bf16 = bfloat16 mixed precision (Hopper/Blackwell — RIKEN H100/H200 OK).
 # Together with the dataloader flags this roughly halves per-step wallclock
