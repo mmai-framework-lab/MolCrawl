@@ -971,6 +971,21 @@ if __name__ == "__main__":
 
     assert_output_dir(model_path, what="model_path")
 
+    # The window length is baked into the arrow features, so a config aimed at a
+    # dataset built for another length does not fail -- it trains with position
+    # embeddings that do not line up with the rows. Compare the two before the
+    # first step rather than discovering it in the loss.
+    _row_len = len(train_dataset[0]["input_ids"])
+    if _row_len != max_length:
+        raise ValueError(
+            f"max_length does not match the data.\n"
+            f"  config max_length : {max_length}\n"
+            f"  arrow row length  : {_row_len}\n"
+            f"  dataset           : {globals().get('dataset_dir')}\n"
+            f"Point LEARNING_SOURCE_DIR at a build of the same length."
+        )
+
+
     # One human-readable file per run recording what the run actually is. The
     # batch composition and the selection metric otherwise live only in
     # training_args.bin (a pickle), and the data provenance, masking and eval
