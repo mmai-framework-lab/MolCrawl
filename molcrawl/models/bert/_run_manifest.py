@@ -98,10 +98,19 @@ TRACKED = (
 # SUBSET_BERT_EPOCHS is the one that has already gone unrecorded: genome's
 # bert_small_subset.py derives max_steps from it, and the 9-epoch saturation run
 # was launched by setting it -- a fact the run itself does not carry.
+#
+# SUBSET_BERT_MAX_LENGTH went the same way. batch.seq_len records the length the
+# run actually used, but not that it was asked for: a run started against a
+# differently built dataset reads as a deliberate choice rather than an inherited
+# default. The genome wide-window runs are the case in point: the 2026-09-01
+# reference run trained on 1,024-token rows and the production runs train on
+# 1,026-token ones, a difference in how the data was built. Its manifest carries
+# batch.seq_len 1024 but nothing about the request that produced it.
 TRACKED_ENV = (
     "SUBSET_BERT_LR",
     "SUBSET_BERT_LARGE_LR",
     "SUBSET_BERT_EPOCHS",
+    "SUBSET_BERT_MAX_LENGTH",
     "SUBSET_BERT_MAX_CKPT",
     "BERT_LR_TAG",
     "SMOKE_MAX_STEPS",
