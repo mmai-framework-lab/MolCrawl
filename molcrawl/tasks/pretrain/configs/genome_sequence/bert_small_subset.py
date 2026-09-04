@@ -131,7 +131,18 @@ _GLOBAL_BATCH = 2560
 # a finished 3-epoch run adds steps at an LR that has already decayed to zero,
 # which measures "does low LR keep helping" rather than "were 3 epochs enough".
 # genome GPT-2 hit exactly that trap once (STEPS_MULT scaled the decay too).
-_N_EPOCH = int(os.environ.get("SUBSET_BERT_EPOCHS", "3"))
+# 9, from the saturation probe. 3 was demonstrably short: rebuilding the same
+# subset on a 9-epoch schedule reached 1.0412 against 1.0873, thirty times the
+# 0.0011 measurement noise.
+#
+# 7 and 8 both looked defensible from that run's curve and neither survives the
+# schedule. The learning rate decays linearly over max_steps -- confirmed in the
+# probe's own log, 97.7% of peak just after warmup down to 0.7% at the end -- so
+# a given step is not the same model state in a shorter run. Reading "the best
+# came at step 143,000, so run to 145,690" off a 163,901-step run compares a
+# point 87% through its decay with one 98% through a different decay. The only
+# length that run measured is its own.
+_N_EPOCH = int(os.environ.get("SUBSET_BERT_EPOCHS", "9"))
 _ds_for_len = _load(dataset_dir)
 _train_n = len(_ds_for_len["train"])
 max_steps = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
