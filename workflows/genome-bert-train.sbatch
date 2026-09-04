@@ -49,6 +49,19 @@ MB="${MB:-160}"
 GA="${GA:-4}"
 STAGE="${STAGE:-1}"
 SUBSET="${GENOME_SUBSET}"
+
+# The window length has to be stated here, not left to arrive through the
+# environment. bert_small_subset.py defaults max_length to 512, so a job
+# submitted against a wide-window dataset without SUBSET_BERT_MAX_LENGTH set
+# reaches the startup check with 512 against 1,026-token rows and refuses. That
+# is the right outcome, but it costs a queue slot to discover, and it makes the
+# window a property of whoever typed the sbatch line rather than of this file.
+#
+# 1026 is [CLS] + 1,024 + [SEP]: the production data wraps GPT-2 rows so the two
+# builds see the same bases, so the length is not the round number it looks like
+# it should be. MAX_LENGTH=512 selects the older narrow-window build.
+MAX_LENGTH="${SUBSET_BERT_MAX_LENGTH:-1026}"
+export SUBSET_BERT_MAX_LENGTH="${MAX_LENGTH}"
 CONFIG=molcrawl/tasks/pretrain/configs/genome_sequence/bert_small_subset.py
 
 # The output root is stated rather than inherited from wherever this was
@@ -74,8 +87,8 @@ if [ -d "${OUT}" ] && ls -d "${OUT}"/checkpoint-* >/dev/null 2>&1; then
 import json,sys
 try: print(json.load(open('${OUT}/run_manifest.json'))['batch']['seq_len'])
 except Exception: print('')" 2>/dev/null)
-    if [ -n "${_len}" ] && [ "${_len}" != "${SUBSET_BERT_MAX_LENGTH:-512}" ]; then
-        echo "REFUSING: ${OUT} holds a run at seq_len ${_len}, this one is ${SUBSET_BERT_MAX_LENGTH:-512}." >&2
+    if [ -n "${_len}" ] && [ "${_len}" != "${MAX_LENGTH}" ]; then
+        echo "REFUSING: ${OUT} holds a run at seq_len ${_len}, this one is ${MAX_LENGTH}." >&2
         echo "          Set RUN_TAG so the two do not share a directory." >&2
         exit 1
     fi

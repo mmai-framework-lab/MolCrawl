@@ -18,14 +18,59 @@ learns, but int64 doubles the file and a missing length hides the window size.
 """
 
 import argparse
+import random
+
+# valid and test are compared in full. Every number this campaign reports is
+# computed on those rows, so a single row of the wrong provenance changes a
+# reported value -- and at 50,000 rows each the exhaustive check is cheap.
+EXHAUSTIVE = ("valid", "test")
+
+# Rows are pulled in batches so an exhaustive pass does not hold a whole split
+# of Python lists at once.
+READ_CHUNK = 5000
+
+
+def _positions(split, n, args):
+    """Which row positions to compare, and a phrase describing the choice.
+
+    A stride sample on its own steps over a local reordering: it takes one row
+    every `step`, so a run of rows swapped among themselves is very likely to
+    fall entirely between two sampled positions. That is the failure this script
+    exists to catch, because datasets.map runs per-process over contiguous shards
+    and concatenates them, so the way it can go wrong is precisely local.
+
+    Contiguous blocks close that gap. The stride says the split as a whole is
+    aligned; the blocks say the rows inside it are in order.
+    """
+    if split in EXHAUSTIVE or n <= args.sample:
+        return list(range(n)), f"all {n:,} rows"
+
+    step = max(1, n // args.sample)
+    idx = set(range(0, n, step))
+    strided = len(idx)
+
+    size = min(args.block_size, n)
+    rng = random.Random(args.seed)
+    for _ in range(args.blocks):
+        start = rng.randrange(0, n - size + 1)
+        idx.update(range(start, start + size))
+
+    return sorted(idx), (f"{strided:,} at stride {step:,}, plus {args.blocks}"
+                         f" contiguous blocks of {size:,}")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("gpt2")
     ap.add_argument("bert")
-    ap.add_argument("--sample", type=int, default=20000,
-                    help="positions per split to compare row for row")
+    ap.add_argument("--sample", type=int, default=100000,
+                    help="stride positions to compare in a sampled split")
+    ap.add_argument("--blocks", type=int, default=100,
+                    help="contiguous runs to compare on top of the stride")
+    ap.add_argument("--block-size", type=int, default=1000,
+                    help="rows per contiguous run")
+    ap.add_argument("--seed", type=int, default=42,
+                    help="seed for where the contiguous runs start")
     args = ap.parse_args()
 
     from datasets import load_from_disk
@@ -54,21 +99,21 @@ def main():
             problems.append(f"{split}: length {length}, expected {gl} + 2")
 
         # Positions, not contents: a reordered shard passes a contents check.
-        n = min(args.sample, len(gs))
-        step = max(1, len(gs) // n)
-        idx = list(range(0, len(gs), step))
-        gb, bb = gs[idx], bs[idx]
+        idx, how = _positions(split, len(gs), args)
         bad_order = bad_body = bad_ends = 0
-        for i in range(len(idx)):
-            if (gb["accession"][i] != bb["accession"][i]
-                    or gb["contig_id"][i] != bb["contig_id"][i]):
-                bad_order += 1
-            row = bb["input_ids"][i]
-            if row[0] != 7 or row[-1] != 8:
-                bad_ends += 1
-            elif list(row[1:-1]) != list(gb["input_ids"][i]):
-                bad_body += 1
-        print(f"    checked {len(idx):,} positions: "
+        for lo in range(0, len(idx), READ_CHUNK):
+            part = idx[lo:lo + READ_CHUNK]
+            gb, bb = gs[part], bs[part]
+            for i in range(len(part)):
+                if (gb["accession"][i] != bb["accession"][i]
+                        or gb["contig_id"][i] != bb["contig_id"][i]):
+                    bad_order += 1
+                row = bb["input_ids"][i]
+                if row[0] != 7 or row[-1] != 8:
+                    bad_ends += 1
+                elif list(row[1:-1]) != list(gb["input_ids"][i]):
+                    bad_body += 1
+        print(f"    checked {len(idx):,} positions ({how}): "
               f"provenance mismatches {bad_order}, "
               f"CLS/SEP {bad_ends}, bodies {bad_body}")
         if bad_order:
