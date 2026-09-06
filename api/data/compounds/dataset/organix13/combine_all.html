@@ -191,7 +191,7 @@ el.replaceWith(d);
 
     logging.info(&#34;Processing df_zinc_full&#34;)
     df_zinc_full = safe_read_parquet(os.path.join(data_dir, &#34;zinc20&#34;, &#34;zinc_processed.parquet&#34;), &#34;ZINC20 Full&#34;)
-    df_zinc_full = df_zinc_full.sample(n=5_000_000)
+    df_zinc_full = df_zinc_full.sample(n=ZINC_SAMPLE_N, random_state=ZINC_SAMPLE_SEED)
     df_zinc_full = calculateProperties(df_zinc_full)
 
     logging.info(&#34;Processing df_zinc_qm9&#34;)
