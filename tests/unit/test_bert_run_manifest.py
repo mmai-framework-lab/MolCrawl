@@ -191,3 +191,17 @@ def test_a_decomposition_change_that_preserves_the_product_still_matches(tmp_pat
     got = _batch(tmp_path, pd=160, ga=4, ws=4, config={"expected_global_batch": 2560})
 
     assert got["matches_expected_global_batch"] is True
+
+
+def test_the_requested_window_length_is_recorded_not_just_the_one_used():
+    """batch.seq_len says what ran; it does not say what was asked for.
+
+    genome's wide-window build is the case that exposed this. The 2026-09-01
+    reference run trained on 1,024-token rows and production trains on 1,026-token
+    ones, and the difference is which dataset SUBSET_BERT_MAX_LENGTH was pointed
+    at. A manifest that omits the request cannot tell an inherited default from a
+    deliberate choice.
+    """
+    from molcrawl.models.bert import _run_manifest
+
+    assert "SUBSET_BERT_MAX_LENGTH" in _run_manifest.TRACKED_ENV
