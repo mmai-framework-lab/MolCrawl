@@ -7,6 +7,17 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+# ZINC20 is subsampled rather than used whole. The module seeds numpy globally further
+# down, and pandas .sample() without random_state draws from that global state, so the
+# draw was deterministic for a given execution path -- but only for that path. Anything
+# upstream that consumes numpy randomness, or a change to the order sources are read in,
+# silently selects a different five million molecules, with no error to show for it.
+# Passing random_state pins the draw to the seed alone.
+# Named and valued alongside the other preparation seeds (SPLIT_SEED 42 in the packing
+# script, PACK_ORDER_SEED 43) so the pipeline reads from one convention.
+ZINC_SAMPLE_SEED = 42
+ZINC_SAMPLE_N = 5_000_000
+
 logger = logging.getLogger(__name__)
 
 np.random.seed(42)
@@ -148,7 +159,7 @@ def combine_all(raw_data_path: str, save_path: str):
 
     logging.info("Processing df_zinc_full")
     df_zinc_full = safe_read_parquet(os.path.join(data_dir, "zinc20", "zinc_processed.parquet"), "ZINC20 Full")
-    df_zinc_full = df_zinc_full.sample(n=5_000_000)
+    df_zinc_full = df_zinc_full.sample(n=ZINC_SAMPLE_N, random_state=ZINC_SAMPLE_SEED)
     df_zinc_full = calculateProperties(df_zinc_full)
 
     logging.info("Processing df_zinc_qm9")
