@@ -49,17 +49,24 @@ cd "${REPO}"
 export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
 mkdir -p "${MAIN}/workflows/slurm-logs" "${HF_DATASETS_CACHE}" "${XDG_CACHE_HOME}" "${TMPDIR}"
 
+# Outputs go to a stated root, never under LEARNING_SOURCE_DIR. core.paths
+# derives model_path from LEARNING_SOURCE_DIR, which puts checkpoints inside the
+# tree the run reads; output_guard (core/output_guard.py, merged 2026-09-01)
+# refuses that at startup. The root lives in the main checkout, not in a
+# worktree -- learning_source* is gitignored, so a worktree keeps its own copy
+# and a production run launched from one would leave its record somewhere built
+# to be deleted.
+RUNS_ROOT="${RUNS_ROOT:-${MAIN}/learning_source_rna_runs}"
 OVERRIDES=()
 if [ -n "${SMOKE_MAX_STEPS:-}" ]; then
-  OUT="${LEARNING_SOURCE_DIR}/rna/runs/${TAG}-bert-${SIZE}"
+  OUT="${RUNS_ROOT}/${TAG}-bert-${SIZE}"
   OVERRIDES+=(--max_steps="${SMOKE_MAX_STEPS}" --save_steps=100)
 else
-  OUT="$("${MAIN}"/miniconda/bin/python -c "
-from molcrawl.core.paths import get_bert_output_path
-print(get_bert_output_path('rna', '${SIZE}'))")"
+  OUT="${RUNS_ROOT}/bert-${SIZE}"
 fi
 OVERRIDES+=(--model_path="${OUT}")
 mkdir -p "${OUT}"
+echo "=== outputs: ${OUT} (RUNS_ROOT=${RUNS_ROOT}) ==="
 
 echo "=== rna bert-${SIZE} ${SMOKE_MAX_STEPS:+SMOKE max_steps=${SMOKE_MAX_STEPS}} @ $(date -Is) on ${SLURMD_NODENAME} ==="
 # A run can outlive the checkout it started from: production takes days, resume
@@ -85,6 +92,8 @@ nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 # Sanity anchors to grep for in this log (see §5 of the instruction):
 #   vocab_size 25,432   (= (25,426 + [UNK] + [PAD]) rounded up to a multiple of 8)
 #   eval runs on the valid split — test stays held out (PR #98)
+#   "effective global batch 2560 matches the declared expected_global_batch"
+#     absent => the run got a batch other than 2,560 and is not this ladder
 rc=0
 "${MAIN}"/miniconda/bin/torchrun --standalone --nproc_per_node=4 \
   molcrawl/models/bert/main.py "${CONFIG}" "${OVERRIDES[@]}" || rc=$?
