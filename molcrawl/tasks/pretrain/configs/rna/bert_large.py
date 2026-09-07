@@ -81,6 +81,14 @@ batch_size: int = 8
 per_device_eval_batch_size: int = 8
 gradient_accumulation_steps: int = 5 * 16
 
+# 8 x 80 x world_size 4 = 2,560, the batch max_steps was derived from. Under HF
+# the effective batch moves with the GPU count, and --gpus=4 can arrive as two
+# nodes of two while the launcher drives one node with --standalone: the run
+# would then train at 1,280 and not be this ladder. Declared so main.py refuses
+# to start rather than finding out at the time limit. A deliberate run on a
+# different GPU count passes the intended value at launch.
+expected_global_batch: int = 2560
+
 # No preprocess_function here on purpose. training_ready packs cells end-to-end and
 # truncates to whole 1024-token blocks, so the data contains no padding at all —
 # attention_mask would be all ones and token_type_ids all zeros, exactly what the
