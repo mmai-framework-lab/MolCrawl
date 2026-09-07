@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gpus=4
 #SBATCH --cpus-per-task=32
-#SBATCH --time=03:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
 # Repeat one ladder size with the seed changed and nothing else, so the spread between
@@ -17,6 +17,11 @@
 # Everything except `seed` matches the ladder config, and the run starts from scratch:
 # a resumed run cannot be compared with a scratch one because the sampler's RNG state
 # is not restored exactly.
+# TimeLimit is set for the slowest size this script is used with, not the fastest:
+# xl measures 29.6 GPU-h over 4 GPUs, i.e. 7.4 hours of wall, and large 3.1. A 3-hour
+# limit killed xl before it wrote a single eval point and cut large off at iter 1500
+# of 1558. Sizes that finish sooner are not charged for the unused reservation, so the
+# only cost of asking for more is queue position.
 set -eo pipefail
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
 : "${SIZE:?set SIZE to small|medium|large|xl}"

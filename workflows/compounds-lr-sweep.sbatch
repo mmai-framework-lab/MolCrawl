@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gpus=4
 #SBATCH --cpus-per-task=32
-#SBATCH --time=03:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
 # Vary the learning rate on one ladder size with everything else held, so the spread
@@ -16,6 +16,11 @@
 #
 # The seed is held at the ladder value so the existing run serves as a fourth point on
 # the same curve. Results go to their own directory; the ladder outputs are untouched.
+# TimeLimit is set for the slowest size this script is used with, not the fastest:
+# xl measures 29.6 GPU-h over 4 GPUs, i.e. 7.4 hours of wall, and large 3.1. A 3-hour
+# limit killed xl before it wrote a single eval point and cut large off at iter 1500
+# of 1558. Sizes that finish sooner are not charged for the unused reservation, so the
+# only cost of asking for more is queue position.
 set -eo pipefail
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
 : "${SIZE:?set SIZE to small|medium|large|xl}"
