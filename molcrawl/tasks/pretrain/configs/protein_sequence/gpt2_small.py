@@ -24,14 +24,15 @@ gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
 # 3 epochs of the train split at global batch 2560:
 # floor(3 * 9,538,464 train blocks / 2560) = 11,177 iters (~29.3B tokens processed).
-max_iters = 11177
-lr_decay_iters = 11177
-warmup_iters = 224  # ~2% of max_iters (compounds convention); < max_iters so LR reaches peak
-learning_rate = 6e-4  # per-size ladder small; re-confirmed best at global batch 2560 (2026-08-04)
-min_lr = 6e-5  # peak/10
+max_iters = 33531        # PROVISIONAL 9-epoch (=3x old 11177); RECOMPUTE from new packed train rows after shuffle-rebuild  # retrain 2026-09-07
+lr_decay_iters = 33531   # = max_iters (recompute together)  # retrain 2026-09-07
+warmup_iters = 671       # 2% of max_iters (recompute with max_iters)  # retrain 2026-09-07
+learning_rate = 6e-4     # unified across 4 sizes (boss case A; only value measured-best at global batch 2560)  # retrain 2026-09-07
+min_lr = 6e-5            # peak/10  # retrain 2026-09-07
+dtype = "bfloat16"       # explicit precision, unified across sizes  # retrain 2026-09-07
 
 # eval stuff
-eval_interval = 1000
+eval_interval = 335      # ~100 eval points over max_iters (recompute with max_iters)  # retrain 2026-09-07
 # eval_sequences fixes the *number of validation sequences* per eval point instead of
 # the number of batches, so every ladder size averages its val loss over the same
 # 3,200 sequences. batch_size shrinks with model size, so a shared eval_iters would
@@ -49,12 +50,12 @@ save_checkpoint_steps = 5000  # Periodically save every 5000 steps
 max_checkpoints = 10  # Increase to maintain checkpoints before overfitting
 
 # early stopping - detect overfitting and automatically stop
-early_stopping = True
+early_stopping = False   # no patience: run to completion  # retrain 2026-09-07
 early_stopping_patience = 5  # Stop if there is no improvement 5 times (5000 steps)
 
 # regularization - suppress overfitting
 weight_decay = 0.1
-dropout = 0.1  # enable Dropout (default 0.0)
+dropout = 0.0            # 0 for clean size comparison (was 0.1)  # retrain 2026-09-07
 
 # dataset
 dataset = "protein_sequence"
@@ -72,4 +73,4 @@ pad_token_id = 1
 # Training seed (sequentially assigned across the 117 tracked pretrain configs
 # on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
 # Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 90
+seed = 42                # unified run seed (seed C) across 4 sizes (was per-size 90/85/84/92)  # retrain 2026-09-07
