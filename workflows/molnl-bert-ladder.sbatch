@@ -44,6 +44,14 @@
 #   SEGMENT=1        first segment; refuses if checkpoints already exist
 #   SEGMENT=2,3,...  a continuation; refuses if the directory holds none
 # Both directions fail before a GPU is touched.
+#
+# STEPS must not change between segments either. HF decays the learning rate over
+# max_steps and has no separate decay length, so a segment given a smaller STEPS does
+# not stop early -- it runs a compressed schedule and trains a different model, at the
+# same output directory, resuming cleanly. Segmentation happens by hitting the time
+# limit, not by shortening the run. The newest checkpoint's trainer_state.json carries
+# the max_steps it was trained under, and a continuation is refused unless STEPS
+# matches it.
 set -eo pipefail
 : "${SIZE:?SIZE=small|medium|large}"
 : "${SEGMENT:?SEGMENT=1 for the first, 2,3,... for each continuation}"
@@ -65,6 +73,9 @@ fi
 TORCHRUN="${TORCHRUN:-${PYROOT}/miniconda/bin/torchrun}"
 [ -x "${TORCHRUN}" ] || {
   echo "no torchrun at ${TORCHRUN}; export TORCHRUN=<main checkout>/miniconda/bin/torchrun" >&2; exit 1; }
+PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
+[ -x "${PYTHON}" ] || {
+  echo "no interpreter at ${PYTHON}; export PYTHON=<main checkout>/miniconda/bin/python" >&2; exit 1; }
 
 # Outputs must not land in a worktree: learning_source* is gitignored, so each
 # checkout has its own, and a worktree is meant to be disposable. RUNS_ROOT is the
@@ -97,6 +108,32 @@ if [ "${SEGMENT}" != "1" ] && [ "${_n_ckpt}" -eq 0 ]; then
        "time limit re-running step 0. Check that SIZE=${SIZE}, LEARNING_SOURCE_DIR" \
        "and RUNS_ROOT match the earlier segment -- OUT is derived from all three." >&2
   exit 1
+fi
+
+# The schedule must be the same run continued, not a new one written over it.
+if [ "${SEGMENT}" != "1" ]; then
+  _state="${OUT}/checkpoint-${_last}/trainer_state.json"
+  [ -f "${_state}" ] || {
+    echo "REFUSING: ${_state} is missing, so the schedule this checkpoint was trained" \
+         "under cannot be read and STEPS=${STEPS} cannot be checked against it." >&2
+    exit 1; }
+  read -r _prev_steps _prev_done <<EOF
+$("${PYTHON}" -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s["max_steps"], int(s["global_step"]))' "${_state}")
+EOF
+  if [ "${_prev_steps}" != "${STEPS}" ]; then
+    echo "REFUSING: the checkpoint at step ${_last} was trained with max_steps=${_prev_steps}," \
+         "and this segment passes STEPS=${STEPS}. HF decays the learning rate over" \
+         "max_steps with no separate decay length, so resuming under a different value" \
+         "compresses or stretches the schedule and continues a different run into the" \
+         "same directory. Pass STEPS=${_prev_steps}, or start a new run elsewhere." >&2
+    exit 1
+  fi
+  if [ "${_prev_done}" -ge "${STEPS}" ]; then
+    echo "REFUSING: the run already reached step ${_prev_done} of ${STEPS}, so there is" \
+         "nothing for this segment to do." >&2
+    exit 1
+  fi
+  echo "schedule check: max_steps ${_prev_steps} matches, ${_prev_done}/${STEPS} steps done"
 fi
 
 echo "=== mol_nl bert-${SIZE} (shuffled) ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
