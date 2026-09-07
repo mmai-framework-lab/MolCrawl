@@ -29,7 +29,27 @@ else PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null
 PY="${PYROOT}/miniconda/bin/python"
 export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 
-if [ -n "${SUBSETS:-}" ]; then LIST="${SUBSETS//,/ }"
+# A named list bypasses the directory scan below, which is what filters out
+# entries that are not subsets at all -- DST_ROOT also holds the tokenizer
+# directory. Names are therefore checked against the same condition the scan
+# uses, up front, so a typo or a stray entry fails here rather than three
+# subsets into a job.
+#
+# The list is read from the environment, never from the --export string: commas
+# separate --export's own assignments, so a comma-joined value there arrives
+# truncated at the first element with no error.
+if [ -n "${SUBSETS:-}" ]; then
+    LIST="${SUBSETS//,/ }"
+    _bad=""
+    for s in ${LIST}; do
+        [ -d "${DST_ROOT}/${s}/training_ready_hf_dataset_bert" ] || _bad="${_bad} ${s}"
+    done
+    if [ -n "${_bad}" ]; then
+        echo "REFUSING: no training_ready_hf_dataset_bert under DST_ROOT for:${_bad}" >&2
+        echo "          DST_ROOT=${DST_ROOT}" >&2
+        exit 1
+    fi
+    echo "=== SUBSETS named: $(echo ${LIST} | wc -w) ==="
 else LIST=$(for d in "${DST_ROOT}"/*/; do
                 [ -d "${d}/training_ready_hf_dataset_bert" ] && basename "${d}"; done | sort); fi
 
