@@ -46,6 +46,7 @@ class BestNCheckpointRetention(TrainerCallback):
         self.keep_latest = max(int(keep_latest), 1)
         self.greater_is_better = bool(greater_is_better)
         self._warned_fallback = False
+        self._warned_foreign = False
 
     def _scores(self, state):
         """Latest value of the ranking metric at each step it was logged."""
@@ -59,6 +60,17 @@ class BestNCheckpointRetention(TrainerCallback):
                 return scores
         return {}
 
+    def _own_steps(self, state):
+        """Steps this run has actually reached.
+
+        On resume the Trainer restores ``log_history`` from the checkpoint, so a
+        run's earlier steps are present here across a restart. A step that never
+        appears was written by something else.
+        """
+        steps = {e["step"] for e in state.log_history if "step" in e}
+        steps.add(state.global_step)
+        return steps
+
     def on_save(self, args, state, control, **kwargs):
         if not state.is_world_process_zero:
             return control
@@ -70,6 +82,25 @@ class BestNCheckpointRetention(TrainerCallback):
             and os.path.isdir(os.path.join(args.output_dir, d))
             and d[len(CHECKPOINT_PREFIX):].isdigit()
         ]
+
+        # Never prune a checkpoint this run did not write. An output_dir can hold
+        # an older campaign's checkpoints -- genome's 512-token runs and the
+        # 1,026-token rebuild share a subset name -- and to the ranking below
+        # those look exactly like checkpoints that were saved without an eval:
+        # unrankable, therefore deletable. Deleting them destroys a finished
+        # campaign rather than tidying this one.
+        own = self._own_steps(state)
+        foreign = sorted(p for p in existing if _step_of(p) not in own)
+        if foreign:
+            if not self._warned_foreign:
+                print(f"⚠️  checkpoint retention: {len(foreign)} checkpoint(s) in "
+                      f"{args.output_dir} were not written by this run and will "
+                      f"not be pruned: "
+                      f"{', '.join(os.path.basename(p) for p in foreign[:5])}"
+                      f"{' ...' if len(foreign) > 5 else ''}")
+                self._warned_foreign = True
+            existing = [p for p in existing if _step_of(p) in own]
+
         if len(existing) <= self.keep_best + self.keep_latest:
             return control
 
