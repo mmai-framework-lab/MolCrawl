@@ -101,6 +101,13 @@ label and tissue tag.</li>
     parser.add_argument(&#34;--max-cells&#34;, type=int, default=None)
     parser.add_argument(&#34;--cell-type-field&#34;, default=&#34;cell_type&#34;)
     parser.add_argument(&#34;--tissue-field&#34;, default=&#34;tissue&#34;)
+    parser.add_argument(
+        &#34;--cell-id-field&#34;,
+        default=&#34;soma_joinid&#34;,
+        help=&#34;obs column written to each record as cell_id, for joining the &#34;
+        &#34;embeddings back to a count matrix. Falls back to obs_names when the &#34;
+        &#34;column is absent.&#34;,
+    )
     parser.add_argument(&#34;--seed&#34;, type=int, default=42)
     args = parser.parse_args(argv)
 
@@ -113,13 +120,14 @@ label and tissue tag.</li>
         max_cells=args.max_cells,
         cell_type_field=args.cell_type_field,
         tissue_field=args.tissue_field,
+        cell_id_field=args.cell_id_field,
         seed=args.seed,
     )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.tabula_sapiens.prepare_jsonl.materialise_tabula_jsonl"><code class="name flex">
-<span>def <span class="ident">materialise_tabula_jsonl</span></span>(<span>h5ad_url: str,<br>h5ad_path: Path,<br>output_jsonl: Path,<br>tokenizer_dir: Path,<br>top_n_genes_per_cell: int = 1024,<br>max_cells: Optional[int] = None,<br>cell_type_field: str = 'cell_type',<br>tissue_field: str = 'tissue',<br>seed: int = 42) ‑> dict</span>
+<span>def <span class="ident">materialise_tabula_jsonl</span></span>(<span>h5ad_url: str,<br>h5ad_path: Path,<br>output_jsonl: Path,<br>tokenizer_dir: Path,<br>top_n_genes_per_cell: int = 1024,<br>max_cells: Optional[int] = None,<br>cell_type_field: str = 'cell_type',<br>tissue_field: str = 'tissue',<br>cell_id_field: str = 'soma_joinid',<br>seed: int = 42) ‑> dict</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -135,6 +143,7 @@ label and tissue tag.</li>
     max_cells: Optional[int] = None,
     cell_type_field: str = &#34;cell_type&#34;,
     tissue_field: str = &#34;tissue&#34;,
+    cell_id_field: str = &#34;soma_joinid&#34;,
     seed: int = 42,
 ) -&gt; dict:
     import anndata as ad
@@ -207,6 +216,21 @@ label and tissue tag.</li>
         logger.info(&#34;Subsampled to %d cells (seed=%d)&#34;, adata.n_obs, seed)
 
     cell_types = adata.obs[cell_type_field].astype(str).tolist()
+    # Downstream analysis joins the model&#39;s embeddings back to a count matrix
+    # (scIB, the HVG and scVI controls). The join has to be on an identifier
+    # carried per row: rows are skipped when a cell has no gene in the vocab, so
+    # line number and cell index are not the same sequence.
+    cell_ids_from_obs_column = bool(cell_id_field) and cell_id_field in adata.obs.columns
+    if cell_ids_from_obs_column:
+        cell_ids = adata.obs[cell_id_field].astype(str).tolist()
+    else:
+        cell_ids = adata.obs_names.astype(str).tolist()
+        logger.warning(
+            &#34;No %s column in obs; falling back to obs_names for cell_id. &#34;
+            &#34;obs_names are assigned per study, so they do not identify a cell &#34;
+            &#34;across datasets.&#34;,
+            cell_id_field,
+        )
     tissues = (
         adata.obs[tissue_field].astype(str).tolist()
         if tissue_field in adata.obs.columns
@@ -251,6 +275,7 @@ label and tissue tag.</li>
                 skipped += 1
                 continue
             rec = {
+                &#34;cell_id&#34;: cell_ids[i],
                 &#34;tokens&#34;: tok_ids,
                 &#34;cell_type&#34;: cell_types[i],
                 &#34;tissue&#34;: tissues[i],
@@ -268,6 +293,7 @@ label and tissue tag.</li>
         &#34;n_known_genes&#34;: n_known,
         &#34;n_total_genes&#34;: len(gene_token_ids),
         &#34;top_n_genes_per_cell&#34;: top_n_genes_per_cell,
+        &#34;cell_id_field&#34;: cell_id_field if cell_ids_from_obs_column else &#34;obs_names&#34;,
     }
     logger.info(&#34;Wrote %s&#34;, summary)
     return summary</code></pre>

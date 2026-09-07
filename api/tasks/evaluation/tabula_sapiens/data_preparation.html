@@ -63,6 +63,10 @@ el.replaceWith(d);
     tokens: List[List[int]] = []
     cell_types: List[str] = []
     tissues: List[str] = []
+    # Carried through so an embedding can be joined back to the count matrix the
+    # cell came from. Subsampling and skipped rows both break the line-number
+    # correspondence, so the identifier has to travel with the row.
+    cell_ids: List[str] = []
     with file_path.open(encoding=&#34;utf-8&#34;) as handle:
         for line in handle:
             line = line.strip()
@@ -72,10 +76,16 @@ el.replaceWith(d);
             tokens.append([int(t) for t in record[&#34;tokens&#34;]])
             cell_types.append(str(record[&#34;cell_type&#34;]))
             tissues.append(str(record.get(&#34;tissue&#34;, &#34;&#34;)))
+            cell_ids.append(str(record.get(&#34;cell_id&#34;, &#34;&#34;)))
             if max_cells is not None and len(tokens) &gt;= int(max_cells):
                 break
     logger.info(&#34;Loaded %d Tabula Sapiens cells from %s&#34;, len(tokens), file_path)
-    return {&#34;tokens&#34;: tokens, &#34;cell_type&#34;: cell_types, &#34;tissue&#34;: tissues}</code></pre>
+    return {
+        &#34;tokens&#34;: tokens,
+        &#34;cell_type&#34;: cell_types,
+        &#34;tissue&#34;: tissues,
+        &#34;cell_id&#34;: cell_ids,
+    }</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -131,6 +141,10 @@ el.replaceWith(d);
         &#34;cell_type&#34;: [dataset[&#34;cell_type&#34;][i] for i in idx],
         &#34;tissue&#34;: [dataset[&#34;tissue&#34;][i] for i in idx],
     }
+    # Absent in JSONL written before cell_id existed; the rest of the subsample
+    # is unaffected either way.
+    if &#34;cell_id&#34; in dataset:
+        out[&#34;cell_id&#34;] = [dataset[&#34;cell_id&#34;][i] for i in idx]
     return out</code></pre>
 </details>
 <div class="desc"><p>Class-balanced subsample over <code>cell_type</code>.</p>
