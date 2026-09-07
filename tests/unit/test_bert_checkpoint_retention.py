@@ -127,3 +127,84 @@ def test_the_best_model_checkpoint_survives_even_outside_the_top_n(tmp_path):
     )
 
     assert 2000 in _on_disk(tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Checkpoints this run did not write
+#
+# An output_dir can already hold a finished campaign's checkpoints: genome's
+# 512-token runs and the 1,026-token rebuild derive the same directory name from
+# the same subset, and the sbatch guard that should catch that reads a manifest
+# the older runs never wrote. To the ranking, a foreign checkpoint is
+# indistinguishable from one saved without an eval -- unrankable, therefore
+# deletable -- so without this the newer run quietly deletes the older campaign.
+# ---------------------------------------------------------------------------
+
+
+def test_a_previous_campaigns_checkpoints_are_never_pruned(tmp_path):
+    """The 512-run's output survives a 1,026-run started in the same directory."""
+    old = [100000, 105000, 110000, 111230]
+    mine = [1000, 2000, 3000, 4000, 5000]
+    args = _make(tmp_path, old + mine)
+    state = _State(
+        [{"step": s, "eval_loss_mask": 1.0 + s / 1e6} for s in mine],
+        step=5000,
+    )
+
+    BestNCheckpointRetention(keep_best=2, keep_latest=1).on_save(args, state, None)
+
+    survived = _on_disk(tmp_path)
+    assert all(s in survived for s in old)
+
+
+def test_the_foreign_checkpoints_do_not_count_toward_the_keep_budget(tmp_path):
+    """Four inherited directories must not stop this run's own pruning."""
+    args = _make(tmp_path, [111230, 110000] + [1000, 2000, 3000, 4000, 5000])
+    state = _State(
+        [{"step": s, "eval_loss_mask": 1.0 + s / 1e6} for s in (1000, 2000, 3000, 4000, 5000)],
+        step=5000,
+    )
+
+    BestNCheckpointRetention(keep_best=2, keep_latest=1).on_save(args, state, None)
+
+    survived = _on_disk(tmp_path)
+    assert 111230 in survived and 110000 in survived
+    # own: best two by metric (1000, 2000) plus latest (5000)
+    assert [s for s in survived if s < 100000] == [1000, 2000, 5000]
+
+
+def test_a_resumed_run_still_prunes_its_own_earlier_checkpoints(tmp_path):
+    """Resume restores log_history, so steps from before the restart are ours."""
+    args = _make(tmp_path, [1000, 2000, 3000, 4000, 5000])
+    state = _State(
+        [{"step": s, "eval_loss_mask": 1.0 + s / 1e6} for s in (1000, 2000, 3000, 4000, 5000)],
+        step=5000,
+    )
+
+    BestNCheckpointRetention(keep_best=1, keep_latest=1).on_save(args, state, None)
+
+    assert _on_disk(tmp_path) == [1000, 5000]
+
+
+def test_the_step_being_saved_counts_as_ours_before_it_is_logged(tmp_path):
+    """on_save can precede the log entry for that step; it must not read foreign."""
+    args = _make(tmp_path, [1000, 2000, 3000, 4000])
+    state = _State(
+        [{"step": s, "eval_loss_mask": 1.0 + s / 1e6} for s in (1000, 2000, 3000)],
+        step=4000,
+    )
+
+    BestNCheckpointRetention(keep_best=1, keep_latest=1).on_save(args, state, None)
+
+    assert 4000 in _on_disk(tmp_path)
+
+
+def test_nothing_is_deleted_when_every_checkpoint_is_foreign(tmp_path):
+    """A fresh run landing on a finished campaign deletes none of it."""
+    old = [100000, 105000, 110000, 111230]
+    args = _make(tmp_path, old)
+    state = _State([], step=0)
+
+    BestNCheckpointRetention(keep_best=1, keep_latest=1).on_save(args, state, None)
+
+    assert _on_disk(tmp_path) == old
