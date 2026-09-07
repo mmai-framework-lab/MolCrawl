@@ -82,12 +82,22 @@ LOCAL_ROOT=/tmp/genome-bert-${SLURM_JOB_ID:-0}
 # separates them, and main.py resumes from whatever checkpoints it finds, so a
 # mismatched window would silently continue someone else's run.
 if [ -d "${OUT}" ] && ls -d "${OUT}"/checkpoint-* >/dev/null 2>&1; then
-    _seen=$(ls "${OUT}"/checkpoint-*/run_manifest.json 2>/dev/null | head -1)
     _len=$("${PYROOT:-.}/miniconda/bin/python" -c "
 import json,sys
 try: print(json.load(open('${OUT}/run_manifest.json'))['batch']['seq_len'])
 except Exception: print('')" 2>/dev/null)
-    if [ -n "${_len}" ] && [ "${_len}" != "${MAX_LENGTH}" ]; then
+    if [ -z "${_len}" ]; then
+        # No manifest beside the checkpoints, so the window they were trained at
+        # is unknown. Unknown is not the same as compatible: the 512-token runs
+        # finished before manifests existed, and reading their absence as "fine"
+        # is exactly how a 1,026-token job would resume on top of a finished
+        # campaign. Resume needs positive evidence, not the lack of a refusal.
+        echo "REFUSING: ${OUT} holds checkpoints with no run_manifest.json, so the" >&2
+        echo "          window they were trained at cannot be established." >&2
+        echo "          Set RUN_TAG to write beside them, or move them aside." >&2
+        exit 1
+    fi
+    if [ "${_len}" != "${MAX_LENGTH}" ]; then
         echo "REFUSING: ${OUT} holds a run at seq_len ${_len}, this one is ${MAX_LENGTH}." >&2
         echo "          Set RUN_TAG so the two do not share a directory." >&2
         exit 1
