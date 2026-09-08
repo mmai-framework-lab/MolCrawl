@@ -30,9 +30,12 @@ cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 if [ -x "./miniconda/bin/python" ]; then PYROOT="$PWD"
 else PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"; fi
 PY="${PYROOT}/miniconda/bin/python"
+[ -x "${PY}" ] || { echo "no python under ${PYROOT}/miniconda -- set PYROOT" >&2; exit 1; }
 export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 TAG="${RUN_TAG:-w1026}"
-OUT_DIR="${OUT_DIR:-$PWD/tmp/genome-final-scores}"
+# These scores are the campaign's record, not scratch, so they default beside the
+# runs in the main checkout rather than into a worktree's disposable tmp/.
+OUT_DIR="${OUT_DIR:-${RUNS_ROOT}/_results/final-scores}"
 mkdir -p "${OUT_DIR}"
 
 # Named subsets are checked against the data being present, the same condition
@@ -56,6 +59,9 @@ else
 fi
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} subsets=$(echo ${LIST} | wc -w) @ $(date -Is) ==="
+echo "=== python:  ${PY} ==="
+echo "=== runs:    ${RUNS_ROOT} ==="
+echo "=== outputs: ${OUT_DIR} ==="
 rc=0
 for s in ${LIST}; do
     echo ""; echo "########## ${s} ##########"
