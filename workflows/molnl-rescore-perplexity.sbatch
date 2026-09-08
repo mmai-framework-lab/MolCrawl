@@ -40,10 +40,20 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 [ -x "${PYTHON}" ] || {
   echo "no interpreter at ${PYTHON}; export PYTHON=<main checkout>/miniconda/bin/python" >&2; exit 1; }
 
-RUNS_ROOT="${RUNS_ROOT:-${LEARNING_SOURCE_DIR}/molecule_nat_lang}"
+# Inputs and outputs are separate trees. core/output_guard.py refuses a model_path
+# that lands inside LEARNING_SOURCE_DIR, and mol_nl used to point both at the same
+# place: LEARNING_SOURCE_DIR named learning_source_20260803_molnl_train, which holds
+# the outputs and two symlinks to the corpus. So the default here was a path the
+# guard is guaranteed to reject, and the failure came two minutes into a 4-GPU job.
+#
+# LEARNING_SOURCE_DIR now names the corpus itself (learning_source), which is what
+# the symlinks pointed at, so the data read is the same bytes. MOLNL_ARTIFACT_ROOT
+# names where mol_nl's own artifacts already live, and nothing moves.
+ARTIFACT_ROOT="${MOLNL_ARTIFACT_ROOT:-${PYROOT}/learning_source_20260803_molnl_train}"
+RUNS_ROOT="${RUNS_ROOT:-${ARTIFACT_ROOT}/molecule_nat_lang}"
 CKPT_TEMPLATE="${CKPT_TEMPLATE:-${RUNS_ROOT}/gpt2-output-shuffled-${STAGE}/molecule_nat_lang-{size}/ckpt.pt}"
 DATASET_DIR="${DATASET_DIR:-${RUNS_ROOT}/training_ready_hf_dataset_shuffled}"
-OUT="${OUT_DIR:-${LEARNING_SOURCE_DIR}/experiment_data/eval/ladder-perplexity}"
+OUT="${OUT_DIR:-${ARTIFACT_ROOT}/experiment_data/eval/ladder-perplexity}"
 
 export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${PYROOT}/tmp/hf-cache-molnl}"
@@ -52,6 +62,11 @@ export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1 HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
        TOKENIZERS_PARALLELISM=false
 cd "${REPO}"; mkdir -p "${OUT}" "${HF_DATASETS_CACHE}" workflows/slurm-logs
+
+# Ask the guard itself rather than re-deriving its rule here, so the two cannot drift
+# and so nanoGPT -- which does not call it anywhere -- is covered too. Seconds, and
+# before the allocation is put to work.
+"${PYTHON}" -c 'import sys; from molcrawl.core.output_guard import assert_output_dir; assert_output_dir(sys.argv[1], what=sys.argv[2])' "${OUT}" "output-dir" || exit 1
 
 echo "=== mol_nl ladder re-score (stage ${STAGE}, shuffled) ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "code : $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
