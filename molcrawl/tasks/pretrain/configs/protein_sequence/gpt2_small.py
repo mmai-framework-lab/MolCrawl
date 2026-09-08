@@ -24,15 +24,16 @@ gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
 # 3 epochs of the train split at global batch 2560:
 # floor(3 * 9,538,464 train blocks / 2560) = 11,177 iters (~29.3B tokens processed).
-max_iters = 33531        # PROVISIONAL 9-epoch (=3x old 11177); RECOMPUTE from new packed train rows after shuffle-rebuild  # retrain 2026-09-07
-lr_decay_iters = 33531   # = max_iters (recompute together)  # retrain 2026-09-07
-warmup_iters = 671       # 2% of max_iters (recompute with max_iters)  # retrain 2026-09-07
-learning_rate = 6e-4     # unified across 4 sizes (boss case A; only value measured-best at global batch 2560)  # retrain 2026-09-07
-min_lr = 6e-5            # peak/10  # retrain 2026-09-07
+max_iters = 33531        # 9 epochs of the current packed train: floor(9*9,538,464/2560). No data rebuild (rev2 §1).
+expected_global_batch = 2560  # startup guard: fail if batch_size*grad_accum*world_size != 2560  # retrain rev2 2026-09-07
+lr_decay_iters = 33531   # = max_iters
+warmup_iters = 671       # 2% of max_iters
+learning_rate = 6e-4     # template default (= L, arm base). The 21-run retrain overrides --learning_rate per arm at launch (rev2 §3: L, L/2, L/4; xl also L/8).
+min_lr = 6e-5            # template (peak/10). Overridden per arm at launch (= arm LR / 10).
 dtype = "bfloat16"       # explicit precision, unified across sizes  # retrain 2026-09-07
 
 # eval stuff
-eval_interval = 335      # ~100 eval points over max_iters (recompute with max_iters)  # retrain 2026-09-07
+eval_interval = 335      # ~100 eval points over max_iters
 # eval_sequences fixes the *number of validation sequences* per eval point instead of
 # the number of batches, so every ladder size averages its val loss over the same
 # 3,200 sequences. batch_size shrinks with model size, so a shared eval_iters would
@@ -46,7 +47,7 @@ init_from = "resume"  # 'scratch' or 'resume' - resume from checkpoint by defaul
 
 # checkpoint management - Ensure model before overfitting with regular save
 always_save_checkpoint = False  # Save only the best model (to prevent overfitting)
-save_checkpoint_steps = 5000  # Periodically save every 5000 steps
+save_checkpoint_steps = 1000  # resumable latest every 1000 steps (4-day TimeLimit + requeue resume)  # retrain rev2 2026-09-07
 max_checkpoints = 10  # Increase to maintain checkpoints before overfitting
 
 # early stopping - detect overfitting and automatically stop
@@ -73,4 +74,4 @@ pad_token_id = 1
 # Training seed (sequentially assigned across the 117 tracked pretrain configs
 # on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
 # Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 42                # unified run seed (seed C) across 4 sizes (was per-size 90/85/84/92)  # retrain 2026-09-07
+seed = 42                # template default. Overridden per run at launch (rev2 §3 run seed: 1001/1002/1003).
