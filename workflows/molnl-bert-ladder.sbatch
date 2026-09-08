@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gpus=4
 #SBATCH --cpus-per-task=32
-#SBATCH --time=72:00:00
+#SBATCH --time=96:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
 # mol_nl BERT ladder on the shuffled corpus.
@@ -29,7 +29,8 @@
 #                    every one of them checkpointable.
 #
 # SPLIT RUNS. medium and large exceed the partition's 4-day limit and are run in
-# segments. main.py resolves the checkpoint itself -- it lists model_path, sorts by
+# segments, so the time limit here is the partition maximum: a segment should be cut
+# by the limit, not finish under it with time left unused. main.py resolves the checkpoint itself -- it lists model_path, sorts by
 # step and resumes from the highest -- so "resume from the newest" cannot be got
 # wrong by hand.
 #

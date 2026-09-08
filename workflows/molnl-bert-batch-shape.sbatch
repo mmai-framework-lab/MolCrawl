@@ -26,6 +26,17 @@
 # PD x GA x world_size must equal what the config declares as expected_global_batch,
 # or main.py refuses to start. That check is the point: it lets the decomposition be
 # varied without letting the run being measured drift into a different model.
+#
+# NOT the way to measure a production s/it. STEPS is passed as max_steps, so a 200
+# step probe runs a 200 step schedule -- and warmup_steps is a constant 200, so the
+# whole probe sits inside warmup while production leaves it at step 200 and decays
+# from there. That is harmless for comparing decompositions against each other, which
+# is all this is for: the three runs are wrong in the same way and the ratio holds.
+# For an absolute number, run the production schedule and let the time limit stop it:
+#
+#   LEARNING_SOURCE_DIR=<dir> RUNS_ROOT=<probe root> sbatch --time=<short> \
+#     --export=ALL,SIZE=large,STEPS=12000,SEGMENT=1,EVERY=100 \
+#     workflows/molnl-bert-ladder.sbatch
 set -eo pipefail
 : "${PD:?PD=per_device_train_batch_size}"
 : "${GA:?GA=gradient_accumulation_steps}"
