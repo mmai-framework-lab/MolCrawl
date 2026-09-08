@@ -1086,7 +1086,7 @@ if __name__ == "__main__":
         should_stop = False
 
         # evaluate the loss on train/val sets and write checkpoints
-        if iter_num % eval_interval == 0 and master_process:
+        if (iter_num % eval_interval == 0 or iter_num == max_iters) and master_process:
             losses = estimate_loss()
             print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
@@ -1140,6 +1140,11 @@ if __name__ == "__main__":
                 always_save_checkpoint
                 # Save at specific step intervals (periodic, for resume/chaining)
                 or (save_checkpoint_steps is not None and iter_num % save_checkpoint_steps == 0)
+                # Save the final state (max_iters is rarely a multiple of the eval
+                # interval or save_checkpoint_steps, so without this the last
+                # checkpoint lands short of the finished run; the ladder point is
+                # read off this final checkpoint)
+                or iter_num == max_iters
                 # Save when validation improves
                 or is_best_model
             )
