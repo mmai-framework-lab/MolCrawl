@@ -26,7 +26,7 @@ from collections import Counter
 
 import torch
 
-IGNORE_INDEX = -100
+from molcrawl.models.bert._mlm_diagnostics import IGNORE_INDEX, split_mlm_loss
 
 
 def _entropy(counts):
@@ -39,11 +39,13 @@ def _entropy(counts):
 
 def _best_checkpoint(run_dir):
     """The checkpoint the run itself selected, on the range it evaluated on."""
-    latest = max(
-        (d for d in os.listdir(run_dir) if d.startswith("checkpoint-")
-         and d.split("-")[1].isdigit()),
-        key=lambda d: int(d.split("-")[1]),
-    )
+    if not os.path.isdir(run_dir):
+        raise SystemExit(f"{run_dir}: no such run directory")
+    dirs = [d for d in os.listdir(run_dir)
+            if d.startswith("checkpoint-") and d.split("-")[1].isdigit()]
+    if not dirs:
+        raise SystemExit(f"{run_dir}: holds no checkpoint-* directory to score")
+    latest = max(dirs, key=lambda d: int(d.split("-")[1]))
     state = json.load(open(os.path.join(run_dir, latest, "trainer_state.json")))
     best = state.get("best_model_checkpoint")
     if best and os.path.isdir(best):
@@ -56,7 +58,13 @@ def _best_checkpoint(run_dir):
 
 
 def score(model, collator, rows, seed, batch_size, device, mask_token_id):
-    """One masking draw over every row, scored the way training scores it."""
+    """One masking draw over every row, scored the way training scores it.
+
+    The loss itself comes from ``split_mlm_loss`` -- the same function the Trainer
+    mixin uses during the run -- so the number here cannot drift from the one the
+    checkpoint was selected on. Only the label tally at the masked positions is
+    added, and that is what the degenerate baseline is computed from.
+    """
     torch.manual_seed(seed)
     sums = Counter()
     counts = Counter()
@@ -71,20 +79,18 @@ def score(model, collator, rows, seed, batch_size, device, mask_token_id):
             out = model(input_ids=ids,
                         attention_mask=attn.to(device) if attn is not None else None)
 
-            scored = labels != IGNORE_INDEX
-            if not bool(scored.any()):
-                continue
-            flat_logits = out.logits[scored]
-            flat_labels = labels[scored]
-            flat_inputs = ids[scored]
-            ce = torch.nn.functional.cross_entropy(
-                flat_logits.float(), flat_labels, reduction="none")
+            batch_sums, batch_counts = split_mlm_loss(
+                out.logits, labels, ids, mask_token_id)
+            for k in ("mask", "copy", "random"):
+                sums[k] += batch_sums[k]
+                counts[k] += batch_counts[k]
 
-            is_mask = flat_inputs == mask_token_id
-            if bool(is_mask.any()):
-                sums["mask"] += float(ce[is_mask].sum())
-                counts["mask"] += int(is_mask.sum())
-                label_counts.update(flat_labels[is_mask].tolist())
+            scored = labels != IGNORE_INDEX
+            if bool(scored.any()):
+                flat_labels = labels[scored]
+                is_mask = ids[scored] == mask_token_id
+                if bool(is_mask.any()):
+                    label_counts.update(flat_labels[is_mask].tolist())
 
     if not counts["mask"]:
         raise SystemExit("no [MASK] positions were produced; check mlm_probability")
@@ -92,6 +98,8 @@ def score(model, collator, rows, seed, batch_size, device, mask_token_id):
         "seed": seed,
         "masked_positions": counts["mask"],
         "eval_loss_mask": sums["mask"] / counts["mask"],
+        "eval_loss_copy": (sums["copy"] / counts["copy"]) if counts["copy"] else None,
+        "eval_loss_random": (sums["random"] / counts["random"]) if counts["random"] else None,
         "degenerate_baseline": _entropy(label_counts),
         "label_counts": {int(k): int(v) for k, v in sorted(label_counts.items())},
     }
@@ -164,6 +172,13 @@ def main():
         "split": args.split,
         "rows_scored": len(rows),
         "mlm_probability": args.mlm_probability,
+        # The run evaluated under bf16 autocast; this pass is fp32. Values here
+        # are therefore not expected to reproduce best_metric_at_selection even
+        # at the same rows and seed. Every subset is scored by this script, so
+        # the comparison across subsets is unaffected -- but the two numbers are
+        # not interchangeable and should not be quoted side by side as one.
+        "precision": "fp32",
+        "selection_precision": "bf16 autocast (as trained)",
         "seeds": seeds,
         "per_seed": runs,
         "eval_loss_mask": agg("eval_loss_mask"),

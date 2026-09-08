@@ -36,11 +36,18 @@ cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 if [ -x "./miniconda/bin/python" ]; then PYROOT="$PWD"
 else PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"; fi
 PY="${PYROOT}/miniconda/bin/python"
+[ -x "${PY}" ] || { echo "no python under ${PYROOT}/miniconda -- set PYROOT" >&2; exit 1; }
 export PYTHONPATH="$PWD:${PYTHONPATH:-}"
-OUT_DIR="${OUT_DIR:-$PWD/tmp/genome-analyses}"
+# window-loss.json is read back by the results table, so it is a record rather
+# than scratch: it defaults beside the runs in the main checkout. RESULTS_ROOT
+# overrides it; PYROOT already resolves the main checkout from a worktree.
+RESULTS_ROOT="${RESULTS_ROOT:-${PYROOT}/learning_source_genome_runs/_results}"
+OUT_DIR="${OUT_DIR:-${RESULTS_ROOT}/analyses}"
 mkdir -p "${OUT_DIR}"
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} @ $(date -Is) ==="
+echo "=== python:  ${PY} ==="
+echo "=== outputs: ${OUT_DIR} ==="
 rc=0
 
 echo ""; echo "================ 1. window loss ================"
