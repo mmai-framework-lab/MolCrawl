@@ -53,7 +53,16 @@ class GPT2Adapter(ModelAdapter):
 
         device = self.handle.extras.get("device", "cuda")
         logger.info("Loading GPT-2 checkpoint from %s", self.handle.model_path)
-        checkpoint = torch.load(self.handle.model_path, map_location=device)
+        # weights_only=False because a nanoGPT checkpoint is not weights alone:
+        # train.py stores model_args, iter_num, best_val_loss and the captured RNG
+        # state beside the tensors, and the RNG state pickles numpy objects. Torch
+        # 2.6 flipped this default to True, so every checkpoint carrying RNG state
+        # -- which is all of them since exact resume was added -- stopped loading
+        # here with an UnpicklingError. These files are written by this repo's own
+        # training runs and read from paths the caller supplies.
+        checkpoint = torch.load(
+            self.handle.model_path, map_location=device, weights_only=False
+        )
         model_args = checkpoint.get("model_args", {})
         checkpoint_vocab_size = model_args.get("vocab_size")
         if checkpoint_vocab_size is None:
