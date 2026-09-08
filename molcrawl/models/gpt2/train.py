@@ -197,6 +197,26 @@ def restore_rng_state(state):
 def rank_rng_path(checkpoint_dir, rank):
     return os.path.join(checkpoint_dir, f"rng_state_{rank}.pth")
 
+def own_checkpoint_steps(base_dir, resumed_from_step):
+    """Which checkpoints already on disk belong to this run's lineage.
+
+    A fresh run that lands in a directory holding a finished campaign owns none
+    of what is there. A resumed run owns everything up to the step it resumed
+    from, because that is its own history from before the restart.
+    """
+    if resumed_from_step is None:
+        return set()
+    steps = set()
+    for d in glob.glob(os.path.join(base_dir, "checkpoint-*")):
+        try:
+            step = int(os.path.basename(d).split("-")[1])
+        except (ValueError, IndexError):
+            continue
+        if step <= resumed_from_step:
+            steps.add(step)
+    return steps
+
+
 if __name__ == "__main__":
     # Handle configurator path (support repo-root invocation and direct invocation)
     _this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -503,6 +523,9 @@ def get_batch(split):
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
 if __name__ == "__main__":
     iter_num = 0
+    # Steps this run may prune. A fresh run owns nothing that is already in
+    # out_dir; a resume adopts its own history below. See cleanup_old_checkpoints.
+    _own_ckpt_steps = set()
     best_val_loss = 1e9
     best_val_step = None  # step at which best_val_loss was recorded (charter § 1.1 protect)
     early_stopping_counter = 0  # count eval intervals without improvement
@@ -666,6 +689,7 @@ if __name__ == "__main__":
                     state_dict[k[len(unwanted_prefix) :]] = state_dict.pop(k)
             model.load_state_dict(state_dict)
             iter_num = checkpoint["iter_num"]
+            _own_ckpt_steps = own_checkpoint_steps(out_dir, iter_num)
             best_val_loss = checkpoint["best_val_loss"]
             best_val_step = checkpoint.get("best_val_step")  # may be None for older ckpts
             early_stopping_counter = checkpoint.get("early_stopping_counter", 0)
@@ -872,13 +896,26 @@ def save_checkpoint_hf(
     print(f"Checkpoint saved to {checkpoint_dir} (HuggingFace compatible format)")
 
 
-def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None):
+_WARNED_FOREIGN = set()
+
+
+def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None,
+                            own_steps=None):
     """Remove old checkpoints, keeping only the most recent max_checkpoints.
 
     ``protect_step`` (optional): step number of a checkpoint that must NOT be
     deleted even if it falls outside the max_checkpoints window (used to preserve
     the best-val checkpoint for downstream evaluation; charter § 1.1 comparability
     rule requires subset comparison at best-val ckpt).
+
+    ``own_steps`` (optional): the steps this run may prune. An out_dir can
+    already hold a finished campaign's checkpoints -- runs of one subset at
+    different window lengths derive the same directory name -- and this ranks by
+    step alone. Without it the older campaign, carrying the higher step numbers,
+    fills the keep window and the new run deletes its own work instead; once the
+    new run passes those numbers, the old campaign goes too. Steps outside
+    ``own_steps`` are left alone and reported once. ``None`` keeps the historical
+    behaviour, so a caller that has not been taught about ownership is unchanged.
     """
     if max_checkpoints is None:
         return
@@ -896,6 +933,18 @@ def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None):
             checkpoints.append((step, ckpt_dir))
         except (ValueError, IndexError):
             continue
+
+    if own_steps is not None:
+        foreign = sorted((s, d) for s, d in checkpoints if s not in own_steps)
+        if foreign:
+            key = os.path.abspath(base_dir)
+            if key not in _WARNED_FOREIGN:
+                _WARNED_FOREIGN.add(key)
+                names = ", ".join(os.path.basename(d) for _s, d in foreign[:5])
+                print(f"WARNING: {len(foreign)} checkpoint(s) in {base_dir} were not "
+                      f"written by this run and will not be removed: {names}"
+                      f"{' ...' if len(foreign) > 5 else ''}")
+            checkpoints = [(s, d) for s, d in checkpoints if s in own_steps]
 
     checkpoints.sort(reverse=True)  # Sort by step, newest first
 
@@ -1141,7 +1190,14 @@ if __name__ == "__main__":
                     # Cleanup old checkpoints AFTER wandb upload.
                     # Protect best-val step from FIFO eviction (charter § 1.1
                     # comparability rule: subsets are compared on the best-val ckpt).
-                    cleanup_old_checkpoints(out_dir, max_checkpoints, protect_step=best_val_step)
+                    # own_steps keeps the pruning inside this run: an out_dir can
+                    # hold a finished campaign's checkpoints, and ranking by step
+                    # alone would let those fill the window and delete this run's
+                    # work instead.
+                    _own_ckpt_steps.add(iter_num)
+                    cleanup_old_checkpoints(out_dir, max_checkpoints,
+                                            protect_step=best_val_step,
+                                            own_steps=_own_ckpt_steps)
 
                 # Also save legacy ckpt.pt for backward compatibility (or best model)
                 if keep_legacy_ckpt or is_best_model:
