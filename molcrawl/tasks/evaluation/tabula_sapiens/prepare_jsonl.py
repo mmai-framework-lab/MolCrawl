@@ -28,8 +28,10 @@ Optional subsampling caps the JSONL size for smoke runs.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
+import pickle
 import random
 import subprocess
 from pathlib import Path
@@ -73,6 +75,34 @@ def _load_tokenizer_vocab(tokenizer_dir: Path) -> dict:
     return tok.get_vocab()
 
 
+def _gene_median_path(explicit: Optional[Path] = None) -> Path:
+    if explicit is not None:
+        return Path(explicit)
+    from molcrawl.data.rna.dataset.geneformer.tokenizer import GENE_MEDIAN_FILE
+
+    return Path(GENE_MEDIAN_FILE)
+
+
+def _sha256(path: Path) -> str:
+    """So a report can say which medians produced a given JSONL."""
+    h = hashlib.sha256()
+    with Path(path).open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _load_gene_medians(explicit: Optional[Path] = None) -> dict:
+    """The medians pretraining used -- never recomputed from evaluation data."""
+    path = _gene_median_path(explicit)
+    if not path.exists():
+        raise FileNotFoundError(f"gene median dictionary not found: {path}")
+    with path.open("rb") as fh:
+        medians = pickle.load(fh)
+    logger.info("Gene medians: %d genes from %s", len(medians), path)
+    return medians
+
+
 def materialise_tabula_jsonl(
     h5ad_url: str,
     h5ad_path: Path,
@@ -83,6 +113,7 @@ def materialise_tabula_jsonl(
     cell_type_field: str = "cell_type",
     tissue_field: str = "tissue",
     cell_id_field: str = "soma_joinid",
+    gene_median_file: Optional[Path] = None,
     seed: int = 42,
 ) -> dict:
     import anndata as ad
@@ -176,13 +207,54 @@ def materialise_tabula_jsonl(
         else [""] * adata.n_obs
     )
 
-    # Use the .X matrix; for CellxGene the canonical normalised counts
-    # live in obs.layers but ``X`` is fine for ranked-by-expression.
+    # Rank on the value pretraining ranked on, not on the raw counts.
+    #
+    # Geneformer's rank value encoding orders genes by
+    #     X / n_counts * 10_000 / (that gene's non-zero median in Genecorpus-30M)
+    # (data/rna/dataset/geneformer/tokenizer.py:200). Sorting the raw counts
+    # instead leaves the top 1,024 about 87% the same, so roughly one gene in
+    # eight is a gene the model never saw at that rank -- and the ordering *is*
+    # the input for this encoding. Measured 2026-09-08 on 5,000 lung-atlas cells.
+    #
+    # n_counts is the corpus-side ``raw_sum``: the total over *all* genes
+    # (cellxgene/script/h5ad_to_loom.py:31), not over the median-dictionary
+    # subset the numerator is restricted to. Using the subset sum here would be
+    # a different per-cell constant -- harmless for the order, but no longer the
+    # same expression, so take raw_sum when the obs carries it.
     import scipy.sparse as sp
 
     X = adata.X
     if sp.issparse(X):
         X = X.tocsr()
+
+    medians = _load_gene_medians(gene_median_file)
+    # The training gene set is exactly the median dictionary's keys
+    # (tokenizer.py:95 -> genelist_dict), so a gene without a median was never
+    # tokenised and must not be ranked here either.
+    median_vec = np.array([medians.get(k, np.nan) for k in keys], dtype=float)
+    rankable = np.isfinite(median_vec) & (gene_token_ids >= 0)
+    logger.info(
+        "Rankable genes: %d / %d (in median dictionary and in vocab)",
+        int(rankable.sum()), len(keys),
+    )
+    if not rankable.any():
+        raise RuntimeError(
+            "No gene of this H5AD has both a token id and a non-zero median; "
+            "cannot reproduce the pretraining ranking."
+        )
+
+    if "raw_sum" in adata.obs.columns:
+        n_counts = adata.obs["raw_sum"].to_numpy(dtype=float)
+        n_counts_source = "obs.raw_sum"
+    else:
+        n_counts = np.asarray(X.sum(axis=1)).ravel().astype(float)
+        n_counts_source = "row sum over all genes (obs.raw_sum absent)"
+        logger.warning(
+            "obs has no raw_sum; using the row sum over all genes. This matches "
+            "raw_sum when X holds the full raw counts, and does not otherwise."
+        )
+    n_counts[n_counts <= 0] = 1.0
+    logger.info("n_counts from %s", n_counts_source)
 
     n_written = 0
     skipped = 0
@@ -199,17 +271,15 @@ def materialise_tabula_jsonl(
             if col_idx.size == 0:
                 skipped += 1
                 continue
-            # Sort by expression descending, take top-N, drop unknown genes
-            order = np.argsort(-vals)
-            top = col_idx[order]
-            tok_ids: List[int] = []
-            for c in top:
-                tid = int(gene_token_ids[int(c)])
-                if tid < 0:
-                    continue
-                tok_ids.append(tid)
-                if len(tok_ids) >= top_n_genes_per_cell:
-                    break
+            # Same expression the tokenizer used, then descending order.
+            keep = rankable[col_idx]
+            cols_k, vals_k = col_idx[keep], vals[keep]
+            if cols_k.size == 0:
+                skipped += 1
+                continue
+            scaled = vals_k / n_counts[i] * 10_000.0 / median_vec[cols_k]
+            order = np.argsort(-scaled)[:top_n_genes_per_cell]
+            tok_ids: List[int] = [int(t) for t in gene_token_ids[cols_k[order]]]
             if not tok_ids:
                 skipped += 1
                 continue
@@ -233,6 +303,11 @@ def materialise_tabula_jsonl(
         "n_total_genes": len(gene_token_ids),
         "top_n_genes_per_cell": top_n_genes_per_cell,
         "cell_id_field": cell_id_field if cell_ids_from_obs_column else "obs_names",
+        "rank_basis": "geneformer median-scaled (X / n_counts * 10000 / gene median)",
+        "n_counts_source": n_counts_source,
+        "gene_median_file": str(_gene_median_path(gene_median_file)),
+        "gene_median_sha256": _sha256(_gene_median_path(gene_median_file)),
+        "n_rankable_genes": int(rankable.sum()),
     }
     logger.info("Wrote %s", summary)
     return summary
@@ -272,6 +347,12 @@ def main(argv: Optional[List[str]] = None) -> None:
         "embeddings back to a count matrix. Falls back to obs_names when the "
         "column is absent.",
     )
+    parser.add_argument(
+        "--gene-median-file",
+        default=None,
+        help="Pickle of per-gene non-zero medians. Defaults to the file "
+        "pretraining used; pass one only to reproduce an older run.",
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args(argv)
 
@@ -285,6 +366,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         cell_type_field=args.cell_type_field,
         tissue_field=args.tissue_field,
         cell_id_field=args.cell_id_field,
+        gene_median_file=Path(args.gene_median_file) if args.gene_median_file else None,
         seed=args.seed,
     )
 
