@@ -9,13 +9,23 @@
 # Zero-shot ClinVar scoring for a genome subset campaign, one adopted
 # checkpoint per subset.
 #
-# SCORE_WINDOW_HALF=0 is the definition asked for: the variant position alone is
-# masked while the rest of the window stays visible, and the score is the log
-# probability of the reference base minus that of the variant base at that one
-# position. Leaving it unset averages a pseudo-log-likelihood over the whole
-# 128-nt window, which is a different quantity -- that is what earlier work used
-# when it reported the zero-shot AUROC plateauing near chance, so the two runs
-# are not comparable and the flag has to be stated, not defaulted.
+# The two architectures are scored differently, by the 2026-09-08 correction.
+#
+#   BERT   the variant position alone is masked while the rest of the window
+#          stays visible, and the score is the log probability of the reference
+#          base minus that of the variant base at that one position.
+#   GPT-2  the difference of whole-window log likelihood. A single conditional
+#          probability drops everything downstream of the variant, and putting
+#          the variant into the context is exactly what changes those
+#          predictions, so that has to be kept in the score.
+#
+# FLANK is where the variant sits inside the window, and it must match the data:
+# the 1,024-base build puts it at index 512, the older 129-base one at 64. Get it
+# wrong and BERT masks a position that is not the variant, with no error.
+#
+# CONTEXT_LENGTH must cover the window. The evaluator truncates to it silently
+# (ids = ids[:context_length]), so a 1,024-base window under the 512 default
+# loses the variant itself and still returns numbers.
 #
 # CHROMS restricts scoring to the chromosomes every pretraining subset held out.
 # The evaluator has no chromosome filter of its own, so the table is subset here
@@ -24,7 +34,7 @@
 #
 # Required: RUNS_ROOT, CLINVAR_CSV, TOKENIZER, ARCH, RUN_GLOB.
 # Optional: ADOPTED_CSV (subset,adopted_ckpt_step), RUN_TAG, N_PER_CLASS,
-#           SCORE_WINDOW_HALF, OUT_DIR, CHROMS.
+#           SCORE_WINDOW_HALF, OUT_DIR, CHROMS, FLANK, CONTEXT_LENGTH.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -48,7 +58,19 @@ echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} @ $(date -Is) ==="
 echo "=== python:  ${PY} ==="
 echo "=== runs:    ${RUNS_ROOT}/${RUN_GLOB} ==="
 echo "=== outputs: ${OUT_DIR} ==="
-echo "=== window:  score-window-half ${SCORE_WINDOW_HALF:-0} (0 = the variant position alone) ==="
+# Defaults follow the architecture and the 1,024-base build; both stay overridable.
+FLANK="${FLANK:-512}"
+if [ "${ARCH}" = "gpt2" ]; then
+    CONTEXT_LENGTH="${CONTEXT_LENGTH:-1024}"        # block_size
+    SCORE_ARGS=""                                    # whole-window log likelihood
+    SCORE_DESC="whole-window log likelihood"
+else
+    CONTEXT_LENGTH="${CONTEXT_LENGTH:-1026}"        # [CLS] + 1024 + [SEP]
+    SCORE_ARGS="--score-window-half ${SCORE_WINDOW_HALF:-0}"
+    SCORE_DESC="masked at the variant position (score-window-half ${SCORE_WINDOW_HALF:-0})"
+fi
+echo "=== scoring: ${SCORE_DESC} ==="
+echo "=== flank ${FLANK}, context-length ${CONTEXT_LENGTH} ==="
 
 # Restrict the table to the held-out chromosomes, once, into a file every run
 # reads. Scoring all 221,873 variants would spend most of the time on sequence
@@ -113,8 +135,9 @@ for d in "${RUNS_ROOT}"/${RUN_GLOB}/; do
         --clinvar-data "${SCORED_CSV}" \
         --arch "${ARCH}" \
         --modality genome_sequence \
-        --score-window-half "${SCORE_WINDOW_HALF:-0}" \
-        --flank 64 \
+        ${SCORE_ARGS} \
+        --flank "${FLANK}" \
+        --context-length "${CONTEXT_LENGTH}" \
         ${N_PER_CLASS:+--n-per-class "${N_PER_CLASS}"} \
         --output-dir "${OUT_DIR}/${subset}" || { echo "  FAILED: ${subset}"; rc=1; }
 done
