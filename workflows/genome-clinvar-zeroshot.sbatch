@@ -104,15 +104,43 @@ for d in "${RUNS_ROOT}"/${RUN_GLOB}/; do
     run=$(basename "${d}")
     subset=$(echo "${run}" | sed "s/^${ARCH}-small-//;s/^bert-small-//;s/-${RUN_TAG:-__none__}\$//")
 
-    # Which checkpoint this subset adopted. A CSV of (subset, step) is the
-    # authority when one is given -- the campaign's own record -- and the newest
-    # checkpoint is only a fallback for a run that has none.
+    # Which checkpoint this subset adopted. The two architectures record it in
+    # different places and the newest checkpoint is not it for either:
+    #
+    #   GPT-2  ADOPTED_CSV, the campaign's own record of the best-val step.
+    #   BERT   best_model_checkpoint in the run's trainer_state, selected on
+    #          eval_loss_mask. It is routinely well short of the last step --
+    #          on eukaryote_matched_random_seed10, 131,000 against a final
+    #          138,230 -- so falling through to the newest would score a
+    #          checkpoint the campaign did not adopt, with nothing to say so.
+    #
+    # The newest checkpoint remains the last resort, for a run with neither.
     step=""
     if [ -n "${ADOPTED_CSV:-}" ] && [ -f "${ADOPTED_CSV}" ]; then
         step=$(awk -F, -v s="${subset}" 'NR>1 && $1==s {print $11}' "${ADOPTED_CSV}")
     fi
     if [ -z "${step}" ]; then
-        step=$(ls -d "${d}"/checkpoint-* 2>/dev/null | sed 's/.*checkpoint-//' | sort -n | tail -1)
+        step=$("${PY}" - "${d}" <<'PYEOF'
+import glob, json, os, sys
+run = sys.argv[1]
+ckpts = [int(p.rsplit("-", 1)[1]) for p in glob.glob(os.path.join(run, "checkpoint-*"))
+         if p.rsplit("-", 1)[1].isdigit()]
+if not ckpts:
+    sys.exit(0)
+latest = max(ckpts)
+try:
+    state = json.load(open(os.path.join(run, f"checkpoint-{latest}", "trainer_state.json")))
+    best = state.get("best_model_checkpoint")
+    if best:
+        step = int(os.path.basename(best).rsplit("-", 1)[1])
+        if os.path.isdir(os.path.join(run, f"checkpoint-{step}")):
+            print(step)
+            sys.exit(0)
+except (OSError, ValueError, KeyError):
+    pass
+print(latest)
+PYEOF
+)
     fi
     # The two architectures store a checkpoint differently and their adapters
     # take different things: the MLM adapter loads an HF directory, the nanoGPT
