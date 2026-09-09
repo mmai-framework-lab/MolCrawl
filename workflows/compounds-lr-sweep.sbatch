@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gpus=4
 #SBATCH --cpus-per-task=32
-#SBATCH --time=12:00:00
+#SBATCH --time=4-00:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
 # Vary the learning rate on one ladder size with everything else held, so the spread
@@ -39,18 +39,31 @@ TORCHRUN="${TORCHRUN:-${REPO}/miniconda/bin/torchrun}"
 
 CONFIG="molcrawl/tasks/pretrain/configs/compounds/gpt2_${SIZE}.py"
 [ -f "${CONFIG}" ] || { echo "no config at ${CONFIG}" >&2; exit 1; }
-OUT="${RUNS_ROOT}/lrsweep-gpt2-${SIZE}-lr${LR}-seed${SEED}"
+
+# Run length. ITERS unset leaves the config's schedule alone; setting it moves
+# max_iters, lr_decay_iters and warmup together. Moving max_iters on its own would
+# leave lr_decay_iters at the config value, and get_lr returns min_lr past that point
+# -- the extra steps would run at a tenth of the peak rate and say nothing about
+# whether a longer schedule keeps improving. Warmup stays at the config's 2%.
+LENGTH_ARGS=""
+TAG="lr${LR}-seed${SEED}"
+if [ -n "${ITERS:-}" ]; then
+    WARM=$(( ITERS / 50 ))
+    LENGTH_ARGS="--max_iters=${ITERS} --lr_decay_iters=${ITERS} --warmup_iters=${WARM}"
+    TAG="${TAG}-iters${ITERS}"
+fi
+OUT="${RUNS_ROOT}/lrsweep-gpt2-${SIZE}-${TAG}"
 mkdir -p "${OUT}"
 
 echo "=== compounds lr sweep ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "code   : $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
-echo "size   : ${SIZE}   lr: ${LR}   seed: ${SEED}"
+echo "size   : ${SIZE}   lr: ${LR}   seed: ${SEED}   iters: ${ITERS:-config default}"
 echo "outputs: ${OUT}"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 
 "${TORCHRUN}" --standalone --nproc_per_node=4 \
   molcrawl/models/gpt2/train.py "${CONFIG}" \
-  --init_from=scratch --seed="${SEED}" --learning_rate="${LR}" \
+  --init_from=scratch --seed="${SEED}" --learning_rate="${LR}" ${LENGTH_ARGS} \
   --out_dir="${OUT}" --compile=False --tensorboard=False && rc=0 || rc=$?
 # Taken explicitly: under `set -e` a trailing $? could only ever be 0.
 echo "=== rc=${rc} @ $(date -Is) ==="
