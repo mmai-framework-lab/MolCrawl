@@ -125,6 +125,9 @@ def main():
     ap.add_argument("--chroms", default="21,22,X,Y")
     ap.add_argument("--k", type=int, default=5)
     ap.add_argument("--out", default="")
+    ap.add_argument("--scores-out", default="",
+                    help="per-variant baseline scores, needed to pair them "
+                         "against a model's scores variant for variant")
     args = ap.parse_args()
 
     import numpy as np
@@ -144,13 +147,17 @@ def main():
     print(f"  1. unigram  log f(ref) - log f(alt)      AUROC {a_uni:.4f}")
 
     ctx, nxt, order = fit_markov(rows, args.k)
+    # k names the table; the model conditions on k-1 preceding bases. Recording
+    # both so "5-mer" is not read as "conditions on five".
     mk = [markov_loglik(r["reference_sequence"], ctx, nxt, order)
           - markov_loglik(r["variant_sequence"], ctx, nxt, order) for r in rows]
     a_mk = auroc(labels, mk)
     print(f"  2. {args.k}-mer Markov (order {order}) 窓全体の対数尤度差  "
           f"AUROC {a_mk:.4f}   文脈 {len(ctx):,} 種")
 
-    out = {"variants": len(rows), "window": win, "k": args.k,
+    out = {"variants": len(rows), "window": win,
+           "k": args.k, "markov_order": order,
+           "conditions_on_preceding_bases": order,
            "base_frequency": freq,
            "unigram_auroc": a_uni, "markov_auroc": a_mk,
            "per_chrom": {}}
@@ -166,10 +173,23 @@ def main():
         print(f"  chr{c:<3s} {n:>6,} 件   unigram {u:.4f}   markov {m:.4f}{note}")
         out["per_chrom"][c] = {"n": n, "unigram_auroc": u, "markov_auroc": m}
 
+    if args.scores_out:
+        os.makedirs(os.path.dirname(args.scores_out) or ".", exist_ok=True)
+        with open(args.scores_out, "w") as fh:
+            for r, u, m, y in zip(rows, uni, mk, labels):
+                fh.write(json.dumps({
+                    "vcv_id": r.get("vcv_id"),
+                    "chrom": (r.get("chrom") or "").replace("chr", "").strip(),
+                    "label_pathogenic": y,
+                    "unigram": u,
+                    "markov": m,
+                }) + "\n")
+        print(f"\n  wrote {args.scores_out}")
+
     if args.out:
         os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
         json.dump(out, open(args.out, "w"), indent=2)
-        print(f"\n  wrote {args.out}")
+        print(f"  wrote {args.out}")
 
 
 if __name__ == "__main__":
