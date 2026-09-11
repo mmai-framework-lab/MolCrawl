@@ -274,6 +274,16 @@ if __name__ == "__main__":
             f"-> eval_iters={eval_iters} ({eval_iters * batch_size} sequences per eval point)"
         )
 
+    # A new run must not be placed inside the tree it reads. core.paths derives
+    # out_dir from LEARNING_SOURCE_DIR, so every GPT-2 config's default lands there;
+    # BERT has refused that since 893ce81 while nanoGPT wrote into the corpus without
+    # a word. Resumes are exempt for now -- see assert_output_dir_for_new_run. Checked
+    # on every rank and before anything is written, so a refusal is one clean error
+    # rather than one rank failing while the others wait at a collective.
+    from molcrawl.core.output_guard import assert_output_dir_for_new_run
+
+    assert_output_dir_for_new_run(out_dir, init_from, what="out_dir")
+
     # create folder if it doesn't exist
     os.makedirs(out_dir, exist_ok=True)
 
