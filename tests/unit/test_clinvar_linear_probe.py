@@ -86,3 +86,60 @@ def test_a_non_cpg_site_is_not_flagged():
     rows = _rows([("21", 1, "A", "T", "A" * (2 * n))])
 
     assert lp.model_free_features(rows)[0, 12] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# chrY and the per-variant record
+#
+# chrY is never a test fold, so its held-out scores stay NaN. np.argsort sorts NaN
+# last -- it would rank those variants as the most pathogenic -- so the overall
+# value must be taken over the variants that were actually scored. And the
+# per-variant file is what every paired comparison is built from, so it has to
+# hold exactly the held-out variants.
+# ---------------------------------------------------------------------------
+
+
+def _mixed_rows():
+    rng = np.random.default_rng(5)
+    out = []
+    for c in ("21", "22", "X", "Y"):
+        for i in range(40):
+            y = int(rng.integers(0, 2))
+            ref, alt = ("C", "T") if y else ("A", "G")
+            out.append({"_chrom": c, "_y": y, "ref": ref, "alt": alt,
+                        "reference_sequence": "ACGT" * 8, "vcv_id": f"V{c}{i}"})
+    return out
+
+
+def test_chr_y_is_left_unscored():
+    rows = _mixed_rows()
+    _pf, _ov, held = lp.probe(lp.model_free_features(rows), rows, C=1.0, seed=0)
+    chrom = np.array([r["_chrom"] for r in rows])
+
+    assert np.isnan(held[chrom == "Y"]).all()
+    assert not np.isnan(held[chrom != "Y"]).any()
+
+
+def test_the_overall_value_ignores_the_unscored_chr_y():
+    rows = _mixed_rows()
+    _pf, overall, held = lp.probe(lp.model_free_features(rows), rows, C=1.0, seed=0)
+    y = np.array([r["_y"] for r in rows])
+    ok = ~np.isnan(held)
+
+    assert not np.isnan(overall)
+    assert overall == pytest.approx(lp.auroc(y[ok], held[ok]))
+
+
+def test_predictions_hold_exactly_the_held_out_variants(tmp_path):
+    import json
+    rows = _mixed_rows()
+    _pf, _ov, held = lp.probe(lp.model_free_features(rows), rows, C=1.0, seed=0)
+    path = tmp_path / "m" / "predictions.jsonl"
+
+    n = lp.write_predictions(str(path), rows, held)
+    lines = [json.loads(x) for x in path.read_text().splitlines()]
+
+    assert n == len(lines) == 120                    # 3 folds x 40, chrY omitted
+    assert {x["fold"] for x in lines} == {"chr21", "chr22", "chrX"}
+    assert all(set(x) == {"vcv_id", "chrom", "fold", "label_pathogenic", "score"}
+               for x in lines)
