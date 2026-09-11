@@ -152,6 +152,53 @@ EOF
   echo "schedule check: max_steps ${_prev_steps} matches, ${_prev_done}/${STEPS} steps done"
 fi
 
+# --- continuation guard ---
+# A continuation follows only a segment that ran out of time. It is queued with a
+# dependency (afterany / afternotok), and both fire on TIMEOUT and on a crash alike;
+# none of the guards above can tell those apart either, because after a crash the
+# checkpoint is still there and STEPS and the batch still match. So ask Slurm how the
+# previous segment ended, and continue only from TIMEOUT. COMPLETED is refused too:
+# a run that finished has nothing to continue.
+#
+# Every segment appends its job id to ${OUT}/segments.log, so the next one finds its
+# predecessor without being told. PREV_JOB overrides that, and is required for a
+# directory whose earlier segments predate the log.
+_segments_log="${OUT}/segments.log"
+_prev_segment_state() {  # $1 = job id. Waits briefly while accounting catches up.
+  local s="" i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    s=$(sacct -X -n -j "$1" -o State%30 2>/dev/null | head -1 | awk '{print $1}' || true)
+    case "${s}" in ""|RUNNING|PENDING|COMPLETING|REQUEUED|RESIZING|SUSPENDED) sleep 30;; *) break;; esac
+  done
+  echo "${s:-UNKNOWN}"
+}
+if [ "${SEGMENT}" != "1" ]; then
+  _prev_seg=$(( SEGMENT - 1 ))
+  _prev_job="${PREV_JOB:-}"
+  if [ -z "${_prev_job}" ] && [ -f "${_segments_log}" ]; then
+    _prev_job=$(awk -v s="${_prev_seg}" '$1==s {j=$2} END {print j}' "${_segments_log}" || true)
+  fi
+  if [ -z "${_prev_job}" ]; then
+    echo "REFUSING: cannot tell which job ran segment ${_prev_seg} -- ${_segments_log} has no" \
+         "entry for it. Pass PREV_JOB=<job id> so its end state can be checked." >&2
+    exit 1
+  fi
+  _prev_state=$(_prev_segment_state "${_prev_job}")
+  if [ "${_prev_state}" != "TIMEOUT" ]; then
+    if [ "${_prev_state}" = "COMPLETED" ]; then
+      _why="it finished the run, so there is nothing to continue"
+    else
+      _why="a segment that did not run out of time may have stopped for a reason a resume would repeat"
+    fi
+    echo "REFUSING: segment ${_prev_seg} (job ${_prev_job}) ended ${_prev_state}, not TIMEOUT:" \
+         "${_why}. Read its log before continuing." >&2
+    exit 1
+  fi
+  echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended TIMEOUT"
+fi
+echo "${SEGMENT} ${SLURM_JOB_ID:-local} $(date -Is)" >> "${_segments_log}"
+# --- end continuation guard ---
+
 echo "=== mol_nl bert-${SIZE} (shuffled) ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "code : $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
 echo "config: ${CFG} (unmodified)"
