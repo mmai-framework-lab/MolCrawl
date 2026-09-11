@@ -24,6 +24,7 @@ import csv
 import json
 import os
 import sys
+import time
 
 import numpy as np
 
@@ -149,7 +150,32 @@ def probe(features, rows, C, seed):
             "n_test": int(te.sum()), "n_train": int(tr.sum()),
             "pathogenic_test": int(y[te].sum()), "auroc": auroc(y[te], s),
         }
-    return per_fold, auroc(y, held), held
+    # chrY is never held out, so its entries stay NaN. np.argsort sorts NaN
+    # last, which would rank those 29 variants as the most pathogenic; the
+    # overall value is taken over the variants that were actually scored.
+    ok = ~np.isnan(held)
+    return per_fold, auroc(y[ok], held[ok]), held
+
+
+def write_predictions(path, rows, held):
+    """One line per held-out variant: what the paired comparisons are built from.
+
+    Without these, the fold AUROCs are all that survives and nothing can be
+    compared variant for variant afterwards -- neither probe against probe nor
+    probe against the model-free control. chrY is never held out and is omitted.
+    """
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    n = 0
+    with open(path, "w") as fh:
+        for r, s in zip(rows, held):
+            if np.isnan(s):
+                continue
+            fh.write(json.dumps({"vcv_id": r.get("vcv_id"), "chrom": r["_chrom"],
+                                 "fold": "chr" + r["_chrom"],
+                                 "label_pathogenic": int(r["_y"]),
+                                 "score": float(s)}) + "\n")
+            n += 1
+    return n
 
 
 def main():
@@ -168,6 +194,8 @@ def main():
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--model-free-only", action="store_true")
     ap.add_argument("--out", default="")
+    ap.add_argument("--pred-dir", default="",
+                    help="write <pred-dir>/<name>/predictions.jsonl for each probe")
     args = ap.parse_args()
 
     import glob
@@ -180,10 +208,19 @@ def main():
           f"benign {int((y == 0).sum()):,}   C={args.C}  seed={args.seed}")
     print(f"  folds: test chr21 / chr22 / chrX, chr{'/'.join(ALWAYS_TRAIN)} always in train\n")
 
-    results = {"C": args.C, "seed": args.seed, "variants": len(rows), "runs": {}}
+    results = {"C": args.C, "seed": args.seed, "variants": len(rows), "runs": {},
+               # Features are taken in fp32; the runs trained under bf16 autocast.
+               # Every subset goes through this same path, so the comparison
+               # across subsets is unaffected.
+               "precision": "fp32",
+               "feature_layout": "h_ref[centre] | h_var[centre]-h_ref[centre] | "
+                                 "mean(h_var)-mean(h_ref)"}
 
     mf = model_free_features(rows)
-    per_fold, overall, _ = probe(mf, rows, args.C, args.seed)
+    per_fold, overall, held = probe(mf, rows, args.C, args.seed)
+    if args.pred_dir:
+        write_predictions(os.path.join(args.pred_dir, "model_free", "predictions.jsonl"),
+                          rows, held)
     results["model_free"] = {"overall_auroc": overall, "per_fold": per_fold,
                              "n_features": int(mf.shape[1])}
     print(f"  {'model-free (置換型 12 + CpG + GC)':44s} 全体 {overall:.4f}   "
@@ -213,14 +250,23 @@ def main():
             step = int(os.path.basename(best).rsplit("-", 1)[1]) if best else max(ck)
             path = os.path.join(d, f"checkpoint-{step}")
 
+            t0 = time.monotonic()
             feats = representations(rows, path, args.tokenizer, args.arch,
                                     args.batch_size, device)
-            pf, ov, _ = probe(feats, rows, args.C, args.seed)
+            t_feat = time.monotonic() - t0
+            pf, ov, held = probe(feats, rows, args.C, args.seed)
+            t_all = time.monotonic() - t0
+            if args.pred_dir:
+                write_predictions(os.path.join(args.pred_dir, subset, "predictions.jsonl"),
+                                  rows, held)
             results["runs"][subset] = {"checkpoint": f"checkpoint-{step}",
                                        "overall_auroc": ov, "per_fold": pf,
-                                       "n_features": int(feats.shape[1])}
+                                       "n_features": int(feats.shape[1]),
+                                       "seconds_features": round(t_feat, 1),
+                                       "seconds_total": round(t_all, 1)}
             print(f"  {subset:44s} 全体 {ov:.4f}   "
-                  + "  ".join(f"{k} {v['auroc']:.4f}" for k, v in pf.items()))
+                  + "  ".join(f"{k} {v['auroc']:.4f}" for k, v in pf.items())
+                  + f"   ({os.path.basename(path)}, {t_all / 60:.1f} 分)", flush=True)
 
     if args.out:
         os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
