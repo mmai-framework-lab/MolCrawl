@@ -81,23 +81,3 @@ def map_cache_path(dest_dir, name="map-cache"):
     """
     cache = _resolve(dest_dir).parent / f"{_resolve(dest_dir).name}.{name}"
     return cache
-
-
-def assert_output_dir_for_new_run(path, init_from, extra_roots=(), what="output"):
-    """``assert_output_dir`` for a run that is starting, not one that is resuming.
-
-    The check exists to stop a new run being placed inside a tree it reads. A resume
-    is already wherever it is: refusing it cannot move it, only kill it. And the
-    nanoGPT runs in flight when this was added -- protein's retrain21, resubmitted with
-    ``init_from=resume`` after each four-day limit -- resolve their output through
-    ``core.paths.get_gpt2_output_path``, which returns a path inside
-    ``LEARNING_SOURCE_DIR``. Checking resumes now would stop them at their next restart.
-
-    Resumes come under the check once that default has moved out of the input tree
-    (verdict 2026-09-10 §5.2, steps 3 and 4). Every other ``init_from`` -- ``scratch``
-    and the ``gpt2*`` initialisations -- starts a new run in a new place, so every other
-    value is checked, not only ``scratch``.
-    """
-    if str(init_from) == "resume":
-        return
-    assert_output_dir(path, extra_roots=extra_roots, what=what)
