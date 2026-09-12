@@ -15,7 +15,7 @@
 # Production runs deliberately keep init_from="resume" from the config so that
 # resubmitting the same job continues from the last checkpoint (resume chain for
 # runs that exceed the 4-day walltime).
-#SBATCH --account=rkp00024
+# The account is passed at submission (sbatch --account=...), not written in.
 #SBATCH --partition=gpu
 #SBATCH --gpus=4
 #SBATCH --cpus-per-task=32
