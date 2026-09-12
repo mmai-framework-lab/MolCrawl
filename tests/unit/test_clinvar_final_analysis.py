@@ -92,3 +92,47 @@ def test_a_paired_difference_of_a_score_with_itself_is_zero():
     lo, hi = fa.paired_ci(y, s, s, idx)
 
     assert lo == 0.0 and hi == 0.0
+
+
+# ---------------------------------------------------------------------------
+# What the run is measured against
+#
+# The zero-shot comparison is against the 5-mer Markov model, written under
+# "markov"; the linear probe's comparison is against its model-free control,
+# written under "score". Same arithmetic, different file, so the field is an
+# argument rather than a literal -- and a wrong name has to fail loudly, because
+# silently reading the other baseline would change every verdict in the output.
+# ---------------------------------------------------------------------------
+
+
+def test_the_baseline_field_is_not_hardcoded():
+    import inspect
+    src = inspect.getsource(fa.main)
+
+    assert '"--baseline-key"' in src
+    assert 'base[v][key]' in src
+
+
+def test_a_missing_baseline_field_stops_the_run(tmp_path, capsys):
+    import json
+    import pytest as _pytest
+    p = tmp_path / "b.jsonl"
+    p.write_text(json.dumps({"vcv_id": "V1", "chrom": "21",
+                             "label_pathogenic": 1, "score": 0.5}) + "\n")
+    scores = tmp_path / "s"
+    (scores / "run").mkdir(parents=True)
+    (scores / "run" / "predictions.jsonl").write_text(
+        json.dumps({"vcv_id": "V1", "score": 0.5}) + "\n")
+
+    import sys
+    argv = ["x", "--scores-dir", str(scores), "--baseline-scores", str(p),
+            "--baseline-key", "markov"]
+    old = sys.argv
+    sys.argv = argv
+    try:
+        with _pytest.raises(SystemExit) as e:
+            fa.main()
+    finally:
+        sys.argv = old
+
+    assert "markov" in str(e.value)

@@ -116,7 +116,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scores-dir", required=True)
     ap.add_argument("--baseline-scores", required=True,
-                    help="per-variant JSONL from clinvar_zeroshot_baselines.py")
+                    help="per-variant JSONL for whatever this is measured against")
+    ap.add_argument("--baseline-key", default="markov",
+                    help="field holding the baseline's score. clinvar_zeroshot_"
+                         "baselines.py writes 'markov' and 'unigram'; the linear "
+                         "probe's model-free control writes 'score'")
+    ap.add_argument("--baseline-name", default="",
+                    help="what to call it in the output; defaults to --baseline-key")
     ap.add_argument("--window-loss", default="")
     ap.add_argument("--degenerate-baselines", default="")
     ap.add_argument("--per-run-csv", default="", help="b21-per-run.csv, for best_val")
@@ -130,7 +136,13 @@ def main():
     order = sorted(base)
     labels = np.array([base[v]["label_pathogenic"] for v in order])
     chrom = np.array([base[v]["chrom"] for v in order])
-    mk = np.array([base[v]["markov"] for v in order], dtype=float)
+    key = args.baseline_key
+    missing = [v for v in order[:1] if key not in base[v]]
+    if missing:
+        raise SystemExit(f"{args.baseline_scores}: no field {key!r}; it has "
+                         f"{sorted(base[order[0]])}")
+    name = args.baseline_name or key
+    mk = np.array([base[v][key] for v in order], dtype=float)
 
     runs = {}
     for f in sorted(glob.glob(os.path.join(args.scores_dir, "*", "predictions.jsonl"))):
@@ -141,25 +153,26 @@ def main():
         runs[s] = np.array([rec[v] for v in order], dtype=float)
 
     print(f"  runs {len(runs)}   variants {len(order):,}")
-    print(f"  markov baseline overall {auroc(labels, mk):.4f}")
+    print(f"  baseline ({name}) overall {auroc(labels, mk):.4f}")
     print("\n  === fold ごとの構成 ===")
     for c in FOLDS:
         sel = chrom == c
         print(f"  chr{c:<3s} {int(sel.sum()):>6,} 件   病原性 {labels[sel].mean():.1%}   "
-              f"markov {auroc(labels[sel], mk[sel]):.4f}")
+              f"{name} {auroc(labels[sel], mk[sel]):.4f}")
 
     rng = np.random.default_rng(args.seed)
     fold_idx = {c: rng.integers(0, int((chrom == c).sum()),
                                 size=(args.rounds, int((chrom == c).sum())))
                 for c in FOLDS}
 
-    out = {"markov_overall": auroc(labels, mk), "folds": {}, "runs": {}}
+    out = {"baseline_key": key, "baseline_name": name,
+           "baseline_overall": auroc(labels, mk), "folds": {}, "runs": {}}
     for c in FOLDS:
         sel = chrom == c
         out["folds"][c] = {"n": int(sel.sum()), "pathogenic_rate": float(labels[sel].mean()),
-                           "markov_auroc": auroc(labels[sel], mk[sel])}
+                           "baseline_auroc": auroc(labels[sel], mk[sel])}
 
-    print("\n  === 各 run: fold 別 AUROC と、5-mer マルコフとの対応のある差 ===")
+    print(f"\n  === 各 run: fold 別 AUROC と、{name} との対応のある差 ===")
     print(f"  {'subset':36s} " + "  ".join(f"{'chr'+c:>21s}" for c in FOLDS))
     for s in sorted(runs, key=lambda k: -auroc(labels, runs[k])):
         v = runs[s]
@@ -169,7 +182,7 @@ def main():
             a = auroc(labels[sel], v[sel])
             lo, hi = paired_ci(labels[sel], v[sel], mk[sel], fold_idx[c])
             beat = lo > 0
-            row[c] = {"auroc": a, "diff_vs_markov": a - auroc(labels[sel], mk[sel]),
+            row[c] = {"auroc": a, "diff_vs_baseline": a - auroc(labels[sel], mk[sel]),
                       "diff_ci": [lo, hi], "beats_baseline": bool(beat)}
             line.append(f"{a:.4f} {'+' if beat else ' '}[{lo:+.3f},{hi:+.3f}]")
         n_beat = sum(1 for c in FOLDS if row[c]["beats_baseline"])
