@@ -21,15 +21,24 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --time=4-00:00:00
 #SBATCH --job-name=rna-gpt2
-#SBATCH --output=/data1/rkp00024/matsubara/MolCrawl/workflows/slurm-logs/%x-%j.out
-#SBATCH --error=/data1/rkp00024/matsubara/MolCrawl/workflows/slurm-logs/%x-%j.out
+# Relative so nothing here names a machine. sbatch resolves it against the
+# submitting directory, so submit production runs from the main checkout --
+# from a worktree the log lands in a tree meant to be disposable. The run
+# echoes MAIN and REPO below, so the log says which it was either way.
+#SBATCH --output=workflows/slurm-logs/%x-%j.out
+#SBATCH --error=workflows/slurm-logs/%x-%j.out
 set -e
 
 # Code and data are separate: REPO is the checkout to run (a worktree when
 # testing a branch), MAIN holds the conda env, the learning source and the
 # log directory. Pinning both to the same path silently ran whatever branch
 # the shared checkout happened to be on.
-MAIN="/data1/rkp00024/matsubara/MolCrawl"
+# MAIN holds the conda env, the learning source and the log directory; REPO is
+# the checkout to run. A worktree has no miniconda, so MAIN comes from git's
+# common dir rather than from a path written in here.
+MAIN="${MAIN:-$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)}"
+[ -x "${MAIN}/miniconda/bin/python" ] || {
+    echo "no miniconda under MAIN=${MAIN} -- export MAIN to the main checkout" >&2; exit 1; }
 REPO="${REPO:-$MAIN}"
 SIZE="${SIZE:?SIZE is required (small|medium|large|xl)}"
 TAG="${TAG:-smoke}"
