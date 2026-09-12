@@ -14,7 +14,7 @@
 # per_device (8) x grad_accum (80) x world_size, so the 2560 spec only holds at
 # 4 GPUs; changing the GPU count silently changes the amount of data the model
 # sees. GPT-2 has no such coupling (nanoGPT divides grad_accum by world_size).
-#SBATCH --account=rkp00024
+# The account is passed at submission (sbatch --account=...), not written in.
 #SBATCH --partition=gpu
 #SBATCH --gpus=4
 #SBATCH --cpus-per-task=32
