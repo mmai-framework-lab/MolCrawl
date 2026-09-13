@@ -1,30 +1,32 @@
 """評価用 AnnData と JSONL を 1 度の census 読みから作る（未承認の作り置き。前提を読むこと）。
 
 ================================ 前提ブロック ================================
-この版は次を仮定している。上長の判断が違う場合、対応する箇所を直してから走らせる。
+上長の判断で確定した事項（2026-08-26 / 09-07 / 09-08）。走らせる前に突き合わせること。
 
  A. 対象は肺アトラス 093d3bfe... の primary 細胞 193,108（全体）
-      → 肺実質のみに絞る判断なら --tissue-filter parenchyma
+      → 肺実質のみに絞るなら --tissue-filter parenchyma
       → 別データセットなら --dataset
- B. test 側 3 名は A41, A43, A47
-      → 既定値を置いていない。--test-donors で必ず渡す（8/28 §6.1 の確認待ちのため）
- C. 分割はドナー単位（細胞単位で切らない）
-      → これは 8/26 判断で確定済み
- D. JSONL の切り出しは上位 1,024 遺伝子
-      → GPT-2 の位置埋め込みが 1,024 なのでモデル側の制約。変える余地はない
-      → HVG 対科の遺伝子数は別（--hvg-n）
- E. 語彙は Geneformer の 25,426（token_dictionary.pkl）
-      → 学習時と同じもの。変えない
+ B. test 側 3 名は A41, A43, A47（2026-09-07 §3 で確定）
+      → 既定値は置かない。--test-donors で必ず渡す
+ C. 分割はドナー単位（細胞単位で切らない）。2026-08-26 判断
+ D. 切り出しは上位 1,024 遺伝子。GPT-2 の位置埋め込みが 1,024 で、
+    2,048 に伸ばすことは事前学習のやり直しに相当する
+ E. 語彙は Geneformer の 25,426（token_dictionary.pkl）。学習時と同じもの
+ F. 順位は学習時と同じ式で付ける（2026-09-08 指示）
+      X / n_counts * 10000 / 遺伝子ごとの中央値   の降順
+      - 遺伝子集合は中央値辞書のキー。中央値の無い遺伝子は学習時にトークン化
+        されていないので、ここでも並べない
+      - n_counts は raw_sum（全遺伝子の合計）。絞り込み後の合計でも順序は同じだが、
+        同じ式にはならない
+      - 中央値は学習時と同一ファイルを使い、評価データからは計算し直さない。
+        パスと sha256 を出力に記録する
 
 未確定なので既定値を置いていないもの:
- - --test-donors（B）
- - --hvg-n（同条件 1,024 か実用条件 2,000 か、上長の判断待ち。両方作るなら 2 回走らせる）
+ - --hvg-n（同条件 1,024 か実用条件 2,000。2026-09-08 §2 では両方作る）
 
 出力は 2 つ。どちらも cell_id = soma_joinid で対応が取れる。
-  eval.h5ad   カウント行列 / obs 4 列 / 語彙内遺伝子の印 / 正規化層 / X_pca
-  eval.jsonl  1 行 1 細胞（cell_id, tokens, cell_type, tissue）
-
-実行はまだしていない。承認後、A〜E を突き合わせてから投入すること。
+  eval.h5ad   カウント行列 / obs / 語彙内遺伝子の印 / 正規化層 / X_pca
+  eval.jsonl  1 行 1 細胞（cell_id, tokens, cell_type, tissue, split）
 =============================================================================
 
 なぜ 1 度の読みで両方作るか: JSONL と AnnData を別々に取ると、census の版や
@@ -32,6 +34,7 @@
 対応は構成上ずれない。
 """
 import argparse
+import hashlib
 import json
 import pickle
 import sys
@@ -60,7 +63,12 @@ def main(argv=None):
                     help="HVG 対科の遺伝子数。同条件 1024 / 実用条件 2000")
     ap.add_argument("--hvg-within-vocab", action="store_true",
                     help="HVG を語彙 25,426 の範囲内から選ぶ（同条件）")
+    ap.add_argument("--n-comps", type=int, default=50,
+                    help="主成分の数。細胞数や HVG 数がこれより小さければ自動で下げる")
     ap.add_argument("--out-dir", required=True)
+    ap.add_argument("--gene-median-file", required=True,
+                    help="学習時に使った遺伝子ごとの中央値（pickle）。"
+                         "評価データからは計算し直さない")
     ap.add_argument("--vocab",
                     default="molcrawl/data/rna/dataset/geneformer/token_dictionary.pkl")
     ap.add_argument("--census-version", default="latest")
@@ -130,21 +138,59 @@ def main(argv=None):
     ad.var["hvg"] = ad.var_names.isin(chosen)
     LOG(f"HVG selected={int(ad.var['hvg'].sum()):,}")
 
-    sc.pp.pca(ad, n_comps=50, mask_var="hvg")
+    # 主成分の数は固定にできない。細胞数と HVG の数のどちらより大きくても
+    # 落ちる。小さな評価データや、語彙内に絞って HVG が減った場合に当たる。
+    n_hvg = int(ad.var["hvg"].sum())
+    n_comps = min(a.n_comps, ad.n_obs - 1, n_hvg - 1)
+    if n_comps < 2:
+        raise SystemExit(
+            f"主成分が取れない: 細胞 {ad.n_obs:,} / HVG {n_hvg:,}。"
+            "--hvg-n を上げるか、対象を広げること")
+    if n_comps < a.n_comps:
+        LOG(f"PCA n_comps を {a.n_comps} から {n_comps} に下げた"
+            f"（細胞 {ad.n_obs:,} / HVG {n_hvg:,}）")
+    sc.pp.pca(ad, n_comps=n_comps, mask_var="hvg")
     LOG(f"PCA X_pca {ad.obsm['X_pca'].shape}")
 
     h5 = out / "eval.h5ad"
     ad.write_h5ad(h5, compression="gzip")
     LOG(f"WROTE {h5} ({h5.stat().st_size/1e9:.2f} GB)")
 
-    # --- JSONL。順位は生カウントで付ける（正規化前）---
+    # --- JSONL。順位は学習時と同じ式で付ける（前提ブロック F）---
+    #
+    # 生カウントを並べると、上位 1,024 の顔ぶれが学習時と 87.2% しか一致しない。
+    # 細胞内の総数で割るだけでは順序は変わらない（細胞ごとに定数倍）。効くのは
+    # 遺伝子ごとの中央値で割る操作で、rank value encoding は順序そのものが入力。
     LOG("--- JSONL ---")
-    # 学習時と同じ辞書で ENSG -> トークン id。語彙に無い遺伝子は -1 にして落とす。
     vd = pickle.load(open(a.vocab, "rb"))
     gene_tok = np.array([int(vd.get(str(f), -1)) for f in ad.var["feature_id"]], dtype=np.int64)
 
+    with open(a.gene_median_file, "rb") as fh:
+        medians = pickle.load(fh)
+    h = hashlib.sha256()
+    with open(a.gene_median_file, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    median_sha = h.hexdigest()
+    median_vec = np.array([medians.get(str(f), np.nan) for f in ad.var["feature_id"]], dtype=float)
+    rankable = np.isfinite(median_vec) & (gene_tok >= 0)
+    LOG(f"MEDIANS {len(medians):,} genes from {a.gene_median_file}")
+    LOG(f"MEDIANS sha256={median_sha}")
+    LOG(f"RANKABLE {int(rankable.sum()):,} / {ad.n_vars:,} 遺伝子"
+        "（中央値辞書と語彙の両方にある）")
+    if not rankable.any():
+        raise SystemExit("中央値と語彙の両方にある遺伝子が無い。並べられない")
+
+    # n_counts は全遺伝子にわたる生カウントの合計（学習側は census の raw_sum）
     X = ad.layers["counts"]
     X = X.tocsr() if sp.issparse(X) else sp.csr_matrix(X)
+    if "raw_sum" in ad.obs.columns:
+        n_counts = ad.obs["raw_sum"].to_numpy(dtype=float)
+        LOG("N_COUNTS obs.raw_sum")
+    else:
+        n_counts = np.asarray(X.sum(axis=1)).ravel().astype(float)
+        LOG("N_COUNTS 全遺伝子の行和（obs に raw_sum が無いため）")
+    n_counts[n_counts <= 0] = 1.0
     ids = ad.obs["soma_joinid"].astype(str).to_numpy()
     cts = ad.obs["cell_type"].astype(str).to_numpy()
     tis = ad.obs["tissue"].astype(str).to_numpy()
@@ -159,17 +205,21 @@ def main(argv=None):
                 skipped += 1
                 continue
             cols, vals = X.indices[s:e], X.data[s:e]
-            order = np.argsort(-vals)
-            toks = [int(t) for t in gene_tok[cols[order]] if t >= 0][:a.top_n_genes]
-            if not toks:
+            keep = rankable[cols]
+            cols_k, vals_k = cols[keep], vals[keep]
+            if cols_k.size == 0:
                 skipped += 1
                 continue
+            scaled = vals_k / n_counts[i] * 10_000.0 / median_vec[cols_k]
+            order = np.argsort(-scaled)[:a.top_n_genes]
+            toks = [int(t) for t in gene_tok[cols_k[order]]]
             fh.write(json.dumps({"cell_id": ids[i], "tokens": toks,
                                  "cell_type": cts[i], "tissue": tis[i],
                                  "split": str(spl[i])}, ensure_ascii=False) + "\n")
             written += 1
     LOG(f"WROTE {jl} rows={written:,} skipped={skipped:,}")
     LOG("RESULT cell_id は soma_joinid。h5ad の obs と 1 対 1 で対応する")
+    LOG(f"RESULT rank_basis=geneformer median-scaled  median_sha256={median_sha}")
     return 0
 
 
