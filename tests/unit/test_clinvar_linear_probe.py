@@ -193,3 +193,32 @@ def test_bert_adopts_the_checkpoint_trainer_state_names(tmp_path):
 def test_a_run_with_no_checkpoint_reports_nothing_rather_than_guessing(tmp_path):
     assert lp.adopted_checkpoint(str(tmp_path), "gpt2") == (None, None)
     assert lp.adopted_checkpoint(str(tmp_path), "bert") == (None, None)
+
+
+# ---------------------------------------------------------------------------
+# Whether the fit actually converged
+#
+# At max_iter=2,000 the trained runs and the model-free control all converged
+# while every untrained fit hit the limit. An unconverged floor sits lower than
+# the real one, which makes pretraining look better than it is -- so the limit is
+# generous and convergence is recorded, not left to a warning on stderr.
+# ---------------------------------------------------------------------------
+
+
+def test_each_fold_records_whether_it_converged():
+    rows = _mixed_rows()
+    per_fold, _ov, _held = lp.probe(lp.model_free_features(rows), rows, C=1.0, seed=0)
+
+    for fold in per_fold.values():
+        assert "n_iter" in fold
+        assert fold["converged"] is True
+        assert fold["n_iter"] >= 1
+
+
+def test_hitting_the_limit_is_reported_as_not_converged():
+    rows = _mixed_rows()
+
+    per_fold, _ov, _held = lp.probe(lp.model_free_features(rows), rows,
+                                    C=1.0, seed=0, max_iter=1)
+
+    assert all(f["converged"] is False for f in per_fold.values())
