@@ -195,7 +195,18 @@ def _chart_line(spec, path):
     _finish(fig, path)
 
 
-CHARTS = {"dumbbell": _chart_dumbbell, "hbar": _chart_hbar, "line": _chart_line}
+def _chart_image(spec, path):
+    """Place a figure rendered elsewhere, unchanged.
+
+    Loss curves are drawn by scripts/plot_eval_loss_series.py, which owns the
+    conventions for them (floors, the train/valid split, the five-item caption).
+    Re-drawing them here would let the two drift apart.
+    """
+    import shutil
+    shutil.copyfile(spec["path"], path)
+
+
+CHARTS = {"image": _chart_image, "dumbbell": _chart_dumbbell, "hbar": _chart_hbar, "line": _chart_line}
 
 
 # --------------------------------------------------------------------------- slides
