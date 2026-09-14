@@ -21,6 +21,7 @@ table does not already have.
 """
 import argparse
 import csv
+import glob
 import json
 import os
 import sys
@@ -69,40 +70,135 @@ def model_free_features(rows):
     return out
 
 
-def representations(rows, model_path, tokenizer_path, arch, batch_size, device):
-    """Frozen features: what the substitution did to the representation.
+def variant_token_index(arch, window_len):
+    """Where the variant sits in the token sequence.
 
-    The hidden state at the variant position, before and after the substitution,
-    and the difference -- plus the same difference mean-pooled over the window,
-    since a substitution can move the representation of positions around it.
+    BERT prepends [CLS], so every base moves one along; nanoGPT has no special
+    tokens. Reading the wrong index scores a position that is not the variant,
+    and nothing in the output would say so.
+    """
+    return window_len // 2 + (0 if arch == "gpt2" else 1)
+
+
+def _strip_compile_prefix(state):
+    """torch.compile stores parameters under _orig_mod.; train.py strips it too."""
+    pre = "_orig_mod."
+    return {(k[len(pre):] if k.startswith(pre) else k): v for k, v in state.items()}
+
+
+def adopted_checkpoint(run_dir, arch):
+    """The checkpoint the run adopted -- not its newest one.
+
+    nanoGPT rewrites ckpt.pt at the run root whenever validation improves, so
+    that file is the best-val model. HF keeps every checkpoint and names the
+    adopted one in the newest trainer_state; on the 21 genome BERT runs the
+    adopted and newest checkpoints differ in every one.
+    """
+    if arch == "gpt2":
+        path = os.path.join(run_dir, "ckpt.pt")
+        return (path, "ckpt.pt") if os.path.exists(path) else (None, None)
+    steps = [int(p.rsplit("-", 1)[1]) for p in glob.glob(os.path.join(run_dir, "checkpoint-*"))
+             if p.rsplit("-", 1)[1].isdigit()]
+    if not steps:
+        return None, None
+    state = json.load(open(os.path.join(run_dir, f"checkpoint-{max(steps)}",
+                                        "trainer_state.json")))
+    best = state.get("best_model_checkpoint")
+    step = int(os.path.basename(best).rsplit("-", 1)[1]) if best else max(steps)
+    path = os.path.join(run_dir, f"checkpoint-{step}")
+    return (path, f"checkpoint-{step}") if os.path.isdir(path) else (None, None)
+
+
+def build_encoder(model_path, tokenizer_path, arch, device, untrained=False, init_seed=0):
+    """Load a trunk and return (forward, encode, hidden_size).
+
+    ``untrained`` builds the same architecture from the checkpoint's own config
+    and leaves the weights at their initialisation. That is the floor for the
+    architecture: it carries the same number of features as the trained run, so
+    whatever a linear classifier reads out of it is not an effect of pretraining.
+
+    The final hidden state means what each architecture calls by that name --
+    nanoGPT's after ln_f, BERT's the last encoder layer's output, which carries
+    no such final norm. Forcing one convention onto the other would change what
+    is being measured.
     """
     import torch
-    from transformers import AutoModel, AutoTokenizer
+    from transformers import AutoTokenizer
 
     tok = AutoTokenizer.from_pretrained(tokenizer_path)
-    model = AutoModel.from_pretrained(model_path).to(device).eval()
-    centre = len(rows[0]["reference_sequence"]) // 2
+
+    if arch == "gpt2":
+        from molcrawl.models.gpt2.model import GPT, GPTConfig
+
+        ck = torch.load(model_path, map_location="cpu", weights_only=False)
+        margs = dict(ck["model_args"])
+        if untrained:
+            torch.manual_seed(init_seed)
+        model = GPT(GPTConfig(**margs))
+        if not untrained:
+            model.load_state_dict(_strip_compile_prefix(ck["model"]))
+        model.to(device).eval()
+        tr = model.transformer
+
+        def forward(ids):
+            pos = torch.arange(ids.size(1), dtype=torch.long, device=ids.device)
+            x = tr.drop(tr.wte(ids) + tr.wpe(pos))
+            for block in tr.h:
+                x = block(x)
+            return tr.ln_f(x)
+
+        def encode(seqs):
+            return torch.tensor([tok.convert_tokens_to_ids(list(s)) for s in seqs],
+                                dtype=torch.long, device=device)
+
+        return forward, encode, int(margs["n_embd"])
+
+    from transformers import AutoConfig, AutoModel
+
+    if untrained:
+        torch.manual_seed(init_seed)
+        model = AutoModel.from_config(AutoConfig.from_pretrained(model_path))
+    else:
+        model = AutoModel.from_pretrained(model_path)
+    model.to(device).eval()
+
+    def forward(ids):
+        return model(input_ids=ids).last_hidden_state
 
     def encode(seqs):
-        ids = [tok.convert_tokens_to_ids(list(s)) for s in seqs]
-        if arch != "gpt2":
-            cls, sep = tok.cls_token_id, tok.sep_token_id
-            ids = [[cls] + i + [sep] for i in ids]
-        return torch.tensor(ids, dtype=torch.long, device=device)
+        cls, sep = tok.cls_token_id, tok.sep_token_id
+        return torch.tensor(
+            [[cls] + tok.convert_tokens_to_ids(list(s)) + [sep] for s in seqs],
+            dtype=torch.long, device=device)
 
-    offset = 0 if arch == "gpt2" else 1        # [CLS] shifts every position by one
+    return forward, encode, int(model.config.hidden_size)
+
+
+def representations(rows, forward, encode, at, batch_size):
+    """Frozen features: what the substitution did to the representation.
+
+    The hidden state at the variant position, the change there, and the same
+    change averaged over the window, since a substitution moves the positions
+    around it too.
+
+    In a causal model the positions before the variant are identical between the
+    two sequences, so half the window contributes exactly zero to the third
+    group and its mean is half the mean over the right-hand side. That is a
+    constant factor on the whole group, and the per-fold standardisation removes
+    it.
+    """
+    import torch
+
     feats = []
     with torch.no_grad():
         for lo in range(0, len(rows), batch_size):
             chunk = rows[lo:lo + batch_size]
-            h_ref = model(input_ids=encode([r["reference_sequence"] for r in chunk])
-                          ).last_hidden_state
-            h_var = model(input_ids=encode([r["variant_sequence"] for r in chunk])
-                          ).last_hidden_state
-            at = centre + offset
+            h_ref = forward(encode([r["reference_sequence"] for r in chunk]))
+            h_var = forward(encode([r["variant_sequence"] for r in chunk]))
             d_centre = h_var[:, at] - h_ref[:, at]
             d_mean = h_var.mean(dim=1) - h_ref.mean(dim=1)
-            feats.append(torch.cat([h_ref[:, at], d_centre, d_mean], dim=1).float().cpu().numpy())
+            feats.append(torch.cat([h_ref[:, at], d_centre, d_mean],
+                                   dim=1).float().cpu().numpy())
     return np.concatenate(feats, axis=0)
 
 
@@ -194,11 +290,14 @@ def main():
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--model-free-only", action="store_true")
     ap.add_argument("--out", default="")
+    ap.add_argument("--untrained-seeds", default="",
+                    help="comma-separated seeds; builds the architecture from a "
+                         "run's config and leaves the weights at init, instead "
+                         "of probing the trained runs")
     ap.add_argument("--pred-dir", default="",
                     help="write <pred-dir>/<name>/predictions.jsonl for each probe")
     args = ap.parse_args()
 
-    import glob
     import torch
 
     chroms = {c.strip() for c in args.chroms.split(",") if c.strip()}
@@ -233,40 +332,60 @@ def main():
         print("\n  (モデル側は未実行)")
     else:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        for d in sorted(glob.glob(os.path.join(args.runs_root, args.run_glob))):
-            run = os.path.basename(d.rstrip("/"))
-            subset = run.split("-small-", 1)[-1]
-            if args.run_tag:
-                subset = subset[: -len(args.run_tag) - 1] if subset.endswith(
-                    "-" + args.run_tag) else subset
-            ck = [int(p.rsplit("-", 1)[1]) for p in glob.glob(os.path.join(d, "checkpoint-*"))
-                  if p.rsplit("-", 1)[1].isdigit()]
-            if not ck:
-                print(f"  {subset}: checkpoint なし")
-                continue
-            state = json.load(open(os.path.join(d, f"checkpoint-{max(ck)}",
-                                                "trainer_state.json")))
-            best = state.get("best_model_checkpoint")
-            step = int(os.path.basename(best).rsplit("-", 1)[1]) if best else max(ck)
-            path = os.path.join(d, f"checkpoint-{step}")
+        runs = sorted(glob.glob(os.path.join(args.runs_root, args.run_glob)))
+        seeds = [int(x) for x in args.untrained_seeds.split(",") if x.strip()]
+        jobs = []                       # (name, checkpoint, label, untrained, seed)
+        if seeds:
+            # One architecture, several initialisations. The reference run gives
+            # the shape only -- its weights are never read -- so which run it is
+            # does not matter, but it is recorded.
+            ref = next((d.rstrip("/") for d in runs
+                        if adopted_checkpoint(d.rstrip("/"), args.arch)[0]), None)
+            if ref is None:
+                raise SystemExit(f"no run under {args.run_glob} carries a checkpoint "
+                                 f"to take the architecture from")
+            path, label = adopted_checkpoint(ref, args.arch)
+            for sd in seeds:
+                jobs.append((f"untrained_seed{sd}", path,
+                             f"{os.path.basename(ref)}/{label} の構成のみ", True, sd))
+        else:
+            for d in runs:
+                d = d.rstrip("/")
+                subset = os.path.basename(d).split("-small-", 1)[-1]
+                if args.run_tag and subset.endswith("-" + args.run_tag):
+                    subset = subset[: -len(args.run_tag) - 1]
+                path, label = adopted_checkpoint(d, args.arch)
+                if path is None:
+                    print(f"  {subset}: checkpoint なし")
+                    continue
+                jobs.append((subset, path, label, False, 0))
 
+        at = variant_token_index(args.arch, len(rows[0]["reference_sequence"]))
+        results["variant_token_index"] = at
+        print(f"  arch {args.arch}   変異のトークン位置 {at}\n")
+
+        for name, path, label, untrained, sd in jobs:
             t0 = time.monotonic()
-            feats = representations(rows, path, args.tokenizer, args.arch,
-                                    args.batch_size, device)
+            fwd, enc, hidden = build_encoder(path, args.tokenizer, args.arch, device,
+                                             untrained=untrained, init_seed=sd)
+            feats = representations(rows, fwd, enc, at, args.batch_size)
             t_feat = time.monotonic() - t0
             pf, ov, held = probe(feats, rows, args.C, args.seed)
             t_all = time.monotonic() - t0
             if args.pred_dir:
-                write_predictions(os.path.join(args.pred_dir, subset, "predictions.jsonl"),
+                write_predictions(os.path.join(args.pred_dir, name, "predictions.jsonl"),
                                   rows, held)
-            results["runs"][subset] = {"checkpoint": f"checkpoint-{step}",
-                                       "overall_auroc": ov, "per_fold": pf,
-                                       "n_features": int(feats.shape[1]),
-                                       "seconds_features": round(t_feat, 1),
-                                       "seconds_total": round(t_all, 1)}
-            print(f"  {subset:44s} 全体 {ov:.4f}   "
+            results["runs"][name] = {"checkpoint": label,
+                                     "untrained": untrained,
+                                     "init_seed": sd if untrained else None,
+                                     "hidden_size": hidden,
+                                     "overall_auroc": ov, "per_fold": pf,
+                                     "n_features": int(feats.shape[1]),
+                                     "seconds_features": round(t_feat, 1),
+                                     "seconds_total": round(t_all, 1)}
+            print(f"  {name:36s} 全体 {ov:.4f}   "
                   + "  ".join(f"{k} {v['auroc']:.4f}" for k, v in pf.items())
-                  + f"   ({os.path.basename(path)}, {t_all / 60:.1f} 分)", flush=True)
+                  + f"   ({label}, hidden {hidden}, {t_all / 60:.1f} 分)", flush=True)
 
     if args.out:
         os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)

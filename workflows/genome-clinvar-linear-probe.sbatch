@@ -19,8 +19,17 @@
 # comparisons asked for -- probe against probe, probe against the control -- are
 # all paired.
 #
+# UNTRAINED_SEEDS builds the architecture from a run's config and leaves the
+# weights at their initialisation, one probe per seed. That is the floor for the
+# architecture: the same feature count as a trained run, so whatever a linear
+# classifier reads out of it is not an effect of pretraining. Several seeds
+# because the draw at initialisation moves the value.
+#
+# RUN_TAG uses ${RUN_TAG-...} rather than ${RUN_TAG:-...}: the GPT-2 runs carry
+# no suffix and pass an empty string, which :- would replace with the default.
+#
 # Required: RUNS_ROOT, CLINVAR_CSV, TOKENIZER.
-# Optional: RUN_GLOB, ARCH, RUN_TAG, C, SEED, BATCH, OUT_DIR.
+# Optional: RUN_GLOB, ARCH, RUN_TAG, C, SEED, BATCH, OUT_DIR, UNTRAINED_SEEDS.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -34,22 +43,25 @@ PY="${PYROOT}/miniconda/bin/python"
 [ -x "${PY}" ] || { echo "no python under ${PYROOT}/miniconda -- set PYROOT" >&2; exit 1; }
 export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 
+ARCH="${ARCH:-bert}"
 RUN_GLOB="${RUN_GLOB:-bert-small-*-w1026}"
-OUT_DIR="${OUT_DIR:-${RUNS_ROOT}/_results/clinvar-probe-bert-w1026}"
+OUT_DIR="${OUT_DIR:-${RUNS_ROOT}/_results/clinvar-probe-${ARCH}}"
 mkdir -p "${OUT_DIR}"
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} @ $(date -Is) ==="
 echo "=== python:  ${PY} ==="
 echo "=== runs:    ${RUNS_ROOT}/${RUN_GLOB} ==="
 echo "=== outputs: ${OUT_DIR} ==="
-echo "=== C ${C:-1.0}  seed ${SEED:-1026}  arch ${ARCH:-bert} ==="
+echo "=== C ${C:-1.0}  seed ${SEED:-1026}  arch ${ARCH} ==="
+[ -n "${UNTRAINED_SEEDS:-}" ] && echo "=== untrained seeds: ${UNTRAINED_SEEDS} ==="
 
 "${PY}" scripts/clinvar_linear_probe.py \
     --clinvar-csv "${CLINVAR_CSV}" \
     --runs-root "${RUNS_ROOT}" \
     --run-glob "${RUN_GLOB}" \
-    --arch "${ARCH:-bert}" \
-    --run-tag "${RUN_TAG:-w1026}" \
+    --arch "${ARCH}" \
+    --run-tag "${RUN_TAG-w1026}" \
+    ${UNTRAINED_SEEDS:+--untrained-seeds "${UNTRAINED_SEEDS}"} \
     --tokenizer "${TOKENIZER}" \
     --C "${C:-1.0}" \
     --seed "${SEED:-1026}" \
