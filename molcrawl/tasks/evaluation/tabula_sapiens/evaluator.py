@@ -75,6 +75,16 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         # stratify by class.
         ds = load_jsonl(self.jsonl_path, max_cells=None)
         if self.max_cells is not None and self.max_cells < len(ds["tokens"]):
+            # Stratifying by class runs across both sides of a precomputed
+            # split, so the train/test proportions move and a class that is
+            # thin on the test side can lose it entirely. Fine for a timing
+            # run, not for a reported number.
+            if ds.get("split") and any(str(x) for x in ds["split"]):
+                logger.warning(
+                    "max_cells=%s subsamples across the split the JSONL carries; "
+                    "the reported proportions will not be the split's own.",
+                    self.max_cells,
+                )
             ds = stratified_subsample(
                 ds, n_examples=int(self.max_cells), seed=self.seed
             )
@@ -97,16 +107,19 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         split_labels = dataset.get("split")
         if split_labels and any(str(x) for x in split_labels):
             train_idx, test_idx = precomputed_split(split_labels)
+            self._split_source = "from the JSONL"
             logger.info(
                 "TabulaSapiens split: taken from the JSONL (train=%d test=%d)",
                 len(train_idx), len(test_idx),
             )
         elif self.holdout_tissues is not None:
             train_idx, test_idx = cross_tissue_split(dataset["tissue"], self.holdout_tissues)
+            self._split_source = f"holdout tissues {self.holdout_tissues}"
         else:
             train_idx, test_idx = random_split(
                 len(tokens), test_fraction=self.test_fraction, seed=self.seed
             )
+            self._split_source = f"random, test_fraction={self.test_fraction:.2f}"
         if len(test_idx) == 0:
             raise RuntimeError("TabulaSapiens split produced an empty test set")
 
@@ -116,10 +129,12 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         test_labels = labels[test_idx]
 
         logger.info(
-            "TabulaSapiens split: train=%d test=%d (test_fraction=%.2f)",
+            "TabulaSapiens split: train=%d test=%d (%s)",
             len(train_idx),
             len(test_idx),
-            self.test_fraction,
+            # Naming test_fraction here regardless was misleading: it is not what
+            # produced the split when the JSONL carried one.
+            self._split_source,
         )
         # Pass token-id lists straight to the adapter (HfMlm.embed accepts
         # both strings and pre-tokenised int lists).

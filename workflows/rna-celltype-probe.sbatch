@@ -16,6 +16,10 @@ set -e
 : "${MODEL_PATH:?export MODEL_PATH to the GPT-2 checkpoint directory}"
 : "${EVAL_JSONL:?export EVAL_JSONL to the evaluation JSONL}"
 : "${PROBE_OUT_DIR:?export PROBE_OUT_DIR to the directory results should be written to}"
+# Passed rather than derived: core.paths builds it from LEARNING_SOURCE_DIR, so
+# an unset root resolves to a relative path and the load fails 35s in, looking
+# like a network error rather than a missing root.
+: "${TOKENIZER_DIR:?export TOKENIZER_DIR to the tokenizer directory}"
 if [ -x "./miniconda/bin/python" ]; then PYROOT="$PWD"; else
     PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"; fi
 PY="${PYROOT}/miniconda/bin/python"
@@ -33,6 +37,7 @@ nvidia-smi --query-gpu=name --format=csv,noheader | head -1
   --model-path "${MODEL_PATH}" \
   --jsonl-path "${EVAL_JSONL}" \
   --output-dir "${PROBE_OUT_DIR}" \
+  --tokenizer-path "${TOKENIZER_DIR}" \
   --arch gpt2 --modality rna \
   ${MAX_CELLS:+--max-cells "${MAX_CELLS}"}
 echo "=== done @ $(date -Is) ==="
