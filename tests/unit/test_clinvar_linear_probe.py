@@ -143,3 +143,53 @@ def test_predictions_hold_exactly_the_held_out_variants(tmp_path):
     assert {x["fold"] for x in lines} == {"chr21", "chr22", "chrX"}
     assert all(set(x) == {"vcv_id", "chrom", "fold", "label_pathogenic", "score"}
                for x in lines)
+
+
+# ---------------------------------------------------------------------------
+# Reading the right position, and the right checkpoint, for each architecture
+#
+# BERT prepends [CLS] and nanoGPT prepends nothing, so the variant sits at a
+# different token index in each. And the checkpoint a run adopted is not its
+# newest one: nanoGPT rewrites ckpt.pt on every validation improvement, while HF
+# keeps them all and names the adopted one in trainer_state.
+# ---------------------------------------------------------------------------
+
+
+def test_the_variant_index_follows_the_architecture():
+    assert lp.variant_token_index("bert", 1024) == 513      # [CLS] + 512 bases
+    assert lp.variant_token_index("gpt2", 1024) == 512      # no special token
+
+
+def test_the_compile_prefix_is_stripped():
+    """torch.compile saves under _orig_mod.; load_state_dict would reject it."""
+    got = lp._strip_compile_prefix({"_orig_mod.wte.weight": 1, "ln_f.bias": 2})
+
+    assert got == {"wte.weight": 1, "ln_f.bias": 2}
+
+
+def test_gpt2_adopts_the_best_val_file_at_the_run_root(tmp_path):
+    (tmp_path / "ckpt.pt").write_text("x")
+    (tmp_path / "checkpoint-99000").mkdir()
+
+    path, label = lp.adopted_checkpoint(str(tmp_path), "gpt2")
+
+    assert label == "ckpt.pt"
+    assert path.endswith("ckpt.pt")
+
+
+def test_bert_adopts_the_checkpoint_trainer_state_names(tmp_path):
+    import json
+    for step in (1000, 2000, 3000):
+        (tmp_path / f"checkpoint-{step}").mkdir()
+    (tmp_path / "checkpoint-3000" / "trainer_state.json").write_text(json.dumps(
+        {"best_model_checkpoint": str(tmp_path / "checkpoint-1000")}))
+
+    path, label = lp.adopted_checkpoint(str(tmp_path), "bert")
+
+    assert label == "checkpoint-1000"          # not the newest, which is 3000
+    assert path.endswith("checkpoint-1000")
+
+
+def test_a_run_with_no_checkpoint_reports_nothing_rather_than_guessing(tmp_path):
+    assert lp.adopted_checkpoint(str(tmp_path), "gpt2") == (None, None)
+    assert lp.adopted_checkpoint(str(tmp_path), "bert") == (None, None)
