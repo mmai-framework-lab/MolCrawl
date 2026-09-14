@@ -23,9 +23,9 @@ from molcrawl.tasks.evaluation import _adapters  # noqa: F401 - registers adapte
 from molcrawl.tasks.evaluation._base import BaseEvaluator, ModelHandle
 
 from .data_preparation import load_jsonl, stratified_subsample
-from .metrics import bootstrap_celltype_ci, cell_type_metrics
+from .metrics import bootstrap_celltype_ci, cell_type_metrics, drop_rare_labels
 from .predictions_log import write_predictions
-from .splits import cross_tissue_split, random_split
+from .splits import cross_tissue_split, precomputed_split, random_split
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,14 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         self.holdout_tissues: Optional[List[str]] = self.config.get("holdout_tissues")
         self.max_cells: Optional[int] = self.config.get("max_cells")
         self.bootstrap_samples: int = int(self.config.get("bootstrap_samples", 100))
+        # A cell may be longer than the adapter's default window. RNA packs the
+        # top 1,024 ranked genes into one line, and embedding at 512 would drop
+        # half of every cell without saying so.
+        self.context_length: int = int(self.config.get("context_length", 1024))
+        self.embed_batch_size: int = int(self.config.get("embed_batch_size", 16))
+        # Classes below this in the *test* side are set aside before the macro
+        # average, and named in the result.
+        self.min_cells_per_label: int = int(self.config.get("min_cells_per_label", 20))
         self.predictions_preview_count: int = int(
             self.config.get("predictions_preview_count", 16)
         )
@@ -82,7 +90,18 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         tokens = dataset["tokens"]
         labels = np.asarray(dataset["cell_type"])
 
-        if self.holdout_tissues is not None:
+        # A split the JSONL already carries wins over one drawn here. Splitting
+        # cells at random puts the same donor on both sides, and a linear probe
+        # then has donor-specific signal available instead of cell type -- which
+        # is the thing being measured.
+        split_labels = dataset.get("split")
+        if split_labels and any(str(x) for x in split_labels):
+            train_idx, test_idx = precomputed_split(split_labels)
+            logger.info(
+                "TabulaSapiens split: taken from the JSONL (train=%d test=%d)",
+                len(train_idx), len(test_idx),
+            )
+        elif self.holdout_tissues is not None:
             train_idx, test_idx = cross_tissue_split(dataset["tissue"], self.holdout_tissues)
         else:
             train_idx, test_idx = random_split(
@@ -104,8 +123,10 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         )
         # Pass token-id lists straight to the adapter (HfMlm.embed accepts
         # both strings and pre-tokenised int lists).
-        train_emb = np.asarray(adapter.embed(train_tokens).embeddings)
-        test_emb = np.asarray(adapter.embed(test_tokens).embeddings)
+        _kw = {"context_length": self.context_length, "batch_size": self.embed_batch_size}
+        logger.info("Embedding with context_length=%d", self.context_length)
+        train_emb = np.asarray(adapter.embed(train_tokens, **_kw).embeddings)
+        test_emb = np.asarray(adapter.embed(test_tokens, **_kw).embeddings)
 
         from sklearn.linear_model import LogisticRegression
 
@@ -122,9 +143,24 @@ class TabulaSapiensEvaluator(BaseEvaluator):
         }
 
     def compute_metrics(self, dataset, predictions) -> Dict[str, float]:
-        yt = np.asarray(predictions["test_labels"])
-        yp = np.asarray(predictions["predictions"])
+        yt_all = np.asarray(predictions["test_labels"])
+        yp_all = np.asarray(predictions["predictions"])
+        # f1_macro weights every class equally, so a class with a handful of
+        # cells in the test side swings the average on one or two predictions.
+        # Set those aside, and name them -- a smaller problem reported as the
+        # whole one is worse than the noise it removes.
+        yt, yp, dropped = drop_rare_labels(yt_all, yp_all, self.min_cells_per_label)
+        self._dropped_labels = dropped
+        if dropped:
+            logger.info(
+                "Excluded %d classes under %d cells in the test side: %s",
+                len(dropped), self.min_cells_per_label,
+                ", ".join(f"{k} ({v})" for k, v in sorted(dropped.items())),
+            )
         metrics = cell_type_metrics(yt, yp)
+        metrics["n_classes_scored"] = int(len(np.unique(yt)))
+        metrics["n_classes_excluded"] = len(dropped)
+        metrics["n_cells_scored"] = int(len(yt))
         ci = bootstrap_celltype_ci(
             yt, yp, n_boot=self.bootstrap_samples, seed=self.seed
         )
@@ -135,6 +171,10 @@ class TabulaSapiensEvaluator(BaseEvaluator):
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+        # Named in the report, not only in the log: a macro average
+        # over a filtered set of classes has to say which set.
+        report["excluded_labels"] = dict(getattr(self, "_dropped_labels", {}) or {})
+        report["min_cells_per_label"] = self.min_cells_per_label
         artefacts = write_predictions(
             output_dir=self.output_dir,
             test_tokens=predictions["test_tokens"],

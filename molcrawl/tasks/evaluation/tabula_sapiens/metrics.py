@@ -64,3 +64,27 @@ def bootstrap_celltype_ci(
         return float(np.quantile(a, alpha)), float(np.quantile(a, 1.0 - alpha))
 
     return {"accuracy": _ci(acc_arr), "f1_macro": _ci(f1_arr)}
+
+
+def drop_rare_labels(y_true, y_pred, min_count: int = 20):
+    """Set aside the classes too small to score, and say which they were.
+
+    ``f1_macro`` weights every class equally, so a class with five cells in the
+    test side carries the same weight as one with nine thousand and moves the
+    macro average on the strength of one or two predictions. Dropping them is
+    only honest if the report says what was dropped, so this returns the counts
+    alongside the filtered arrays rather than quietly shrinking the problem.
+
+    Counts are taken on the test side, which is where the metric is computed:
+    a class can clear the threshold overall and still fall under it here.
+    """
+    import numpy as np
+
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred)
+    labels, counts = np.unique(yt, return_counts=True)
+    rare = {str(lbl): int(c) for lbl, c in zip(labels, counts) if c < min_count}
+    if not rare:
+        return yt, yp, {}
+    keep = ~np.isin(yt, list(rare))
+    return yt[keep], yp[keep], rare

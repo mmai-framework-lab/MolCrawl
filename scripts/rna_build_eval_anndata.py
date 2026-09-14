@@ -55,7 +55,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="093d3bfe-6f0f-4ac0-a7a1-829f94d0a49f")
     ap.add_argument("--test-donors", required=True,
-                    help="カンマ区切り。既定を置いていないのは §6.1 の確認待ちのため")
+                    help="カンマ区切り。test 側に回すドナー。既定は置かない")
     ap.add_argument("--tissue-filter", choices=["all", "parenchyma"], default="all")
     ap.add_argument("--top-n-genes", type=int, default=1024,
                     help="JSONL の切り出し。GPT-2 の位置埋め込みが 1,024")
