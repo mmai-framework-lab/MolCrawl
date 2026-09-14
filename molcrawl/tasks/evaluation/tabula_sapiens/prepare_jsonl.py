@@ -75,6 +75,53 @@ def _load_tokenizer_vocab(tokenizer_dir: Path) -> dict:
     return tok.get_vocab()
 
 
+def _resolve_counts(adata):
+    """The raw counts, wherever this H5AD keeps them.
+
+    ``X`` is not reliably the counts. Tabula Sapiens ships log-normalised values
+    in ``X`` (0.17 to 7.75, non-integral) and the counts in ``raw.X``; census
+    returns counts in ``X``. Ranking the log-normalised values divides a log by
+    a sum of logs and then by a count median -- an expression that means nothing
+    and produces an order the model was never trained on, silently.
+
+    Prefers an explicit counts layer, then ``raw.X``, then ``X``, and refuses to
+    return values that are not whole numbers.
+    """
+    import numpy as np
+    import scipy.sparse as sp
+
+    def _sample(mat):
+        if sp.issparse(mat):
+            d = mat.data[:200_000]
+        else:
+            d = np.asarray(mat[: min(64, mat.shape[0])]).ravel()
+        return np.asarray(d, dtype=float)
+
+    def _integral(mat):
+        d = _sample(mat)
+        return d.size == 0 or bool(np.allclose(d, np.rint(d)))
+
+    for name in ("counts", "raw_counts"):
+        if name in getattr(adata, "layers", {}) and _integral(adata.layers[name]):
+            return adata.layers[name], f"layers[{name!r}]"
+    if getattr(adata, "raw", None) is not None and _integral(adata.raw.X):
+        if adata.raw.shape[1] == adata.shape[1]:
+            return adata.raw.X, "raw.X"
+        logger.warning(
+            "raw.X holds counts but has %d genes against X's %d; using it means "
+            "the var order below must come from raw.var",
+            adata.raw.shape[1], adata.shape[1],
+        )
+    if _integral(adata.X):
+        return adata.X, "X"
+    raise RuntimeError(
+        "No whole-number counts found: X is not integral and neither a counts "
+        "layer nor raw.X supplies one. Ranking normalised values reproduces "
+        "nothing the model was trained on. Point this at an H5AD that carries "
+        "its counts."
+    )
+
+
 def _gene_median_path(explicit: Optional[Path] = None) -> Path:
     if explicit is not None:
         return Path(explicit)
@@ -223,9 +270,10 @@ def materialise_tabula_jsonl(
     # same expression, so take raw_sum when the obs carries it.
     import scipy.sparse as sp
 
-    X = adata.X
+    X, counts_source = _resolve_counts(adata)
     if sp.issparse(X):
         X = X.tocsr()
+    logger.info("Counts from %s", counts_source)
 
     medians = _load_gene_medians(gene_median_file)
     # The training gene set is exactly the median dictionary's keys
@@ -248,7 +296,7 @@ def materialise_tabula_jsonl(
         n_counts_source = "obs.raw_sum"
     else:
         n_counts = np.asarray(X.sum(axis=1)).ravel().astype(float)
-        n_counts_source = "row sum over all genes (obs.raw_sum absent)"
+        n_counts_source = f"row sum over all genes of {counts_source} (obs.raw_sum absent)"
         logger.warning(
             "obs has no raw_sum; using the row sum over all genes. This matches "
             "raw_sum when X holds the full raw counts, and does not otherwise."
@@ -308,6 +356,7 @@ def materialise_tabula_jsonl(
         "gene_median_file": str(_gene_median_path(gene_median_file)),
         "gene_median_sha256": _sha256(_gene_median_path(gene_median_file)),
         "n_rankable_genes": int(rankable.sum()),
+        "counts_source": counts_source,
     }
     logger.info("Wrote %s", summary)
     return summary
