@@ -224,8 +224,18 @@ def auroc(labels, scores):
     return (ranks[pos].sum() - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
 
 
-def probe(features, rows, C, seed):
-    """Fit on the other chromosomes, score the held-out one. Three times."""
+def probe(features, rows, C, seed, max_iter=20000):
+    """Fit on the other chromosomes, score the held-out one. Three times.
+
+    ``max_iter`` is a stopping limit, not a setting that shapes the answer: a fit
+    that reaches its tolerance first is unaffected by raising it. It has to be
+    generous because untrained representations are far harder to separate than
+    trained ones -- at 2,000 the trained runs and the model-free control all
+    converged while every untrained fit hit the limit, which would have left the
+    floor lower than it really is and made pretraining look better than it is.
+    Whether each fit converged is recorded rather than left to a warning on
+    stderr.
+    """
     from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
 
@@ -238,13 +248,15 @@ def probe(features, rows, C, seed):
         # The scaler is fitted on the training side only; fitting it on
         # everything would let the held-out chromosome inform the transform.
         sc = StandardScaler().fit(features[tr])
-        clf = LogisticRegression(C=C, max_iter=2000, random_state=seed)
+        clf = LogisticRegression(C=C, max_iter=max_iter, random_state=seed)
         clf.fit(sc.transform(features[tr]), y[tr])
         s = clf.predict_proba(sc.transform(features[te]))[:, 1]
         held[te] = s
+        n_iter = int(np.asarray(clf.n_iter_).max())
         per_fold["chr" + test[0]] = {
             "n_test": int(te.sum()), "n_train": int(tr.sum()),
             "pathogenic_test": int(y[te].sum()), "auroc": auroc(y[te], s),
+            "n_iter": n_iter, "converged": bool(n_iter < max_iter),
         }
     # chrY is never held out, so its entries stay NaN. np.argsort sorts NaN
     # last, which would rank those 29 variants as the most pathogenic; the
@@ -286,6 +298,9 @@ def main():
     ap.add_argument("--chroms", default="21,22,X,Y")
     ap.add_argument("--C", type=float, default=1.0,
                     help="inverse regularisation; one value for every run and fold")
+    ap.add_argument("--max-iter", type=int, default=20000,
+                    help="stopping limit for the fit, not a tuning knob; a fit "
+                         "that reaches tolerance first is unaffected")
     ap.add_argument("--seed", type=int, default=1026)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--model-free-only", action="store_true")
@@ -304,10 +319,12 @@ def main():
     rows = read_table(args.clinvar_csv, chroms)
     y = np.array([r["_y"] for r in rows])
     print(f"  variants {len(rows):,}   pathogenic {int(y.sum()):,}   "
-          f"benign {int((y == 0).sum()):,}   C={args.C}  seed={args.seed}")
+          f"benign {int((y == 0).sum()):,}   C={args.C}  seed={args.seed}  "
+          f"max_iter={args.max_iter}")
     print(f"  folds: test chr21 / chr22 / chrX, chr{'/'.join(ALWAYS_TRAIN)} always in train\n")
 
-    results = {"C": args.C, "seed": args.seed, "variants": len(rows), "runs": {},
+    results = {"C": args.C, "seed": args.seed, "max_iter": args.max_iter,
+               "variants": len(rows), "runs": {},
                # Features are taken in fp32; the runs trained under bf16 autocast.
                # Every subset goes through this same path, so the comparison
                # across subsets is unaffected.
@@ -316,7 +333,7 @@ def main():
                                  "mean(h_var)-mean(h_ref)"}
 
     mf = model_free_features(rows)
-    per_fold, overall, held = probe(mf, rows, args.C, args.seed)
+    per_fold, overall, held = probe(mf, rows, args.C, args.seed, args.max_iter)
     if args.pred_dir:
         write_predictions(os.path.join(args.pred_dir, "model_free", "predictions.jsonl"),
                           rows, held)
@@ -370,7 +387,7 @@ def main():
                                              untrained=untrained, init_seed=sd)
             feats = representations(rows, fwd, enc, at, args.batch_size)
             t_feat = time.monotonic() - t0
-            pf, ov, held = probe(feats, rows, args.C, args.seed)
+            pf, ov, held = probe(feats, rows, args.C, args.seed, args.max_iter)
             t_all = time.monotonic() - t0
             if args.pred_dir:
                 write_predictions(os.path.join(args.pred_dir, name, "predictions.jsonl"),
