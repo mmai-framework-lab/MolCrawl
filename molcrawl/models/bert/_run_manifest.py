@@ -90,6 +90,7 @@ TRACKED = (
     "judge_on",
     "degenerate_loss_threshold",
     "document_masking",
+    "save_on_improve",
 )
 
 # Read by the BERT configs. LEARNING_SOURCE_DIR, GENOME_SUBSET and

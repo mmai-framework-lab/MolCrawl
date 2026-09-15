@@ -283,6 +283,12 @@ if __name__ == "__main__":
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
     document_masking = False
+    # Ask for a checkpoint at every step the judged metric improves, on top of the
+    # save interval (see models/bert/_save_on_improve). Declared here so the
+    # configurator accepts it and so the manifest can record which runs had it:
+    # it decides whether the checkpoint behind a reported number still exists.
+    save_on_improve = False
+    save_on_improve_metric = None  # None => follow judge_on
     # The id the packer wrote between documents. None falls back to the
     # tokenizer's sep_token_id, which is only right when the packer used it.
     boundary_token_id = None
