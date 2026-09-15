@@ -56,6 +56,10 @@ MAX_DIRTY_FILES = 50
 # by the caller; these are the ones either side can hit.
 COMMON_ENV = (
     "LEARNING_SOURCE_DIR",
+    # Where generated model output goes when a run does not want it inside the
+    # corpus (see core.paths.get_model_output_root). Unset is the old behaviour,
+    # so the manifest has to say which of the two a run got.
+    "MODEL_OUTPUT_ROOT",
     "GENOME_SUBSET",
     "HARD_MAX_STEPS_OVERRIDE",
 )
