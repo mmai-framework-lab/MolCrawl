@@ -105,7 +105,7 @@ def adopted_checkpoint(run_dir, arch):
     return (path, f"checkpoint-{step}") if os.path.isdir(path) else (None, None)
 
 
-def representations(rows, forward, encode, at, batch_size):
+def representations(rows, forward, encode, at, batch_size, base_span):
     """Frozen features: what the substitution did to the representation.
 
     The hidden state at the variant position, the change there, and the same
@@ -117,7 +117,13 @@ def representations(rows, forward, encode, at, batch_size):
     group and its mean is half the mean over the right-hand side. That is a
     constant factor on the whole group, and the per-fold standardisation removes
     it.
+
+    ``base_span`` is (start, length) of the bases inside the token sequence. The
+    average is taken over those positions only, so [CLS] and [SEP] stay out of
+    it: including them would average 1,026 positions for BERT against 1,024 for
+    nanoGPT, and the third group would not mean the same thing in the two.
     """
+    lo_b, n_b = base_span
     import torch
 
     feats = []
@@ -127,7 +133,8 @@ def representations(rows, forward, encode, at, batch_size):
             h_ref = forward(encode([r["reference_sequence"] for r in chunk]))
             h_var = forward(encode([r["variant_sequence"] for r in chunk]))
             d_centre = h_var[:, at] - h_ref[:, at]
-            d_mean = h_var.mean(dim=1) - h_ref.mean(dim=1)
+            span = slice(lo_b, lo_b + n_b)
+            d_mean = h_var[:, span].mean(dim=1) - h_ref[:, span].mean(dim=1)
             feats.append(torch.cat([h_ref[:, at], d_centre, d_mean],
                                    dim=1).float().cpu().numpy())
     return np.concatenate(feats, axis=0)
@@ -316,15 +323,21 @@ def main():
                     continue
                 jobs.append((subset, path, label, False, 0))
 
-        at = variant_token_index(args.arch, len(rows[0]["reference_sequence"]))
+        window = len(rows[0]["reference_sequence"])
+        at = variant_token_index(args.arch, window)
+        base_span = (special_token_offset(args.arch), window)
         results["variant_token_index"] = at
-        print(f"  arch {args.arch}   変異のトークン位置 {at}\n")
+        results["mean_pool_span"] = {"start": base_span[0], "length": base_span[1],
+                                     "excludes_special_tokens": True}
+        print(f"  arch {args.arch}   変異のトークン位置 {at}   "
+              f"平均の範囲 {base_span[0]}..{base_span[0] + base_span[1] - 1}"
+              f"（塩基 {base_span[1]} 個、特別なトークンを含まない）\n")
 
         for name, path, label, untrained, sd in jobs:
             t0 = time.monotonic()
             fwd, enc, hidden = build_encoder(path, args.tokenizer, args.arch, device,
                                              untrained=untrained, init_seed=sd)
-            feats = representations(rows, fwd, enc, at, args.batch_size)
+            feats = representations(rows, fwd, enc, at, args.batch_size, base_span)
             t_feat = time.monotonic() - t0
             pf, ov, held = probe(feats, rows, args.C, args.seed, args.max_iter)
             t_all = time.monotonic() - t0
