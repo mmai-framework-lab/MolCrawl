@@ -210,7 +210,16 @@ degenerate_baseline = 1.3703
 # world_size 4. Running on 8 GPUs would give a global batch of 5,120 and break
 # the max_steps derivation above.
 batch_size = 160
-per_device_eval_batch_size = 8
+# Evaluation reads a fixed 10,000 rows (models/bert/main.py EVAL_SUBSET_ROWS), so an
+# eval point costs the same work however it is batched -- but at a micro-batch far
+# below the training one it takes far longer in wall time. genome measured the
+# consequence: 8.08 s per eval against a 0.40 s training step, which is 16.3 % of the
+# run at eval_interval=100 (commit 4972a37). Matching the training micro-batch is safe
+# by construction: evaluation runs two no_grad forwards per batch (HF's own and the
+# breakdown's in models/bert/_mlm_diagnostics.py), and two of those peak below one
+# forward+backward at the same width, which training already does. Logits are the
+# term that scales -- 160 x 512 x 10 vocab = 3 MB here.
+per_device_eval_batch_size = 160
 
 gradient_accumulation_steps = 4
 
