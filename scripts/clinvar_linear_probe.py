@@ -29,6 +29,8 @@ import time
 
 import numpy as np
 
+from molcrawl.models._representations import build_encoder, special_token_offset
+
 FOLDS = [("21",), ("22",), ("X",)]     # chrY stays in train in all three
 ALWAYS_TRAIN = ("Y",)
 BASES = "ACGT"
@@ -73,17 +75,11 @@ def model_free_features(rows):
 def variant_token_index(arch, window_len):
     """Where the variant sits in the token sequence.
 
-    BERT prepends [CLS], so every base moves one along; nanoGPT has no special
-    tokens. Reading the wrong index scores a position that is not the variant,
-    and nothing in the output would say so.
+    The window puts the variant at its centre; the offset is whatever special
+    token the family prepends. Reading the wrong index scores a position that is
+    not the variant, and nothing in the output would say so.
     """
-    return window_len // 2 + (0 if arch == "gpt2" else 1)
-
-
-def _strip_compile_prefix(state):
-    """torch.compile stores parameters under _orig_mod.; train.py strips it too."""
-    pre = "_orig_mod."
-    return {(k[len(pre):] if k.startswith(pre) else k): v for k, v in state.items()}
+    return window_len // 2 + special_token_offset(arch)
 
 
 def adopted_checkpoint(run_dir, arch):
@@ -107,71 +103,6 @@ def adopted_checkpoint(run_dir, arch):
     step = int(os.path.basename(best).rsplit("-", 1)[1]) if best else max(steps)
     path = os.path.join(run_dir, f"checkpoint-{step}")
     return (path, f"checkpoint-{step}") if os.path.isdir(path) else (None, None)
-
-
-def build_encoder(model_path, tokenizer_path, arch, device, untrained=False, init_seed=0):
-    """Load a trunk and return (forward, encode, hidden_size).
-
-    ``untrained`` builds the same architecture from the checkpoint's own config
-    and leaves the weights at their initialisation. That is the floor for the
-    architecture: it carries the same number of features as the trained run, so
-    whatever a linear classifier reads out of it is not an effect of pretraining.
-
-    The final hidden state means what each architecture calls by that name --
-    nanoGPT's after ln_f, BERT's the last encoder layer's output, which carries
-    no such final norm. Forcing one convention onto the other would change what
-    is being measured.
-    """
-    import torch
-    from transformers import AutoTokenizer
-
-    tok = AutoTokenizer.from_pretrained(tokenizer_path)
-
-    if arch == "gpt2":
-        from molcrawl.models.gpt2.model import GPT, GPTConfig
-
-        ck = torch.load(model_path, map_location="cpu", weights_only=False)
-        margs = dict(ck["model_args"])
-        if untrained:
-            torch.manual_seed(init_seed)
-        model = GPT(GPTConfig(**margs))
-        if not untrained:
-            model.load_state_dict(_strip_compile_prefix(ck["model"]))
-        model.to(device).eval()
-        tr = model.transformer
-
-        def forward(ids):
-            pos = torch.arange(ids.size(1), dtype=torch.long, device=ids.device)
-            x = tr.drop(tr.wte(ids) + tr.wpe(pos))
-            for block in tr.h:
-                x = block(x)
-            return tr.ln_f(x)
-
-        def encode(seqs):
-            return torch.tensor([tok.convert_tokens_to_ids(list(s)) for s in seqs],
-                                dtype=torch.long, device=device)
-
-        return forward, encode, int(margs["n_embd"])
-
-    from transformers import AutoConfig, AutoModel
-
-    if untrained:
-        torch.manual_seed(init_seed)
-        model = AutoModel.from_config(AutoConfig.from_pretrained(model_path))
-    else:
-        model = AutoModel.from_pretrained(model_path)
-    model.to(device).eval()
-
-    def forward(ids):
-        return model(input_ids=ids).last_hidden_state
-
-    def encode(seqs):
-        cls, sep = tok.cls_token_id, tok.sep_token_id
-        return torch.tensor(
-            [[cls] + tok.convert_tokens_to_ids(list(s)) + [sep] for s in seqs],
-            dtype=torch.long, device=device)
-
-    return forward, encode, int(model.config.hidden_size)
 
 
 def representations(rows, forward, encode, at, batch_size):
@@ -323,7 +254,15 @@ def main():
           f"max_iter={args.max_iter}")
     print(f"  folds: test chr21 / chr22 / chrX, chr{'/'.join(ALWAYS_TRAIN)} always in train\n")
 
+    # The fit is described in the output rather than left to the reader to infer
+    # from defaults: the same settings have to hold for every run and every fold,
+    # and a later sklearn could change what a default means.
+    from sklearn.linear_model import LogisticRegression as _LR
+    _ref = _LR(C=args.C, max_iter=args.max_iter)
     results = {"C": args.C, "seed": args.seed, "max_iter": args.max_iter,
+               "penalty": _ref.penalty, "solver": _ref.solver,
+               "standardisation": "StandardScaler, per feature, fitted on each "
+                                  "fold's training side only",
                "variants": len(rows), "runs": {},
                # Features are taken in fp32; the runs trained under bf16 autocast.
                # Every subset goes through this same path, so the comparison

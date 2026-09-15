@@ -160,13 +160,6 @@ def test_the_variant_index_follows_the_architecture():
     assert lp.variant_token_index("gpt2", 1024) == 512      # no special token
 
 
-def test_the_compile_prefix_is_stripped():
-    """torch.compile saves under _orig_mod.; load_state_dict would reject it."""
-    got = lp._strip_compile_prefix({"_orig_mod.wte.weight": 1, "ln_f.bias": 2})
-
-    assert got == {"wte.weight": 1, "ln_f.bias": 2}
-
-
 def test_gpt2_adopts_the_best_val_file_at_the_run_root(tmp_path):
     (tmp_path / "ckpt.pt").write_text("x")
     (tmp_path / "checkpoint-99000").mkdir()
