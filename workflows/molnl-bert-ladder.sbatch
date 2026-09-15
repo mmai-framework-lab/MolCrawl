@@ -9,7 +9,8 @@
 # mol_nl BERT ladder on the shuffled corpus.
 #
 # Submit from the repository root:
-#   LEARNING_SOURCE_DIR=<dir> sbatch --export=ALL,SIZE=medium,STEPS=12000,SEGMENT=1 \
+#   LEARNING_SOURCE_DIR=<dir> sbatch \
+#     --export=ALL,CONFIG=molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_medium_lr3e4.py,SEGMENT=1 \
 #     workflows/molnl-bert-ladder.sbatch
 #
 # 4 GPUs are REQUIRED, not an optimisation. Under HF Trainer the effective global
@@ -19,14 +20,10 @@
 # quietly producing something incomparable.
 #
 # The config is UNMODIFIED. Only operational values are passed here:
-#   --max_steps      the step budget is a research value pending the cross-modality
-#                    decision, so it is passed rather than edited into the config.
-#                    The config's 373 (3 epochs) is known to be far short.
-#   --log_interval / --save_steps
-#                    main.py sets eval_steps = log_interval and forces
-#                    load_best_model_at_end, and HF requires save_steps % eval_steps
-#                    == 0. 250/250 over 12,000 steps gives 48 eval points and keeps
-#                    every one of them checkpointable.
+# Only --model_path is passed. max_steps, the evaluation and save intervals, warmup, the
+# learning rate and the seed all live in the config, so what a run was is answerable from
+# the file it names rather than from the submit command that started it -- and the nine
+# arms of the learning-rate grid cannot drift apart in anything but the learning rate.
 #
 # SPLIT RUNS. medium and large exceed the partition's 4-day limit and are run in
 # segments, so the time limit here is the partition maximum: a segment should be cut
@@ -46,23 +43,21 @@
 #   SEGMENT=2,3,...  a continuation; refuses if the directory holds none
 # Both directions fail before a GPU is touched.
 #
-# STEPS must not change between segments either. HF decays the learning rate over
+# max_steps must not change between segments either. HF decays the learning rate over
 # max_steps and has no separate decay length, so a segment given a smaller STEPS does
 # not stop early -- it runs a compressed schedule and trains a different model, at the
 # same output directory, resuming cleanly. Segmentation happens by hitting the time
 # limit, not by shortening the run. The newest checkpoint's trainer_state.json carries
-# the max_steps it was trained under, and a continuation is refused unless STEPS
-# matches it.
+# the max_steps it was trained under, and a continuation is refused unless the config's
+# max_steps matches it.
 set -eo pipefail
-: "${SIZE:?SIZE=small|medium|large}"
+: "${CONFIG:?CONFIG=path to the config to run, e.g. molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small_lr3e4.py}"
 : "${SEGMENT:?SEGMENT=1 for the first, 2,3,... for each continuation}"
 : "${LEARNING_SOURCE_DIR:?export LEARNING_SOURCE_DIR to the learning_source root holding molecule_nat_lang/}"
 [ -d "${LEARNING_SOURCE_DIR}/molecule_nat_lang" ] || {
   echo "LEARNING_SOURCE_DIR=${LEARNING_SOURCE_DIR} has no molecule_nat_lang/ under it" >&2; exit 1; }
-STEPS="${STEPS:-12000}"
-EVERY="${EVERY:-250}"
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
-CFG="molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_${SIZE}.py"
+CFG="${CONFIG}"
 
 # A git worktree holds only tracked files, so miniconda and assets/ are not inside
 # it. Resolve them through git's common dir when running from one.
@@ -92,7 +87,11 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 # names where mol_nl's own artifacts already live, and nothing moves.
 ARTIFACT_ROOT="${MOLNL_ARTIFACT_ROOT:-${PYROOT}/learning_source_20260803_molnl_train}"
 RUNS_ROOT="${RUNS_ROOT:-${ARTIFACT_ROOT}/molecule_nat_lang}"
-OUT="${RUNS_ROOT}/bert-output-shuffled/molecule_nat_lang-${SIZE}"
+# Named after the config, not the size: the grid runs three learning rates per size, and
+# a directory named for the size alone would have all three arms writing to one place --
+# where the first would be resumed by the second instead of it starting.
+CFG_NAME="$(basename "${CFG}" .py)"
+OUT="${RUNS_ROOT}/bert-output-shuffled/${CFG_NAME}"
 
 export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${PYROOT}/tmp/hf-cache-molnl}"
@@ -101,6 +100,23 @@ export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1 WANDB_MODE=offline HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 \
        TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false TORCHDYNAMO_DISABLE=1
 cd "${REPO}"; mkdir -p "${OUT}" "${HF_DATASETS_CACHE}" workflows/slurm-logs
+[ -f "${CFG}" ] || { echo "no config at ${CFG} (relative to ${REPO})" >&2; exit 1; }
+
+# The grid configs import their base rather than restating it, so the values cannot be
+# read out of the file with grep. Run it the way main.py will and read what it resolves to.
+_cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>/dev/null
+import runpy, sys
+g = runpy.run_path(sys.argv[1])
+keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
+        "gradient_accumulation_steps", "per_device_eval_batch_size", "expected_global_batch",
+        "log_interval", "save_steps", "max_length", "document_masking", "save_on_improve",
+        "dataset_dir")
+for k in keys:
+    print(f"{k}={g.get(k)}")
+PYEOF
+) || { echo "could not read ${CFG}" >&2; exit 1; }
+_cfg_steps=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^max_steps=//p')
+[ -n "${_cfg_steps}" ] || { echo "no max_steps in ${CFG}" >&2; exit 1; }
 
 # Ask the guard itself rather than re-deriving its rule here, so the two cannot drift
 # and so nanoGPT -- which does not call it anywhere -- is covered too. Seconds, and
@@ -121,7 +137,7 @@ fi
 if [ "${SEGMENT}" != "1" ] && [ "${_n_ckpt}" -eq 0 ]; then
   echo "REFUSING: SEGMENT=${SEGMENT} is a continuation, but ${OUT} holds no checkpoint." \
        "main.py would print \"Starting training from scratch\" and spend the whole" \
-       "time limit re-running step 0. Check that SIZE=${SIZE}, LEARNING_SOURCE_DIR" \
+       "time limit re-running step 0. Check that CONFIG=${CFG}, LEARNING_SOURCE_DIR" \
        "and RUNS_ROOT match the earlier segment -- OUT is derived from all three." >&2
   exit 1
 fi
@@ -131,32 +147,34 @@ if [ "${SEGMENT}" != "1" ]; then
   _state="${OUT}/checkpoint-${_last}/trainer_state.json"
   [ -f "${_state}" ] || {
     echo "REFUSING: ${_state} is missing, so the schedule this checkpoint was trained" \
-         "under cannot be read and STEPS=${STEPS} cannot be checked against it." >&2
+         "under cannot be read and the config's max_steps=${_cfg_steps} cannot be checked" \
+         "against it." >&2
     exit 1; }
   read -r _prev_steps _prev_done <<EOF
 $("${PYTHON}" -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s["max_steps"], int(s["global_step"]))' "${_state}")
 EOF
-  if [ "${_prev_steps}" != "${STEPS}" ]; then
+  if [ "${_prev_steps}" != "${_cfg_steps}" ]; then
     echo "REFUSING: the checkpoint at step ${_last} was trained with max_steps=${_prev_steps}," \
-         "and this segment passes STEPS=${STEPS}. HF decays the learning rate over" \
+         "and ${CFG} says max_steps=${_cfg_steps}. HF decays the learning rate over" \
          "max_steps with no separate decay length, so resuming under a different value" \
          "compresses or stretches the schedule and continues a different run into the" \
-         "same directory. Pass STEPS=${_prev_steps}, or start a new run elsewhere." >&2
+         "same directory. Run a config whose max_steps is ${_prev_steps}, or start a new" \
+         "run in another directory." >&2
     exit 1
   fi
-  if [ "${_prev_done}" -ge "${STEPS}" ]; then
-    echo "REFUSING: the run already reached step ${_prev_done} of ${STEPS}, so there is" \
+  if [ "${_prev_done}" -ge "${_cfg_steps}" ]; then
+    echo "REFUSING: the run already reached step ${_prev_done} of ${_cfg_steps}, so there is" \
          "nothing for this segment to do." >&2
     exit 1
   fi
-  echo "schedule check: max_steps ${_prev_steps} matches, ${_prev_done}/${STEPS} steps done"
+  echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
 fi
 
 # --- continuation guard ---
 # A continuation follows only a segment that ran out of time. It is queued with a
 # dependency (afterany / afternotok), and both fire on TIMEOUT and on a crash alike;
 # none of the guards above can tell those apart either, because after a crash the
-# checkpoint is still there and STEPS and the batch still match. So ask Slurm how the
+# checkpoint is still there and max_steps and the batch still match. So ask Slurm how the
 # previous segment ended, and continue only from TIMEOUT. COMPLETED is refused too:
 # a run that finished has nothing to continue.
 #
@@ -199,22 +217,21 @@ fi
 echo "${SEGMENT} ${SLURM_JOB_ID:-local} $(date -Is)" >> "${_segments_log}"
 # --- end continuation guard ---
 
-echo "=== mol_nl bert-${SIZE} (shuffled) ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
+echo "=== mol_nl ${CFG_NAME} (shuffled) ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "code : $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
 echo "config: ${CFG} (unmodified)"
 echo "outputs: ${OUT}   (RUNS_ROOT=${RUNS_ROOT})"
 echo "data : ${LEARNING_SOURCE_DIR}"
-echo "steps=${STEPS}  eval/save every ${EVERY}  global batch 8x80x4 = 2560 (4-GPU launch required)"
+echo "4-GPU launch required: under HF the effective batch is per_device x grad_accum x world_size"
 echo "segment=${SEGMENT}  ${_n_ckpt} checkpoint(s) present  $([ "${SEGMENT}" = 1 ] && echo 'starting from scratch' || echo "resuming from step ${_last}")"
-echo "--- config values under test ---"
-grep -hE "^max_steps|^learning_rate|^weight_decay|^batch_size|^gradient_accumulation_steps|^max_length|^document_masking|^dataset_dir|^seed|^expected_global_batch|^degenerate" "${CFG}" | sed 's/^/    /'
+echo "--- config values as resolved (not grepped: the grid configs import their base) ---"
+printf '%s\n' "${_cfg_dump}" | sed 's/^/    /'
 echo "baselines (mol_nl, job 22503): unigram 3.8638 / degenerate 3.4774 / left 2.2533 / both 1.2804"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 
 rc=0
 "${TORCHRUN}" --standalone --nproc_per_node=4 \
   molcrawl/models/bert/main.py "${CFG}" \
-  --model_path="${OUT}" \
-  --max_steps="${STEPS}" --log_interval="${EVERY}" --save_steps="${EVERY}" || rc=$?
+  --model_path="${OUT}" || rc=$?
 echo "=== rc=${rc} @ $(date -Is) ==="
 exit "${rc}"
