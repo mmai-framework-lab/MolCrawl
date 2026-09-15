@@ -312,6 +312,7 @@ def get_batch(split):
 if __name__ == "__main__":
     iter_num = 0
     best_val_loss = 1e9
+    best_val_step = None  # step best_val_loss was recorded at; protected from eviction
     early_stopping_counter = 0  # count eval intervals without improvement
 
     if not ("meta_vocab_size" in vars() and "meta_vocab_size" in globals()):
@@ -571,8 +572,14 @@ def save_checkpoint_hf(
     )
 
 
-def cleanup_old_checkpoints(base_dir, max_checkpoints):
-    """Remove old checkpoints, keeping only the most recent max_checkpoints"""
+def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None):
+    """Remove old checkpoints, keeping the newest max_checkpoints.
+
+    ``protect_step`` is the step the best validation loss was recorded at. Without
+    it, newest-first eviction deletes the best-val checkpoint whenever the minimum
+    falls more than ``max_checkpoints`` saves back, which is the ordinary case on a
+    curve that turns -- and it is the checkpoint downstream evaluation reads.
+    """
     if max_checkpoints is None:
         return
 
@@ -592,8 +599,10 @@ def cleanup_old_checkpoints(base_dir, max_checkpoints):
 
     checkpoints.sort(reverse=True)  # Sort by step, newest first
 
-    # Remove old checkpoints
+    # Remove old checkpoints, but PROTECT the best-val step (if provided)
     for _step, ckpt_dir in checkpoints[max_checkpoints:]:
+        if protect_step is not None and _step == protect_step:
+            continue
         print(f"Removing old checkpoint: {ckpt_dir}")
         shutil.rmtree(ckpt_dir, ignore_errors=True)
 
@@ -640,6 +649,7 @@ if __name__ == "__main__":
             if losses["val"] < best_val_loss:
                 # Validation loss improved
                 best_val_loss = losses["val"]
+                best_val_step = iter_num
                 early_stopping_counter = 0
                 is_best_model = True
             else:
@@ -652,19 +662,21 @@ if __name__ == "__main__":
                         destroy_process_group()
                     break
 
-            # Checkpoint saving logic (independent of best model tracking)
-            should_save_checkpoint = False
-
-            # Determine if we should save based on configured strategy
-            if always_save_checkpoint:
+            # Checkpoint saving logic (independent of best model tracking).
+            # These reasons are additive, not exclusive. Chained with elif, setting
+            # save_checkpoint_steps silently dropped every improvement that did not
+            # land on a multiple of the interval -- llama_small_extend and llama_xl
+            # both set it with always_save_checkpoint off, so the best-val
+            # checkpoint was never written for them. Fixed on the GPT-2 side in
+            # models/gpt2/train.py; this is the same defect.
+            should_save_checkpoint = (
                 # Save at every eval_interval
-                should_save_checkpoint = True
-            elif save_checkpoint_steps is not None:
-                # Save at specific step intervals
-                should_save_checkpoint = iter_num % save_checkpoint_steps == 0
-            elif is_best_model:
-                # Default: only save when validation improves
-                should_save_checkpoint = True
+                always_save_checkpoint
+                # Save at specific step intervals (periodic, for resume/chaining)
+                or (save_checkpoint_steps is not None and iter_num % save_checkpoint_steps == 0)
+                # Save when validation improves
+                or is_best_model
+            )
 
             if should_save_checkpoint and iter_num > 0:
                 checkpoint = {
@@ -708,7 +720,8 @@ if __name__ == "__main__":
                         wandb_run.log_artifact(artifact)
 
                     # Cleanup old checkpoints AFTER wandb upload
-                    cleanup_old_checkpoints(out_dir, max_checkpoints)
+                    cleanup_old_checkpoints(out_dir, max_checkpoints,
+                                            protect_step=best_val_step)
 
                 # Also save legacy ckpt.pt for backward compatibility (or best model)
                 if keep_legacy_ckpt or is_best_model:
