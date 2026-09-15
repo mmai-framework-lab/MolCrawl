@@ -39,7 +39,7 @@ learning_rate = 0.0006  # max learning rate
 min_lr = 6e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 
 # eval stuff
-eval_interval = 1000
+eval_interval = 100
 # eval_sequences fixes the *number of validation sequences* per eval point instead of
 # the number of batches, so every ladder size averages its val loss over the same
 # 3,200 sequences. batch_size shrinks with model size, so a shared eval_iters would
@@ -52,9 +52,14 @@ log_interval = 10
 init_from = "resume"  # 'scratch' or 'resume' - resume from checkpoint by default
 
 # checkpoint management
-always_save_checkpoint = True  # Save regularly regardless of validation loss
-save_checkpoint_steps = 5000  # Save checkpoint every 5000 steps (prioritizes eval_interval)
-max_checkpoints = 5  # Keep up to 5 checkpoints
+# Checkpoint policy, unified across modalities and architectures (directive
+# 2026-09-15 §3.1). always_save_checkpoint writes at every eval point, which makes
+# save_checkpoint_steps mean nothing; off, the run writes on the periodic grid for
+# resume and on every improvement for comparison (train.py, is_best_model).
+# max_checkpoints is the best-N kept by score, plus the newest for resume.
+always_save_checkpoint = False
+save_checkpoint_steps = 1000
+max_checkpoints = 10
 
 # weight decay
 weight_decay = 0.1
