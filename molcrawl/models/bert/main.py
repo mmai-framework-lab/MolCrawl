@@ -64,6 +64,36 @@ def subsample_eval_split(dataset, random_sample=False, seed=EVAL_SUBSET_SEED, ro
     return sampled
 
 
+def _scan_boundary_id(dataset, boundary_id, n_rows=2000):
+    """How often ``boundary_id`` actually occurs in the packed data.
+
+    Answers two questions with one pass: whether document masking has anything
+    to key on at all, and how many documents a block holds. Returns zeros rather
+    than raising when the rows cannot be read -- the caller decides what an
+    absent boundary means.
+    """
+    rows = positions = count = 0
+    try:
+        total = len(dataset)
+    except TypeError:
+        return {"rows": 0, "positions": 0, "count": 0, "rate": 0.0, "per_block": 0.0}
+    for i in range(min(int(n_rows), total)):
+        try:
+            ids = dataset[i]["input_ids"]
+        except (KeyError, IndexError, TypeError):
+            break
+        rows += 1
+        positions += len(ids)
+        count += sum(1 for t in ids if int(t) == boundary_id)
+    return {
+        "rows": rows,
+        "positions": positions,
+        "count": count,
+        "rate": (count / positions) if positions else 0.0,
+        "per_block": (count / rows) if rows else 0.0,
+    }
+
+
 def resolve_eval_split(available, requested=DEFAULT_EVAL_SPLIT):
     """Pick the split that feeds ``Trainer.eval_dataset``.
 
@@ -253,6 +283,10 @@ if __name__ == "__main__":
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
     document_masking = False
+    # The id the packer wrote between documents. None falls back to the
+    # tokenizer's sep_token_id, which is only right when the packer used it.
+    boundary_token_id = None
+    boundary_scan_rows = 2000
     reset_position_ids = True
     # Collapse detection (see models/bert/_mlm_diagnostics). Declared here so the
     # configurator accepts --degenerate_loss_threshold from the command line;
@@ -483,12 +517,29 @@ if __name__ == "__main__":
     if bool(globals().get("document_masking", False)):
         from molcrawl.models._collators import DocumentMaskingCollator
 
-        _sep_id = getattr(actual_tokenizer, "sep_token_id", None)
-        if _sep_id is None:
+        # Which id marks a boundary is a property of the packing, not of the
+        # tokenizer. RNA separates cells with token 0 while its tokenizer
+        # resolves sep_token_id to 25428, an id the data never contains: the
+        # collator then found zero boundaries and passed the batch through
+        # unchanged, with no error and no warning. A config that knows what its
+        # packer wrote says so; the tokenizer stays the fallback.
+        _boundary_id = globals().get("boundary_token_id")
+        if _boundary_id is None:
+            _boundary_id = getattr(actual_tokenizer, "sep_token_id", None)
+            _boundary_from = "tokenizer.sep_token_id"
+        else:
+            _boundary_id = int(_boundary_id)
+            _boundary_from = "config.boundary_token_id"
+        if _boundary_id is None:
             raise ValueError(
-                "document_masking=True needs the tokenizer to expose sep_token_id "
-                "(the separator packing wrote between documents)."
+                "document_masking=True needs a boundary id: set boundary_token_id "
+                "in the config, or give the tokenizer a sep_token_id."
             )
+        _sep_id = int(_boundary_id)
+        print(f"Document boundary id {_sep_id} (from {_boundary_from})")
+        # Counted once the data is loaded, below.
+        _boundary_stats = None
+
         data_collator = DocumentMaskingCollator(
             data_collator,
             separator_id=_sep_id,
@@ -918,6 +969,30 @@ if __name__ == "__main__":
                   f"{log_interval}. Saved checkpoints that miss an eval cannot be ranked "
                   f"and are only held by keep_latest.")
 
+    # An id that never appears turns document masking into a no-op. That is how
+    # it went unnoticed on protein, on molecule_nat_lang and on RNA: the collator
+    # found zero boundaries and passed the batch through, with no error and no
+    # warning, and the run looked normal. Checked here rather than left to the
+    # first batch, because a rare boundary can miss a single batch by chance.
+    if bool(globals().get("document_masking", False)):
+        _boundary_stats = _scan_boundary_id(
+            train_dataset, _sep_id,
+            n_rows=int(globals().get("boundary_scan_rows", 2000)),
+        )
+        print(
+            f"Boundary scan: id {_sep_id} occurs {_boundary_stats['count']:,} times in "
+            f"{_boundary_stats['positions']:,} positions ({_boundary_stats['rate']:.4%}), "
+            f"{_boundary_stats['per_block']:.2f} per block over "
+            f"{_boundary_stats['rows']:,} rows"
+        )
+        if _boundary_stats["count"] == 0:
+            raise SystemExit(
+                f"document_masking=True but id {_sep_id} does not occur in "
+                f"{_boundary_stats['rows']:,} sampled rows. Document masking would "
+                "be a no-op and the run would look normal. Check what the packer "
+                "wrote between documents, and set boundary_token_id to it."
+            )
+
     trainer = _WeightDecayNoEmbedTrainer(
         model=model,
         args=training_args,
@@ -1046,6 +1121,11 @@ if __name__ == "__main__":
                 # own collator never sets the latter, and the manifest write is
                 # wrapped, so a NameError here would degrade to "could not write"
                 # rather than to a missing field.
+                "document_boundary": (
+                    {"id": _sep_id, "from": _boundary_from, **_boundary_stats}
+                    if bool(globals().get("document_masking", False))
+                    else None
+                ),
                 "sep_token_id": getattr(_tok_for_mask, "sep_token_id", None),
                 "pad_token_id": getattr(_tok_for_mask, "pad_token_id", None),
                 "mask_token_id": getattr(_tok_for_mask, "mask_token_id", None),

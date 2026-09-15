@@ -26,6 +26,16 @@ batch_size = 16
 block_size = 1024
 gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 
+# batch_size x gradient_accumulation_steps, the number max_iters was derived
+# from. nanoGPT divides grad_accum by the world size before this is checked
+# (models/gpt2/train.py:311 then :339), so the effective batch does not move
+# with the GPU count -- unlike the BERT side. Declared so a config whose two
+# factors stop multiplying to it refuses to start: genome trained at 640
+# against an intended 2,560 and protein's LR pilots at 480, both found by
+# reading a log afterwards.
+expected_global_batch = 2560
+
+
 # 3 epochs of the train split at global batch 2560:
 # floor(3 * 34,407,040 train blocks / 2560) = 40,320 iters (~105.7B tokens processed).
 max_iters = 40320
