@@ -1,0 +1,206 @@
+# Measurement-condition registry (boss: protein-arch-inventory-verdict-2026-09-15 §5).
+#
+# Every eval number that appears in a report cites one `id` from this file, and ONLY the
+# id (no natural-language condition text in report tables). A number whose condition is
+# not registered here MUST NOT appear in a report. The scorer (§4) writes these same
+# fields next to each value; the field names mirror run_manifest.json where they exist.
+#
+# Ordering: production / comparison-basis conditions first, then per-modality variants,
+# then superseded (never to be quoted as a production value) and the separate 2026-06
+# published lineage.
+#
+# Field vocabulary:
+#   architecture: nanogpt-GPT | BertForMaskedLM | EsmForMaskedLM | RobertaForMaskedLM
+#   metric:       clm | mask_only | blended
+#   eval_scope:   full | subsample        (subsample = a fixed row cap or the in-training eval subset)
+#   checkpoint_kind: max_step | adopted_step | best_val
+#   checkpoint_file: "checkpoint-<step>/training_state.bin" (GPT-2 canonical)
+#                  | "ckpt.pt" (GPT-2 legacy = best-val)
+#                  | "checkpoint-<step>/" (BERT, HF Trainer)
+
+conditions:
+
+  # ==== production / comparison basis (first) ====
+  - id: GPT2-PROD
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_split: valid
+    eval_scope: full
+    eval_rows: per-modality           # compounds 49,813 / mol_nl 1,631 / rna 4,300,848
+    checkpoint_kind: max_step
+    checkpoint_file: "checkpoint-<step>/training_state.bin"
+    seq_len: 1024
+    effective_global_batch: 2560
+    note: production GPT-2 ladder scoring (full valid, canonical checkpoint)
+    used_by: [compounds C1, molecule_nat_lang M1, rna R1]
+
+  - id: BERT-PROD
+    architecture: BertForMaskedLM
+    metric: mask_only
+    mlm_probability: 0.20
+    eval_split: valid
+    eval_scope: full
+    document_masking: true
+    checkpoint_file: "checkpoint-<step>/"
+    seq_len: 1024
+    effective_global_batch: 2560
+    note: production BERT scoring (mask-only, full valid)
+    used_by: [molecule_nat_lang M3]
+
+  # ==== protein ====
+  - id: GPT2-PROT-SUB100K
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_split: valid
+    eval_scope: subsample
+    eval_rows: 100000
+    checkpoint_kind: max_step
+    checkpoint_file: "checkpoint-<step>/training_state.bin"
+    seq_len: 1024
+    effective_global_batch: 2560
+    note: protein ladder (valid first-100k, max step). 9-epoch stage-2 and 3-epoch full_split(step 11,000) both use this.
+    used_by: [protein 9ep ladder, protein 3ep full_split]
+
+  - id: BERT-PROT-EVALSUB
+    architecture: BertForMaskedLM
+    metric: mask_only
+    mlm_probability: 0.20
+    eval_split: valid
+    eval_scope: subsample        # the in-training eval subset (eval_mlm_checkpoint_protein.py)
+    document_masking: true
+    seq_len: 1024
+    effective_global_batch: 2560
+    note: protein case A/C re-score (eval subset, not full valid)
+    used_by: [protein case A 2.7298, case C 2.6303]
+
+  - id: BERT-PROT-DIAG-EB128
+    architecture: BertForMaskedLM
+    metric: mask_only
+    mlm_probability: 0.20
+    eval_split: valid
+    eval_scope: subsample
+    seq_len: 1024
+    effective_global_batch: 128
+    note: protein eff-batch diagnostic, small-batch arm (collapsed)
+    used_by: [protein batch-diag eb128]
+
+  - id: BERT-PROT-DIAG-EB640
+    architecture: BertForMaskedLM
+    metric: mask_only
+    mlm_probability: 0.20
+    eval_split: valid
+    eval_scope: subsample
+    seq_len: 1024
+    effective_global_batch: 640
+    note: protein eff-batch diagnostic, mid-batch arm (best of the four)
+    used_by: [protein batch-diag eb640]
+
+  # (protein batch-diag eff-batch 2560 arms use BERT-PROT-EVALSUB conditions with eff-batch 2560.)
+
+  # ==== genome ====
+  - id: GPT2-GENOME-BESTVAL
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_split: valid
+    eval_scope: subsample        # in-training best_val
+    checkpoint_kind: best_val
+    checkpoint_file: "ckpt.pt"
+    seq_len: 1026
+    note: genome GPT-2 21-subset best_val (FLAG: best_val subsample, not full-split)
+    flag: best_val_as_result
+    used_by: [genome GPT-2 21 subsets]
+
+  - id: BERT-SUB10K
+    architecture: BertForMaskedLM
+    metric: mask_only
+    mlm_probability: 0.20
+    eval_split: valid
+    eval_scope: subsample
+    eval_rows: 10000
+    document_masking: false        # genome; compounds C4 = true
+    checkpoint_file: "checkpoint-<step>/"
+    seq_len: 1026                  # genome; compounds C4 = 1024
+    effective_global_batch: 2560
+    note: BERT mask-only on a 10k subsample. genome G2 (docmask off, seq 1026) and compounds C4 (docmask on, seq 1024) share the 10k-subsample shape; split by the per-modality fields.
+    flag: best_val_as_result
+    used_by: [genome G2, compounds C4]
+
+  # ==== compounds ====
+  - id: GPT2-CMP-SHUFFLE-FULL
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_split: valid
+    eval_scope: full
+    checkpoint_file: "ckpt.pt"
+    seq_len: 1024
+    effective_global_batch: 2560
+    note: compounds shuffled-corpus ladder (full valid)
+    used_by: [compounds C2]
+
+  - id: GPT2-CMP-LRGRID-BESTVAL
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_split: valid
+    eval_scope: subsample
+    eval_rows: 3200
+    checkpoint_kind: best_val
+    checkpoint_file: "ckpt.pt"
+    seq_len: 1024
+    effective_global_batch: 2560
+    note: compounds LR-grid 30ep (FLAG: best_val 3,200-seq subsample quoted as ladder result)
+    flag: best_val_as_result
+    used_by: [compounds C3 / review-11 progress-3]
+
+  # ==== molecule_nat_lang ====
+  # M1 = GPT2-PROD (full valid). M3 = BERT-PROD (full valid, docmask on, eff 8x80x4=2560).
+
+  # ==== rna ====
+  # R1 = GPT2-PROD (full valid, 4.3M seq). rna BERT: never ran (no production number).
+
+  # ==== superseded — MUST NOT be quoted as a production value (see §3) ====
+  - id: SUP-BERT-BLENDED015
+    architecture: BertForMaskedLM
+    metric: blended
+    mlm_probability: 0.15
+    effective_global_batch: 128
+    note: protein "work-1" (job 40664) 2.561. blended metric + mlm 0.15 + eff-batch 128.
+    superseded: true
+
+  - id: SUP-ESM
+    architecture: EsmForMaskedLM
+    metric: blended
+    mlm_probability: 0.15
+    effective_global_batch: 128
+    note: protein esm2 (job 32688) 2.5233. non-production architecture.
+    superseded: true
+
+  - id: SUP-GPT2-CONVERTER
+    architecture: nanogpt-GPT
+    metric: clm
+    note: protein ladder values first produced via scripts/gpt2_hf_maxstep_to_nanogpt.py (repack path). Replaced by direct-read of training_state.bin; do not cite the converter-path values.
+    superseded: true
+
+  - id: SUP-MOLNL-STAGE1
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_scope: full
+    note: mol_nl GPT-2 stage-1 source-order (373 iter). Superseded by stage-2 shuffled (M1); always state the stage.
+    superseded: true
+
+  - id: SUP-GPT2-BESTVAL-PROT
+    architecture: nanogpt-GPT
+    metric: clm
+    eval_scope: subsample
+    eval_rows: 3200
+    checkpoint_kind: best_val
+    note: protein GPT-2 best_val column (small 2.5744 / medium 2.5108 / large 2.4847 / xl 2.4866). In-training subsample best_val; must not be quoted as a full-split value.
+    superseded: true
+
+  # ==== separate 2026-06 published lineage (never a mask-only / full-split production value) ====
+  - id: LINEAGE-A
+    architecture: mixed        # BertForMaskedLM-family + non-production (dnabert2, chemberta2/Roberta, rnaformer)
+    metric: blended
+    eval_split: valid
+    checkpoint_kind: final     # best not tracked
+    note: 2026-06 kojima-lab HF published set (hf-published-eval.json). blended eval_loss only, old vocab, no document masking, 60k-500k steps, no eval_loss_mask. Includes non-production architectures (chemberta2/dnabert2/rnaformer, arch unconfirmed). Never equate with lineage-B production numbers even when repo names collide.
+    superseded: true

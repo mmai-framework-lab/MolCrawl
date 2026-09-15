@@ -2,6 +2,12 @@
 """
 ChemBERTa-2 Training Script
 
+NOT USED IN PRODUCTION. BERT is unified on `BertForMaskedLM` across all five modalities
+(bert-architecture-unify-order-2026-09-11 §1); this RobertaForMaskedLM path is dormant,
+kept for diagnostics only. No current-lineage result number comes from it (the 2026-06
+published chemberta2-small 0.1098 is the separate published lineage) -- see
+review-10-numbers-conditions-inventory-2026-09-15.
+
 RoBERTa-based Transformer model training script specialized for SMILES compound data.
 Learn on large-scale compound data using the ChemBERTa-2 architecture.
 
