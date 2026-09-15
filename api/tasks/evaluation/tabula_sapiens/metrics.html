@@ -110,6 +110,46 @@ to the integer-only metric registry entries.</p>
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="molcrawl.tasks.evaluation.tabula_sapiens.metrics.drop_rare_labels"><code class="name flex">
+<span>def <span class="ident">drop_rare_labels</span></span>(<span>y_true, y_pred, min_count: int = 20)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def drop_rare_labels(y_true, y_pred, min_count: int = 20):
+    &#34;&#34;&#34;Set aside the classes too small to score, and say which they were.
+
+    ``f1_macro`` weights every class equally, so a class with five cells in the
+    test side carries the same weight as one with nine thousand and moves the
+    macro average on the strength of one or two predictions. Dropping them is
+    only honest if the report says what was dropped, so this returns the counts
+    alongside the filtered arrays rather than quietly shrinking the problem.
+
+    Counts are taken on the test side, which is where the metric is computed:
+    a class can clear the threshold overall and still fall under it here.
+    &#34;&#34;&#34;
+    import numpy as np
+
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred)
+    labels, counts = np.unique(yt, return_counts=True)
+    rare = {str(lbl): int(c) for lbl, c in zip(labels, counts) if c &lt; min_count}
+    if not rare:
+        return yt, yp, {}
+    keep = ~np.isin(yt, list(rare))
+    return yt[keep], yp[keep], rare</code></pre>
+</details>
+<div class="desc"><p>Set aside the classes too small to score, and say which they were.</p>
+<p><code>f1_macro</code> weights every class equally, so a class with five cells in the
+test side carries the same weight as one with nine thousand and moves the
+macro average on the strength of one or two predictions. Dropping them is
+only honest if the report says what was dropped, so this returns the counts
+alongside the filtered arrays rather than quietly shrinking the problem.</p>
+<p>Counts are taken on the test side, which is where the metric is computed:
+a class can clear the threshold overall and still fall under it here.</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -129,6 +169,7 @@ to the integer-only metric registry entries.</p>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.metrics.bootstrap_celltype_ci" href="#molcrawl.tasks.evaluation.tabula_sapiens.metrics.bootstrap_celltype_ci">bootstrap_celltype_ci</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.metrics.cell_type_metrics" href="#molcrawl.tasks.evaluation.tabula_sapiens.metrics.cell_type_metrics">cell_type_metrics</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.metrics.drop_rare_labels" href="#molcrawl.tasks.evaluation.tabula_sapiens.metrics.drop_rare_labels">drop_rare_labels</a></code></li>
 </ul>
 </li>
 </ul>

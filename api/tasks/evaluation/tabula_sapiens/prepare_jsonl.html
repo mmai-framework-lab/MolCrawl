@@ -261,9 +261,10 @@ label and tissue tag.</li>
     # same expression, so take raw_sum when the obs carries it.
     import scipy.sparse as sp
 
-    X = adata.X
+    X, counts_source = _resolve_counts(adata)
     if sp.issparse(X):
         X = X.tocsr()
+    logger.info(&#34;Counts from %s&#34;, counts_source)
 
     medians = _load_gene_medians(gene_median_file)
     # The training gene set is exactly the median dictionary&#39;s keys
@@ -286,7 +287,7 @@ label and tissue tag.</li>
         n_counts_source = &#34;obs.raw_sum&#34;
     else:
         n_counts = np.asarray(X.sum(axis=1)).ravel().astype(float)
-        n_counts_source = &#34;row sum over all genes (obs.raw_sum absent)&#34;
+        n_counts_source = f&#34;row sum over all genes of {counts_source} (obs.raw_sum absent)&#34;
         logger.warning(
             &#34;obs has no raw_sum; using the row sum over all genes. This matches &#34;
             &#34;raw_sum when X holds the full raw counts, and does not otherwise.&#34;
@@ -346,6 +347,7 @@ label and tissue tag.</li>
         &#34;gene_median_file&#34;: str(_gene_median_path(gene_median_file)),
         &#34;gene_median_sha256&#34;: _sha256(_gene_median_path(gene_median_file)),
         &#34;n_rankable_genes&#34;: int(rankable.sum()),
+        &#34;counts_source&#34;: counts_source,
     }
     logger.info(&#34;Wrote %s&#34;, summary)
     return summary</code></pre>

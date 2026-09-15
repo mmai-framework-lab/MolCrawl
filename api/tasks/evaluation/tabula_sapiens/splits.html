@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>molcrawl.tasks.evaluation.tabula_sapiens.splits API documentation</title>
-<meta name="description" content="Cross-tissue / random splits for Tabula Sapiens.">
+<meta name="description" content="Cross-tissue / random / precomputed splits for Tabula Sapiens.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>molcrawl.tasks.evaluation.tabula_sapiens.splits</code></h1>
 </header>
 <section id="section-intro">
-<p>Cross-tissue / random splits for Tabula Sapiens.</p>
+<p>Cross-tissue / random / precomputed splits for Tabula Sapiens.</p>
 </section>
 <section>
 </section>
@@ -64,6 +64,37 @@ el.replaceWith(d);
     return train_idx, test_idx</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="molcrawl.tasks.evaluation.tabula_sapiens.splits.precomputed_split"><code class="name flex">
+<span>def <span class="ident">precomputed_split</span></span>(<span>labels: Sequence[str], test_label: str = 'test') ‑> Tuple[numpy.ndarray, numpy.ndarray]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def precomputed_split(
+    labels: Sequence[str], test_label: str = &#34;test&#34;
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    &#34;&#34;&#34;Use the split each row already carries.
+
+    A random split over cells puts the same donor on both sides, and a linear
+    probe can then read donor-specific signal instead of cell type. Which donors
+    go where is a decision made once, against the cell counts and the assay and
+    tissue balance, and recorded -- not redrawn per run. When the JSONL carries
+    that decision, this returns it unchanged.
+    &#34;&#34;&#34;
+    arr = np.asarray([str(x) for x in labels])
+    test_idx = np.flatnonzero(arr == test_label)
+    train_idx = np.flatnonzero(arr != test_label)
+    return train_idx, test_idx</code></pre>
+</details>
+<div class="desc"><p>Use the split each row already carries.</p>
+<p>A random split over cells puts the same donor on both sides, and a linear
+probe can then read donor-specific signal instead of cell type. Which donors
+go where is a decision made once, against the cell counts and the assay and
+tissue balance, and recorded &ndash; not redrawn per run. When the JSONL carries
+that decision, this returns it unchanged.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.tabula_sapiens.splits.random_split"><code class="name flex">
 <span>def <span class="ident">random_split</span></span>(<span>n: int, test_fraction: float = 0.2, seed: int = 0) ‑> Tuple[numpy.ndarray, numpy.ndarray]</span>
@@ -101,6 +132,7 @@ el.replaceWith(d);
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.splits.cross_tissue_split" href="#molcrawl.tasks.evaluation.tabula_sapiens.splits.cross_tissue_split">cross_tissue_split</a></code></li>
+<li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.splits.precomputed_split" href="#molcrawl.tasks.evaluation.tabula_sapiens.splits.precomputed_split">precomputed_split</a></code></li>
 <li><code><a title="molcrawl.tasks.evaluation.tabula_sapiens.splits.random_split" href="#molcrawl.tasks.evaluation.tabula_sapiens.splits.random_split">random_split</a></code></li>
 </ul>
 </li>

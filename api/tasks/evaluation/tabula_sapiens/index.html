@@ -63,7 +63,7 @@ el.replaceWith(d);
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.tabula_sapiens.splits" href="splits.html">molcrawl.tasks.evaluation.tabula_sapiens.splits</a></code></dt>
 <dd>
-<div class="desc"><p>Cross-tissue / random splits for Tabula Sapiens.</p></div>
+<div class="desc"><p>Cross-tissue / random / precomputed splits for Tabula Sapiens.</p></div>
 </dd>
 <dt><code class="name"><a title="molcrawl.tasks.evaluation.tabula_sapiens.visualization" href="visualization.html">molcrawl.tasks.evaluation.tabula_sapiens.visualization</a></code></dt>
 <dd>
@@ -112,6 +112,14 @@ el.replaceWith(d);
         self.holdout_tissues: Optional[List[str]] = self.config.get(&#34;holdout_tissues&#34;)
         self.max_cells: Optional[int] = self.config.get(&#34;max_cells&#34;)
         self.bootstrap_samples: int = int(self.config.get(&#34;bootstrap_samples&#34;, 100))
+        # A cell may be longer than the adapter&#39;s default window. RNA packs the
+        # top 1,024 ranked genes into one line, and embedding at 512 would drop
+        # half of every cell without saying so.
+        self.context_length: int = int(self.config.get(&#34;context_length&#34;, 1024))
+        self.embed_batch_size: int = int(self.config.get(&#34;embed_batch_size&#34;, 16))
+        # Classes below this in the *test* side are set aside before the macro
+        # average, and named in the result.
+        self.min_cells_per_label: int = int(self.config.get(&#34;min_cells_per_label&#34;, 20))
         self.predictions_preview_count: int = int(
             self.config.get(&#34;predictions_preview_count&#34;, 16)
         )
@@ -124,6 +132,16 @@ el.replaceWith(d);
         # stratify by class.
         ds = load_jsonl(self.jsonl_path, max_cells=None)
         if self.max_cells is not None and self.max_cells &lt; len(ds[&#34;tokens&#34;]):
+            # Stratifying by class runs across both sides of a precomputed
+            # split, so the train/test proportions move and a class that is
+            # thin on the test side can lose it entirely. Fine for a timing
+            # run, not for a reported number.
+            if ds.get(&#34;split&#34;) and any(str(x) for x in ds[&#34;split&#34;]):
+                logger.warning(
+                    &#34;max_cells=%s subsamples across the split the JSONL carries; &#34;
+                    &#34;the reported proportions will not be the split&#39;s own.&#34;,
+                    self.max_cells,
+                )
             ds = stratified_subsample(
                 ds, n_examples=int(self.max_cells), seed=self.seed
             )
@@ -139,12 +157,26 @@ el.replaceWith(d);
         tokens = dataset[&#34;tokens&#34;]
         labels = np.asarray(dataset[&#34;cell_type&#34;])
 
-        if self.holdout_tissues is not None:
+        # A split the JSONL already carries wins over one drawn here. Splitting
+        # cells at random puts the same donor on both sides, and a linear probe
+        # then has donor-specific signal available instead of cell type -- which
+        # is the thing being measured.
+        split_labels = dataset.get(&#34;split&#34;)
+        if split_labels and any(str(x) for x in split_labels):
+            train_idx, test_idx = precomputed_split(split_labels)
+            self._split_source = &#34;from the JSONL&#34;
+            logger.info(
+                &#34;TabulaSapiens split: taken from the JSONL (train=%d test=%d)&#34;,
+                len(train_idx), len(test_idx),
+            )
+        elif self.holdout_tissues is not None:
             train_idx, test_idx = cross_tissue_split(dataset[&#34;tissue&#34;], self.holdout_tissues)
+            self._split_source = f&#34;holdout tissues {self.holdout_tissues}&#34;
         else:
             train_idx, test_idx = random_split(
                 len(tokens), test_fraction=self.test_fraction, seed=self.seed
             )
+            self._split_source = f&#34;random, test_fraction={self.test_fraction:.2f}&#34;
         if len(test_idx) == 0:
             raise RuntimeError(&#34;TabulaSapiens split produced an empty test set&#34;)
 
@@ -154,15 +186,19 @@ el.replaceWith(d);
         test_labels = labels[test_idx]
 
         logger.info(
-            &#34;TabulaSapiens split: train=%d test=%d (test_fraction=%.2f)&#34;,
+            &#34;TabulaSapiens split: train=%d test=%d (%s)&#34;,
             len(train_idx),
             len(test_idx),
-            self.test_fraction,
+            # Naming test_fraction here regardless was misleading: it is not what
+            # produced the split when the JSONL carried one.
+            self._split_source,
         )
         # Pass token-id lists straight to the adapter (HfMlm.embed accepts
         # both strings and pre-tokenised int lists).
-        train_emb = np.asarray(adapter.embed(train_tokens).embeddings)
-        test_emb = np.asarray(adapter.embed(test_tokens).embeddings)
+        _kw = {&#34;context_length&#34;: self.context_length, &#34;batch_size&#34;: self.embed_batch_size}
+        logger.info(&#34;Embedding with context_length=%d&#34;, self.context_length)
+        train_emb = np.asarray(adapter.embed(train_tokens, **_kw).embeddings)
+        test_emb = np.asarray(adapter.embed(test_tokens, **_kw).embeddings)
 
         from sklearn.linear_model import LogisticRegression
 
@@ -179,9 +215,24 @@ el.replaceWith(d);
         }
 
     def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-        yt = np.asarray(predictions[&#34;test_labels&#34;])
-        yp = np.asarray(predictions[&#34;predictions&#34;])
+        yt_all = np.asarray(predictions[&#34;test_labels&#34;])
+        yp_all = np.asarray(predictions[&#34;predictions&#34;])
+        # f1_macro weights every class equally, so a class with a handful of
+        # cells in the test side swings the average on one or two predictions.
+        # Set those aside, and name them -- a smaller problem reported as the
+        # whole one is worse than the noise it removes.
+        yt, yp, dropped = drop_rare_labels(yt_all, yp_all, self.min_cells_per_label)
+        self._dropped_labels = dropped
+        if dropped:
+            logger.info(
+                &#34;Excluded %d classes under %d cells in the test side: %s&#34;,
+                len(dropped), self.min_cells_per_label,
+                &#34;, &#34;.join(f&#34;{k} ({v})&#34; for k, v in sorted(dropped.items())),
+            )
         metrics = cell_type_metrics(yt, yp)
+        metrics[&#34;n_classes_scored&#34;] = int(len(np.unique(yt)))
+        metrics[&#34;n_classes_excluded&#34;] = len(dropped)
+        metrics[&#34;n_cells_scored&#34;] = int(len(yt))
         ci = bootstrap_celltype_ci(
             yt, yp, n_boot=self.bootstrap_samples, seed=self.seed
         )
@@ -192,6 +243,10 @@ el.replaceWith(d);
 
     def build_report(self, metrics, dataset, predictions):
         report = super().build_report(metrics, dataset, predictions)
+        # Named in the report, not only in the log: a macro average
+        # over a filtered set of classes has to say which set.
+        report[&#34;excluded_labels&#34;] = dict(getattr(self, &#34;_dropped_labels&#34;, {}) or {})
+        report[&#34;min_cells_per_label&#34;] = self.min_cells_per_label
         artefacts = write_predictions(
             output_dir=self.output_dir,
             test_tokens=predictions[&#34;test_tokens&#34;],
@@ -247,6 +302,10 @@ example <code>"clinvar"</code> or <code>"moleculenet"</code>).</p></div>
 </summary>
 <pre><code class="python">def build_report(self, metrics, dataset, predictions):
     report = super().build_report(metrics, dataset, predictions)
+    # Named in the report, not only in the log: a macro average
+    # over a filtered set of classes has to say which set.
+    report[&#34;excluded_labels&#34;] = dict(getattr(self, &#34;_dropped_labels&#34;, {}) or {})
+    report[&#34;min_cells_per_label&#34;] = self.min_cells_per_label
     artefacts = write_predictions(
         output_dir=self.output_dir,
         test_tokens=predictions[&#34;test_tokens&#34;],
@@ -302,9 +361,24 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_metrics(self, dataset, predictions) -&gt; Dict[str, float]:
-    yt = np.asarray(predictions[&#34;test_labels&#34;])
-    yp = np.asarray(predictions[&#34;predictions&#34;])
+    yt_all = np.asarray(predictions[&#34;test_labels&#34;])
+    yp_all = np.asarray(predictions[&#34;predictions&#34;])
+    # f1_macro weights every class equally, so a class with a handful of
+    # cells in the test side swings the average on one or two predictions.
+    # Set those aside, and name them -- a smaller problem reported as the
+    # whole one is worse than the noise it removes.
+    yt, yp, dropped = drop_rare_labels(yt_all, yp_all, self.min_cells_per_label)
+    self._dropped_labels = dropped
+    if dropped:
+        logger.info(
+            &#34;Excluded %d classes under %d cells in the test side: %s&#34;,
+            len(dropped), self.min_cells_per_label,
+            &#34;, &#34;.join(f&#34;{k} ({v})&#34; for k, v in sorted(dropped.items())),
+        )
     metrics = cell_type_metrics(yt, yp)
+    metrics[&#34;n_classes_scored&#34;] = int(len(np.unique(yt)))
+    metrics[&#34;n_classes_excluded&#34;] = len(dropped)
+    metrics[&#34;n_cells_scored&#34;] = int(len(yt))
     ci = bootstrap_celltype_ci(
         yt, yp, n_boot=self.bootstrap_samples, seed=self.seed
     )
@@ -328,6 +402,16 @@ distribution summaries, etc.</p></div>
     # stratify by class.
     ds = load_jsonl(self.jsonl_path, max_cells=None)
     if self.max_cells is not None and self.max_cells &lt; len(ds[&#34;tokens&#34;]):
+        # Stratifying by class runs across both sides of a precomputed
+        # split, so the train/test proportions move and a class that is
+        # thin on the test side can lose it entirely. Fine for a timing
+        # run, not for a reported number.
+        if ds.get(&#34;split&#34;) and any(str(x) for x in ds[&#34;split&#34;]):
+            logger.warning(
+                &#34;max_cells=%s subsamples across the split the JSONL carries; &#34;
+                &#34;the reported proportions will not be the split&#39;s own.&#34;,
+                self.max_cells,
+            )
         ds = stratified_subsample(
             ds, n_examples=int(self.max_cells), seed=self.seed
         )
@@ -353,12 +437,26 @@ distribution summaries, etc.</p></div>
     tokens = dataset[&#34;tokens&#34;]
     labels = np.asarray(dataset[&#34;cell_type&#34;])
 
-    if self.holdout_tissues is not None:
+    # A split the JSONL already carries wins over one drawn here. Splitting
+    # cells at random puts the same donor on both sides, and a linear probe
+    # then has donor-specific signal available instead of cell type -- which
+    # is the thing being measured.
+    split_labels = dataset.get(&#34;split&#34;)
+    if split_labels and any(str(x) for x in split_labels):
+        train_idx, test_idx = precomputed_split(split_labels)
+        self._split_source = &#34;from the JSONL&#34;
+        logger.info(
+            &#34;TabulaSapiens split: taken from the JSONL (train=%d test=%d)&#34;,
+            len(train_idx), len(test_idx),
+        )
+    elif self.holdout_tissues is not None:
         train_idx, test_idx = cross_tissue_split(dataset[&#34;tissue&#34;], self.holdout_tissues)
+        self._split_source = f&#34;holdout tissues {self.holdout_tissues}&#34;
     else:
         train_idx, test_idx = random_split(
             len(tokens), test_fraction=self.test_fraction, seed=self.seed
         )
+        self._split_source = f&#34;random, test_fraction={self.test_fraction:.2f}&#34;
     if len(test_idx) == 0:
         raise RuntimeError(&#34;TabulaSapiens split produced an empty test set&#34;)
 
@@ -368,15 +466,19 @@ distribution summaries, etc.</p></div>
     test_labels = labels[test_idx]
 
     logger.info(
-        &#34;TabulaSapiens split: train=%d test=%d (test_fraction=%.2f)&#34;,
+        &#34;TabulaSapiens split: train=%d test=%d (%s)&#34;,
         len(train_idx),
         len(test_idx),
-        self.test_fraction,
+        # Naming test_fraction here regardless was misleading: it is not what
+        # produced the split when the JSONL carried one.
+        self._split_source,
     )
     # Pass token-id lists straight to the adapter (HfMlm.embed accepts
     # both strings and pre-tokenised int lists).
-    train_emb = np.asarray(adapter.embed(train_tokens).embeddings)
-    test_emb = np.asarray(adapter.embed(test_tokens).embeddings)
+    _kw = {&#34;context_length&#34;: self.context_length, &#34;batch_size&#34;: self.embed_batch_size}
+    logger.info(&#34;Embedding with context_length=%d&#34;, self.context_length)
+    train_emb = np.asarray(adapter.embed(train_tokens, **_kw).embeddings)
+    test_emb = np.asarray(adapter.embed(test_tokens, **_kw).embeddings)
 
     from sklearn.linear_model import LogisticRegression
 

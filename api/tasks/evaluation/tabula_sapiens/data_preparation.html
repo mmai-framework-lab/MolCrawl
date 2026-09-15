@@ -67,6 +67,7 @@ el.replaceWith(d);
     # cell came from. Subsampling and skipped rows both break the line-number
     # correspondence, so the identifier has to travel with the row.
     cell_ids: List[str] = []
+    splits: List[str] = []
     with file_path.open(encoding=&#34;utf-8&#34;) as handle:
         for line in handle:
             line = line.strip()
@@ -77,6 +78,7 @@ el.replaceWith(d);
             cell_types.append(str(record[&#34;cell_type&#34;]))
             tissues.append(str(record.get(&#34;tissue&#34;, &#34;&#34;)))
             cell_ids.append(str(record.get(&#34;cell_id&#34;, &#34;&#34;)))
+            splits.append(str(record.get(&#34;split&#34;, &#34;&#34;)))
             if max_cells is not None and len(tokens) &gt;= int(max_cells):
                 break
     logger.info(&#34;Loaded %d Tabula Sapiens cells from %s&#34;, len(tokens), file_path)
@@ -85,6 +87,7 @@ el.replaceWith(d);
         &#34;cell_type&#34;: cell_types,
         &#34;tissue&#34;: tissues,
         &#34;cell_id&#34;: cell_ids,
+        &#34;split&#34;: splits,
     }</code></pre>
 </details>
 <div class="desc"></div>
@@ -143,8 +146,9 @@ el.replaceWith(d);
     }
     # Absent in JSONL written before cell_id existed; the rest of the subsample
     # is unaffected either way.
-    if &#34;cell_id&#34; in dataset:
-        out[&#34;cell_id&#34;] = [dataset[&#34;cell_id&#34;][i] for i in idx]
+    for extra in (&#34;cell_id&#34;, &#34;split&#34;):
+        if extra in dataset:
+            out[extra] = [dataset[extra][i] for i in idx]
     return out</code></pre>
 </details>
 <div class="desc"><p>Class-balanced subsample over <code>cell_type</code>.</p>
