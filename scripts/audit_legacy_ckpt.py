@@ -88,8 +88,16 @@ def read_scalars(path):
 
 
 def min_eval(directory):
-    """``(step, val_loss)`` of the lowest validation loss this run recorded."""
-    best = (None, None)
+    """``(steps, val_loss)`` of the lowest validation loss this run recorded.
+
+    ``steps`` is every step that reached that value, earliest first, because the
+    log rounds to four decimals and the run did not. compounds gpt2-small printed
+    0.5944 at both 1500 and 1550, and the run -- comparing in full precision --
+    took 1550. Treating the first as "the" minimum makes the checkpoint look stale
+    when it is exactly right, so a tie is reported as a tie.
+    """
+    best_val = None
+    steps = []
     for entry in sorted(os.listdir(directory)):
         if not (entry.startswith("logging_") and entry.endswith(".csv")):
             continue
@@ -103,9 +111,11 @@ def min_eval(directory):
                     step, val = int(row[0]), float(row[2])
                 except ValueError:
                     continue
-                if best[1] is None or val < best[1]:
-                    best = (step, val)
-    return best
+                if best_val is None or val < best_val:
+                    best_val, steps = val, [step]
+                elif val == best_val:
+                    steps.append(step)
+    return sorted(steps), best_val
 
 
 def _as_loss(value):
@@ -160,17 +170,19 @@ def main(argv=None):
         except Exception as exc:                      # noqa: BLE001 - reported, not raised
             print(f"| {rel} | - | - | unreadable: {exc.__class__.__name__}: {exc} | - | - |")
             continue
-        step, val = min_eval(directory)
+        steps, val = min_eval(directory)
         it = fields.get("iter_num")
-        if step is None:
-            verdict = "no eval log — undecidable"
+        if not steps:
+            verdict, shown = "no eval log — undecidable", "-"
         elif it is None:
-            verdict = "no iter_num in ckpt.pt — undecidable"
-        elif it == step:
-            verdict = "best"
+            verdict, shown = "no iter_num in ckpt.pt — undecidable", str(steps[0])
+        elif it in steps:
+            shown = "/".join(str(s) for s in steps)
+            verdict = "best" if len(steps) == 1 else "best (tied at log precision)"
         else:
-            verdict = f"**LAST, not best** (off by {it - step:+d})"
-        print(f"| {rel} | {it} | {step} | {verdict} | "
+            shown = "/".join(str(s) for s in steps)
+            verdict = f"**LAST, not best** (off by {it - steps[-1]:+d})"
+        print(f"| {rel} | {it} | {shown} | {verdict} | "
               f"{_as_loss(fields.get('best_val_loss'))} | "
               f"{'-' if val is None else f'{val:.4f}'} |")
     if seen == 0:

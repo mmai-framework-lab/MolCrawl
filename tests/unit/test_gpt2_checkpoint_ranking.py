@@ -10,7 +10,6 @@ The score has to come from the run's own evaluations. A checkpoint directory
 records ``best_val_loss``, which is the running best and therefore the same
 number in every directory written after the minimum: it cannot order them.
 """
-import importlib.util
 import types
 from pathlib import Path
 
@@ -143,3 +142,34 @@ def test_a_line_cut_off_by_the_time_limit_does_not_stop_the_run(tmp_path):
 
 def test_no_logs_is_an_empty_history_not_an_error(tmp_path):
     assert g.eval_history(str(tmp_path)) == {}
+
+
+# --- the audit that reads those logs back ----------------------------------- #
+
+def _audit():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "scripts" / "audit_legacy_ckpt.py"
+    spec = importlib.util.spec_from_file_location("_audit_legacy_ckpt", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_a_minimum_tied_at_log_precision_reports_both_steps(tmp_path):
+    """compounds gpt2-small printed 0.5944 at 1500 and at 1550. The run compared
+    in full precision and took 1550; calling 1500 "the" minimum would mark a
+    correct ckpt.pt stale."""
+    _log(tmp_path, "logging_20260821_112610.csv",
+         [(1450, 0.5888, 0.5963), (1500, 0.5885, 0.5944), (1550, 0.5847, 0.5944)])
+
+    steps, val = _audit().min_eval(str(tmp_path))
+
+    assert steps == [1500, 1550]
+    assert val == 0.5944
+
+
+def test_a_single_minimum_is_a_single_step(tmp_path):
+    _log(tmp_path, "logging_20260101_000000.csv",
+         [(100, 4.0, 3.9), (200, 3.5, 3.4), (300, 3.3, 3.6)])
+
+    assert _audit().min_eval(str(tmp_path)) == ([200], 3.4)
