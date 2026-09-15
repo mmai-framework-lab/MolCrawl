@@ -1,4 +1,4 @@
-# compounds BERT small — learning-rate grid, point 3 of 3 (lr 0.002)
+# compounds BERT small — learning-rate grid, point 2 of 3 (lr 0.001)
 # launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py <this config>
 #
 # The grid is three arms at this size: 5e-4, 1e-3, 2e-3. Run 53767 sat at 1e-3 but is
@@ -22,14 +22,14 @@ model_size = "small"
 # Per-arm directory under MODEL_OUTPUT_ROOT. Unset, this resolves under
 # LEARNING_SOURCE_DIR -- the tree compounds' 18G of input and 1.4T of output already
 # share -- and main.py's output guard stops the run before the first step.
-model_path = get_bert_output_path("compounds", model_size) + "-lr2e3"
+model_path = get_bert_output_path("compounds", model_size) + "-lr1e3"
 max_length = 1024  # packed blocks; sets BertConfig.max_position_embeddings
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
 # The compounds sets were packed in source order before the 2026-08-21 rebuild, so the
 # split's leading rows are shorter and easier than the split as a whole. Draw the eval
 # subset at random instead.
 eval_subset_random = True
-learning_rate = 0.002
+learning_rate = 0.001
 weight_decay = 0.01
 log_interval = 100  # = eval_steps -> 150 eval points over the run
 save_steps = 1000  # multiple of eval_steps, so every checkpoint carries an eval
