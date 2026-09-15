@@ -82,11 +82,21 @@ def test_only_compounds_bert_opts_in():
         for path in CONFIG_ROOT.rglob("*.py")
         if "eval_subset_random = True" in path.read_text(encoding="utf-8")
     }
-    assert on == {
+    # The concern is other modalities: protein, RNA and genome shuffle in prep, so
+    # opting them in would move their numbers by resampling noise for nothing. Adding a
+    # compounds BERT arm -- a learning-rate grid point, another ladder size -- has to
+    # opt in to share the eval rows with the runs it is compared against, so the set is
+    # checked by scope rather than pinned to a list that every new arm would break.
+    assert on, "nothing opts in any more; the knob has been dropped"
+    for rel in sorted(on):
+        modality, _, name = rel.partition("/")
+        assert modality == "compounds", f"{rel} opts in outside compounds"
+        assert name.startswith("bert_"), f"{rel} opts in outside BERT"
+    assert {
         "compounds/bert_small.py",
         "compounds/bert_medium.py",
         "compounds/bert_large.py",
-    }, on
+    } <= on, on
 
 
 @pytest.mark.parametrize("modality", ["compounds", "protein_sequence"])
