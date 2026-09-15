@@ -969,6 +969,17 @@ if __name__ == "__main__":
                   f"{log_interval}. Saved checkpoints that miss an eval cannot be ranked "
                   f"and are only held by keep_latest.")
 
+    # The checkpoint we report and the checkpoint downstream evaluation reads are
+    # the same only when the minimum lands on a save step. Evaluating every 100
+    # steps and saving every 1,000 makes that the exception. Opt-in, because it
+    # changes which checkpoints a run writes.
+    if bool(globals().get("save_on_improve", False)):
+        from molcrawl.models.bert._save_on_improve import SaveOnMetricImprovement
+
+        _improve_on = str(globals().get("save_on_improve_metric") or judge_on)
+        callbacks.append(SaveOnMetricImprovement(metric=_improve_on))
+        print(f"💾 Save-on-improve: an extra checkpoint whenever {_improve_on} reaches a new best")
+
     # An id that never appears turns document masking into a no-op. That is how
     # it went unnoticed on protein, on molecule_nat_lang and on RNA: the collator
     # found zero boundaries and passed the batch through, with no error and no

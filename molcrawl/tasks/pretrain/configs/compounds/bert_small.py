@@ -1,6 +1,11 @@
-# compounds BERT small — packed 1024 ladder (v4 data, 2026-08-05)
+# compounds BERT small — packed 1024 ladder
 # launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py <this config>
-
+#
+# 2026-09-15: the six fields below were what run 53767 (bert small, lr 1e-3) was
+# actually launched with. They were passed at startup and never written back, so this
+# file kept saying 1,558 steps at 8 x 80 with no document masking while the run that
+# produced the reported numbers used none of that. A config that does not describe the
+# run it produced cannot be used to reproduce it, and the next arm inherits the drift.
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
@@ -9,31 +14,47 @@ tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 
 # v4 packed data (2026-08-05): train = 398,917 blocks x 1024, no padding.
 # HF Trainer is per-device, so global batch = batch_size * grad_accum * n_GPUs
-# = 8 * 80 * 4 = 2,560 seq (assumes the 4-GPU launch used by the whole ladder).
-# 10 epochs at 2,560 = floor(10 * 398,917 / 2560) = 1,558 steps.
-max_steps = 1558
-warmup_steps = 31  # ~2 % of max_steps; < max_steps so LR reaches peak
+# = 32 * 20 * 4 = 2,560 sequences (assumes the 4-GPU launch the whole ladder uses).
+# 15,000 steps at 2,560 = 96.3 epochs over the train split.
+max_steps = 15000
+warmup_steps = 1500  # 10% of max_steps, as run 53767 was launched, not the 2% convention
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
-model_size = "small"  # Choose between small, medium or large
+model_size = "small"
+# Resolves under MODEL_OUTPUT_ROOT when that is set, else under LEARNING_SOURCE_DIR.
+# main.py refuses a model_path that lands inside an input tree, so a run that leaves
+# MODEL_OUTPUT_ROOT unset stops before the first step instead of writing 1.4T of
+# checkpoints beside the corpus, which is how compounds got there.
 model_path = get_bert_output_path("compounds", model_size)
 max_length = 1024  # packed blocks; sets BertConfig.max_position_embeddings
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
-# The compounds sets are packed in source-parquet order, so the split's leading rows
+# The compounds sets were packed in source-parquet order, so the split's leading rows
 # are shorter and easier than the split as a whole. Draw the eval subset at random
 # instead. Off by default in main.py because protein / RNA / genome shuffle in prep and
 # gain nothing from it.
 eval_subset_random = True
-learning_rate = 0.0001
+# Run 53767's learning rate, as that run was launched. bert_small.py said 1e-4 while
+# the run that produced the reported 0.0705 used 1e-3. The 2026-09-15 grid measures
+# this properly; until it reports, this is the value with a run behind it.
+learning_rate = 0.001
 weight_decay = 0.01
-log_interval = 50  # = eval_steps -> ~31 eval points over the run
-save_steps = 100  # must be a multiple of eval_steps for load_best_model_at_end
+log_interval = 100  # = eval_steps -> 150 eval points over the run
+save_steps = 1000  # multiple of eval_steps, so every checkpoint carries an eval
 
-batch_size = 8
+# Keep the checkpoint the reported number came from. Evaluation is 10x finer than
+# saving, so the minimum lands off the save grid nine times in ten.
+save_on_improve = True
+
+# Confine attention to one document inside a packed block. Run 53767 passed this at
+# launch; without it a masked token attends across document boundaries.
+document_masking = True
+
+# 32 x 20 x 4 GPUs = 2,560 sequences, the split run 53767 was launched with. The
+# committed 8 x 80 reached the same global batch by a slower micro-batch shape.
+batch_size = 32
+gradient_accumulation_steps = 20
 per_device_eval_batch_size = 8
 
-gradient_accumulation_steps = 5 * 16
-
-# Training seed (sequentially assigned across the 117 tracked pretrain configs
-# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Training seed (sequentially assigned across the tracked pretrain configs on
+# 2026-08-03; boss directive to fix per-config seeds for reproducibility).
 # Consumed by the runner via configurator; do NOT change once a run has started.
 seed = 9

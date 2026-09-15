@@ -1,11 +1,13 @@
-# compounds BERT large — packed 1024 ladder
+# compounds BERT xl — packed 1024 ladder
 # launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py <this config>
 #
-# 2026-09-15: the six fields below were what run 53767 (bert small, lr 1e-3) was
-# actually launched with. They were passed at startup and never written back, so this
-# file kept saying 1,558 steps at 8 x 80 with no document masking while the run that
-# produced the reported numbers used none of that. A config that does not describe the
-# run it produced cannot be used to reproduce it, and the next arm inherits the drift.
+# New file (2026-09-15 order): the fourth rung of the compounds BERT ladder. Copied
+# from bert_large.py, with model_size and the seed changed and nothing else. The size
+# itself already exists in models/bert/main.py (hidden 1600, 48 layers, 25 heads,
+# intermediate 6400); what was missing was a config pointing at it.
+#
+# Compute relative to small, by 6N + 12 * layers * hidden * 1024:
+# small 1.00 / medium 3.39 / large 6.35 / xl 15.72.
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
@@ -19,7 +21,7 @@ tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 max_steps = 15000
 warmup_steps = 1500  # 10% of max_steps, as run 53767 was launched, not the 2% convention
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
-model_size = "large"
+model_size = "xl"
 # Resolves under MODEL_OUTPUT_ROOT when that is set, else under LEARNING_SOURCE_DIR.
 # main.py refuses a model_path that lands inside an input tree, so a run that leaves
 # MODEL_OUTPUT_ROOT unset stops before the first step instead of writing 1.4T of
@@ -32,17 +34,9 @@ dataset_dir = COMPOUNDS_DATASET_DIR_BERT
 # instead. Off by default in main.py because protein / RNA / genome shuffle in prep and
 # gain nothing from it.
 eval_subset_random = True
-# Phase 1-5c (2026-07-16): 5e-5 -> 3e-5. The 22913 (5e-5) attempt was auto-aborted by
-# the early-plateau detector at eval 6 (val=1.79 > 1.5 threshold), then 22918 (3e-5)
-# COMPLETED healthy with min val 0.1766 -- matching bert-small 0.176 / bert-medium
-# 0.144. The boss's 2026-07-16 reply promotes 3e-5 to the unified default across every
-# modality's BERT large because it is the empirically-attested convergent value at 340M
-# scale.
-#
-# 2026-09-15: written as a literal. It used to read
-# float(os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003")), so the value a run actually
-# trained with did not have to be the one in the file, and nothing recorded which it
-# was. The value itself is unchanged; the 2026-09-15 grid is what replaces it.
+# Carried over from bert_large.py, which this file is a copy of. Not measured at this
+# size -- 12 * 48 * 1600^2 = 1.47B non-embedding parameters is well past the 340M the
+# 3e-5 result comes from -- and the 2026-09-15 learning-rate grid is what settles it.
 learning_rate = 0.00003
 weight_decay = 0.01
 log_interval = 100  # = eval_steps -> 150 eval points over the run
@@ -67,4 +61,4 @@ per_device_eval_batch_size = 8
 # Training seed (sequentially assigned across the tracked pretrain configs on
 # 2026-08-03; boss directive to fix per-config seeds for reproducibility).
 # Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 7
+seed = 118
