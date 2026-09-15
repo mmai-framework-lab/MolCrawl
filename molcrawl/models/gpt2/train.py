@@ -217,6 +217,40 @@ def own_checkpoint_steps(base_dir, resumed_from_step):
     return steps
 
 
+def eval_history(base_dir):
+    """``{step: val_loss}`` from every evaluation this out_dir has recorded.
+
+    The training loop keeps its own evaluations in memory, but a resume starts a
+    new ``logging_<timestamp>.csv`` and so begins with none -- while
+    ``own_checkpoint_steps`` hands it the previous segment's checkpoints as
+    prunable. Ranking on the in-memory history alone would therefore delete the
+    earlier segment for having no score, which is the opposite of the point.
+    Reading the CSVs back covers steps whose checkpoints are already gone too,
+    which costs nothing and keeps the ranking honest about what was measured.
+
+    Rows are ``iter, train_loss, val_loss``. Malformed rows are skipped rather
+    than raising: this runs at startup, and a truncated final line from a job
+    killed at the time limit is the ordinary case, not a reason to refuse to
+    start.
+    """
+    history = {}
+    for path in sorted(glob.glob(os.path.join(base_dir, "logging_*.csv"))):
+        try:
+            with open(path) as fh:
+                next(fh, None)  # header
+                for line in fh:
+                    parts = line.split(",")
+                    if len(parts) < 3:
+                        continue
+                    try:
+                        history[int(parts[0])] = float(parts[2])
+                    except ValueError:
+                        continue
+        except OSError:
+            continue
+    return history
+
+
 if __name__ == "__main__":
     # Handle configurator path (support repo-root invocation and direct invocation)
     _this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -526,6 +560,9 @@ if __name__ == "__main__":
     # Steps this run may prune. A fresh run owns nothing that is already in
     # out_dir; a resume adopts its own history below. See cleanup_old_checkpoints.
     _own_ckpt_steps = set()
+    # {step: val_loss} for every evaluation this run knows about, which is what
+    # cleanup_old_checkpoints ranks on. Seeded from disk on resume below.
+    _val_by_step = {}
     best_val_loss = 1e9
     best_val_step = None  # step at which best_val_loss was recorded (charter § 1.1 protect)
     early_stopping_counter = 0  # count eval intervals without improvement
@@ -690,6 +727,7 @@ if __name__ == "__main__":
             model.load_state_dict(state_dict)
             iter_num = checkpoint["iter_num"]
             _own_ckpt_steps = own_checkpoint_steps(out_dir, iter_num)
+            _val_by_step = eval_history(out_dir)
             best_val_loss = checkpoint["best_val_loss"]
             best_val_step = checkpoint.get("best_val_step")  # may be None for older ckpts
             early_stopping_counter = checkpoint.get("early_stopping_counter", 0)
@@ -816,7 +854,7 @@ def convert_nanogpt_to_hf_state_dict(model_state, model_args):
 
 
 def save_checkpoint_hf(
-    model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0, best_val_step=None
+    model_state, optimizer_state, model_args, iter_num, val_loss, config, checkpoint_dir, early_stopping_counter=0, best_val_step=None, step_val_loss=None
 ):
     """
     Save checkpoint in HuggingFace Transformers compatible format.
@@ -826,6 +864,12 @@ def save_checkpoint_hf(
     - pytorch_model.bin: Model weights (HuggingFace compatible state_dict)
     - training_state.bin: Training state (optimizer, iteration, etc.) for resuming
     - training_args.json: Training arguments as JSON
+
+    ``val_loss`` is the run's best so far, not this checkpoint's. ``step_val_loss``
+    is this checkpoint's own evaluation, which is what ranking checkpoints against
+    each other needs -- ``best_val_loss`` is the same number in every directory
+    written after the minimum, so it cannot order them. Written as ``val_loss``
+    into both files. ``None`` where the caller did not evaluate at this step.
     """
     os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -871,6 +915,8 @@ def save_checkpoint_hf(
         "iter_num": iter_num,
         "best_val_loss": val_loss,
         "best_val_step": best_val_step,
+        # This checkpoint's own evaluation, as against the running best above.
+        "val_loss": float(step_val_loss) if step_val_loss is not None else None,
         "early_stopping_counter": early_stopping_counter,
         "config": config,
         # Saving process only; ranks write their own rng_state_{rank}.pth
@@ -884,6 +930,7 @@ def save_checkpoint_hf(
     training_args = {
         "iteration": iter_num,
         "best_val_loss": float(val_loss) if val_loss is not None else None,
+        "val_loss": float(step_val_loss) if step_val_loss is not None else None,
         "early_stopping_counter": early_stopping_counter,
         "learning_rate": config.get("learning_rate"),
         "batch_size": config.get("batch_size"),
@@ -900,13 +947,26 @@ _WARNED_FOREIGN = set()
 
 
 def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None,
-                            own_steps=None):
-    """Remove old checkpoints, keeping only the most recent max_checkpoints.
+                            own_steps=None, scores=None, keep_latest=1):
+    """Prune checkpoints, keeping the ones worth keeping.
+
+    Two policies, chosen by whether ``scores`` is supplied.
+
+    Without ``scores`` this keeps the newest ``max_checkpoints`` -- the historical
+    behaviour, kept for callers that have no evaluation history to rank by.
+
+    With ``scores`` (a ``{step: val_loss}`` mapping) it keeps the best
+    ``max_checkpoints`` by that value plus the newest ``keep_latest`` for resume,
+    which is the rule BERT already follows in models/bert/_checkpoint_retention.
+    Newest-first is the wrong rule for a ladder: the checkpoint a size is scored
+    at is the best one, and on a curve that turns it is not among the last few.
+    A step with no score cannot be ranked and survives only via ``keep_latest``.
 
     ``protect_step`` (optional): step number of a checkpoint that must NOT be
-    deleted even if it falls outside the max_checkpoints window (used to preserve
-    the best-val checkpoint for downstream evaluation; charter § 1.1 comparability
-    rule requires subset comparison at best-val ckpt).
+    deleted even if it falls outside the window (used to preserve the best-val
+    checkpoint for downstream evaluation; charter § 1.1 comparability rule
+    requires subset comparison at best-val ckpt). Redundant under ``scores``,
+    which already keeps the best, but harmless and still honoured.
 
     ``own_steps`` (optional): the steps this run may prune. An out_dir can
     already hold a finished campaign's checkpoints -- runs of one subset at
@@ -948,10 +1008,21 @@ def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None,
 
     checkpoints.sort(reverse=True)  # Sort by step, newest first
 
-    # Remove old checkpoints, but PROTECT the best-val step (if provided)
-    for _step, ckpt_dir in checkpoints[max_checkpoints:]:
-        if protect_step is not None and _step == protect_step:
-            # Best-val ckpt: skip deletion to preserve for downstream evaluation
+    if scores is None:
+        keep = {step for step, _d in checkpoints[:max_checkpoints]}
+    else:
+        # Newest few for resume, then the best by score. A step scores only if it
+        # was evaluated; one that was not cannot be placed against the others.
+        keep = {step for step, _d in checkpoints[:keep_latest]}
+        ranked = sorted((s for s, _d in checkpoints if s in scores),
+                        key=lambda s: (scores[s], s))
+        keep.update(ranked[:max_checkpoints])
+
+    if protect_step is not None:
+        keep.add(protect_step)
+
+    for _step, ckpt_dir in checkpoints:
+        if _step in keep:
             continue
         print(f"Removing old checkpoint: {ckpt_dir}")
         shutil.rmtree(ckpt_dir, ignore_errors=True)
@@ -1090,6 +1161,8 @@ if __name__ == "__main__":
             losses = estimate_loss()
             print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
+            _val_by_step[iter_num] = float(losses["val"])
+
             with open(logging_file, "a") as f:
                 f.write(f"{iter_num}, {losses['train']:.4f}, {losses['val']:.4f}\n")
 
@@ -1174,6 +1247,7 @@ if __name__ == "__main__":
                         checkpoint_dir,
                         early_stopping_counter,
                         best_val_step=best_val_step,
+                        step_val_loss=losses["val"],
                     )
 
                     # Log checkpoint to wandb as artifact BEFORE cleanup
@@ -1202,7 +1276,8 @@ if __name__ == "__main__":
                     _own_ckpt_steps.add(iter_num)
                     cleanup_old_checkpoints(out_dir, max_checkpoints,
                                             protect_step=best_val_step,
-                                            own_steps=_own_ckpt_steps)
+                                            own_steps=_own_ckpt_steps,
+                                            scores=_val_by_step)
 
                 # Also save legacy ckpt.pt for backward compatibility (or best model)
                 if keep_legacy_ckpt or is_best_model:
