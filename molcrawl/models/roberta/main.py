@@ -1,3 +1,7 @@
+"""NOT USED IN PRODUCTION. BERT is unified on ``BertForMaskedLM`` across all five
+modalities (bert-architecture-unify-order-2026-09-11 §1); this ``RobertaForMaskedLM``
+path is dormant and kept for diagnostics only. No current-lineage (Aug-2026+) result
+number comes from this path -- see review-10-numbers-conditions-inventory-2026-09-15."""
 import json
 import os
 from pathlib import Path
