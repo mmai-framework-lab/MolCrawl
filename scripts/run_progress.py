@@ -31,6 +31,9 @@ import subprocess
 # earlier segments ran -- 87484 read 27.75 s/it for a run at 58. HF says where it
 # resumed from, so the segment starts there.
 RESUMED = re.compile(r"Resuming training from: .*checkpoint-(\d+)")
+# max_steps as the run itself reported it: the launcher prints the config it resolved
+# ("    max_steps=12000"), and its older form printed "steps=12000" in the header.
+MAX_STEPS = (re.compile(r"^\s*max_steps=(\d+)\s*$", re.M), re.compile(r"^steps=(\d+)", re.M))
 PROGRESS = re.compile(r"\|\s*(\d+)/(\d+) \[(?:(\d+):)?(\d\d):(\d\d)<")
 
 
@@ -60,10 +63,13 @@ def _slurm(job):
 def _progress(path):
     """Training-bar steps -> elapsed seconds, for this segment only.
 
-    HF prints evaluation bars in the same "N/M [elapsed<" form. Their M is the number of
-    eval batches, and their N would overwrite training steps of the same number, so only
-    the bar with the largest total -- max_steps -- is kept. Steps before the checkpoint
-    this segment resumed from are dropped (see RESUMED).
+    Several tqdm bars share the "N/M [elapsed<" form: the training bar, HF's evaluation
+    bars, and the dataset map. Picking the largest total was wrong -- the map bar counts
+    rows (318,118 here) and dwarfs max_steps, so a run still loading its data read as
+    "step 318,118 of 318,118". The training bar is the one whose total is the max_steps
+    the log itself reports; without that line, fall back to the largest total and say so.
+
+    Steps before the checkpoint this segment resumed from are dropped (see RESUMED).
     """
     by_total = {}
     with open(path, errors="ignore") as fh:
@@ -74,7 +80,14 @@ def _progress(path):
             h * 3600 + int(m.group(4)) * 60 + int(m.group(5)))
     if not by_total:
         return {}, None, 0
-    total = max(by_total)
+    total = None
+    for pattern in MAX_STEPS:
+        found = pattern.search(text)
+        if found and int(found.group(1)) in by_total:
+            total = int(found.group(1))
+            break
+    if total is None:
+        total = max(by_total)
     r = RESUMED.search(text)
     start = int(r.group(1)) if r else 0
     return {k: v for k, v in by_total[total].items() if k >= start}, total, start
@@ -101,7 +114,8 @@ def report(job, save_every, window, root):
         return
     steps, total, resumed = _progress(logs[0])
     if len(steps) < 2:
-        print(f"  log: {os.path.basename(logs[0])} has no HF progress lines")
+        print(f"  log: {os.path.basename(logs[0])} has no training progress yet"
+              f" (the run is still before its first step)")
         return
     ks = sorted(steps)
     first, last = ks[0], ks[-1]
