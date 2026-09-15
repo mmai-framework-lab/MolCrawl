@@ -27,6 +27,7 @@ def load_jsonl(path: Path, max_cells: Optional[int] = None) -> Dict[str, List]:
     # cell came from. Subsampling and skipped rows both break the line-number
     # correspondence, so the identifier has to travel with the row.
     cell_ids: List[str] = []
+    splits: List[str] = []
     with file_path.open(encoding="utf-8") as handle:
         for line in handle:
             line = line.strip()
@@ -37,6 +38,7 @@ def load_jsonl(path: Path, max_cells: Optional[int] = None) -> Dict[str, List]:
             cell_types.append(str(record["cell_type"]))
             tissues.append(str(record.get("tissue", "")))
             cell_ids.append(str(record.get("cell_id", "")))
+            splits.append(str(record.get("split", "")))
             if max_cells is not None and len(tokens) >= int(max_cells):
                 break
     logger.info("Loaded %d Tabula Sapiens cells from %s", len(tokens), file_path)
@@ -45,6 +47,7 @@ def load_jsonl(path: Path, max_cells: Optional[int] = None) -> Dict[str, List]:
         "cell_type": cell_types,
         "tissue": tissues,
         "cell_id": cell_ids,
+        "split": splits,
     }
 
 
@@ -94,6 +97,7 @@ def stratified_subsample(
     }
     # Absent in JSONL written before cell_id existed; the rest of the subsample
     # is unaffected either way.
-    if "cell_id" in dataset:
-        out["cell_id"] = [dataset["cell_id"][i] for i in idx]
+    for extra in ("cell_id", "split"):
+        if extra in dataset:
+            out[extra] = [dataset[extra][i] for i in idx]
     return out

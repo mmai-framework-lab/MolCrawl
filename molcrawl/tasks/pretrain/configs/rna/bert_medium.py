@@ -84,6 +84,16 @@ gradient_accumulation_steps: int = 5 * 16
 # different GPU count passes the intended value at launch.
 expected_global_batch: int = 2560
 
+# Cells are packed end to end into 1,024-token blocks with token 0 between them
+# (data/rna/dataset/prepare_gpt2.py, eos_token_id=0), so a block holds several
+# cells and nothing stops a masked token from attending across the join.
+document_masking = True
+# The packer wrote 0, not the tokenizer's sep_token_id. That resolves to 25428
+# here -- [SEP] is absent from the 25,426-token vocabulary, so HuggingFace
+# numbered it past the end -- and the data's largest id is 25,406. Keying on it
+# found zero boundaries and passed every batch through unchanged.
+boundary_token_id = 0
+
 # No preprocess_function here on purpose. training_ready packs cells end-to-end and
 # truncates to whole 1024-token blocks, so the data contains no padding at all —
 # attention_mask would be all ones and token_type_ids all zeros, exactly what the
