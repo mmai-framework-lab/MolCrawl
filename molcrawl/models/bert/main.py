@@ -969,6 +969,22 @@ if __name__ == "__main__":
                   f"{log_interval}. Saved checkpoints that miss an eval cannot be ranked "
                   f"and are only held by keep_latest.")
 
+    # An eval point reads a fixed EVAL_SUBSET_ROWS rows however it is batched, so a
+    # per_device_eval_batch_size well below the training micro-batch buys nothing and
+    # costs wall time in proportion. genome ran 160 for training and 8 for evaluation:
+    # 8.08 s per eval against a 0.40 s training step, which is 16.3 % of the run at
+    # eval_interval=100, and the interval was widened to 1,000 to pay for it (4972a37).
+    # The shapes drift apart because raising the training micro-batch is a throughput
+    # change and the eval line sits elsewhere in the file. Matching them is safe:
+    # evaluation runs two no_grad forwards per batch (HF's own, and the breakdown in
+    # _mlm_diagnostics), and two of those peak below the one forward+backward training
+    # already does at that width.
+    if per_device_eval_batch_size * 2 <= batch_size:
+        print(f"⚠️  per_device_eval_batch_size={per_device_eval_batch_size} against a "
+              f"training micro-batch of {batch_size}. Evaluation reads the same "
+              f"{EVAL_SUBSET_ROWS:,} rows either way, so this only makes each eval point "
+              f"slower -- about {batch_size / per_device_eval_batch_size:.0f}x here.")
+
     # The checkpoint we report and the checkpoint downstream evaluation reads are
     # the same only when the minimum lands on a save step. Evaluating every 100
     # steps and saving every 1,000 makes that the exception. Opt-in, because it
