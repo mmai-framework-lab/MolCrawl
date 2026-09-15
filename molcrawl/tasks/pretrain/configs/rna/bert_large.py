@@ -55,6 +55,11 @@ weight_decay: float  = 0.01
 log_interval: int = 100
 save_steps: int = 1000  # protein convention; 100 meant ~400 saves over 40,320 steps
 
+# Keep the checkpoint the reported number came from. Evaluation is 10x finer than
+# saving here (100 against 1,000), so the minimum lands off the save grid nine
+# times in ten and best_model_checkpoint points at a neighbour instead.
+save_on_improve = True
+
 # 10 % of max_steps, against the 2 % used elsewhere. The MLM stall investigation
 # (tmp/bert-mlm-stall-report-2026-08-06.md) traces the collapse of deep post-LN
 # BERT to too short a warmup — the original BERT-large took 10,000 steps, and
