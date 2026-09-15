@@ -1,6 +1,11 @@
 """
 ESM-2 Training Script for Protein Sequence Data
 
+NOT USED IN PRODUCTION. BERT is unified on `BertForMaskedLM` across all five modalities
+(bert-architecture-unify-order-2026-09-11 §1); this EsmForMaskedLM path is dormant, used
+only for the protein root-cause diagnostics (job 32688, value 2.5233, superseded). No
+production result number comes from it -- see review-10-numbers-conditions-inventory-2026-09-15.
+
 ESM-2 (Evolutionary Scale Modeling 2) is a protein sequence-specific software developed by Meta.
 This is a cutting edge Transformer model.
 
