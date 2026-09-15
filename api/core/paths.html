@@ -78,7 +78,7 @@ el.replaceWith(d);
     Returns:
         str: BERT output directory path
     &#34;&#34;&#34;
-    return os.path.join(LEARNING_SOURCE_DIR, domain, BERT_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
+    return os.path.join(get_model_output_root(), domain, BERT_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of BERT model</p>
 <h2 id="args">Args</h2>
@@ -249,7 +249,7 @@ el.replaceWith(d);
     else:
         size_suffix = model_size
 
-    return os.path.join(LEARNING_SOURCE_DIR, domain, GPT2_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
+    return os.path.join(get_model_output_root(), domain, GPT2_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of GPT-2 model</p>
 <h2 id="args">Args</h2>
@@ -318,7 +318,7 @@ el.replaceWith(d);
     else:
         size_suffix = model_size
 
-    return os.path.join(LEARNING_SOURCE_DIR, domain, LLAMA_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
+    return os.path.join(get_model_output_root(), domain, LLAMA_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of Llama-style decoder model</p>
 <h2 id="args">Args</h2>
@@ -347,6 +347,20 @@ el.replaceWith(d);
     return get_llama_output_path(domain, model_size)</code></pre>
 </details>
 <div class="desc"><p>Get Llama-style TensorBoard output path</p></div>
+</dd>
+<dt id="molcrawl.core.paths.get_model_output_root"><code class="name flex">
+<span>def <span class="ident">get_model_output_root</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_model_output_root():
+    &#34;&#34;&#34;Base directory for generated model output: MODEL_OUTPUT_ROOT, else the corpus.&#34;&#34;&#34;
+    return MODEL_OUTPUT_ROOT or LEARNING_SOURCE_DIR</code></pre>
+</details>
+<div class="desc"><p>Base directory for generated model output: MODEL_OUTPUT_ROOT, else the corpus.</p></div>
 </dd>
 <dt id="molcrawl.core.paths.get_refseq_tokenizer_path"><code class="name flex">
 <span>def <span class="ident">get_refseq_tokenizer_path</span></span>(<span>)</span>
@@ -394,7 +408,7 @@ el.replaceWith(d);
     Returns:
         str: RoBERTa output directory path
     &#34;&#34;&#34;
-    return os.path.join(LEARNING_SOURCE_DIR, domain, ROBERTA_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
+    return os.path.join(get_model_output_root(), domain, ROBERTA_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of RoBERTa model</p>
 <h2 id="args">Args</h2>
@@ -453,6 +467,7 @@ el.replaceWith(d);
 <li><code><a title="molcrawl.core.paths.get_llama_model_output_path" href="#molcrawl.core.paths.get_llama_model_output_path">get_llama_model_output_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_llama_output_path" href="#molcrawl.core.paths.get_llama_output_path">get_llama_output_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_llama_tensorboard_path" href="#molcrawl.core.paths.get_llama_tensorboard_path">get_llama_tensorboard_path</a></code></li>
+<li><code><a title="molcrawl.core.paths.get_model_output_root" href="#molcrawl.core.paths.get_model_output_root">get_model_output_root</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_refseq_tokenizer_path" href="#molcrawl.core.paths.get_refseq_tokenizer_path">get_refseq_tokenizer_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_roberta_model_output_path" href="#molcrawl.core.paths.get_roberta_model_output_path">get_roberta_model_output_path</a></code></li>
 <li><code><a title="molcrawl.core.paths.get_roberta_output_path" href="#molcrawl.core.paths.get_roberta_output_path">get_roberta_output_path</a></code></li>
