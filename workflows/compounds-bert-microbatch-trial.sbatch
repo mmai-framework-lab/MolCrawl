@@ -128,6 +128,44 @@ done
 echo
 echo "=== results (${RESULTS}) ==="
 cat "${RESULTS}"
+
+# The trial above times training only. Evaluation is 150 points over the run against
+# 15 saves, on a 10,000-row subset at per_device_eval_batch_size, and that count was
+# inherited rather than measured. At xl it is the difference between 1% of the run and
+# something worth reorganising, so one eval is timed at the shape that was adopted.
+ADOPTED=$(awk -F'\t' 'NR>1 && $5=="fits" { print $2; exit }' "${RESULTS}")
+if [ -n "${ADOPTED:-}" ]; then
+    echo
+    echo "=== one evaluation at batch_size=${ADOPTED} @ $(date -Is) ==="
+    OUT="${TRIAL_ROOT}/eval-probe"
+    LOG="${TRIAL_ROOT}/eval-probe.log"
+    mkdir -p "${OUT}"
+    # log_interval = max_steps puts exactly one evaluation at the last step.
+    # save_on_improve would then write a checkpoint -- 17 GB at xl -- for a number
+    # nothing reads, so it is off here.
+    "${TORCHRUN}" --standalone --nproc_per_node=4 \
+        molcrawl/models/bert/main.py "${CONFIG}" \
+        --model_path="${OUT}" \
+        --batch_size="${ADOPTED}" \
+        --gradient_accumulation_steps=1 \
+        --max_steps=2 \
+        --warmup_steps=1 \
+        --log_interval=2 \
+        --save_steps=1000 \
+        --save_on_improve=False \
+        > "${LOG}" 2>&1
+    EVAL_RC=$?
+    EVAL_RUNTIME=$(grep -o "'eval_runtime': [0-9.]*" "${LOG}" | tail -1 | sed "s/.*: //")
+    if [ "${EVAL_RC}" -eq 0 ] && [ -n "${EVAL_RUNTIME}" ]; then
+        awk -v e="${EVAL_RUNTIME}" \
+            'BEGIN { printf "one eval %.1fs -> 150 eval points = %.2f h wall = %.1f GPU-h\n", e, e*150/3600, e*150/3600*4 }'
+    else
+        echo "eval probe did not report a runtime (rc=${EVAL_RC}); see ${LOG}"
+        tail -20 "${LOG}"
+    fi
+    rm -rf "${OUT}"
+fi
+
 echo
 echo "=== largest that fits, and the 15,000-step cost it implies ==="
 awk -F'\t' 'NR>1 && $5=="fits" { print; exit }' "${RESULTS}" |
