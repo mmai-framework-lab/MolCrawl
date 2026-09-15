@@ -119,6 +119,23 @@ LLAMA_OUTPUT_BASE_DIR = "llama-output"
 ROBERTA_OUTPUT_BASE_DIR = "roberta-output"
 
 
+# Model output has always been derived from LEARNING_SOURCE_DIR, which puts every
+# checkpoint inside the tree the corpus is read from. On compounds that is 1.4T of
+# run artifacts sitting beside 18G of input; on genome the corpus belongs to another
+# user and is not writable at all. MODEL_OUTPUT_ROOT replaces the base for the
+# derived paths below and nothing else -- dataset and corpus paths keep resolving
+# under LEARNING_SOURCE_DIR, because that is where the inputs are.
+#
+# Unset, every path below is byte-identical to what it was, so no run in flight and
+# no checkpoint already on disk moves. A run that wants its output elsewhere sets it.
+MODEL_OUTPUT_ROOT = os.environ.get("MODEL_OUTPUT_ROOT", "")
+
+
+def get_model_output_root():
+    """Base directory for generated model output: MODEL_OUTPUT_ROOT, else the corpus."""
+    return MODEL_OUTPUT_ROOT or LEARNING_SOURCE_DIR
+
+
 def get_gpt2_output_path(domain, model_size):
     """
     Function to get output path of GPT-2 model
@@ -136,7 +153,7 @@ def get_gpt2_output_path(domain, model_size):
     else:
         size_suffix = model_size
 
-    return os.path.join(LEARNING_SOURCE_DIR, domain, GPT2_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
+    return os.path.join(get_model_output_root(), domain, GPT2_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
 
 
 # Commonly used GPT-2 output path constants
@@ -161,7 +178,7 @@ def get_bert_output_path(domain, model_size):
     Returns:
         str: BERT output directory path
     """
-    return os.path.join(LEARNING_SOURCE_DIR, domain, BERT_OUTPUT_BASE_DIR, f"{domain}-{model_size}")
+    return os.path.join(get_model_output_root(), domain, BERT_OUTPUT_BASE_DIR, f"{domain}-{model_size}")
 
 
 def get_bert_tensorboard_path(domain, model_size):
@@ -191,7 +208,7 @@ def get_llama_output_path(domain, model_size):
     else:
         size_suffix = model_size
 
-    return os.path.join(LEARNING_SOURCE_DIR, domain, LLAMA_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
+    return os.path.join(get_model_output_root(), domain, LLAMA_OUTPUT_BASE_DIR, f"{domain}-{size_suffix}")
 
 
 def get_llama_tensorboard_path(domain, model_size):
@@ -215,7 +232,7 @@ def get_roberta_output_path(domain, model_size):
     Returns:
         str: RoBERTa output directory path
     """
-    return os.path.join(LEARNING_SOURCE_DIR, domain, ROBERTA_OUTPUT_BASE_DIR, f"{domain}-{model_size}")
+    return os.path.join(get_model_output_root(), domain, ROBERTA_OUTPUT_BASE_DIR, f"{domain}-{model_size}")
 
 
 def get_roberta_tensorboard_path(domain, model_size):
