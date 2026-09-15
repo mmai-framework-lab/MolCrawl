@@ -135,11 +135,15 @@ if _smoke:
 # early_stopping OFF and are compute-matched).  gpt2/train.py reads this via globals().get.
 early_stopping = False
 
-# eval_interval defaults to 1000 for production runs (charter § compute-
-# matched schedule). When SMOKE_MAX_STEPS is set the block above already
-# overrode it to something like max_iters/5, so guard so we don't clobber it.
+# eval_interval for production runs. 1,000 was the charter's compute-matched
+# value; 100 is the cross-modality value (directive 2026-09-15 §3). An eval is
+# eval_iters x 2 splits x batch_size forwards on rank 0 alone, about 1.7 training
+# steps here, so ten times as many costs under 2 % of the run. The 16.3 % figure
+# that widened genome's interval was BERT's, and came from evaluating at a
+# micro-batch 20x below the training one -- a different problem, fixed separately.
+# When SMOKE_MAX_STEPS is set the block above already overrode this, so guard.
 if not _smoke:
-    eval_interval = 1000
+    eval_interval = 100
 eval_iters = 200
 log_interval = 10
 
@@ -148,12 +152,18 @@ log_interval = 10
 # "resume" (mirroring the legacy gpt2_small.py), which crashes the trainer
 # on a fresh subset run because no checkpoint exists yet.
 init_from = "scratch"
-always_save_checkpoint = True
-save_checkpoint_steps = None
-# Phase 7 (2026-07-22): allow env override to retain more ckpts during LR-fix
-# pilots so the best-val ckpt (typically at step 5k-13k for divergent runs)
-# is not evicted by the 50k+-step schedule. Default 5 preserved.
-max_checkpoints = int(os.environ.get("SUBSET_GPT2_MAX_CKPT", "5"))
+# Checkpoint policy, unified across modalities and architectures (directive
+# 2026-09-15 §3.1). always_save_checkpoint writes at every eval point, which makes
+# save_checkpoint_steps mean nothing; off, the run writes on the periodic grid for
+# resume and on every improvement for comparison (train.py, is_best_model).
+always_save_checkpoint = False
+save_checkpoint_steps = 1000
+# Phase 7 (2026-07-22) added the env override so LR-fix pilots could retain more
+# ckpts: the best-val one lands at step 5k-13k for a divergent run and the 50k+
+# schedule evicted it. cleanup_old_checkpoints now keeps the best by score rather
+# than the newest, so the window no longer decides that; the override stays as an
+# escape hatch. Default raised 5 -> 10 to match the other modalities.
+max_checkpoints = int(os.environ.get("SUBSET_GPT2_MAX_CKPT", "10"))
 
 # Phase 7 (2026-07-22): env override for weight_decay to support LR-fix pilot
 # where BERT-equivalent wd=0.01 is being tested (per boss GO in

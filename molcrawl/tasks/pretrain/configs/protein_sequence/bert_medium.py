@@ -88,6 +88,11 @@ weight_decay = 0.01
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100
 
+# Keep the checkpoint the reported number came from. Evaluation is 10x finer than
+# saving here (100 against 1,000), so the minimum lands off the save grid nine
+# times in ten and best_model_checkpoint points at a neighbour instead.
+save_on_improve = True
+
 batch_size = 8
 per_device_eval_batch_size = 8
 

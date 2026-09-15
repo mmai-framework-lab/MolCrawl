@@ -52,7 +52,16 @@ document_masking = True
 # committed 8 x 80 reached the same global batch by a slower micro-batch shape.
 batch_size = 32
 gradient_accumulation_steps = 20
-per_device_eval_batch_size = 8
+# Evaluation reads a fixed 10,000 rows (models/bert/main.py EVAL_SUBSET_ROWS), so an
+# eval point costs the same work however it is batched -- but at a micro-batch far
+# below the training one it takes far longer in wall time. genome measured the
+# consequence: 8.08 s per eval against a 0.40 s training step, which is 16.3 % of the
+# run at eval_interval=100 (commit 4972a37). Matching the training micro-batch is safe
+# by construction: evaluation runs two no_grad forwards per batch (HF's own and the
+# breakdown's in models/bert/_mlm_diagnostics.py), and two of those peak below one
+# forward+backward at the same width, which training already does. Logits are the
+# term that scales -- 32 x 1,024 x 616 vocab = 81 MB here.
+per_device_eval_batch_size = 32
 
 # Training seed (sequentially assigned across the tracked pretrain configs on
 # 2026-08-03; boss directive to fix per-config seeds for reproducibility).
