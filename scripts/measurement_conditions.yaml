@@ -106,7 +106,7 @@ conditions:
     checkpoint_kind: best_val
     checkpoint_file: "ckpt.pt"
     seq_len: 1026
-    note: genome GPT-2 21-subset best_val (FLAG: best_val subsample, not full-split)
+    note: "genome GPT-2 21-subset best_val (FLAG: best_val subsample, not full-split)"
     flag: best_val_as_result
     used_by: [genome GPT-2 21 subsets]
 
@@ -147,7 +147,7 @@ conditions:
     checkpoint_file: "ckpt.pt"
     seq_len: 1024
     effective_global_batch: 2560
-    note: compounds LR-grid 30ep (FLAG: best_val 3,200-seq subsample quoted as ladder result)
+    note: "compounds LR-grid 30ep (FLAG: best_val 3,200-seq subsample quoted as ladder result)"
     flag: best_val_as_result
     used_by: [compounds C3 / review-11 progress-3]
 
@@ -204,3 +204,16 @@ conditions:
     checkpoint_kind: final     # best not tracked
     note: 2026-06 kojima-lab HF published set (hf-published-eval.json). blended eval_loss only, old vocab, no document masking, 60k-500k steps, no eval_loss_mask. Includes non-production architectures (chemberta2/dnabert2/rnaformer, arch unconfirmed). Never equate with lineage-B production numbers even when repo names collide.
     superseded: true
+
+# Common rule for all five modalities (protein-arch-inventory-verdict-2026-09-15 §12):
+# the final representation used by a downstream probe is taken in the architecture's
+# standard form and is NOT unified across architectures --
+#   GPT-2 : the value after the final layer-norm (ln_f)
+#   BERT  : the final hidden-layer output
+# A downstream/probe result carries this alongside its condition id. (Protein's own
+# ProteinGym eval is zero-shot likelihood, so it extracts no such representation; this
+# rule bites where embeddings feed a classifier, e.g. genome/compounds probes.)
+representation_extraction:
+  gpt2: after_final_layernorm
+  bert: final_hidden_layer_output
+  unified_across_architectures: false
