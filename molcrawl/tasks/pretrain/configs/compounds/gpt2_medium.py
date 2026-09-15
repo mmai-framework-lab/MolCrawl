@@ -38,6 +38,12 @@ min_lr = 3e-05  # minimum learning rate, should be ~= learning_rate/10 per Chinc
 
 # eval stuff — ~31 eval points over the run; log_interval != eval_interval so the
 # reported dt/MFU is not polluted by eval time.
+# Left at 50 while the directive's 100 is applied elsewhere. This ladder runs
+# max_iters=1558 and compounds-ladder-gpt2.sbatch passes no overrides, so 100
+# would take it from 31 eval points to 15 -- the resolution loss the directive's
+# own §4 warns about, on the arch whose curve turns. The value to settle first is
+# max_iters: compounds BERT moved to 15,000 steps in 54552c3 because that is what
+# its run used, and 1,558 here no longer matches it.
 eval_interval = 50
 # eval_sequences fixes the *number of validation sequences* per eval point instead of
 # the number of batches, so every ladder size averages its val loss over the same
@@ -51,9 +57,14 @@ log_interval = 10
 init_from = "scratch"  # v4 packed ladder starts fresh; no v3 checkpoint is compatible
 
 # checkpoint management
-always_save_checkpoint = True  # Save regularly regardless of validation loss
-save_checkpoint_steps = None  # If None, save with eval_interval
-max_checkpoints = 5  # Keep up to 5 checkpoints
+# Checkpoint policy, unified across modalities and architectures (directive
+# 2026-09-15 §3.1). always_save_checkpoint writes at every eval point, which makes
+# save_checkpoint_steps mean nothing; off, the run writes on the periodic grid for
+# resume and on every improvement for comparison (train.py, is_best_model).
+# max_checkpoints is the best-N kept by score, plus the newest for resume.
+always_save_checkpoint = False
+save_checkpoint_steps = 1000
+max_checkpoints = 10
 
 # early stopping — OFF for pretraining: the ladder is compute-matched, every size
 # runs the full schedule (spec 2026-07-31 §2; matches bert_*.py early_stopping=False).
