@@ -303,6 +303,16 @@ def main() -> int:
         ),
     )
     parser.add_argument("--max-sequences", type=int, default=0, help="0 scores the whole split")
+    parser.add_argument(
+        "--condition-id",
+        default=None,
+        help=(
+            "The measurement-condition id from scripts/measurement_conditions.yaml this "
+            "run realises (e.g. GPT2-PROT-SUB100K). Written into the output so reports can "
+            "cite the id alone (protein-arch-inventory-verdict §5). A value whose condition "
+            "is not registered must not be reported."
+        ),
+    )
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
@@ -381,6 +391,8 @@ def main() -> int:
         loss, tokens, sequences_scored = score_split(
             model, fetch, n_rows, args.device, args.max_sequences, ignored_ids
         )
+        _cfg = ckpt.get("config") or {}
+        _egb = _cfg.get("effective_global_batch") or _cfg.get("expected_global_batch")
         results[size] = {
             "loss": loss,
             "perplexity": math.exp(loss),
@@ -393,6 +405,22 @@ def main() -> int:
             "checkpoint_iter": ckpt.get("iter_num"),
             "best_val_loss": float(ckpt.get("best_val_loss", float("nan"))),
             "params_millions": sum(p.numel() for p in model.parameters()) / 1e6,
+            # Measurement conditions (protein-arch-inventory-verdict §4): written next to
+            # every value so no bare number leaves this path. This scorer is GPT-2 CLM only,
+            # so architecture/metric are fixed; mlm_probability is not applicable.
+            "conditions": {
+                "condition_id": args.condition_id,
+                "architecture": "nanogpt-GPT",
+                "metric": "clm",
+                "mlm_probability": None,
+                "eval_split": args.split,
+                "eval_scope": "subsample" if args.max_sequences else "full",
+                "eval_rows": sequences_scored,
+                "checkpoint_step": ckpt.get("iter_num"),
+                "checkpoint_file": os.path.basename(str(ckpt_path)),
+                "seq_len": model_args.get("block_size"),
+                "effective_global_batch": _egb,  # null if the checkpoint config did not record it (see run_manifest.json / the registry)
+            },
         }
         logger.info(
             "%s: %s loss %.4f, perplexity %.3f (logged best_val %.4f at iter %s)",
