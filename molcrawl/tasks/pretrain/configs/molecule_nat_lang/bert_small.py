@@ -27,13 +27,15 @@ tokenizer = Tokenizer()
 meta_vocab_size = (tokenizer.vocab_size // 8 + 1) * 8
 check_vocab_size(meta_vocab_size)
 
-# 3 epochs of the train split at effective global batch 2560. BERT runs under HF
-# Trainer, where the effective batch is batch_size * grad_accum * world_size, so
-# 8 * 80 * 4 GPU = 2560 — this REQUIRES the fixed 4-GPU launch (unlike GPT-2,
-# whose nanoGPT effective batch is GPU-count-independent).
-# 3 * 318,118 train blocks / 2560 = 372.8 -> 373 steps. Verified empirically:
-# HF reported epoch=1.61 at 200 steps in the smoke (job 15429).
-max_steps = 373
+# 12,000 steps at effective global batch 2,560 -- the value the learning-rate grid of
+# 2026-09-15 is run at, and the length the small, medium and large arms are compared at.
+# The 373 this replaces was 3 epochs of the train split (3 * 318,118 / 2,560), which the
+# runs up to 2026-09-13 overrode at launch to 12,000 anyway; written here so the grid
+# arms carry it in the config rather than in the submit command.
+max_steps = 12000
+# 10% of max_steps. models/bert/main.py sets 200 when a config says nothing, which is the
+# value shared by five modalities; this config states its own rather than inheriting it.
+warmup_steps = 1200
 # MLM collapse fix: packing concatenates ~10 documents per 1024 block (measured
 # 10.26 EOS per block on the train split); without masking, attention leaks across
 # those documents and the run stalls at the unigram level. Confine attention per
@@ -51,7 +53,9 @@ max_length = 1024
 # rebuild brings it to 0.00096. Content is identical (325,752,832 tokens,
 # 3,267,172 documents); only the grouping into 1024-token blocks differs.
 dataset_dir = MOLECULE_NAT_LANG_DATASET_DIR + "_shuffled"
-learning_rate = 0.0001
+# Provisional: the 2026-09-15 grid runs 1e-4 / 3e-4 / 1e-3 at each size in the
+# bert_*_lr*.py configs, and the winner gets written back here.
+learning_rate = 1e-4
 weight_decay = 0.01
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100
@@ -86,7 +90,14 @@ def preprocess_function(examples):
 
 
 
-# Training seed (sequentially assigned across the 117 tracked pretrain configs
-# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
-# Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 59
+# 42 across all three sizes, so the learning-rate grid differs in the learning rate alone.
+# This leaves the per-config sequential seeds assigned on 2026-08-03 (small 59, medium 55,
+# large 54), which the runs up to 2026-09-13 used; those runs are kept as reference values
+# and are not part of the grid. Seed variance is therefore not measured here.
+seed = 42
+
+# Evaluation runs every 100 steps and checkpoints are written every 1,000, so of the 120
+# eval points only 12 leave weights behind: the best number reported and the weights that
+# can be adopted would come from different steps. Ask for a checkpoint at each new best as
+# well (models/bert/_save_on_improve).
+save_on_improve = True
