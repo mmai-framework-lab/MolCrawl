@@ -23,8 +23,14 @@
 # The GPU is not used; gpu is the only partition here.
 #
 # Required: SCORES_DIR, BASELINE_SCORES, OUT.
-# Optional: BASELINE_KEY, BASELINE_NAME, WINDOW_LOSS, DEGENERATE_BASELINES,
-#           PER_RUN_CSV, ROUNDS, SEED.
+# Optional: BASELINE_KEY, BASELINE_NAME, WINDOW_LOSS, FINAL_SCORES,
+#           DEGENERATE_BASELINES, PER_RUN_CSV, ROUNDS, SEED.
+#
+# FINAL_SCORES is the directory of <subset>.json the final scorers write. It
+# supplies the second correlation's x-axis with both of its terms measured in
+# one pass over the whole valid split, and takes priority over the older
+# DEGENERATE_BASELINES + PER_RUN_CSV pair, whose two terms come from
+# different ranges. Pass FINAL_SCORES whenever that correlation is reported.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -52,6 +58,7 @@ echo "=== out:      ${OUT} ==="
     ${WINDOW_LOSS:+--window-loss "${WINDOW_LOSS}"} \
     ${DEGENERATE_BASELINES:+--degenerate-baselines "${DEGENERATE_BASELINES}"} \
     ${PER_RUN_CSV:+--per-run-csv "${PER_RUN_CSV}"} \
+    ${FINAL_SCORES:+--final-scores "${FINAL_SCORES}"} \
     --rounds "${ROUNDS:-2000}" \
     --seed "${SEED:-1026}" \
     --out "${OUT}"
