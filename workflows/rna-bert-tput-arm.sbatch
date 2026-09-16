@@ -30,7 +30,13 @@
 # second apart and arm 2 ran at 5.17 s/step early and 12.81 at the end, while
 # arm 1 held flat. Whatever the mechanism, the two are not independent samples.
 #
-# Required: LEARNING_SOURCE_DIR, TPUT_OUT_BASE, ARM_CONFIG. Optional: STEPS, LABEL.
+# Pass SEED when an arm must not reuse the rows an earlier arm read. All configs
+# carry seed 106, so every arm draws the same head of the same permutation; if a
+# later arm lands on a node an earlier one used, those rows are still in RAM. Rows
+# are a fixed 1,024 tokens, so a different seed changes which rows are read and not
+# what a step costs.
+#
+# Required: LEARNING_SOURCE_DIR, TPUT_OUT_BASE, ARM_CONFIG. Optional: STEPS, LABEL, SEED.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -79,7 +85,7 @@ export HF_DATASETS_CACHE="${TPUT_OUT_BASE}/hf-cache-rna"
 export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 export OMP_NUM_THREADS=8
 
-echo "=== arm=${LABEL} node=$(hostname) job=${SLURM_JOB_ID:-none} steps=${STEPS} ==="
+echo "=== arm=${LABEL} node=$(hostname) job=${SLURM_JOB_ID:-none} steps=${STEPS} seed=${SEED:-config} ==="
 echo "=== config=${ARM_CONFIG} ==="
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1
 free -g | awk 'NR<=2{print "  mem: "$0}'
@@ -103,6 +109,7 @@ PYTOK
     molcrawl/models/bert/main.py "${ARM_CONFIG}" \
     --model_path="${OUT}" \
     --max_steps="${STEPS}" \
+    ${SEED:+--seed="${SEED}"} \
     --warmup_steps=10 \
     --log_interval="$((STEPS + 100))" \
     --save_steps="$((STEPS + 100))" \
