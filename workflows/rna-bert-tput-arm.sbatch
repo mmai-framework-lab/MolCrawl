@@ -24,6 +24,12 @@
 # as-is arm again after the last one and compare. Across jobs that check now
 # measures what it always claimed to -- whether the machine moved under us.
 #
+# Run the arms ONE AT A TIME, with --dependency, not side by side. Every arm
+# draws the same rows (seed 106), so two arms running together read the same
+# Lustre objects and one warms them for the other: arms 1 and 2 launched one
+# second apart and arm 2 ran at 5.17 s/step early and 12.81 at the end, while
+# arm 1 held flat. Whatever the mechanism, the two are not independent samples.
+#
 # Required: LEARNING_SOURCE_DIR, TPUT_OUT_BASE, ARM_CONFIG. Optional: STEPS, LABEL.
 
 set -uo pipefail
