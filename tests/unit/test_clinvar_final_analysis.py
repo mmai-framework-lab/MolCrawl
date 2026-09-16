@@ -158,7 +158,7 @@ def _tiny_campaign(tmp_path, subsets):
                      "label_pathogenic": label, "score": 0.1 * (i % 5)})
     b = tmp_path / "b.jsonl"
     b.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
-    for n, (name, shift) in enumerate(subsets.items()):
+    for name, shift in subsets.items():
         d = scores / name
         d.mkdir(parents=True)
         d.joinpath("predictions.jsonl").write_text("\n".join(
