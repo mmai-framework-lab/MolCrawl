@@ -51,47 +51,39 @@ def strip_compile_prefix(state: dict) -> dict:
     return {(k[len(pre):] if k.startswith(pre) else k): v for k, v in state.items()}
 
 
-def build_encoder(model_path: str, tokenizer_path: str, arch: str, device: str,
-                  untrained: bool = False, init_seed: int = 0
-                  ) -> Tuple[Callable, Callable, int]:
-    """Return ``(forward, encode, hidden_size)`` for a trunk.
-
-    ``forward(ids)`` gives the final hidden states, ``encode(seqs)`` turns a list
-    of character strings into a batch of ids with whatever special tokens the
-    family expects. See the module docstring for the layer, the normalisation and
-    the padding contract.
-    """
+def _nanogpt_encoder(model_path, tok, device, untrained, init_seed):
+    """nanoGPT: walk the trunk by hand, since forward() only returns logits."""
     import torch
-    from transformers import AutoTokenizer
 
-    tok = AutoTokenizer.from_pretrained(tokenizer_path)
+    from molcrawl.models.gpt2.model import GPT, GPTConfig
 
-    if arch == "gpt2":
-        from molcrawl.models.gpt2.model import GPT, GPTConfig
+    ck = torch.load(model_path, map_location="cpu", weights_only=False)
+    margs = dict(ck["model_args"])
+    if untrained:
+        torch.manual_seed(init_seed)
+    model = GPT(GPTConfig(**margs))
+    if not untrained:
+        model.load_state_dict(strip_compile_prefix(ck["model"]))
+    model.to(device).eval()
+    tr = model.transformer
 
-        ck = torch.load(model_path, map_location="cpu", weights_only=False)
-        margs = dict(ck["model_args"])
-        if untrained:
-            torch.manual_seed(init_seed)
-        model = GPT(GPTConfig(**margs))
-        if not untrained:
-            model.load_state_dict(strip_compile_prefix(ck["model"]))
-        model.to(device).eval()
-        tr = model.transformer
+    def forward(ids):
+        pos = torch.arange(ids.size(1), dtype=torch.long, device=ids.device)
+        x = tr.drop(tr.wte(ids) + tr.wpe(pos))
+        for block in tr.h:
+            x = block(x)
+        return tr.ln_f(x)
 
-        def forward(ids):
-            pos = torch.arange(ids.size(1), dtype=torch.long, device=ids.device)
-            x = tr.drop(tr.wte(ids) + tr.wpe(pos))
-            for block in tr.h:
-                x = block(x)
-            return tr.ln_f(x)
+    def encode(seqs):
+        return torch.tensor([tok.convert_tokens_to_ids(list(s)) for s in seqs],
+                            dtype=torch.long, device=device)
 
-        def encode(seqs):
-            return torch.tensor([tok.convert_tokens_to_ids(list(s)) for s in seqs],
-                                dtype=torch.long, device=device)
+    return forward, encode, int(margs["n_embd"])
 
-        return forward, encode, int(margs["n_embd"])
 
+def _hf_encoder(model_path, tok, device, untrained, init_seed):
+    """Hugging Face: the trunk is AutoModel, and it wraps the window itself."""
+    import torch
     from transformers import AutoConfig, AutoModel
 
     if untrained:
@@ -111,3 +103,23 @@ def build_encoder(model_path: str, tokenizer_path: str, arch: str, device: str,
             dtype=torch.long, device=device)
 
     return forward, encode, int(model.config.hidden_size)
+
+
+def build_encoder(model_path: str, tokenizer_path: str, arch: str, device: str,
+                  untrained: bool = False, init_seed: int = 0
+                  ) -> Tuple[Callable, Callable, int]:
+    """Return ``(forward, encode, hidden_size)`` for a trunk.
+
+    ``forward(ids)`` gives the final hidden states, ``encode(seqs)`` turns a list
+    of character strings into a batch of ids with whatever special tokens the
+    family expects. See the module docstring for the layer, the normalisation and
+    the padding contract.
+
+    The two families are built by separate helpers rather than by two branches
+    here, so that each one's ``forward`` and ``encode`` are named once.
+    """
+    from transformers import AutoTokenizer
+
+    tok = AutoTokenizer.from_pretrained(tokenizer_path)
+    build = _nanogpt_encoder if arch == "gpt2" else _hf_encoder
+    return build(model_path, tok, device, untrained, init_seed)
