@@ -46,7 +46,27 @@ OUT="${TPUT_OUT_BASE}/bert-tput-arm/${LABEL}-${SLURM_JOB_ID:-0}"
 LOG="${TPUT_OUT_BASE}/tput-arm-${SLURM_JOB_ID:-0}-${LABEL}.log"
 mkdir -p "${OUT}" "${TPUT_OUT_BASE}" workflows/slurm-logs
 
-export LEARNING_SOURCE_DIR
+# The config writes the tokenizer to LEARNING_SOURCE_DIR/rna/custom_tokenizer_bert
+# and reads it straight back. That path is shared, so arms running at the same
+# time write over each other's directory mid-read: arms 1 and 2 of the first
+# attempt (117320, 117321) both died in AutoTokenizer.from_pretrained while arm 3
+# was writing. Pre-writing it once per job does not help -- the collision is
+# between jobs, not between the four ranks.
+#
+# So each job gets its own view of the tree: every entry of rna/ symlinked
+# through, except custom_tokenizer_bert, which is a real directory this job alone
+# writes. The data is not copied and the shared tree is not written to.
+OVERLAY="${TPUT_OUT_BASE}/ls-overlay-${SLURM_JOB_ID:-0}"
+rm -rf "${OVERLAY}"; mkdir -p "${OVERLAY}/rna"
+for e in "${LEARNING_SOURCE_DIR}"/rna/*; do
+    b="$(basename "${e}")"
+    [ "${b}" = "custom_tokenizer_bert" ] && continue
+    ln -s "${e}" "${OVERLAY}/rna/${b}"
+done
+mkdir -p "${OVERLAY}/rna/custom_tokenizer_bert"
+echo "--- per-job learning source overlay: ${OVERLAY} ---"
+export LEARNING_SOURCE_DIR="${OVERLAY}"
+
 export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1
 export TOKENIZERS_PARALLELISM=false
 export HF_DATASETS_CACHE="${TPUT_OUT_BASE}/hf-cache-rna"
@@ -58,9 +78,10 @@ echo "=== config=${ARM_CONFIG} ==="
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1
 free -g | awk 'NR<=2{print "  mem: "$0}'
 
-# The config writes the tokenizer from every rank. Four ranks writing one
-# directory is a race, and it killed the first arm of job 117065 when rank 1 read
-# a half-written file. Write it once, single process, before torchrun.
+# Four ranks writing one directory is also a race -- it killed the first arm of
+# job 117065 when rank 1 read a half-written file. Write it once, single process,
+# before torchrun. With the overlay above this is now the only writer of that
+# path anywhere.
 echo "--- materialising the tokenizer once ---"
 "${PYBIN}" - "${ARM_CONFIG}" <<'PYTOK'
 import sys
@@ -85,7 +106,7 @@ rc=$?
 if [ ${rc} -ne 0 ]; then
     why="rc=${rc}"; grep -qi "out of memory" "${LOG}" && why="OOM"
     echo "FAILED (${why})"; grep -i "error\|out of memory" "${LOG}" | head -5 | sed 's/^/  /'
-    rm -rf "${OUT}"; exit "${rc}"
+    rm -rf "${OUT}" "${OVERLAY}"; exit "${rc}"
 fi
 
 # Seconds per step from tqdm's own clock, from step 50 to the last step. genome's
@@ -115,5 +136,5 @@ seen = [k for k in sorted(pts) if k >= 50]
 for k in seen[:: max(1, len(seen) // 6)]:
     print(f"    step {k:>4}  {pts[k]:>6}s elapsed")
 PYTPUT
-rm -rf "${OUT}"
+rm -rf "${OUT}" "${OVERLAY}"
 echo "=== done @ $(date -Is) ==="
