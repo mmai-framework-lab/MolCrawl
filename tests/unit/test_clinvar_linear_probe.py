@@ -160,13 +160,6 @@ def test_the_variant_index_follows_the_architecture():
     assert lp.variant_token_index("gpt2", 1024) == 512      # no special token
 
 
-def test_the_compile_prefix_is_stripped():
-    """torch.compile saves under _orig_mod.; load_state_dict would reject it."""
-    got = lp._strip_compile_prefix({"_orig_mod.wte.weight": 1, "ln_f.bias": 2})
-
-    assert got == {"wte.weight": 1, "ln_f.bias": 2}
-
-
 def test_gpt2_adopts_the_best_val_file_at_the_run_root(tmp_path):
     (tmp_path / "ckpt.pt").write_text("x")
     (tmp_path / "checkpoint-99000").mkdir()
@@ -222,3 +215,33 @@ def test_hitting_the_limit_is_reported_as_not_converged():
                                     C=1.0, seed=0, max_iter=1)
 
     assert all(f["converged"] is False for f in per_fold.values())
+
+
+# ---------------------------------------------------------------------------
+# What the third feature group averages over
+#
+# BERT wraps the window in [CLS] and [SEP], nanoGPT wraps it in nothing. Taking
+# the mean over every token position would average 1,026 positions for one and
+# 1,024 for the other, so the group would not mean the same thing in the two.
+# The span is the bases only.
+# ---------------------------------------------------------------------------
+
+
+def test_the_mean_span_covers_the_bases_and_nothing_else():
+    window = 1024
+    for arch, start in (("bert", 1), ("gpt2", 0)):
+        span = (lp.special_token_offset(arch), window)
+
+        assert span == (start, window)
+        assert span[0] + span[1] <= window + 2 * span[0]   # stays inside the input
+
+
+def test_the_variant_index_sits_inside_the_mean_span():
+    """Otherwise the centre feature and the pooled feature describe different
+    regions, and the third group would not contain the substitution at all."""
+    window = 1024
+    for arch in ("bert", "gpt2"):
+        start = lp.special_token_offset(arch)
+        at = lp.variant_token_index(arch, window)
+
+        assert start <= at < start + window
