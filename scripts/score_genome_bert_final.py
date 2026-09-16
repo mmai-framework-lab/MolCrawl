@@ -172,6 +172,10 @@ def main():
         "split": args.split,
         "rows_scored": len(rows),
         "mlm_probability": args.mlm_probability,
+        # The masking draw consumes the RNG per batch, so which positions
+        # a seed masks depends on how the split was batched. Recorded so
+        # two scorings can be told apart when their seeds agree.
+        "batch_size": args.batch_size,
         # The run evaluated under bf16 autocast; this pass is fp32. Values here
         # are therefore not expected to reproduce best_metric_at_selection even
         # at the same rows and seed. Every subset is scored by this script, so
