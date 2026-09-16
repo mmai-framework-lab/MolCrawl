@@ -189,3 +189,23 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "benchmark: Benchmark tests")
     config.addinivalue_line("markers", "bert: BERT tests")
     config.addinivalue_line("markers", "gpt2: GPT2 tests")
+
+
+try:  # the plugin is not in this environment; see the fixture below
+    import pytest_benchmark  # noqa: F401
+except ImportError:
+
+    @pytest.fixture
+    def benchmark():
+        """Stand in for pytest-benchmark's fixture when the plugin is not installed.
+
+        Both users of it -- the two performance tests in tests/unit/test_compounds.py --
+        skip on their first line, but a fixture is resolved before the body runs, so
+        without the plugin they ended the run as errors rather than skips. Two permanent
+        errors in every run are two places a new one can hide, and "303 passed, 2 errors"
+        stops meaning anything.
+
+        Defined only when the import fails, so installing pytest-benchmark later gives
+        the real fixture back without touching this.
+        """
+        pytest.skip("pytest-benchmark is not installed")
