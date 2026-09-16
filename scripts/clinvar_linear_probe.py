@@ -29,6 +29,8 @@ import time
 
 import numpy as np
 
+from molcrawl.models._representations import build_encoder, special_token_offset
+
 FOLDS = [("21",), ("22",), ("X",)]     # chrY stays in train in all three
 ALWAYS_TRAIN = ("Y",)
 BASES = "ACGT"
@@ -73,17 +75,11 @@ def model_free_features(rows):
 def variant_token_index(arch, window_len):
     """Where the variant sits in the token sequence.
 
-    BERT prepends [CLS], so every base moves one along; nanoGPT has no special
-    tokens. Reading the wrong index scores a position that is not the variant,
-    and nothing in the output would say so.
+    The window puts the variant at its centre; the offset is whatever special
+    token the family prepends. Reading the wrong index scores a position that is
+    not the variant, and nothing in the output would say so.
     """
-    return window_len // 2 + (0 if arch == "gpt2" else 1)
-
-
-def _strip_compile_prefix(state):
-    """torch.compile stores parameters under _orig_mod.; train.py strips it too."""
-    pre = "_orig_mod."
-    return {(k[len(pre):] if k.startswith(pre) else k): v for k, v in state.items()}
+    return window_len // 2 + special_token_offset(arch)
 
 
 def adopted_checkpoint(run_dir, arch):
@@ -109,72 +105,7 @@ def adopted_checkpoint(run_dir, arch):
     return (path, f"checkpoint-{step}") if os.path.isdir(path) else (None, None)
 
 
-def build_encoder(model_path, tokenizer_path, arch, device, untrained=False, init_seed=0):
-    """Load a trunk and return (forward, encode, hidden_size).
-
-    ``untrained`` builds the same architecture from the checkpoint's own config
-    and leaves the weights at their initialisation. That is the floor for the
-    architecture: it carries the same number of features as the trained run, so
-    whatever a linear classifier reads out of it is not an effect of pretraining.
-
-    The final hidden state means what each architecture calls by that name --
-    nanoGPT's after ln_f, BERT's the last encoder layer's output, which carries
-    no such final norm. Forcing one convention onto the other would change what
-    is being measured.
-    """
-    import torch
-    from transformers import AutoTokenizer
-
-    tok = AutoTokenizer.from_pretrained(tokenizer_path)
-
-    if arch == "gpt2":
-        from molcrawl.models.gpt2.model import GPT, GPTConfig
-
-        ck = torch.load(model_path, map_location="cpu", weights_only=False)
-        margs = dict(ck["model_args"])
-        if untrained:
-            torch.manual_seed(init_seed)
-        model = GPT(GPTConfig(**margs))
-        if not untrained:
-            model.load_state_dict(_strip_compile_prefix(ck["model"]))
-        model.to(device).eval()
-        tr = model.transformer
-
-        def forward(ids):
-            pos = torch.arange(ids.size(1), dtype=torch.long, device=ids.device)
-            x = tr.drop(tr.wte(ids) + tr.wpe(pos))
-            for block in tr.h:
-                x = block(x)
-            return tr.ln_f(x)
-
-        def encode(seqs):
-            return torch.tensor([tok.convert_tokens_to_ids(list(s)) for s in seqs],
-                                dtype=torch.long, device=device)
-
-        return forward, encode, int(margs["n_embd"])
-
-    from transformers import AutoConfig, AutoModel
-
-    if untrained:
-        torch.manual_seed(init_seed)
-        model = AutoModel.from_config(AutoConfig.from_pretrained(model_path))
-    else:
-        model = AutoModel.from_pretrained(model_path)
-    model.to(device).eval()
-
-    def forward(ids):
-        return model(input_ids=ids).last_hidden_state
-
-    def encode(seqs):
-        cls, sep = tok.cls_token_id, tok.sep_token_id
-        return torch.tensor(
-            [[cls] + tok.convert_tokens_to_ids(list(s)) + [sep] for s in seqs],
-            dtype=torch.long, device=device)
-
-    return forward, encode, int(model.config.hidden_size)
-
-
-def representations(rows, forward, encode, at, batch_size):
+def representations(rows, forward, encode, at, batch_size, base_span):
     """Frozen features: what the substitution did to the representation.
 
     The hidden state at the variant position, the change there, and the same
@@ -186,7 +117,13 @@ def representations(rows, forward, encode, at, batch_size):
     group and its mean is half the mean over the right-hand side. That is a
     constant factor on the whole group, and the per-fold standardisation removes
     it.
+
+    ``base_span`` is (start, length) of the bases inside the token sequence. The
+    average is taken over those positions only, so [CLS] and [SEP] stay out of
+    it: including them would average 1,026 positions for BERT against 1,024 for
+    nanoGPT, and the third group would not mean the same thing in the two.
     """
+    lo_b, n_b = base_span
     import torch
 
     feats = []
@@ -196,7 +133,8 @@ def representations(rows, forward, encode, at, batch_size):
             h_ref = forward(encode([r["reference_sequence"] for r in chunk]))
             h_var = forward(encode([r["variant_sequence"] for r in chunk]))
             d_centre = h_var[:, at] - h_ref[:, at]
-            d_mean = h_var.mean(dim=1) - h_ref.mean(dim=1)
+            span = slice(lo_b, lo_b + n_b)
+            d_mean = h_var[:, span].mean(dim=1) - h_ref[:, span].mean(dim=1)
             feats.append(torch.cat([h_ref[:, at], d_centre, d_mean],
                                    dim=1).float().cpu().numpy())
     return np.concatenate(feats, axis=0)
@@ -323,7 +261,15 @@ def main():
           f"max_iter={args.max_iter}")
     print(f"  folds: test chr21 / chr22 / chrX, chr{'/'.join(ALWAYS_TRAIN)} always in train\n")
 
+    # The fit is described in the output rather than left to the reader to infer
+    # from defaults: the same settings have to hold for every run and every fold,
+    # and a later sklearn could change what a default means.
+    from sklearn.linear_model import LogisticRegression as _LR
+    _ref = _LR(C=args.C, max_iter=args.max_iter)
     results = {"C": args.C, "seed": args.seed, "max_iter": args.max_iter,
+               "penalty": _ref.penalty, "solver": _ref.solver,
+               "standardisation": "StandardScaler, per feature, fitted on each "
+                                  "fold's training side only",
                "variants": len(rows), "runs": {},
                # Features are taken in fp32; the runs trained under bf16 autocast.
                # Every subset goes through this same path, so the comparison
@@ -377,15 +323,21 @@ def main():
                     continue
                 jobs.append((subset, path, label, False, 0))
 
-        at = variant_token_index(args.arch, len(rows[0]["reference_sequence"]))
+        window = len(rows[0]["reference_sequence"])
+        at = variant_token_index(args.arch, window)
+        base_span = (special_token_offset(args.arch), window)
         results["variant_token_index"] = at
-        print(f"  arch {args.arch}   変異のトークン位置 {at}\n")
+        results["mean_pool_span"] = {"start": base_span[0], "length": base_span[1],
+                                     "excludes_special_tokens": True}
+        print(f"  arch {args.arch}   変異のトークン位置 {at}   "
+              f"平均の範囲 {base_span[0]}..{base_span[0] + base_span[1] - 1}"
+              f"（塩基 {base_span[1]} 個、特別なトークンを含まない）\n")
 
         for name, path, label, untrained, sd in jobs:
             t0 = time.monotonic()
             fwd, enc, hidden = build_encoder(path, args.tokenizer, args.arch, device,
                                              untrained=untrained, init_seed=sd)
-            feats = representations(rows, fwd, enc, at, args.batch_size)
+            feats = representations(rows, fwd, enc, at, args.batch_size, base_span)
             t_feat = time.monotonic() - t0
             pf, ov, held = probe(feats, rows, args.C, args.seed, args.max_iter)
             t_all = time.monotonic() - t0
