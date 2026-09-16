@@ -21,6 +21,15 @@ something other than corpus composition: how much of each subset was lost to
 windowing, and how far each run got from its own degenerate baseline. The second
 uses the margin rather than raw loss because the 21 valid splits are not the same
 data and their losses are not on one scale.
+
+A margin is only meaningful when both of its terms are measured on the same
+positions. Pass ``--final-scores``, whose scorers compute the loss and the
+baseline in one pass over the whole valid split. The older
+``--degenerate-baselines`` with ``--per-run-csv`` subtracts a baseline tallied on
+the first 10,000 rows from a minimum over evaluations that sampled all 50,000
+with replacement; the range difference alone moves the baseline by -0.0141 to
++0.0123 per subset, which on this x-axis is indistinguishable from a real
+difference in how well the corpus was learned.
 """
 import argparse
 import csv
@@ -126,6 +135,11 @@ def main():
     ap.add_argument("--window-loss", default="")
     ap.add_argument("--degenerate-baselines", default="")
     ap.add_argument("--per-run-csv", default="", help="b21-per-run.csv, for best_val")
+    ap.add_argument("--final-scores", default="",
+                    help="directory of <subset>.json from score_genome_{bert,gpt2}_"
+                         "final.py. Preferred over --degenerate-baselines with "
+                         "--per-run-csv: those two measure the margin's terms on "
+                         "different ranges, these measure both in one pass")
     ap.add_argument("--rounds", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=1026)
     ap.add_argument("--out", default="")
@@ -214,13 +228,41 @@ def main():
     if args.window_loss and os.path.exists(args.window_loss):
         xs["窓の欠落率"] = {r["subset"]: r["loss_fraction"]
                         for r in json.load(open(args.window_loss))}
-    if (args.degenerate_baselines and args.per_run_csv
+    margin_source = None
+    if args.final_scores and os.path.isdir(args.final_scores):
+        # One pass per subset: the model's loss and the baseline it is measured
+        # against come from the same rows and the same positions, so their
+        # difference carries no range difference inside it.
+        got = {}
+        for path in sorted(glob.glob(os.path.join(args.final_scores, "*.json"))):
+            d = json.load(open(path))
+            m = d.get("margin")
+            # The BERT scorer aggregates over masking seeds and writes
+            # {"mean", "min", "max", "spread"}; the GPT-2 pass is deterministic
+            # and writes the number itself.
+            got[os.path.splitext(os.path.basename(path))[0]] = (
+                float(m["mean"]) if isinstance(m, dict) else float(m))
+        if got:
+            xs["退化解からの余裕"] = got
+            margin_source = {"from": "final-scores", "dir": args.final_scores,
+                             "range": "one ordered pass over the whole valid split",
+                             "n": len(got)}
+    elif (args.degenerate_baselines and args.per_run_csv
             and os.path.exists(args.degenerate_baselines) and os.path.exists(args.per_run_csv)):
+        # Kept for reading back the campaign's earlier figures. The baseline is
+        # tallied on the first 10,000 valid rows and best_val is a minimum over
+        # evaluations that sampled all 50,000 with replacement, so this margin
+        # is a difference between two ranges. Do not report it as the second
+        # correlation; use --final-scores.
         deg = {r["subset"]: r["gpt2"]["baseline"]
                for r in json.load(open(args.degenerate_baselines))}
         best = {r["subset"]: float(r["best_val"])
                 for r in csv.DictReader(open(args.per_run_csv))}
         xs["退化解からの余裕"] = {s: deg[s] - best[s] for s in deg if s in best}
+        margin_source = {"from": "degenerate-baselines + per-run-csv",
+                         "range": "baseline on the first 10,000 rows, best_val "
+                                  "on 64,000 drawn with replacement -- not matched",
+                         "matched": False, "n": len(xs["退化解からの余裕"])}
     if xs:
         print("\n  === 相関（21 subset） ===")
         out["correlations"] = {}
@@ -230,6 +272,8 @@ def main():
             y = [out["runs"][s]["overall_auroc"] for s in common]
             p, sp = pearson_spearman(x, y)
             out["correlations"][name] = {"n": len(common), "pearson": p, "spearman": sp}
+            if name == "退化解からの余裕" and margin_source:
+                out["correlations"][name]["source"] = margin_source
             print(f"  {name:16s} n={len(common)}  Pearson {p:+.3f}  Spearman {sp:+.3f}")
 
     if args.out:
