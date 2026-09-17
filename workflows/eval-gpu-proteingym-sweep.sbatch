@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=eval-gpu-proteingym-sweep
-#SBATCH --partition=h200-long
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --output=slurm_logs/eval_gpu_proteingym_sweep_%j.log
-#SBATCH --error=slurm_logs/eval_gpu_proteingym_sweep_%j.log
+#SBATCH --output=workflows/slurm-logs/%x-%j.out
+#SBATCH --error=workflows/slurm-logs/%x-%j.out
 #
 # ProteinGym full-assay sweep wrapper. Defaults to the
 # ``protein_sequence × gpt2 × medium`` model so a single sbatch run
