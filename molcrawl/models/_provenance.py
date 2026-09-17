@@ -732,3 +732,243 @@ def mark_used(values: Mapping[str, Any], read_names: Iterable[str]) -> Dict[str,
     """
     read = set(read_names)
     return {name: {"value": value, "used": name in read} for name, value in sorted(values.items())}
+
+
+TERMINAL_STATUSES = ("completed", "failed")
+MAX_ERROR_SUMMARY = 800
+
+
+def error_summary(exc: BaseException) -> str:
+    """Exception type and message, cut short. No traceback: paths and locals stay out."""
+    text = f"{type(exc).__name__}: {exc}"
+    return text if len(text) <= MAX_ERROR_SUMMARY else text[: MAX_ERROR_SUMMARY - 3] + "..."
+
+
+class RunLifecycle:
+    """One run segment's status in its manifest: starting -> running -> completed | failed.
+
+    Before this, both manifests were written once, before the first step, and a
+    finished run could not say how it finished (order §4). This keeps the file
+    current at the few points that matter and records a failure on the way out:
+
+    - an uncaught exception is captured by a ``sys.excepthook`` wrapper, and the
+      ``atexit`` hook then writes ``failed`` with the phase and a short summary;
+    - an exit that never reached ``complete()`` -- ``SystemExit`` included -- is
+      also written as ``failed``, with the exit code recorded as unknown, because
+      the process cannot see its own exit status from ``atexit``.
+
+    A SIGKILL or a scheduler kill that skips interpreter shutdown leaves the last
+    status (``running``) in place; ``status_history`` then shows when it was set.
+
+    Only an ``enabled`` lifecycle writes (rank 0). A resumed segment keeps the
+    previous segments' records under ``run.segments`` instead of overwriting them.
+    """
+
+    def __init__(self, path: str, run_id: str, enabled: bool):
+        self.path = path
+        self.run_id = run_id
+        self.enabled = enabled
+        self.phase = "setup"
+        self.document: Optional[Dict[str, Any]] = None
+        self._exc: Optional[BaseException] = None
+        self._step_getter = None
+        self._failure_fields = None
+        self._hooks_installed = False
+        self._started = datetime.now(timezone.utc)
+
+    # -- hooks ------------------------------------------------------------- #
+    def install_hooks(self, step_getter=None, failure_fields=None) -> None:
+        """``failure_fields()`` returns extra fields for a failure record, e.g. the last checkpoint."""
+        if not self.enabled or self._hooks_installed:
+            return
+        import atexit
+
+        self._step_getter = step_getter
+        self._failure_fields = failure_fields
+        previous = sys.excepthook
+
+        def _hook(exc_type, exc, tb):
+            self._exc = exc
+            previous(exc_type, exc, tb)
+
+        sys.excepthook = _hook
+        atexit.register(self._at_exit)
+        self._hooks_installed = True
+
+    def _reached_step(self) -> Optional[int]:
+        if self._step_getter is None:
+            return None
+        try:
+            step = self._step_getter()
+            return int(step) if step is not None else None
+        except Exception:
+            return None
+
+    def _at_exit(self) -> None:
+        if self.document is None or self.status in TERMINAL_STATUSES:
+            return
+        if self._exc is not None:
+            summary = error_summary(self._exc)
+        else:
+            summary = "process exited before reporting completion (SystemExit or an early return); exit code not visible"
+        extra = {}
+        if self._failure_fields is not None:
+            try:
+                extra = dict(self._failure_fields() or {})
+            except Exception as exc:
+                extra = {"failure_fields_error": error_summary(exc)}
+        try:
+            self.fail(summary, exit_code=None, **extra)
+        except Exception:
+            pass
+
+    # -- state ------------------------------------------------------------- #
+    @property
+    def status(self) -> Optional[str]:
+        if self.document is None:
+            return None
+        return self.document.get("run", {}).get("status")
+
+    def set_phase(self, phase: str) -> None:
+        self.phase = phase
+
+    def _stamp(self, status: str, extra: Optional[Dict[str, Any]] = None) -> None:
+        run = self.document.setdefault("run", {})
+        run["status"] = status
+        entry = {"status": status, "at": now_iso(), "phase": self.phase}
+        if extra:
+            entry.update(extra)
+        run.setdefault("status_history", []).append(entry)
+
+    def _write(self) -> None:
+        if self.enabled and self.document is not None:
+            write_json_atomic(self.path, self.document)
+
+    def start(self, document: Dict[str, Any], resume_expected: bool = False) -> Dict[str, Any]:
+        """Write the first, partial manifest. Raises if it cannot be written."""
+        self.document = document
+        run = document.setdefault("run", {})
+        run["run_id"] = self.run_id
+        run["start_time"] = self._started.astimezone().isoformat(timespec="seconds")
+        run.setdefault("segments", [])
+        if resume_expected and os.path.exists(self.path):
+            try:
+                with open(self.path) as fh:
+                    previous = json.load(fh)
+                prev_run = previous.get("run", {})
+                segments = list(prev_run.get("segments") or [])
+                segments.append({
+                    "run_id": prev_run.get("run_id"),
+                    "job_id": prev_run.get("job_id"),
+                    "status": prev_run.get("status"),
+                    "start_time": prev_run.get("start_time") or previous.get("written"),
+                    "end_time": prev_run.get("end_time"),
+                    "reached_step": prev_run.get("reached_step"),
+                    "world_size": (previous.get("placement") or {}).get("world_size"),
+                    "effective_global_batch": (previous.get("batch") or {}).get("effective_global_batch"),
+                    "schema_version": previous.get("schema_version", 1),
+                })
+                run["segments"] = segments
+                if prev_run.get("resume_history"):
+                    run["resume_history"] = list(prev_run["resume_history"])
+            except (OSError, ValueError):
+                run["segments_error"] = "previous manifest could not be read"
+        self._stamp("starting")
+        self._write()
+        return document
+
+    def running(self, document: Dict[str, Any]) -> Dict[str, Any]:
+        """Replace the document with the full one, keeping identity and history."""
+        if self.document is not None:
+            old_run = self.document.get("run", {})
+            run = document.setdefault("run", {})
+            for key in ("run_id", "start_time", "status", "status_history", "segments", "segments_error"):
+                if key in old_run and key not in run:
+                    run[key] = old_run[key]
+            if "resume_history" in old_run:
+                run["resume_history"] = list(old_run["resume_history"]) + [
+                    h for h in run.get("resume_history", []) if h not in old_run["resume_history"]
+                ]
+        self.document = document
+        self.phase = "training"
+        self._stamp("running")
+        self._write()
+        return document
+
+    def update(self, mutate) -> None:
+        if self.document is None:
+            return
+        mutate(self.document)
+        self._write()
+
+    def _finish(self, status: str, exit_code: Optional[int], fields: Dict[str, Any]) -> None:
+        if self.document is None:
+            return
+        run = self.document.setdefault("run", {})
+        end = datetime.now(timezone.utc)
+        run["end_time"] = end.astimezone().isoformat(timespec="seconds")
+        run["wall_clock_seconds"] = round((end - self._started).total_seconds(), 3)
+        run["exit_code"] = exit_code
+        run["reached_step"] = self._reached_step() if "reached_step" not in fields else fields.pop("reached_step")
+        run.update(fields)
+        self._stamp(status)
+        self._write()
+
+    def complete(self, **fields: Any) -> None:
+        self._finish("completed", 0, dict(fields))
+
+    def fail(self, error: str, exit_code: Optional[int] = None, **fields: Any) -> None:
+        fields = dict(fields)
+        fields["failure"] = {"phase": self.phase, "error_summary": error}
+        self._finish("failed", exit_code, fields)
+
+
+LAUNCHER_TYPES = ("srun_deepspeed", "torchrun_legacy", "single_process", "other")
+
+
+def _scontrol_command(job_id: str) -> Optional[str]:
+    try:
+        done = subprocess.run(
+            ["scontrol", "show", "job", "-o", job_id], capture_output=True, text=True, timeout=10
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r"\bCommand=(\S+)", done.stdout)
+    return match.group(1) if match else None
+
+
+def launcher_record(environ: Optional[Mapping[str, str]] = None, query_scheduler: bool = True) -> Dict[str, Any]:
+    """Which launcher started this process, and the script it came from.
+
+    A launcher that knows itself says so through ``MOLCRAWL_LAUNCHER``,
+    ``MOLCRAWL_LAUNCHER_SCRIPT`` and ``MOLCRAWL_LAUNCHER_ARGS``; the DeepSpeed
+    srun launcher sets all three. The 29 existing torchrun sbatch files set none,
+    so for them the type is inferred from torchrun's own variables and the script
+    is asked of the scheduler -- recorded with ``type_from`` so a reader can tell
+    a declared launcher from an inferred one.
+    """
+    env = os.environ if environ is None else environ
+    declared = env.get("MOLCRAWL_LAUNCHER")
+    if declared:
+        kind, kind_from = declared, "MOLCRAWL_LAUNCHER"
+    elif "TORCHELASTIC_RUN_ID" in env or "LOCAL_WORLD_SIZE" in env:
+        kind, kind_from = "torchrun_legacy", "inferred from TORCHELASTIC_RUN_ID / LOCAL_WORLD_SIZE"
+    elif "RANK" not in env:
+        kind, kind_from = "single_process", "inferred: no RANK"
+    else:
+        kind, kind_from = "other", "RANK set by an unrecognised launcher"
+    script = env.get("MOLCRAWL_LAUNCHER_SCRIPT")
+    script_from = "MOLCRAWL_LAUNCHER_SCRIPT" if script else None
+    if not script and query_scheduler and env.get("SLURM_JOB_ID"):
+        script = _scontrol_command(env["SLURM_JOB_ID"])
+        script_from = "scontrol show job Command=" if script else None
+    return {
+        "type": kind,
+        "type_from": kind_from,
+        "script_path": os.path.abspath(script) if script else None,
+        "script_sha256": sha256_file(script) if script else None,
+        "script_from": script_from,
+        "arguments": env.get("MOLCRAWL_LAUNCHER_ARGS"),
+        "torchrun": {k: env[k] for k in ("LOCAL_WORLD_SIZE", "TORCHELASTIC_RUN_ID", "GROUP_WORLD_SIZE") if k in env},
+        "process": {k: env.get(k) for k in ("RANK", "LOCAL_RANK", "WORLD_SIZE", "SLURM_PROCID", "SLURM_LOCALID")},
+    }

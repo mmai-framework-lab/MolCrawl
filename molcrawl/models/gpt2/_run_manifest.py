@@ -38,22 +38,49 @@ each one came from:
     arithmetic can be redone later against the corpus the run really used.
 """
 
-import json
 import os
 from datetime import datetime, timezone
 
 from molcrawl.models._provenance import (
+    SCHEMA_VERSION,
+    RunLifecycle,
+    config_file_record,
+    configurator_locals,
+    cpu_info,
     dirty_tree_warning,
     environment,
+    environment_by_prefix,
     git_state,
+    gpu_info,
     introduced_values,
+    is_rank_zero,
+    launcher_record,
+    mark_used,
+    names_read_by,
+    now_iso,
+    parse_argv,
     placement as _placement,
+    runtime_versions,
+    scalar_snapshot,
+    slurm_info,
+    stage_sources,
+    update_json_atomic,
     value_sources,
+    write_json_atomic,
 )
 
 MANIFEST = "run_manifest.json"
 
-__all__ = ["MANIFEST", "TRACKED", "TRACKED_ENV", "dirty_tree_warning", "note_resume", "write_manifest"]
+__all__ = [
+    "MANIFEST",
+    "TRACKED",
+    "TRACKED_ENV",
+    "build_provenance",
+    "dirty_tree_warning",
+    "note_resume",
+    "start_run",
+    "write_manifest",
+]
 
 # Values whose provenance has mattered. Each is reported with the default it
 # would have had, so "the run took the default" is stated rather than implied.
@@ -85,24 +112,112 @@ TRACKED_ENV = (
 )
 
 
+def build_provenance(*, argv, trainer_file, configurator_path, defaults, after_config_file,
+                     after_cli, resolved, after_deepspeed=None, read_sources=()):
+    """Order §1.1-§1.3 and §3: the stages, the config file, and which keys code reads.
+
+    ``defaults`` holds only the trainer's declared names; the later snapshots hold
+    every scalar global, so a name a config introduced first appears at
+    ``after_config_file``. configurator.py's own loop variables are removed from
+    every snapshot, as ``introduced`` already does.
+    """
+    excluded = configurator_locals(configurator_path) if configurator_path else frozenset()
+    clean = {
+        name: (scalar_snapshot(snap, exclude=excluded) if snap is not None else None)
+        for name, snap in (
+            ("defaults", defaults),
+            ("after_config_file", after_config_file),
+            ("after_cli", after_cli),
+            ("after_deepspeed", after_deepspeed),
+            ("resolved", resolved),
+        )
+    }
+    parsed = parse_argv(argv, trainer_file)
+    final = clean["resolved"] or clean["after_cli"] or {}
+    read = names_read_by(read_sources) if read_sources else None
+    return {
+        "argv": parsed["argv"],
+        "cwd": os.getcwd(),
+        "config_file": config_file_record(parsed),
+        "cli_overrides": parsed["cli_overrides"],
+        "argv_problems": parsed["problems"],
+        "stages_recorded": [name for name, snap in clean.items() if snap is not None],
+        "after_config_file_missing_reason": (
+            None if after_config_file is not None
+            else "configurator did not record _config_after_file (older configurator.py)"
+        ),
+        "keys": stage_sources(clean),
+        "used": mark_used(final, read) if read is not None else None,
+        "used_method": "static: names read by " + ", ".join(os.path.basename(s) for s in read_sources)
+        if read_sources else None,
+    }
+
+
+def start_run(out_dir, *, run_id, argv, trainer_file, configurator_path, defaults,
+              after_config_file, after_cli, init_from, purpose=None):
+    """Write the ``starting`` manifest before any GPU work; return its lifecycle.
+
+    Order §0: a run whose manifest cannot be written must fail before it trains,
+    so the write error propagates. Non-zero ranks get a disabled lifecycle.
+    """
+    lifecycle = RunLifecycle(os.path.join(out_dir, MANIFEST), run_id, enabled=is_rank_zero())
+    if not lifecycle.enabled:
+        return lifecycle
+    document = {
+        "schema_version": SCHEMA_VERSION,
+        "written": now_iso(),
+        "framework": "nanoGPT",
+        "architecture": "gpt2",
+        "run": {
+            "job_id": os.environ.get("SLURM_JOB_ID"),
+            "node": os.environ.get("SLURMD_NODENAME") or os.uname().nodename,
+            "git": git_state(),
+            "out_dir": os.path.abspath(out_dir),
+            "purpose": purpose or os.environ.get("MOLCRAWL_RUN_PURPOSE") or "training",
+        },
+        "launcher": launcher_record(),
+        "provenance": build_provenance(
+            argv=argv, trainer_file=trainer_file, configurator_path=configurator_path,
+            defaults=defaults, after_config_file=after_config_file, after_cli=after_cli,
+            resolved=None,
+        ),
+        "slurm": slurm_info(),
+        "env_by_prefix": environment_by_prefix(),
+        "deepspeed": {"enabled": False},
+    }
+    lifecycle.start(document, resume_expected=(init_from == "resume"))
+    return lifecycle
+
+
 def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objective,
                    evaluation, selection, seed, introduced=None,
-                   configurator_path=None, resumed_from_iter=None):
-    """Write ``run_manifest.json`` into ``out_dir`` and return the dict."""
+                   configurator_path=None, resumed_from_iter=None,
+                   lifecycle=None, provenance=None, batch_policy=None, model=None,
+                   optimizer=None, launcher=None, deepspeed=None, purpose=None,
+                   collect_runtime=True):
+    """Write ``run_manifest.json`` into ``out_dir`` and return the dict.
+
+    Schema 2 adds sections beside the schema-1 fields; none of those is removed or
+    renamed (order §2.10). With a ``lifecycle`` the document becomes that run's
+    ``running`` record; without one it is written directly, as before.
+    """
     micro = int(batch.get("batch_size") or 0)
     accum = int(batch.get("gradient_accumulation_steps_configured") or 0)
     block = int(batch.get("block_size") or 0)
     effective = micro * accum
 
     manifest = {
+        "schema_version": SCHEMA_VERSION,
         "written": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "framework": "nanoGPT",
+        "architecture": "gpt2",
         "run": {
             "job_id": os.environ.get("SLURM_JOB_ID"),
             "node": os.environ.get("SLURMD_NODENAME") or os.uname().nodename,
             "git": git_state(),
             "out_dir": os.path.abspath(out_dir),
             "resumed_from_iter": resumed_from_iter,
+            "purpose": purpose or os.environ.get("MOLCRAWL_RUN_PURPOSE") or "training",
         },
         "placement": _placement(int(batch.get("world_size") or 1)),
         "data": data,
@@ -130,29 +245,47 @@ def write_manifest(out_dir, config, defaults, *, data, batch, schedule, objectiv
         # more list to forget to update, and a duplicated value costs nothing.
         "introduced": introduced_values(config, introduced or {}, configurator_path),
         "env": environment(TRACKED_ENV),
+        # ---- schema 2 ---- #
+        "env_by_prefix": environment_by_prefix(),
+        "launcher": launcher if launcher is not None else launcher_record(),
+        "provenance": provenance,
+        "batch_policy": batch_policy,
+        "model": model,
+        "optimizer": optimizer,
+        "deepspeed": deepspeed if deepspeed is not None else {"enabled": False},
+        "slurm": slurm_info(),
+        "cpu": cpu_info(),
+        "runtime": runtime_versions() if collect_runtime else None,
+        "gpu": gpu_info() if collect_runtime else None,
     }
 
-    os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, MANIFEST), "w") as fh:
-        json.dump(manifest, fh, indent=2, sort_keys=False)
-        fh.write("\n")
+    if lifecycle is not None:
+        return lifecycle.running(manifest)
+    write_json_atomic(os.path.join(out_dir, MANIFEST), manifest)
     return manifest
 
 
-def note_resume(out_dir, iter_num):
-    """Record on an existing manifest that this run resumed, without losing the rest."""
+def note_resume(out_dir, iter_num, lifecycle=None, **details):
+    """Record on an existing manifest that this run resumed, without losing the rest.
+
+    ``details`` (order §4.5) -- the checkpoint, world sizes before and after, the
+    effective batch, whether optimizer state was restored -- are kept on the entry.
+    """
     path = os.path.join(out_dir, MANIFEST)
-    if not os.path.exists(path):
-        return
-    try:
-        with open(path) as fh:
-            manifest = json.load(fh)
-        manifest.setdefault("run", {}).setdefault("resume_history", []).append(
-            {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "from_iter": iter_num}
-        )
+    entry = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "from_iter": iter_num}
+    entry.update(details)
+
+    def _mutate(manifest):
+        manifest.setdefault("run", {}).setdefault("resume_history", []).append(entry)
         manifest["run"]["resumed_from_iter"] = iter_num
-        with open(path, "w") as fh:
-            json.dump(manifest, fh, indent=2, sort_keys=False)
-            fh.write("\n")
+
+    # With a lifecycle, update its in-memory document too: a later complete() or
+    # fail() rewrites the file from that document and would drop this entry.
+    try:
+        if lifecycle is not None and lifecycle.document is not None:
+            lifecycle.update(_mutate)
+        else:
+            update_json_atomic(path, _mutate)
     except (OSError, ValueError):
         pass
+    return entry

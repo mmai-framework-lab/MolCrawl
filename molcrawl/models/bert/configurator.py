@@ -19,6 +19,16 @@ import sys
 from ast import literal_eval
 
 if __name__ == "__main__":
+    # Refuse an order that would let a later argument win silently: a config file
+    # after --key=value overwrites the CLI value, and a second config file the
+    # first. No launcher in the tree does either (checked 2026-09-17).
+    from molcrawl.models._provenance import validate_argv as _validate_argv
+
+    _validate_argv(sys.argv[1:], globals().get("__file__"))
+    # Every scalar global after the config file ran and before any --key=value,
+    # so run_manifest.json can tell a config value from a CLI override. Taken at
+    # the first override, or at the end when there is none.
+    _config_after_file = None
     for arg in sys.argv[1:]:
         if "=" not in arg:
             # assume it's the name of a config file
@@ -40,6 +50,12 @@ if __name__ == "__main__":
         else:
             # assume it's a --key=value argument
             assert arg.startswith("--")
+            if _config_after_file is None:
+                _config_after_file = {
+                    _k: _v
+                    for _k, _v in dict(globals()).items()
+                    if not _k.startswith("_") and isinstance(_v, (int, float, bool, str))
+                }
             key, val = arg.split("=")
             key = key[2:]
             if key in globals():
@@ -57,3 +73,9 @@ if __name__ == "__main__":
                 globals()[key] = attempt
             else:
                 raise ValueError(f"Unknown config key: {key}")
+    if _config_after_file is None:
+        _config_after_file = {
+            _k: _v
+            for _k, _v in dict(globals()).items()
+            if not _k.startswith("_") and isinstance(_v, (int, float, bool, str))
+        }

@@ -197,6 +197,19 @@ def restore_rng_state(state):
 def rank_rng_path(checkpoint_dir, rank):
     return os.path.join(checkpoint_dir, f"rng_state_{rank}.pth")
 
+
+def _last_checkpoint_dir(base_dir):
+    """The highest-numbered ``checkpoint-<step>`` holding a training state, or None."""
+    best = None
+    for d in glob.glob(os.path.join(base_dir, "checkpoint-*")):
+        try:
+            step = int(os.path.basename(d).split("-")[1])
+        except (ValueError, IndexError):
+            continue
+        if os.path.exists(os.path.join(d, "training_state.bin")) and (best is None or step > best[0]):
+            best = (step, os.path.abspath(d))
+    return best[1] if best else None
+
 def own_checkpoint_steps(base_dir, resumed_from_step):
     """Which checkpoints already on disk belong to this run's lineage.
 
@@ -317,6 +330,28 @@ if __name__ == "__main__":
 
     with open(logging_file, "w") as f:
         f.write("iter, train_loss, val_loss\n")
+
+    # run_manifest.json, first write: status "starting", before any GPU work. The
+    # full record replaces it just before the training loop, and the lifecycle
+    # records how the run ended. A manifest that cannot be written stops the run
+    # here rather than after it has trained (run-manifest order §0).
+    from molcrawl.models.gpt2._run_manifest import start_run as _start_run
+
+    _run_lifecycle = _start_run(
+        out_dir,
+        run_id=f"{os.environ.get('SLURM_JOB_ID') or 'local'}-{timestamp}",
+        argv=sys.argv[1:],
+        trainer_file=os.path.abspath(__file__),
+        configurator_path=configurator_path,
+        defaults=config_defaults,
+        after_config_file=globals().get("_config_after_file"),
+        after_cli=config_introduced,
+        init_from=init_from,
+    )
+    _run_lifecycle.install_hooks(
+        step_getter=lambda: globals().get("iter_num"),
+        failure_fields=lambda: {"last_checkpoint": _last_checkpoint_dir(out_dir)},
+    )
 
     writer = None
     if tensorboard:
@@ -591,6 +626,8 @@ if __name__ == "__main__":
 
     checkpoint = None  # Initialize checkpoint variable
     _resume_ckpt_dir = None  # dir the resume checkpoint came from (for per-rank RNG)
+    _resume_source = None  # file an out_dir resume loaded, for run_manifest resume_history
+    _resume_optimizer_restored = False
 
     if init_from == "scratch":
         # init a new model from scratch
@@ -629,6 +666,7 @@ if __name__ == "__main__":
                 checkpoint = torch.load(latest_ckpt_path, map_location=device)
                 checkpoint_loaded = True
                 _resume_ckpt_dir = os.path.dirname(latest_ckpt_path)
+                _resume_source = os.path.abspath(latest_ckpt_path)
 
         # Fall back to legacy ckpt.pt
         if not checkpoint_loaded:
@@ -637,6 +675,7 @@ if __name__ == "__main__":
                 print(f"Loading legacy checkpoint from {ckpt_path}")
                 checkpoint = torch.load(ckpt_path, map_location=device)
                 checkpoint_loaded = True
+                _resume_source = os.path.abspath(ckpt_path)
 
         if not checkpoint_loaded:
             print(f"No checkpoint found in {out_dir}")
@@ -752,6 +791,7 @@ if __name__ == "__main__":
     optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
     if init_from == "resume" and checkpoint is not None:
         optimizer.load_state_dict(checkpoint["optimizer"])
+        _resume_optimizer_restored = True
 
         # Restore RNG so a chained run continues the same streams instead of
         # replaying from `seed + rank`. Prefer this rank's own file; fall back
@@ -1044,10 +1084,40 @@ if __name__ == "__main__":
     # _run_manifest.py for the three times that has cost us.
     if master_process:
         try:
-            from molcrawl.models.gpt2._run_manifest import dirty_tree_warning, write_manifest
+            from molcrawl.models._batch_policy import (
+                BatchPolicyError,
+                from_legacy_gpt2,
+                resolve_global_fixed,
+                scaling_feasibility,
+            )
+            from molcrawl.models.gpt2._run_manifest import (
+                build_provenance,
+                dirty_tree_warning,
+                note_resume,
+                write_manifest,
+            )
 
             _train_rows = len(training_data) if training_data is not None else None
             _eval_rows = len(test_data) if test_data is not None else None
+
+            # The canonical reading of this run's batch, beside the legacy one.
+            # Recorded only: the loop below still uses train.py's own division,
+            # and matches_legacy says whether the two agree.
+            try:
+                _canon = from_legacy_gpt2(batch_size, config.get("gradient_accumulation_steps"))
+                _resolved_batch = resolve_global_fixed(_canon, ddp_world_size)
+                _batch_policy_record = _resolved_batch.as_manifest(sequence_length=block_size)
+                _batch_policy_record["matches_legacy"] = (
+                    _resolved_batch.gradient_accumulation_steps_per_rank == gradient_accumulation_steps
+                )
+                _batch_policy_record["scaling_feasibility"] = scaling_feasibility(_canon)
+            except BatchPolicyError as _bp:
+                _batch_policy_record = {"batch_policy": "global_fixed", "error": str(_bp)}
+
+            _stage_keys = set(config_defaults) | set(config_introduced)
+            _resolved_snapshot = {k: globals()[k] for k in _stage_keys if k in globals()}
+            _attn = raw_model.transformer.h[0].attn if hasattr(raw_model, "transformer") else None
+            _opt_defaults = dict(getattr(optimizer, "defaults", {}) or {})
             _manifest = write_manifest(
                 out_dir,
                 config,
@@ -1118,8 +1188,79 @@ if __name__ == "__main__":
                 introduced=config_introduced,
                 configurator_path=configurator_path,
                 resumed_from_iter=iter_num if init_from == "resume" else None,
+                lifecycle=_run_lifecycle,
+                provenance=build_provenance(
+                    argv=sys.argv[1:],
+                    trainer_file=os.path.abspath(__file__),
+                    configurator_path=configurator_path,
+                    defaults=config_defaults,
+                    after_config_file=globals().get("_config_after_file"),
+                    after_cli=config_introduced,
+                    resolved=_resolved_snapshot,
+                    read_sources=[os.path.abspath(__file__)],
+                ),
+                batch_policy=_batch_policy_record,
+                model={
+                    "class": type(raw_model).__name__,
+                    "model_args": dict(model_args),
+                    "parameter_count": sum(p.numel() for p in raw_model.parameters()),
+                    "trainable_parameter_count": sum(
+                        p.numel() for p in raw_model.parameters() if p.requires_grad
+                    ),
+                    "parameter_dtype": str(next(raw_model.parameters()).dtype),
+                    "autocast_dtype": dtype if device_type != "cpu" else None,
+                    # model.py uses SDPA with is_causal when torch has it, else
+                    # a masked matmul; there is no config switch.
+                    "attention_implementation": (
+                        None if _attn is None
+                        else ("sdpa (is_causal)" if getattr(_attn, "flash", False) else "manual causal matmul")
+                    ),
+                    "activation_checkpointing": False,
+                    "compile": bool(compile),
+                    "dropout": dropout,
+                    "initialization": (
+                        "resume" if _resume_source
+                        else "pretrain_dir" if init_from == "resume" and pretrain_dir
+                        else "scratch (init_from=resume found no checkpoint)" if init_from == "resume"
+                        else init_from
+                    ),
+                },
+                optimizer={
+                    "class": type(optimizer).__name__,
+                    "created_by": "GPT.configure_optimizers (model.py)",
+                    "fused": _opt_defaults.get("fused"),
+                    "foreach": _opt_defaults.get("foreach"),
+                    "lr_at_creation": _opt_defaults.get("lr"),
+                    "betas": list(_opt_defaults.get("betas") or []),
+                    "eps": _opt_defaults.get("eps"),
+                    "weight_decay_groups": [
+                        {"weight_decay": g.get("weight_decay"), "tensors": len(g.get("params", []))}
+                        for g in optimizer.param_groups
+                    ],
+                    "grad_clip": grad_clip,
+                    "grad_scaler_enabled": bool(scaler.is_enabled()),
+                },
             )
             print(f"📝 Wrote {out_dir}/run_manifest.json")
+            if _resume_source:
+                _previous = (_manifest.get("run", {}).get("segments") or [{}])[-1]
+                note_resume(
+                    out_dir,
+                    iter_num,
+                    lifecycle=_run_lifecycle,
+                    checkpoint=_resume_source,
+                    previous_run_id=_previous.get("run_id"),
+                    world_size_before=_previous.get("world_size"),
+                    world_size_after=ddp_world_size,
+                    effective_global_batch_before=_previous.get("effective_global_batch"),
+                    effective_global_batch_after=_manifest["batch"]["effective_global_batch"],
+                    gradient_accumulation_steps_per_rank=gradient_accumulation_steps,
+                    optimizer_state_restored=_resume_optimizer_restored,
+                    scheduler_state="recomputed from iter_num (get_lr); nothing to restore",
+                    compatible=(
+                        _previous.get("effective_global_batch") in (None, _manifest["batch"]["effective_global_batch"])
+                    ),
+                )
             _dirty = dirty_tree_warning(_manifest["run"]["git"])
             if _dirty:
                 print(f"⚠️  {_dirty}")
@@ -1143,8 +1284,10 @@ if __name__ == "__main__":
                       " unaffected, but"
                       f" {_p['gpus_allocated'] - ddp_world_size} allocated GPU(s) are idle."
                       " Check the launcher's --nproc_per_node against the allocation.")
-        except Exception as _e:  # never let bookkeeping stop a run
-            print(f"⚠️  Could not write run_manifest.json: {_e}")
+        except Exception as _e:
+            # This used to be a warning. The run-manifest order (§0) requires the
+            # opposite: a run that cannot record what it is must not train.
+            raise SystemExit(f"Could not write run_manifest.json, refusing to train: {_e}") from _e
 
     while True:
         # determine and set the learning rate for this iteration
@@ -1389,6 +1532,30 @@ if __name__ == "__main__":
         # termination conditions
         if iter_num > max_iters:
             break
+
+    # run_manifest.json: how the run ended. iter_num here is the number of
+    # optimizer steps taken (each iteration increments it after its step).
+    if master_process:
+        _run_lifecycle.set_phase("finalize")
+        _best_ckpt = os.path.join(out_dir, f"checkpoint-{best_val_step}") if best_val_step is not None else None
+        _last_eval_step = max(_val_by_step) if _val_by_step else None
+        _run_lifecycle.complete(
+            reached_step=iter_num,
+            stop_reason=(
+                "max_iters" if iter_num > max_iters
+                else "eval_only" if eval_only
+                else "early_stopping"
+            ),
+            best_metric={"name": "val_loss", "direction": "min",
+                         "value": best_val_loss if best_val_step is not None else None,
+                         "step": best_val_step},
+            best_checkpoint=os.path.abspath(_best_ckpt) if _best_ckpt and os.path.isdir(_best_ckpt) else None,
+            final_checkpoint=_last_checkpoint_dir(out_dir),
+            final_validation=(
+                {"step": _last_eval_step, "val_loss": _val_by_step[_last_eval_step]}
+                if _last_eval_step is not None else None
+            ),
+        )
 
     # Finish wandb run
     if wandb_run is not None:
