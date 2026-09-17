@@ -7,28 +7,36 @@ class PreparedDataset:
         from datasets import load_from_disk
 
         dataset_path = Path(dataset_dir)
+        # How and from where this split was opened, for run_manifest.json. Set by
+        # whichever branch below succeeds; reading it changes nothing here.
+        self.source = {"method": None, "path": None}
 
         # Try to load from arrow format (with .arrow suffix)
         arrow_split_path = dataset_path / f"{split}.arrow"
         if arrow_split_path.exists():
             print(f"Loading from arrow format: {arrow_split_path}")
             self.data = load_from_disk(str(arrow_split_path))
+            self.source = {"method": "load_from_disk(<dir>/<split>.arrow)", "path": str(arrow_split_path.resolve())}
         else:
             # Fall back to standard HuggingFace dataset format
             try:
                 self.data = load_from_disk(str(dataset_path))[split]
+                self.source = {"method": "load_from_disk(<dir>)[split]", "path": str(dataset_path.resolve())}
             except Exception:
                 # Try split subdirectory (e.g., {dataset_dir}/train/)
                 split_path = dataset_path / split
                 if split_path.exists():
                     print(f"Trying to load from split subdirectory {split_path}...")
                     self.data = load_from_disk(str(split_path))
+                    self.source = {"method": "load_from_disk(<dir>/<split>)", "path": str(split_path.resolve())}
                 else:
                     # Try direct path (no split subdirectory)
                     print(f"Trying to load from {dataset_path} directly...")
                     self.data = load_from_disk(str(dataset_path))
+                    self.source = {"method": "load_from_disk(<dir>)", "path": str(dataset_path.resolve())}
                     if hasattr(self.data, "keys") and split in self.data:
                         self.data = self.data[split]
+                        self.source["method"] = "load_from_disk(<dir>)[split] after a failed first attempt"
 
     def __len__(self):
         return len(self.data)

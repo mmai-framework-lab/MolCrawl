@@ -972,3 +972,107 @@ def launcher_record(environ: Optional[Mapping[str, str]] = None, query_scheduler
         "torchrun": {k: env[k] for k in ("LOCAL_WORLD_SIZE", "TORCHELASTIC_RUN_ID", "GROUP_WORLD_SIZE") if k in env},
         "process": {k: env.get(k) for k in ("RANK", "LOCAL_RANK", "WORLD_SIZE", "SLURM_PROCID", "SLURM_LOCALID")},
     }
+
+
+def _file_record(path: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not path or not isinstance(path, str) or not os.path.isfile(path):
+        return None
+    return {"path": os.path.abspath(path), "sha256": sha256_file(path)}
+
+
+def describe_dataset(obj: Any, split: str) -> Dict[str, Any]:
+    """Order §2.6: what a split actually was, read off the object the trainer opened.
+
+    Rows come from ``len()`` of that object, never from ``dataset_info.json``,
+    which ``datasets`` writes with the pre-split row count. Each field that cannot
+    be read is ``None`` with a reason rather than left out.
+    """
+    out: Dict[str, Any] = {"split": split, "class": type(obj).__name__ if obj is not None else None}
+    if obj is None:
+        out["reason"] = "no dataset object"
+        return out
+    try:
+        out["rows"] = len(obj)
+        out["rows_from"] = f"len({type(obj).__name__})"
+    except Exception as exc:
+        out["rows"], out["rows_from"] = None, f"len() failed: {error_summary(exc)}"
+
+    source = getattr(obj, "source", None)
+    if isinstance(source, dict):
+        out["loading_method"], out["path"] = source.get("method"), source.get("path")
+    elif hasattr(obj, "bin_dir"):
+        out["loading_method"] = "numpy memmap (uint16, rows x block)"
+        arr = getattr(obj, "_arr", None)
+        out["path"] = os.path.abspath(getattr(arr, "filename", None) or obj.bin_dir)
+        out["row_length"] = getattr(obj, "block", None)
+    elif hasattr(obj, "data_dir"):
+        out["loading_method"] = f"{type(obj).__name__}(data_dir)"
+        out["path"] = os.path.abspath(obj.data_dir)
+    else:
+        out["loading_method"], out["path"] = None, None
+        out["source_reason"] = "the dataset object does not say how it was opened"
+
+    hf = getattr(obj, "data", None)
+    fingerprint = getattr(hf, "_fingerprint", None)
+    out["fingerprint"] = fingerprint
+    if fingerprint is None:
+        out["fingerprint_reason"] = "not a Hugging Face Dataset" if hf is None else "no _fingerprint attribute"
+    cache_files = getattr(hf, "cache_files", None)
+    if cache_files:
+        names = [c.get("filename") for c in cache_files if isinstance(c, dict)]
+        out["files_opened"] = {"count": len(names), "first": names[0] if names else None, "last": names[-1] if names else None}
+
+    if "row_length" not in out:
+        try:
+            first = obj[0]
+            out["row_length"] = int(len(first))
+        except Exception as exc:
+            out["row_length"], out["row_length_reason"] = None, error_summary(exc)
+    return out
+
+
+def describe_tokenizer(tokenizer: Any, *, vocab_size: Optional[int] = None,
+                       special_ids: Optional[Mapping[str, Any]] = None,
+                       ambiguity_ids: Optional[Iterable[int]] = None) -> Dict[str, Any]:
+    """Order §2.6: tokenizer class, where it was read from, a hash, and its special ids."""
+    out: Dict[str, Any] = {
+        "class": type(tokenizer).__name__ if tokenizer is not None else None,
+        "vocab_size_used_by_model": vocab_size,
+        "special_token_ids_from_config": dict(special_ids or {}),
+        "ambiguity_token_ids": list(ambiguity_ids) if ambiguity_ids is not None else None,
+    }
+    if tokenizer is None:
+        out["reason"] = "the config binds no tokenizer object"
+        return out
+    out["name_or_path"] = getattr(tokenizer, "name_or_path", None)
+    files = []
+    for attr in ("vocab_file", "model_file", "merges_file", "tokenizer_file", "sp_model_file"):
+        rec = _file_record(getattr(tokenizer, attr, None))
+        if rec:
+            files.append({"attribute": attr, **rec})
+    out["files"] = files
+    if not files:
+        out["files_reason"] = "the tokenizer object exposes no file attribute this reads"
+    for attr, key in (("__len__", "length"), ("vocab_size", "vocab_size_attribute")):
+        try:
+            value = len(tokenizer) if attr == "__len__" else getattr(tokenizer, attr)
+            out[key] = int(value() if callable(value) else value)
+        except Exception:
+            out[key] = None
+    try:
+        out["special_tokens_map"] = dict(getattr(tokenizer, "special_tokens_map"))
+        out["all_special_ids"] = list(getattr(tokenizer, "all_special_ids"))
+    except Exception:
+        out["special_tokens_map"], out["all_special_ids"] = None, None
+    return out
+
+
+def preparation_record(dataset_dir: Optional[str]) -> Dict[str, Any]:
+    """Order §2.6: preparation commit, time and config. Not guessed when absent."""
+    return {
+        "commit": None,
+        "created": None,
+        "config": None,
+        "reason": "the dataset directory carries no preparation record that this code reads",
+        "dataset_dir": os.path.abspath(dataset_dir) if dataset_dir else None,
+    }

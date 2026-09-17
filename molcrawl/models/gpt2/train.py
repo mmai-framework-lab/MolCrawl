@@ -1115,6 +1115,7 @@ if __name__ == "__main__":
     # _run_manifest.py for the three times that has cost us.
     if master_process:
         try:
+            from molcrawl.models._provenance import describe_dataset, describe_tokenizer, preparation_record
             from molcrawl.models._batch_policy import (
                 BatchPolicyError,
                 from_legacy_gpt2,
@@ -1166,6 +1167,24 @@ if __name__ == "__main__":
                     "staged_to_local_nvme": str(
                         os.environ.get("LEARNING_SOURCE_DIR", "")
                     ).startswith("/tmp"),
+                    # Schema 2 (order §2.6): the objects actually opened, the tokenizer
+                    # and the preparation record, each null with a reason when unknown.
+                    "splits": {
+                        "train": describe_dataset(training_data, "train"),
+                        "eval": describe_dataset(test_data, "valid"),
+                    },
+                    "tokenizer": describe_tokenizer(
+                        globals().get("tokenizer"),
+                        vocab_size=globals().get("meta_vocab_size"),
+                        special_ids={
+                            k: globals().get(k)
+                            for k in ("bos_token_id", "eos_token_id", "pad_token_id", "pad_token_id_for_loss")
+                        },
+                        ambiguity_ids=ambiguous_token_ids,
+                    ),
+                    "preparation": preparation_record(
+                        (dataset_params or {}).get("dataset_dir") or globals().get("rna_bin_dir")
+                    ),
                 },
                 batch={
                     "batch_size": batch_size,

@@ -225,3 +225,15 @@ def test_deepspeed_config_on_cpu_single_process_fails_before_training(tmp_path):
     assert m["deepspeed"]["enabled"] is True
     assert m["deepspeed"]["config_path"] == str(ds)
     assert "distributed launch" in m["run"]["failure"]["error_summary"]
+
+
+def test_data_splits_and_tokenizer_are_described(completed_run):
+    data = completed_run["manifest"]["data"]
+    train = data["splits"]["train"]
+    assert train["loading_method"] == "load_from_disk(<dir>/<split>.arrow)"
+    assert train["path"].endswith("train.arrow")
+    assert train["rows"] == 64 and train["row_length"] == 17
+    assert train["fingerprint"]
+    assert data["splits"]["eval"]["path"].endswith("valid.arrow")
+    assert data["tokenizer"]["class"] is None and data["tokenizer"]["vocab_size_used_by_model"] == 32
+    assert data["preparation"]["commit"] is None and data["preparation"]["reason"]
