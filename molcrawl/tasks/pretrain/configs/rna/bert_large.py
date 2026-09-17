@@ -38,12 +38,15 @@ save_pretrained_atomic(tmp_tokenizer, _custom_tokenizer_path)
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
 
-# 3 epochs of the train split at global batch 2560:
-# floor(3 * 34,407,040 train blocks / 2560) = 40,320 steps.
+# 9 epochs of the train split at global batch 2560 (all-bert-order-2026-09-17 §2.5).
+# 3 epochs was 40,320 steps; 120,960 is 3 x 40,320, the same convention protein uses
+# (an exact floor(9 x 34,407,040 / 2560) would be 120,962).
+# The fp32/bf16 check (§9) runs this config with --max_steps=40320 --warmup_steps=4032
+# passed explicitly, so its schedule is the old 3-epoch one on purpose.
 # NOTE: unlike GPT-2/nanoGPT, HF Trainer's effective batch is GPU-count-dependent
 # (per_device 8 * grad_accum 80 * world_size), so 2560 only holds on 4 GPUs.
 # Running on a different GPU count requires rescaling gradient_accumulation_steps.
-max_steps: int = 40320
+max_steps: int = 120960
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # early_stopping_patience: int = 3  # N/A when early_stopping = Falsevement
 model_size: str = "large"  # Choose between small, medium or large
@@ -57,7 +60,7 @@ dataset_dir: str = CELLXGENE_DATASET_DIR
 learning_rate: float = float(_os.environ.get("SUBSET_BERT_LARGE_LR", "0.00003"))
 weight_decay: float  = 0.01
 log_interval: int = 100
-save_steps: int = 1000  # protein convention; 100 meant ~400 saves over 40,320 steps
+save_steps: int = 1000  # protein convention; 100 meant ~1,200 saves over 120,960 steps
 
 # Keep the checkpoint the reported number came from. Evaluation is 10x finer than
 # saving here (100 against 1,000), so the minimum lands off the save grid nine
@@ -68,9 +71,9 @@ save_on_improve = True
 # (tmp/bert-mlm-stall-report-2026-08-06.md) traces the collapse of deep post-LN
 # BERT to too short a warmup — the original BERT-large took 10,000 steps, and
 # compounds cannot get near that because its whole run is 1,558 steps. RNA's
-# 40,320 steps make a real warmup affordable, so it carries the 10 % arm of that
-# test (boss decision 2026-08-07, Q3/Q6).
-warmup_steps: int = 4032
+# run length makes a real warmup affordable, so it carries the 10 % arm of that
+# test (boss decision 2026-08-07, Q3/Q6). Kept at 10 % of the 9-epoch max_steps.
+warmup_steps: int = 12096
 
 # Collapse detection is deliberately OFF for RNA. The threshold was 9.3, drawn
 # just under the 9.372-nat unigram baseline — but crossing that line is not
