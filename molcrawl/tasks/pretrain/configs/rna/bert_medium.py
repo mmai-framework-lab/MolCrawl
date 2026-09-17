@@ -10,6 +10,7 @@ from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 from molcrawl.core.paths import CELLXGENE_DATASET_DIR, get_bert_output_path, get_custom_tokenizer_path
+from molcrawl.core.tokenizer_io import save_pretrained_atomic
 
 # Build the tokenizer using the WordLevel model
 from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
@@ -27,7 +28,10 @@ tmp_tokenizer.cls_token = "[CLS]"
 tmp_tokenizer.mask_token = "<mask>"
 
 _custom_tokenizer_path = get_custom_tokenizer_path("rna", "bert")
-tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
+# Runs of a grid start together and all write this directory. A plain
+# save_pretrained truncates each file in place, so a run starting alongside can
+# read an empty tokenizer.json; save_pretrained_atomic moves complete files in.
+save_pretrained_atomic(tmp_tokenizer, _custom_tokenizer_path)
 
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
@@ -80,6 +84,24 @@ warmup_steps: int = 4032
 batch_size: int = 8
 per_device_eval_batch_size: int = 8
 gradient_accumulation_steps: int = 5 * 16
+# Where the input is fetched, not what is computed: the same rows in the same
+# order, pulled by four worker processes into pinned buffers instead of by the
+# training process itself. main.py defaults both off (main.py:655-656), and with
+# them off the Arrow read, the MLM draw and the document masking all sit on the
+# critical path of every step. Measured on rna small at 8 x 80, 4 GPUs: in fp32
+# these two settings alone take a step from 12.476 to 11.044 s (1.13x); with bf16
+# as well it falls to 3.812 s (3.27x from where it started). bf16 without them is
+# 0.94x. Neither half does much on its own.
+#
+# The masked positions are not the same as a 0-worker run: the collate runs in
+# the worker, whose RNG PyTorch seeds per worker. The rate and the objective are
+# unchanged and each setting reproduces itself, but the draw differs, so a run
+# started with workers is not a continuation of one started without.
+#
+# Approved 2026-09-16 (all-bert-throughput-verdict-2026-09-16b). bf16 was not:
+# on its own it measured 0.94x, and it changes numerics rather than placement.
+dataloader_num_workers = 4
+dataloader_pin_memory = True
 
 # 8 x 80 x world_size 4 = 2,560, the batch max_steps was derived from. Under HF
 # the effective batch moves with the GPU count, and --gpus=4 can arrive as two
