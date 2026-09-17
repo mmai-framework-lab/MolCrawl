@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import multiprocessing as mp
 import runpy
-import traceback
 
 
 def _worker(config: str, iters: int, q) -> None:

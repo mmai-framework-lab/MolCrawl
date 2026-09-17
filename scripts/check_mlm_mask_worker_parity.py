@@ -21,7 +21,6 @@ import runpy
 
 
 def masked_positions(dataset, collator, batch: int, workers: int, seed: int) -> list:
-    import torch
     from torch.utils.data import DataLoader, SequentialSampler
 
     from transformers import set_seed
@@ -53,7 +52,6 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=None, help="default: the config's")
     args = ap.parse_args()
 
-    import torch  # noqa: F401  (imported for the side effect of a stable RNG)
     from datasets import load_from_disk
     from transformers import DataCollatorForLanguageModeling
 
@@ -64,9 +62,7 @@ def main() -> int:
 
     ds = load_from_disk(g["dataset_dir"])["train"].select(range(args.rows))
     ds = ds.with_format("torch")
-    collator = DataCollatorForLanguageModeling(
-        tokenizer=tokenizer, mlm=True, mlm_probability=prob
-    )
+    collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=prob)
 
     print(f"config      {args.config}")
     print(f"rows {args.rows}  batch {args.batch}  seed {seed}  mlm_probability {prob}")
@@ -98,8 +94,7 @@ def main() -> int:
     # Repeating one setting twice says whether the difference is workers or just
     # non-determinism, which would make the comparison above meaningless.
     b2 = masked_positions(ds, collator, args.batch, args.workers, seed)
-    print(f"\nworkers={args.workers} reproduces itself on a rerun: "
-          f"{'YES' if b == b2 else 'NO'}")
+    print(f"\nworkers={args.workers} reproduces itself on a rerun: {'YES' if b == b2 else 'NO'}")
     a2 = masked_positions(ds, collator, args.batch, 0, seed)
     print(f"workers=0 reproduces itself on a rerun: {'YES' if a == a2 else 'NO'}")
     return 0
