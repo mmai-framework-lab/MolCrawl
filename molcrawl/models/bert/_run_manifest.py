@@ -91,6 +91,13 @@ TRACKED = (
     "degenerate_loss_threshold",
     "document_masking",
     "save_on_improve",
+    # Execution, not research values, but they move a step by 3.27x together and
+    # the masked positions change with the worker count -- a run's record has to
+    # say which side of that it was on.
+    "bf16",
+    "tf32",
+    "dataloader_num_workers",
+    "dataloader_pin_memory",
 )
 
 # Read by the BERT configs. LEARNING_SOURCE_DIR, GENOME_SUBSET and
