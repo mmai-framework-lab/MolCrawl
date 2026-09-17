@@ -154,6 +154,19 @@ def test_batch_policy_agrees_with_train_py(completed_run):
     assert bp["scaling_feasibility"]["max_feasible_candidate_node_count"] is None
 
 
+def test_derived_values_match_the_toy_run(completed_run):
+    d = completed_run["manifest"]["derived"]
+    assert d["sequences_per_optimizer_step"] == 2
+    assert d["optimizer_steps_planned"] == 5
+    assert d["train_rows"] == 64
+    assert d["epochs_planned"] == pytest.approx(5 * 2 / 64)
+    lr = d["learning_rate"]
+    assert lr["initial"] == 0.0
+    assert lr["peak"] == pytest.approx(2e-3)  # the CLI override, not the config file
+    assert lr["floor_reached_at_step"] == 4 and lr["floor_reached_within_run"] is True
+    assert lr["at_final_step"] == pytest.approx(1e-4)
+
+
 def test_model_optimizer_and_environment_sections(completed_run):
     m = completed_run["manifest"]
     assert m["model"]["class"] == "GPT"

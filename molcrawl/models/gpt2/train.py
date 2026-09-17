@@ -1094,6 +1094,7 @@ if __name__ == "__main__":
             )
             from molcrawl.models.gpt2._run_manifest import (
                 build_provenance,
+                derived_values,
                 dirty_tree_warning,
                 note_resume,
                 write_manifest,
@@ -1202,6 +1203,24 @@ if __name__ == "__main__":
                     read_sources=[os.path.abspath(__file__)],
                 ),
                 batch_policy=_batch_policy_record,
+                derived=derived_values(
+                    train_rows=_train_rows,
+                    batch_size=batch_size,
+                    gradient_accumulation_steps_configured=config.get("gradient_accumulation_steps"),
+                    world_size=ddp_world_size,
+                    block_size=block_size,
+                    max_iters=max_iters,
+                    warmup_iters=warmup_iters,
+                    lr_decay_iters=lr_decay_iters,
+                    decay_lr=decay_lr,
+                    learning_rate=learning_rate,
+                    min_lr=min_lr,
+                    lr_fn=get_lr,
+                    eval_interval=eval_interval,
+                    save_checkpoint_steps=save_checkpoint_steps,
+                    always_save_checkpoint=always_save_checkpoint,
+                    out_dir=out_dir,
+                ),
                 model={
                     "class": type(raw_model).__name__,
                     "model_args": dict(model_args),
