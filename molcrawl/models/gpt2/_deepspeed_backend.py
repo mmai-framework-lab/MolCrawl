@@ -44,6 +44,14 @@ from molcrawl.models._batch_policy import from_legacy_gpt2, resolve_global_fixed
 PRECISION_FOR_DTYPE = {"bfloat16": "bf16", "float32": "fp32"}
 
 
+class DeepSpeedBackendError(RuntimeError):
+    """A refusal of the DeepSpeed backend.
+
+    Not SystemExit: that bypasses sys.excepthook, so the run manifest's lifecycle
+    would record the failure without its reason.
+    """
+
+
 def check_preconditions(*, deepspeed_config: str, ddp: bool, device_type: str, dtype: str) -> str:
     """Refuse, before any data is loaded, a run this backend would not train faithfully."""
     problems = []
@@ -56,11 +64,11 @@ def check_preconditions(*, deepspeed_config: str, ddp: bool, device_type: str, d
             f"dtype {dtype!r} is not supported: float16 would need the legacy GradScaler, which this path does not reproduce"
         )
     if problems:
-        raise SystemExit(f"deepspeed_config={deepspeed_config!r} cannot be used: " + "; ".join(problems))
+        raise DeepSpeedBackendError(f"deepspeed_config={deepspeed_config!r} cannot be used: " + "; ".join(problems))
     try:
         import deepspeed  # noqa: F401
     except ImportError as exc:
-        raise SystemExit(f"deepspeed_config={deepspeed_config!r} is set but deepspeed is not importable: {exc}") from exc
+        raise DeepSpeedBackendError(f"deepspeed_config={deepspeed_config!r} is set but deepspeed is not importable: {exc}") from exc
     return PRECISION_FOR_DTYPE[dtype]
 
 
@@ -96,7 +104,7 @@ def initialize(
 
     batch = resolve_global_fixed(from_legacy_gpt2(batch_size, gradient_accumulation_steps_configured), world_size)
     if batch.gradient_accumulation_steps_per_rank != gradient_accumulation_steps_per_rank:
-        raise SystemExit(
+        raise DeepSpeedBackendError(
             f"batch policy gives per-rank accumulation {batch.gradient_accumulation_steps_per_rank}"
             f" but train.py resolved {gradient_accumulation_steps_per_rank}; refusing to start"
         )
@@ -107,7 +115,7 @@ def initialize(
     )
     engine, engine_optimizer, _, _ = deepspeed_module.initialize(model=model, optimizer=optimizer, config=config)
     if getattr(engine, "optimizer", None) is not optimizer:
-        raise SystemExit(
+        raise DeepSpeedBackendError(
             "DeepSpeed wrapped the client optimizer"
             f" ({type(getattr(engine, 'optimizer', None)).__name__}); the optimizer implementation and the"
             " checkpoint format would change. Only ZeRO stage 0 with fp32 parameters is supported here."

@@ -97,7 +97,7 @@ class FakeDeepSpeed:
      (dict(ddp=True, device_type="cuda", dtype="float16"), "GradScaler")],
 )
 def test_preconditions_refuse_what_would_not_train_the_same(kw, fragment):
-    with pytest.raises(SystemExit, match=fragment):
+    with pytest.raises(backend.DeepSpeedBackendError, match=fragment):
         backend.check_preconditions(deepspeed_config="x.json", **kw)
 
 
@@ -105,7 +105,7 @@ def test_preconditions_report_a_missing_deepspeed(monkeypatch):
     import sys
 
     monkeypatch.setitem(sys.modules, "deepspeed", None)
-    with pytest.raises(SystemExit, match="not importable"):
+    with pytest.raises(backend.DeepSpeedBackendError, match="not importable"):
         backend.check_preconditions(deepspeed_config="x.json", ddp=True, device_type="cuda", dtype="bfloat16")
 
 
@@ -150,19 +150,20 @@ def test_initialize_hands_deepspeed_the_resolved_config(tmp_path):
 
 
 def test_initialize_refuses_a_wrapped_optimizer(tmp_path):
-    with pytest.raises(SystemExit, match="wrapped the client optimizer"):
+    with pytest.raises(backend.DeepSpeedBackendError, match="wrapped the client optimizer"):
         _init(tmp_path, FakeDeepSpeed(wrap_optimizer=True))
 
 
 def test_initialize_refuses_a_per_rank_accumulation_train_py_did_not_resolve(tmp_path):
-    with pytest.raises(SystemExit, match="per-rank accumulation"):
+    with pytest.raises(backend.DeepSpeedBackendError, match="per-rank accumulation"):
         _init(tmp_path, FakeDeepSpeed(), gradient_accumulation_steps_per_rank=160)
 
 
 def test_initialize_refuses_an_optimizer_in_the_file(tmp_path):
-    bad = _ds_file(tmp_path, {**dsc.default_config(), "optimizer": {"type": "AdamW"}})
+    bad = tmp_path / "with_optimizer.deepspeed.json"
+    bad.write_text(json.dumps({**dsc.default_config(), "optimizer": {"type": "AdamW"}}))
     with pytest.raises(dsc.DeepSpeedConfigError, match="optimizer"):
-        _init(tmp_path, FakeDeepSpeed(), deepspeed_config=bad)
+        _init(tmp_path, FakeDeepSpeed(), deepspeed_config=str(bad))
 
 
 # ------------------------------------------------------------ loop arithmetic ---- #
