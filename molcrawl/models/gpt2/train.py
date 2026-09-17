@@ -585,7 +585,9 @@ def get_batch(split):
             y.pin_memory().to(device, non_blocking=True),
         )
     else:
-        x, y = x.to(device), y.to(device)
+        # batch[:, 1:] is a non-contiguous view. On CUDA pin_memory() copies it;
+        # .to("cpu") returns it as is, and model.py's targets.view(-1) then fails.
+        x, y = x.contiguous().to(device), y.contiguous().to(device)
     return x, y
 
 
