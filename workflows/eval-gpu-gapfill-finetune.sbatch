@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=eval-gpu-gapfill-finetune
-#SBATCH --partition=h200-long
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --output=slurm_logs/eval_gpu_gapfill_finetune_%j.log
-#SBATCH --error=slurm_logs/eval_gpu_gapfill_finetune_%j.log
+#SBATCH --output=workflows/slurm-logs/%x-%j.out
+#SBATCH --error=workflows/slurm-logs/%x-%j.out
 #
 # Fine-tune evaluation gap-fill: invokes ``workflows/eval-gapfill-finetune.sh``
 # with DEVICE=cuda so every (corpus, arch, size, task) combo whose
 # fine-tune checkpoint exists is evaluated on GPU. Idempotent — combos
 # whose REPORT.md already exists are skipped.
 #
-# Uses h200-long (24h timelimit) so the job survives even if the queue
-# is busy or runs slower than expected. Resubmittable safely.
+# A 24h time limit (the gpu partition allows up to 4 days) so the job survives
+# even if it runs slower than expected. Resubmittable safely.
 
 set -uo pipefail
 # shellcheck disable=SC1091
