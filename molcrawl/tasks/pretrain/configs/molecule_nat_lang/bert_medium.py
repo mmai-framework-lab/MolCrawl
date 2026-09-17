@@ -78,10 +78,15 @@ gradient_accumulation_steps = 5 * 16
 # unchanged and each setting reproduces itself, but the draw differs, so a run
 # started with workers is not a continuation of one started without.
 #
-# Approved 2026-09-16 (all-bert-throughput-verdict-2026-09-16b). bf16 was not:
-# on its own it measured 0.94x, and it changes numerics rather than placement.
+# Workers and pinning approved 2026-09-16 (all-bert-throughput-verdict-2026-09-16b);
+# bf16 approved 2026-09-17 (all-bert-order-2026-09-17 §1). bf16 is the one of the three
+# that changes numerics: every GPT-2 result and genome's BERT (bert_small_subset.py)
+# already ran in bf16, so this aligns the remaining BERT modalities with them rather
+# than introducing a new precision. Results from before this line ran in fp32 and are
+# tabulated with a precision column (§1.4).
 dataloader_num_workers = 4
 dataloader_pin_memory = True
+bf16 = True
 
 # The number max_steps was derived from, stated so the run can check it rather
 # than assume it. main.py multiplies per_device x grad_accum x world_size at
