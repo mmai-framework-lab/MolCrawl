@@ -52,6 +52,24 @@ document_masking = True
 # committed 8 x 80 reached the same global batch by a slower micro-batch shape.
 batch_size = 32
 gradient_accumulation_steps = 20
+# Where the input is fetched, not what is computed: the same rows in the same
+# order, pulled by four worker processes into pinned buffers instead of by the
+# training process itself. main.py defaults both off (main.py:655-656), and with
+# them off the Arrow read, the MLM draw and the document masking all sit on the
+# critical path of every step. Measured on rna small at 8 x 80, 4 GPUs: in fp32
+# these two settings alone take a step from 12.476 to 11.044 s (1.13x); with bf16
+# as well it falls to 3.812 s (3.27x from where it started). bf16 without them is
+# 0.94x. Neither half does much on its own.
+#
+# The masked positions are not the same as a 0-worker run: the collate runs in
+# the worker, whose RNG PyTorch seeds per worker. The rate and the objective are
+# unchanged and each setting reproduces itself, but the draw differs, so a run
+# started with workers is not a continuation of one started without.
+#
+# Approved 2026-09-16 (all-bert-throughput-verdict-2026-09-16b). bf16 was not:
+# on its own it measured 0.94x, and it changes numerics rather than placement.
+dataloader_num_workers = 4
+dataloader_pin_memory = True
 # Evaluation reads a fixed 10,000 rows (models/bert/main.py EVAL_SUBSET_ROWS), so an
 # eval point costs the same work however it is batched -- but at a micro-batch far
 # below the training one it takes far longer in wall time. genome measured the
