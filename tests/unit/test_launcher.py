@@ -140,8 +140,10 @@ def test_sbatch_file_follows_the_placement_and_path_rules():
     assert ': "${RUNS_ROOT:?' in text and ': "${LEARNING_SOURCE_DIR:?' in text
     assert "git-common-dir" in text
     assert "record-failure" in text
-    for forbidden in ("/data1/", "rkp00024", "matsubara", "rku00055", "torchrun"):
-        assert forbidden not in text, forbidden
+    # No absolute server path, account or user name in tracked launch code.
+    assert not re.search(r"(^|[\s'"=])/(data\d*|home|work)/", text, re.M)
+    assert "--account" not in text
+    assert "torchrun" not in text
 
 
 # ------------------------------------------------------------- submitter ---- #
