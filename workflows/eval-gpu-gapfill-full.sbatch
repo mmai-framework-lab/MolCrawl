@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=eval-gpu-gapfill-full
-#SBATCH --partition=h200
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
 #SBATCH --time=08:00:00
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --output=slurm_logs/eval_gpu_gapfill_full_%j.log
-#SBATCH --error=slurm_logs/eval_gpu_gapfill_full_%j.log
+#SBATCH --output=workflows/slurm-logs/%x-%j.out
+#SBATCH --error=workflows/slurm-logs/%x-%j.out
 #
 # Comprehensive GPU gap-fill: invokes ``workflows/eval-gapfill.sh`` with
 # DEVICE=cuda so every remaining (modality × arch × size × task) combo

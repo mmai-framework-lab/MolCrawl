@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=eval-chebi20-mol-instr-retry
-#SBATCH --partition=h200
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
 #SBATCH --time=02:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=8
-#SBATCH --output=slurm_logs/eval_chebi20_mol_instr_retry_%j.log
-#SBATCH --error=slurm_logs/eval_chebi20_mol_instr_retry_%j.log
+#SBATCH --output=workflows/slurm-logs/%x-%j.out
+#SBATCH --error=workflows/slurm-logs/%x-%j.out
 #
 # Retry chebi20 × molecule_nat_lang_mol_instructions × gpt2 for the
 # three sizes whose HF checkpoint dirs bake a tokenizer.json:
