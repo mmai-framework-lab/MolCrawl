@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>molcrawl.core API documentation</title>
-<meta name="description" content="">
+<title>molcrawl.core.tokenizer_io API documentation</title>
+<meta name="description" content="Save a tokenizer so that other processes never read a half-written file …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -33,55 +33,56 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>molcrawl.core</code></h1>
+<h1 class="title">Module <code>molcrawl.core.tokenizer_io</code></h1>
 </header>
 <section id="section-intro">
+<p>Save a tokenizer so that other processes never read a half-written file.</p>
+<p>Several configs build a tokenizer at import, save it to a fixed directory and read
+it straight back. <code>save_pretrained</code> opens each file for writing in place, so a
+second run starting at the same moment can open <code>tokenizer.json</code> after it has
+been truncated and before it has been written, and fails on an empty JSON. That is
+what killed two of three rna arms launched together (117320, 117321), and a
+48-execution stress test reproduces it six times over.</p>
+<p>Writing the directory once in advance does not help: every run writes it again.
+What helps is never exposing a partial file. Each file is written in a private
+directory on the same filesystem and moved into place with <code>os.replace</code>, which
+swaps the name atomically, so a reader sees either the previous complete file or
+the new complete one. Concurrent runs write identical content, so which one wins
+does not matter.</p>
+<p>A directory that has never been populated can still be read while only some of
+its files have arrived. Write it once before launching runs together
+(<code>workflows/bert-prepare-tokenizer.sbatch</code>); after that every file is always
+present and always complete.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="molcrawl.core.base" href="base.html">molcrawl.core.base</a></code></dt>
+<dt id="molcrawl.core.tokenizer_io.save_pretrained_atomic"><code class="name flex">
+<span>def <span class="ident">save_pretrained_atomic</span></span>(<span>tokenizer, path: str) ‑> None</span>
+</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_pretrained_atomic(tokenizer, path: str) -&gt; None:
+    os.makedirs(path, exist_ok=True)
+    parent = os.path.dirname(os.path.abspath(path)) or &#34;.&#34;
+    tmp = tempfile.mkdtemp(prefix=f&#34;.{os.path.basename(path)}.tmp-&#34;, dir=parent)
+    try:
+        tokenizer.save_pretrained(tmp)
+        for name in sorted(os.listdir(tmp)):
+            os.replace(os.path.join(tmp, name), os.path.join(path, name))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)</code></pre>
+</details>
 <div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.config" href="config.html">molcrawl.core.config</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.dataset" href="dataset.html">molcrawl.core.dataset</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.output_guard" href="output_guard.html">molcrawl.core.output_guard</a></code></dt>
-<dd>
-<div class="desc"><p>Keep generated files out of the tree the inputs come from …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.paths" href="paths.html">molcrawl.core.paths</a></code></dt>
-<dd>
-<div class="desc"><p>Define constants for path settings used throughout the project</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.tokenizer_io" href="tokenizer_io.html">molcrawl.core.tokenizer_io</a></code></dt>
-<dd>
-<div class="desc"><p>Save a tokenizer so that other processes never read a half-written file …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.torch_compat" href="torch_compat.html">molcrawl.core.torch_compat</a></code></dt>
-<dd>
-<div class="desc"><p>Compatibility shim for <code>torch &gt;= 2.6</code> with HuggingFace Trainer resume …</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.tracking" href="tracking/index.html">molcrawl.core.tracking</a></code></dt>
-<dd>
-<div class="desc"><p>Experiment Tracking System
-A module that centrally manages the execution status, results, and logs of each process</p></div>
-</dd>
-<dt><code class="name"><a title="molcrawl.core.utils" href="utils/index.html">molcrawl.core.utils</a></code></dt>
-<dd>
-<div class="desc"><p>Shared utility package.</p></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -93,20 +94,12 @@ A module that centrally manages the execution status, results, and logs of each 
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="molcrawl" href="../index.html">molcrawl</a></code></li>
+<li><code><a title="molcrawl.core" href="index.html">molcrawl.core</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="molcrawl.core.base" href="base.html">molcrawl.core.base</a></code></li>
-<li><code><a title="molcrawl.core.config" href="config.html">molcrawl.core.config</a></code></li>
-<li><code><a title="molcrawl.core.dataset" href="dataset.html">molcrawl.core.dataset</a></code></li>
-<li><code><a title="molcrawl.core.output_guard" href="output_guard.html">molcrawl.core.output_guard</a></code></li>
-<li><code><a title="molcrawl.core.paths" href="paths.html">molcrawl.core.paths</a></code></li>
-<li><code><a title="molcrawl.core.tokenizer_io" href="tokenizer_io.html">molcrawl.core.tokenizer_io</a></code></li>
-<li><code><a title="molcrawl.core.torch_compat" href="torch_compat.html">molcrawl.core.torch_compat</a></code></li>
-<li><code><a title="molcrawl.core.tracking" href="tracking/index.html">molcrawl.core.tracking</a></code></li>
-<li><code><a title="molcrawl.core.utils" href="utils/index.html">molcrawl.core.utils</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="molcrawl.core.tokenizer_io.save_pretrained_atomic" href="#molcrawl.core.tokenizer_io.save_pretrained_atomic">save_pretrained_atomic</a></code></li>
 </ul>
 </li>
 </ul>
