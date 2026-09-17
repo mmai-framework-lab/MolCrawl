@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=eval-gpu-external-baselines
-#SBATCH --partition=h200-long
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
 #SBATCH --time=12:00:00
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --output=slurm_logs/eval_gpu_external_baselines_%j.log
-#SBATCH --error=slurm_logs/eval_gpu_external_baselines_%j.log
+#SBATCH --output=workflows/slurm-logs/%x-%j.out
+#SBATCH --error=workflows/slurm-logs/%x-%j.out
 #
 # External HuggingFace baseline sweep on GPU. The first time this runs
 # it downloads ChemBERTa-2 (~150MB), ESM-2 (~150MB), DNABERT-2 (~500MB)
