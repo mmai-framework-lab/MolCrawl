@@ -209,3 +209,19 @@ def test_resumed_run_keeps_the_previous_segment(completed_run):
     assert entry["optimizer_state_restored"] is True
     assert entry["world_size_after"] == 1
     assert m["model"]["initialization"] == "resume"
+
+
+def test_deepspeed_config_on_cpu_single_process_fails_before_training(tmp_path):
+    """The backend refuses a launch it cannot run faithfully, and the manifest says why."""
+    data = _dataset(str(tmp_path / "data"))
+    out = str(tmp_path / "out")
+    cfg = _config(str(tmp_path / "cfg.py"), out, data)
+    ds = tmp_path / "cfg.deepspeed.json"
+    ds.write_text("{}")
+    done = _run(cfg, f"--deepspeed_config={ds}", cwd=str(tmp_path))
+    assert done.returncode != 0
+    m = _manifest(out)
+    assert m["run"]["status"] == "failed"
+    assert m["deepspeed"]["enabled"] is True
+    assert m["deepspeed"]["config_path"] == str(ds)
+    assert "distributed launch" in m["run"]["failure"]["error_summary"]

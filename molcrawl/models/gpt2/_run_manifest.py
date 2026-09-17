@@ -229,7 +229,7 @@ def derived_values(*, train_rows, batch_size, gradient_accumulation_steps_config
 
 
 def start_run(out_dir, *, run_id, argv, trainer_file, configurator_path, defaults,
-              after_config_file, after_cli, init_from, purpose=None):
+              after_config_file, after_cli, init_from, purpose=None, deepspeed_config=""):
     """Write the ``starting`` manifest before any GPU work; return its lifecycle.
 
     Order §0: a run whose manifest cannot be written must fail before it trains,
@@ -258,7 +258,11 @@ def start_run(out_dir, *, run_id, argv, trainer_file, configurator_path, default
         ),
         "slurm": slurm_info(),
         "env_by_prefix": environment_by_prefix(),
-        "deepspeed": {"enabled": False},
+        "deepspeed": (
+            {"enabled": True, "config_path": os.path.abspath(deepspeed_config),
+             "note": "engine and resolved config are recorded when the run reaches running"}
+            if deepspeed_config else {"enabled": False}
+        ),
     }
     lifecycle.start(document, resume_expected=(init_from == "resume"))
     return lifecycle

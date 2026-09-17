@@ -28,9 +28,15 @@ precision
     ``torch.autocast`` (engine.py:2779), and at ZeRO stage 0 gradients are
     all-reduced in their own dtype (engine.py:174-191). The file must not set
     ``bf16``, ``fp16``, ``amp`` or ``torch_autocast``; they are written here.
+    The engine owns autocast even for a custom loop: with ``torch_autocast``
+    disabled it runs the forward under ``torch.autocast(enabled=False)``, so an
+    autocast the caller opened outside is switched off (torch_autocast.py:107-128).
 gradient clipping
     The trainer's config (``grad_clip`` / ``max_grad_norm``). ``"auto"`` or the
-    same value.
+    same value. ``clipping_by="trainer"`` keeps torch's ``clip_grad_norm_`` in a
+    custom loop and sets DeepSpeed's to 0, because DeepSpeed's own
+    (runtime/utils.py:359) computes the norm differently; the HF Trainer can only
+    clip through DeepSpeed.
 ZeRO and offload
     The file. Stage 0 and no offload are the initial specification (order §5);
     anything else is refused unless the caller passes ``allow_zero_stage`` /
@@ -153,6 +159,7 @@ def resolve(
     batch: BatchResolution,
     precision: str,
     gradient_clipping: float,
+    clipping_by: str = "deepspeed",
     allow_zero_stage: bool = False,
     allow_offload: bool = False,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -173,8 +180,23 @@ def resolve(
         raise DeepSpeedConfigError(
             f"gradient_clipping {clip} in the DeepSpeed config does not match the model config's {gradient_clipping}"
         )
-    out["gradient_clipping"] = AUTO if framework == "hf" else float(gradient_clipping)
-    sources["gradient_clipping"] = "model config (max_grad_norm / grad_clip)"
+    if clipping_by not in ("deepspeed", "trainer"):
+        raise DeepSpeedConfigError(f"clipping_by must be deepspeed or trainer, got {clipping_by!r}")
+    if clipping_by == "trainer":
+        # The trainer keeps torch.nn.utils.clip_grad_norm_ between the boundary
+        # backward (gradients already reduced) and engine.step(); DeepSpeed's own
+        # clip_grad_norm_ (runtime/utils.py:359) computes the norm differently.
+        if framework == "hf":
+            raise DeepSpeedConfigError("the HF Trainer cannot clip outside DeepSpeed; use clipping_by=deepspeed")
+        out["gradient_clipping"] = 0.0
+        sources["gradient_clipping"] = (
+            f"0.0 in DeepSpeed; the trainer applies torch clip_grad_norm_({float(gradient_clipping)})"
+        )
+        engine_clip = 0.0
+    else:
+        out["gradient_clipping"] = AUTO if framework == "hf" else float(gradient_clipping)
+        sources["gradient_clipping"] = "model config (max_grad_norm / grad_clip), applied by DeepSpeed"
+        engine_clip = float(gradient_clipping)
 
     expected = {
         "train_micro_batch_size_per_gpu": batch.micro_batch_size_per_gpu,
@@ -201,7 +223,8 @@ def resolve(
         "parameter_dtype": "float32",
         "optimizer_created_by": "trainer (client optimizer); DeepSpeed config has no optimizer",
         "scheduler_created_by": "trainer; DeepSpeed config has no scheduler",
-        "expected": {**expected, "gradient_clipping": float(gradient_clipping)},
+        "gradient_clipping": {"value": float(gradient_clipping), "applied_by": clipping_by},
+        "expected": {**expected, "gradient_clipping": engine_clip},
         "sources": sources,
         "resolved": out,
     }

@@ -123,6 +123,10 @@ dtype = (
     "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
 )  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
 compile = False  # use PyTorch 2.0 to compile the model to be faster
+# DeepSpeed backend: path to the model config's .deepspeed.json. Empty keeps the
+# DDP path. Launched through workflows/deepspeed-train.sbatch; see
+# models/gpt2/_deepspeed_backend.py for what is and is not delegated to the engine.
+deepspeed_config = ""
 # MFU reference: accelerator bf16 dense peak in TFLOPS, used only to report MFU
 # as a fraction of hardware peak. Default ~ NVIDIA GB200/B200 bf16 dense; set
 # --mfu_peak_tflops=312 for A100, or your measured value for an exact ratio.
@@ -347,6 +351,7 @@ if __name__ == "__main__":
         after_config_file=globals().get("_config_after_file"),
         after_cli=config_introduced,
         init_from=init_from,
+        deepspeed_config=deepspeed_config,
     )
     _run_lifecycle.install_hooks(
         step_getter=lambda: globals().get("iter_num"),
@@ -475,6 +480,16 @@ if __name__ == "__main__":
         "float16": torch.float16,
     }[dtype]
     ctx = nullcontext() if device_type == "cpu" else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
+
+    # Fail before any data is read if the DeepSpeed backend cannot run this faithfully.
+    use_deepspeed = bool(deepspeed_config)
+    _deepspeed_record = {"enabled": False}
+    if use_deepspeed:
+        from molcrawl.models.gpt2 import _deepspeed_backend
+
+        _deepspeed_precision = _deepspeed_backend.check_preconditions(
+            deepspeed_config=deepspeed_config, ddp=ddp, device_type=device_type, dtype=dtype
+        )
 
     # Resolve ambiguous token ids once for CLM-side loss masking (legacy
     # ablation path; same policy as the Llama-style train loop).
@@ -824,8 +839,22 @@ if __name__ == "__main__":
         unoptimized_model = model
         model = torch.compile(model)  # type: ignore[assignment] # requires PyTorch 2.0
 
-    # wrap model into DDP container
-    if ddp:
+    # wrap model into a DeepSpeed engine or a DDP container
+    if use_deepspeed:
+        model, _deepspeed_record = _deepspeed_backend.initialize(  # type: ignore[assignment]
+            model,
+            optimizer,
+            deepspeed_config=deepspeed_config,
+            batch_size=batch_size,
+            gradient_accumulation_steps_configured=config["gradient_accumulation_steps"],
+            gradient_accumulation_steps_per_rank=gradient_accumulation_steps,
+            world_size=ddp_world_size,
+            precision=_deepspeed_precision,
+            grad_clip=grad_clip,
+        )
+        # The engine applies torch_autocast itself and disables an outer one.
+        ctx = nullcontext()
+    elif ddp:
         model = DDP(model, device_ids=[ddp_local_rank])  # type: ignore[assignment]
 
 
@@ -1261,6 +1290,7 @@ if __name__ == "__main__":
                     "grad_clip": grad_clip,
                     "grad_scaler_enabled": bool(scaler.is_enabled()),
                 },
+                deepspeed=_deepspeed_record,
             )
             print(f"📝 Wrote {out_dir}/run_manifest.json")
             if _resume_source:
@@ -1494,29 +1524,40 @@ if __name__ == "__main__":
 
         # forward backward update, with optional gradient accumulation to simulate larger batch size
         # and using the GradScaler if data type is float16
-        for micro_step in range(gradient_accumulation_steps):
-            if ddp:
-                # in DDP training we only need to sync gradients at the last micro step.
-                # the official way to do this is with model.no_sync() context manager, but
-                # I really dislike that this bloats the code and forces us to repeat code
-                # looking at the source of that context manager, it just toggles this variable
-                model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1  # type: ignore[assignment]
-            with ctx:
-                logits, loss = model(X, Y)
-                loss = loss / gradient_accumulation_steps  # scale the loss to account for gradient accumulation
-            # immediately async prefetch next batch while model is doing the forward pass on the GPU
-            X, Y = get_batch("train")
-            # backward pass, with gradient scaling if training in fp16
-            scaler.scale(loss).backward()
-        # clip the gradient
-        if grad_clip != 0.0:
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-        # step the optimizer and scaler if training in fp16
-        scaler.step(optimizer)
-        scaler.update()
-        # flush the gradients as soon as we can, no need for this memory anymore
-        optimizer.zero_grad(set_to_none=True)
+        if use_deepspeed:
+            # Same arithmetic through the engine: loss / accum, reduce at the
+            # boundary, torch clipping, then the client optimizer's step.
+            X, Y, loss = _deepspeed_backend.micro_steps(
+                model, X, Y,
+                gradient_accumulation_steps=gradient_accumulation_steps,
+                grad_clip=grad_clip,
+                get_batch=get_batch,
+                ctx=ctx,
+            )
+        else:
+            for micro_step in range(gradient_accumulation_steps):
+                if ddp:
+                    # in DDP training we only need to sync gradients at the last micro step.
+                    # the official way to do this is with model.no_sync() context manager, but
+                    # I really dislike that this bloats the code and forces us to repeat code
+                    # looking at the source of that context manager, it just toggles this variable
+                    model.require_backward_grad_sync = micro_step == gradient_accumulation_steps - 1  # type: ignore[assignment]
+                with ctx:
+                    logits, loss = model(X, Y)
+                    loss = loss / gradient_accumulation_steps  # scale the loss to account for gradient accumulation
+                # immediately async prefetch next batch while model is doing the forward pass on the GPU
+                X, Y = get_batch("train")
+                # backward pass, with gradient scaling if training in fp16
+                scaler.scale(loss).backward()
+            # clip the gradient
+            if grad_clip != 0.0:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            # step the optimizer and scaler if training in fp16
+            scaler.step(optimizer)
+            scaler.update()
+            # flush the gradients as soon as we can, no need for this memory anymore
+            optimizer.zero_grad(set_to_none=True)
 
         # timing and logging
         t1 = time.time()

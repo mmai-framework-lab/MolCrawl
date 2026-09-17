@@ -208,3 +208,12 @@ def test_submitter_refuses_commas_in_extra_args(submit_module, tmp_path):
     env = {"RUNS_ROOT": str(tmp_path), "LEARNING_SOURCE_DIR": str(tmp_path)}
     result = submit_module.plan(_submit_args(ds_config=_ds_file(tmp_path), extra_args="--a=1,2"), environ=env)
     assert any("comma" in p for p in result["problems"])
+
+
+def test_sbatch_guard_matches_the_trainers_that_declare_deepspeed_config():
+    """The sbatch refuses a trainer without the key; gpt2 has it, bert does not yet."""
+    pattern = re.compile(r"^\s*deepspeed_config\s*(:[^=]*)?=", re.M)
+    gpt2 = open(os.path.join(REPO, "molcrawl", "models", "gpt2", "train.py")).read()
+    bert = open(os.path.join(REPO, "molcrawl", "models", "bert", "main.py")).read()
+    assert pattern.search(gpt2)
+    assert not pattern.search(bert)
