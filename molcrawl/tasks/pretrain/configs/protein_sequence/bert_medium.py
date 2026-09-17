@@ -93,6 +93,12 @@ max_length = 1024
 dataset_dir = UNIPROT_DATASET_DIR
 learning_rate = 0.0001
 weight_decay = 0.01
+# 0.999, not main.py's default of 0.95. The note above names adam_beta2=0.95 with a
+# 200-step warmup as the cause of the collapse every learning rate fell into, and this
+# base declared neither, so running it directly reproduced exactly that setting
+# (all-bert-order-2026-09-17 §3.3). warmup_steps is already set above. main.py's
+# default stays 0.95: the other modalities run on it and have not collapsed.
+adam_beta2 = 0.999
 log_interval = 100
 save_steps = 1000  # Save checkpoint every 1000 steps instead of 100
 
