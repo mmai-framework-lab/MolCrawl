@@ -134,7 +134,7 @@ fi
     --warmup_steps=10 \
     --log_interval="$((STEPS + 100))" \
     --save_steps="$((STEPS + 100))" \
-    ${EXTRA_ARGS} \
+    ${EXTRA_ARGS:-} \
     > "${LOG}" 2>&1
 rc=$?
 
