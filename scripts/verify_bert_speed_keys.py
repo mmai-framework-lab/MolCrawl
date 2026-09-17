@@ -22,8 +22,10 @@ def main() -> int:
     if not paths:
         print(__doc__)
         return 2
-    print(f"{'config':44s}{'bf16':>6}{'tf32':>6}{'work':>6}{'pin':>6}"
-          f"{'mb':>6}{'accum':>7}{'eb(4gpu)':>10}{'declared':>10}{'seed':>7}")
+    print(
+        f"{'config':44s}{'bf16':>6}{'tf32':>6}{'work':>6}{'pin':>6}"
+        f"{'mb':>6}{'accum':>7}{'eb(4gpu)':>10}{'declared':>10}{'seed':>7}"
+    )
     bad = 0
     for p in paths:
         try:
@@ -39,14 +41,15 @@ def main() -> int:
         flag = "" if dec is None or int(dec) == eb else "  <- declared differs"
         if flag:
             bad += 1
-        print(f"{p.split('configs/')[-1]:44s}"
-              f"{str(g.get('bf16', False)):>6}{str(g.get('tf32', False)):>6}"
-              f"{str(g.get('dataloader_num_workers', 0)):>6}"
-              f"{str(g.get('dataloader_pin_memory', False)):>6}"
-              f"{mb:>6}{acc:>7}{eb:>10}"
-              f"{('-' if dec is None else int(dec)):>10}{str(g.get('seed', '-')):>7}{flag}")
-    print("\ndeclared '-' means the config states no expected_global_batch, so"
-          " main.py's guard does not run for it.")
+        print(
+            f"{p.split('configs/')[-1]:44s}"
+            f"{str(g.get('bf16', False)):>6}{str(g.get('tf32', False)):>6}"
+            f"{str(g.get('dataloader_num_workers', 0)):>6}"
+            f"{str(g.get('dataloader_pin_memory', False)):>6}"
+            f"{mb:>6}{acc:>7}{eb:>10}"
+            f"{('-' if dec is None else int(dec)):>10}{str(g.get('seed', '-')):>7}{flag}"
+        )
+    print("\ndeclared '-' means the config states no expected_global_batch, so main.py's guard does not run for it.")
     return 1 if bad else 0
 
 
