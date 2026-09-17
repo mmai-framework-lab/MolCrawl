@@ -67,7 +67,15 @@ class ProteinSequenceDataCollator(DataCollatorForLanguageModeling):
 data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_probability=0.2)
 
 # Training configuration
-max_steps = 11177  # 3 epochs of train at global batch 2560 = floor(3*9,538,464/2560)
+# 9 epochs at global batch 2,560. At 3 epochs (11,177 steps) the loss is still falling
+# and sizes cannot be compared (protein-bert-grid-verdict-2026-09-16 §2; all-bert-order
+# 2026-09-17 §6.1). 33,531 is 3 x 11,177, the length the protein GPT-2 9-epoch runs used;
+# an exact floor(9 x 9,538,464 / 2,560) would be 33,533.
+max_steps = 33531
+# 10 % of max_steps. Written here rather than in the grid: without this line the base
+# fell to main.py's default of 200, and a grid that set only its own warmup would have
+# gone to 3.3 % the moment max_steps changed here.
+warmup_steps = 3353
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
 # MLM collapse fix: packing concatenates ~3-5 proteins per 1024 block; without
 # masking, attention leaks across those documents. Confine attention per document.
