@@ -146,7 +146,12 @@ def test_batch_policy_agrees_with_train_py(completed_run):
     assert bp["batch_policy"] == "global_fixed"
     assert bp["matches_legacy"] is True
     assert bp["effective_global_batch"] == 2
-    assert bp["scaling_feasibility"]["candidates"][0]["feasible"] is True
+    # Target 2 at micro batch 2 cannot be spread over even one 4-GPU node
+    # (2 / (2 x 4) = 0.25), and the record says so rather than rounding.
+    one_node = bp["scaling_feasibility"]["candidates"][0]
+    assert (one_node["nodes"], one_node["feasible"], one_node["quotient"]) == (1, False, 0.25)
+    assert "< 1" in one_node["reason"]
+    assert bp["scaling_feasibility"]["max_feasible_candidate_node_count"] is None
 
 
 def test_model_optimizer_and_environment_sections(completed_run):
