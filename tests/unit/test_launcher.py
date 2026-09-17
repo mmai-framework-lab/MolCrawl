@@ -143,7 +143,9 @@ def test_sbatch_file_follows_the_placement_and_path_rules():
     # No absolute server path, account or user name in tracked launch code.
     assert not re.search(r"""(^|[\s'"=])/(data\d*|home|work)/""", text, re.M)
     assert "--account" not in text
-    assert "torchrun" not in text
+    # The header may mention the legacy path; no command line may use it.
+    commands = [line for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")]
+    assert not any("torchrun" in line for line in commands)
 
 
 # ------------------------------------------------------------- submitter ---- #
