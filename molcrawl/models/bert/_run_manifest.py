@@ -98,6 +98,12 @@ TRACKED = (
     "tf32",
     "dataloader_num_workers",
     "dataloader_pin_memory",
+    "dataloader_persistent_workers",
+    "torch_compile",
+    "torch_compile_backend",
+    # A run stopped early by design has to say so, or its last step reads as a
+    # crash or a time limit.
+    "stop_at_step",
 )
 
 # Read by the BERT configs. LEARNING_SOURCE_DIR, GENOME_SUBSET and

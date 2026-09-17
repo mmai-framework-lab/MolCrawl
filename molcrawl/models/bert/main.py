@@ -291,6 +291,18 @@ if __name__ == "__main__":
     tf32 = False
     dataloader_num_workers = 0
     dataloader_pin_memory = False
+    # Declared on the same terms: the value the old fallback gave, so no run moves.
+    # torch_compile_backend is "" rather than None because config_keys only snapshots
+    # int / float / bool / str -- a None default would be declared and still not
+    # recorded. "" means "not set" and is turned back into None before HF sees it.
+    # dataloader_persistent_workers was already passed to TrainingArguments through
+    # globals().get; it is declared here, not newly wired.
+    torch_compile = False
+    torch_compile_backend = ""
+    dataloader_persistent_workers = False
+    # End the training loop at this step while max_steps stays the length the
+    # learning-rate schedule decays over (see models/bert/_stop_at_step). 0 = off.
+    stop_at_step = 0
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
     document_masking = False
@@ -410,11 +422,13 @@ if __name__ == "__main__":
             "Choose: small, medium, large, xl"
         )
 
-    # Opt-in: enable Flash Attention 2 implementation if the per-config
-    # global ``flash_attention`` is True. Requires the ``flash-attn``
-    # package; falls back to the model's default attention if the
-    # config / hardware combination is unsupported (HF will raise at
-    # ``from_config`` / ``from_pretrained`` time).
+    # ``flash_attention = True`` asks for Flash Attention 2. It does NOT fall back:
+    # transformers 4.45.1's BERT supports only "eager" and "sdpa"
+    # (BERT_SELF_ATTENTION_CLASSES in modeling_bert.py) and does not set
+    # ``_supports_flash_attn_2``, so building the model raises ValueError
+    # ("does not support Flash Attention 2.0 yet"). No config sets it. Left
+    # undeclared on purpose, so it cannot look like a working setting in a
+    # manifest; the attention actually used is SDPA by default.
     if globals().get("flash_attention", False):
         model_config._attn_implementation = "flash_attention_2"
 
@@ -584,8 +598,8 @@ if __name__ == "__main__":
     #
     # Keep the backend None unless compilation is actually asked for, so the
     # declared default is honoured and `torch_compile=True` remains the opt-in.
-    _torch_compile = bool(globals().get("torch_compile", False))
-    _torch_compile_backend = globals().get("torch_compile_backend")
+    _torch_compile = bool(torch_compile)
+    _torch_compile_backend = torch_compile_backend or None
     if _torch_compile_backend is None and _torch_compile:
         _torch_compile_backend = "inductor"
     if _torch_compile_backend is not None:
@@ -683,7 +697,7 @@ if __name__ == "__main__":
         # config until the forward-pass cost is measured.
         include_num_input_tokens_seen=bool(globals().get("include_num_input_tokens_seen", False)),
         optim=str(globals().get("optim", "adamw_torch")),
-        dataloader_persistent_workers=bool(globals().get("dataloader_persistent_workers", False)),
+        dataloader_persistent_workers=bool(dataloader_persistent_workers),
         ddp_bucket_cap_mb=int(globals().get("ddp_bucket_cap_mb", 25)),
     )
 
@@ -1006,6 +1020,19 @@ if __name__ == "__main__":
     # the same only when the minimum lands on a save step. Evaluating every 100
     # steps and saving every 1,000 makes that the exception. Opt-in, because it
     # changes which checkpoints a run writes.
+    if int(stop_at_step) > 0:
+        if int(stop_at_step) >= int(max_steps):
+            raise SystemExit(
+                f"stop_at_step={stop_at_step} is not before max_steps={max_steps}; "
+                "max_steps already ends the run there. Set stop_at_step below max_steps "
+                "or leave it at 0."
+            )
+        from molcrawl.models.bert._stop_at_step import StopAtStep
+
+        callbacks.append(StopAtStep(int(stop_at_step)))
+        print(f"⏹️  stop_at_step: training ends at step {int(stop_at_step)}; "
+              f"the schedule still runs over max_steps={int(max_steps)}")
+
     if bool(globals().get("save_on_improve", False)):
         from molcrawl.models.bert._save_on_improve import SaveOnMetricImprovement
 
