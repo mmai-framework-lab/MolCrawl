@@ -46,6 +46,18 @@ document_masking = True
 # 32 x 20 x 4 GPUs = 2,560 sequences, the split run 53767 was launched with.
 batch_size = 32
 gradient_accumulation_steps = 20
+
+# The grid writes every key out rather than importing bert_small.py, so nothing added to
+# the base reaches it -- these have to be stated here. Same values as every BERT base:
+# four dataloader workers into pinned buffers, and bf16 (all-bert-order-2026-09-17 §1).
+# A grid must not mix worker counts across its arms: the worker count changes the
+# masked positions (§2).
+dataloader_num_workers = 4
+dataloader_pin_memory = True
+bf16 = True
+# 32 x 20 x 4 GPUs = 2,560. Declared so main.py stops a launch on any other GPU count
+# instead of training at another batch (§5.3).
+expected_global_batch = 2560
 # Evaluation reads a fixed 10,000 rows (models/bert/main.py EVAL_SUBSET_ROWS), so an
 # eval point costs the same work however it is batched -- but at a micro-batch far
 # below the training one it takes far longer in wall time. genome measured the
