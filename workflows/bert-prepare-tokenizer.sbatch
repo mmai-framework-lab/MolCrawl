@@ -14,11 +14,16 @@
 # other's copy mid-read. Three arms went out at once on 2026-09-16 and two died in
 # AutoTokenizer.from_pretrained thirty seconds in (117320, 117321).
 #
-# Four ranks inside one job collide the same way; a job can serialise that itself.
-# Jobs cannot. So the tokenizer is written once here, by one process, and the grid
-# follows with --dependency=afterok:<this job>. After the first time the directory
-# is already complete and later runs only read it -- this is needed when the tree
-# is new, and harmless when it is not.
+# Writing it in advance is not enough on its own, because every run writes it
+# again. The three rna BERT base configs therefore save through
+# molcrawl.core.tokenizer_io.save_pretrained_atomic, which moves complete files
+# into place so a reader never sees a truncated one (48 concurrent executions
+# failed 6 times before, 96 failed 0 after; job 121584 against 121585).
+#
+# What atomic replacement cannot cover is a directory that has never been
+# populated: a run can arrive while only some of the files are there. This job
+# closes that gap -- run it once on a new tree, and the grid follows with
+# --dependency=afterok:<this job>.
 #
 # protein, compounds and molecule_nat_lang configs do not write a tokenizer at all
 # (molecule_nat_lang reads GPT2_TOKENIZER_DIR), so grids for those do not need this.

@@ -12,6 +12,7 @@ from tokenizers.models import WordLevel
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 from molcrawl.core.paths import CELLXGENE_DATASET_DIR, get_bert_output_path, get_custom_tokenizer_path
+from molcrawl.core.tokenizer_io import save_pretrained_atomic
 
 # Build the tokenizer using the WordLevel model
 from molcrawl.data.rna.dataset.geneformer.tokenizer import TranscriptomeTokenizer
@@ -29,7 +30,10 @@ tmp_tokenizer.cls_token = "[CLS]"
 tmp_tokenizer.mask_token = "<mask>"
 
 _custom_tokenizer_path = get_custom_tokenizer_path("rna", "bert")
-tmp_tokenizer.save_pretrained(_custom_tokenizer_path)
+# Runs of a grid start together and all write this directory. A plain
+# save_pretrained truncates each file in place, so a run starting alongside can
+# read an empty tokenizer.json; save_pretrained_atomic moves complete files in.
+save_pretrained_atomic(tmp_tokenizer, _custom_tokenizer_path)
 
 tokenizer = AutoTokenizer.from_pretrained(_custom_tokenizer_path)
 
