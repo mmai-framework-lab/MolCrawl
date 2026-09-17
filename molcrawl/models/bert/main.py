@@ -280,6 +280,17 @@ if __name__ == "__main__":
     judge_on = "eval_loss_mask"
     metric_for_best_model = None  # None => follow judge_on
     eval_subset_seed = EVAL_SUBSET_SEED
+    # Where the input is fetched and in what precision the step runs. Read into
+    # TrainingArguments below, and until these lines existed they were read through
+    # globals().get(..., False): a config that did not mention them ran with all four
+    # off and its manifest had nothing to say about it, and --bf16=True from the
+    # command line was rejected as an unknown key. Declared with the value that
+    # fallback gave, so no existing run moves -- turning any of them on is a config's
+    # decision, not this file's.
+    bf16 = False
+    tf32 = False
+    dataloader_num_workers = 0
+    dataloader_pin_memory = False
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
     document_masking = False
@@ -650,10 +661,10 @@ if __name__ == "__main__":
         #   dataloader_pin_memory=True     : pinned CPU buffers for H2D transfer
         #   ddp_find_unused_parameters     : BERT uses every parameter each step,
         #                                    so leave False to skip the DDP scan.
-        bf16=bool(globals().get("bf16", False)),
-        tf32=bool(globals().get("tf32", False)),
-        dataloader_num_workers=int(globals().get("dataloader_num_workers", 0)),
-        dataloader_pin_memory=bool(globals().get("dataloader_pin_memory", False)),
+        bf16=bool(bf16),
+        tf32=bool(tf32),
+        dataloader_num_workers=int(dataloader_num_workers),
+        dataloader_pin_memory=bool(dataloader_pin_memory),
         ddp_find_unused_parameters=bool(globals().get("ddp_find_unused_parameters", False)),
         # XL-scale opt-ins (defaults preserve existing config behaviour):
         #   torch_compile=True               : inductor kernel fusion,
