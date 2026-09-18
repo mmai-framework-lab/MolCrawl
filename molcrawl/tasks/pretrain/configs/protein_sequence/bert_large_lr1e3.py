@@ -4,7 +4,7 @@
 #
 # The shape is the base's 8 x 80 (all-bert-order-2026-09-17 §4). 160 x 4 was measured
 # against it in bf16 on large and ran out of GPU memory in both repetitions (jobs 122023,
-# 122024); 8 x 80 ran at 11.548 and 11.44 s/step. max_steps (33,531, 9 epochs),
+# 122024); 8 x 80 ran at 11.548 and 11.484 s/step. max_steps (33,531, 9 epochs),
 # warmup_steps (3,353), adam_beta2 (0.999) and the dataloader settings come from the base;
 # adam_beta2 is restated below as well, so this file alone shows the grid is not on the
 # collapsed optimizer.
