@@ -105,7 +105,7 @@ def style(ax, xlabel, ylabel):
         ax.set_ylabel(ylabel, color=INK_2, fontsize=9)
 
 
-def finish(fig, title, caption, out):
+def finish(fig, title, caption, out, bottom=0.0):
     fig.suptitle(title, fontsize=13.5, fontweight="bold", color=INK, x=.012, ha="left", y=.985)
     # Wrap before drawing: bbox_inches="tight" sizes the canvas around a single
     # long line, which stretches the figure to several times its intended width.
@@ -114,7 +114,9 @@ def finish(fig, title, caption, out):
     # lets a longer caption print over the x axis.
     _lines = wrapped.count("\n") + 1
     if _lines > 2:
-        fig.subplots_adjust(bottom=max(.16, .10 + .035 * _lines))
+        # Never below what the caller asked for: this runs after tight_layout and
+        # would otherwise pull the axes back down onto a long caption.
+        fig.subplots_adjust(bottom=max(.16, bottom, .10 + .035 * _lines))
     fig.text(.012, .012, wrapped, fontsize=7.6, color=INK_3, ha="left", va="bottom",
              linespacing=1.6)
     fig.patch.set_facecolor(SURFACE)
@@ -179,7 +181,8 @@ def fig_panels_nanogpt(cfg, out_dir):
             if cfg.get("show_train"):
                 ax.plot(st, tr, color=c, linewidth=1, linestyle=(0, (4, 3)), alpha=.5, zorder=2)
             ax.plot(st, va, color=c, linewidth=1.6, alpha=.95, zorder=3,
-                    label=run["lr"] if run["lr"] not in seen else None)
+                    label=(cfg.get("lr_labels", {}).get(run["lr"], run["lr"])
+                           if run["lr"] not in seen else None))
             seen.add(run["lr"])
             print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={st[-1]:6d} "
                   f"best_val={min(va):.4f}@{st[va.index(min(va))]}")
@@ -197,14 +200,84 @@ def fig_panels_nanogpt(cfg, out_dir):
         if cfg.get("floors"):
             floors(ax, cfg["floors"], cfg.get("floor_side", "right"))
         handles, labels = ax.get_legend_handles_labels()
-        order = sorted(range(len(labels)), key=lambda k: lrs.index(labels[k]))
+        raw = {cfg.get("lr_labels", {}).get(x, x): x for x in lrs}
+        order = sorted(range(len(labels)), key=lambda k: lrs.index(raw[labels[k]]))
+        # Where a panel has room differs between panels: a curve that rises at the
+        # right leaves the top-right corner occupied.
         ax.legend([handles[k] for k in order], [labels[k] for k in order],
                   frameon=False, fontsize=8.5, labelcolor=INK_2, title=cfg.get("legend_title"),
-                  title_fontsize=8, loc=cfg.get("legend_loc", "upper right"))
+                  title_fontsize=8, loc=g.get("legend_loc") or cfg.get("legend_loc", "upper right"))
     for j in range(n, rows * cols):
         axes[j // cols][j % cols].axis("off")
     fig.tight_layout(rect=(0, cfg.get("rect_bottom", .05), 1, .955))
-    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"])
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
+           bottom=cfg.get("rect_bottom", 0))
+
+
+def fig_panels_hf(cfg, out_dir):
+    """Small multiples over HF runs: one panel per size, learning rates coloured.
+
+    The nanoGPT twin of this reads one stdout file per run; here each run is a
+    directory and the series comes from the newest checkpoint's trainer_state.json,
+    so a run that spans several segments still yields one curve.
+    """
+    groups = cfg["panels"]
+    n = len(groups)
+    cols = cfg.get("cols") or min(n, 2)
+    rows = (n + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols,
+                             figsize=(cfg.get("panel_w", 5.7) * cols,
+                                      cfg.get("panel_h", 3.0) * rows + .8),
+                             squeeze=False)
+    lrs = cfg["lr_order"]
+    key = cfg.get("key", "eval_loss_mask")
+    tsv_rows = []
+    for i, g in enumerate(groups):
+        ax = axes[i // cols][i % cols]
+        runs = [r for r in expand(g) if r.get("lr") in lrs]
+        for run in sorted(runs, key=lambda r: lrs.index(r["lr"])):
+            st, va, _ = read_hf(Path(run["path"]), key)
+            if not st:
+                print(f"  ! no series: {run['path']}")
+                continue
+            c = SERIES[lrs.index(run["lr"])]
+            # A path spells a rate as "lr1e4"; the legend has to read "1e-4".
+            ax.plot(st, va, color=c, linewidth=1.6, alpha=.95, zorder=3,
+                    label=cfg.get("lr_labels", {}).get(run["lr"], run["lr"]))
+            print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={st[-1]:7d} "
+                  f"last_val={va[-1]:.4f} best={min(va):.4f}@{st[va.index(min(va))]}")
+            for step, value in zip(st, va):
+                tsv_rows.append({"panel": g["title"], "lr": run["lr"], "step": step,
+                                 key: f"{value:.6f}"})
+        ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK,
+                     loc="left", pad=6)
+        if cfg.get("yscale"):
+            ax.set_yscale(cfg["yscale"])
+        if g.get("ylim"):
+            ax.set_ylim(*g["ylim"])
+        if g.get("xlim"):
+            ax.set_xlim(*g["xlim"])
+        style(ax, cfg["xlabel"] if i // cols == rows - 1 else "",
+              cfg["ylabel"] if i % cols == 0 else "")
+        # The floor belongs in every panel: a curve resting on it is the whole
+        # reading of a collapsed arm, and it differs per modality.
+        if g.get("floors") or cfg.get("floors"):
+            floors(ax, g.get("floors") or cfg["floors"], cfg.get("floor_side", "right"))
+        handles, labels = ax.get_legend_handles_labels()
+        raw = {cfg.get("lr_labels", {}).get(x, x): x for x in lrs}
+        order = sorted(range(len(labels)), key=lambda k: lrs.index(raw[labels[k]]))
+        # Where a panel has room differs between panels: a curve that rises at the
+        # right leaves the top-right corner occupied.
+        ax.legend([handles[k] for k in order], [labels[k] for k in order],
+                  frameon=False, fontsize=8.5, labelcolor=INK_2, title=cfg.get("legend_title"),
+                  title_fontsize=8, loc=g.get("legend_loc") or cfg.get("legend_loc", "upper right"))
+    for j in range(n, rows * cols):
+        axes[j // cols][j % cols].axis("off")
+    fig.tight_layout(rect=(0, cfg.get("rect_bottom", .05), 1, .955))
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
+           bottom=cfg.get("rect_bottom", 0))
+    if cfg.get("tsv"):
+        write_tsv(out_dir / cfg["tsv"], tsv_rows, ["panel", "lr", "step", key])
 
 
 def fig_many_hf(cfg, out_dir):
@@ -300,7 +373,8 @@ def fig_lines_hf(cfg, out_dir):
                           ["size", "lr", "step", cfg.get("key", "eval_loss_mask"), "segment"]))
 
 
-KIND = {"panels_nanogpt": fig_panels_nanogpt, "many_hf": fig_many_hf, "lines_hf": fig_lines_hf}
+KIND = {"panels_nanogpt": fig_panels_nanogpt, "panels_hf": fig_panels_hf,
+        "many_hf": fig_many_hf, "lines_hf": fig_lines_hf}
 
 
 def main() -> int:
