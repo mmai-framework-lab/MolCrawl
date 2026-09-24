@@ -29,6 +29,18 @@ batch_size = 4
 block_size = 1024
 gradient_accumulation_steps = 640  # 4 * 640 = 2560 seq global batch
 
+# The effective global batch this schedule was derived from. nanoGPT divides the
+# accumulation by the DDP world size and multiplies it back, so micro x accumulation
+# is the effective batch whatever the GPU count, and train.py refuses to start when
+# the two disagree. Declared from evidence, not intent: all 29 existing compounds
+# GPT-2 runs from these four configs recorded 2,560, read from their
+# run_manifest.json and from the config saved in ckpt.pt (2026-09-17).
+#
+# The chembl and guacamol configs declare their own numbers, 640 (8 x 80) and
+# 160 (2 x 80), because that is what they run at. 2,560 is this ladder's figure,
+# not a project-wide one.
+expected_global_batch = 2560
+
 # v4 packed data (2026-08-05): train = 398,917 blocks x 1024, no padding.
 # 10 epochs at global batch 2560 = floor(10 * 398,917 / 2560) = 1,558 iters.
 max_iters = 1558
