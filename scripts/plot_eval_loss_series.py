@@ -110,6 +110,11 @@ def finish(fig, title, caption, out):
     # Wrap before drawing: bbox_inches="tight" sizes the canvas around a single
     # long line, which stretches the figure to several times its intended width.
     wrapped = "\n".join(textwrap.wrap(caption, width=132, break_long_words=True))
+    # Each wrapped line needs its own strip of canvas. A fixed margin fits two and
+    # lets a longer caption print over the x axis.
+    _lines = wrapped.count("\n") + 1
+    if _lines > 2:
+        fig.subplots_adjust(bottom=max(.16, .10 + .035 * _lines))
     fig.text(.012, .012, wrapped, fontsize=7.6, color=INK_3, ha="left", va="bottom",
              linespacing=1.6)
     fig.patch.set_facecolor(SURFACE)
@@ -275,6 +280,10 @@ def fig_lines_hf(cfg, out_dir):
             row = {k: v for k, v in run.items() if k != "dir"}
             row.update({"step": step, cfg.get("key", "eval_loss_mask"): f"{value:.6f}"})
             tsv_rows.append(row)
+    # A run that falls by two orders of magnitude spends most of a linear axis
+    # flat against the bottom, where the part worth reading is.
+    if cfg.get("yscale"):
+        ax.set_yscale(cfg["yscale"])
     if cfg.get("ylim"):
         ax.set_ylim(*cfg["ylim"])
     if cfg.get("xlim"):
