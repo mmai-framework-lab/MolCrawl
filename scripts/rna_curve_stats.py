@@ -45,6 +45,8 @@ def main(argv=None):
                     help="この差が揺らぎに埋もれるかを見る。run 間の差")
     ap.add_argument("--block", type=int, default=2000,
                     help="平均を取る窓の幅。step で数える")
+    ap.add_argument("--cross", type=int, default=0,
+                    help="run 間の揺れの相関を、この点数の移動平均を引いて出す")
     ap.add_argument("--only", default="", help="この文字列を含む run だけ見る")
     a = ap.parse_args(argv)
 
@@ -90,6 +92,33 @@ def main(argv=None):
         t = slope / se if se else 0.0
         print(f"    {key[0]+' lr'+key[1]:<20}{rows[0][0]:>8,}-{rows[-1][0]:<9,}"
               f"{slope*1000:>+14.5f}{t:>8.2f}{sd:>9.5f}{a.gap/sd if sd else 0:>8.2f}")
+
+    if a.cross:
+        print(f"\n  run 間で揺れが共通か (移動平均 {a.cross} 点を引いた残りの相関)")
+        half = a.cross // 2
+        resid = {}
+        for key in sorted(runs):
+            rows = sorted(runs[key])
+            ys = [v for _, v in rows]
+            r = {}
+            for i in range(half, len(rows) - half):
+                win = ys[i - half:i + half + 1]
+                r[rows[i][0]] = ys[i] - sum(win) / len(win)
+            resid[key] = r
+        keys = sorted(resid)
+        print(f"    {'':<20}" + "".join(f"{k[0][:3]+k[1][2:6]:>9}" for k in keys))
+        for ka in keys:
+            cells = []
+            for kb in keys:
+                common = sorted(set(resid[ka]) & set(resid[kb]))
+                xa = [resid[ka][s] for s in common]
+                xb = [resid[kb][s] for s in common]
+                ma, mb = sum(xa) / len(xa), sum(xb) / len(xb)
+                num = sum((x - ma) * (y - mb) for x, y in zip(xa, xb))
+                da = sum((x - ma) ** 2 for x in xa) ** 0.5
+                db = sum((y - mb) ** 2 for y in xb) ** 0.5
+                cells.append(num / (da * db) if da and db else float("nan"))
+            print(f"    {ka[0]+' lr'+ka[1]:<20}" + "".join(f"{c:>9.2f}" for c in cells))
 
     print(f"\n  指示 §4.2 の判定 (散らばりを {a.gap} と比べる)")
     print(f"    {'run':<20}{'散らばり':>10}{'/0.012':>9}  判定")
