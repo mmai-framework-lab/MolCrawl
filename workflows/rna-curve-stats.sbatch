@@ -17,4 +17,4 @@ mkdir -p workflows/slurm-logs
 echo "=== rna-curve-stats @ $(date -Is) on ${SLURMD_NODENAME:-$(hostname)} ==="
 "${PYROOT}/miniconda/bin/python" scripts/rna_curve_stats.py \
   --tsv "${CURVE_TSV}" --tail-points "${TAIL_POINTS:-50}" --gap "${GAP:-0.012}" \
-  --block "${BLOCK:-2000}" ${CROSS:+--cross "${CROSS}"}
+  --block "${BLOCK:-2000}" ${CROSS:+--cross "${CROSS}"} ${CROSS_FROM:+--cross-from "${CROSS_FROM}"}

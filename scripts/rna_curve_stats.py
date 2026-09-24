@@ -45,6 +45,8 @@ def main(argv=None):
                     help="この差が揺らぎに埋もれるかを見る。run 間の差")
     ap.add_argument("--block", type=int, default=2000,
                     help="平均を取る窓の幅。step で数える")
+    ap.add_argument("--cross-from", type=int, default=0,
+                    help="相関を取る範囲の下限。学習初期の曲率を外すために使う")
     ap.add_argument("--cross", type=int, default=0,
                     help="run 間の揺れの相関を、この点数の移動平均を引いて出す")
     ap.add_argument("--only", default="", help="この文字列を含む run だけ見る")
@@ -94,11 +96,12 @@ def main(argv=None):
               f"{slope*1000:>+14.5f}{t:>8.2f}{sd:>9.5f}{a.gap/sd if sd else 0:>8.2f}")
 
     if a.cross:
-        print(f"\n  run 間で揺れが共通か (移動平均 {a.cross} 点を引いた残りの相関)")
+        print(f"\n  run 間で揺れが共通か (step {a.cross_from:,} 以降、"
+              f"移動平均 {a.cross} 点を引いた残りの相関)")
         half = a.cross // 2
         resid = {}
         for key in sorted(runs):
-            rows = sorted(runs[key])
+            rows = [x for x in sorted(runs[key]) if x[0] >= a.cross_from]
             ys = [v for _, v in rows]
             r = {}
             for i in range(half, len(rows) - half):
