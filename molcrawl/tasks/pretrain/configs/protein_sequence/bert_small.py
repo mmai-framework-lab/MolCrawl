@@ -92,12 +92,17 @@ model_path = get_bert_output_path("protein_sequence", model_size)
 max_length = 1024
 dataset_dir = UNIPROT_DATASET_DIR
 # INVALID as a "best LR" (boss note 2026-08-26): the value below was measured under the
-# collapsed optimizer (adam_beta2=0.95, warmup=200, GPT-2 spec) where every LR merely
+# then-default optimizer (adam_beta2=0.95, warmup=200, GPT-2 spec) where every LR merely
 # collapsed to the unigram marginal, so 3e-4 was the least-bad collapse, not a real
-# optimum. The root cause of the collapse was that optimizer setting; under the fixed
-# optimizer (adam_beta2=0.999, warmup=2000) the best LR must be RE-MEASURED before this
-# recipe is trusted (runs 44835 @3e-4 and the 4e-4 twin are that re-measurement). Value
-# kept, not deleted, so the provenance stays visible.
+# optimum. It is still not a validated best LR.
+#
+# RETRACTED 2026-09-24 (boss protein-order §1.4): the earlier text here named that
+# optimizer setting as the root cause of the collapse. The 9-epoch 3x3 LR grid was run
+# with the fixed optimizer (adam_beta2=0.999, warmup 10%) and STILL collapsed -- large
+# at all three LRs (1e-4 ended at 3.074, above the 2.8947 baseline), plus medium 3e-4/1e-3
+# and small 1e-3. The optimizer setting is therefore NOT the cause; the cause is not yet
+# identified. The eff-batch-128 arm also collapsed, so it is not eff-batch either. The LR
+# below is kept, not deleted, so the provenance stays visible; do not treat it as trusted.
 learning_rate = 0.0003  # P8: measured best for bert-small at global batch 2560 (2026-08-04) -- see note above; measured under the collapsed optimizer
 weight_decay = 0.01
 # 0.999, not main.py's default of 0.95. The note above names adam_beta2=0.95 with a
