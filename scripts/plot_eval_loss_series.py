@@ -196,9 +196,9 @@ def fig_panels_nanogpt(cfg, out_dir):
               cfg["ylabel"] if i % cols == 0 else "")
         if cfg.get("floors"):
             floors(ax, cfg["floors"], cfg.get("floor_side", "right"))
-        h, l = ax.get_legend_handles_labels()
-        order = sorted(range(len(l)), key=lambda k: lrs.index(l[k]))
-        ax.legend([h[k] for k in order], [l[k] for k in order],
+        handles, labels = ax.get_legend_handles_labels()
+        order = sorted(range(len(labels)), key=lambda k: lrs.index(labels[k]))
+        ax.legend([handles[k] for k in order], [labels[k] for k in order],
                   frameon=False, fontsize=8.5, labelcolor=INK_2, title=cfg.get("legend_title"),
                   title_fontsize=8, loc=cfg.get("legend_loc", "upper right"))
     for j in range(n, rows * cols):
