@@ -120,6 +120,20 @@ def main(argv=None):
                 cells.append(num / (da * db) if da and db else float("nan"))
             print(f"    {ka[0]+' lr'+ka[1]:<20}" + "".join(f"{c:>9.2f}" for c in cells))
 
+        # 揺れが共通なら、どの run でも同じ step が落ち込む。深い順に並べる。
+        common = set.intersection(*(set(r) for r in resid.values()))
+        mean_at = {s: sum(resid[k][s] for k in keys) / len(keys) for s in common}
+        deep = sorted(mean_at, key=lambda s: mean_at[s])[:6]
+        print("\n  共通して深い step (run の残りの平均が小さい順)")
+        print(f"    {'step':>9}{'平均の残り':>12}{'最良がここの run':>20}")
+        argmins = {}
+        for k in keys:
+            rows = sorted(runs[k])
+            argmins[k] = rows[min(range(len(rows)), key=lambda i: rows[i][1])][0]
+        for st in deep:
+            n = sum(1 for k in keys if argmins[k] == st)
+            print(f"    {st:>9,}{mean_at[st]:>12.4f}{n:>20}")
+
     print(f"\n  指示 §4.2 の判定 (散らばりを {a.gap} と比べる)")
     print(f"    {'run':<20}{'散らばり':>10}{'/0.012':>9}  判定")
     for key in sorted(runs):
