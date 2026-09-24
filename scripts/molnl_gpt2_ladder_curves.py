@@ -25,6 +25,7 @@ import glob
 import os
 import re
 import sys
+from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from molnl_loss_figures import (SIZE_COLOUR, axes, best_point, label_bests,  # noqa: E402
@@ -34,11 +35,19 @@ from molnl_loss_figures import (SIZE_COLOUR, axes, best_point, label_bests,  # n
 # in workflows/slurm-logs/ -- the launcher passes --max_iters and --eval_interval, so the
 # config's own max_iters (373) is not by itself what ran.
 #   directory                job ids     what the log's "Overriding:" lines say
-#   directory                 slug              label             job  iters  eval every
+class Stage(NamedTuple):
+    tree: str        # the directory the pass wrote
+    slug: str        # what its figure is called
+    label: str       # what it is called in a caption
+    job: int         # the slurm job whose log the schedule was read from
+    iters: int       # --max_iters as that log's "Overriding:" lines report it
+    every: int       # --eval_interval, likewise
+
+
 STAGES = (
-    ("gpt2-output", "before-shuffle", "before the shuffle", 28845, 373, 25),
-    ("gpt2-output-shuffled", "shuffled", "shuffled corpus", 33746, 373, 25),
-    ("gpt2-output-shuffled-s2", "shuffled-long", "shuffled corpus, long schedule", 35218, 3000, 100),
+    Stage("gpt2-output", "before-shuffle", "before the shuffle", 28845, 373, 25),
+    Stage("gpt2-output-shuffled", "shuffled", "shuffled corpus", 33746, 373, 25),
+    Stage("gpt2-output-shuffled-s2", "shuffled-long", "shuffled corpus, long schedule", 35218, 3000, 100),
 )
 GLOBAL_BATCH = 2560          # sequences; batch_size * gradient_accumulation_steps
 BLOCK = 1024                 # tokens per sequence
@@ -83,13 +92,13 @@ def read_run(run_dir):
 
 def collect(runs_root):
     runs = {}
-    for tree, slug, label, job, iters, every in STAGES:
-        for d in sorted(glob.glob(os.path.join(runs_root, tree, "molecule_nat_lang-*"))):
+    for stage in STAGES:
+        for d in sorted(glob.glob(os.path.join(runs_root, stage.tree, "molecule_nat_lang-*"))):
             size = os.path.basename(d).split("molecule_nat_lang-", 1)[1]
             steps, val, train = read_run(d)
             if steps:
-                runs[(tree, size)] = {"steps": steps, "val": val, "train": train,
-                                      "label": label, "job": job, "iters": iters, "every": every}
+                runs[(stage.tree, size)] = {"steps": steps, "val": val, "train": train,
+                                            "stage": stage}
     return runs
 
 
@@ -104,8 +113,9 @@ def preconditions(iters, every):
 def fig_stage(runs, out_dir):
     """One figure per pass over the corpus, sizes overlaid."""
     made = []
-    for tree, slug, label, job, iters, every in STAGES:
-        arms = [(size, runs[(tree, size)]) for size in SIZE_ORDER if (tree, size) in runs]
+    for stage in STAGES:
+        arms = [(size, runs[(stage.tree, size)]) for size in SIZE_ORDER
+                if (stage.tree, size) in runs]
         if not arms:
             continue
         fig, ax = new_figure()
@@ -118,24 +128,25 @@ def fig_stage(runs, out_dir):
         ax.set_yscale("log")   # the first evaluation is near 11 and the last near 0.5
         axes(ax, "val loss", xlabel="iteration")
         label_bests(ax, items, room=0.40)
-        note = f"{preconditions(iters, every)}\n{label}; slurm job {job} and its siblings."
+        note = (f"{preconditions(stage.iters, stage.every)}\n{stage.label}; "
+                f"slurm job {stage.job} and its siblings.")
         reached = max(max(r["steps"]) for _, r in arms)
-        if reached < iters:
-            note += (f" The last evaluation is at {reached:,} rather than {iters:,}: evaluation "
-                     f"happens on multiples of {every}.")
+        if reached < stage.iters:
+            note += (f" The last evaluation is at {reached:,} rather than {stage.iters:,}: "
+                     f"evaluation happens on multiples of {stage.every}.")
         short = [size for size, r in arms if max(r["steps"]) < reached]
         if short:
             note += (" Stopped early, after 10 evaluations without improvement: "
                      + ", ".join(f"{size} at {max(dict(arms)[size]['steps']):,}" for size in short) + ".")
-        made.append(save(fig, ax, f"molecule_nat_lang GPT-2 ladder - {label}", note,
-                         os.path.join(out_dir, f"gpt2-{slug}.png")))
+        made.append(save(fig, ax, f"molecule_nat_lang GPT-2 ladder - {stage.label}", note,
+                         os.path.join(out_dir, f"gpt2-{stage.slug}.png")))
     return made
 
 
 def fig_tail(runs, out_dir, frac=0.20):
     """The last 20% of the longest schedule: does the best sit at the end?"""
-    tree, slug, label, job, iters, every = max(STAGES, key=lambda s: s[4])
-    arms = [(size, runs[(tree, size)]) for size in SIZE_ORDER if (tree, size) in runs]
+    stage = max(STAGES, key=lambda s: s.iters)
+    arms = [(size, runs[(stage.tree, size)]) for size in SIZE_ORDER if (stage.tree, size) in runs]
     if not arms:
         return []
     cut = max(max(r["steps"]) for _, r in arms) * (1 - frac)
@@ -148,8 +159,8 @@ def fig_tail(runs, out_dir, frac=0.20):
         items.append((bx, by, f"{size}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
     axes(ax, "val loss", xlabel="iteration")
     label_bests(ax, items, room=0.36)
-    note = (f"{preconditions(iters, every)}\nLast {int(frac * 100)}% of the longest schedule "
-            f"({label}). Every size ends worse than its own best, and xl's run stopped at 2,900 "
+    note = (f"{preconditions(stage.iters, stage.every)}\nLast {int(frac * 100)}% of the longest "
+            f"schedule ({stage.label}). Every size ends worse than its own best, and xl's run stopped at 2,900 "
             "on 10 evaluations without improvement: the schedule runs past where these runs peak. "
             "Marked points are the best inside this window, which for medium and xl is not the run's best.")
     return [save(fig, ax, f"molecule_nat_lang GPT-2 ladder - last {int(frac * 100)}% of the long schedule",
@@ -163,15 +174,16 @@ def write_tsv(runs, out_dir):
         fh.write(f"# train {TRAIN_BLOCKS:,} sequences of {BLOCK:,} tokens · "
                  f"global batch {GLOBAL_BATCH:,} sequences · metric val loss (whole sequence)\n")
         fh.write("# pass: which run over the corpus; see the figures for each one's schedule\n")
-        fh.write("pass\\tsize\\tlearning_rate\\tmax_iters\\tstep\\tval_loss\\ttrain_loss\n")
-        for tree, slug, label, job, iters, every in STAGES:
+        fh.write("pass\tsize\tlearning_rate\tmax_iters\tstep\tval_loss\ttrain_loss\n")
+        for stage in STAGES:
             for size in SIZE_ORDER:
-                run = runs.get((tree, size))
+                run = runs.get((stage.tree, size))
                 if not run:
                     continue
                 lr = learning_rate_of(size)
                 for s, v, t in zip(run["steps"], run["val"], run["train"]):
-                    fh.write(f"{label}\\t{size}\\t{lr:g}\\t{iters}\\t{s}\\t{v:.6f}\\t{t:.6f}\n")
+                    fh.write(f"{stage.label}\t{size}\t{lr:g}\t{stage.iters}\t{s}"
+                             f"\t{v:.6f}\t{t:.6f}\n")
     return path
 
 
@@ -191,13 +203,13 @@ def main() -> int:
     for p in made + [tsv]:
         print(f"  {os.path.basename(p)}  {os.path.getsize(p):,} bytes")
     print(f"\n  {'pass':<32}{'size':<10}{'lr':>8}{'best val':>10}{'at':>8}{'last':>10}")
-    for tree, slug, label, job, iters, every in STAGES:
+    for stage in STAGES:
         for size in SIZE_ORDER:
-            run = runs.get((tree, size))
+            run = runs.get((stage.tree, size))
             if not run:
                 continue
             bx, by = best_point(run["steps"], run["val"])
-            print(f"  {label:<32}{size:<10}{learning_rate_of(size):>8g}{by:>10.4f}{bx:>8,}"
+            print(f"  {stage.label:<32}{size:<10}{learning_rate_of(size):>8g}{by:>10.4f}{bx:>8,}"
                   f"{run['val'][-1]:>10.4f}")
     return 0
 
