@@ -142,7 +142,12 @@ def main(argv=None):
         se = sd * (1 / (n_near * shrink) + 1 / (len(late) * shrink)) ** 0.5
         diff = m_late - m_near
         t = diff / se if se else 0.0
-        call = "折り返した" if abs(t) >= 2 else "平らと区別できない"
+        if t >= 2:
+            call = "折り返した (末尾のほうが悪い)"
+        elif t <= -2:
+            call = "まだ良くなっている (末尾のほうが良い)"
+        else:
+            call = "平らと区別できない"
         print(f"    {key[0]+' lr'+key[1]:<20}{m_near:>11.4f}{m_late:>9.4f}"
               f"{diff:>+9.4f}{r1:>7.2f}{t:>8.2f}  {call}")
     return 0
