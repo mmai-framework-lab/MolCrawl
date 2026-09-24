@@ -28,8 +28,9 @@ gradient_accumulation_steps = 160  # 16 * 160 = 2560 seq global batch
 # GPT-2 runs from these four configs recorded 2,560, read from their
 # run_manifest.json and from the config saved in ckpt.pt (2026-09-17).
 #
-# Not declared in the chembl and guacamol configs: those run at 640 (8 x 80) and
-# 160 (2 x 80), and no run of theirs at 2,560 exists.
+# The chembl and guacamol configs declare their own numbers, 640 (8 x 80) and
+# 160 (2 x 80), because that is what they run at. 2,560 is this ladder's figure,
+# not a project-wide one.
 expected_global_batch = 2560
 
 # v4 packed data (2026-08-05): train = 398,917 blocks x 1024, no padding.

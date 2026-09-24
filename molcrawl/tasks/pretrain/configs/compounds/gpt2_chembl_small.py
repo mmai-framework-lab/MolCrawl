@@ -28,6 +28,17 @@ dataset_dir = CHEMBL_DATASET_DIR
 batch_size = 8
 block_size = 1024
 gradient_accumulation_steps = 5 * 16
+# The effective global batch this config runs at. nanoGPT divides the accumulation
+# by the DDP world size and multiplies it back, so micro x accumulation is the
+# effective batch whatever the GPU count, and train.py refuses to start when the
+# two disagree.
+#
+# Declared at 640, which is what this config computes -- not at the 2,560 the
+# organix13 ladder uses. The chembl subsets were set up with their own shape and
+# no run of theirs at 2,560 exists; writing 2,560 here would stop the run rather
+# than describe it. Any move to 2,560 is a change to the run, not to a comment.
+expected_global_batch = 640
+
 
 # Fine-tuning schedule: fewer iterations and a lower LR than pretraining
 # (pretraining: max_iters=6000, lr=6e-6).
