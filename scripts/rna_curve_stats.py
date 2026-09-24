@@ -7,9 +7,12 @@
 run 間の差より大きければ、その差は揺らぎに埋もれていて読み取れない。
 
 末尾だけを見ると、どの run も傾きが 0 と見分けられないことがある。窓が短ければ
-傾きの標準誤差が大きくなるからで、平らだという証拠ではない。曲線が折り返したか
-は、最小点から末尾までの上がり幅を残差の何倍かで測る。この 2 つは別の問いで、
-どちらか一方だけを出すと読み違える。
+傾きの標準誤差が大きくなるからで、平らだという証拠ではない。
+
+曲線が折り返したかを、最小点から末尾への上がり幅で測ってはいけない。最小は
+数百点の中から選んだ点で、選んだ時点で下に偏っており、平らな系列でも上がり幅が
+出る。偏りの大きさも併せて出す。折り返しの判定は、最小の周りの窓の平均と末尾の
+窓の平均を比べる。隣り合う評価点は相関するので、有効な点数を落として t を出す。
 """
 import argparse
 import csv
@@ -40,6 +43,8 @@ def main(argv=None):
     ap.add_argument("--tail-points", type=int, default=50, help="直線をあてる末尾の点数")
     ap.add_argument("--gap", type=float, default=0.012,
                     help="この差が揺らぎに埋もれるかを見る。run 間の差")
+    ap.add_argument("--block", type=int, default=2000,
+                    help="平均を取る窓の幅。step で数える")
     ap.add_argument("--only", default="", help="この文字列を含む run だけ見る")
     a = ap.parse_args(argv)
 
@@ -86,24 +91,60 @@ def main(argv=None):
         print(f"    {key[0]+' lr'+key[1]:<20}{rows[0][0]:>8,}-{rows[-1][0]:<9,}"
               f"{slope*1000:>+14.5f}{t:>8.2f}{sd:>9.5f}{a.gap/sd if sd else 0:>8.2f}")
 
-    print("\n  折り返したか (最小点から末尾への上がり幅を、上の残差の何倍かで見る)")
-    print(f"    {'run':<20}{'最小':>9}{'その step':>11}{'末尾平均':>10}"
-          f"{'上がり幅':>10}{'/残差':>8}  判定")
+    print(f"\n  指示 §4.2 の判定 (散らばりを {a.gap} と比べる)")
+    print(f"    {'run':<20}{'散らばり':>10}{'/0.012':>9}  判定")
+    for key in sorted(runs):
+        sd = tail_sd.get(key)
+        if not sd or (a.only and a.only not in f"{key[0]}-{key[1]}"):
+            continue
+        r = sd / a.gap
+        call = ("折り返しは本物" if r < 0.5 else
+                "折り返しとは言えない。曲線は平ら")
+        print(f"    {key[0]+' lr'+key[1]:<20}{sd:>10.5f}{r:>9.2f}  {call}")
+
+    print(f"\n  最小点は、選んだ時点で下に偏る (最小 - その周り {a.block:,} step の平均)")
+    print(f"    {'run':<20}{'最小':>9}{'周りの平均':>11}{'偏り':>9}{'/散らばり':>10}")
+    blocks = {}
     for key in sorted(runs):
         rows = sorted(runs[key])
-        if a.only and a.only not in f"{key[0]}-{key[1]}":
-            continue
         sd = tail_sd.get(key)
-        if not sd:
+        if not sd or (a.only and a.only not in f"{key[0]}-{key[1]}"):
             continue
         bi = min(range(len(rows)), key=lambda i: rows[i][1])
-        last = rows[-min(10, len(rows)):]
-        end = sum(v for _, v in last) / len(last)
-        rise = end - rows[bi][1]
-        k = rise / sd
-        call = "折り返した" if k >= 2 else "揺らぎに埋もれ、平らと区別できない"
-        print(f"    {key[0]+' lr'+key[1]:<20}{rows[bi][1]:>9.4f}{rows[bi][0]:>11,}"
-              f"{end:>10.4f}{rise:>+10.4f}{k:>8.2f}  {call}")
+        at = rows[bi][0]
+        near = [v for s, v in rows if abs(s - at) <= a.block // 2]
+        m_near = sum(near) / len(near)
+        blocks[key] = (at, m_near, len(near))
+        print(f"    {key[0]+' lr'+key[1]:<20}{rows[bi][1]:>9.4f}{m_near:>11.4f}"
+              f"{rows[bi][1]-m_near:>+9.4f}{(rows[bi][1]-m_near)/sd:>10.2f}")
+
+    print(f"\n  折り返したか (最小の周りと末尾、それぞれ {a.block:,} step の平均を比べる)")
+    print(f"    {'run':<20}{'最小の周り':>11}{'末尾':>9}{'差':>9}"
+          f"{'相関':>7}{'その t':>8}  判定")
+    for key in sorted(runs):
+        rows = sorted(runs[key])
+        sd = tail_sd.get(key)
+        if not sd or key not in blocks:
+            continue
+        at, m_near, n_near = blocks[key]
+        end = rows[-1][0]
+        late = [v for s, v in rows if s > end - a.block]
+        if not late or at > end - a.block:
+            print(f"    {key[0]+' lr'+key[1]:<20}  最小が末尾の窓の中にあり、比べられない")
+            continue
+        m_late = sum(late) / len(late)
+        # 隣り合う評価点は相関する。有効な点数を落とさないと t を過大に見る。
+        res = [v - m_late for v in late]
+        num = sum(x * y for x, y in zip(res, res[1:]))
+        den = sum(x * x for x in res)
+        r1 = max(min(num / den if den else 0.0, 0.95), 0.0)
+        shrink = (1 - r1) / (1 + r1)
+        se = sd * (1 / (n_near * shrink) + 1 / (len(late) * shrink)) ** 0.5
+        diff = m_late - m_near
+        t = diff / se if se else 0.0
+        call = "折り返した" if abs(t) >= 2 else "平らと区別できない"
+        print(f"    {key[0]+' lr'+key[1]:<20}{m_near:>11.4f}{m_late:>9.4f}"
+              f"{diff:>+9.4f}{r1:>7.2f}{t:>8.2f}  {call}")
     return 0
 
 
