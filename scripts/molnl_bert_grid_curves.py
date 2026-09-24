@@ -24,20 +24,17 @@ import glob
 import json
 import os
 import statistics as st
-import textwrap
 
-import matplotlib
+import sys
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from molnl_loss_figures import (ARM_COLOURS, SIZE_COLOUR, axes, best_point,  # noqa: E402
+                                floor_line, label_bests, new_figure, save)
 
 BASELINE = 3.8638          # unigram floor on the masked positions, mol_nl (job 22503)
 SIZES = ("small", "medium", "large")
 LRS = (("1e4", "1e-4", 1e-4), ("3e4", "3e-4", 3e-4), ("1e3", "1e-3", 1e-3))
 LR_COLOUR = {"1e-4": "#1f6fb4", "3e-4": "#c8571b", "1e-3": "#2e7d32"}
-SIZE_COLOUR = {"small": "#1f6fb4", "medium": "#c8571b", "large": "#2e7d32"}
-# For the collapsed figure, where two of the three arms are the same size.
-ARM_COLOURS = ("#c8571b", "#2e7d32", "#7b1fa2", "#1f6fb4", "#00838f", "#a1887f")
 INK = "#222222"
 
 # The five things a loss figure has to carry to be readable later.
@@ -80,84 +77,6 @@ def learned(run):
     return min(run["vals"]) < BASELINE
 
 
-def _axes(ax, ylabel="eval_loss_mask"):
-    ax.set_xlabel("step", color=INK)
-    ax.set_ylabel(ylabel, color=INK)
-    ax.grid(True, color="#dddddd", linewidth=.6)
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    ax.tick_params(colors=INK)
-
-
-def _best_point(steps, vals):
-    """(step, value) of the minimum -- what a label is anchored to."""
-    i = min(range(len(vals)), key=lambda k: vals[k])
-    return steps[i], vals[i]
-
-
-def _label_bests(ax, items, room=0.34, gap=0.062):
-    """Mark each arm's minimum and name it beside the mark, without labels overlapping.
-
-    The labels carry the arm's name, so none of these figures has a legend.
-
-    Writing the value at the point does not work here: six arms reach their best at the
-    same step, 11,900, within 0.13 of each other, so the labels land on top of one
-    another. Instead the axis is widened, every label is written in the margin that
-    creates, and labels that would collide are pushed apart and joined to their point by
-    a leader line. items is (step, value, text, colour).
-    """
-    lo, hi = ax.get_xlim()
-    ax.set_xlim(lo, hi + (hi - lo) * room)
-    # The widening is margin, not schedule: a tick at 16,000 on a 12,000-step run reads
-    # as if the run went there.
-    ax.set_xticks([t for t in ax.get_xticks() if lo <= t <= hi])
-    ax.set_xlim(lo, hi + (hi - lo) * room)
-    ax.figure.canvas.draw()   # a log axis has no usable transform before this
-
-    to_axes = ax.transAxes.inverted()
-    placed = []
-    for x, y, text, colour in items:
-        ax.plot([x], [y], marker="o", ms=5, color=colour, zorder=5)
-        xf, yf = to_axes.transform(ax.transData.transform((x, y)))
-        placed.append([xf, yf, yf, text, colour])
-
-    # Push apart from the bottom up, then slide everything down if the stack overflows.
-    placed.sort(key=lambda r: r[1])
-    for i in range(1, len(placed)):
-        placed[i][2] = max(placed[i][2], placed[i - 1][2] + gap)
-    over = placed[-1][2] - 0.97 if placed and placed[-1][2] > 0.97 else 0
-    for row in placed:
-        row[2] = max(0.02, row[2] - over)
-
-    label_x = 1 - room / (1 + room) + 0.015   # just inside the margin the widening made
-    for xf, yf, y_label, text, colour in placed:
-        ax.plot([xf + 0.006, label_x - 0.006], [yf, y_label], color=colour, linewidth=.6,
-                alpha=.5, transform=ax.transAxes, zorder=4)
-        ax.text(label_x, y_label, text, transform=ax.transAxes, va="center", fontsize=8,
-                color=colour, zorder=5)
-
-
-def _baseline(ax, lo, hi):
-    """Draw the floor when it is on the axis, and say so when it is not."""
-    if lo <= BASELINE <= hi:
-        ax.axhline(BASELINE, color="#888888", linestyle="--", linewidth=1)
-        ax.annotate(f"unigram floor {BASELINE}", (0.015, BASELINE), xycoords=("axes fraction", "data"),
-                    va="bottom", fontsize=8, color="#666666",
-                    bbox=dict(facecolor="white", edgecolor="none", pad=1.5))
-        return True
-    return False
-
-
-def _save(fig, ax, title, note, path):
-    ax.set_title(title, fontsize=11, color=INK, loc="left")
-    lines = [ln for raw in note.split("\n") for ln in textwrap.wrap(raw, 112)]
-    fig.text(0.012, 0.012, "\n".join(lines), fontsize=7.5, color="#666666", va="bottom")
-    fig.tight_layout(rect=(0, 0.035 + 0.026 * len(lines), 1, 1))
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    return path
-
-
 def fig_by_size(runs, out_dir):
     """One figure per size, learning rates overlaid. Arms that learned only."""
     made = []
@@ -166,18 +85,18 @@ def fig_by_size(runs, out_dir):
                 if (size, lr) in runs and learned(runs[(size, lr)])]
         if not arms:
             continue
-        fig, ax = plt.subplots(figsize=(8.4, 4.2))
+        fig, ax = new_figure()
         for lr, run in arms:
             ax.plot(run["steps"], run["vals"], color=LR_COLOUR[lr], linewidth=1.3, label=f"lr {lr}")
         ax.set_yscale("log")
-        _axes(ax)
-        drawn = _baseline(ax, *ax.get_ylim())
-        _label_bests(ax, [(*_best_point(r["steps"], r["vals"]),
-                           f"lr {lr}: {min(r['vals']):.4f} @ {_best_point(r['steps'], r['vals'])[0]:,}",
+        axes(ax, "eval_loss_mask")
+        drawn = floor_line(ax, BASELINE, "unigram floor")
+        label_bests(ax, [(*best_point(r["steps"], r["vals"]),
+                           f"lr {lr}: {min(r['vals']):.4f} @ {best_point(r['steps'], r['vals'])[0]:,}",
                            LR_COLOUR[lr]) for lr, r in arms])
         note = (f"{PRECONDITIONS}\nlog scale, so the floor and the best values fit on one axis."
                 + ("" if drawn else " The floor is off this axis."))
-        made.append(_save(fig, ax, f"molecule_nat_lang BERT {size} - learning rates that learned",
+        made.append(save(fig, ax, f"molecule_nat_lang BERT {size} - learning rates that learned",
                           note, os.path.join(out_dir, f"by-size-{size}.png")))
     return made
 
@@ -190,18 +109,18 @@ def fig_by_lr(runs, out_dir):
                 if (size, lr) in runs and learned(runs[(size, lr)])]
         if not arms:
             continue
-        fig, ax = plt.subplots(figsize=(8.4, 4.2))
+        fig, ax = new_figure()
         for size, run in arms:
             ax.plot(run["steps"], run["vals"], color=SIZE_COLOUR[size], linewidth=1.3, label=size)
         ax.set_yscale("log")
-        _axes(ax)
-        drawn = _baseline(ax, *ax.get_ylim())
-        _label_bests(ax, [(*_best_point(r["steps"], r["vals"]),
-                           f"{size}: {min(r['vals']):.4f} @ {_best_point(r['steps'], r['vals'])[0]:,}",
+        axes(ax, "eval_loss_mask")
+        drawn = floor_line(ax, BASELINE, "unigram floor")
+        label_bests(ax, [(*best_point(r["steps"], r["vals"]),
+                           f"{size}: {min(r['vals']):.4f} @ {best_point(r['steps'], r['vals'])[0]:,}",
                            SIZE_COLOUR[size]) for size, r in arms])
         note = (f"{PRECONDITIONS}\nSizes that collapsed at this learning rate are not drawn here; "
                 "see the collapsed figure." + ("" if drawn else " The floor is off this axis."))
-        made.append(_save(fig, ax, f"molecule_nat_lang BERT lr {lr} - sizes that learned",
+        made.append(save(fig, ax, f"molecule_nat_lang BERT lr {lr} - sizes that learned",
                           note, os.path.join(out_dir, f"by-lr-{lr}.png")))
     return made
 
@@ -212,18 +131,18 @@ def fig_collapsed(runs, out_dir):
             if (size, lr) in runs and not learned(runs[(size, lr)])]
     if not arms:
         return []
-    fig, ax = plt.subplots(figsize=(8.4, 4.2))
+    fig, ax = new_figure()
     for (size, lr, run), colour in zip(arms, ARM_COLOURS):
         ax.plot(run["steps"], run["vals"], color=colour, linewidth=1.3, label=f"{size} lr {lr}")
-    _axes(ax)
+    axes(ax, "eval_loss_mask")
     ax.set_ylim(min(BASELINE * 0.97, ax.get_ylim()[0]), ax.get_ylim()[1])
-    _baseline(ax, *ax.get_ylim())
-    _label_bests(ax, [(*_best_point(r["steps"], r["vals"]),
-                       f"{size} lr {lr}: {min(r['vals']):.4f} @ {_best_point(r['steps'], r['vals'])[0]:,}", c)
+    floor_line(ax, BASELINE, "unigram floor")
+    label_bests(ax, [(*best_point(r["steps"], r["vals"]),
+                       f"{size} lr {lr}: {min(r['vals']):.4f} @ {best_point(r['steps'], r['vals'])[0]:,}", c)
                       for (size, lr, r), c in zip(arms, ARM_COLOURS)], room=0.34)
     note = (f"{PRECONDITIONS}\nEvery point of every one of these is above the floor: their best is "
             "worse than predicting token frequencies. Marked points are each arm's minimum.")
-    return [_save(fig, ax, "molecule_nat_lang BERT - the arms that collapsed", note,
+    return [save(fig, ax, "molecule_nat_lang BERT - the arms that collapsed", note,
                   os.path.join(out_dir, "collapsed.png"))]
 
 
@@ -234,21 +153,22 @@ def fig_tail(runs, out_dir, frac=0.20):
     if not arms:
         return []
     cut = max(max(r["steps"]) for _, _, r in arms) * (1 - frac)
-    fig, ax = plt.subplots(figsize=(8.4, 4.2))
+    fig, ax = new_figure()
     items = []
     for size, lr, run in arms:
         pts = [(s, v) for s, v in zip(run["steps"], run["vals"]) if s >= cut]
         ax.plot([s for s, _ in pts], [v for _, v in pts], color=SIZE_COLOUR[size],
                 linestyle={"1e-4": "-", "3e-4": "--", "1e-3": ":"}[lr],
                 linewidth=1.3, label=f"{size} lr {lr}")
-        bx, by = _best_point([s for s, _ in pts], [v for _, v in pts])
+        bx, by = best_point([s for s, _ in pts], [v for _, v in pts])
         items.append((bx, by, f"{size} lr {lr}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
-    _axes(ax)
-    _label_bests(ax, items, room=0.46)
+    axes(ax, "eval_loss_mask")
+    label_bests(ax, items, room=0.46)
     note = (f"{PRECONDITIONS}\nLast {int(frac * 100)}% of the schedule, y near the best values. "
-            f"The floor {BASELINE} is far above this axis. Whether the minimum sits at the end "
-            "decides whether the step budget is the thing to change.")
-    return [_save(fig, ax, f"molecule_nat_lang BERT - last {int(frac * 100)}% of the schedule",
+            f"The floor {BASELINE} is far above this axis. Marked points are the best inside "
+            "this window, which here is also each arm's best overall. Whether the minimum sits at "
+            "the end decides whether the step budget is the thing to change.")
+    return [save(fig, ax, f"molecule_nat_lang BERT - last {int(frac * 100)}% of the schedule",
                   note, os.path.join(out_dir, "tail-last20pct.png"))]
 
 

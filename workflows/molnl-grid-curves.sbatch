@@ -5,7 +5,8 @@
 #SBATCH --time=00:20:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
-# Draw the molecule_nat_lang BERT learning-rate grid's curves and write its TSV.
+# Draw the molecule_nat_lang loss curves and write their TSVs: the BERT learning-rate
+# grid, and the GPT-2 ladder's three passes over the corpus.
 #
 # No GPU: this reads each run's trainer_state.json and draws. It is here rather than on
 # the login node because compute there is not allowed, matplotlib included.
@@ -39,7 +40,9 @@ cd "${REPO}"; mkdir -p workflows/slurm-logs "${OUT_DIR}"
 
 echo "=== grid curves on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "tree: ${REPO}  $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
-echo "runs: ${RUNS_DIR}"
+echo "runs: ${RUNS_DIR} (bert), ${RUNS_ROOT}/gpt2-output* (gpt2)"
 echo "out:  ${OUT_DIR}"
 "${PYTHON}" scripts/molnl_bert_grid_curves.py --runs-root "${RUNS_DIR}" --out-dir "${OUT_DIR}"
+echo
+"${PYTHON}" scripts/molnl_gpt2_ladder_curves.py --runs-root "${RUNS_ROOT}" --out-dir "${OUT_DIR}"
 echo "=== done @ $(date -Is) ==="
