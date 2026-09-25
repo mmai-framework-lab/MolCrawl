@@ -26,6 +26,7 @@ derived, none is typed in: see ``job_id_for``.
 """
 import argparse
 import csv
+import datetime
 import glob
 import json
 import os
@@ -51,48 +52,94 @@ def subset_of(basename):
 
 
 def _sacct_rows(start, end, user):
-    """One row per job in the window: (JobID, JobName, NodeList)."""
+    """One row per job in the window: (JobID, JobName, NodeList, Start, End)."""
     try:
         out = subprocess.run(
             ["sacct", "-S", start, "-E", end, "-u", user, "-X", "-P", "-n",
-             "-o", "JobID,JobName,NodeList"],
-            capture_output=True, text=True, timeout=120).stdout
+             "-o", "JobID,JobName,NodeList,Start,End"],
+            capture_output=True, text=True, timeout=180).stdout
     except (OSError, subprocess.SubprocessError):
         return []
-    return [line.split("|") for line in out.strip().splitlines() if line]
+    rows = []
+    for line in out.strip().splitlines():
+        field = line.split("|")
+        if len(field) < 5:
+            continue
+        try:
+            began = datetime.datetime.fromisoformat(field[3])
+            ended = datetime.datetime.fromisoformat(field[4])
+        except ValueError:
+            continue                       # PENDING and CANCELLED carry "Unknown"
+        rows.append((field[0], field[1], field[2], began, ended))
+    return rows
 
 
-def job_id_for(run_dir, series, log_dir, sacct):
-    """The Slurm job that produced this run.
+def _log_headers(log_dir):
+    """Every `job=<id> subset=<name>` header the run scripts print.
 
-    Four sources, because the runs span two months of changing conventions:
-    the manifest (written only for the 1,026-window runs and the 1,024 probe),
-    the slurm log file name (the 512-window series), the log name again for
-    sat9 whose manifest recorded an empty LEARNING_SOURCE_DIR, and for GPT-2 --
-    which writes no manifest and whose logs do not carry the subset -- sacct
-    matched on the node name that tensorboard baked into its event file.
+    The file name is not enough: the two 21-run BERT series produce jobs of the
+    same name for the same subset, months apart, and some jobs carry no subset
+    in their name at all. The header inside the log states both.
     """
-    base = os.path.basename(run_dir)
-    manifest = os.path.join(run_dir, "run_manifest.json")
-    if os.path.exists(manifest):
-        src = json.load(open(manifest)).get("env", {}).get("LEARNING_SOURCE_DIR", "")
-        hit = re.search(r"genome-bert-(\d+)", src)
-        if hit:
-            return hit.group(1)
+    pattern = re.compile(r"job=(\d+)\s+subset=([A-Za-z0-9_]+)")
+    found = []
+    for path in sorted(glob.glob(os.path.join(log_dir, "*.out"))):
+        try:
+            with open(path, errors="replace") as handle:
+                for _ in range(5):
+                    hit = pattern.search(handle.readline())
+                    if hit:
+                        found.append((hit.group(1), hit.group(2)))
+                        break
+        except OSError:
+            continue
+    return found
+
+
+def _run_mtime(run_dir):
+    """When this run last wrote -- used to tell two attempts of one subset apart."""
+    checkpoints = [p for p in glob.glob(f"{run_dir}/checkpoint-*")
+                   if p.rsplit("-", 1)[1].isdigit()]
+    path = (max(checkpoints, key=lambda p: int(p.rsplit("-", 1)[1]))
+            if checkpoints else os.path.join(run_dir, "ckpt.pt"))
+    if not os.path.exists(path):
+        return None
+    return datetime.datetime.fromtimestamp(os.path.getmtime(path))
+
+
+def job_id_for(run_dir, series, headers, sacct):
+    """The Slurm job that produced this run, or "" when it cannot be pinned.
+
+    Matching on the log file name alone is wrong here and quietly so: the two
+    21-run BERT series produce identically named jobs for the same subset two
+    weeks apart, so the untagged 512-window run picks up the 1,026-window run's
+    number and nothing complains. Both of the routes below therefore intersect
+    an identity with the window the job actually ran in, checked against when
+    the run last wrote a checkpoint.
+
+    BERT: the subset comes from the `job=<id> subset=<name>` header the run
+    script prints. GPT-2 writes no such header and no manifest, so its identity
+    is the node name tensorboard baked into the event file.
+
+    More than one candidate returns "" rather than the first. A wrong job
+    number in the table is worse than a missing one -- it reads as a fact.
+    """
+    when = _run_mtime(run_dir)
+    if when is None:
+        return ""
+    ran = {row[0] for row in sacct
+           if row[3] <= when <= row[4] + datetime.timedelta(minutes=30)}
 
     if series.startswith("bert"):
-        pattern = re.compile(rf"-{re.escape(subset_of(base))}-(\d+)\.out$")
-        for name in sorted(os.listdir(log_dir) if os.path.isdir(log_dir) else []):
-            hit = pattern.search(name)
-            if hit and ("sat9" in name) == (series == "bert-sat9"):
-                return hit.group(1)
-        return ""
-
-    events = glob.glob(os.path.join(run_dir, "events.out.tfevents.*"))
-    if not events:
-        return ""
-    node = os.path.basename(events[0]).rsplit(".", 1)[1]
-    hits = [r[0] for r in sacct if r[2] == node and "gpt2" in r[1]]
+        subset = subset_of(os.path.basename(run_dir))
+        hits = sorted({job for job, name in headers if name == subset and job in ran})
+    else:
+        events = glob.glob(os.path.join(run_dir, "events.out.tfevents.*"))
+        if not events:
+            return ""
+        node = os.path.basename(events[0]).rsplit(".", 1)[1]
+        hits = sorted({row[0] for row in sacct
+                       if row[2] == node and "gpt2" in row[1] and row[0] in ran})
     return hits[0] if len(hits) == 1 else ""
 
 
@@ -120,6 +167,28 @@ def bert_meta(run_dir):
             "lr": args.learning_rate, "warmup": args.warmup_steps,
             "eval_every": (evals[1] - evals[0]) if len(evals) > 1 else None,
             "epochs": _manifest_epochs(run_dir)}
+
+
+def _measured_epochs(root, subset, max_steps, batch, model):
+    """max_steps x batch / train rows, accepted only if it lands on an integer.
+
+    The row count is taken by opening the split, not from dataset_info.json,
+    which reports 95,016,076 where the split holds 94,916,076 -- a hundred
+    thousand rows out, and the source of a step-count error corrected on
+    2026-08-24. The integer check is what makes this safe to run against a root
+    that might be the wrong build: a mismatched root gives a fractional answer
+    and the field stays empty rather than gaining a plausible wrong number.
+    """
+    path = os.path.join(root, subset, f"training_ready_hf_dataset_{model}")
+    if not os.path.isdir(path):
+        return None
+    try:
+        from datasets import load_from_disk
+        rows = len(load_from_disk(path)["train"])
+    except Exception:
+        return None
+    epochs = max_steps * batch / rows
+    return round(epochs) if abs(epochs - round(epochs)) < 0.005 else None
 
 
 def _manifest_epochs(run_dir):
@@ -194,12 +263,17 @@ def main():
     ap.add_argument("--sacct-start", default="2026-08-16")
     ap.add_argument("--sacct-end", default="2026-08-20")
     ap.add_argument("--user", default=os.environ.get("USER", ""))
+    ap.add_argument("--train-root", nargs="*", default=[],
+                    help="series=genome_sequence root, to count that build's train "
+                         "rows and turn max_steps into an epoch count")
     ap.add_argument("--out", required=True, help="the TSV every figure is drawn from")
     ap.add_argument("--meta-out", default="", help="per-series metadata the captions are built from")
     args = ap.parse_args()
 
     sacct = _sacct_rows(args.sacct_start, args.sacct_end, args.user)
-    print(f"  sacct rows in window: {len(sacct)}", flush=True)
+    headers = _log_headers(args.log_dir)
+    print(f"  sacct rows in window: {len(sacct)}   log headers: {len(headers)}", flush=True)
+    train_root = dict(item.partition("=")[::2] for item in args.train_root)
 
     rows, skipped, meta = [], [], {}
     for run_dir in sorted(glob.glob(f"{args.runs_root}/bert-small-*")
@@ -213,8 +287,12 @@ def main():
         if not points:
             skipped.append(base)
             continue
-        job = job_id_for(run_dir, series, args.log_dir, sacct)
+        job = job_id_for(run_dir, series, headers, sacct)
         got = bert_meta(run_dir) if arch == "bert" else gpt2_meta(run_dir)
+        if got and got.get("epochs") is None and series in train_root:
+            got["epochs"] = _measured_epochs(
+                train_root[series], subset_of(base), got["max_steps"], got["global_batch"],
+                "bert" if arch == "bert" else "gpt2")
         if got:
             slot = meta.setdefault(series, {})
             for key, value in got.items():

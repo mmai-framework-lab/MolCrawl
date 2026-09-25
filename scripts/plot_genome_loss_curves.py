@@ -70,10 +70,18 @@ def caption(series, meta, n_runs, metric):
             return f"{fmt.format(value[0])}〜{fmt.format(value[1])}"
         return fmt.format(value)
 
-    return (f"{series}  |  {n_runs} 本  |  窓 {show('window', '{:,}')}  |  "
+    line = (f"{series}  |  {n_runs} 本  |  窓 {show('window', '{:,}')}  |  "
             f"エポック {show('epochs')}  |  step {show('max_steps', '{:,}')}  |  "
             f"グローバルバッチ {show('global_batch', '{:,}')}  |  "
             f"学習率 {show('lr')}  |  評価間隔 {show('eval_every', '{:,}')}  |  {metric}")
+    if n_runs > 1:
+        # Each run is scored on its own subset's valid split, so the curves are
+        # not one task measured 21 ways. Height across subsets is not a ranking;
+        # the distance to that subset's own baseline is the comparable quantity.
+        line += ("\n各 run は自分の subset の valid で採点している。"
+                 "subset をまたいで高さを比べることはできない。"
+                 "比べられるのは各 subset 自身の基準線からの差である。")
+    return line
 
 
 def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
@@ -82,7 +90,7 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     last_step = max(s for pts in runs.values() for s, _ in pts)
     lo_step = last_step * (1 - tail_fraction) if tail_fraction else 0
 
-    seen, ys = set(), []
+    seen, ys, labelled = set(), [], False
     for subset, points in sorted(runs.items()):
         kept = [(s, v) for s, v in points if s >= lo_step]
         if not kept:
@@ -97,6 +105,7 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
         ax.plot([best_step], [best_value], marker="o", markersize=4.5,
                 color=colour, markeredgecolor="white", markeredgewidth=0.8, zorder=3)
         if len(runs) <= 3 or tail_fraction:
+            labelled = True
             ax.annotate(f"{best_step:,}", (best_step, best_value),
                         textcoords="offset points", xytext=(0, -12),
                         ha="center", fontsize=6.5, color=colour)
@@ -114,11 +123,14 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
                              f"（{baseline_method}）")
         ys += [min(drawn), max(drawn)]
 
-    pad = (max(ys) - min(ys)) * 0.04
-    ax.set_ylim(min(ys) - pad, max(ys) + pad)      # nothing leaves the frame
+    span = max(ys) - min(ys)
+    # The step labels sit 12 points below their marker, so a figure that draws
+    # them needs room underneath or the lowest run's label is cut by the axis.
+    ax.set_ylim(min(ys) - span * (0.11 if labelled else 0.04), max(ys) + span * 0.04)
     ax.set_xlim(lo_step, last_step)
     ax.set_xlabel("step")
     ax.set_ylabel(metric)
+    ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
     ax.set_title(("最後の 20 %: " if tail_fraction else "") + series, fontsize=11)
     ax.grid(alpha=0.25, linewidth=0.5)
     for side in ("top", "right"):
@@ -161,10 +173,11 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
         ax.axhline(value, color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
                    label=f"基準線 {value:.4f}")
         ys.append(value)
-    pad = (max(ys) - min(ys)) * 0.04
-    ax.set_ylim(min(ys) - pad, max(ys) + pad)
+    span = max(ys) - min(ys)
+    ax.set_ylim(min(ys) - span * 0.11, max(ys) + span * 0.04)
     ax.set_xlabel("step")
     ax.set_ylabel(metric)
+    ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
     ax.set_title("mammal_centered: 3 エポックと 9 エポック", fontsize=11)
     ax.grid(alpha=0.25, linewidth=0.5)
     for side in ("top", "right"):
