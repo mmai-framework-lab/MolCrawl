@@ -77,6 +77,7 @@ eval_iters = 200
 # larger downward selection bias. Set this instead of eval_iters to compare
 # sizes on equal footing; eval_iters is then derived from batch_size.
 eval_sequences = None
+deterministic_val_eval = False  # §5.2 (protein-order-2026-09-25): if True the val eval scans a fixed reproducible set of sequences every time instead of resampling with replacement (removes eval noise + best_val downward bias). val only; train and gradients unchanged. Default off = unchanged behaviour; set per config on the runs that want it.
 eval_only = False  # if True, script exits right after the first eval
 always_save_checkpoint = False  # if True, always save a checkpoint after each eval
 init_from = "scratch"  # 'scratch' or 'resume' or 'gpt2*'
@@ -498,13 +499,34 @@ if __name__ == "__main__":
 # )  # For now, we use the training data for validation as we want to overfit to confirm the model is working with the data
 
 
+_val_fixed_ix = None      # §5.2: cached fixed permutation for deterministic val eval
+_val_eval_cursor = 0      # position within _val_fixed_ix; reset each estimate_loss
+
+
 def get_batch(split):
+    global _val_fixed_ix, _val_eval_cursor
     if split == "train":
         data = training_data
     elif split == "val":
         data = test_data
 
-    ix = np.random.randint(0, len(data), batch_size).tolist()
+    if split == "val" and deterministic_val_eval:
+        # §5.2 (protein-order-2026-09-25): score a fixed, reproducible set of val
+        # sequences every eval instead of resampling with replacement. Removes the
+        # per-eval noise and the best_val downward-selection bias. The permutation is
+        # seeded by a constant so the order does not depend on the run's own seed;
+        # estimate_loss resets the cursor before the val loop, so each eval walks the
+        # same leading prefix (eval_iters * batch_size sequences). val only -- train's
+        # sampling and the gradient computation are untouched.
+        if _val_fixed_ix is None:
+            _val_fixed_ix = np.random.default_rng(12345).permutation(len(data))
+        take = _val_fixed_ix[_val_eval_cursor:_val_eval_cursor + batch_size]
+        if len(take) < batch_size:
+            take = np.concatenate([take, _val_fixed_ix[:batch_size - len(take)]])
+        _val_eval_cursor = (_val_eval_cursor + batch_size) % len(_val_fixed_ix)
+        ix = take.tolist()
+    else:
+        ix = np.random.randint(0, len(data), batch_size).tolist()
 
     # Handle variable length sequences for RNA data
     sequences = [data[i] for i in ix]
@@ -790,9 +812,12 @@ if __name__ == "__main__":
 # helps estimate an arbitrarily accurate loss over either split using many batches
 @torch.no_grad()
 def estimate_loss():
+    global _val_eval_cursor
     out = {}
     model.eval()
     for split in ["train", "val"]:
+        if split == "val" and deterministic_val_eval:
+            _val_eval_cursor = 0  # every eval scans the same fixed prefix
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             X, Y = get_batch(split)
@@ -1106,6 +1131,7 @@ if __name__ == "__main__":
                     "eval_iters": eval_iters,
                     "eval_sequences": globals().get("eval_sequences"),
                     "eval_sequences_seen": eval_iters * batch_size,
+                    "deterministic_val_eval": deterministic_val_eval,
                     "judge_on": "val loss (mean cross-entropy, nats/token)",
                 },
                 selection={
