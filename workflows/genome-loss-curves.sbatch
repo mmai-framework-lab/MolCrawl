@@ -30,6 +30,13 @@
 #
 # Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT,
 # SACCT_START, SACCT_END, SKIP_TALLY (set to 1 to reuse an earlier tally).
+#
+# The sacct window has to cover the whole campaign, not just one launch: a job
+# number is only accepted when the window it ran in contains the time the run
+# last wrote a checkpoint, which is what tells the 512-window series apart from
+# the 1,026-window one when both produce a job of the same name for the same
+# subset. SRC_ROOT_512 doubles as the row count that turns the untagged
+# series' max_steps into an epoch count.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -72,8 +79,9 @@ echo ""; echo "########## 2. TSV ##########"
 "${PY}" scripts/genome_loss_curves.py \
     --runs-root "${RUNS_ROOT}" \
     --log-dir "$PWD/workflows/slurm-logs" \
-    --sacct-start "${SACCT_START:-2026-08-16}" \
-    --sacct-end "${SACCT_END:-2026-08-20}" \
+    --sacct-start "${SACCT_START:-2026-08-01}" \
+    --sacct-end "${SACCT_END:-2026-09-30}" \
+    --train-root "bert-base=${SRC_ROOT_512}" "bert-sat9=${SRC_ROOT_512}" \
     --out "${TSV}" \
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
 
