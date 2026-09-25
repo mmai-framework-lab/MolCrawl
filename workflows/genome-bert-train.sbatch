@@ -69,7 +69,22 @@ CONFIG=molcrawl/tasks/pretrain/configs/genome_sequence/bert_small_subset.py
 # $PWD silently sends a production run somewhere that is meant to be disposable.
 # RUN_TAG keeps a probe from colliding with the production directory of the same
 # subset -- the 512 and 1,024 builds of a subset share a name otherwise.
-RUNS_ROOT="${RUNS_ROOT:-$PWD/learning_source_genome_runs}"
+# The interpreter lives in the main checkout, not in a worktree, so a relative
+# ./miniconda breaks whenever this is submitted from one. Resolve it through
+# git's common dir rather than writing an absolute path into the repo.
+if [ -x "./miniconda/bin/torchrun" ]; then
+    PYROOT="$PWD"
+else
+    PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"
+fi
+TORCHRUN="${PYROOT}/miniconda/bin/torchrun"
+[ -x "${TORCHRUN}" ] || { echo "no torchrun under ${PYROOT}/miniconda -- set PYROOT"; exit 1; }
+
+# learning_source* is gitignored, so every checkout and every worktree has its
+# own copy. Defaulting to $PWD put a production sweep's 102G of checkpoints
+# inside a worktree once, with nothing failing to say so; default beside the
+# interpreter, which resolves to the main checkout from either place.
+RUNS_ROOT="${RUNS_ROOT:-${PYROOT}/learning_source_genome_runs}"
 OUT="${RUNS_ROOT}/bert-small-${SUBSET}${RUN_TAG:+-${RUN_TAG}}"
 echo "=== outputs: ${OUT} ==="
 DONE="${OUT}/.run_complete"
@@ -82,7 +97,7 @@ LOCAL_ROOT=/tmp/genome-bert-${SLURM_JOB_ID:-0}
 # separates them, and main.py resumes from whatever checkpoints it finds, so a
 # mismatched window would silently continue someone else's run.
 if [ -d "${OUT}" ] && ls -d "${OUT}"/checkpoint-* >/dev/null 2>&1; then
-    _len=$("${PYROOT:-.}/miniconda/bin/python" -c "
+    _len=$("${PYROOT}/miniconda/bin/python" -c "
 import json,sys
 try: print(json.load(open('${OUT}/run_manifest.json'))['batch']['seq_len'])
 except Exception: print('')" 2>/dev/null)
@@ -111,17 +126,6 @@ export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 export OMP_NUM_THREADS=8
 export SUBSET_BERT_LR="${LR}"
 export GENOME_SUBSET="${SUBSET}"
-
-# The interpreter lives in the main checkout, not in a worktree, so a relative
-# ./miniconda breaks whenever this is submitted from one. Resolve it through
-# git's common dir rather than writing an absolute path into the repo.
-if [ -x "./miniconda/bin/torchrun" ]; then
-    PYROOT="$PWD"
-else
-    PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"
-fi
-TORCHRUN="${PYROOT}/miniconda/bin/torchrun"
-[ -x "${TORCHRUN}" ] || { echo "no torchrun under ${PYROOT}/miniconda -- set PYROOT"; exit 1; }
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} subset=${SUBSET} LR=${LR} MB=${MB} GA=${GA} stage=${STAGE} ==="
 echo "=== torchrun: ${TORCHRUN} ==="
