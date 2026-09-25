@@ -9,7 +9,7 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=8:00:00
+#SBATCH --time=12:00:00
 #SBATCH --job-name=rna-revalidate-gpt2
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
