@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from molnl_loss_figures import (ARM_COLOURS, SIZE_COLOUR, axes, best_point,  # noqa: E402
-                                floor_line, label_bests, new_figure, save)
+                                fit_y, floor_line, label_bests, new_figure, save)
 
 BASELINE = 3.8638          # unigram floor on the masked positions, mol_nl (job 22503)
 SIZES = ("small", "medium", "large")
@@ -90,6 +90,7 @@ def fig_by_size(runs, out_dir):
             ax.plot(run["steps"], run["vals"], color=LR_COLOUR[lr], linewidth=1.3, label=f"lr {lr}")
         ax.set_yscale("log")
         axes(ax, "eval_loss_mask")
+        fit_y(ax, [r["vals"] for _, r in arms])
         drawn = floor_line(ax, BASELINE, "unigram floor")
         label_bests(ax, [(*best_point(r["steps"], r["vals"]),
                            f"lr {lr}: {min(r['vals']):.4f} @ {best_point(r['steps'], r['vals'])[0]:,}",
@@ -114,6 +115,7 @@ def fig_by_lr(runs, out_dir):
             ax.plot(run["steps"], run["vals"], color=SIZE_COLOUR[size], linewidth=1.3, label=size)
         ax.set_yscale("log")
         axes(ax, "eval_loss_mask")
+        fit_y(ax, [r["vals"] for _, r in arms])
         drawn = floor_line(ax, BASELINE, "unigram floor")
         label_bests(ax, [(*best_point(r["steps"], r["vals"]),
                            f"{size}: {min(r['vals']):.4f} @ {best_point(r['steps'], r['vals'])[0]:,}",
@@ -135,6 +137,9 @@ def fig_collapsed(runs, out_dir):
     for (size, lr, run), colour in zip(arms, ARM_COLOURS):
         ax.plot(run["steps"], run["vals"], color=colour, linewidth=1.3, label=f"{size} lr {lr}")
     axes(ax, "eval_loss_mask")
+    fit_y(ax, [r["vals"] for _, _, r in arms])
+    # The floor is the point of this figure -- every one of these stayed above it -- so
+    # here the range is widened to hold it rather than the line being dropped.
     ax.set_ylim(min(BASELINE * 0.97, ax.get_ylim()[0]), ax.get_ylim()[1])
     floor_line(ax, BASELINE, "unigram floor")
     label_bests(ax, [(*best_point(r["steps"], r["vals"]),
@@ -154,20 +159,29 @@ def fig_tail(runs, out_dir, frac=0.20):
         return []
     cut = max(max(r["steps"]) for _, _, r in arms) * (1 - frac)
     fig, ax = new_figure()
-    items = []
+    items, elsewhere, drawn = [], [], []
     for size, lr, run in arms:
         pts = [(s, v) for s, v in zip(run["steps"], run["vals"]) if s >= cut]
         ax.plot([s for s, _ in pts], [v for _, v in pts], color=SIZE_COLOUR[size],
                 linestyle={"1e-4": "-", "3e-4": "--", "1e-3": ":"}[lr],
                 linewidth=1.3, label=f"{size} lr {lr}")
-        bx, by = best_point([s for s, _ in pts], [v for _, v in pts])
-        items.append((bx, by, f"{size} lr {lr}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
+        drawn.append([v for _, v in pts])
+        # The mark means one thing in every figure: the run's own best. When that falls
+        # before this window it is not drawn here, and the caption says where it is.
+        bx, by = best_point(run["steps"], run["vals"])
+        if bx >= cut:
+            items.append((bx, by, f"{size} lr {lr}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
+        else:
+            elsewhere.append(f"{size} lr {lr} {by:.4f} at {bx:,}")
     axes(ax, "eval_loss_mask")
+    fit_y(ax, drawn)
     label_bests(ax, items, room=0.46)
     note = (f"{PRECONDITIONS}\nLast {int(frac * 100)}% of the schedule, y near the best values. "
-            f"The floor {BASELINE} is far above this axis. Marked points are the best inside "
-            "this window, which here is also each arm's best overall. Whether the minimum sits at "
-            "the end decides whether the step budget is the thing to change.")
+            f"The floor {BASELINE} is far above this axis. Marks are each run's own best."
+            + (" Best before this window, so not marked here: " + "; ".join(elsewhere) + "."
+               if elsewhere else "")
+            + " Whether the minimum sits at the end decides whether the step budget is the "
+            "thing to change.")
     return [save(fig, ax, f"molecule_nat_lang BERT - last {int(frac * 100)}% of the schedule",
                   note, os.path.join(out_dir, "tail-last20pct.png"))]
 
