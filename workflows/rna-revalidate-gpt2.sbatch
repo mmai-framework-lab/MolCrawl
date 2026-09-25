@@ -15,7 +15,13 @@
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
 set -e
 : "${LEARNING_SOURCE_DIR:?export LEARNING_SOURCE_DIR to the rna learning_source root}"
-: "${MODEL_OUTPUT_ROOT:?export MODEL_OUTPUT_ROOT to the runs root the grid wrote to}"
+# Two different roots are in play and they are one level apart: the GPT-2 configs
+# join MODEL_OUTPUT_ROOT with the run name directly, while get_bert_output_path
+# puts <modality>/bert-output under it. Deriving one from the other silently
+# builds a path that does not exist, so both are named.
+: "${MODEL_OUTPUT_ROOT:?export MODEL_OUTPUT_ROOT to the root the config joins its run name onto}"
+: "${GPT2_RUNS_ROOT:?export GPT2_RUNS_ROOT to the directory holding the rna-gpt2-* run directories}"
+[ -d "${GPT2_RUNS_ROOT}" ] || { echo "GPT2_RUNS_ROOT=${GPT2_RUNS_ROOT} is not a directory" >&2; exit 1; }
 : "${REVAL_CONFIG:?export REVAL_CONFIG to a config that names the rna data}"
 : "${REVAL_OUT:?export REVAL_OUT to the TSV to write, outside every input tree}"
 
@@ -30,11 +36,11 @@ export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
 mkdir -p "${TMPDIR}" "${HF_HOME}" "${XDG_CACHE_HOME}" workflows/slurm-logs
 
 echo "=== rna-revalidate-gpt2 @ $(date -Is) on ${SLURMD_NODENAME:-$(hostname)} ==="
-echo "  runs root: ${MODEL_OUTPUT_ROOT}/gpt2-grid"
+echo "  runs root: ${GPT2_RUNS_ROOT}"
 echo "  out: ${REVAL_OUT}"
 "${PYROOT}/miniconda/bin/python" scripts/rna_revalidate_gpt2.py \
   --config "${REVAL_CONFIG}" \
-  --runs-root "${MODEL_OUTPUT_ROOT}/gpt2-grid" \
+  --runs-root "${GPT2_RUNS_ROOT}" \
   --out "${REVAL_OUT}" \
   --rows "${REVAL_ROWS:-0}" \
   --batch-size "${REVAL_BATCH:-16}" \
