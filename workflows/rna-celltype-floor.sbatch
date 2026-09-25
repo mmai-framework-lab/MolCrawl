@@ -24,7 +24,11 @@
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
 set -e
-: "${MODEL_OUTPUT_ROOT:?export MODEL_OUTPUT_ROOT to the runs root the grid wrote to}"
+# The shape comes out of a grid run directory. GPT-2 and BERT hang off
+# MODEL_OUTPUT_ROOT at different depths, so the GPT-2 root is named rather than
+# built from the other one.
+: "${GPT2_RUNS_ROOT:?export GPT2_RUNS_ROOT to the directory holding the rna-gpt2-* run directories}"
+[ -d "${GPT2_RUNS_ROOT}" ] || { echo "GPT2_RUNS_ROOT=${GPT2_RUNS_ROOT} is not a directory" >&2; exit 1; }
 : "${EVAL_JSONL:?export EVAL_JSONL to the evaluation JSONL}"
 : "${FLOOR_OUT_DIR:?export FLOOR_OUT_DIR to where the floor results go, outside every input tree}"
 : "${TOKENIZER_DIR:?export TOKENIZER_DIR to the tokenizer directory}"
@@ -46,7 +50,7 @@ nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 # The rate is irrelevant to an untrained trunk; 6e-4 is named only because its
 # run is the one whose checkpoint carries the shape for that size.
 for SIZE in ${FLOOR_SIZES:-small medium large xl}; do
-    SHAPE="${MODEL_OUTPUT_ROOT}/gpt2-grid/rna-gpt2-${SIZE}-lr6e4/checkpoint-40320/training_state.bin"
+    SHAPE="${GPT2_RUNS_ROOT}/rna-gpt2-${SIZE}-lr6e4/checkpoint-40320/training_state.bin"
     [ -f "${SHAPE}" ] || { echo "no checkpoint to take the ${SIZE} shape from: ${SHAPE}" >&2; exit 1; }
     for S in ${FLOOR_SEEDS:-1 2 3}; do
             CK="${CKPT_DIR}/${SIZE}-seed${S}.pt"
