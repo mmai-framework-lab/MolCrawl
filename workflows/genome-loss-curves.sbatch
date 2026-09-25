@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=8
-#SBATCH --time=01:00:00
+#SBATCH --time=08:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #
 # Build the genome loss-curve table, then draw every figure from it.
@@ -18,19 +18,24 @@
 # each run selected on.
 #
 # A baseline is drawn only where one was measured on that series' own build.
-# The 1,026-window BERT runs and the GPT-2 runs have one (2026-09-16, valid all
-# 50,000 rows); the 512-window series and the 1,024 probe do not, and the
-# figures say so rather than borrowing a neighbouring build's number.
+# The 1,026-window BERT runs and the GPT-2 runs have one from the final scorers
+# (2026-09-16, valid all 50,000 rows, taken at the positions that paid loss).
+# The 512-window series had none, so step 1 tallies it here -- a different
+# measurement from the scorers', agreeing to about 0.002 where both exist, and
+# the figure names which one it drew. The 1,024 probe still has none and its
+# figure says so rather than borrowing the 1,026 build's number.
 #
 # No GPU work happens here. It runs on the gpu partition because that is where
 # compute nodes are, and nothing in this repo runs on the login node.
 #
-# Required: RUNS_ROOT, OUT_DIR. Optional: RESULTS_ROOT, SACCT_START, SACCT_END.
+# Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT,
+# SACCT_START, SACCT_END, SKIP_TALLY (set to 1 to reuse an earlier tally).
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 : "${RUNS_ROOT:?set RUNS_ROOT to the directory holding the run outputs}"
 : "${OUT_DIR:?set OUT_DIR to the report directory the figures and TSV go to}"
+: "${SRC_ROOT_512:?set SRC_ROOT_512 to the genome_sequence root of the 512 build}"
 
 if [ -x "./miniconda/bin/python" ]; then PYROOT="$PWD"
 else PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"; fi
@@ -41,13 +46,29 @@ RESULTS_ROOT="${RESULTS_ROOT:-${RUNS_ROOT}/_results}"
 mkdir -p "${OUT_DIR}"
 TSV="${OUT_DIR}/genome-loss-curves.tsv"
 META="${OUT_DIR}/genome-loss-curves-meta.json"
+TALLY="${RESULTS_ROOT}/analyses/degenerate-baselines-512-full.json"
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} @ $(date -Is) ==="
 echo "=== python:  ${PY} ==="
 echo "=== runs:    ${RUNS_ROOT} ==="
 echo "=== outputs: ${OUT_DIR} ==="
 
-echo ""; echo "########## 1. TSV ##########"
+echo ""; echo "########## 1. 窓 512 の基準線（BERT のみ） ##########"
+# gpt2 is skipped: its build was already measured in the same pass as its loss
+# on 2026-09-16, and the tally reads every token of every row, so including it
+# would double the wall time to reproduce a number that already exists.
+if [ "${SKIP_TALLY:-0}" = "1" ] && [ -f "${TALLY}" ]; then
+    echo "  SKIP_TALLY=1 なので既存の ${TALLY} を使う"
+else
+    "${PY}" scripts/genome_degenerate_baselines.py \
+        --src-root "${SRC_ROOT_512}" \
+        --bert-root "${SRC_ROOT_512}" \
+        --models bert \
+        --split valid \
+        --out "${TALLY}" || { echo "  FAILED: tally"; exit 1; }
+fi
+
+echo ""; echo "########## 2. TSV ##########"
 "${PY}" scripts/genome_loss_curves.py \
     --runs-root "${RUNS_ROOT}" \
     --log-dir "$PWD/workflows/slurm-logs" \
@@ -56,7 +77,7 @@ echo ""; echo "########## 1. TSV ##########"
     --out "${TSV}" \
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
 
-echo ""; echo "########## 2. 図 ##########"
+echo ""; echo "########## 3. 図 ##########"
 # series=directory. A series absent from this list gets no baseline line, which
 # is the honest state for the builds that have not been measured.
 "${PY}" scripts/plot_genome_loss_curves.py \
@@ -65,6 +86,9 @@ echo ""; echo "########## 2. 図 ##########"
     --baselines \
         "bert-w1026=${RESULTS_ROOT}/final-scores-bert-w1026" \
         "gpt2=${RESULTS_ROOT}/final-scores-gpt2" \
+    --baselines-tally \
+        "bert-base=${TALLY}:bert" \
+        "bert-sat9=${TALLY}:bert" \
     --out-dir "${OUT_DIR}" || { echo "  FAILED: figures"; exit 1; }
 
 echo ""; echo "---- rc=0 ----"
