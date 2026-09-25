@@ -79,9 +79,19 @@ def main(argv=None):
 
     sizes = sorted({s for s, _ in points}, key=lambda s: order[s])
     lrs = sorted({lr for _, lr in points}, key=lambda x: -lr_num.get(x, 0))
-    lo = min(min(v for _, _, v, _ in r) for r in points.values())
-    hi = max(max(v for _, _, v, _ in r[len(r)//10:]) for r in points.values())
+    # 縦軸を末尾側で決めると、初期の急降下が枠の上にはみ出す。はみ出した線は
+    # その区間の傾きが読めず、線ごとに見えている区間が違う図になる。縦軸に
+    # 収まる step まで横軸を切り、どの線も枠の中に入るようにする。
+    maxstep = max(r[-1][0] for r in points.values())
+    base = int(maxstep * 0.2)
+    band = [v for r in points.values() for s, _, v, _ in r if s >= base]
+    hi_band = max(band)
+    over = [s for r in points.values() for s, _, v, _ in r if v > hi_band]
+    x_start = max(over) if over else 0
+    inside = [v for r in points.values() for s, _, v, _ in r if s >= x_start]
+    lo, hi = min(inside), max(inside)
     pad = (hi - lo) * 0.08
+    print(f"  枠に全線が収まる step {x_start:,} 以降、縦軸 {lo:.4f}-{hi:.4f}")
 
     def draw(groups, title, fname, xlim=None, ylim=None, mark=True):
         n = len(groups)
@@ -104,8 +114,7 @@ def main(argv=None):
             ax.set_ylabel(a.metric)
             ax.grid(alpha=0.25, lw=0.5)
             ax.legend(fontsize=7, ncol=2)
-            if xlim:
-                ax.set_xlim(*xlim)
+            ax.set_xlim(*(xlim or (x_start, maxstep)))
             ax.set_ylim(*(ylim or (lo - pad, hi + pad)))
         fig.suptitle(title, fontsize=11)
         fig.tight_layout(rect=(0, 0, 1, 0.98))
@@ -123,7 +132,6 @@ def main(argv=None):
                                             for s in sizes if (s, lr) in points]) for lr in lrs],
          f"{a.arch}: {a.metric} by learning rate", f"{a.arch}-by-lr.png")
     # 3: 末尾の拡大。0.012 の動きが見える縦軸に絞る
-    maxstep = max(r[-1][0] for r in points.values())
     x0 = int(maxstep * (1 - a.tail_frac))
     tail = [v for r in points.values() for s, _, v, _ in r if s >= x0]
     t_lo, t_hi = min(tail), max(tail)

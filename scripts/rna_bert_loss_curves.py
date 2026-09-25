@@ -176,10 +176,21 @@ def main(argv=None):
         for ax, p in zip(axes[:, 0], panels):
             ks = pick(p)
             pmax = max(series[k][-1][0] for k in ks)
-            x0 = int(pmax * (1 - a.tail_frac)) if tail else 0
+            if tail:
+                x0 = int(pmax * (1 - a.tail_frac))
+            elif baseline is None:
+                # 学習できた run の図は縦軸を末尾側に絞る。絞った縦軸から
+                # はみ出す線を残さないよう、収まる step まで横軸を切る。
+                base = int(pmax * 0.2)
+                hi_band = max(v for k in ks for s, v in series[k] if s >= base)
+                over = [s for k in ks for s, v in series[k] if v > hi_band]
+                x0 = max(over) if over else 0
+            else:
+                # 崩れた run の図は、崩れるところを外せないので全体を入れる。
+                x0 = 0
             shown = [v for k in ks for s, v in series[k] if s >= x0]
             lo, hi = min(shown), max(shown)
-            if baseline is not None and not tail:
+            if baseline is not None:
                 lo, hi = min(lo, baseline), max(hi, baseline)
             pad = (hi - lo) * 0.08 or 0.05
             for key in ks:
@@ -204,8 +215,7 @@ def main(argv=None):
             ax.set_ylabel(a.metric)
             ax.grid(alpha=0.25, lw=0.5)
             ax.legend(fontsize=7, ncol=2)
-            if tail:
-                ax.set_xlim(x0, pmax)
+            ax.set_xlim(x0, pmax)
             ax.set_ylim(lo - pad, hi + pad)
         fig.suptitle(title, fontsize=11)
         fig.tight_layout(rect=(0, 0, 1, 0.98))
