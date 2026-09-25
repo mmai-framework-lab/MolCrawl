@@ -76,7 +76,8 @@ def caption(series, meta, n_runs, metric):
             f"学習率 {show('lr')}  |  評価間隔 {show('eval_every', '{:,}')}  |  {metric}")
 
 
-def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None):
+def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
+         baseline_method=""):
     fig, ax = plt.subplots(figsize=(11, 5.2))
     last_step = max(s for pts in runs.values() for s, _ in pts)
     lo_step = last_step * (1 - tail_fraction) if tail_fraction else 0
@@ -106,10 +107,11 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None):
         # their full spread, and each subset's own number is in the TSV.
         if len(drawn) == 1:
             ax.axhline(drawn[0], color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
-                       label=f"基準線 {drawn[0]:.4f}")
+                       label=f"基準線 {drawn[0]:.4f}（{baseline_method}）")
         else:
             ax.axhspan(min(drawn), max(drawn), color=BASELINE_COLOUR, alpha=0.18,
-                       label=f"基準線 subset ごと {min(drawn):.4f}〜{max(drawn):.4f}")
+                       label=f"基準線 subset ごと {min(drawn):.4f}〜{max(drawn):.4f}"
+                             f"（{baseline_method}）")
         ys += [min(drawn), max(drawn)]
 
     pad = (max(ys) - min(ys)) * 0.04
@@ -177,9 +179,18 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
     print(f"  wrote {out_path}")
 
 
-def load_baselines(spec):
-    """series=dir pairs; a series with no matched measurement simply has none."""
-    out = defaultdict(dict)
+def load_baselines(spec, tally_spec):
+    """series=source pairs; a series with no measurement on its own build has none.
+
+    Two shapes, because the two were measured for different reasons. The final
+    scorers write one file per subset and take the baseline at exactly the
+    positions that paid loss, in the same pass -- that is the campaign's record
+    for the 1,026 and 1,024 builds. The composition tally writes one file for
+    all subsets and counts the whole split; it is what the 512 build has. The
+    two agree to about 0.002 where both exist, but they are different
+    measurements and the figure names which one it drew.
+    """
+    out, method = defaultdict(dict), {}
     for item in spec:
         series, _, directory = item.partition("=")
         for path in sorted(__import__("glob").glob(os.path.join(directory, "*.json"))):
@@ -188,7 +199,18 @@ def load_baselines(spec):
                 value = value.get("mean")
             if value is not None:
                 out[series][os.path.splitext(os.path.basename(path))[0]] = float(value)
-    return out
+                method[series] = "採点と同一パス"
+    for item in tally_spec:
+        series, _, rest = item.partition("=")
+        path, _, model = rest.partition(":")
+        if not os.path.exists(path):
+            continue
+        for row in json.load(open(path)):
+            got = row.get(model or "bert", {}).get("baseline")
+            if got is not None:
+                out[series][row["subset"]] = float(got)
+                method[series] = "組成の集計"
+    return out, method
 
 
 def main():
@@ -197,6 +219,8 @@ def main():
     ap.add_argument("--meta", default="")
     ap.add_argument("--baselines", nargs="*", default=[],
                     help="series=directory of <subset>.json holding degenerate_baseline")
+    ap.add_argument("--baselines-tally", nargs="*", default=[],
+                    help="series=path/to/degenerate-baselines.json:model")
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--prefix", default="genome-loss")
     args = ap.parse_args()
@@ -207,7 +231,7 @@ def main():
 
     curves, metric = read_tsv(args.tsv)
     meta = json.load(open(args.meta)) if args.meta and os.path.exists(args.meta) else {}
-    baselines = load_baselines(args.baselines)
+    baselines, method = load_baselines(args.baselines, args.baselines_tally)
     os.makedirs(args.out_dir, exist_ok=True)
 
     for series in sorted(curves):
@@ -215,12 +239,13 @@ def main():
         if not base:
             print(f"  {series}: このビルドで測った基準線が無いので引かない")
         draw(series, curves[series], metric[series], meta, base,
-             os.path.join(args.out_dir, f"{args.prefix}-{series}.png"))
+             os.path.join(args.out_dir, f"{args.prefix}-{series}.png"),
+             baseline_method=method.get(series, ""))
         draw(series, curves[series], metric[series], meta, base,
              os.path.join(args.out_dir, f"{args.prefix}-{series}-tail20.png"),
-             tail_fraction=0.20)
+             tail_fraction=0.20, baseline_method=method.get(series, ""))
 
-    draw_epoch_pair(curves, "eval_loss_mask", meta, baselines.get("bert-sat9", {}),
+    draw_epoch_pair(curves, "eval_loss_mask", meta, baselines.get("bert-base", {}),
                     os.path.join(args.out_dir, f"{args.prefix}-epoch-3-vs-9.png"))
 
 

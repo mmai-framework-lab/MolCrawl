@@ -63,6 +63,11 @@ def main():
     ap.add_argument("--rows", type=int, default=None,
                     help="rows per split; default every row")
     ap.add_argument("--chunk", type=int, default=2000)
+    ap.add_argument("--models", default="gpt2,bert",
+                    help="which builds to tally. Narrow it when one side has "
+                         "already been measured: the tally reads every token of "
+                         "every row, so a model that is not needed doubles the "
+                         "wall time for nothing")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -76,8 +81,11 @@ def main():
     for s in subsets:
         print(f"\n########## {s} ##########", flush=True)
         row = {"subset": s, "split": args.split}
+        wanted = [m for m in args.models.split(",") if m.strip()]
         for model, root, sub in (("gpt2", args.src_root, "training_ready_hf_dataset_gpt2"),
                                  ("bert", args.bert_root, "training_ready_hf_dataset_bert")):
+            if model not in wanted:
+                continue
             path = os.path.join(root, s, sub)
             ds = load_from_disk(path)[args.split]
             counts, used = tally(ds, args.rows, args.chunk)
@@ -102,8 +110,9 @@ def main():
                   f"  baseline {h:.4f}  GC {100*gc:.2f}%"
                   f"  N excluded {amb:,}  UNK {unk:,}", flush=True)
 
-        d = row["bert"]["baseline"] - row["gpt2"]["baseline"]
-        print(f"  bert - gpt2 = {d:+.4f}   (ln 4 = {math.log(4):.4f})", flush=True)
+        if "bert" in row and "gpt2" in row:
+            d = row["bert"]["baseline"] - row["gpt2"]["baseline"]
+            print(f"  bert - gpt2 = {d:+.4f}   (ln 4 = {math.log(4):.4f})", flush=True)
         results.append(row)
 
     if args.out:
