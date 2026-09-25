@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import os
 import runpy
-import sys
 
 # What a point of a grid is allowed to differ in. Everything else the run reads has to
 # match across the points, or the grid is not measuring the learning rate.
