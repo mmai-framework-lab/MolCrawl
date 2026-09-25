@@ -41,7 +41,9 @@
 # 3,140 is known good and 15,345 known bad, with nothing measured in between.
 #
 # Required: TAG. Optional: LR (default 6e-4), DECAY_FRAC (default 1.0),
-# GENOME_SUBSET (default mammal_centered).
+# GENOME_SUBSET (default mammal_centered), RUNS_ROOT (defaults beside the
+# interpreter, i.e. the main checkout, never the worktree this was submitted
+# from).
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -57,7 +59,21 @@ GA="${GA:-8}"
 
 LOCAL_ROOT=/tmp/genome-stab
 DST="${LOCAL_ROOT}/genome_sequence/${SUBSET}"
-OUT="$PWD/learning_source_genome_runs/stab-${TAG}"
+
+# The interpreter lives in the main checkout: ./miniconda does not exist in a
+# worktree, and a relative path here dies after the staging copy has already
+# run -- 201 s of NVMe writes for nothing, twice, on 2026-09-25.
+if [ -x "./miniconda/bin/torchrun" ]; then PYROOT="$PWD"
+else PYROOT="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"; fi
+PY_BIN="${PYROOT}/miniconda/bin/python"
+TORCHRUN="${PYROOT}/miniconda/bin/torchrun"
+[ -x "${TORCHRUN}" ] || { echo "no torchrun under ${PYROOT}/miniconda -- set PYROOT" >&2; exit 1; }
+
+# learning_source* is gitignored, so every checkout and every worktree has its
+# own copy. Defaulting the output root to $PWD puts a multi-day run's
+# checkpoints inside a tree built to be deleted, and nothing fails to say so.
+RUNS_ROOT="${RUNS_ROOT:-${PYROOT}/learning_source_genome_runs}"
+OUT="${RUNS_ROOT}/stab-${TAG}"
 
 export GENOME_SUBSET="${SUBSET}"
 export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1
@@ -67,6 +83,8 @@ export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 export OMP_NUM_THREADS=8
 
 echo "=== node=$(hostname) tag=${TAG} subset=${SUBSET} LR=${LR} decay_frac=${DECAY_FRAC} ==="
+echo "=== torchrun: ${TORCHRUN} ==="
+echo "=== outputs:  ${OUT} ==="
 
 echo "########## staging to local NVMe ##########"
 mkdir -p "${DST}" "${LOCAL_ROOT}/genome_sequence"
@@ -84,7 +102,7 @@ echo "=== staged in $(( $(date +%s) - t0 )) s ==="
 # max_iters comes from the realized row count, so read it from the config rather
 # than hardcoding a per-subset number, then derive lr_decay_iters from it.
 read -r MAX_ITERS DECAY_ITERS RESIDENCY <<EOF
-$(LEARNING_SOURCE_DIR="${LOCAL_ROOT}" GENOME_SUBSET="${SUBSET}" ./miniconda/bin/python - "${LR}" "${DECAY_FRAC}" <<'PY' 2>/dev/null
+$(LEARNING_SOURCE_DIR="${LOCAL_ROOT}" GENOME_SUBSET="${SUBSET}" "${PY_BIN}" - "${LR}" "${DECAY_FRAC}" <<'PY' 2>/dev/null
 import math, sys, runpy
 lr, frac = float(sys.argv[1]), float(sys.argv[2])
 ns = runpy.run_path("molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_small_subset.py")
@@ -108,7 +126,7 @@ echo "=== max_iters=${MAX_ITERS} lr_decay_iters=${DECAY_ITERS} residency(LR>=5e-
 LEARNING_SOURCE_DIR="${LOCAL_ROOT}" \
 SUBSET_GPT2_LR="${LR}" \
 GPT2_LR_TAG="stab-${TAG}" \
-./miniconda/bin/torchrun --standalone --nproc_per_node=4 \
+"${TORCHRUN}" --standalone --nproc_per_node=4 \
     molcrawl/models/gpt2/train.py \
     molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_small_subset.py \
     --out_dir="${OUT}" --tensorboard_dir="${OUT}" \
