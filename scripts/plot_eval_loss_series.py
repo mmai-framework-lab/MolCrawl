@@ -135,6 +135,24 @@ def floors(ax, items, side="right"):
 
 # --------------------------------------------------------------------------- figures
 
+def best_in_view(steps, values, xlim):
+    """Index of the lowest value among the points actually drawn.
+
+    A zoom is a window on the run, and the run's own minimum is usually outside
+    it: the compounds 2e-3 arm bottoms at step 1,300 and the last-20% window
+    starts at 12,000. Annotating the global minimum there puts the label off the
+    axes, where it is silently dropped -- the zoom came out with no marker at all.
+    Inside a window, "best" means best in the window.
+    """
+    idx = range(len(values))
+    if xlim:
+        lo, hi = xlim
+        inside = [i for i in idx if lo <= steps[i] <= hi]
+        if inside:
+            idx = inside
+    return min(idx, key=lambda i: values[i])
+
+
 def fig_panels_nanogpt(cfg, out_dir):
     """Small multiples: one panel per size, learning rates coloured inside it."""
     groups = cfg["panels"]
@@ -184,17 +202,17 @@ def fig_panels_nanogpt(cfg, out_dir):
             # Where a run bottoms out is the reading of interest once a schedule
             # runs past its minimum: the 30-epoch compounds sweep turns back up,
             # and the turn is at a different iteration for every learning rate.
-            best_i = va.index(min(va))
+            best_i = best_in_view(st, va, g.get("xlim"))
             if cfg.get("mark_best"):
-                ax.plot([st[best_i]], [min(va)], marker="o", markersize=4.5, color=c,
+                ax.plot([st[best_i]], [va[best_i]], marker="o", markersize=4.5, color=c,
                         markeredgecolor=SURFACE, markeredgewidth=1.1, zorder=5)
             if cfg.get("annotate_step"):
                 dx, dy = g.get("min_offsets", {}).get(run["lr"], [0, -12])
-                ax.annotate(f"{min(va):.4f} @ {st[best_i]:,}", (st[best_i], min(va)),
+                ax.annotate(f"{va[best_i]:.4f} @ {st[best_i]:,}", (st[best_i], va[best_i]),
                             textcoords="offset points", xytext=(dx, dy), ha="center",
                             fontsize=7.4, color=c, fontweight="bold", zorder=6)
             print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={st[-1]:6d} "
-                  f"best_val={min(va):.4f}@{st[best_i]}")
+                  f"best_val={va[best_i]:.4f}@{st[best_i]}")
         ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK,
                      loc="left", pad=6)
         if cfg.get("xticks"):
@@ -273,19 +291,19 @@ def fig_lines_hf(cfg, out_dir):
             print(f"  ! no series: {run['dir']}")
             continue
         ax.plot(st, va, color=SERIES[i], linewidth=1.8, zorder=3, label=run["label"])
-        best_i = va.index(min(va))
-        print(f"    {run['label'][:30]:32s} last={st[-1]:7d} best={min(va):.4f}@{st[best_i]}")
+        best_i = best_in_view(st, va, cfg.get("xlim"))
+        print(f"    {run['label'][:30]:32s} last={st[-1]:7d} best={va[best_i]:.4f}@{st[best_i]}")
         dx, dy = cfg.get("min_offsets", [[0, -13]] * len(cfg["runs"]))[i]
         # The step belongs beside the value: a minimum in the middle of a run is a
         # different statement from one at the last evaluation, and the two arms of
         # this grid differ in which they are.
-        text = (f"{min(va):.4f} @ {st[best_i]:,}" if cfg.get("annotate_step")
-                else f"{min(va):.4f}")
+        text = (f"{va[best_i]:.4f} @ {st[best_i]:,}" if cfg.get("annotate_step")
+                else f"{va[best_i]:.4f}")
         if cfg.get("mark_best"):
-            ax.plot([st[best_i]], [min(va)], marker="o", markersize=5,
+            ax.plot([st[best_i]], [va[best_i]], marker="o", markersize=5,
                     color=SERIES[i], markeredgecolor=SURFACE, markeredgewidth=1.2,
                     zorder=5)
-        ax.annotate(text, (st[best_i], min(va)),
+        ax.annotate(text, (st[best_i], va[best_i]),
                     textcoords="offset points", xytext=(dx, dy), ha="center",
                     fontsize=8, color=SERIES[i], fontweight="bold")
         for step, value in zip(st, va):
