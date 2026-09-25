@@ -168,11 +168,12 @@ def fig_tail(runs, out_dir, frac=0.20):
 
 
 def write_tsv(runs, out_dir):
+    """The table, for whoever recomputes from it. Pure ASCII, comment lines included."""
     path = os.path.join(out_dir, "molnl-gpt2-ladder-val-loss.tsv")
     with open(path, "w") as fh:
         fh.write("# molecule_nat_lang GPT-2 ladder, val loss at every evaluation\n")
-        fh.write(f"# train {TRAIN_BLOCKS:,} sequences of {BLOCK:,} tokens · "
-                 f"global batch {GLOBAL_BATCH:,} sequences · metric val loss (whole sequence)\n")
+        fh.write(f"# train {TRAIN_BLOCKS:,} sequences of {BLOCK:,} tokens | "
+                 f"global batch {GLOBAL_BATCH:,} sequences | metric val loss (whole sequence)\n")
         fh.write("# pass: which run over the corpus; see the figures for each one's schedule\n")
         fh.write("pass\tsize\tlearning_rate\tmax_iters\tstep\tval_loss\ttrain_loss\n")
         for stage in STAGES:
