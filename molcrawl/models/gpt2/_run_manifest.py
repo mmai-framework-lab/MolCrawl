@@ -70,6 +70,10 @@ TRACKED = (
     "grad_clip",
     "eval_interval",
     "eval_iters",
+    # Whether the validation rows were drawn afresh at every eval or held
+    # fixed. It changes what the eval number means, so two runs cannot be
+    # compared without it. The flag itself lives in train.py.
+    "deterministic_val_eval",
 )
 
 # Read by the nanoGPT configs. LEARNING_SOURCE_DIR and GENOME_SUBSET are in
