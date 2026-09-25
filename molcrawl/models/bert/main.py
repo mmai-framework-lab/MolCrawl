@@ -578,6 +578,20 @@ if __name__ == "__main__":
         )
         print(f"Document masking on: attention confined per document (separator id {_sep_id})")
 
+    # Evaluation masks at collate time from the global RNG, so every evaluation sees a
+    # different draw of positions and two evaluations of one model differ by the draw as
+    # well as by the model. On the molecule_nat_lang grid that draw was worth about as
+    # much as the gap between two learning rates (2026-09-24 report, 2026-09-25 order
+    # §2.4). Opt in per config: a run already in flight must not change what it measures.
+    eval_data_collator = None
+    if bool(globals().get("fixed_eval_mask", False)):
+        from molcrawl.models._collators import FixedEvalMaskCollator
+
+        _eval_mask_seed = int(globals().get("eval_mask_seed", 42))
+        eval_data_collator = FixedEvalMaskCollator(data_collator, seed=_eval_mask_seed)
+        print(f"Fixed evaluation mask on: seed {_eval_mask_seed}, evaluation only "
+              "(training masks are untouched, so no gradient changes)")
+
     # Early stopping configuration
     early_stopping = globals().get("early_stopping", True)  # Enable by default
     early_stopping_patience = globals().get("early_stopping_patience", 10)  # Default patience
@@ -953,6 +967,23 @@ if __name__ == "__main__":
     class _WeightDecayNoEmbedTrainer(MlmBreakdownMixin, Trainer):
         """Trainer that additionally excludes nn.Embedding.weight from weight decay."""
 
+        def get_eval_dataloader(self, eval_dataset=None):
+            """Build the evaluation loader with the fixed-mask collator, if there is one.
+
+            Swapping the attribute around the call is what keeps training out of it:
+            Trainer reads self.data_collator when it builds either loader, and the
+            training loader is built from the unwrapped one.
+            """
+            fixed = getattr(self, "eval_data_collator", None)
+            if fixed is None:
+                return super().get_eval_dataloader(eval_dataset)
+            training_collator = self.data_collator
+            self.data_collator = fixed
+            try:
+                return super().get_eval_dataloader(eval_dataset)
+            finally:
+                self.data_collator = training_collator
+
         def get_decay_parameter_names(self, model):
             names = super().get_decay_parameter_names(model)
             embedding_names = set()
@@ -1072,6 +1103,8 @@ if __name__ == "__main__":
         eval_dataset=test_dataset,
         callbacks=callbacks if callbacks else None,
     )
+    trainer.eval_data_collator = eval_data_collator
+
     # The breakdown needs the [MASK] id; without it the extra metrics are skipped.
     # actual_tokenizer is absent when a config brings its own collator, so fall
     # back to the config's tokenizer and then to its inner tokenizer.
@@ -1206,6 +1239,14 @@ if __name__ == "__main__":
                 "rows": len(test_dataset),
                 "subset_random": bool(globals().get("eval_subset_random", False)),
                 "subset_seed": globals().get("eval_subset_seed"),
+                # Whether the masked positions are the same at every evaluation. A run
+                # with this on is not measuring the same thing as one without it.
+                "fixed_mask": {
+                    "enabled": bool(globals().get("fixed_eval_mask", False)),
+                    "seed": (int(globals().get("eval_mask_seed", 42))
+                             if bool(globals().get("fixed_eval_mask", False)) else None),
+                    "applies_to": "evaluation only; training masks unchanged",
+                },
                 "metrics": ["eval_loss", "eval_loss_mask", "eval_loss_copy", "eval_loss_random"],
                 "judge_on": str(globals().get("judge_on", "eval_loss_mask")),
                 "degenerate_baseline": globals().get("degenerate_baseline"),

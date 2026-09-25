@@ -162,10 +162,15 @@ EOF
          "run in another directory." >&2
     exit 1
   fi
+  # A chained segment that turns out not to be needed exits 0 rather than failing.
+  # Two jobs per run are queued up front because nobody knows whether 24,000 steps fit
+  # in one time limit; when the first segment finishes the schedule, the second has
+  # nothing to do and that is the expected outcome, not an error to investigate.
+  # Anything else that stopped the run short still goes through the guard below.
   if [ "${_prev_done}" -ge "${_cfg_steps}" ]; then
-    echo "REFUSING: the run already reached step ${_prev_done} of ${_cfg_steps}, so there is" \
-         "nothing for this segment to do." >&2
-    exit 1
+    echo "nothing to do: the run reached step ${_prev_done} of ${_cfg_steps} in an earlier" \
+         "segment. Exiting without training."
+    exit 0
   fi
   echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
 fi

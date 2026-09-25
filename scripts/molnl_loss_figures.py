@@ -83,6 +83,26 @@ def label_bests(ax, items, room=0.34, gap=0.062):
                 color=colour, zorder=5)
 
 
+def fit_y(ax, series, pad=0.06):
+    """Set the y-range from the curves themselves.
+
+    Matplotlib's own limits are set by everything on the axes, so a reference line far
+    from the data stretches the range until the curves are a flat band at one edge, and
+    an annotation placed outside the data can push a curve past the frame. The range is
+    taken from the drawn values instead, and a reference line is only drawn if it lands
+    inside it (2026-09-25 order §8.2, §8.3).
+    """
+    values = [v for s_ in series for v in s_]
+    lo, hi = min(values), max(values)
+    if ax.get_yscale() == "log":
+        import math
+        span = math.log10(hi) - math.log10(lo)
+        ax.set_ylim(10 ** (math.log10(lo) - span * pad), 10 ** (math.log10(hi) + span * pad))
+    else:
+        span = hi - lo or abs(hi) or 1.0
+        ax.set_ylim(lo - span * pad, hi + span * pad)
+
+
 def floor_line(ax, value, name):
     """Draw a reference floor when it is on the axis. Returns whether it was drawn."""
     lo, hi = ax.get_ylim()
