@@ -173,10 +173,15 @@ def fig_tail(runs, out_dir, frac=0.20):
 
 
 def write_tsv(runs, out_dir):
+    """The table, for whoever recomputes from it rather than reading the figures.
+
+    Pure ASCII, including the comment lines: the file is sent on, and the separator the
+    captions use is not worth a mojibake risk in whatever reads it next.
+    """
     path = os.path.join(out_dir, "molnl-bert-grid-eval-loss-mask.tsv")
     with open(path, "w") as fh:
         fh.write("# molecule_nat_lang BERT learning-rate grid, eval_loss_mask at every evaluation\n")
-        fh.write(f"# {PRECONDITIONS}\n")
+        fh.write("# " + PRECONDITIONS.replace("·", "|") + "\n")
         fh.write(f"# unigram floor on this corpus: {BASELINE} (job 22503)\n")
         fh.write("size\tlearning_rate\tstep\teval_loss_mask\tsegment\n")
         for size in SIZES:
