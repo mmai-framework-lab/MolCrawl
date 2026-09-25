@@ -181,8 +181,20 @@ def fig_panels_nanogpt(cfg, out_dir):
             ax.plot(st, va, color=c, linewidth=1.6, alpha=.95, zorder=3,
                     label=run["lr"] if run["lr"] not in seen else None)
             seen.add(run["lr"])
+            # Where a run bottoms out is the reading of interest once a schedule
+            # runs past its minimum: the 30-epoch compounds sweep turns back up,
+            # and the turn is at a different iteration for every learning rate.
+            best_i = va.index(min(va))
+            if cfg.get("mark_best"):
+                ax.plot([st[best_i]], [min(va)], marker="o", markersize=4.5, color=c,
+                        markeredgecolor=SURFACE, markeredgewidth=1.1, zorder=5)
+            if cfg.get("annotate_step"):
+                dx, dy = g.get("min_offsets", {}).get(run["lr"], [0, -12])
+                ax.annotate(f"{min(va):.4f} @ {st[best_i]:,}", (st[best_i], min(va)),
+                            textcoords="offset points", xytext=(dx, dy), ha="center",
+                            fontsize=7.4, color=c, fontweight="bold", zorder=6)
             print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={st[-1]:6d} "
-                  f"best_val={min(va):.4f}@{st[va.index(min(va))]}")
+                  f"best_val={min(va):.4f}@{st[best_i]}")
         ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK,
                      loc="left", pad=6)
         if cfg.get("xticks"):
