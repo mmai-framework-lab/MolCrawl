@@ -47,9 +47,13 @@ dtype = "bfloat16"
 # The grid drew fresh validation rows at every eval, which put a scatter of
 # 0.010-0.012 on the curve -- larger than the differences being read off it.
 # This point reads the same rows every time, so its curve can be read at the
-# width of the movements that matter. Stated here rather than passed on the
-# command line, so the manifest and this file agree on how the run measured.
-# Numbers from this run are not directly comparable with the grid's; the two
-# are measured on different validation sets.
-eval_val_fixed = True
-eval_val_seed = 1234
+# width of the movements that matter. The flag is train.py's own, added for
+# protein-order-2026-09-25 §5.2; rna uses it rather than a second flag of its
+# own, so that one setting means one thing across the five modalities.
+#
+# Stated here rather than passed on the command line, so the manifest and this
+# file agree on how the run measured. Numbers from this run are not directly
+# comparable with the grid's: the two are measured on different validation
+# sets, and the grid has to be re-measured this way before they are put side
+# by side.
+deterministic_val_eval = True

@@ -16,9 +16,10 @@
 # max_iters, so a surplus link costs one startup and nothing more. Link counts
 # are the grid's submitted counts plus one.
 #
-# These runs measure on a fixed validation set (eval_val_fixed in the config),
-# which the grid did not. Their eval numbers are not on the same footing as the
-# grid's; compare within this set, or re-measure the grid the same way first.
+# These runs measure on a fixed validation set (deterministic_val_eval in the
+# config); the grid resampled its validation rows at every eval. The two sets of
+# eval numbers are therefore not on the same footing. Compare within this set, or
+# re-measure the grid the same way first.
 #
 # Usage:
 #   MODEL_OUTPUT_ROOT=... LEARNING_SOURCE_DIR=... SLURM_ACCOUNT=... \
