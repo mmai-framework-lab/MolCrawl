@@ -10,9 +10,9 @@ things make them a different picture, and the figures keep them apart:
   shuffled corpus, and once on the shuffled corpus with a 3,000-iteration schedule
   instead of 373. Each pass gets its own axes; their schedules are not the same length.
 - the metric is nanoGPT's validation loss over whole sequences, not BERT's
-  eval_loss_mask over masked positions. No floor is drawn, because the unigram floor
-  measured for this corpus (3.8638, job 22503) was measured on masked positions and is
-  not the reference for next-token loss. None has been measured for this one.
+  eval_loss_mask over masked positions, so its floor is a different number. BERT's
+  3.8638 is the unigram floor over masked positions; the next-token one is 4.6514,
+  measured by scripts/molnl_unigram_floor.py (job 138304).
 
     python scripts/molnl_gpt2_ladder_curves.py --runs-root <dir> --out-dir <dir>
 """
@@ -28,8 +28,8 @@ import sys
 from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from molnl_loss_figures import (SIZE_COLOUR, axes, best_point, label_bests,  # noqa: E402
-                                new_figure, save)
+from molnl_loss_figures import (SIZE_COLOUR, axes, best_point, fit_y,  # noqa: E402
+                                floor_line, label_bests, new_figure, save)
 
 # Facts the run directories do not carry. Each comes from the job that wrote the tree,
 # in workflows/slurm-logs/ -- the launcher passes --max_iters and --eval_interval, so the
@@ -49,6 +49,11 @@ STAGES = (
     Stage("gpt2-output-shuffled", "shuffled", "shuffled corpus", 33746, 373, 25),
     Stage("gpt2-output-shuffled-s2", "shuffled-long", "shuffled corpus, long schedule", 35218, 3000, 100),
 )
+# What a model that reads nothing scores here: predict every token by the training
+# split's token frequencies and take the cross-entropy on valid. Measured by
+# scripts/molnl_unigram_floor.py, job 138304. valid's own entropy is 4.5334, which no
+# context-free model can beat on this split.
+UNIGRAM_FLOOR = 4.6514
 GLOBAL_BATCH = 2560          # sequences; batch_size * gradient_accumulation_steps
 BLOCK = 1024                 # tokens per sequence
 TRAIN_BLOCKS = 318118        # mol_nl train split, 325,752,832 tokens
@@ -127,9 +132,12 @@ def fig_stage(runs, out_dir):
             items.append((bx, by, f"{size} lr {lr:g}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
         ax.set_yscale("log")   # the first evaluation is near 11 and the last near 0.5
         axes(ax, "val loss", xlabel="iteration")
+        fit_y(ax, [r["val"] for _, r in arms])
+        drew_floor = floor_line(ax, UNIGRAM_FLOOR, "unigram floor")
         label_bests(ax, items, room=0.40)
         note = (f"{preconditions(stage.iters, stage.every)}\n{stage.label}; "
-                f"slurm job {stage.job} and its siblings.")
+                f"slurm job {stage.job} and its siblings."
+                + ("" if drew_floor else f" The unigram floor {UNIGRAM_FLOOR} is off this axis."))
         reached = max(max(r["steps"]) for _, r in arms)
         if reached < stage.iters:
             note += (f" The last evaluation is at {reached:,} rather than {stage.iters:,}: "
@@ -151,18 +159,27 @@ def fig_tail(runs, out_dir, frac=0.20):
         return []
     cut = max(max(r["steps"]) for _, r in arms) * (1 - frac)
     fig, ax = new_figure()
-    items = []
+    items, elsewhere, drawn = [], [], []
     for size, run in arms:
         pts = [(s, v) for s, v in zip(run["steps"], run["val"]) if s >= cut]
         ax.plot([s for s, _ in pts], [v for _, v in pts], color=SIZE_COLOUR[size], linewidth=1.3)
-        bx, by = best_point([s for s, _ in pts], [v for _, v in pts])
-        items.append((bx, by, f"{size}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
+        drawn.append([v for _, v in pts])
+        # The mark means one thing in every figure: the run's own best. When that falls
+        # before this window it is not drawn here, and the caption says where it is.
+        bx, by = best_point(run["steps"], run["val"])
+        if bx >= cut:
+            items.append((bx, by, f"{size}: {by:.4f} @ {bx:,}", SIZE_COLOUR[size]))
+        else:
+            elsewhere.append(f"{size} {by:.4f} at {bx:,}")
     axes(ax, "val loss", xlabel="iteration")
+    fit_y(ax, drawn)
     label_bests(ax, items, room=0.36)
     note = (f"{preconditions(stage.iters, stage.every)}\nLast {int(frac * 100)}% of the longest "
             f"schedule ({stage.label}). Every size ends worse than its own best, and xl's run stopped at 2,900 "
             "on 10 evaluations without improvement: the schedule runs past where these runs peak. "
-            "Marked points are the best inside this window, which for medium and xl is not the run's best.")
+            "Marks are each run's own best."
+            + (" Best before this window, so not marked here: " + "; ".join(elsewhere) + "."
+               if elsewhere else ""))
     return [save(fig, ax, f"molecule_nat_lang GPT-2 ladder - last {int(frac * 100)}% of the long schedule",
                  note, os.path.join(out_dir, "gpt2-tail-last20pct.png"))]
 
