@@ -21,16 +21,20 @@ import sys
 # What a point of a grid is allowed to differ in. Everything else the run reads has to
 # match across the points, or the grid is not measuring the learning rate.
 VARIES = ("learning_rate", "min_lr", "out_dir", "tensorboard_dir")
-REPORT = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
-          "gradient_accumulation_steps", "expected_global_batch", "max_length",
-          "document_masking", "bf16", "dataloader_num_workers", "dataloader_pin_memory",
-          "save_steps", "log_interval", "fixed_eval_mask", "eval_mask_seed",
-          "early_stopping", "save_on_improve")
+# Both frameworks, because both have grids: HF names a schedule in steps, nanoGPT in
+# iterations, and a key one of them does not have resolves to None for every point --
+# which is a value they agree on, so it does not trip the comparison below.
+REPORT = ("max_steps", "max_iters", "lr_decay_iters", "warmup_steps", "warmup_iters",
+          "learning_rate", "min_lr", "seed", "batch_size", "gradient_accumulation_steps",
+          "expected_global_batch", "max_length", "block_size", "document_masking", "bf16",
+          "dtype", "dataloader_num_workers", "dataloader_pin_memory", "save_steps",
+          "log_interval", "eval_interval", "eval_sequences", "fixed_eval_mask",
+          "eval_mask_seed", "early_stopping", "save_on_improve")
 
 
-def resolve(path):
+def resolve(path, extra=()):
     values = runpy.run_path(path)
-    return {k: values.get(k) for k in REPORT}
+    return {k: values.get(k) for k in tuple(REPORT) + tuple(extra)}
 
 
 def main() -> int:
@@ -44,16 +48,20 @@ def main() -> int:
     resolved = {}
     for path in a.configs:
         try:
-            resolved[path] = resolve(path)
+            resolved[path] = resolve(path, expected)
         except Exception as exc:                      # noqa: BLE001 - report, don't raise
             print(f"FAILED to resolve {path}: {type(exc).__name__}: {exc}")
             return 1
 
+    # A key every point resolves to None is one this framework does not have; printing a
+    # column of None for it buries the ones that matter.
+    columns = [k for k in resolved[next(iter(resolved))]
+               if any(v[k] is not None for v in resolved.values())]
     width = max(len(os.path.basename(p)) for p in resolved)
-    print(f"{'config':<{width}}  " + "  ".join(k for k in REPORT))
+    print(f"{'config':<{width}}  " + "  ".join(columns))
     for path, values in resolved.items():
         print(f"{os.path.basename(path):<{width}}  "
-              + "  ".join(str(values[k]) for k in REPORT))
+              + "  ".join(str(values[k]) for k in columns))
 
     problems = []
     for path, values in resolved.items():
@@ -61,7 +69,7 @@ def main() -> int:
             if str(values.get(key)) != want:
                 problems.append(f"{os.path.basename(path)}: {key} is {values.get(key)!r}, "
                                 f"expected {want}")
-    for key in REPORT:
+    for key in resolved[next(iter(resolved))]:
         if key in VARIES:
             continue
         seen = {str(v[key]) for v in resolved.values()}
