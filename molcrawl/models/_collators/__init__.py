@@ -6,6 +6,7 @@ from molcrawl.models._collators.document_masking import (
     document_ids,
     document_position_ids,
 )
+from molcrawl.models._collators.fixed_eval_mask import FixedEvalMaskCollator
 from molcrawl.models._collators.ambiguity_aware_collator import (
     GENOME_AMBIGUOUS_TOKENS,
     PROTEIN_AMBIGUOUS_TOKENS,
@@ -19,6 +20,7 @@ from molcrawl.models._collators.ambiguity_aware_collator import (
 
 __all__ = [
     "DocumentMaskingCollator",
+    "FixedEvalMaskCollator",
     "document_attention_mask",
     "document_ids",
     "document_position_ids",
