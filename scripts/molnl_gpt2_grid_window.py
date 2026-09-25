@@ -23,6 +23,7 @@ import os
 import re
 import statistics as st
 import sys
+from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from molnl_loss_figures import (SIZE_COLOUR, axes, best_point, fit_y,  # noqa: E402
@@ -33,6 +34,19 @@ GLOBAL_BATCH, BLOCK, TRAIN_BLOCKS = 2560, 1024, 318118
 SIZE_ORDER = ("small", "medium", "large", "xl")
 # gpt2_<size>_1500_lr<tag>: 1p2e3 is 1.2e-3, 6e4 is 6e-4.
 NAME = re.compile(r"gpt2_(?P<size>[a-z]+)_(?P<iters>\d+)_lr(?P<tag>[0-9p]+e\d)$")
+
+
+class Arm(NamedTuple):
+    """One run of the grid, reduced to what the comparison needs."""
+
+    size: str
+    lr: float
+    mean: float          # the window mean, which is what the arms are judged on
+    best: float          # the run's best point, kept to show how far the two disagree
+    best_step: int
+    points: int          # evaluations that fell inside the window
+    window_start: int
+    sd: float            # how much the arm moves inside the window
 
 
 def rate_of(tag):
@@ -105,30 +119,33 @@ def main() -> int:
             run = done[(size, lr)]
             mean, start, n = window(run, a.last, a.iters, a.every)
             bx, by = best_point(run["steps"], run["val"])
-            rows.append((size, lr, mean, by, bx, n, start, window_sd(run, a.last, a.iters, a.every)))
-    width = max(len(s) for s, *_ in rows) if rows else 6
-    print(f"window: the last {a.last} evaluations, steps {rows[0][6]:,}-{a.iters:,}" if rows else "")
+            rows.append(Arm(size, lr, mean, by, bx, n, start,
+                            window_sd(run, a.last, a.iters, a.every)))
+    width = max(len(r.size) for r in rows) if rows else 6
+    print(f"window: the last {a.last} evaluations, steps {rows[0].window_start:,}-{a.iters:,}"
+          if rows else "")
     print(f"{'size':<{width+2}}{'lr':>10}{'window mean':>14}{'sd':>9}{'best':>10}{'at':>8}"
           f"{'best-mean':>11}")
-    for size, lr, mean, by, bx, n, start, sd in rows:
-        print(f"{size:<{width+2}}{lr:>10g}{mean:>14.4f}{sd:>9.4f}{by:>10.4f}{bx:>8,}"
-              f"{by - mean:>11.4f}")
+    for r in rows:
+        print(f"{r.size:<{width+2}}{r.lr:>10g}{r.mean:>14.4f}{r.sd:>9.4f}{r.best:>10.4f}"
+              f"{r.best_step:>8,}{r.best - r.mean:>11.4f}")
 
     # Is a gap between two arms bigger than the arms move inside the window? Printed for
     # the pairs the comparison rests on: each size's best rate, in size order.
     bests = []
     for size in SIZE_ORDER:
-        same = [r for r in rows if r[0] == size]
+        same = [r for r in rows if r.size == size]
         if same:
-            bests.append(min(same, key=lambda r: r[2]))
+            bests.append(min(same, key=lambda r: r.mean))
     if len(bests) > 1:
         print("\neach size's best rate, and whether the step to the next size clears the noise:")
         for i, r in enumerate(bests):
-            line = f"  {r[0]:<7} lr {r[1]:<8g} window {r[2]:.4f}  sd {r[7]:.4f}"
+            line = f"  {r.size:<7} lr {r.lr:<8g} window {r.mean:.4f}  sd {r.sd:.4f}"
             if i:
-                gap = bests[i - 1][2] - r[2]
-                scale = max(r[7], bests[i - 1][7])
-                line += (f"  gap from {bests[i - 1][0]} {gap:+.4f} = {abs(gap) / scale:.1f}x "
+                previous = bests[i - 1]
+                gap = previous.mean - r.mean
+                scale = max(r.sd, previous.sd)
+                line += (f"  gap from {previous.size} {gap:+.4f} = {abs(gap) / scale:.1f}x "
                          f"the larger sd")
             print(line)
 
@@ -187,7 +204,7 @@ def main() -> int:
     if rows:
         fig, ax = new_figure()
         for size in SIZE_ORDER:
-            pts = sorted((lr, mean) for s, lr, mean, *_ in rows if s == size)
+            pts = sorted((r.lr, r.mean) for r in rows if r.size == size)
             if not pts:
                 continue
             ax.plot([p[0] for p in pts], [p[1] for p in pts], marker="o", ms=4,
