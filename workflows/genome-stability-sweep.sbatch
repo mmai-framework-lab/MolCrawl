@@ -43,7 +43,18 @@
 # Required: TAG. Optional: LR (default 6e-4), DECAY_FRAC (default 1.0),
 # GENOME_SUBSET (default mammal_centered), RUNS_ROOT (defaults beside the
 # interpreter, i.e. the main checkout, never the worktree this was submitted
-# from).
+# from), EVAL_INTERVAL.
+#
+# EVAL_INTERVAL, measured 2026-09-25. An eval here is eval_iters 200 x 2 splits
+# x batch_size 320 = 128,000 sequence forwards on rank 0, and it costs about 98
+# seconds against a training step of about 0.71 -- so the config's current
+# interval of 100 adds 0.98 s to every step and more than doubles the run:
+# 0.81 s/step measured at interval 1,000 against 1.69 measured at 100, which is
+# 12.3 h against 25.6 h for one 54,634-iter subset. The config's note that ten
+# times as many evals costs "under 2 %" does not hold for genome GPT-2. Set this
+# to 1,000 to compare against the August sweeps, which all ran at that interval
+# -- a minimum over ten times as many noisy draws is biased low, so the two
+# cannot be placed side by side otherwise.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -132,6 +143,7 @@ GPT2_LR_TAG="stab-${TAG}" \
     --out_dir="${OUT}" --tensorboard_dir="${OUT}" \
     --lr_decay_iters="${DECAY_ITERS}" \
     --batch_size="${MB}" --gradient_accumulation_steps="${GA}" \
+    ${EVAL_INTERVAL:+--eval_interval="${EVAL_INTERVAL}"} \
     --compile=False --log_interval=100
 rc=$?
 
