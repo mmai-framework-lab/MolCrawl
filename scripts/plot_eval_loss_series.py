@@ -28,6 +28,8 @@ import japanize_matplotlib  # noqa: F401  (no CJK font is installed system-wide)
 import matplotlib.pyplot as plt
 
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"]
+# One wording for the axis every figure in this project now shares.
+TOKENS_LABEL = "処理トークン数"
 INK, INK_2, INK_3 = "#0f161a", "#53626c", "#8695a0"
 SURFACE, RULE = "#fcfcfb", "#d7e0e5"
 
