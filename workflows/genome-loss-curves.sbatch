@@ -98,6 +98,13 @@ echo ""; echo "########## 2. TSV ##########"
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
 
 echo ""; echo "########## 3. 図 ##########"
+# Clear the figures before redrawing them. Every one is rewritten below, so
+# nothing is lost -- but a series that stops being drawn leaves its last
+# rendering behind, and a stale figure in a directory of fresh ones is read as
+# fresh. Two mislabelled gpt2-lr-sweep figures survived that way on 2026-09-28,
+# in the very run that stopped drawing them for being mislabelled.
+_stale=$(ls "${OUT_DIR}"/genome-loss-*.png 2>/dev/null | wc -l)
+[ "${_stale}" -gt 0 ] && { rm -f "${OUT_DIR}"/genome-loss-*.png; echo "  既存の図 ${_stale} 枚を消してから描く"; }
 # series=directory. A series absent from this list gets no baseline line, which
 # is the honest state for the builds that have not been measured.
 "${PY}" scripts/plot_genome_loss_curves.py \
