@@ -11,7 +11,9 @@ style from that module so the two look like one set of figures.
 It also draws the x axis in FLOPs, which the shared script cannot: it scales every
 series by one tokens-per-step, and C = 6ND puts a different factor on each size. Set
 "x_flops" to {series: non-embedding parameter count} and each curve is placed at
-6 x N x (step x tokens/step). Tokens and FLOPs are the same axis up to a constant within
+6 x N x (step x tokens/step). "x_flops_per_unit" divides that by a unit's worth of FLOPs:
+8.64e19 gives petaflop/s-days, the unit the scaling-law papers report compute in
+(1 PF-day = 1e15 FLOP/s x 86,400 s). Tokens and FLOPs are the same axis up to a constant within
 one size and are not across sizes, so a figure comparing sizes at equal cost needs this
 one (run-completion-figures, "Which x axis"). 6ND leaves out the attention term, which is
 13-18% at sequence length 1,024 -- it cancels in a ratio between sizes, and the caption
@@ -72,6 +74,7 @@ def draw(cfg, out_dir, house):
     scale = cfg.get("x_tokens_per_step") or 1
     # 6ND: the factor differs per series, so it cannot be one number for the figure.
     flops = cfg.get("x_flops") or {}
+    per_unit = float(cfg.get("x_flops_per_unit") or 1)
     reader = house.read_nanogpt if cfg.get("kind") == "panels_nanogpt" else None
     for i, panel in enumerate(panels):
         ax = axes[i // cols][i % cols]
@@ -98,13 +101,13 @@ def draw(cfg, out_dir, house):
             if name not in series:
                 continue
             pts = sorted(series[name].items())
-            factor = 6 * flops[name] * scale if name in flops else scale
+            factor = 6 * flops[name] * scale / per_unit if name in flops else scale
             xs = [s * factor for s, _ in pts]
             ys = [v for _, v in pts]
             ax.plot(xs, ys, color=SERIES[order.index(name)], linewidth=1.6, zorder=3,
                     label=cfg.get("lr_labels", {}).get(name, name))
             print(f"    {panel['title'][:22]:24s} {name:<7} last={ys[-1]:.4f} "
-                  f"best={min(ys):.4f}@{xs[ys.index(min(ys))]:,.0f}")
+                  f"best={min(ys):.4f}@{xs[ys.index(min(ys))]:.4g}")
         ax.set_yscale(cfg.get("yscale", "log"))
         if panel.get("ylim"):
             ax.set_ylim(*panel["ylim"])
@@ -114,9 +117,13 @@ def draw(cfg, out_dir, house):
               cfg["ylabel"] if i % cols == 0 else "")
         tokens_axis(ax, cfg)
         if flops:
-            # tokens_axis labels the ticks in M/G/T of tokens; on a FLOPs axis that
-            # prints "1e+06T", which reads as a token count in the wrong unit.
-            ax.xaxis.set_major_formatter(matplotlib.ticker.LogFormatterSciNotation())
+            # tokens_axis labels the ticks in M/G/T of tokens; on a compute axis that
+            # prints "1e+06T", which reads as a token count in the wrong unit. In a unit
+            # whose values are around 1, plain numbers beat powers of ten.
+            if per_unit > 1:
+                ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:g}"))
+            else:
+                ax.xaxis.set_major_formatter(matplotlib.ticker.LogFormatterSciNotation())
             ax.xaxis.set_minor_formatter(plt.NullFormatter())
         if panel.get("floors") or cfg.get("floors"):
             floors(ax, panel.get("floors") or cfg["floors"], cfg.get("floor_side", "right"))
