@@ -89,6 +89,27 @@ def expand(spec):
     return out
 
 
+def tokens_axis(ax, cfg):
+    """Put the x axis in processed tokens, on the range every panel shares.
+
+    A step is not the same amount of work at two model sizes -- large does about
+    three times the compute of small in one step -- so panels whose x axis is the
+    step number compare different points. Tokens (step x tokens/step) are the same
+    quantity everywhere, and one range across the panels makes the comparison the
+    reader is invited to make an honest one.
+    """
+    if not cfg.get("x_tokens_per_step"):
+        return
+    ax.set_xscale(cfg.get("xscale", "log"))
+    if cfg.get("xlim"):
+        ax.set_xlim(*cfg["xlim"])
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(
+        lambda v, _: "" if v <= 0 else
+        f"{v / 1e12:g}T" if v >= 1e12 else
+        f"{v / 1e9:g}G" if v >= 1e9 else
+        f"{v / 1e6:g}M"))
+
+
 def style(ax, xlabel, ylabel):
     ax.set_facecolor(SURFACE)
     for s in ("top", "right"):
@@ -176,6 +197,7 @@ def fig_panels_nanogpt(cfg, out_dir):
             st, tr, va = run["st"], run["tr"], run["va"]
             if st[-1] < g.get("min_last_step", 0):
                 continue
+            st = [x * (cfg.get("x_tokens_per_step") or 1) for x in st]
             xmax = max(xmax, st[-1])
             c = SERIES[lrs.index(run["lr"])]
             if cfg.get("show_train"):
@@ -197,6 +219,7 @@ def fig_panels_nanogpt(cfg, out_dir):
             ax.set_xlim(*g["xlim"])
         style(ax, cfg["xlabel"] if i // cols == rows - 1 else "",
               cfg["ylabel"] if i % cols == 0 else "")
+        tokens_axis(ax, cfg)
         if cfg.get("floors"):
             floors(ax, cfg["floors"], cfg.get("floor_side", "right"))
         handles, labels = ax.get_legend_handles_labels()
@@ -229,11 +252,14 @@ def fig_panels_hf(cfg, out_dir):
                              figsize=(cfg.get("panel_w", 5.7) * cols,
                                       cfg.get("panel_h", 3.0) * rows + .8),
                              squeeze=False)
-    lrs = cfg["lr_order"]
     key = cfg.get("key", "eval_loss_mask")
     tsv_rows = []
     for i, g in enumerate(groups):
         ax = axes[i // cols][i % cols]
+        # A panel may carry its own rates: when a grid is filled in, the rates that
+        # bracket the collapse differ per size, and there are more of them in total
+        # than the palette has slots.
+        lrs = g.get("lr_order") or cfg["lr_order"]
         runs = [r for r in expand(g) if r.get("lr") in lrs]
         for run in sorted(runs, key=lambda r: lrs.index(r["lr"])):
             st, va, _ = read_hf(Path(run["path"]), key)
@@ -241,14 +267,18 @@ def fig_panels_hf(cfg, out_dir):
                 print(f"  ! no series: {run['path']}")
                 continue
             c = SERIES[lrs.index(run["lr"])]
+            scale = cfg.get("x_tokens_per_step") or 1
+            steps, st = st, [x * scale for x in st]
             # A path spells a rate as "lr1e4"; the legend has to read "1e-4".
             ax.plot(st, va, color=c, linewidth=1.6, alpha=.95, zorder=3,
                     label=cfg.get("lr_labels", {}).get(run["lr"], run["lr"]))
             print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={st[-1]:7d} "
                   f"last_val={va[-1]:.4f} best={min(va):.4f}@{st[va.index(min(va))]}")
-            for step, value in zip(st, va):
+            # The TSV keeps the step, which is what a log line and a checkpoint
+            # name carry, and adds the tokens the figure is drawn against.
+            for step, value in zip(steps, va):
                 tsv_rows.append({"panel": g["title"], "lr": run["lr"], "step": step,
-                                 key: f"{value:.6f}"})
+                                 "tokens": step * scale, key: f"{value:.6f}"})
         ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK,
                      loc="left", pad=6)
         if cfg.get("yscale"):
@@ -259,6 +289,7 @@ def fig_panels_hf(cfg, out_dir):
             ax.set_xlim(*g["xlim"])
         style(ax, cfg["xlabel"] if i // cols == rows - 1 else "",
               cfg["ylabel"] if i % cols == 0 else "")
+        tokens_axis(ax, cfg)
         # The floor belongs in every panel: a curve resting on it is the whole
         # reading of a collapsed arm, and it differs per modality.
         if g.get("floors") or cfg.get("floors"):
@@ -277,7 +308,7 @@ def fig_panels_hf(cfg, out_dir):
     finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
            bottom=cfg.get("rect_bottom", 0))
     if cfg.get("tsv"):
-        write_tsv(out_dir / cfg["tsv"], tsv_rows, ["panel", "lr", "step", key])
+        write_tsv(out_dir / cfg["tsv"], tsv_rows, ["panel", "lr", "step", "tokens", key])
 
 
 def fig_many_hf(cfg, out_dir):
@@ -333,6 +364,8 @@ def fig_lines_hf(cfg, out_dir):
         if not st:
             print(f"  ! no series: {run['dir']}")
             continue
+        scale = cfg.get("x_tokens_per_step") or 1
+        steps, st = st, [x * scale for x in st]
         ax.plot(st, va, color=SERIES[i], linewidth=1.8, zorder=3, label=run["label"])
         best_i = va.index(min(va))
         print(f"    {run['label'][:30]:32s} last={st[-1]:7d} best={min(va):.4f}@{st[best_i]}")
@@ -349,9 +382,10 @@ def fig_lines_hf(cfg, out_dir):
         ax.annotate(text, (st[best_i], min(va)),
                     textcoords="offset points", xytext=(dx, dy), ha="center",
                     fontsize=8, color=SERIES[i], fontweight="bold")
-        for step, value in zip(st, va):
+        for step, value in zip(steps, va):
             row = {k: v for k, v in run.items() if k != "dir"}
-            row.update({"step": step, cfg.get("key", "eval_loss_mask"): f"{value:.6f}"})
+            row.update({"step": step, "tokens": step * scale,
+                        cfg.get("key", "eval_loss_mask"): f"{value:.6f}"})
             tsv_rows.append(row)
     # A run that falls by two orders of magnitude spends most of a linear axis
     # flat against the bottom, where the part worth reading is.
@@ -362,6 +396,7 @@ def fig_lines_hf(cfg, out_dir):
     if cfg.get("xlim"):
         ax.set_xlim(*cfg["xlim"])
     style(ax, cfg["xlabel"], cfg["ylabel"])
+    tokens_axis(ax, cfg)
     if cfg.get("floors"):
         floors(ax, cfg["floors"], cfg.get("floor_side", "right"))
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_2, loc=cfg.get("legend_loc", "upper right"))
