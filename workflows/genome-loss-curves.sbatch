@@ -54,6 +54,7 @@ mkdir -p "${OUT_DIR}"
 TSV="${OUT_DIR}/genome-loss-curves.tsv"
 META="${OUT_DIR}/genome-loss-curves-meta.json"
 TALLY="${RESULTS_ROOT}/analyses/degenerate-baselines-512-full.json"
+TALLY_1024="${RESULTS_ROOT}/analyses/degenerate-baselines-w1024-ep9.json"
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} @ $(date -Is) ==="
 echo "=== python:  ${PY} ==="
@@ -97,6 +98,7 @@ echo ""; echo "########## 3. 図 ##########"
     --baselines-tally \
         "bert-base=${TALLY}:bert" \
         "bert-sat9=${TALLY}:bert" \
+        "bert-w1024-ep9=${TALLY_1024}:bert" \
     --out-dir "${OUT_DIR}" || { echo "  FAILED: figures"; exit 1; }
 
 echo ""; echo "---- rc=0 ----"

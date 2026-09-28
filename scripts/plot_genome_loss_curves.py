@@ -38,6 +38,44 @@ FAMILY = [("mammal_centered", "mammal_centered", "#1b3a6b"),
           ("global_random", "global_random_seed*", "#3f8f6f")]
 BASELINE_COLOUR = "#8a8a8a"
 
+# Used when every run in a series shares one subset -- a learning-rate sweep,
+# where the arm is what varies and the family colour would paint all of them
+# the same. Ordered dark to light so they also separate in greyscale.
+ARM_COLOURS = ["#1b3a6b", "#c2622d", "#3f8f6f", "#7b4b8a", "#8a6d1f",
+               "#2f7f8f", "#a03a4a", "#4a4a4a"]
+
+
+def colour_map(runs):
+    """Colour by corpus family, or by run when the family cannot separate them.
+
+    The production series vary the subset, so the three corpus families carry
+    the experiment's axis. A learning-rate sweep varies the arm on one subset,
+    where every run is the same family and one colour would cover the lot.
+    """
+    families = {family_of(s) for s in runs}
+    if len(runs) > 1 and len(families) == 1 and len(runs) <= len(ARM_COLOURS):
+        return {s: ARM_COLOURS[i] for i, s in enumerate(sorted(runs))}, True
+    by_family = dict((f[0], f[2]) for f in FAMILY)
+    return {s: by_family[family_of(s)] for s in runs}, False
+
+
+def split_collapsed(runs, baselines):
+    """Runs that ended above their own baseline, separated from the rest.
+
+    The order asks that a run which collapsed not share a figure with runs that
+    learned: its axis is set by a value the others never reach, and every curve
+    is then squeezed into a band where its slope cannot be read. With no
+    baseline measured for the series nothing is split -- guessing a threshold
+    would be worse than leaving the figure whole.
+    """
+    if not baselines:
+        return runs, {}
+    learned, collapsed = {}, {}
+    for subset, points in runs.items():
+        line = baselines.get(subset, max(baselines.values()))
+        (collapsed if points[-1][1] >= line else learned)[subset] = points
+    return (learned, collapsed) if learned and collapsed else (runs, {})
+
 
 def family_of(subset):
     if subset == "mammal_centered":
@@ -90,21 +128,22 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     last_step = max(s for pts in runs.values() for s, _ in pts)
     lo_step = last_step * (1 - tail_fraction) if tail_fraction else 0
 
+    colours, by_arm = colour_map(runs)
     seen, ys, labelled = set(), [], False
     for subset, points in sorted(runs.items()):
         kept = [(s, v) for s, v in points if s >= lo_step]
         if not kept:
             continue
-        fam = family_of(subset)
-        colour = dict((f[0], f[2]) for f in FAMILY)[fam]
+        colour = colours[subset]
+        key = subset if by_arm else family_of(subset)
         ax.plot(*zip(*kept), color=colour, linewidth=1.0, alpha=0.75,
-                label=fam if fam not in seen else None)
-        seen.add(fam)
+                label=key if key not in seen else None)
+        seen.add(key)
         ys += [v for _, v in kept]
         best_step, best_value = min(kept, key=lambda p: p[1])
         ax.plot([best_step], [best_value], marker="o", markersize=4.5,
                 color=colour, markeredgecolor="white", markeredgewidth=0.8, zorder=3)
-        if len(runs) <= 3 or tail_fraction:
+        if len(runs) <= 8 or tail_fraction:
             labelled = True
             ax.annotate(f"{best_step:,}", (best_step, best_value),
                         textcoords="offset points", xytext=(0, -12),
@@ -251,12 +290,19 @@ def main():
         base = baselines.get(series, {})
         if not base:
             print(f"  {series}: このビルドで測った基準線が無いので引かない")
-        draw(series, curves[series], metric[series], meta, base,
-             os.path.join(args.out_dir, f"{args.prefix}-{series}.png"),
-             baseline_method=method.get(series, ""))
-        draw(series, curves[series], metric[series], meta, base,
-             os.path.join(args.out_dir, f"{args.prefix}-{series}-tail20.png"),
-             tail_fraction=0.20, baseline_method=method.get(series, ""))
+        learned, collapsed = split_collapsed(curves[series], base)
+        if collapsed:
+            print(f"  {series}: 崩れた {len(collapsed)} 本を別図にした "
+                  f"({', '.join(sorted(collapsed))})")
+        for name, runs in (("", learned), ("-collapsed", collapsed)):
+            if not runs:
+                continue
+            draw(series, runs, metric[series], meta, base,
+                 os.path.join(args.out_dir, f"{args.prefix}-{series}{name}.png"),
+                 baseline_method=method.get(series, ""))
+            draw(series, runs, metric[series], meta, base,
+                 os.path.join(args.out_dir, f"{args.prefix}-{series}{name}-tail20.png"),
+                 tail_fraction=0.20, baseline_method=method.get(series, ""))
 
     draw_epoch_pair(curves, "eval_loss_mask", meta, baselines.get("bert-base", {}),
                     os.path.join(args.out_dir, f"{args.prefix}-epoch-3-vs-9.png"))

@@ -215,3 +215,78 @@ def test_the_plotter_groups_a_subset_into_its_corpus_family(subset, family):
     spec.loader.exec_module(module)
 
     assert module.family_of(subset) == family
+
+
+# ---------------------------------------------------------------------------
+# A learning-rate arm is not a subset of the production series. `...-w1026-lr3e4`
+# ends with the arm, not with the window tag it contains, so the untagged
+# fallback put a 1,026-window 3e-4 run into the 512-window twenty-one -- a
+# different window, length and learning rate, averaged in with nothing to say so.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name,series", [
+    ("bert-small-mammal_centered-w1026-lr3e4", "bert-lr-sweep"),
+    ("bert-small-mammal_centered-w1026-lr5p5e4", "bert-lr-sweep"),
+    ("bert-small-mammal_centered-w1026-lr1e3", "bert-lr-sweep"),
+    ("bert-small-mammal_centered-w1026", "bert-w1026"),
+    ("bert-small-mammal_centered", "bert-base"),
+])
+def test_an_arm_does_not_land_in_the_production_series(name, series):
+    assert lc.series_of(name) == series
+
+
+@pytest.mark.parametrize("name", ["stab-base", "stab2-G-clip05"])
+def test_a_sweep_run_without_its_rate_in_the_name_is_still_a_sweep_run(name):
+    """Two of the GPT-2 sweeps carry no learning rate in their directory name.
+    Matching on the arm would drop exactly those two into the production 21."""
+    assert lc.series_of(name) == "gpt2-lr-sweep"
+
+
+def test_the_arm_stays_in_the_label_so_three_curves_are_not_one_name():
+    assert lc.subset_of("bert-small-mammal_centered-w1026-lr3e4") == "mammal_centered-lr3e4"
+    assert lc.subset_of("bert-small-mammal_centered-w1026") == "mammal_centered"
+
+
+def _plot():
+    import importlib.util
+    src = Path(__file__).resolve().parents[2] / "scripts" / "plot_genome_loss_curves.py"
+    spec = importlib.util.spec_from_file_location("_genome_plot2", src)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_one_subset_per_arm_is_coloured_by_arm_not_by_family():
+    """Every run in a sweep is mammal_centered, so the family colour would
+    paint all three the same."""
+    runs = {"mammal_centered-lr3e4": [], "mammal_centered-lr1e3": []}
+    colours, by_arm = _plot().colour_map(runs)
+
+    assert by_arm is True
+    assert len(set(colours.values())) == 2
+
+
+def test_the_production_series_stays_coloured_by_family():
+    runs = {"mammal_centered": [], "global_random_seed1": [], "global_random_seed2": []}
+    colours, by_arm = _plot().colour_map(runs)
+
+    assert by_arm is False
+    assert colours["global_random_seed1"] == colours["global_random_seed2"]
+
+
+def test_a_run_that_ended_above_its_baseline_is_split_out():
+    """Its axis is set by a value the others never reach, and every curve is
+    then squeezed into a band where its slope cannot be read."""
+    runs = {"good": [(1, 1.30), (2, 1.05)], "bad": [(1, 1.30), (2, 1.37)]}
+    learned, collapsed = _plot().split_collapsed(runs, {"good": 1.368, "bad": 1.368})
+
+    assert set(learned) == {"good"} and set(collapsed) == {"bad"}
+
+
+def test_without_a_baseline_nothing_is_split():
+    """Guessing a threshold would be worse than leaving the figure whole."""
+    runs = {"a": [(1, 1.30), (2, 1.37)], "b": [(1, 1.30), (2, 1.05)]}
+    learned, collapsed = _plot().split_collapsed(runs, {})
+
+    assert learned == runs and collapsed == {}

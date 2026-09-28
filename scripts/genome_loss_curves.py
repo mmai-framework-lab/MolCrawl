@@ -36,9 +36,31 @@ import subprocess
 BERT_METRIC = "eval_loss_mask"
 GPT2_METRIC = "val_loss"
 
+# A learning-rate arm: -lr1e3, -lr5p5e4, -lr2p5e5-prod. "p" stands in for the
+# decimal point, which cannot go in a directory name.
+_LR_ARM = re.compile(r"-lr\d+(p\d+)?e-?\d+(-\w+)?$")
+
 
 def series_of(basename):
-    """Which series a run directory belongs to, by its name suffix."""
+    """Which series a run directory belongs to, by its name suffix.
+
+    The learning-rate arms are matched before the window tags they contain:
+    `...-w1026-lr3e4` ends with the arm, not with `-w1026`, and the untagged
+    fallback would otherwise put a 1,026-window 3e-4 run into the 512-window
+    production series -- a different window, a different length and a different
+    learning rate, silently averaged into the twenty-one.
+    """
+    # The GPT-2 sweeps write as stab-<arm>, not gpt2-small-<subset>: a different
+    # launcher, the same architecture. The prefix decides, not the arm in the
+    # name -- two of them (stab-base, stab2-G-clip05) carry no learning rate in
+    # their name at all, and matching on the arm would drop those two into the
+    # production twenty-one.
+    if basename.startswith("stab"):
+        return "gpt2-lr-sweep"
+    if basename.startswith("gpt2"):
+        return "gpt2-lr-sweep" if _LR_ARM.search(basename) else "gpt2"
+    if _LR_ARM.search(basename):
+        return "bert-lr-sweep"
     for suffix, name in (("-w1026", "bert-w1026"), ("-sat9", "bert-sat9"),
                          ("-w1024-ep9", "bert-w1024-ep9"), ("-smoke", "smoke")):
         if basename.endswith(suffix):
@@ -47,7 +69,16 @@ def series_of(basename):
 
 
 def subset_of(basename):
+    """The label a curve carries.
+
+    For the production series that is the subset, because the subset is what
+    varies. For a learning-rate arm every run is mammal_centered and the arm is
+    what varies, so the arm stays in the label -- otherwise three curves would
+    share one name.
+    """
     name = re.sub(r"^(bert|gpt2)-small-", "", basename)
+    if _LR_ARM.search(name):
+        return re.sub(r"-(w1026|w1024)", "", name)
     return re.sub(r"-(w1026|sat9|w1024-ep9|smoke)$", "", name)
 
 
@@ -277,10 +308,11 @@ def main():
 
     rows, skipped, meta = [], [], {}
     for run_dir in sorted(glob.glob(f"{args.runs_root}/bert-small-*")
-                          + glob.glob(f"{args.runs_root}/gpt2-small-*")):
+                          + glob.glob(f"{args.runs_root}/gpt2-small-*")
+                          + glob.glob(f"{args.runs_root}/stab*")):
         base = os.path.basename(run_dir)
         arch = "bert" if base.startswith("bert-") else "gpt2"
-        series = series_of(base) if arch == "bert" else "gpt2"
+        series = series_of(base)
         if series == "smoke":                      # 200 steps, excluded by the order
             continue
         points = bert_points(run_dir) if arch == "bert" else gpt2_points(run_dir)
