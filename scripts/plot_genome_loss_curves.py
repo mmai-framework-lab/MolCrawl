@@ -23,6 +23,7 @@ import argparse
 import csv
 import json
 import os
+import re
 from collections import defaultdict
 
 
@@ -65,6 +66,19 @@ ARM_COLOURS = ["#1b3a6b", "#c2622d", "#3f8f6f", "#7b4b8a", "#8a6d1f",
                "#2f7f8f", "#a03a4a", "#4a4a4a"]
 
 
+def base_subset(label):
+    """The subset a label names, with any learning-rate arm removed.
+
+    A sweep's curves are labelled `mammal_centered-lr3e4` so three of them do
+    not share one name, but everything that asks "which subset is this" -- the
+    colour family, the baseline lookup, whether heights are comparable -- has
+    to see `mammal_centered`. Without this the sweep figures came out labelled
+    global_random, drew no baseline, and carried a footnote saying heights
+    could not be compared when every run in them is the same subset.
+    """
+    return re.sub(r"-(stab2?-)?lr[\dp]+e-?\d+(-\w+)?$", "", label)
+
+
 def colour_map(runs):
     """Colour by corpus family, or by run when the family cannot separate them.
 
@@ -72,8 +86,8 @@ def colour_map(runs):
     the experiment's axis. A learning-rate sweep varies the arm on one subset,
     where every run is the same family and one colour would cover the lot.
     """
-    families = {family_of(s) for s in runs}
-    if len(runs) > 1 and len(families) == 1 and len(runs) <= len(ARM_COLOURS):
+    subsets = {base_subset(s) for s in runs}
+    if len(runs) > 1 and len(subsets) == 1 and len(runs) <= len(ARM_COLOURS):
         return {s: ARM_COLOURS[i] for i, s in enumerate(sorted(runs))}, True
     by_family = dict((f[0], f[2]) for f in FAMILY)
     return {s: by_family[family_of(s)] for s in runs}, False
@@ -92,15 +106,19 @@ def split_collapsed(runs, baselines):
         return runs, {}
     learned, collapsed = {}, {}
     for subset, points in runs.items():
-        line = baselines.get(subset, max(baselines.values()))
+        line = baselines.get(subset) or baselines.get(base_subset(subset)) \
+            or max(baselines.values())
         (collapsed if points[-1][1] >= line else learned)[subset] = points
     return (learned, collapsed) if learned and collapsed else (runs, {})
 
 
 def family_of(subset):
-    if subset == "mammal_centered":
+    subset = base_subset(subset)
+    if subset.startswith("mammal_centered"):
         return "mammal_centered"
-    return "eukaryote_matched" if subset.startswith("eukaryote_matched") else "global_random"
+    if subset.startswith("eukaryote_matched"):
+        return "eukaryote_matched"
+    return "global_random"
 
 
 def read_tsv(path):
@@ -116,7 +134,7 @@ def read_tsv(path):
     return curves, metric
 
 
-def caption(series, meta, n_runs, metric):
+def caption(series, meta, n_runs, metric, many_subsets):
     """The five things a loss figure has to state beside its curves."""
     got = meta.get(series, {})
 
@@ -132,10 +150,13 @@ def caption(series, meta, n_runs, metric):
             f"エポック {show('epochs')}  |  step {show('max_steps', '{:,}')}  |  "
             f"グローバルバッチ {show('global_batch', '{:,}')}  |  "
             f"学習率 {show('lr')}  |  評価間隔 {show('eval_every', '{:,}')}  |  {metric}")
-    if n_runs > 1:
+    if many_subsets:
         # Each run is scored on its own subset's valid split, so the curves are
         # not one task measured 21 ways. Height across subsets is not a ranking;
         # the distance to that subset's own baseline is the comparable quantity.
+        # A sweep is the opposite case -- one subset, one valid split -- and the
+        # note would be false there, so it is attached to the figures it is true
+        # of rather than to every figure with more than one curve.
         line += ("\n各 run は自分の subset の valid で採点している。"
                  "subset をまたいで高さを比べることはできない。"
                  "比べられるのは各 subset 自身の基準線からの差である。")
@@ -170,7 +191,9 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
                         textcoords="offset points", xytext=(0, -12),
                         ha="center", fontsize=6.5, color=colour)
 
-    drawn = [baselines[s] for s in runs if s in baselines]
+    drawn = [baselines[k] for k in
+             (s if s in baselines else base_subset(s) for s in runs)
+             if k in baselines]
     if drawn:
         # Per-subset values, never one line standing for twenty-one: the band is
         # their full spread, and each subset's own number is in the TSV.
@@ -196,7 +219,9 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     ax.legend(fontsize=7.5, loc="upper right", framealpha=0.9)
-    fig.text(0.01, 0.015, caption(series, meta, len(runs), metric), fontsize=6.6,
+    fig.text(0.01, 0.015,
+             caption(series, meta, len(runs), metric,
+                     len({base_subset(s) for s in runs}) > 1), fontsize=6.6,
              color="#555555")
     fig.tight_layout(rect=(0, 0.035, 1, 1))
     fig.savefig(out_path, dpi=150)
@@ -295,6 +320,12 @@ def main():
                     help="series=directory of <subset>.json holding degenerate_baseline")
     ap.add_argument("--baselines-tally", nargs="*", default=[],
                     help="series=path/to/degenerate-baselines.json:model")
+    ap.add_argument("--skip-series", nargs="*", default=[],
+                    help="series to keep in the table but not draw. Use it when a "
+                         "series' labels cannot answer which subset each run is "
+                         "on: colour, baseline and the comparability note all "
+                         "depend on that, and a figure that guesses is worse "
+                         "than a table")
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--prefix", default="genome-loss")
     args = ap.parse_args()
@@ -307,6 +338,9 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     for series in sorted(curves):
+        if series in args.skip_series:
+            print(f"  {series}: --skip-series により描かない（表には残る）")
+            continue
         base = baselines.get(series, {})
         if not base:
             print(f"  {series}: このビルドで測った基準線が無いので引かない")

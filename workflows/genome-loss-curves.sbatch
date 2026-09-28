@@ -28,6 +28,11 @@
 # No GPU work happens here. It runs on the gpu partition because that is where
 # compute nodes are, and nothing in this repo runs on the login node.
 #
+# gpt2-lr-sweep is tabled but not drawn. Nine of its eleven runs predate the
+# manifest and their directory names carry the arm, not the subset, so colour,
+# baseline and the comparability note would all have to be guessed. The numbers
+# are in the TSV; the figure would be the part that misleads.
+#
 # Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT,
 # SACCT_START, SACCT_END, SKIP_TALLY (set to 1 to reuse an earlier tally).
 #
@@ -94,11 +99,13 @@ echo ""; echo "########## 3. 図 ##########"
     --meta "${META}" \
     --baselines \
         "bert-w1026=${RESULTS_ROOT}/final-scores-bert-w1026" \
+        "bert-lr-sweep=${RESULTS_ROOT}/final-scores-bert-w1026" \
         "gpt2=${RESULTS_ROOT}/final-scores-gpt2" \
     --baselines-tally \
         "bert-base=${TALLY}:bert" \
         "bert-sat9=${TALLY}:bert" \
         "bert-w1024-ep9=${TALLY_1024}:bert" \
+    --skip-series ${SKIP_SERIES:-gpt2-lr-sweep} \
     --out-dir "${OUT_DIR}" || { echo "  FAILED: figures"; exit 1; }
 
 echo ""; echo "---- rc=0 ----"
