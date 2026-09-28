@@ -317,3 +317,34 @@ def test_the_plotter_imports_where_matplotlib_is_not_installed(monkeypatch):
     assert module.family_of("global_random_seed4") == "global_random"
     with pytest.raises(ModuleNotFoundError):
         module._pyplot()
+
+
+def test_the_manifest_states_the_job_outright_when_the_run_wrote_one(tmp_path):
+    """Newer runs record it, so they depend on neither a name nor a window."""
+    import json
+    run = tmp_path / "stab-lr5e5-prod"
+    run.mkdir()
+    (run / "run_manifest.json").write_text(json.dumps({"run": {"job_id": "138574"}}))
+
+    assert lc.job_id_for(str(run), "gpt2-lr-sweep", [], []) == "138574"
+
+
+def test_an_arm_label_still_names_its_subset():
+    """Colour, baseline and the comparability note all ask which subset a curve
+    is on. A sweep labels its curves by arm so three do not share one name, and
+    without stripping the arm the figures came out labelled global_random, drew
+    no baseline, and said heights could not be compared across subsets when
+    every run in them was one subset."""
+    plot = _plot()
+
+    assert plot.base_subset("mammal_centered-lr3e4") == "mammal_centered"
+    assert plot.base_subset("mammal_centered") == "mammal_centered"
+    assert plot.family_of("mammal_centered-lr5p5e4") == "mammal_centered"
+
+
+def test_a_sweep_on_one_subset_is_not_told_it_cannot_compare_heights():
+    """The note is true of the production series and false of a sweep."""
+    plot = _plot()
+    sweep = {"mammal_centered-lr3e4": [], "mammal_centered-lr1e3": []}
+
+    assert len({plot.base_subset(s) for s in sweep}) == 1

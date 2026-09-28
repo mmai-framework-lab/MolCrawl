@@ -155,6 +155,17 @@ def job_id_for(run_dir, series, headers, sacct):
     More than one candidate returns "" rather than the first. A wrong job
     number in the table is worse than a missing one -- it reads as a fact.
     """
+    # The manifest states it outright on runs new enough to write one. Reading
+    # it first means those runs do not depend on a name or a time window at all.
+    manifest = os.path.join(run_dir, "run_manifest.json")
+    if os.path.exists(manifest):
+        try:
+            stated = json.load(open(manifest)).get("run", {}).get("job_id")
+        except (OSError, ValueError):
+            stated = None
+        if stated:
+            return str(stated)
+
     when = _run_mtime(run_dir)
     if when is None:
         return ""
