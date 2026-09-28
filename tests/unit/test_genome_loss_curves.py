@@ -348,3 +348,17 @@ def test_a_sweep_on_one_subset_is_not_told_it_cannot_compare_heights():
     sweep = {"mammal_centered-lr3e4": [], "mammal_centered-lr1e3": []}
 
     assert len({plot.base_subset(s) for s in sweep}) == 1
+
+
+def test_the_epoch_count_looks_for_the_build_not_the_label(tmp_path):
+    """A sweep's label carries the arm so three curves do not share one name;
+    the build on disk is named for the subset alone. Passing the label looked
+    for a mammal_centered-lr3e4 directory, found nothing, and left the caption
+    reading "unknown" for a number the data answers."""
+    build = tmp_path / "mammal_centered" / "training_ready_hf_dataset_bert"
+    build.mkdir(parents=True)
+
+    assert lc._LR_ARM.sub("", lc.subset_of("bert-small-mammal_centered-w1026-lr3e4")) \
+        == "mammal_centered"
+    assert lc._LR_ARM.sub("", lc.subset_of("bert-small-global_random_seed4")) \
+        == "global_random_seed4"
