@@ -290,3 +290,30 @@ def test_without_a_baseline_nothing_is_split():
     learned, collapsed = _plot().split_collapsed(runs, {})
 
     assert learned == runs and collapsed == {}
+
+
+def test_the_plotter_imports_where_matplotlib_is_not_installed(monkeypatch):
+    """CI has no plotting stack, and seven tests here check rules that contain
+    no plotting: which colour a run gets, and whether a collapsed run is split
+    out. Importing matplotlib at module scope made all seven fail on the import
+    line rather than on anything they were checking."""
+    import builtins
+    import sys
+
+    real = builtins.__import__
+
+    def blocked(name, *args, **kwargs):
+        if name.split(".")[0] in ("matplotlib", "japanize_matplotlib"):
+            raise ModuleNotFoundError(f"No module named '{name}'")
+        return real(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked)
+    for module in [m for m in sys.modules
+                   if m.split(".")[0] in ("matplotlib", "japanize_matplotlib")]:
+        monkeypatch.delitem(sys.modules, module)
+
+    module = _plot()
+
+    assert module.family_of("global_random_seed4") == "global_random"
+    with pytest.raises(ModuleNotFoundError):
+        module._pyplot()
