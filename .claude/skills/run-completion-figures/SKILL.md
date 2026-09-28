@@ -50,6 +50,34 @@ said to be still going, with the fraction of the schedule it has covered.
 A figure that fails one of these is redrawn, or the deviation is stated out loud
 before anyone else sees it.
 
+## Which x axis, and what 6ND does not include
+
+Three axes answer three different questions. Pick by the claim, not by habit.
+
+| Axis | What it compares | Use it for |
+|---|---|---|
+| processed tokens | data efficiency -- what was learned from the same amount of data | the default. Learning rates within one size, data-value arguments |
+| compute, C = 6ND | compute efficiency -- how far the loss falls for the same work | claims that cross model sizes or architectures, scaling laws |
+| GPU-hours | money and wall clock, including how well the hardware was used | budget and scheduling appendices |
+
+Tokens and FLOPs are the same axis up to a constant **within one model size**, and
+are not the same across sizes: at equal tokens, medium costs 3.54x and large 6.72x
+what small costs here (85.6M / 303M / 575M non-embedding parameters).
+
+Three things to get right before quoting a FLOPs number:
+
+1. **N is the non-embedding parameter count.** Embeddings barely enter the matrix
+   multiplies. molnl's vocabulary of 50,264 puts 39M parameters into embeddings, so
+   by total parameters molnl small (125M) looks 1.45x protein small (86M) while
+   both cost exactly the same to train.
+2. **6ND drops the attention term that grows with sequence length.** At sequence
+   length 1,024 it omits 13-18% depending on size. It cancels out in a ratio
+   between sizes, but an absolute figure needs the caveat written down.
+3. **Equal FLOPs does not make two losses comparable.** MLM scores the masked 20%,
+   an autoregressive loss scores every token. A cost axis can be shared; the
+   meaning of the y axis cannot. To put BERT and GPT-2 on one figure, the y axis
+   has to be a downstream metric, not loss.
+
 ## The checks
 
 | # | Check | Why it is here |
@@ -64,6 +92,8 @@ before anyone else sees it.
 | 8 | Runs still going, runs cut short, and bounds that were never crossed are marked as such (an arrow, not a point) | |
 | 9 | Counts are recomputed from the table, never carried over from the previous report | "15 collapsed" survived three revisions after it had become 25 |
 | 10 | BERT and GPT-2 losses are never drawn on the same axes | different objectives, not comparable |
+| 11 | Colour means the same thing in every panel, or the caption says it does not | panels with different rate sets reuse the same four colours |
+| 12 | Differences the figure cannot resolve (a log axis at the tail) are given as a table as well | 0.06 and 0.07 sit on top of each other; the ranking is not readable from the curve |
 
 ## Where things go
 
