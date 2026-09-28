@@ -305,7 +305,7 @@ def main() -> int:
         ("gpt2", gpt2_arms(a.gpt2_root), "val loss（nats/token）", 4.6514, "何も学ばない場合"),
     ]
     rows = []
-    for key, arms, ylabel, floor, floor_label in sets:
+    for key, arms, _ylabel, floor, _floor_label in sets:
         healthy = [x for x in arms if x["window"] is not None and x["window"] < floor]
         for x in healthy:
             rows.append(dict(grid=key, **x))
@@ -331,7 +331,10 @@ def main() -> int:
                     "何も学ばないモデルの 4.6514 は軸の外（どの点もその 6〜8 分の 1）。"
                     "色は学習率を表すが、格子ごとに学習率の組が違うので BERT の図と同じ色は同じ値ではない。")
     fits_all = {}
-    below = lambda arms_, floor_: [x for x in arms_ if x["window"] is not None and x["window"] < floor_]
+    def below(arms_, floor_):
+        """Arms that got under the model-free floor. A diverged arm is not a size point."""
+        return [x for x in arms_ if x["window"] is not None and x["window"] < floor_]
+
     fits_all["bert24k"] = draw(
         below(named["bert24k"], 3.8638),
         "molecule_nat_lang BERT 24,000 step —— 同じ学習率でのサイズ比較と、各サイズ最良の包絡",
