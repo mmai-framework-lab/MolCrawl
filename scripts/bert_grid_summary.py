@@ -25,6 +25,23 @@ import sys
 from pathlib import Path
 
 TOKENS_PER_STEP = 2_560 * 1_024  # 2,560 sequences/step, sequence length 1,024
+PF_DAY = 8.64e19  # 1 petaflop/s-day = 1e15 operations/s x 86,400 s
+
+
+def non_embedding(params, conf):
+    """Parameters that enter the matrix multiplies.
+
+    The 6ND convention counts these, not the embeddings: a large vocabulary adds
+    parameters that barely add work. molnl's 50,264 tokens put 39M into embeddings,
+    which would otherwise make its small model look 1.45x protein's while costing
+    the same to train.
+    """
+    h = conf.get("hidden_size")
+    v = conf.get("vocab_size")
+    pos = conf.get("max_position_embeddings", 0)
+    if not (params and h and v):
+        return None
+    return params - (v * h + pos * h + 2 * h)
 
 
 def newest_checkpoint(run_dir: Path) -> Path | None:
@@ -112,11 +129,14 @@ def main() -> int:
                 "size": m.group("size"),
                 "lr": float(m.group("lr").replace("p", ".").replace("e", "e-")),
                 "params": param_count(ckpt),
+                "params_nonembed": non_embedding(param_count(ckpt), conf),
                 "hidden": conf.get("hidden_size"),
                 "layers": conf.get("num_hidden_layers"),
                 "vocab": conf.get("vocab_size"),
                 "last_step": steps[-1],
                 "last_tokens": steps[-1] * TOKENS_PER_STEP,
+                "last_pfdays": round(6 * (non_embedding(param_count(ckpt), conf) or 0)
+                                     * steps[-1] * TOKENS_PER_STEP / PF_DAY, 3),
                 "last_loss": f"{values[-1]:.4f}",
                 "best_loss": f"{best:.4f}",
                 "best_step": steps[values.index(best)],
