@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""nanoGPT curves in panels, one panel per learning rate, with a logarithmic y axis.
+"""Curves in panels, one panel per learning rate, with the sizes overlaid.
 
 plot_eval_loss_series.py draws this shape for HF runs and for nanoGPT runs, and its HF
 builder honours a "yscale" in the config while its nanoGPT builder does not. A
@@ -8,7 +8,17 @@ curve lies along the bottom of the panel and the comparison the figure exists fo
 invisible. This draws the nanoGPT case with the axis the data needs, borrowing the house
 style from that module so the two look like one set of figures.
 
-It reads the same config; only the "figures" entries of kind "panels_nanogpt" are drawn.
+It also draws the x axis in FLOPs, which the shared script cannot: it scales every
+series by one tokens-per-step, and C = 6ND puts a different factor on each size. Set
+"x_flops" to {series: non-embedding parameter count} and each curve is placed at
+6 x N x (step x tokens/step). Tokens and FLOPs are the same axis up to a constant within
+one size and are not across sizes, so a figure comparing sizes at equal cost needs this
+one (run-completion-figures, "Which x axis"). 6ND leaves out the attention term, which is
+13-18% at sequence length 1,024 -- it cancels in a ratio between sizes, and the caption
+says so for the absolute numbers.
+
+It reads the same config as plot_eval_loss_series.py, for figures of kind
+"panels_nanogpt" and "panels_hf".
 
     python scripts/molnl_curves_by_rate.py --config <file.json> --out-dir <dir>
 """
@@ -49,7 +59,7 @@ def house_style(from_dir=None):
 
 def draw(cfg, out_dir, house):
     INK, INK_2, SERIES = house.INK, house.INK_2, house.SERIES
-    finish, floors, read_nanogpt = house.finish, house.floors, house.read_nanogpt
+    finish, floors = house.finish, house.floors
     style, tokens_axis = house.style, house.tokens_axis
 
     panels = cfg["panels"]
@@ -60,6 +70,9 @@ def draw(cfg, out_dir, house):
                                       cfg.get("panel_h", 3.3) * rows + .8))
     order = cfg["lr_order"]
     scale = cfg.get("x_tokens_per_step") or 1
+    # 6ND: the factor differs per series, so it cannot be one number for the figure.
+    flops = cfg.get("x_flops") or {}
+    reader = house.read_nanogpt if cfg.get("kind") == "panels_nanogpt" else None
     for i, panel in enumerate(panels):
         ax = axes[i // cols][i % cols]
         series = {}
@@ -74,7 +87,10 @@ def draw(cfg, out_dir, house):
                         name = m.group(1)
                 if name is None or name not in order:
                     continue
-                st, _train, val = read_nanogpt(Path(path))
+                if reader is None:                       # HF: a run directory
+                    st, val, _meta = house.read_hf(Path(path), cfg.get("key", "eval_loss_mask"))
+                else:                                    # nanoGPT: a stdout log
+                    st, _train, val = reader(Path(path))
                 if st:
                     # A requeued run writes a second log continuing from a checkpoint.
                     series.setdefault(name, {}).update(dict(zip(st, val)))
@@ -82,7 +98,8 @@ def draw(cfg, out_dir, house):
             if name not in series:
                 continue
             pts = sorted(series[name].items())
-            xs = [s * scale for s, _ in pts]
+            factor = 6 * flops[name] * scale if name in flops else scale
+            xs = [s * factor for s, _ in pts]
             ys = [v for _, v in pts]
             ax.plot(xs, ys, color=SERIES[order.index(name)], linewidth=1.6, zorder=3,
                     label=cfg.get("lr_labels", {}).get(name, name))
@@ -96,6 +113,11 @@ def draw(cfg, out_dir, house):
         style(ax, cfg["xlabel"] if i // cols == rows - 1 else "",
               cfg["ylabel"] if i % cols == 0 else "")
         tokens_axis(ax, cfg)
+        if flops:
+            # tokens_axis labels the ticks in M/G/T of tokens; on a FLOPs axis that
+            # prints "1e+06T", which reads as a token count in the wrong unit.
+            ax.xaxis.set_major_formatter(matplotlib.ticker.LogFormatterSciNotation())
+            ax.xaxis.set_minor_formatter(plt.NullFormatter())
         if panel.get("floors") or cfg.get("floors"):
             floors(ax, panel.get("floors") or cfg["floors"], cfg.get("floor_side", "right"))
         ax.legend(frameon=False, fontsize=8.5, labelcolor=INK_2, title=cfg.get("legend_title"),
@@ -119,13 +141,13 @@ def main() -> int:
     cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
     drawn = 0
     for figure in cfg["figures"]:
-        if figure.get("kind") != "panels_nanogpt":
+        if figure.get("kind") not in ("panels_nanogpt", "panels_hf"):
             continue
         print(f"{figure['file']}:")
         draw(figure, out_dir, house)
         drawn += 1
     if not drawn:
-        print("no panels_nanogpt figures in this config")
+        print("no panels_nanogpt or panels_hf figures in this config")
         return 1
     return 0
 
