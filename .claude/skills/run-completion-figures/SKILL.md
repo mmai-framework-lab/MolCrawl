@@ -50,6 +50,32 @@ said to be still going, with the fraction of the schedule it has covered.
 A figure that fails one of these is redrawn, or the deviation is stated out loud
 before anyone else sees it.
 
+## The approved figure: one panel per rate, sizes overlaid
+
+Signed off on 2026-09-28. **A figure that compares model sizes is cut this way**,
+and a deviation from it is announced before the figure is drawn.
+
+| Element | What it is |
+|---|---|
+| Panels | one per learning rate, the sizes drawn on top of each other. A last panel holds each size at *its own* best rate, and says so in the panel title |
+| Colour | the model size, meaning the same thing in every panel. The legend carries the non-embedding parameter count: `small 85.7M`, `medium 303.4M`, `large 575.2M` |
+| x axis | 学習に使った計算量（PF-days、C = 6ND）, logarithmic, the same range in every panel |
+| y axis | the loss, logarithmic when it spans more than a factor of two |
+| Floor | the model-free value as a dashed line with its number, in every panel |
+| Title | what the reader should take away, plus the axis in parentheses |
+
+The old cut -- a panel per size with the rates coloured inside it -- still belongs
+in an appendix, for reading one size's rate sweep. It is not the figure a size
+comparison is made from, because the eye cannot carry a colour across panels.
+
+The caption carries, in this order: max_steps and epochs, the training set in
+tokens and sequences, the global batch, the tokens seen at completion, the
+definition of the unit (1 PF-day = 10^15 FLOP/s x 86,400 s = 8.64e19), where N
+came from (counted from the checkpoints, non-embedding), the 6ND caveat and what
+it omits, the compute ratio between sizes at equal tokens (3.54x and 6.71x here),
+what colour means, whether seed variance was measured, the floor, and which arms
+are still running.
+
 ## Which x axis, and what 6ND does not include
 
 Three axes answer three different questions. Pick by the claim, not by habit.
