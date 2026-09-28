@@ -17,6 +17,7 @@ Paths live in the config file, not here: this repository is public.
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import re
 import textwrap
@@ -30,6 +31,7 @@ import matplotlib.pyplot as plt
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"]
 # One wording for the axis every figure in this project now shares.
 TOKENS_LABEL = "処理トークン数"
+PF_DAY = 8.64e19  # 1 petaflop/s-day = 1e15 operations/s x 86,400 s
 INK, INK_2, INK_3 = "#0f161a", "#53626c", "#8695a0"
 SURFACE, RULE = "#fcfcfb", "#d7e0e5"
 
@@ -313,6 +315,143 @@ def fig_panels_hf(cfg, out_dir):
         write_tsv(out_dir / cfg["tsv"], tsv_rows, ["panel", "lr", "step", "tokens", key])
 
 
+def fig_scaling(cfg, out_dir):
+    """One large axes, one line per model size, x in PF-days.
+
+    The figure a scaling claim is read from: sizes on top of each other against
+    the compute each of them used, so the reader compares equal work rather than
+    equal steps. Colour carries the size and nothing else, and the legend carries
+    the parameter count that the compute was computed from.
+    """
+    fig, ax = plt.subplots(figsize=(cfg.get("width", 11.0), cfg.get("height", 6.6)))
+    tsv_rows, curves = [], []
+    for i, run in enumerate(cfg["sizes"]):
+        if run.get("kind", "nanogpt") == "nanogpt":
+            merged = {}
+            for path in sorted(sum([glob.glob(p) for p in run["glob"]], [])):
+                st, _tr, va = read_nanogpt(Path(path))
+                # A run that was requeued writes a second log picking up from the
+                # checkpoint; merge on the step or the arm is drawn twice.
+                merged.update(dict(zip(st, va)))
+            pts = sorted(merged.items())
+            steps = [p[0] for p in pts]
+            values = [p[1] for p in pts]
+        else:
+            steps, values, _ = read_hf(Path(run["dir"]), cfg.get("key", "eval_loss_mask"))
+        if not steps:
+            print(f"  ! no series: {run['label']}")
+            continue
+        tokens_per_step = cfg.get("tokens_per_step", 2_621_440)
+        xs = [6 * run["params"] * s * tokens_per_step / PF_DAY for s in steps]
+        keep = [(x, v) for x, v in zip(xs, values) if x > 0 and v > 0]
+        c = SERIES[i % len(SERIES)]
+        curves.append(keep)
+        ax.plot([k[0] for k in keep], [k[1] for k in keep], color=c, linewidth=1.9,
+                zorder=3, label=run["label"])
+        best = min(values)
+        ax.annotate(f"{values[-1]:.4f}", (keep[-1][0], keep[-1][1]),
+                    textcoords="offset points", xytext=(6, 0), ha="left", va="center",
+                    fontsize=9, color=c, fontweight="bold")
+        print(f"    {run['label'][:26]:28s} last={values[-1]:.4f} best={best:.4f} "
+              f"C={keep[-1][0]:.2f} PF-days")
+        for step, value in zip(steps, values):
+            tsv_rows.append({"size": run["label"], "step": step,
+                             "tokens": step * tokens_per_step,
+                             "pfdays": f"{6 * run['params'] * step * tokens_per_step / PF_DAY:.4f}",
+                             "loss": f"{value:.6f}"})
+    if cfg.get("envelope") and curves:
+        # The compute-optimal frontier: at each amount of compute, the best any
+        # size reached by then. This lower hull is what a scaling law is fitted
+        # to -- an individual size's curve leaves it once a larger one overtakes.
+        allpts = sorted(p for c in curves for p in c)
+        hull_x, hull_y, run_min = [], [], float("inf")
+        for x, v in allpts:
+            if v < run_min:
+                run_min = v
+                hull_x.append(x)
+                hull_y.append(v)
+        ax.plot(hull_x, hull_y, color=INK_3, linewidth=1.3, linestyle=(0, (6, 4)),
+                zorder=2, label="到達可能な最小（各計算量での最良）")
+        print(f"    包絡線: {hull_y[0]:.4f} @ {hull_x[0]:.3f} PF-days "
+              f"→ {hull_y[-1]:.4f} @ {hull_x[-1]:.2f} PF-days")
+    ax.set_xscale("log")
+    ax.set_yscale(cfg.get("yscale", "log"))
+    if cfg.get("xlim"):
+        ax.set_xlim(*cfg["xlim"])
+    if cfg.get("ylim"):
+        ax.set_ylim(*cfg["ylim"])
+    style(ax, cfg.get("xlabel", "学習に使った計算量（PF-days、C = 6ND）"), cfg["ylabel"])
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(
+        lambda v, _: "" if v <= 0 else (f"{v:g}" if v >= 0.01 else f"{v:.3f}")))
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(
+        lambda v, _: "" if v <= 0 else f"{v:g}"))
+    if cfg.get("floors"):
+        floors(ax, cfg["floors"], cfg.get("floor_side", "right"))
+    ax.legend(frameon=False, fontsize=10.5, labelcolor=INK_2, title=cfg.get("legend_title"),
+              title_fontsize=9.5, loc=cfg.get("legend_loc", "lower left"))
+    fig.tight_layout(rect=(0, cfg.get("rect_bottom", .16), 1, .95))
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
+           bottom=cfg.get("rect_bottom", .16))
+    if cfg.get("tsv"):
+        write_tsv(out_dir / cfg["tsv"], tsv_rows, ["size", "step", "tokens", "pfdays", "loss"])
+
+
+def fig_points(cfg, out_dir):
+    """Best loss against model size, one line per modality, with the fitted slope.
+
+    The second figure a scaling claim needs: the curves reduced to their end
+    points, so the reader sees whether loss follows a power law in N. A run that
+    has not finished is drawn hollow with a downward arrow -- its point can still
+    move, and a filled marker would invite a comparison it cannot support.
+    """
+    import math
+    fig, ax = plt.subplots(figsize=(cfg.get("width", 10.5), cfg.get("height", 6.4)))
+    for i, ser in enumerate(cfg["series"]):
+        # Absolute losses from different corpora share no scale, so a common axis
+        # flattens every trend. Dividing by the smallest model's loss puts the
+        # shape of each series where it can be read against the others.
+        base = ser["points"][0][1] if cfg.get("relative") else 1.0
+        done = [(n, v / base) for n, v, fin in ser["points"] if fin]
+        running = [(n, v / base) for n, v, fin in ser["points"] if not fin]
+        c = SERIES[i % len(SERIES)]
+        xs = [p[0] for p in ser["points"]]
+        ys = [p[1] / base for p in ser["points"]]
+        ax.plot(xs, ys, color=c, linewidth=1.3, alpha=.55, zorder=2)
+        if done:
+            ax.plot([p[0] for p in done], [p[1] for p in done], marker=ser.get("marker", "o"),
+                    markersize=9, linestyle="none", color=c, markeredgecolor="white",
+                    markeredgewidth=1.2, zorder=4)
+        for n, v in running:
+            ax.plot([n], [v], marker=ser.get("marker", "o"), markersize=9, linestyle="none",
+                    markerfacecolor="white", color=c, markeredgewidth=1.8, zorder=4)
+            ax.annotate("", xy=(n, v * 0.985), xytext=(n, v),
+                        arrowprops=dict(arrowstyle="->", color=c, lw=1.3))
+        label = ser["label"]
+        if len(done) >= 2:
+            lx = [math.log10(p[0]) for p in done]
+            ly = [math.log10(p[1]) for p in done]
+            mx, my = sum(lx) / len(lx), sum(ly) / len(ly)
+            den = sum((x - mx) ** 2 for x in lx)
+            slope = sum((x - mx) * (y - my) for x, y in zip(lx, ly)) / den if den else 0
+            label += f"（傾き {slope:+.3f}）"
+        ax.plot([], [], color=c, marker=ser.get("marker", "o"), linestyle="-", label=label)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    if cfg.get("xlim"):
+        ax.set_xlim(*cfg["xlim"])
+    if cfg.get("ylim"):
+        ax.set_ylim(*cfg["ylim"])
+    style(ax, cfg.get("xlabel", "非埋め込みパラメータ数"), cfg["ylabel"])
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(
+        lambda v, _: "" if v <= 0 else f"{v / 1e6:g}M" if v < 1e9 else f"{v / 1e9:g}B"))
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: "" if v <= 0 else f"{v:g}"))
+    ax.legend(frameon=False, fontsize=10, labelcolor=INK_2, title=cfg.get("legend_title"),
+              title_fontsize=9.5, loc=cfg.get("legend_loc", "best"))
+    fig.tight_layout(rect=(0, cfg.get("rect_bottom", .18), 1, .95))
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
+           bottom=cfg.get("rect_bottom", .18))
+
+
 def fig_many_hf(cfg, out_dir):
     """Many runs, few colours: colour carries the group, never the individual run."""
     fig, ax = plt.subplots(figsize=(11.4, 4.4))
@@ -411,6 +550,7 @@ def fig_lines_hf(cfg, out_dir):
 
 
 KIND = {"panels_nanogpt": fig_panels_nanogpt, "panels_hf": fig_panels_hf,
+        "scaling": fig_scaling, "points": fig_points,
         "many_hf": fig_many_hf, "lines_hf": fig_lines_hf}
 
 
