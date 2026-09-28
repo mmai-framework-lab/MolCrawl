@@ -25,10 +25,30 @@ import json
 import os
 from collections import defaultdict
 
-import matplotlib
-matplotlib.use("Agg")
-import japanize_matplotlib  # noqa: F401,E402  (no CJK font is installed system-wide)
-import matplotlib.pyplot as plt          # noqa: E402
+
+def _pyplot():
+    """matplotlib, configured, imported on first use.
+
+    Deliberately not imported at module scope. Which colour a run gets and
+    whether a collapsed run is split out are plain Python rules with no
+    plotting in them, and the unit suite should be able to reach them on a
+    machine with no plotting stack installed -- CI has none, and importing
+    matplotlib at the top made those seven tests fail on the import line
+    rather than on anything they were checking.
+
+    The backend has to be selected before pyplot is imported, and
+    japanize_matplotlib sets the font family as a side effect of its own
+    import, so the order here is load-bearing.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import japanize_matplotlib  # noqa: F401  (no CJK font is installed system-wide)
+    import matplotlib.pyplot as plt
+    # japanize_matplotlib set the family; only the minus sign is left, which
+    # IPAexGothic renders as a full-width dash without this.
+    plt.rcParams["axes.unicode_minus"] = False
+    return plt
+
 
 # Three families, three colours. Checked with scripts/validate_palette-style
 # separation in mind: these stay distinct under the common CVD simulations and
@@ -124,6 +144,7 @@ def caption(series, meta, n_runs, metric):
 
 def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
          baseline_method=""):
+    plt = _pyplot()
     fig, ax = plt.subplots(figsize=(11, 5.2))
     last_step = max(s for pts in runs.values() for s, _ in pts)
     lo_step = last_step * (1 - tail_fraction) if tail_fraction else 0
@@ -190,6 +211,7 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
     mammal_centered from the 512-window series -- the same subset, the same
     window, the same batch. Any other subset would change two things at once.
     """
+    plt = _pyplot()
     fig, ax = plt.subplots(figsize=(11, 5.2))
     pairs = (("bert-base", "mammal_centered", "3 エポック (bert-base)", "#1b3a6b"),
              ("bert-sat9", "mammal_centered", "9 エポック (bert-sat9)", "#c2622d"))
@@ -277,9 +299,7 @@ def main():
     ap.add_argument("--prefix", default="genome-loss")
     args = ap.parse_args()
 
-    # japanize_matplotlib set the family at import; only the minus sign is left,
-    # which IPAexGothic renders as a full-width dash without this.
-    plt.rcParams["axes.unicode_minus"] = False
+    _pyplot()          # fail here, before any reading, if the stack is missing
 
     curves, metric = read_tsv(args.tsv)
     meta = json.load(open(args.meta)) if args.meta and os.path.exists(args.meta) else {}
