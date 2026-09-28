@@ -333,8 +333,14 @@ def main():
         job = job_id_for(run_dir, series, headers, sacct)
         got = bert_meta(run_dir) if arch == "bert" else gpt2_meta(run_dir)
         if got and got.get("epochs") is None and series in train_root:
+            # The label carries the arm so a sweep's curves do not share one
+            # name; the build on disk is named for the subset alone. Passing
+            # the label looked for a mammal_centered-lr3e4 directory, found
+            # nothing, and returned None -- the field then read "unknown" for a
+            # number the data answers.
             got["epochs"] = _measured_epochs(
-                train_root[series], subset_of(base), got["max_steps"], got["global_batch"],
+                train_root[series], _LR_ARM.sub("", subset_of(base)),
+                got["max_steps"], got["global_batch"],
                 "bert" if arch == "bert" else "gpt2")
         if got:
             slot = meta.setdefault(series, {})
