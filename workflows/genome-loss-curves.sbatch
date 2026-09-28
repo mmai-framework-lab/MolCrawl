@@ -33,7 +33,12 @@
 # baseline and the comparability note would all have to be guessed. The numbers
 # are in the TSV; the figure would be the part that misleads.
 #
-# Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT,
+# SRC_ROOT_1026 is the 1,026-token build, used only to count its train rows so
+# the sweep's caption can state an epoch count. The sweep was launched without
+# SUBSET_BERT_EPOCHS in the environment, so its manifest does not record one and
+# the caption read "unknown" for a number the data answers.
+#
+# Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT, SRC_ROOT_1026,
 # SACCT_START, SACCT_END, SKIP_TALLY (set to 1 to reuse an earlier tally).
 #
 # The sacct window has to cover the whole campaign, not just one launch: a job
@@ -88,6 +93,7 @@ echo ""; echo "########## 2. TSV ##########"
     --sacct-start "${SACCT_START:-2026-08-01}" \
     --sacct-end "${SACCT_END:-2026-09-30}" \
     --train-root "bert-base=${SRC_ROOT_512}" "bert-sat9=${SRC_ROOT_512}" \
+        ${SRC_ROOT_1026:+"bert-lr-sweep=${SRC_ROOT_1026}"} \
     --out "${TSV}" \
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
 
