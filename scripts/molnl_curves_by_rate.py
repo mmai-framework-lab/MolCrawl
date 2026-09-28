@@ -19,6 +19,7 @@ import argparse
 import glob
 import json
 import os
+import re
 from pathlib import Path
 
 import matplotlib
@@ -64,9 +65,10 @@ def draw(cfg, out_dir, house):
         series = {}
         for pattern in (panel["glob"] if isinstance(panel["glob"], list) else [panel["glob"]]):
             for path in sorted(glob.glob(pattern)):
+                # The config names the field as plot_eval_loss_series does; here only
+                # the captured value is used, as the series key.
                 name = None
-                for field, rx in panel.get("derive", {}).items():
-                    import re
+                for rx in panel.get("derive", {}).values():
                     m = re.search(rx, path)
                     if m:
                         name = m.group(1)
