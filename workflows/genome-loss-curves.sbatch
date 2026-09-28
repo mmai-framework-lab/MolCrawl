@@ -33,7 +33,12 @@
 # baseline and the comparability note would all have to be guessed. The numbers
 # are in the TSV; the figure would be the part that misleads.
 #
-# Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT,
+# SRC_ROOT_1026 is the 1,026-token build, used only to count its train rows so
+# the sweep's caption can state an epoch count. The sweep was launched without
+# SUBSET_BERT_EPOCHS in the environment, so its manifest does not record one and
+# the caption read "unknown" for a number the data answers.
+#
+# Required: RUNS_ROOT, OUT_DIR, SRC_ROOT_512. Optional: RESULTS_ROOT, SRC_ROOT_1026,
 # SACCT_START, SACCT_END, SKIP_TALLY (set to 1 to reuse an earlier tally).
 #
 # The sacct window has to cover the whole campaign, not just one launch: a job
@@ -88,10 +93,18 @@ echo ""; echo "########## 2. TSV ##########"
     --sacct-start "${SACCT_START:-2026-08-01}" \
     --sacct-end "${SACCT_END:-2026-09-30}" \
     --train-root "bert-base=${SRC_ROOT_512}" "bert-sat9=${SRC_ROOT_512}" \
+        ${SRC_ROOT_1026:+"bert-lr-sweep=${SRC_ROOT_1026}"} \
     --out "${TSV}" \
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
 
 echo ""; echo "########## 3. 図 ##########"
+# Clear the figures before redrawing them. Every one is rewritten below, so
+# nothing is lost -- but a series that stops being drawn leaves its last
+# rendering behind, and a stale figure in a directory of fresh ones is read as
+# fresh. Two mislabelled gpt2-lr-sweep figures survived that way on 2026-09-28,
+# in the very run that stopped drawing them for being mislabelled.
+_stale=$(ls "${OUT_DIR}"/genome-loss-*.png 2>/dev/null | wc -l)
+[ "${_stale}" -gt 0 ] && { rm -f "${OUT_DIR}"/genome-loss-*.png; echo "  既存の図 ${_stale} 枚を消してから描く"; }
 # series=directory. A series absent from this list gets no baseline line, which
 # is the honest state for the builds that have not been measured.
 "${PY}" scripts/plot_genome_loss_curves.py \
