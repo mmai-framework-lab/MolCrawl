@@ -57,12 +57,18 @@ Three axes answer three different questions. Pick by the claim, not by habit.
 | Axis | What it compares | Use it for |
 |---|---|---|
 | processed tokens | data efficiency -- what was learned from the same amount of data | the default. Learning rates within one size, data-value arguments |
-| compute, C = 6ND | compute efficiency -- how far the loss falls for the same work | claims that cross model sizes or architectures, scaling laws |
+| compute, C = 6ND, **printed in PF-days** | compute efficiency -- how far the loss falls for the same work | claims that cross model sizes or architectures, scaling laws |
 | GPU-hours | money and wall clock, including how well the hardware was used | budget and scheduling appendices |
 
 Tokens and FLOPs are the same axis up to a constant **within one model size**, and
 are not the same across sizes: at equal tokens, medium costs 3.54x and large 6.72x
 what small costs here (85.6M / 303M / 575M non-embedding parameters).
+
+The unit on that axis is the **petaflop/s-day**: 1 PF-day = 10^15 operations per
+second for 86,400 seconds = 8.64 x 10^19 operations. It is a quantity of work, not
+a rate and not work per day -- rate (FLOPS, capital S) is a throughput metric and
+never an x axis, and GPU-days are hardware time, a third axis. For scale, our
+BERT runs are 0.37 to 12.7 PF-days each; GPT-3 was 3,640.
 
 Three things to get right before quoting a FLOPs number:
 
