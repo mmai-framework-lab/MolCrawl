@@ -28,7 +28,7 @@ import japanize_matplotlib  # noqa: F401  (registers a CJK font)
 import matplotlib.pyplot as plt
 
 from plot_eval_loss_series import (  # one house style, one place to change it
-    INK, INK_2, INK_3, SERIES, TOKENS_LABEL, finish, floors, read_hf, style,
+    INK, INK_2, INK_3, SERIES, finish, floors, read_hf, style,
 )
 
 PF_DAY = 8.64e19  # 1 petaflop/s-day; the unit OpenAI's compute figures use
