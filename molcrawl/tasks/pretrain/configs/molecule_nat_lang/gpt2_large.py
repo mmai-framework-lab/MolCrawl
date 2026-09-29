@@ -42,6 +42,15 @@ batch_size = 8
 block_size = 1024
 gradient_accumulation_steps = 320  # 8 * 320 = 2560 seq global batch
 
+# What the schedule above was derived from, stated so train.py can check it.
+# batch_size and gradient_accumulation_steps are both per-device numbers; nanoGPT
+# divides the accumulation by the world size, so the product below is what a run
+# actually trains at whatever the GPU count. Declaring it turns a wrong allocation
+# into a startup failure rather than a run that cannot be compared with the rest
+# of its ladder -- genome GPT-2 trained at 640 while every document said 2,560.
+expected_global_batch = 2560  # 8 x 320
+
+
 # 3 epochs of the train split at global batch 2560:
 # 3 * 318,118 train blocks / 2560 = 372.8 -> 373 iters (~978M tokens processed).
 # Same iter count as every other mol_nl size, so the ladder is compute-matched.
