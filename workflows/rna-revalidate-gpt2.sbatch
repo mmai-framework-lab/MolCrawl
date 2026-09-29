@@ -5,11 +5,17 @@
 # scatter of 0.010-0.012. This reads the same rows for every point, so the
 # points can be put beside each other at the width of the differences between
 # them. Nothing is written into the runs: the only output is the TSV.
+#
+# The wall is four days because the whole validation split is 4,300,848 rows and
+# the cost scales with the model. Measured: small takes 4h53m per checkpoint.
+# Scaled by parameter count that is about 15h at medium, 35h at large and 71h at
+# xl. A twelve-hour wall was tried first and lost twenty of twenty-six jobs to
+# TIMEOUT -- about 240 GPU-hours spent with nothing written.
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=12:00:00
+#SBATCH --time=4-00:00:00
 #SBATCH --job-name=rna-revalidate-gpt2
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
