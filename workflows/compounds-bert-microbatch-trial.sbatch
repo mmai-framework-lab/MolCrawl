@@ -15,6 +15,12 @@
 #   sbatch --export=ALL,SIZE=large,LEARNING_SOURCE_DIR=...,MODEL_OUTPUT_ROOT=... \
 #          workflows/compounds-bert-microbatch-trial.sbatch
 #
+# Accumulation of 1 puts the effective batch at batch_size x 4, not the 2,560 the
+# configs declare, and main.py stops a run whose effective batch does not match the
+# declaration. That guard is right: it exists so a wrong GPU count cannot quietly train
+# at another batch. A trial is the one case where the deviation is intended, so it
+# declares what it actually runs rather than being exempted.
+#
 # What is measured is one micro-batch, with gradient_accumulation_steps=1. The real
 # step is 640/batch_size micro-batches, and at xl that is about three minutes, so a
 # 50-step trial at the production shape would cost hours per candidate and tell us
@@ -89,6 +95,7 @@ for BS in ${CANDIDATES}; do
         --model_path="${OUT}" \
         --batch_size="${BS}" \
         --gradient_accumulation_steps=1 \
+        --expected_global_batch=$(( BS * 4 )) \
         --max_steps="${STEPS}" \
         --warmup_steps=1 \
         --log_interval=$(( STEPS + 1000 )) \
@@ -151,6 +158,7 @@ if [ -n "${ADOPTED:-}" ]; then
         --model_path="${OUT}" \
         --batch_size="${ADOPTED}" \
         --gradient_accumulation_steps=1 \
+        --expected_global_batch=$(( ADOPTED * 4 )) \
         --max_steps=2 \
         --warmup_steps=1 \
         --log_interval=2 \
