@@ -117,8 +117,12 @@ def fig_lr_vs_size(rows, cfg, out_dir, caption):
             ref = pts[0]
             ax.plot([lo, hi], [ref[1] * (lo / ref[0]) ** s, ref[1] * (hi / ref[0]) ** s],
                     color=SERIES[i], linewidth=1.2, linestyle=(0, (5, 3)), zorder=3)
-        ax.plot([], [], color=SERIES[i], marker="o", linestyle="-",
-                label=f"{modality}" + (f"（傾き {slopes[modality]:+.2f}）" if modality in slopes else ""))
+        if pts:
+            # Without this, a config naming one modality still lists the other three in
+            # the legend, each with no data behind it.
+            ax.plot([], [], color=SERIES[i], marker="o", linestyle="-",
+                    label=f"{modality}"
+                          + (f"（傾き {slopes[modality]:+.2f}）" if modality in slopes else ""))
     ax.set_xscale("log")
     ax.set_yscale("log")
     style(ax, "パラメータ数", "学習率")
@@ -137,7 +141,10 @@ def fig_lr_vs_size(rows, cfg, out_dir, caption):
 def fig_loss_vs_tokens(rows, cfg, out_dir, caption):
     """One panel per modality, one line per size, each at the rate that did best."""
     groups = {g["modality"]: g for g in cfg["groups"]}
-    mods = [m for m in MODALITIES if m != "compounds"]
+    # Only what the config actually names: a run of one modality used to die here with
+    # KeyError on the first modality it did not carry, after the previous figure had
+    # already been written.
+    mods = [m for m in MODALITIES if m != "compounds" and m in groups]
     fig, axes = plt.subplots(1, len(mods), figsize=(4.7 * len(mods), 3.6), squeeze=False)
     for i, modality in enumerate(mods):
         ax = axes[0][i]
@@ -174,19 +181,22 @@ def fig_loss_vs_tokens(rows, cfg, out_dir, caption):
 def fig_collapse_map(rows, cfg, out_dir, caption):
     fig, ax = plt.subplots(figsize=(11.4, 4.6))
     for i, modality in enumerate(MODALITIES):
+        drew = False
         for size in SIZES:
             for r in rows:
                 if (r["modality"], r["size"]) != (modality, size) or not r["collapsed"]:
                     continue
                 if not r["turned_tokens"]:
                     continue
+                drew = True
                 x = pfdays(r["turned_tokens"], r["params_nonembed"])
                 ax.plot([x], [r["lr"]], marker=MARKERS[size], markersize=9,
                         color=SERIES[i], markeredgecolor="white", markeredgewidth=1.2, zorder=4)
                 ax.annotate(f"{r['best_loss']:.2f}", (x, r["lr"]),
                             textcoords="offset points", xytext=(0, 9), ha="center",
                             fontsize=7.6, color=SERIES[i])
-        ax.plot([], [], color=SERIES[i], marker="o", linestyle="none", label=modality)
+        if drew:
+            ax.plot([], [], color=SERIES[i], marker="o", linestyle="none", label=modality)
     for size in SIZES:
         ax.plot([], [], marker=MARKERS[size], color=INK_3, linestyle="none", label=size)
     ax.set_xscale("log")
