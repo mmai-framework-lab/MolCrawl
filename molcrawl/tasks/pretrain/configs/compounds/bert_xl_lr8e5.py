@@ -53,12 +53,9 @@ save_on_improve = True
 # launch; without it a masked token attends across document boundaries.
 document_masking = True
 
-# 32 x 20 x 4 GPUs = 2,560 sequences. The split comes from the 2026-09-15
-# micro-batch trial, which found 32 the largest per-device batch that fits at this
-# size. That trial ran in fp32, before bf16 went into the BERT configs; bf16 halves the
-# activations, so a larger split may well fit now. This is the shape attested to fit,
-# not the one attested to be fastest -- the small trial found 128 x 5 some 36 % faster
-# than the largest that fit.
+# 32 x 20 x 4 GPUs = 2,560 sequences. Measured under bf16 on 2026-09-30:
+# 64 does not fit, 32 does, and 32 is also the fastest of the shapes that fit
+# (23.70 s/step against 30.31 at 16 and 43.72 at the shipped 8 x 80).
 batch_size = 32
 gradient_accumulation_steps = 20
 
