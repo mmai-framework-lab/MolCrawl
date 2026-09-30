@@ -53,14 +53,13 @@ save_on_improve = True
 # launch; without it a masked token attends across document boundaries.
 document_masking = True
 
-# 64 x 10 x 4 GPUs = 2,560 sequences. The split comes from the 2026-09-15
-# micro-batch trial, which found 64 the largest per-device batch that fits at this
-# size. That trial ran in fp32, before bf16 went into the BERT configs; bf16 halves the
-# activations, so a larger split may well fit now. This is the shape attested to fit,
-# not the one attested to be fastest -- the small trial found 128 x 5 some 36 % faster
-# than the largest that fit.
-batch_size = 64
-gradient_accumulation_steps = 10
+# 160 x 4 x 4 GPUs = 2,560 sequences. Measured under bf16 on 2026-09-30 (job 150892):
+# 320 does not fit, 160 does, and 160 is also the fastest of the shapes that fit
+# (7.21 s/step against 7.35 at 64 and 14.47 at the shipped 8 x 80). The earlier trial
+# said 64 because it ran in fp32, before bf16 went into the BERT configs; bf16 halves
+# the activations and 160 now fits.
+batch_size = 160
+gradient_accumulation_steps = 4
 
 # The grid writes every key out rather than importing bert_small.py, so nothing added to
 # the base reaches it -- these have to be stated here. Same values as every BERT base:
@@ -81,8 +80,8 @@ expected_global_batch = 2560
 # by construction: evaluation runs two no_grad forwards per batch (HF's own and the
 # breakdown's in models/bert/_mlm_diagnostics.py), and two of those peak below one
 # forward+backward at the same width, which training already does. Logits are the
-# term that scales -- 64 x 1,024 x 616 vocab here.
-per_device_eval_batch_size = 64
+# term that scales -- 160 x 1,024 x 616 vocab here.
+per_device_eval_batch_size = 160
 
 # Seed 9, the same value the small grid used, so the size grid differs in size and
 # learning rate alone. The per-config sequential seeds (medium 8, large 7, xl 118)
