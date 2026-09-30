@@ -44,13 +44,16 @@ TORCHRUN="${TORCHRUN:-${REPO}/miniconda/bin/torchrun}"
 CONFIG="molcrawl/tasks/pretrain/configs/compounds/bert_${SIZE}.py"
 [ -f "${CONFIG}" ] || { echo "no config at ${CONFIG}" >&2; exit 1; }
 
-# Ceilings by size. Starting every size at 320 spends most of the trial on candidates
-# that cannot fit; these are one step above what the parameter count makes plausible.
+# Ceilings by size, one step above what the parameter count makes plausible. Raised on
+# 2026-09-30: the 2026-09-15 trial ran in fp32 and found 160/64/64/32, but bf16 went
+# into the BERT configs on 2026-09-17 and halves the activations, so the shapes that
+# fit now are larger and the old ceilings would cut the search short. Every candidate
+# divides 640, so batch_size x accumulation x 4 GPUs = 2,560 holds whichever is taken.
 case "${SIZE}" in
-    small)  CANDIDATES="320 160 128 64 32 16 8" ;;
-    medium) CANDIDATES="160 128 64 32 16 8" ;;
-    large)  CANDIDATES="128 64 32 16 8" ;;
-    xl)     CANDIDATES="64 32 16 8" ;;
+    small)  CANDIDATES="640 320 160 128 64 32 16 8" ;;
+    medium) CANDIDATES="320 160 128 64 32 16 8" ;;
+    large)  CANDIDATES="320 160 128 64 32 16 8" ;;
+    xl)     CANDIDATES="160 128 64 32 16 8" ;;
     *) echo "unknown SIZE ${SIZE}" >&2; exit 1 ;;
 esac
 
