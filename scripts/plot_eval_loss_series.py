@@ -406,11 +406,16 @@ def fig_points(cfg, out_dir):
     """
     import math
     fig, ax = plt.subplots(figsize=(cfg.get("width", 10.5), cfg.get("height", 6.4)))
+    tsv_rows = []
     for i, ser in enumerate(cfg["series"]):
         # Absolute losses from different corpora share no scale, so a common axis
         # flattens every trend. Dividing by the smallest model's loss puts the
         # shape of each series where it can be read against the others.
         base = ser["points"][0][1] if cfg.get("relative") else 1.0
+        # Both numbers go to the TSV: the plotted ratio, and the loss it came from.
+        tsv_rows += [{"series": ser["label"], "params": n, "value": f"{v:.6f}",
+                      "relative": f"{v / base:.6f}", "finished": int(bool(fin))}
+                     for n, v, fin in ser["points"]]
         done = [(n, v / base) for n, v, fin in ser["points"] if fin]
         running = [(n, v / base) for n, v, fin in ser["points"] if not fin]
         c = SERIES[i % len(SERIES)]
@@ -450,6 +455,8 @@ def fig_points(cfg, out_dir):
     fig.tight_layout(rect=(0, cfg.get("rect_bottom", .18), 1, .95))
     finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
            bottom=cfg.get("rect_bottom", .18))
+    write_tsv(out_dir / Path(cfg["file"]).with_suffix(".tsv").name, tsv_rows,
+              ["series", "params", "value", "relative", "finished"])
 
 
 def fig_many_hf(cfg, out_dir):
