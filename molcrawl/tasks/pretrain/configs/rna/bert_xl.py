@@ -16,9 +16,12 @@
 from molcrawl.core.paths import get_bert_output_path
 from molcrawl.tasks.pretrain.configs.rna.bert_large import *  # noqa: F401,F403
 
-model_size: str = "xl"
-model_path: str = get_bert_output_path("rna", model_size)
+# No annotations on these three: the star import above already bound the names, and
+# re-annotating a name mypy has seen is a redefinition. protein_sequence's and
+# compounds' bert_xl.py assign them the same way.
+model_size = "xl"
+model_path = get_bert_output_path("rna", model_size)
 
 # The three grid points override this. It is set here so that running the base
 # directly does not silently inherit large's env-driven rate.
-learning_rate: float = 1.4e-4
+learning_rate = 1.4e-4
