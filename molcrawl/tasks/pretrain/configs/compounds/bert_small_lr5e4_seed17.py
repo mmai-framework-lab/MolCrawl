@@ -1,0 +1,77 @@
+# compounds BERT small — seed 17 of the 5e-4 arm
+# launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py <this config>
+#
+# The seed replicate of bert_small_lr5e4.py, and nothing else differs. 5e-4 ended at
+# 0.0723 and 1e-3 at 0.0708, and 1e-3 is below 5e-4 at all 31 evaluations of the last
+# 20 % -- but both arms ran at seed 9, so the two curves share an initialisation and a
+# data order and the gap of 0.0015 has never been compared against the spread a
+# different seed produces. Two more seeds on each arm give three per arm, which is what
+# an ordering may be claimed from.
+#
+# Seeds 1 and 17 are also carried by other modalities' configs. That collides with the
+# one-seed-per-config convention but not with the measurement: a seed is only a stream
+# of random numbers, and nothing reads it across configs.
+
+from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
+
+tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
+
+max_steps = 15000
+warmup_steps = 1500  # 10% of max_steps, matching run 53767 rather than the 2% convention
+early_stopping = False  # Pretraining: run the full schedule, no early stopping
+model_size = "small"
+# Per-arm directory under MODEL_OUTPUT_ROOT. Unset, this resolves under
+# LEARNING_SOURCE_DIR -- the tree compounds' 18G of input and 1.4T of output already
+# share -- and main.py's output guard stops the run before the first step.
+model_path = get_bert_output_path("compounds", model_size) + "-lr5e4-seed17"
+max_length = 1024  # packed blocks; sets BertConfig.max_position_embeddings
+dataset_dir = COMPOUNDS_DATASET_DIR_BERT
+# The compounds sets were packed in source order before the 2026-08-21 rebuild, so the
+# split's leading rows are shorter and easier than the split as a whole. Draw the eval
+# subset at random instead.
+eval_subset_random = True
+learning_rate = 0.0005
+weight_decay = 0.01
+log_interval = 100  # = eval_steps -> 150 eval points over the run
+save_steps = 1000  # multiple of eval_steps, so every checkpoint carries an eval
+
+# Keep the checkpoint the reported number came from. At 150 eval points and 15 save
+# points the minimum lands off the save grid nine times in ten, and the arm would be
+# ranked on a number whose weights no longer exist.
+save_on_improve = True
+
+# Confine attention to one document inside a packed block. Run 53767 passed this at
+# launch; without it a masked token attends across document boundaries.
+document_masking = True
+
+# 32 x 20 x 4 GPUs = 2,560 sequences, the split run 53767 was launched with.
+batch_size = 32
+gradient_accumulation_steps = 20
+
+# The grid writes every key out rather than importing bert_small.py, so nothing added to
+# the base reaches it -- these have to be stated here. Same values as every BERT base:
+# four dataloader workers into pinned buffers, and bf16 (all-bert-order-2026-09-17 §1).
+# A grid must not mix worker counts across its arms: the worker count changes the
+# masked positions (§2).
+dataloader_num_workers = 4
+dataloader_pin_memory = True
+bf16 = True
+# 32 x 20 x 4 GPUs = 2,560. Declared so main.py stops a launch on any other GPU count
+# instead of training at another batch (§5.3).
+expected_global_batch = 2560
+# Evaluation reads a fixed 10,000 rows (models/bert/main.py EVAL_SUBSET_ROWS), so an
+# eval point costs the same work however it is batched -- but at a micro-batch far
+# below the training one it takes far longer in wall time. genome measured the
+# consequence: 8.08 s per eval against a 0.40 s training step, which is 16.3 % of the
+# run at eval_interval=100 (commit 4972a37). Matching the training micro-batch is safe
+# by construction: evaluation runs two no_grad forwards per batch (HF's own and the
+# breakdown's in models/bert/_mlm_diagnostics.py), and two of those peak below one
+# forward+backward at the same width, which training already does. Logits are the
+# term that scales -- 32 x 1,024 x 616 vocab = 81 MB here.
+per_device_eval_batch_size = 32
+
+# The replicate's seed. HF seeds weight init and the dataloader from this and from
+# data_seed, which main.py sets to the same value, so both sources of run-to-run
+# variation move together.
+seed = 17

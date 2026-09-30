@@ -162,22 +162,26 @@ def floors(ax, items, side="right"):
 
 # --------------------------------------------------------------------------- figures
 
-def best_in_view(steps, values, xlim):
-    """Index of the lowest value among the points actually drawn.
+def best_overall(steps, values, xlim):
+    """Index of the run's lowest value, and whether it falls inside the drawn window.
 
-    A zoom is a window on the run, and the run's own minimum is usually outside
-    it: the compounds 2e-3 arm bottoms at step 1,300 and the last-20% window
-    starts at 12,000. Annotating the global minimum there puts the label off the
-    axes, where it is silently dropped -- the zoom came out with no marker at all.
-    Inside a window, "best" means best in the window.
+    The mark is the run's own best, not the best of whatever slice is on screen: a
+    zoom is a window on one run, and two figures of the same run marking different
+    points invites the reader to take them as different runs. Where the best is
+    outside the window there is nothing to mark, so the caller writes it into the
+    caption instead -- hence the second return value.
     """
-    idx = range(len(values))
+    best = min(range(len(values)), key=lambda i: values[i])
+    inside = True
     if xlim:
         lo, hi = xlim
-        inside = [i for i in idx if lo <= steps[i] <= hi]
-        if inside:
-            idx = inside
-    return min(idx, key=lambda i: values[i])
+        inside = lo <= steps[best] <= hi
+    return best, inside
+
+
+def offscreen_note(label, step, value):
+    """The footnote a figure carries when a run's best is off the drawn window."""
+    return f"{label} の最良はこの窓より前、{value:.4f} @ step {step:,}。"
 
 
 def fig_panels_nanogpt(cfg, out_dir):
@@ -190,6 +194,7 @@ def fig_panels_nanogpt(cfg, out_dir):
                              figsize=(cfg.get("panel_w", 5.7) * cols,
                                       cfg.get("panel_h", 3.0) * rows + .8),
                              squeeze=False)
+    offscreen = []
     lrs = cfg["lr_order"]
     xmax = 0
     for i, g in enumerate(groups):
@@ -231,11 +236,14 @@ def fig_panels_nanogpt(cfg, out_dir):
             # Where a run bottoms out is the reading of interest once a schedule
             # runs past its minimum: the 30-epoch compounds sweep turns back up,
             # and the turn is at a different iteration for every learning rate.
-            best_i = best_in_view(st, va, g.get("xlim"))
-            if cfg.get("mark_best"):
+            best_i, best_shown = best_overall(st, va, g.get("xlim"))
+            if not best_shown:
+                offscreen.append(offscreen_note(f"{g['title'].split('（')[0]} lr {run['lr']}",
+                                                st[best_i], va[best_i]))
+            if cfg.get("mark_best") and best_shown:
                 ax.plot([st[best_i]], [va[best_i]], marker="o", markersize=4.5, color=c,
                         markeredgecolor=SURFACE, markeredgewidth=1.1, zorder=5)
-            if cfg.get("annotate_step"):
+            if cfg.get("annotate_step") and best_shown:
                 dx, dy = g.get("min_offsets", {}).get(run["lr"], [0, -12])
                 ax.annotate(f"{va[best_i]:.4f} @ {st[best_i]:,}", (st[best_i], va[best_i]),
                             textcoords="offset points", xytext=(dx, dy), ha="center",
@@ -267,7 +275,10 @@ def fig_panels_nanogpt(cfg, out_dir):
     for j in range(n, rows * cols):
         axes[j // cols][j % cols].axis("off")
     fig.tight_layout(rect=(0, cfg.get("rect_bottom", .05), 1, .955))
-    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
+    caption = cfg["caption"]
+    if offscreen:
+        caption += "  " + " ".join(offscreen)
+    finish(fig, cfg["title"], caption, out_dir / cfg["file"],
            bottom=cfg.get("rect_bottom", 0))
 
 
@@ -530,6 +541,7 @@ def fig_lines_hf(cfg, out_dir):
     """A handful of runs, one colour each."""
     fig, ax = plt.subplots(figsize=(11.4, 4.4))
     tsv_rows = []
+    offscreen = []
     for i, run in enumerate(cfg["runs"]):
         st, va, _ = read_hf(Path(run["dir"]), cfg.get("key", "eval_loss_mask"))
         if not st:
@@ -538,7 +550,9 @@ def fig_lines_hf(cfg, out_dir):
         scale = cfg.get("x_tokens_per_step") or 1
         steps, st = st, [x * scale for x in st]
         ax.plot(st, va, color=SERIES[i], linewidth=1.8, zorder=3, label=run["label"])
-        best_i = best_in_view(st, va, cfg.get("xlim"))
+        best_i, best_shown = best_overall(st, va, cfg.get("xlim"))
+        if not best_shown:
+            offscreen.append(offscreen_note(run["label"], st[best_i], va[best_i]))
         print(f"    {run['label'][:30]:32s} last={st[-1]:7d} best={va[best_i]:.4f}@{st[best_i]}")
         dx, dy = cfg.get("min_offsets", [[0, -13]] * len(cfg["runs"]))[i]
         # The step belongs beside the value: a minimum in the middle of a run is a
@@ -546,13 +560,14 @@ def fig_lines_hf(cfg, out_dir):
         # this grid differ in which they are.
         text = (f"{va[best_i]:.4f} @ {st[best_i]:,}" if cfg.get("annotate_step")
                 else f"{va[best_i]:.4f}")
-        if cfg.get("mark_best"):
+        if cfg.get("mark_best") and best_shown:
             ax.plot([st[best_i]], [va[best_i]], marker="o", markersize=5,
                     color=SERIES[i], markeredgecolor=SURFACE, markeredgewidth=1.2,
                     zorder=5)
-        ax.annotate(text, (st[best_i], va[best_i]),
-                    textcoords="offset points", xytext=(dx, dy), ha="center",
-                    fontsize=8, color=SERIES[i], fontweight="bold")
+        if best_shown:
+            ax.annotate(text, (st[best_i], va[best_i]),
+                        textcoords="offset points", xytext=(dx, dy), ha="center",
+                        fontsize=8, color=SERIES[i], fontweight="bold")
         for step, value in zip(steps, va):
             row = {k: v for k, v in run.items() if k != "dir"}
             row.update({"step": step, "tokens": step * scale,
@@ -572,7 +587,10 @@ def fig_lines_hf(cfg, out_dir):
         floors(ax, cfg["floors"], cfg.get("floor_side", "right"))
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_2, loc=cfg.get("legend_loc", "upper right"))
     fig.tight_layout(rect=(0, .06, 1, .94))
-    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"])
+    caption = cfg["caption"]
+    if offscreen:
+        caption += "  " + " ".join(offscreen)
+    finish(fig, cfg["title"], caption, out_dir / cfg["file"])
     if cfg.get("tsv"):
         write_tsv(out_dir / cfg["tsv"], tsv_rows,
                   cfg.get("tsv_columns",
