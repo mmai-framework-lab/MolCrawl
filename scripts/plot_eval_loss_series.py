@@ -162,6 +162,27 @@ def floors(ax, items, side="right"):
 
 # --------------------------------------------------------------------------- figures
 
+def x_scaler(cfg, params=None):
+    """Turn a step index into the x quantity a figure asks for.
+
+    Three axes answer three questions and the choice is not cosmetic: a step is
+    not the same work at two sizes. Steps stay available for a single run read on
+    its own; tokens compare data efficiency; PF-days (C = 6ND over 8.64e19)
+    compare compute, and are what a claim crossing sizes has to be read on.
+
+    6ND omits the attention term, which at sequence length 1,024 is 13-18 % of the
+    true cost. It cancels in a ratio between sizes; an absolute figure carries the
+    caveat in its caption.
+    """
+    per_step = cfg.get("x_tokens_per_step") or 1
+    if cfg.get("x_pfdays"):
+        n = params if params is not None else cfg.get("params")
+        if not n:
+            raise SystemExit("x_pfdays needs params (non-embedding) on the figure or the run")
+        return lambda step: 6 * n * step * per_step / PF_DAY
+    return lambda step: step * per_step
+
+
 def best_overall(steps, values, xlim):
     """Index of the run's lowest value, and whether it falls inside the drawn window.
 
@@ -222,9 +243,11 @@ def fig_panels_nanogpt(cfg, out_dir):
                            "va": [p[1][1] for p in pts]})
         for run in sorted(merged, key=lambda r: lrs.index(r["lr"])):
             st, tr, va = run["st"], run["tr"], run["va"]
-            if st[-1] < g.get("min_last_step", 0):
+            raw_steps = st
+            if raw_steps[-1] < g.get("min_last_step", 0):
                 continue
-            st = [x * (cfg.get("x_tokens_per_step") or 1) for x in st]
+            to_x = x_scaler(cfg, g.get("params"))
+            st = [to_x(x) for x in st]
             xmax = max(xmax, st[-1])
             c = SERIES[lrs.index(run["lr"])]
             if cfg.get("show_train"):
@@ -245,11 +268,13 @@ def fig_panels_nanogpt(cfg, out_dir):
                         markeredgecolor=SURFACE, markeredgewidth=1.1, zorder=5)
             if cfg.get("annotate_step") and best_shown:
                 dx, dy = g.get("min_offsets", {}).get(run["lr"], [0, -12])
-                ax.annotate(f"{va[best_i]:.4f} @ {st[best_i]:,}", (st[best_i], va[best_i]),
+                _at = (f"{st[best_i]:.3f} PF-days" if cfg.get("x_pfdays")
+                       else f"{raw_steps[best_i]:,}")
+                ax.annotate(f"{va[best_i]:.4f} @ {_at}", (st[best_i], va[best_i]),
                             textcoords="offset points", xytext=(dx, dy), ha="center",
                             fontsize=7.4, color=c, fontweight="bold", zorder=6)
-            print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={st[-1]:6d} "
-                  f"best_val={va[best_i]:.4f}@{st[best_i]}")
+            print(f"    {g['title'][:18]:20s} lr={run['lr']:8s} last={raw_steps[-1]:6d} "
+                  f"best_val={va[best_i]:.4f}@step {raw_steps[best_i]}")
         ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK,
                      loc="left", pad=6)
         if cfg.get("xticks"):
@@ -547,18 +572,21 @@ def fig_lines_hf(cfg, out_dir):
         if not st:
             print(f"  ! no series: {run['dir']}")
             continue
-        scale = cfg.get("x_tokens_per_step") or 1
-        steps, st = st, [x * scale for x in st]
+        to_x = x_scaler(cfg, run.get("params"))
+        steps, st = st, [to_x(x) for x in st]
         ax.plot(st, va, color=SERIES[i], linewidth=1.8, zorder=3, label=run["label"])
         best_i, best_shown = best_overall(st, va, cfg.get("xlim"))
         if not best_shown:
             offscreen.append(offscreen_note(run["label"], st[best_i], va[best_i]))
-        print(f"    {run['label'][:30]:32s} last={st[-1]:7d} best={va[best_i]:.4f}@{st[best_i]}")
+        print(f"    {run['label'][:30]:32s} last_step={steps[-1]:7d} "
+              f"best={va[best_i]:.4f}@step {steps[best_i]}")
         dx, dy = cfg.get("min_offsets", [[0, -13]] * len(cfg["runs"]))[i]
         # The step belongs beside the value: a minimum in the middle of a run is a
         # different statement from one at the last evaluation, and the two arms of
         # this grid differ in which they are.
-        text = (f"{va[best_i]:.4f} @ {st[best_i]:,}" if cfg.get("annotate_step")
+        _at = (f"{st[best_i]:.3f} PF-days" if cfg.get("x_pfdays")
+               else f"step {steps[best_i]:,}")
+        text = (f"{va[best_i]:.4f} @ {_at}" if cfg.get("annotate_step")
                 else f"{va[best_i]:.4f}")
         if cfg.get("mark_best") and best_shown:
             ax.plot([st[best_i]], [va[best_i]], marker="o", markersize=5,
@@ -570,7 +598,8 @@ def fig_lines_hf(cfg, out_dir):
                         fontsize=8, color=SERIES[i], fontweight="bold")
         for step, value in zip(steps, va):
             row = {k: v for k, v in run.items() if k != "dir"}
-            row.update({"step": step, "tokens": step * scale,
+            row.update({"step": step,
+                        "tokens": step * (cfg.get("x_tokens_per_step") or 1),
                         cfg.get("key", "eval_loss_mask"): f"{value:.6f}"})
             tsv_rows.append(row)
     # A run that falls by two orders of magnitude spends most of a linear axis
