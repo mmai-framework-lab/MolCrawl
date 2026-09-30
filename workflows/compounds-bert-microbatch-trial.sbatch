@@ -15,6 +15,12 @@
 #   sbatch --export=ALL,SIZE=large,LEARNING_SOURCE_DIR=...,MODEL_OUTPUT_ROOT=... \
 #          workflows/compounds-bert-microbatch-trial.sbatch
 #
+# Accumulation of 1 puts the effective batch at batch_size x 4, not the 2,560 the
+# configs declare, and main.py stops a run whose effective batch does not match the
+# declaration. That guard is right: it exists so a wrong GPU count cannot quietly train
+# at another batch. A trial is the one case where the deviation is intended, so it
+# declares what it actually runs rather than being exempted.
+#
 # What is measured is one micro-batch, with gradient_accumulation_steps=1. The real
 # step is 640/batch_size micro-batches, and at xl that is about three minutes, so a
 # 50-step trial at the production shape would cost hours per candidate and tell us
@@ -44,13 +50,16 @@ TORCHRUN="${TORCHRUN:-${REPO}/miniconda/bin/torchrun}"
 CONFIG="molcrawl/tasks/pretrain/configs/compounds/bert_${SIZE}.py"
 [ -f "${CONFIG}" ] || { echo "no config at ${CONFIG}" >&2; exit 1; }
 
-# Ceilings by size. Starting every size at 320 spends most of the trial on candidates
-# that cannot fit; these are one step above what the parameter count makes plausible.
+# Ceilings by size, one step above what the parameter count makes plausible. Raised on
+# 2026-09-30: the 2026-09-15 trial ran in fp32 and found 160/64/64/32, but bf16 went
+# into the BERT configs on 2026-09-17 and halves the activations, so the shapes that
+# fit now are larger and the old ceilings would cut the search short. Every candidate
+# divides 640, so batch_size x accumulation x 4 GPUs = 2,560 holds whichever is taken.
 case "${SIZE}" in
-    small)  CANDIDATES="320 160 128 64 32 16 8" ;;
-    medium) CANDIDATES="160 128 64 32 16 8" ;;
-    large)  CANDIDATES="128 64 32 16 8" ;;
-    xl)     CANDIDATES="64 32 16 8" ;;
+    small)  CANDIDATES="640 320 160 128 64 32 16 8" ;;
+    medium) CANDIDATES="320 160 128 64 32 16 8" ;;
+    large)  CANDIDATES="320 160 128 64 32 16 8" ;;
+    xl)     CANDIDATES="160 128 64 32 16 8" ;;
     *) echo "unknown SIZE ${SIZE}" >&2; exit 1 ;;
 esac
 
@@ -86,6 +95,7 @@ for BS in ${CANDIDATES}; do
         --model_path="${OUT}" \
         --batch_size="${BS}" \
         --gradient_accumulation_steps=1 \
+        --expected_global_batch=$(( BS * 4 )) \
         --max_steps="${STEPS}" \
         --warmup_steps=1 \
         --log_interval=$(( STEPS + 1000 )) \
@@ -148,6 +158,7 @@ if [ -n "${ADOPTED:-}" ]; then
         --model_path="${OUT}" \
         --batch_size="${ADOPTED}" \
         --gradient_accumulation_steps=1 \
+        --expected_global_batch=$(( ADOPTED * 4 )) \
         --max_steps=2 \
         --warmup_steps=1 \
         --log_interval=2 \
