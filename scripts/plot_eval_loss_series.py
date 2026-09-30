@@ -214,6 +214,10 @@ def fig_panels_nanogpt(cfg, out_dir):
                   f"best_val={min(va):.4f}@{st[va.index(min(va))]}")
         ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK,
                      loc="left", pad=6)
+        # As in fig_panels_hf. A molecule_nat_lang GPT-2 run goes from 10.96 to 0.58, and
+        # on a linear axis all four sizes lie along the bottom of the panel.
+        if cfg.get("yscale"):
+            ax.set_yscale(cfg["yscale"])
         if cfg.get("xticks"):
             ax.set_xticks(cfg["xticks"])
             ax.set_xticklabels(cfg.get("xticklabels") or [str(t) for t in cfg["xticks"]])

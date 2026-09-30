@@ -30,7 +30,7 @@ matplotlib.use("Agg")
 import japanize_matplotlib  # noqa: F401  (registers a CJK font)
 import matplotlib.pyplot as plt
 
-from plot_eval_loss_series import INK, INK_2, INK_3, SERIES, finish, floors, style, write_tsv
+from plot_eval_loss_series import INK_2, SERIES, finish, floors, style, write_tsv
 
 PF_DAY = 8.64e19
 
