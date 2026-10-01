@@ -33,7 +33,8 @@ UNIGRAM_FLOOR = 4.6514      # next-token, this corpus (scripts/molnl_unigram_flo
 GLOBAL_BATCH, BLOCK, TRAIN_BLOCKS = 2560, 1024, 318118
 SIZE_ORDER = ("small", "medium", "large", "xl")
 # gpt2_<size>_1500_lr<tag>: 1p2e3 is 1.2e-3, 6e4 is 6e-4.
-NAME = re.compile(r"gpt2_(?P<size>[a-z]+)_(?P<iters>\d+)_lr(?P<tag>[0-9p]+e\d)$")
+NAME = re.compile(r"gpt2_(?P<size>[a-z]+)_(?P<iters>\d+)_lr(?P<tag>[0-9p]+e\d)"
+                  r"(?:_seed(?P<seed>\d+))?$")
 
 
 class Arm(NamedTuple):
@@ -71,11 +72,17 @@ def collect(runs_root, iters):
             continue
         steps, val, train = read_run(d)
         if steps:
-            runs[(m["size"], rate_of(m["tag"]))] = {
+            runs[(m["size"], rate_of(m["tag"]), int(m["seed"] or 42))] = {
                 "steps": steps, "val": val, "train": train,
                 "complete": max(steps) >= iters, "name": os.path.basename(d),
             }
     return runs
+
+
+def by_seed(runs, size, lr):
+    """The same arm at every seed that has finished, lowest seed first."""
+    return [(seed, runs[(s_, lr_, seed)]) for (s_, lr_, seed) in sorted(runs)
+            if (s_, lr_) == (size, lr) and runs[(s_, lr_, seed)]["complete"]]
 
 
 def window(run, last_n, iters, every):
@@ -115,8 +122,9 @@ def main() -> int:
     # --- the table ---
     rows = []
     for size in SIZE_ORDER:
-        for lr in sorted({lr for s, lr in done if s == size}):
-            run = done[(size, lr)]
+        for lr in sorted({lr for s, lr, _ in done if s == size}):
+            run = done[(size, lr, 42)] if (size, lr, 42) in done else \
+                done[sorted(k for k in done if k[0] == size and k[1] == lr)[0]]
             mean, start, n = window(run, a.last, a.iters, a.every)
             bx, by = best_point(run["steps"], run["val"])
             rows.append(Arm(size, lr, mean, by, bx, n, start,
@@ -149,10 +157,45 @@ def main() -> int:
                          f"the larger sd")
             print(line)
 
+    # Seeds: the point of the repeats is the spread, so it is printed as one line per
+    # arm rather than as more rows in the table above.
+    print(f"\n{'size':<8}{'lr':>10}{'seeds':>22}{'mean':>9}{'spread':>9}{'sd':>8}")
+    spreads = {}
+    for size in SIZE_ORDER:
+        for lr in sorted({lr for s, lr, _ in runs if s == size}):
+            got = by_seed(runs, size, lr)
+            if len(got) < 2:
+                continue
+            values = [window(r, a.last, a.iters, a.every)[0] for _, r in got]
+            spread = max(values) - min(values)
+            spreads[(size, lr)] = (st.mean(values), spread,
+                                   st.pstdev(values), [s_ for s_, _ in got])
+            seeds = ",".join(str(s_) for s_, _ in got)
+            print(f"{size:<8}{lr:>10g}{seeds:>22}{st.mean(values):>9.4f}"
+                  f"{spread:>9.4f}{st.pstdev(values):>8.4f}")
+    if spreads:
+        best = {}
+        for (size, lr), (mean, *_rest) in spreads.items():
+            if size not in best or mean < best[size][1]:
+                best[size] = (lr, mean, spreads[(size, lr)][1])
+        print("\neach size at the rate with repeats, and whether the step to the next"
+              " size clears the spread:")
+        order = [s_ for s_ in SIZE_ORDER if s_ in best]
+        for i, size in enumerate(order):
+            lr, mean, spread = best[size]
+            line = f"  {size:<7} lr {lr:<8g} mean {mean:.4f}  spread {spread:.4f}"
+            if i:
+                prev = best[order[i - 1]]
+                gap = prev[1] - mean
+                scale = max(spread, prev[2])
+                line += (f"  gap from {order[i-1]} {gap:+.4f} = "
+                         f"{abs(gap) / scale:.2f}x the larger spread")
+            print(line)
+
     incomplete = {k: r for k, r in runs.items() if not r["complete"]}
     if incomplete:
         print("\nstill running, left out of the table:")
-        for (size, lr), r in sorted(incomplete.items()):
+        for (size, lr, _seed), r in sorted(incomplete.items()):
             print(f"  {size} lr {lr:g}: at {max(r['steps']):,} of {a.iters:,}")
 
     # --- the TSV: every evaluation of every arm, complete or not ---
@@ -163,19 +206,21 @@ def main() -> int:
         fh.write(f"# unigram floor for next-token prediction on this corpus: {UNIGRAM_FLOOR}\n")
         fh.write(f"# window_mean is the mean of the last {a.last} evaluations; blank while a run "
                  f"has not reached {a.iters}\n")
-        fh.write("size\tlearning_rate\tstep\tval_loss\ttrain_loss\tcomplete\twindow_mean\n")
+        fh.write("size\tlearning_rate\tseed\tstep\tval_loss\ttrain_loss\tcomplete"
+                 "\twindow_mean\n")
         for size in SIZE_ORDER:
-            for lr in sorted({lr for s, lr in runs if s == size}):
-                run = runs[(size, lr)]
+            for lr, seed in sorted({(lr, sd) for s, lr, sd in runs if s == size}):
+                run = runs[(size, lr, seed)]
                 mean, _, _ = window(run, a.last, a.iters, a.every) if run["complete"] else (None, 0, 0)
                 for s, v, t in zip(run["steps"], run["val"], run["train"]):
-                    fh.write(f"{size}\t{lr:g}\t{s}\t{v:.6f}\t{t:.6f}\t"
+                    fh.write(f"{size}\t{lr:g}\t{seed}\t{s}\t{v:.6f}\t{t:.6f}\t"
                              f"{int(run['complete'])}\t{'' if mean is None else f'{mean:.6f}'}\n")
 
     # --- one figure per size, rates overlaid ---
     made = []
     for size in SIZE_ORDER:
-        arms = [(lr, runs[(size, lr)]) for lr in sorted({lr for s, lr in runs if s == size})]
+        arms = [(lr, runs[(size, lr, 42)]) for lr in sorted({lr for s, lr, sd in runs
+                                                             if s == size and sd == 42})]
         if not arms:
             continue
         fig, ax = new_figure()
