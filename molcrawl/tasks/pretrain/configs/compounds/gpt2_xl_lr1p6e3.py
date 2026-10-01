@@ -1,0 +1,121 @@
+# compounds GPT-2 xl — learning-rate sweep point 0.0016
+# launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/gpt2/train.py <this config>
+#
+# xl has no point at this length. The three rates are small's and medium's, because
+# the best rate has not moved with size in compounds GPT-2: 8e-4 at all three sizes.
+#
+# 4,674 iterations, the length the existing 14 sweep points ran at (30 epochs). The
+# ladder configs still say 1,558, which the sweep overrode at launch; written out here
+# so the file describes the run.
+#
+# Evaluation is the fixed set (deterministic_val_eval, protein-order-2026-09-25 §5.2):
+# the 14 existing points resample val with replacement at every eval, which adds noise
+# and biases best_val downward by selecting on it. These four are therefore NOT
+# directly comparable with those 14 -- comparing means re-scoring the 14 checkpoints
+# on the same fixed set first.
+#
+# seed 42 per compounds-order-2026-10-01 §5. The existing sweep ran at 1001, so a
+# comparison across the two carries seed variance as well as the rate; the order was
+# confirmed on 2026-10-01 with that understood.
+
+from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
+from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_GPT2, get_gpt2_output_path
+
+# EX-Large-Sized GPT2 Model
+n_layer = 48
+n_head = 25
+n_embd = 1600
+
+dataset_dir = COMPOUNDS_DATASET_DIR_GPT2
+
+tensorboard = True  # log training metrics to tensorboard
+tensorboard_dir = get_gpt2_output_path("compounds", "xl") + "-lr1p6e3"
+out_dir = get_gpt2_output_path("compounds", "xl") + "-lr1p6e3"
+
+tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
+meta_vocab_size = tokenizer.vocab_size
+eos_token_id = tokenizer.eos_token_id  # 13 ([SEP]) — the molecule separator in packed blocks
+
+# nanoGPT divides gradient_accumulation_steps by the DDP world size, so the
+# effective global batch = batch_size * gradient_accumulation_steps and is
+# GPU-count-independent. 4 * 640 = 2560 seq (same convention as protein xl).
+# The previous "batch x grad_accum x n_GPUs(4) = 2,560" comment was wrong for
+# nanoGPT semantics: 2 * 320 was an effective 640, not 2,560.
+batch_size = 4
+block_size = 1024
+gradient_accumulation_steps = 640  # 4 * 640 = 2560 seq global batch
+
+# The effective global batch this schedule was derived from. nanoGPT divides the
+# accumulation by the DDP world size and multiplies it back, so micro x accumulation
+# is the effective batch whatever the GPU count, and train.py refuses to start when
+# the two disagree. Declared from evidence, not intent: all 29 existing compounds
+# GPT-2 runs from these four configs recorded 2,560, read from their
+# run_manifest.json and from the config saved in ckpt.pt (2026-09-17).
+#
+# The chembl and guacamol configs declare their own numbers, 640 (8 x 80) and
+# 160 (2 x 80), because that is what they run at. 2,560 is this ladder's figure,
+# not a project-wide one.
+expected_global_batch = 2560
+
+# v4 packed data (2026-08-05): train = 398,917 blocks x 1024, no padding.
+# 10 epochs at global batch 2560 = floor(10 * 398,917 / 2560) = 1,558 iters.
+max_iters = 4674
+lr_decay_iters = 4674
+warmup_iters = 93  # 2% of max_iters
+learning_rate = 0.0016  # max learning rate
+min_lr = 0.00016  # ~= learning_rate/10 per Chinchilla
+
+# eval stuff — ~31 eval points over the run; log_interval != eval_interval so the
+# reported dt/MFU is not polluted by eval time.
+# Left at 50 while the directive's 100 is applied elsewhere. This ladder runs
+# max_iters=1558 and compounds-ladder-gpt2.sbatch passes no overrides, so 100
+# would take it from 31 eval points to 15 -- the resolution loss the directive's
+# own §4 warns about, on the arch whose curve turns. The value to settle first is
+# max_iters: compounds BERT moved to 15,000 steps in 54552c3 because that is what
+# its run used, and 1,558 here no longer matches it.
+eval_interval = 50
+# eval_sequences fixes the *number of validation sequences* per eval point instead of
+# the number of batches, so every ladder size averages its val loss over the same
+# 3,200 sequences. batch_size shrinks with model size, so a shared eval_iters would
+# give the large models a 2-4x smaller val sample. train.py derives eval_iters from
+# this and batch_size, so setting eval_iters here as well would be dead config.
+eval_sequences = 3200
+log_interval = 10
+
+# init from checkpoint
+init_from = "scratch"  # v4 packed ladder starts fresh; no v3 checkpoint is compatible
+
+# checkpoint management
+# Checkpoint policy, unified across modalities and architectures (directive
+# 2026-09-15 §3.1). always_save_checkpoint writes at every eval point, which makes
+# save_checkpoint_steps mean nothing; off, the run writes on the periodic grid for
+# resume and on every improvement for comparison (train.py, is_best_model).
+# max_checkpoints is the best-N kept by score, plus the newest for resume.
+always_save_checkpoint = False
+save_checkpoint_steps = 1000
+max_checkpoints = 10
+
+# early stopping — OFF for pretraining: the ladder is compute-matched, every size
+# runs the full schedule (spec 2026-07-31 §2; matches bert_*.py early_stopping=False).
+early_stopping = False
+
+# weight decay
+weight_decay = 0.1
+
+# dataset
+dataset = "compounds"
+
+# Special Tokens
+start_instruction = 12
+eos_token = 12  # eos
+
+dataset_params = {"dataset_dir": dataset_dir}
+
+# Training seed (sequentially assigned across the 117 tracked pretrain configs
+# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
+# Consumed by the runner via configurator; do NOT change once a run has started.
+seed = 42
+
+# Score the same fixed val sequences at every evaluation instead of resampling with
+# replacement. Off by default in train.py, so no run in flight changes.
+deterministic_val_eval = True
