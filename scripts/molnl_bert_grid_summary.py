@@ -23,8 +23,9 @@ import re
 import statistics as st
 import subprocess
 
-NAME = re.compile(r"^bert_(?P<size>small|medium|large)(?:_(?P<schedule>\w+?))?_lr(?P<tag>[0-9p]+e\d)$")
-SIZE_ORDER = {"small": 0, "medium": 1, "large": 2}
+NAME = re.compile(r"^bert_(?P<size>small|medium|large|xl)(?:_(?P<schedule>\w+?))?"
+                  r"_lr(?P<tag>[0-9p]+e\d)(?:_seed(?P<seed>\d+))?$")
+SIZE_ORDER = {"small": 0, "medium": 1, "large": 2, "xl": 3}
 
 
 def rate_of(tag):
@@ -91,7 +92,7 @@ def collect(runs_root, pattern):
             continue
         pts, max_steps = read_run(d)
         if pts:
-            runs[(m["size"], rate_of(m["tag"]), m["tag"])] = {
+            runs[(m["size"], rate_of(m["tag"]), m["tag"], int(m["seed"] or 42))] = {
                 "name": name, "points": pts, "max_steps": max_steps,
                 "state": run_state(d), "dir": d,
             }
@@ -113,8 +114,9 @@ def main() -> int:
 
     print(f"{'run':<26}{'lr':>9}{'step':>8}{'/max':>8}{'window':>9}{'sd':>8}{'best':>9}"
           f"{'at':>8}{'last':>9}  state")
-    for (size, lr, tag) in sorted(runs, key=lambda k: (SIZE_ORDER[k[0]], k[1])):
-        run = runs[(size, lr, tag)]
+    for key in sorted(runs, key=lambda k: (SIZE_ORDER[k[0]], k[1], k[3])):
+        size, lr, tag, seed = key
+        run = runs[key]
         pts = run["points"]
         reached = pts[-1][0]
         best_step, best = min(pts, key=lambda p: p[1])
@@ -135,12 +137,12 @@ def main() -> int:
         other = collect(a.runs_root, "bert_*_lr*")
         print(f"\n{'size':<8}{'lr':>9}{'this':>9}{'other':>9}{'change':>9}  compared with "
               f"(window means)")
-        for (size, lr, tag) in sorted(runs, key=lambda k: (SIZE_ORDER[k[0]], k[1])):
+        for (size, lr, tag, seed) in sorted(runs, key=lambda k: (SIZE_ORDER[k[0]], k[1], k[3])):
             want = a.against.format(size=size, tag=tag)
             match = [v for k, v in other.items() if v["name"] == want]
             if not match:
                 continue
-            mine, _ = window(runs[(size, lr, tag)]["points"])
+            mine, _ = window(runs[(size, lr, tag, seed)]["points"])
             theirs, _ = window(match[0]["points"])
             print(f"{size:<8}{lr:>9g}{mine:>9.4f}{theirs:>9.4f}{mine - theirs:>+9.4f}  {want}")
     return 0
