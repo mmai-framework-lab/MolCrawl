@@ -22,6 +22,16 @@ from molcrawl.tasks.pretrain.configs.rna.bert_large import *  # noqa: F401,F403
 model_size = "xl"
 model_path = get_bert_output_path("rna", model_size)
 
+# A new config gets 42. Without this line the star import leaves large's 104 in
+# place, which is what the 2026-09-30 batch-shape probe ran at -- the one run in
+# that day's inventory that did not match the policy. The three rate configs set
+# 42 themselves, so the points already launched are unaffected; this closes the
+# gap for anything that imports this base without setting a seed of its own.
+#
+# No data_seed. transformers 4.45.1 never reads it, the data order follows
+# set_seed(seed), and main.py refuses a config that declares a second seed.
+seed = 42
+
 # The three grid points override this. It is set here so that running the base
 # directly does not silently inherit large's env-driven rate.
 learning_rate = 1.4e-4
