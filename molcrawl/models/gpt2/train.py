@@ -264,6 +264,18 @@ if __name__ == "__main__":
     else:
         configurator_path = "configurator.py"
     exec(open(configurator_path).read())  # overrides from command line or config file
+    # One seed here too, and a config that asks for two is refused rather than
+    # silently dropped. nanoGPT has no data_seed: the single seed below drives both
+    # torch.manual_seed (the weights) and np.random.seed (get_batch's draw). The
+    # configurator execs the config file into these globals, so a declared
+    # data_seed would appear here and do nothing at all.
+    _declared_data_seed = globals().get("data_seed")
+    if _declared_data_seed is not None and int(_declared_data_seed) != int(seed):
+        raise SystemExit(
+            f"config declares data_seed={_declared_data_seed} beside seed={seed},"
+            " but train.py has no data_seed: one seed drives both the weights and"
+            " the batch draw. Drop data_seed from the config and set seed alone."
+        )
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
     # The same filter again, now that the config file has run. What it adds are
     # names a config *introduced* rather than overrode -- eos_token_id,
