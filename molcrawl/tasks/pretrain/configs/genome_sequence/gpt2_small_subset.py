@@ -100,7 +100,13 @@ _GLOBAL_BATCH = 2560
 # edited apart and their product stops matching. This config trained at 640 for
 # exactly that reason before 4974f55.
 expected_global_batch = _GLOBAL_BATCH
-_N_EPOCH = 3
+# Epochs. The default is the 3 the production 21 ran at; SUBSET_GPT2_EPOCHS
+# raises it without editing this line, the same way SUBSET_BERT_EPOCHS does on
+# the BERT side. It has to go through max_iters rather than through a
+# command-line --max_iters, because warmup_iters and lr_decay_iters are derived
+# from it here: overriding only max_iters at launch would leave a 9-epoch run
+# warming up over 2% of a 3-epoch schedule, which is 0.67% of its own.
+_N_EPOCH = int(os.environ.get("SUBSET_GPT2_EPOCHS", "3"))
 _ds_for_len = _load(dataset_dir)
 _train_n = len(_ds_for_len["train"])
 max_iters = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
