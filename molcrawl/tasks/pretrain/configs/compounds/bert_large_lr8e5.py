@@ -1,21 +1,15 @@
-# compounds BERT medium — learning-rate grid, point added below the original three
+# compounds BERT large — learning-rate grid, point added below the original three
 # launch: torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py <this config>
 #
-# Added 2026-10-01, after the first grid put medium's only surviving arm at the bottom
-# of its own range. 2.8e-4 was still learning at 0.0711 while 5e-4 and 1e-3 both collapsed, so
-# whether a lower rate does better is unmeasured.
+# Added 2026-10-01. At 41 % of the schedule large's lowest rate was its best -- 1.5e-4
+# at 0.0819 against 2.8e-4 at 0.0835 -- which is the shape medium and xl both showed
+# before their surviving arm turned out to be the bottom of the range.
 #
-# The rate a run collapses at falls faster in compounds than the three modalities the
-# grid was extrapolated from: small's highest surviving rate is 1e-3 and medium's is
-# 2.8e-4, a factor of 3.57 per size step, where molnl was 3.16, protein 3.00 and rna
-# 1.73. The original grids were placed on that 1.73-3.16 range and sit too high.
+# Not waiting for the two to finish. If the bottom is still best at 15,000 steps, a
+# point added then starts 30 hours late; a point added now costs one run if the order
+# reverses.
 #
-# One step of about 1.8 below the surviving point, so the optimum is bracketed from
-# below rather than pinned against the edge of the range.
-#
-# Seed 9, the seed this grid runs at. A point filled into an existing grid takes that
-# grid's seed: a different one would put seed variance inside a difference that is
-# supposed to be about the rate.
+# One step of about 1.8 below 1.5e-4. Seed 9, this grid's seed.
 
 from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer as Tokenizer
 from molcrawl.core.paths import COMPOUNDS_DATASET_DIR_BERT, get_bert_output_path
@@ -25,18 +19,18 @@ tokenizer = Tokenizer("assets/molecules/vocab.txt", 256)
 max_steps = 15000
 warmup_steps = 1500  # 10% of max_steps, matching the small grid
 early_stopping = False  # Pretraining: run the full schedule, no early stopping
-model_size = "medium"
+model_size = "large"
 # Per-arm directory under MODEL_OUTPUT_ROOT. Unset, this resolves under
 # LEARNING_SOURCE_DIR -- the tree compounds' 18G of input and 1.4T of output already
 # share -- and main.py's output guard stops the run before the first step.
-model_path = get_bert_output_path("compounds", model_size) + "-lr1p5e4"
+model_path = get_bert_output_path("compounds", model_size) + "-lr8e5"
 max_length = 1024  # packed blocks; sets BertConfig.max_position_embeddings
 dataset_dir = COMPOUNDS_DATASET_DIR_BERT
 # The compounds sets were packed in source order before the 2026-08-21 rebuild, so the
 # split's leading rows are shorter and easier than the split as a whole. Draw the eval
 # subset at random instead.
 eval_subset_random = True
-learning_rate = 0.00015
+learning_rate = 8e-05
 weight_decay = 0.01
 log_interval = 100  # = eval_steps -> 150 eval points over the run
 save_steps = 1000  # multiple of eval_steps, so every checkpoint carries an eval
@@ -50,13 +44,11 @@ save_on_improve = True
 # launch; without it a masked token attends across document boundaries.
 document_masking = True
 
-# 160 x 4 x 4 GPUs = 2,560 sequences. Measured under bf16 on 2026-09-30 (job 150892):
-# 320 does not fit, 160 does, and 160 is also the fastest of the shapes that fit
-# (7.21 s/step against 7.35 at 64 and 14.47 at the shipped 8 x 80). The earlier trial
-# said 64 because it ran in fp32, before bf16 went into the BERT configs; bf16 halves
-# the activations and 160 now fits.
-batch_size = 160
-gradient_accumulation_steps = 4
+# 64 x 10 x 4 GPUs = 2,560 sequences. Measured under bf16 on 2026-09-30:
+# 160 and 128 do not fit, 64 does, and 64 is also the fastest of the shapes that fit
+# (12.14 s/step against 12.27 at 32 and 22.35 at the shipped 8 x 80).
+batch_size = 64
+gradient_accumulation_steps = 10
 
 # The grid writes every key out rather than importing bert_small.py, so nothing added to
 # the base reaches it -- these have to be stated here. Same values as every BERT base:
@@ -77,8 +69,8 @@ expected_global_batch = 2560
 # by construction: evaluation runs two no_grad forwards per batch (HF's own and the
 # breakdown's in models/bert/_mlm_diagnostics.py), and two of those peak below one
 # forward+backward at the same width, which training already does. Logits are the
-# term that scales -- 160 x 1,024 x 616 vocab here.
-per_device_eval_batch_size = 160
+# term that scales -- 64 x 1,024 x 616 vocab here.
+per_device_eval_batch_size = 64
 
 # seed only. data_seed is not written: neither trainer reads it -- transformers 4.45.1
 # stores it on TrainingArguments and never consults it, and the data order follows
