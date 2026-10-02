@@ -51,7 +51,11 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 # names where mol_nl's own artifacts already live, and nothing moves.
 ARTIFACT_ROOT="${MOLNL_ARTIFACT_ROOT:-${PYROOT}/learning_source_20260803_molnl_train}"
 RUNS_ROOT="${RUNS_ROOT:-${ARTIFACT_ROOT}/molecule_nat_lang}"
-CKPT_TEMPLATE="${CKPT_TEMPLATE:-${RUNS_ROOT}/gpt2-output-shuffled-${STAGE}/molecule_nat_lang-{size}/ckpt.pt}"
+# Not ${CKPT_TEMPLATE:-...}: the "}" of the {size} placeholder closes the parameter
+# expansion early, and an exported template comes back with "/ckpt.pt}" glued to it.
+if [ -z "${CKPT_TEMPLATE:-}" ]; then
+  CKPT_TEMPLATE="${RUNS_ROOT}/gpt2-output-shuffled-${STAGE}/molecule_nat_lang-{size}/ckpt.pt"
+fi
 DATASET_DIR="${DATASET_DIR:-${RUNS_ROOT}/training_ready_hf_dataset_shuffled}"
 OUT="${OUT_DIR:-${ARTIFACT_ROOT}/experiment_data/eval/ladder-perplexity}"
 
