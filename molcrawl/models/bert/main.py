@@ -361,6 +361,22 @@ if __name__ == "__main__":
     else:
         configurator_path = "configurator.py"
     exec(open(configurator_path).read())  # overrides from command line or config file
+    # One seed, and a config that asks for two is refused rather than ignored.
+    #
+    # transformers 4.45.1 stores data_seed on TrainingArguments and never reads it:
+    # the training sampler is a plain RandomSampler, so the order is drawn from the
+    # global RNG that set_seed(seed) fixed. A config declaring data_seed therefore
+    # promises a separation between the weights' seed and the data's seed that no
+    # code here delivers -- and because config_keys is snapshotted before this line,
+    # the declaration would not even reach run_manifest.json. Fail loudly instead.
+    _declared_data_seed = globals().get("data_seed")
+    if _declared_data_seed is not None and int(_declared_data_seed) != int(seed):
+        raise SystemExit(
+            f"config declares data_seed={_declared_data_seed} beside seed={seed},"
+            " but nothing reads data_seed: transformers 4.45.1 never consults it and"
+            " the data order follows set_seed(seed). Drop data_seed from the config"
+            " and set seed alone, or implement the separation before declaring it."
+        )
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
     # The same filter again, now that the config file has run. What it adds are
     # names a config *introduced* rather than overrode -- expected_global_batch,
@@ -636,9 +652,9 @@ if __name__ == "__main__":
         learning_rate=learning_rate,
         weight_decay=weight_decay,
         # Training seed from config (per-config sequential value, boss directive
-        # 2026-08-03). data_seed=seed keeps DataLoader shuffling in lockstep so
-        # a rerun with the same config reproduces both weight init and batch order.
-        seed=seed,
+        # Passed so run_manifest.json records the one seed under both names. It has no
+        # effect of its own in transformers 4.45.1 (see the refusal above): the data
+        # order comes from set_seed(seed).
         data_seed=seed,
         # AdamW optimizer settings — production spec (2026-07-08):
         # betas = (0.9, 0.95) instead of HF default (0.9, 0.999).
