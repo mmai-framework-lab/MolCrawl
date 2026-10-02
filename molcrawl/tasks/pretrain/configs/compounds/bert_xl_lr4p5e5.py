@@ -78,7 +78,8 @@ expected_global_batch = 2560
 # term that scales -- 32 x 1,024 x 616 vocab here.
 per_device_eval_batch_size = 32
 
-# Both written out: they do different jobs, and leaving data_seed to the framework
-# means the manifest records a value no one chose.
+# seed only. data_seed is not written: neither trainer reads it -- transformers 4.45.1
+# stores it on TrainingArguments and never consults it, and the data order follows
+# set_seed(seed) -- so a declaration is dead config that reads as a second knob.
+# main.py refuses a config whose data_seed disagrees with seed, for the same reason.
 seed = 9
-data_seed = 9
