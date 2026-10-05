@@ -444,3 +444,15 @@ def test_the_collapsed_figure_says_so_in_its_title():
 
     assert "collapsed" in inspect.signature(_plot().draw).parameters
     assert "基準線を上回って終わった run" in src
+
+
+def test_every_figure_shares_one_x_axis():
+    """The three-versus-nine figure is drawn by its own function and was the
+    only one left on step after the axis changed -- and it is the figure the
+    reading is made from."""
+    import inspect
+    src = inspect.getsource(_plot().draw_epoch_pair)
+
+    assert "tokens_per_step" in src
+    assert 'ax.set_xscale("log")' in src
+    assert "figsize=(18, 9)" in src
