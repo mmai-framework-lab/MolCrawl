@@ -93,6 +93,7 @@ echo ""; echo "########## 2. TSV ##########"
     --sacct-start "${SACCT_START:-2026-08-01}" \
     --sacct-end "${SACCT_END:-2026-09-30}" \
     --train-root "bert-base=${SRC_ROOT_512}" "bert-sat9=${SRC_ROOT_512}" \
+        ${SRC_ROOT_GPT2:+"gpt2-ep9=${SRC_ROOT_GPT2}"} \
         ${SRC_ROOT_1026:+"bert-lr-sweep=${SRC_ROOT_1026}"} \
     --out "${TSV}" \
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
@@ -114,6 +115,7 @@ _stale=$(ls "${OUT_DIR}"/genome-loss-*.png 2>/dev/null | wc -l)
         "bert-w1026=${RESULTS_ROOT}/final-scores-bert-w1026" \
         "bert-lr-sweep=${RESULTS_ROOT}/final-scores-bert-w1026" \
         "gpt2=${RESULTS_ROOT}/final-scores-gpt2" \
+        "gpt2-ep9=${RESULTS_ROOT}/final-scores-gpt2" \
     --baselines-tally \
         "bert-base=${TALLY}:bert" \
         "bert-sat9=${TALLY}:bert" \
