@@ -13,9 +13,17 @@
 #   ZINC22_RECORD=<tsv>,ZINC22_RETRY=<txt>[,ZINC22_WORKERS=8][,ZINC22_AUTH=<user:password>] \
 #          workflows/zinc22-fetch.sbatch
 #
-# ZINC22_AUTH is optional: the 2D tranches are served without credentials, and the
-# header is sent only when the variable is set. It is read from the environment so
-# that a credential never reaches a tracked file.
+# The 2D tranches sit behind HTTP Basic. ZINC publishes what to use on its own index
+# page at files.docking.org/zinc22/, stating the point is to keep the files out of
+# search engines rather than to restrict access. Supply it either way:
+#
+#   ZINC22_AUTH=<user:password>        directly, or
+#   ZINC22_AUTH_FILE=<path>           a file whose first line is user:password
+#
+# The file form keeps the value out of the submit line and the process list. Either
+# way it is read at run time and never written to a tracked file or a log. With
+# neither set the request goes out unauthenticated, which is what the public
+# directories want.
 #
 # Outbound name lookup goes through the unprivileged bind-mount helper because this
 # cluster's /etc/resolv.conf points at a dead stub. NETRUN points at it.
@@ -24,6 +32,11 @@ set -uo pipefail
 : "${ZINC22_DEST:?export ZINC22_DEST to the directory to fetch into}"
 : "${ZINC22_RECORD:?export ZINC22_RECORD to the per-file record TSV to write}"
 : "${ZINC22_RETRY:?export ZINC22_RETRY to the retry list to write}"
+if [ -n "${ZINC22_AUTH_FILE:-}" ]; then
+  [ -r "${ZINC22_AUTH_FILE}" ] || { echo "cannot read ${ZINC22_AUTH_FILE}" >&2; exit 1; }
+  ZINC22_AUTH="$(head -n 1 "${ZINC22_AUTH_FILE}" | tr -d '\r\n')"
+  export ZINC22_AUTH
+fi
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
 NETRUN="${NETRUN:?export NETRUN to the DNS wrapper}"
 [ -x "${NETRUN}" ] || { echo "no wrapper at ${NETRUN}" >&2; exit 1; }
@@ -34,6 +47,7 @@ export PYTHONPATH="${REPO}:${PYTHONPATH:-}" PYTHONUNBUFFERED=1
 cd "${REPO}"; mkdir -p workflows/slurm-logs "${ZINC22_DEST}" "$(dirname "${ZINC22_RECORD}")"
 echo "=== ZINC-22 fetch on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "code: $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
+if [ -n "${ZINC22_AUTH:-}" ]; then echo "auth: supplied"; else echo "auth: none"; fi
 echo "dest: ${ZINC22_DEST}"
 df -h "${ZINC22_DEST}" | tail -1
 "${NETRUN}" "${PYTHON}" scripts/zinc22_fetch.py \
