@@ -294,7 +294,12 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
     window, the same batch. Any other subset would change two things at once.
     """
     plt = _pyplot()
-    fig, ax = plt.subplots(figsize=(11, 5.2))
+    fig, ax = plt.subplots(figsize=(18, 9))
+    # Both sides are window 512 at global batch 2,560, so one tokens-per-step
+    # covers them and the axis matches every other figure here. Drawn against
+    # step this was the only figure left on a different axis -- and it is the
+    # one the three-versus-nine reading is made from.
+    per_step = tokens_per_step("bert-base", meta) or tokens_per_step("bert-sat9", meta)
     pairs = (("bert-base", "mammal_centered", "3 エポック (bert-base)", "#1b3a6b"),
              ("bert-sat9", "mammal_centered", "9 エポック (bert-sat9)", "#c2622d"))
     ys = []
@@ -303,14 +308,16 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
         if not points:
             print(f"  {series}/{subset} が無いので省いた")
             continue
-        ax.plot(*zip(*points), color=colour, linewidth=1.2, label=label)
+        xs = [(st * per_step if per_step else st) for st, _ in points]
+        ax.plot(xs, [v for _, v in points], color=colour, linewidth=1.6, label=label)
         ys += [v for _, v in points]
         best_step, best_value = min(points, key=lambda p: p[1])
-        ax.plot([best_step], [best_value], marker="o", markersize=5, color=colour,
-                markeredgecolor="white", markeredgewidth=0.8, zorder=3)
-        ax.annotate(f"{best_step:,} / {best_value:.4f}", (best_step, best_value),
-                    textcoords="offset points", xytext=(0, -13), ha="center",
-                    fontsize=7, color=colour)
+        best_x = best_step * per_step if per_step else best_step
+        ax.plot([best_x], [best_value], marker="o", markersize=7, color=colour,
+                markeredgecolor="white", markeredgewidth=1.0, zorder=3)
+        ax.annotate(f"{best_step:,} step / {best_value:.4f}", (best_x, best_value),
+                    textcoords="offset points", xytext=(0, -16), ha="center",
+                    fontsize=10, color=colour)
     if "mammal_centered" in baselines:
         value = baselines["mammal_centered"]
         ax.axhline(value, color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
@@ -318,19 +325,32 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
         ys.append(value)
     span = max(ys) - min(ys)
     ax.set_ylim(min(ys) - span * 0.11, max(ys) + span * 0.04)
-    ax.set_xlabel("step")
-    ax.set_ylabel(metric)
-    ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
-    ax.set_title("mammal_centered: 3 エポックと 9 エポック", fontsize=11)
+    if per_step:
+        ax.set_xscale("log")
+        ax.set_xlabel("処理トークン数（対数）")
+        ax.xaxis.set_major_formatter(
+            lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
+                             f"{v / 1e9:.1f} G" if v >= 1e9 else
+                             f"{v / 1e6:,.0f} M"))
+    else:
+        ax.set_xlabel("step")
+        ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
+    ax.set_ylabel(f"{metric}（nats/token）")
+    ax.set_title("mammal_centered: 3 エポックと 9 エポック", fontsize=15)
     ax.grid(alpha=0.25, linewidth=0.5)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
-    ax.legend(fontsize=8, loc="upper right", framealpha=0.9)
-    fig.text(0.01, 0.015, "窓 512・グローバルバッチ 2,560・学習率 1e-4・"
-             "指標 eval_loss_mask。両者とも mammal_centered の 1 本である。",
-             fontsize=6.6, color="#555555")
-    fig.tight_layout(rect=(0, 0.035, 1, 1))
-    fig.savefig(out_path, dpi=150)
+    ax.tick_params(labelsize=11)
+    ax.legend(fontsize=11, loc="upper right", framealpha=0.9)
+    note = ("窓 512・グローバルバッチ 2,560・学習率 1e-4・エポック 3 と 9・"
+            "指標 eval_loss_mask（nats/token）。両者とも mammal_centered の 1 本である。")
+    if per_step:
+        note += (f"\n横軸は処理トークン数 = step × グローバルバッチ × 窓長"
+                 f"（{per_step:,} トークン/step）。計算量 C = 6ND ではない。"
+                 f"6ND は系列長由来の注意機構の項を含まない。")
+    fig.text(0.008, 0.012, note, fontsize=9, color="#555555")
+    fig.tight_layout(rect=(0, 0.055, 1, 1))
+    fig.savefig(out_path, dpi=200)
     plt.close(fig)
     print(f"  wrote {out_path}")
 
