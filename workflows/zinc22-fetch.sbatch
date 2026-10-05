@@ -9,14 +9,17 @@
 # already present at its listed size is skipped, so re-submitting after a timeout or
 # a failure continues rather than starting over.
 #
-#   sbatch --export=ALL,ZINC22_AUTH=<user:password>,ZINC22_INVENTORY=<tsv>,\
-#   ZINC22_DEST=<dir>,ZINC22_RECORD=<tsv>,ZINC22_RETRY=<txt>[,ZINC22_WORKERS=8] \
+#   sbatch --export=ALL,ZINC22_INVENTORY=<tsv>,ZINC22_DEST=<dir>,\
+#   ZINC22_RECORD=<tsv>,ZINC22_RETRY=<txt>[,ZINC22_WORKERS=8][,ZINC22_AUTH=<user:password>] \
 #          workflows/zinc22-fetch.sbatch
+#
+# ZINC22_AUTH is optional: the 2D tranches are served without credentials, and the
+# header is sent only when the variable is set. It is read from the environment so
+# that a credential never reaches a tracked file.
 #
 # Outbound name lookup goes through the unprivileged bind-mount helper because this
 # cluster's /etc/resolv.conf points at a dead stub. NETRUN points at it.
 set -uo pipefail
-: "${ZINC22_AUTH:?export ZINC22_AUTH as user:password}"
 : "${ZINC22_INVENTORY:?export ZINC22_INVENTORY to the tranche TSV}"
 : "${ZINC22_DEST:?export ZINC22_DEST to the directory to fetch into}"
 : "${ZINC22_RECORD:?export ZINC22_RECORD to the per-file record TSV to write}"
