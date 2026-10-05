@@ -37,7 +37,8 @@ echo "vocab: ${VOCAB} ($(wc -l < "${VOCAB}") entries)"
     --smi "${SMI}" --vocab "${VOCAB}" \
     --out "${ZINC22_SHARDS}/${STEM}.parquet" \
     --counts "${ZINC22_COUNTS}/${STEM}.json" \
-    --block "${ZINC22_BLOCK:-1024}"
+    --block "${ZINC22_BLOCK:-1024}" \
+    --workers "${ZINC22_WORKERS:-${SLURM_CPUS_PER_TASK:-8}}"
 rc=$?
 echo "=== rc=${rc} @ $(date -Is) ==="
 exit "${rc}"

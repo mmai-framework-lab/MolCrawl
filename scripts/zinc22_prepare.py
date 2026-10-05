@@ -16,15 +16,23 @@ that choice can be revisited without re-reading the corpus.
 
 A molecule longer than the block size is kept: it spans a block boundary exactly as a
 short one does, which is what the organix13 packing does too.
+
+The tranche sizes are heavily skewed -- 1,309 files under a megabyte against 304 over
+a gigabyte, the largest 11 GiB -- so one process per file would leave the whole array
+waiting on a handful of tasks. Lines are therefore handed to a pool in ordered chunks
+and the blocks are cut in the parent from the results in order, which keeps the output
+identical to the single-process one regardless of how many workers run.
 """
 
 from __future__ import annotations
 
 import argparse
 import gzip
+import itertools
 import json
 import os
 import time
+from multiprocessing import Pool
 
 import numpy as np
 import pyarrow as pa
@@ -32,6 +40,49 @@ import pyarrow.parquet as pq
 
 BLOCK = 1024
 REPORT_EVERY = 2_000_000
+CHUNK_LINES = 20_000
+
+_TOK = None
+_UNK = None
+_COLUMN = 0
+
+
+def _init_worker(vocab_path, block, unk_id, smiles_column):
+    """Build one tokenizer per worker: constructing it per chunk would dominate."""
+    global _TOK, _UNK, _COLUMN
+    from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
+
+    _TOK = SmilesTokenizer(vocab_path, model_max_length=block)
+    _UNK = unk_id
+    _COLUMN = smiles_column
+
+
+def _encode_chunk(lines):
+    """Encode one chunk of .smi lines. Returns ids plus the counts for those lines."""
+    out = []
+    n_tok = n_unknown = n_charged = n_fragment = 0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split()
+        if _COLUMN >= len(parts):
+            continue
+        smi = parts[_COLUMN]
+        if smi.lower() in ("smiles", "smi"):
+            continue
+        ids = _TOK.encode(smi, add_special_tokens=False)
+        if not ids:
+            continue
+        out.append(ids)
+        n_tok += len(ids)
+        if _UNK in ids:
+            n_unknown += 1
+        if "+" in smi or "-" in smi:
+            n_charged += 1
+        if "." in smi:
+            n_fragment += 1
+    return out, n_tok, n_unknown, n_charged, n_fragment
 
 
 def load_vocab(path):
@@ -49,15 +100,16 @@ def main(argv=None) -> int:
     ap.add_argument("--block", type=int, default=BLOCK)
     ap.add_argument("--smiles-column", type=int, default=0,
                     help="column of the whitespace-separated .smi line holding the SMILES")
+    # os.cpu_count() reports the node's cores, not the ones allocated to this task,
+    # so the allocation is the default when Slurm states it.
+    ap.add_argument("--workers", type=int,
+                    default=int(os.environ.get("SLURM_CPUS_PER_TASK") or os.cpu_count() or 2))
     args = ap.parse_args(argv)
 
     if os.path.exists(args.out) and os.path.exists(args.counts):
         print(f"既存 {args.out} -- 何もしない")
         return 0
 
-    from molcrawl.data.compounds.utils.tokenizer import SmilesTokenizer
-
-    tok = SmilesTokenizer(args.vocab, model_max_length=args.block)
     vocab = load_vocab(args.vocab)
     sep_id = vocab["[SEP]"]
 
@@ -66,39 +118,29 @@ def main(argv=None) -> int:
     n_mol = n_tok = n_unknown_mol = n_charged = n_fragment = 0
     unk_id = vocab["[UNK]"]
     t0 = time.time()
+    next_report = REPORT_EVERY
 
     with gzip.open(args.smi, "rt", encoding="utf-8", errors="replace") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split()
-            if args.smiles_column >= len(parts):
-                continue
-            smi = parts[args.smiles_column]
-            # A .smi file may carry a header naming its columns; it is not a molecule.
-            if n_mol == 0 and smi.lower() in ("smiles", "smi"):
-                continue
-            ids = tok.encode(smi, add_special_tokens=False)
-            if not ids:
-                continue
-            n_mol += 1
-            n_tok += len(ids)
-            if unk_id in ids:
-                n_unknown_mol += 1
-            if "+" in smi or "-" in smi:
-                n_charged += 1
-            if "." in smi:
-                n_fragment += 1
-            stream.extend(ids)
-            stream.append(sep_id)
-            while len(stream) >= args.block:
-                blocks.append(np.asarray(stream[: args.block], dtype=np.int32))
-                del stream[: args.block]
-            if n_mol % REPORT_EVERY == 0:
-                el = time.time() - t0
-                print(f"  {n_mol:,} 分子 {n_tok:,} トークン {len(blocks):,} ブロック "
-                      f"{n_mol / el:,.0f} 分子/秒", flush=True)
+        chunks = iter(lambda: list(itertools.islice(fh, CHUNK_LINES)), [])
+        with Pool(args.workers, initializer=_init_worker,
+                  initargs=(args.vocab, args.block, unk_id, args.smiles_column)) as pool:
+            for encoded, c_tok, c_unk, c_chg, c_frag in pool.imap(_encode_chunk, chunks):
+                n_tok += c_tok
+                n_unknown_mol += c_unk
+                n_charged += c_chg
+                n_fragment += c_frag
+                for ids in encoded:
+                    n_mol += 1
+                    stream.extend(ids)
+                    stream.append(sep_id)
+                while len(stream) >= args.block:
+                    blocks.append(np.asarray(stream[: args.block], dtype=np.int32))
+                    del stream[: args.block]
+                if n_mol >= next_report:
+                    el = time.time() - t0
+                    print(f"  {n_mol:,} 分子 {n_tok:,} トークン {len(blocks):,} ブロック "
+                          f"{n_mol / el:,.0f} 分子/秒", flush=True)
+                    next_report += REPORT_EVERY
 
     # The tail shorter than one block is dropped rather than padded: padding would put
     # tokens in the corpus that no molecule produced, and the shards are assembled
@@ -122,6 +164,7 @@ def main(argv=None) -> int:
         "molecules_multi_fragment": n_fragment,
         "dropped_tail_tokens": dropped_tail,
         "seconds": round(time.time() - t0, 1),
+        "workers": args.workers,
     }
     with open(args.counts, "w", encoding="utf-8") as fh:
         json.dump(counts, fh, ensure_ascii=False, indent=2)
