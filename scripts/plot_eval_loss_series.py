@@ -637,9 +637,65 @@ def fig_lines_hf(cfg, out_dir):
                           ["size", "lr", "step", cfg.get("key", "eval_loss_mask"), "segment"]))
 
 
+def fig_lines_tsv(cfg, out_dir):
+    """Curves read from the curve TSV, one line per selected run, x in PF-days.
+
+    The figure is drawn from the same file the numbers are reported from, so a
+    curve and the table under it cannot disagree. Each series names the columns
+    that select it and the non-embedding parameter count its compute is computed
+    from; N is per series because a figure may hold more than one model size.
+    """
+    import csv as _csv
+    rows = list(_csv.DictReader(open(cfg["tsv"], encoding="utf-8"), delimiter="\t"))
+    fig, ax = plt.subplots(figsize=(cfg.get("width", 14.0), cfg.get("height", 8.0)))
+    per_step = cfg.get("x_tokens_per_step") or 1
+    drawn = 0
+    for i, ser in enumerate(cfg["series"]):
+        sel = [r for r in rows if all(r.get(k) == v for k, v in ser["where"].items())]
+        if not sel:
+            print(f"  ! no rows: {ser['label']}")
+            continue
+        sel.sort(key=lambda r: int(r["step"]))
+        steps = [int(r["step"]) for r in sel]
+        vals = [float(r["value"]) for r in sel]
+        n = ser["params"]
+        xs = [6 * n * st * per_step / PF_DAY for st in steps]
+        c = SERIES[i % len(SERIES)]
+        ax.plot(xs, vals, color=c, linewidth=2.0, zorder=3, label=ser["label"],
+                linestyle=ser.get("linestyle", "-"))
+        b = min(range(len(vals)), key=lambda k: vals[k])
+        ax.plot([xs[b]], [vals[b]], marker="o", markersize=7, color=c,
+                markeredgecolor=SURFACE, markeredgewidth=1.4, zorder=5)
+        dx, dy = ser.get("offset", [0, -18])
+        ax.annotate(f"{vals[b]:.4f} @ {steps[b]:,} step", (xs[b], vals[b]),
+                    textcoords="offset points", xytext=(dx, dy), ha="center",
+                    fontsize=9, color=c, fontweight="bold", zorder=6)
+        print(f"    {ser['label'][:34]:36s} 到達 {steps[-1]:>6}  最良 {vals[b]:.4f} @ {steps[b]}")
+        drawn += 1
+    if not drawn:
+        raise SystemExit(f"{cfg['file']}: no series matched the TSV")
+    ax.set_xscale("log")
+    if cfg.get("yscale", "log") == "log":
+        ax.set_yscale("log")
+    if cfg.get("ylim"):
+        ax.set_ylim(*cfg["ylim"])
+    if cfg.get("xlim"):
+        ax.set_xlim(*cfg["xlim"])
+    style(ax, cfg.get("xlabel", "学習に使った計算量（PF-days、C = 6ND）"), cfg["ylabel"])
+    if cfg.get("floors"):
+        floors(ax, cfg["floors"], cfg.get("floor_side", "left"))
+    ax.legend(frameon=False, fontsize=10.5, labelcolor=INK_2,
+              title=cfg.get("legend_title"), title_fontsize=10,
+              loc=cfg.get("legend_loc", "upper right"))
+    fig.tight_layout(rect=(0, cfg.get("rect_bottom", .10), 1, .955))
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"],
+           bottom=cfg.get("rect_bottom", 0))
+
+
 KIND = {"panels_nanogpt": fig_panels_nanogpt, "panels_hf": fig_panels_hf,
         "scaling": fig_scaling, "points": fig_points,
-        "many_hf": fig_many_hf, "lines_hf": fig_lines_hf}
+        "many_hf": fig_many_hf, "lines_hf": fig_lines_hf,
+        "lines_tsv": fig_lines_tsv}
 
 
 def main() -> int:
