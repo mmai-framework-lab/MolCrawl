@@ -456,3 +456,26 @@ def test_every_figure_shares_one_x_axis():
     assert "tokens_per_step" in src
     assert 'ax.set_xscale("log")' in src
     assert "figsize=(18, 9)" in src
+
+
+def test_the_eval_row_count_survives_a_missing_manifest():
+    """A loss has no meaning without how its rows were chosen. The manifest
+    carries it, but the twenty-one 512-window runs predate the manifest -- so
+    the count comes back out of the trainer's own timings instead."""
+    state = {"log_history": [{"eval_runtime": 20.0, "eval_samples_per_second": 500.0}]}
+
+    assert lc._bert_eval_set("/nonexistent", state) == "valid の取り方不明 10,000 行"
+
+
+def test_a_run_that_recorded_nothing_says_nothing():
+    assert lc._bert_eval_set("/nonexistent", {"log_history": []}) is None
+
+
+def test_the_caption_states_how_the_eval_rows_were_chosen():
+    """Rule 3 of the 2026-10-05 directive: the draw method and the row count go
+    in a footnote to any table of values, and a figure quoting losses is one."""
+    import inspect
+    src = inspect.getsource(_plot().caption)
+
+    assert "eval_set" in src
+    assert "取り方の違う値を同じ列に置かない" in src

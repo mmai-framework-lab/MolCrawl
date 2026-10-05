@@ -214,7 +214,36 @@ def bert_meta(run_dir):
     return {"window": window, "max_steps": args.max_steps, "global_batch": batch,
             "lr": args.learning_rate, "warmup": args.warmup_steps,
             "eval_every": (evals[1] - evals[0]) if len(evals) > 1 else None,
+            "eval_set": _bert_eval_set(run_dir, state),
             "epochs": _manifest_epochs(run_dir)}
+
+
+def _bert_eval_set(run_dir, state):
+    """How the evaluation rows were chosen, from what the run itself saved.
+
+    A loss has no meaning without this. The manifest carries it, but only the
+    runs new enough to write one -- the twenty-one 512-window runs predate it.
+    Their row count comes back out of the trainer's own timings instead:
+    eval_runtime x eval_samples_per_second is the number of rows it scored.
+    """
+    rows = None
+    manifest = os.path.join(run_dir, "run_manifest.json")
+    random_draw = None
+    if os.path.exists(manifest):
+        try:
+            got = json.load(open(manifest)).get("eval", {})
+            rows, random_draw = got.get("rows"), got.get("subset_random")
+        except (OSError, ValueError):
+            pass
+    if rows is None:
+        timed = [e for e in state.get("log_history", []) if "eval_runtime" in e]
+        if timed:
+            last = timed[-1]
+            rows = round(last["eval_runtime"] * last["eval_samples_per_second"])
+    if rows is None:
+        return None
+    how = "先頭" if random_draw is False else ("無作為" if random_draw else "取り方不明")
+    return f"valid の{how} {rows:,} 行"
 
 
 def _measured_epochs(root, subset, max_steps, batch, model):
@@ -271,7 +300,14 @@ def gpt2_meta(run_dir):
             # nine-epoch series was captioned "epochs 3" while that 3 was
             # hardcoded here. Left as None so the measured path fills it from
             # the build's train rows, the same way the BERT series are filled.
-            "eval_every": cfg.get("eval_interval"), "epochs": None}
+            "eval_every": cfg.get("eval_interval"),
+            # nanoGPT redraws its evaluation rows every time, with replacement,
+            # rather than scoring a fixed subset. Not the same measurement as
+            # BERT's, which is why the two never share an axis.
+            "eval_set": (f"valid から毎回抽選 "
+                         f"{cfg.get('eval_iters', 0) * cfg.get('batch_size', 0):,} 行"
+                         f"（重複あり）"),
+            "epochs": None}
 
 
 def bert_points(run_dir):
