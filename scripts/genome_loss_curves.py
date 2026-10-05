@@ -58,7 +58,13 @@ def series_of(basename):
     if basename.startswith("stab"):
         return "gpt2-lr-sweep"
     if basename.startswith("gpt2"):
-        return "gpt2-lr-sweep" if _LR_ARM.search(basename) else "gpt2"
+        if _LR_ARM.search(basename):
+            return "gpt2-lr-sweep"
+        # The nine-epoch series shares the production naming apart from this
+        # tag. Without it the two land in one series: three epochs and nine,
+        # averaged together, on runs whose best points sit at 53-98% and 13-28%
+        # of their schedules respectively.
+        return "gpt2-ep9" if basename.endswith("-ep9") else "gpt2"
     if _LR_ARM.search(basename):
         return "bert-lr-sweep"
     for suffix, name in (("-w1026", "bert-w1026"), ("-sat9", "bert-sat9"),
@@ -79,7 +85,7 @@ def subset_of(basename):
     name = re.sub(r"^(bert|gpt2)-small-", "", basename)
     if _LR_ARM.search(name):
         return re.sub(r"-(w1026|w1024)", "", name)
-    return re.sub(r"-(w1026|sat9|w1024-ep9|smoke)$", "", name)
+    return re.sub(r"-(w1026|sat9|w1024-ep9|smoke|ep9)$", "", name)
 
 
 def _sacct_rows(start, end, user):

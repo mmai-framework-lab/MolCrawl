@@ -362,3 +362,39 @@ def test_the_epoch_count_looks_for_the_build_not_the_label(tmp_path):
         == "mammal_centered"
     assert lc._LR_ARM.sub("", lc.subset_of("bert-small-global_random_seed4")) \
         == "global_random_seed4"
+
+
+@pytest.mark.parametrize("name,series,subset", [
+    ("gpt2-small-mammal_centered", "gpt2", "mammal_centered"),
+    ("gpt2-small-mammal_centered-ep9", "gpt2-ep9", "mammal_centered"),
+    ("gpt2-small-global_random_seed4-ep9", "gpt2-ep9", "global_random_seed4"),
+])
+def test_the_nine_epoch_series_is_not_the_three_epoch_one(name, series, subset):
+    """They share the production naming apart from the tag. Averaged together
+    they would mix runs whose best points sit at 53-98% and at 13-28% of their
+    schedules."""
+    assert lc.series_of(name) == series
+    assert lc.subset_of(name) == subset
+
+
+def test_a_step_is_converted_to_tokens_by_window_and_batch():
+    """A step is not the same amount of data in two series: at one global batch
+    the 512-window runs process half of what the 1,026-window runs do. Drawn
+    against step, the shorter window looks faster for a reason that has nothing
+    to do with learning."""
+    plot = _plot()
+    meta = {"bert-base": {"window": 512, "global_batch": 2560},
+            "bert-w1026": {"window": 1026, "global_batch": 2560}}
+
+    assert plot.tokens_per_step("bert-base", meta) == 512 * 2560
+    assert plot.tokens_per_step("bert-w1026", meta) == 1026 * 2560
+
+
+def test_a_series_whose_window_varies_gets_no_token_axis():
+    """Two windows in one series have no single tokens-per-step, and guessing
+    one would stretch half the curves against the other half."""
+    plot = _plot()
+
+    assert plot.tokens_per_step("mixed", {"mixed": {"window": [512, 1026],
+                                                    "global_batch": 2560}}) is None
+    assert plot.tokens_per_step("absent", {}) is None
