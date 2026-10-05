@@ -13,6 +13,13 @@ retry list is the only evidence that nothing was missed.
 Sizes in the inventory are Apache's rounded column, so a downloaded file is accepted
 when it is within a few per cent of the listed size rather than equal to it.
 
+The server cuts connections partway through under load -- a plain SSL EOF, not a
+status code -- and it does so more often the larger the file. A transfer therefore
+keeps its partial file between attempts and asks for the rest with a Range header, so
+a drop costs the bytes still missing rather than the bytes already taken. Backoff is
+measured in tens of seconds rather than ones, because retrying immediately is what
+the server is objecting to.
+
 Credentials come from the environment, never from this file.
 """
 
@@ -29,54 +36,81 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 USER_AGENT = "MolCrawl-dataprep/1.0 (research corpus build)"
 SIZE_TOLERANCE = 0.12      # Apache rounds to two significant figures
+BACKOFF = (5, 20, 60, 150, 300)
+
+
+def _request(url, auth, offset):
+    """One GET, asking only for the bytes after `offset` when there are any."""
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    if auth:
+        req.add_header("Authorization", "Basic " + b64encode(auth.encode()).decode())
+    if offset:
+        req.add_header("Range", f"bytes={offset}-")
+    return req
 
 
 def fetch_one(row, base, dest, auth, timeout, retries):
-    """Download one file. Returns a record row; never raises."""
+    """Download one file, resuming its partial across attempts. Never raises."""
     tranche, name = row["tranche"], row["file"]
     listed = int(row["size_bytes"])
     out_dir = os.path.join(dest, tranche)
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
+    tmp = path + ".part"
 
     if os.path.exists(path):
         have = os.path.getsize(path)
         if listed == 0 or abs(have - listed) <= listed * SIZE_TOLERANCE:
             return {"tranche": tranche, "file": name, "status": "skipped",
-                    "bytes": have, "seconds": 0.0, "error": ""}
+                    "bytes": have, "seconds": 0.0, "attempts": 0, "error": ""}
 
     url = f"{base.rstrip('/')}/{tranche}/{name}"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    if auth:
-        req.add_header("Authorization", "Basic " + b64encode(auth.encode()).decode())
-
     last = ""
+    t0 = time.time()
     for attempt in range(retries + 1):
-        t0 = time.time()
-        tmp = path + ".part"
+        if attempt:
+            time.sleep(BACKOFF[min(attempt - 1, len(BACKOFF) - 1)])
+        offset = os.path.getsize(tmp) if os.path.exists(tmp) else 0
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp, open(tmp, "wb") as fh:
-                while True:
-                    chunk = resp.read(1 << 20)
-                    if not chunk:
-                        break
-                    fh.write(chunk)
+            with urllib.request.urlopen(_request(url, auth, offset), timeout=timeout) as resp:
+                # A server that ignores Range answers 200 with the whole file, so the
+                # partial has to be thrown away rather than appended to.
+                if offset and resp.status != 206:
+                    offset = 0
+                mode = "ab" if offset else "wb"
+                with open(tmp, mode) as fh:
+                    while True:
+                        chunk = resp.read(1 << 20)
+                        if not chunk:
+                            break
+                        fh.write(chunk)
             got = os.path.getsize(tmp)
-            # A truncated transfer leaves a short file and no error; the listed size
-            # is the only check available before the gzip is read.
+            # A cut connection leaves a short file and no error, so the listed size is
+            # the only check available before the gzip is read.
             if listed and got < listed * (1 - SIZE_TOLERANCE):
-                raise OSError(f"short: {got} of about {listed}")
+                last = f"short: {got} of about {listed}"
+                continue
             os.replace(tmp, path)
             return {"tranche": tranche, "file": name, "status": "taken",
-                    "bytes": got, "seconds": round(time.time() - t0, 1), "error": ""}
+                    "bytes": got, "seconds": round(time.time() - t0, 1),
+                    "attempts": attempt + 1, "error": ""}
+        except urllib.error.HTTPError as exc:
+            # 416 means the partial already runs to the end of the file. The listed
+            # size is a rounded figure, so it can call a complete transfer short;
+            # the server disagreeing is the better authority.
+            if exc.code == 416 and offset:
+                os.replace(tmp, path)
+                return {"tranche": tranche, "file": name, "status": "taken",
+                        "bytes": offset, "seconds": round(time.time() - t0, 1),
+                        "attempts": attempt + 1, "error": "accepted on 416"}
+            last = f"HTTPError: {exc.code} {exc.reason}"
         except Exception as exc:                    # noqa: BLE001 - recorded, not raised
             last = f"{type(exc).__name__}: {exc}"
-            if os.path.exists(tmp):
-                os.unlink(tmp)
-            if attempt < retries:
-                time.sleep(2 ** attempt)
+            # The partial is deliberately kept: the next attempt resumes from it.
     return {"tranche": tranche, "file": name, "status": "failed",
-            "bytes": 0, "seconds": 0.0, "error": last}
+            "bytes": os.path.getsize(tmp) if os.path.exists(tmp) else 0,
+            "seconds": round(time.time() - t0, 1),
+            "attempts": retries + 1, "error": last}
 
 
 def main(argv=None) -> int:
@@ -86,9 +120,9 @@ def main(argv=None) -> int:
     ap.add_argument("--dest", required=True)
     ap.add_argument("--record", required=True)
     ap.add_argument("--retry-list", required=True)
-    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--timeout", type=int, default=1800)
-    ap.add_argument("--retries", type=int, default=2)
+    ap.add_argument("--retries", type=int, default=5)
     ap.add_argument("--only-tranches", nargs="*", default=[],
                     help="restrict to these tranches, for splitting across jobs")
     ap.add_argument("--limit", type=int, default=None)
@@ -109,7 +143,8 @@ def main(argv=None) -> int:
     got_bytes = 0
     t0 = time.time()
     with open(args.record, "w", encoding="utf-8", newline="") as rec:
-        w = csv.DictWriter(rec, fieldnames=["tranche", "file", "status", "bytes", "seconds", "error"],
+        w = csv.DictWriter(rec, fieldnames=["tranche", "file", "status", "bytes",
+                                            "seconds", "attempts", "error"],
                            delimiter="\t")
         w.writeheader()
         with ThreadPoolExecutor(max_workers=args.workers) as pool:
