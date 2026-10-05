@@ -479,3 +479,30 @@ def test_the_caption_states_how_the_eval_rows_were_chosen():
 
     assert "eval_set" in src
     assert "取り方の違う値を同じ列に置かない" in src
+
+
+def test_the_draw_method_is_read_from_the_log_not_assumed(tmp_path):
+    """The twenty-one 512-window runs predate the manifest, so their caption
+    said "取り方不明" for something the log states in words. main.py prints the
+    two paths differently, so the method is read, not inferred."""
+    (tmp_path / "mc-gen-bert-40320.out").write_text(
+        "📊 Eval on the first 10000 rows of 50000\n")
+
+    assert lc._eval_set_from_log(str(tmp_path), "40320") == "valid の先頭 10000 行"
+
+
+def test_a_random_draw_is_told_apart_from_a_head_cut(tmp_path):
+    """From 2026-10-05 new runs draw at random. A reader must never see the two
+    described the same way, nor their values put in one column."""
+    (tmp_path / "mc-gen-bert-99999.out").write_text(
+        "📊 Eval on a random 10000-row sample of 50000 (seed 42)\n")
+
+    assert lc._eval_set_from_log(str(tmp_path), "99999") == \
+        "valid から無作為 10000 行（seed 42）"
+
+
+def test_no_log_and_no_manifest_admits_it(tmp_path):
+    state = {"log_history": [{"eval_runtime": 20.0, "eval_samples_per_second": 500.0}]}
+
+    assert lc._bert_eval_set(str(tmp_path), state, str(tmp_path), "") == \
+        "valid の取り方不明 10,000 行"

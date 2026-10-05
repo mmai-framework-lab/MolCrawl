@@ -191,7 +191,7 @@ def job_id_for(run_dir, series, headers, sacct):
     return hits[0] if len(hits) == 1 else ""
 
 
-def bert_meta(run_dir):
+def bert_meta(run_dir, log_dir="", job=""):
     """Window, schedule and batch shape, read from what the run saved.
 
     Every figure has to state these beside its curves, and a caption typed by
@@ -214,11 +214,38 @@ def bert_meta(run_dir):
     return {"window": window, "max_steps": args.max_steps, "global_batch": batch,
             "lr": args.learning_rate, "warmup": args.warmup_steps,
             "eval_every": (evals[1] - evals[0]) if len(evals) > 1 else None,
-            "eval_set": _bert_eval_set(run_dir, state),
+            "eval_set": _bert_eval_set(run_dir, state, log_dir, job),
             "epochs": _manifest_epochs(run_dir)}
 
 
-def _bert_eval_set(run_dir, state):
+_EVAL_HEAD = re.compile(r"Eval on the first (\d[\d,]*) rows of (\d[\d,]*)")
+_EVAL_RANDOM = re.compile(r"Eval on a random (\d[\d,]*)-row sample of (\d[\d,]*) \(seed (\d+)\)")
+
+
+def _eval_set_from_log(log_dir, job):
+    """How main.py said it cut the split, read from that run's own log.
+
+    The two paths print differently -- "the first N rows" against "a random
+    N-row sample ... (seed S)" -- so the method is in the line, not inferred.
+    This is the only source for the runs that predate the manifest.
+    """
+    if not job or not os.path.isdir(log_dir):
+        return None
+    for path in sorted(glob.glob(os.path.join(log_dir, f"*-{job}.out"))):
+        try:
+            text = open(path, errors="replace").read()
+        except OSError:
+            continue
+        hit = _EVAL_RANDOM.search(text)
+        if hit:
+            return f"valid から無作為 {hit.group(1)} 行（seed {hit.group(3)}）"
+        hit = _EVAL_HEAD.search(text)
+        if hit:
+            return f"valid の先頭 {hit.group(1)} 行"
+    return None
+
+
+def _bert_eval_set(run_dir, state, log_dir="", job=""):
     """How the evaluation rows were chosen, from what the run itself saved.
 
     A loss has no meaning without this. The manifest carries it, but only the
@@ -240,10 +267,14 @@ def _bert_eval_set(run_dir, state):
         if timed:
             last = timed[-1]
             rows = round(last["eval_runtime"] * last["eval_samples_per_second"])
-    if rows is None:
-        return None
-    how = "先頭" if random_draw is False else ("無作為" if random_draw else "取り方不明")
-    return f"valid の{how} {rows:,} 行"
+    if rows is not None and random_draw is not None:
+        how = "先頭" if random_draw is False else "無作為"
+        return f"valid の{how} {rows:,} 行"
+    # No manifest: the log says which way it cut, in so many words.
+    stated = _eval_set_from_log(log_dir, job)
+    if stated:
+        return stated
+    return None if rows is None else f"valid の取り方不明 {rows:,} 行"
 
 
 def _measured_epochs(root, subset, max_steps, batch, model):
@@ -375,7 +406,8 @@ def main():
             skipped.append(base)
             continue
         job = job_id_for(run_dir, series, headers, sacct)
-        got = bert_meta(run_dir) if arch == "bert" else gpt2_meta(run_dir)
+        got = (bert_meta(run_dir, args.log_dir, job) if arch == "bert"
+               else gpt2_meta(run_dir))
         if got and got.get("epochs") is None and series in train_root:
             # The label carries the arm so a sweep's curves do not share one
             # name; the build on disk is named for the subset alone. Passing
