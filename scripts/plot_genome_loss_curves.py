@@ -176,7 +176,8 @@ def caption(series, meta, n_runs, metric, many_subsets, per_step):
             f"エポック {show('epochs')}  |  step {show('max_steps', '{:,}')}  |  "
             f"グローバルバッチ {show('global_batch', '{:,}')}  |  "
             f"学習率 {show('lr')}  |  評価間隔 {show('eval_every', '{:,}')}{seen}  |  "
-            f"{metric}（nats/token）")
+            f"{metric}（nats/token）\n評価は {show('eval_set')}。"
+            f"取り方の違う値を同じ列に置かない。")
     if many_subsets:
         # Each run is scored on its own subset's valid split, so the curves are
         # not one task measured 21 ways. Height across subsets is not a ranking;
