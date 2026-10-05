@@ -10,9 +10,13 @@
 # a re-run skips the files whose shard already exists.
 #
 #   ls <dest>/*/*.smi.gz > <list>
-#   sbatch --array=1-$(wc -l < <list>) \
+#   sbatch --array=1-2000%200 \
 #          --export=ALL,ZINC22_FILELIST=<list>,ZINC22_SHARDS=<dir>,ZINC22_COUNTS=<dir> \
 #          workflows/zinc22-prepare.sbatch
+#
+# The full ZINC-22 2D list is 2,607 files and MaxArraySize is 2,000, so it takes two
+# submissions: the second passes ZINC22_OFFSET=2000 and --array=1-607, which shifts
+# the task id onto the remaining lines.
 #
 # No network: everything this reads is already on disk.
 set -uo pipefail
@@ -26,7 +30,7 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 VOCAB="${ZINC22_VOCAB:-${PYROOT}/assets/molecules/vocab.txt}"
 export PYTHONPATH="${REPO}:${PYTHONPATH:-}" PYTHONUNBUFFERED=1
 cd "${REPO}"; mkdir -p workflows/slurm-logs "${ZINC22_SHARDS}" "${ZINC22_COUNTS}"
-IDX="${SLURM_ARRAY_TASK_ID:-1}"
+IDX=$(( ${SLURM_ARRAY_TASK_ID:-1} + ${ZINC22_OFFSET:-0} ))
 SMI="$(sed -n "${IDX}p" "${ZINC22_FILELIST}")"
 [ -n "${SMI}" ] || { echo "no line ${IDX} in ${ZINC22_FILELIST}" >&2; exit 1; }
 STEM="$(basename "${SMI}" .smi.gz)"
