@@ -37,7 +37,7 @@ def main(argv=None) -> int:
     ap.add_argument("--inventory", required=True)
     ap.add_argument("--record", nargs="+", required=True)
     ap.add_argument("--counts", required=True, help="directory of per-file counts JSON")
-    ap.add_argument("--assemble-summary", help="assemble_summary.json, when assembled")
+    ap.add_argument("--split-counts", help="directory of per-shard split counts JSON")
     ap.add_argument("--out", required=True)
     args = ap.parse_args(argv)
 
@@ -63,9 +63,21 @@ def main(argv=None) -> int:
     dropped = sum(c["dropped_tail_tokens"] for c in counts)
 
     assembled = None
-    if args.assemble_summary and os.path.exists(args.assemble_summary):
-        with open(args.assemble_summary, encoding="utf-8") as fh:
-            assembled = json.load(fh)
+    if args.split_counts and os.path.isdir(args.split_counts):
+        per_shard = []
+        for path in sorted(glob.glob(os.path.join(args.split_counts, "*.json"))):
+            with open(path, encoding="utf-8") as fh:
+                per_shard.append(json.load(fh))
+        if per_shard:
+            split_blocks = {name: sum(c["blocks"][name] for c in per_shard)
+                            for name in per_shard[0]["blocks"]}
+            split_total = sum(split_blocks.values())
+            assembled = {
+                "shards": len(per_shard),
+                "blocks": split_blocks,
+                "fractions": {k: round(v / split_total, 5)
+                              for k, v in split_blocks.items()} if split_total else {},
+            }
 
     manifest = {
         "written": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
