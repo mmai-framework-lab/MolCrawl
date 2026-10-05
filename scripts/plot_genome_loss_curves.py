@@ -199,12 +199,13 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     lo_step = last_step * (1 - tail_fraction) if tail_fraction else 0
 
     colours, by_arm = colour_map(runs)
-    seen, ys, labelled = set(), [], False
+    seen, ys, labelled, x_drawn = set(), [], False, []
     for subset, points in sorted(runs.items()):
         kept = [(s, v) for s, v in points if s >= lo_step]
         if not kept:
             continue
         xs = [(s * per_step if per_step else s) for s, _ in kept]
+        x_drawn += [v for v in xs if v > 0]
         ys_run = [v for _, v in kept]
         colour = colours[subset]
         key = subset if by_arm else family_of(subset)
@@ -242,15 +243,24 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     # them needs room underneath or the lowest run's label is cut by the axis.
     ax.set_ylim(min(ys) - span * (0.11 if labelled else 0.04), max(ys) + span * 0.04)
     if per_step:
+        # The left edge is the first point actually drawn, not step 1. Taking
+        # the schedule's start put three empty decades on a log axis, because
+        # the first evaluation lands at step 1,000 -- about 2.6 G tokens, not
+        # 2.6 M.
         ax.set_xscale("log")
-        ax.set_xlim(max(lo_step, 1) * per_step, last_step * per_step)
+        ax.set_xlim(min(x_drawn), last_step * per_step)
         ax.set_xlabel("処理トークン数（対数）")
     else:
         ax.set_xlim(lo_step, last_step)
         ax.set_xlabel("step")
     ax.set_ylabel(f"{metric}（nats/token）")
     if per_step:
-        ax.xaxis.set_major_formatter(lambda v, _pos: f"{v / 1e9:,.0f} G")
+        # One decimal below 10 G and none above: a bare "{:,.0f} G" printed two
+        # different decades as "0 G" apiece.
+        ax.xaxis.set_major_formatter(
+            lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
+                             f"{v / 1e9:.1f} G" if v >= 1e9 else
+                             f"{v / 1e6:,.0f} M"))
     else:
         ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
     ax.set_title(("最後の 20 %: " if tail_fraction else "") + series, fontsize=15)

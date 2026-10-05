@@ -398,3 +398,28 @@ def test_a_series_whose_window_varies_gets_no_token_axis():
     assert plot.tokens_per_step("mixed", {"mixed": {"window": [512, 1026],
                                                     "global_batch": 2560}}) is None
     assert plot.tokens_per_step("absent", {}) is None
+
+
+def test_the_token_axis_starts_where_the_data_does():
+    """The first evaluation lands at step 1,000 -- about 2.6 G tokens, not
+    2.6 M. Taking the schedule's start as the left edge put three empty decades
+    on the log axis."""
+    import inspect
+    src = inspect.getsource(_plot().draw)
+
+    assert "min(x_drawn)" in src
+    assert "max(lo_step, 1) * per_step" not in src
+
+
+def test_two_decades_do_not_print_the_same_tick_label():
+    """A bare thousands format rounded everything below 1 G to '0 G', so two
+    different decades carried the same label."""
+    def fmt(v):
+        return (f"{v / 1e9:,.0f} G" if v >= 1e10 else
+                f"{v / 1e9:.1f} G" if v >= 1e9 else
+                f"{v / 1e6:,.0f} M")
+
+    labels = [fmt(v) for v in (1e8, 5e8, 1e9, 2.6e9, 1e10, 1e11)]
+
+    assert len(set(labels)) == len(labels)
+    assert "0 G" not in labels
