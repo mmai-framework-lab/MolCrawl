@@ -267,9 +267,11 @@ def gpt2_meta(run_dir):
     return {"window": cfg.get("block_size"), "max_steps": cfg.get("max_iters"),
             "global_batch": cfg.get("batch_size") * cfg.get("gradient_accumulation_steps"),
             "lr": cfg.get("learning_rate"), "warmup": cfg.get("warmup_iters"),
-            # _N_EPOCH is a literal 3 in gpt2_small_subset.py, not an env
-            # override, so the config file is the record for GPT-2.
-            "eval_every": cfg.get("eval_interval"), "epochs": 3}
+            # Not a literal any more: SUBSET_GPT2_EPOCHS raises it, and the
+            # nine-epoch series was captioned "epochs 3" while that 3 was
+            # hardcoded here. Left as None so the measured path fills it from
+            # the build's train rows, the same way the BERT series are filled.
+            "eval_every": cfg.get("eval_interval"), "epochs": None}
 
 
 def bert_points(run_dir):

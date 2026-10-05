@@ -80,6 +80,7 @@ TRACKED = (
 # _provenance.COMMON_ENV, since the BERT configs read them too.
 TRACKED_ENV = (
     "SUBSET_GPT2_LR",
+    "SUBSET_GPT2_EPOCHS",
     "SUBSET_GPT2_WD",
     "SUBSET_GPT2_MAX_CKPT",
     "GPT2_LR_TAG",

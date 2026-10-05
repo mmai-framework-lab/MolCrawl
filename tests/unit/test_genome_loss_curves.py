@@ -423,3 +423,24 @@ def test_two_decades_do_not_print_the_same_tick_label():
 
     assert len(set(labels)) == len(labels)
     assert "0 G" not in labels
+
+
+def test_the_gpt2_epoch_count_is_not_a_literal(tmp_path):
+    """It was hardcoded to 3 while the config's _N_EPOCH was a literal 3.
+    SUBSET_GPT2_EPOCHS now raises it, and the nine-epoch series went out
+    captioned "epochs 3" until this stopped being a constant."""
+    import inspect
+    src = inspect.getsource(lc.gpt2_meta)
+
+    assert '"epochs": 3' not in src
+    assert '"epochs": None' in src
+
+
+def test_the_collapsed_figure_says_so_in_its_title():
+    """Two figures of one series differ only by which runs they hold. Told
+    apart by file name alone, the image on its own does not say which it is."""
+    import inspect
+    src = inspect.getsource(_plot().draw)
+
+    assert "collapsed" in inspect.signature(_plot().draw).parameters
+    assert "基準線を上回って終わった run" in src

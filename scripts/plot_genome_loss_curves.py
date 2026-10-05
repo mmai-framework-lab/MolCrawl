@@ -191,7 +191,7 @@ def caption(series, meta, n_runs, metric, many_subsets, per_step):
 
 
 def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
-         baseline_method=""):
+         baseline_method="", collapsed=False):
     plt = _pyplot()
     fig, ax = plt.subplots(figsize=(18, 9))          # 大判
     per_step = tokens_per_step(series, meta)
@@ -263,7 +263,11 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
                              f"{v / 1e6:,.0f} M"))
     else:
         ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
-    ax.set_title(("最後の 20 %: " if tail_fraction else "") + series, fontsize=15)
+    # The collapsed runs are a separate figure; without saying so in the title
+    # the two are told apart only by their file names.
+    ax.set_title(("最後の 20 %: " if tail_fraction else "") + series
+                 + ("（自分の基準線を上回って終わった run）" if collapsed else ""),
+                 fontsize=15)
     ax.grid(alpha=0.25, linewidth=0.5)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
@@ -441,12 +445,14 @@ def main():
         for name, runs in (("", learned), ("-collapsed", collapsed)):
             if not runs:
                 continue
+            is_collapsed = name == "-collapsed"
             draw(series, runs, metric[series], meta, base,
                  os.path.join(args.out_dir, f"{args.prefix}-{series}{name}.png"),
-                 baseline_method=method.get(series, ""))
+                 baseline_method=method.get(series, ""), collapsed=is_collapsed)
             draw(series, runs, metric[series], meta, base,
                  os.path.join(args.out_dir, f"{args.prefix}-{series}{name}-tail20.png"),
-                 tail_fraction=0.20, baseline_method=method.get(series, ""))
+                 tail_fraction=0.20, baseline_method=method.get(series, ""),
+                 collapsed=is_collapsed)
 
     table = per_run_table(curves, metric, meta, baselines,
                           os.path.join(args.out_dir, f"{args.prefix}-per-run.tsv"))
