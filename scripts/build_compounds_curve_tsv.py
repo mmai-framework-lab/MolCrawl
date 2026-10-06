@@ -28,6 +28,7 @@ import re
 STEP = re.compile(r"step\s+(\d+):\s+train loss\s+([\d.]+),\s+val loss\s+([\d.]+)")
 FIELD = re.compile(r"\b(size|lr|seed|iters)\s*:\s*(\S+)")
 HEADER = re.compile(r"^(?:code|size)\s*:.*$", re.M)
+CONFIG_LINE = re.compile(r"^config:\s*(\S+)", re.M)
 COLUMNS = ["arch", "size", "lr", "seed", "step", "value", "metric", "job"]
 
 
@@ -55,12 +56,43 @@ def bert_rows(spec, metric):
     return out
 
 
+def identity_from_config(path):
+    """size, lr and seed read out of the nanoGPT config a log names.
+
+    compounds-gpt2-grid.sbatch passes nothing at launch, so there is no header line
+    to parse -- which is the point of it. The identity therefore comes from the file
+    the log names, read rather than inferred from its name: the rate in
+    gpt2_xl_lr8e4.py is whatever the file says it is.
+    """
+    out = {}
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError:
+        return out
+    m = re.search(r"^learning_rate\s*=\s*([0-9.eE+-]+)", text, re.M)
+    if m:
+        out["lr"] = f"{float(m.group(1)):g}"
+    m = re.search(r"^seed\s*=\s*(\d+)", text, re.M)
+    if m:
+        out["seed"] = m.group(1)
+    m = re.search(r'get_gpt2_output_path\(\s*"compounds"\s*,\s*"(\w+)"', text)
+    if m:
+        out["size"] = m.group(1)
+    m = re.search(r"^max_iters\s*=\s*(\d+)", text, re.M)
+    if m:
+        out["iters"] = m.group(1)
+    return out
+
+
 def gpt2_rows(pattern, iters_only):
     """Every nanoGPT log matching the pattern, with the job number from its name."""
     out = []
     for path in sorted(glob.glob(pattern)):
         text = open(path, errors="ignore").read()
         ident = dict(FIELD.findall("\n".join(HEADER.findall(text)[:3])))
+        cfg = CONFIG_LINE.search(text)
+        if cfg and not ident.get("lr"):
+            ident.update(identity_from_config(cfg.group(1)))
         if iters_only and ident.get("iters") != iters_only:
             continue
         job = re.search(r"(\d+)\.out$", path)
@@ -77,7 +109,9 @@ def main(argv=None):
                     metavar=("DIR", "SIZE", "LR", "SEED", "JOB"),
                     help="one BERT run: its directory, size, learning rate, seed, job (repeatable)")
     ap.add_argument("--bert-metric", default="eval_loss_mask")
-    ap.add_argument("--gpt2-logs", help="glob for the nanoGPT logs")
+    ap.add_argument("--gpt2-logs", nargs="+", default=[],
+                    help="glob(s) for the nanoGPT logs; the sweep and the grid write to "
+                         "different trees, so more than one is the normal case")
     ap.add_argument("--gpt2-iters", help="keep only runs launched with this length")
     ap.add_argument("--out", required=True)
     args = ap.parse_args(argv)
@@ -85,8 +119,8 @@ def main(argv=None):
     rows = []
     for spec in args.bert:
         rows.extend(bert_rows(spec, args.bert_metric))
-    if args.gpt2_logs:
-        rows.extend(gpt2_rows(args.gpt2_logs, args.gpt2_iters))
+    for pattern in args.gpt2_logs:
+        rows.extend(gpt2_rows(pattern, args.gpt2_iters))
 
     with open(args.out, "w", encoding="utf-8") as fh:
         fh.write("\t".join(COLUMNS) + "\n")
