@@ -665,7 +665,11 @@ if __name__ == "__main__":
         # existing run's behaviour moves without an explicit config opt-in.
         adam_beta1=float(globals().get("adam_beta1", 0.9)),
         adam_beta2=float(globals().get("adam_beta2", 0.95)),
-        max_grad_norm=1.0,  # grad clip = 1.0 (production spec)
+        # Config-overridable for the same reason adam_beta2 above is: molecule_nat_lang
+        # xl diverges at every rate that trains in reasonable time and holds only at
+        # rates that barely learn, and a tighter clip is one of the two things worth
+        # trying against that. Default unchanged, so no existing run moves.
+        max_grad_norm=float(globals().get("max_grad_norm", 1.0)),  # grad clip (production spec 1.0)
         report_to="none",  # Disable wandb integration to prevent artifact bloat
         # charter § 1.1 comparability rule: subsets are compared on the best-val
         # checkpoint, so load_best_model_at_end stays on independently of
