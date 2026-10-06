@@ -10,8 +10,12 @@
 # a failure continues rather than starting over.
 #
 #   sbatch --export=ALL,ZINC22_INVENTORY=<tsv>,ZINC22_DEST=<dir>,\
-#   ZINC22_RECORD=<tsv>,ZINC22_RETRY=<txt>[,ZINC22_WORKERS=8][,ZINC22_AUTH=<user:password>] \
+#   ZINC22_RECORD=<tsv>,ZINC22_RETRY=<txt>[,ZINC22_WORKERS=4][,ZINC22_AUTH=<user:password>] \
 #          workflows/zinc22-fetch.sbatch
+#
+# ZINC22_ONLY restricts the run to a space-separated list of tranches, which is how
+# two fetches are kept off each other's files: two processes writing one partial
+# would corrupt it, so a second fetch must name tranches the first has not reached.
 #
 # The 2D tranches sit behind HTTP Basic. ZINC publishes what to use on its own index
 # page at files.docking.org/zinc22/, stating the point is to keep the files out of
@@ -56,8 +60,9 @@ df -h "${ZINC22_DEST}" | tail -1
     --dest "${ZINC22_DEST}" \
     --record "${ZINC22_RECORD}" \
     --retry-list "${ZINC22_RETRY}" \
-    --workers "${ZINC22_WORKERS:-8}" \
-    ${ZINC22_LIMIT:+--limit "${ZINC22_LIMIT}"}
+    --workers "${ZINC22_WORKERS:-4}" \
+    ${ZINC22_LIMIT:+--limit "${ZINC22_LIMIT}"} \
+    ${ZINC22_ONLY:+--only-tranches ${ZINC22_ONLY}}
 rc=$?
 echo "=== rc=${rc} @ $(date -Is) ==="
 exit "${rc}"
