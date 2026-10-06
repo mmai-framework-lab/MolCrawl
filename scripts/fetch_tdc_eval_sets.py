@@ -19,24 +19,31 @@ import os
 import traceback
 from importlib.metadata import version
 
-# Solubility is AqSolDB, a regression task. The hERG candidates are the names TDC
-# publishes for hERG blockade; which of them is usable is decided by the counts.
+# Solubility is AqSolDB, a regression task. The hERG candidates are every name TDC
+# publishes for hERG under Tox -- retrieve_dataset_names("Tox") lists exactly these
+# three and no other group has any -- and which one is used is decided by the counts.
+# herg_central carries three labels rather than one, so it needs a label named.
+# hERG_inhib is the binary one; hERG_at_1uM and hERG_at_10uM are percent inhibition
+# and would make the largest set the only regression among the three, which is not a
+# comparison. hERG_inhib is also not a dataset of its own, which is easy to read it as.
 TARGETS = [
-    ("Tox", "hERG"),
-    ("Tox", "hERG_Karim"),
-    ("HTS", "hERG_inhib"),
+    ("Tox", "hERG", None),
+    ("Tox", "hERG_Karim", None),
+    ("Tox", "herg_central", "hERG_inhib"),
 ]
 SOLUBILITY = ("ADME", "Solubility_AqSolDB")
 
 
-def load(group: str, name: str, path: str):
+def load(group: str, name: str, path: str, label: str | None = None):
     """Pull one dataset. Returns its row count and columns, or the failure."""
     from tdc import single_pred
 
     cls = getattr(single_pred, group)
-    data = cls(name=name, path=path)
+    data = cls(name=name, path=path) if label is None \
+        else cls(name=name, path=path, label_name=label)
     df = data.get_data()
-    return {"rows": int(len(df)), "columns": list(df.columns)}
+    return {"rows": int(len(df)), "columns": list(df.columns),
+            **({"label": label} if label else {})}
 
 
 def main(argv=None) -> int:
@@ -61,9 +68,9 @@ def main(argv=None) -> int:
         traceback.print_exc()
 
     print("\n=== hERG の候補 ===", flush=True)
-    for group, name in TARGETS:
+    for group, name, label in TARGETS:
         try:
-            got = load(group, name, args.path)
+            got = load(group, name, args.path, label)
             out["herg_candidates"][name] = {"group": group, **got}
             print(f"  {name:14s} {got['rows']:,} 行  列 {got['columns']}", flush=True)
         except Exception as exc:                    # noqa: BLE001 - recorded, not raised
