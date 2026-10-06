@@ -125,6 +125,9 @@ def main(argv=None) -> int:
     ap.add_argument("--retries", type=int, default=5)
     ap.add_argument("--only-tranches", nargs="*", default=[],
                     help="restrict to these tranches, for splitting across jobs")
+    ap.add_argument("--part", default=None, metavar="I/N",
+                    help="take only part I of N of the list, so several jobs can run "
+                         "at once without two of them writing one partial file")
     ap.add_argument("--limit", type=int, default=None)
     args = ap.parse_args(argv)
 
@@ -133,6 +136,17 @@ def main(argv=None) -> int:
     if args.only_tranches:
         keep = set(args.only_tranches)
         rows = [r for r in rows if r["tranche"] in keep]
+    if args.part:
+        # Two fetches writing one partial file would corrupt it, and restricting by
+        # tranche cannot split a single large tranche. Striding the list by index
+        # splits any list into disjoint pieces without either job needing to know
+        # what the other is doing.
+        i, n = (int(x) for x in args.part.split("/"))
+        if not 1 <= i <= n:
+            print(f"--part {args.part} の I は 1..N の範囲にする")
+            return 2
+        rows = rows[i - 1 :: n]
+        print(f"この担当は {n} 分の {i}", flush=True)
     if args.limit:
         rows = rows[: args.limit]
     want = sum(int(r["size_bytes"]) for r in rows)
