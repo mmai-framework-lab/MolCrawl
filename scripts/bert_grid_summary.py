@@ -80,6 +80,20 @@ def at_tokens(steps, values, budget_tokens):
     return keep[-1][1] if keep else None
 
 
+def pattern_of(last, floor, best):
+    """Which kind of instability this is, in the words a paper uses.
+
+    Two endings that look alike in a "collapsed / not" column have different
+    causes, so they are named apart: a run that settles back onto the value a
+    model that learned nothing reaches has fallen into the degenerate solution
+    (for MLM, predicting the unigram prior), while a run that climbs past it has
+    diverged. Without a measured floor neither can be told from the other.
+    """
+    if floor is None:
+        return "判定不可"
+    return "自明解" if abs(last - floor) <= 0.02 else "発散"
+
+
 def verdict(steps, values, floor):
     """(collapsed, step it turned, best before that, best overall).
 
@@ -141,6 +155,7 @@ def main() -> int:
                 "best_loss": f"{best:.4f}",
                 "best_step": steps[values.index(best)],
                 "collapsed": int(collapsed),
+                "pattern": pattern_of(values[-1], floor, best) if collapsed else "健全",
                 "turned_step": turned or "",
                 "turned_tokens": (turned * TOKENS_PER_STEP) if turned else "",
                 "floor": floor if floor is not None else "",
@@ -149,9 +164,13 @@ def main() -> int:
                 got = at_tokens(steps, values, b)
                 row[f"loss@{b / 1e9:g}G"] = f"{got:.4f}" if got is not None else ""
             rows.append(row)
+            # A run whose newest checkpoint predates safetensors, or which has not
+            # written weights yet, has no parameter count. It still has a curve.
+            shown = f"{row['params']:,}" if row["params"] else "不明"
             print(f"    {group['modality']:9s} {row['size']:6s} lr={row['lr']:<9g} "
-                  f"N={row['params']:>11,} last={values[-1]:.4f} best={best:.4f} "
-                  f"{'崩壊' if collapsed else '健全'}", file=sys.stderr)
+                  f"N={shown:>11} last={values[-1]:.4f} best={best:.4f} "
+                  f"{pattern_of(values[-1], floor, best) if collapsed else '健全'}",
+                  file=sys.stderr)
 
     columns = list(rows[0]) if rows else []
     with open(args.out, "w", encoding="utf-8") as fh:
