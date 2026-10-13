@@ -40,10 +40,15 @@ MARKERS = {"small": "o", "medium": "s", "large": "^"}
 
 def load(path: Path):
     rows = list(csv.DictReader(open(path, encoding="utf-8"), delimiter="\t"))
+    def count(v):
+        # An arm whose newest checkpoint has no safetensors yet reports no count.
+        # It still has a curve, and the figures that do not need N can use it.
+        return int(v) if v not in ("", "None") else None
+
     for r in rows:
         r["lr"] = float(r["lr"])
-        r["params"] = int(r["params"])
-        r["params_nonembed"] = int(r["params_nonembed"])
+        r["params"] = count(r["params"])
+        r["params_nonembed"] = count(r["params_nonembed"])
         r["collapsed"] = r["collapsed"] == "1"
         r["best_loss"] = float(r["best_loss"])
         r["last_loss"] = float(r["last_loss"])
@@ -63,7 +68,8 @@ def pfdays(tokens, params_nonembed):
 
 def band(rows, modality, size):
     """(held, collapsed, N) -- the largest rate that held, the smallest that did not."""
-    arms = [r for r in rows if r["modality"] == modality and r["size"] == size]
+    arms = [r for r in rows if r["modality"] == modality and r["size"] == size
+            and r["params"] is not None]
     if not arms:
         return None
     held = [r["lr"] for r in arms if not r["collapsed"]]
@@ -134,7 +140,7 @@ def fig_lr_vs_size(rows, cfg, out_dir, caption):
               loc="lower left", ncol=2)
     fig.tight_layout(rect=(0, .14, 1, .94))
     finish(fig, cfg.get("titles", {}).get("lr_vs_size", ""), caption,
-           out_dir / "grid-lr-vs-size.png", bottom=.14)
+           out_dir / cfg.get("filenames", {}).get("lr_vs_size", "grid-lr-vs-size.png"), bottom=.14)
     return slopes
 
 
@@ -150,7 +156,7 @@ def fig_loss_vs_tokens(rows, cfg, out_dir, caption):
         ax = axes[0][i]
         for j, size in enumerate(SIZES):
             arms = [r for r in rows if r["modality"] == modality and r["size"] == size
-                    and not r["collapsed"]]
+                    and not r["collapsed"] and r["params_nonembed"] is not None]
             if not arms:
                 continue
             pick = min(arms, key=lambda r: r["best_loss"])
@@ -175,7 +181,7 @@ def fig_loss_vs_tokens(rows, cfg, out_dir, caption):
         ax.legend(frameon=False, fontsize=8.5, labelcolor=INK_2, loc="lower left")
     fig.tight_layout(rect=(0, cfg.get("rect_bottom_loss", .27), 1, .94))
     finish(fig, cfg.get("titles", {}).get("loss_vs_tokens", ""), caption,
-           out_dir / "grid-loss-vs-compute.png", bottom=cfg.get("rect_bottom_loss", .27))
+           out_dir / cfg.get("filenames", {}).get("loss_vs_tokens", "grid-loss-vs-compute.png"), bottom=cfg.get("rect_bottom_loss", .27))
 
 
 def fig_collapse_map(rows, cfg, out_dir, caption):
@@ -186,12 +192,18 @@ def fig_collapse_map(rows, cfg, out_dir, caption):
             for r in rows:
                 if (r["modality"], r["size"]) != (modality, size) or not r["collapsed"]:
                     continue
-                if not r["turned_tokens"]:
+                if not r["turned_tokens"] or r["params_nonembed"] is None:
                     continue
                 drew = True
                 x = pfdays(r["turned_tokens"], r["params_nonembed"])
-                ax.plot([x], [r["lr"]], marker=MARKERS[size], markersize=9,
-                        color=SERIES[i], markeredgecolor="white", markeredgewidth=1.2, zorder=4)
+                # Filled = fell back onto the no-learning value (the degenerate
+                # solution); hollow = climbed past it (divergence). The two look
+                # alike in a collapsed/not column and need not share a cause.
+                hollow = r.get("pattern") == "発散"
+                ax.plot([x], [r["lr"]], marker=MARKERS[size], markersize=9, color=SERIES[i],
+                        markerfacecolor="white" if hollow else SERIES[i],
+                        markeredgecolor=SERIES[i] if hollow else "white",
+                        markeredgewidth=1.8 if hollow else 1.2, zorder=4)
                 ax.annotate(f"{r['best_loss']:.2f}", (x, r["lr"]),
                             textcoords="offset points", xytext=(0, 9), ha="center",
                             fontsize=7.6, color=SERIES[i])
@@ -199,6 +211,10 @@ def fig_collapse_map(rows, cfg, out_dir, caption):
             ax.plot([], [], color=SERIES[i], marker="o", linestyle="none", label=modality)
     for size in SIZES:
         ax.plot([], [], marker=MARKERS[size], color=INK_3, linestyle="none", label=size)
+    if any(r.get("pattern") for r in rows):
+        ax.plot([], [], marker="o", color=INK_3, linestyle="none", label="自明解（床へ戻る）")
+        ax.plot([], [], marker="o", markerfacecolor="white", markeredgecolor=INK_3,
+                color=INK_3, linestyle="none", markeredgewidth=1.8, label="発散（床を超える）")
     ax.set_xscale("log")
     ax.set_yscale("log")
     style(ax, "計算量（PF-days）", "学習率")
@@ -207,7 +223,7 @@ def fig_collapse_map(rows, cfg, out_dir, caption):
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_2, loc="upper right", ncol=2)
     fig.tight_layout(rect=(0, .16, 1, .94))
     finish(fig, cfg.get("titles", {}).get("collapse_map", ""), caption,
-           out_dir / "grid-collapse-map.png", bottom=.16)
+           out_dir / cfg.get("filenames", {}).get("collapse_map", "grid-collapse-map.png"), bottom=.16)
 
 
 def main() -> int:
