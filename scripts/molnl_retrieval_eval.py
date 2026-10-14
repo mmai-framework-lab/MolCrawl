@@ -105,9 +105,20 @@ def main() -> int:
     ap.add_argument("--modality", default="molecule_nat_lang")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--separator", default="\n", help="written between query and candidate")
+    ap.add_argument("--bert-mlm-batch", type=int, default=256,
+                    help="masked copies BERT scores in one forward; the adapter's own "
+                         "default of 64 leaves a GB200 idle and the description->molecule "
+                         "direction needs one copy per molecule token")
     ap.add_argument("--context", type=int, default=1024)
     ap.add_argument("--candidates", type=int, default=100)
-    ap.add_argument("--queries", type=int, default=0, help="0 uses every test pair")
+    ap.add_argument("--queries", type=int, default=0,
+                    help="how many queries to score; 0 scores every test pair. The "
+                         "candidates are always drawn from all 1,000 pairs, so this does "
+                         "not make a query cheaper -- it makes fewer of them")
+    ap.add_argument("--queries-text-to-molecule", type=int, default=0,
+                    help="overrides --queries for the description->molecule direction, "
+                         "which for BERT costs one masked forward per molecule token and "
+                         "is some 6x the other direction")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out-dir", required=True)
     a = ap.parse_args()
@@ -115,17 +126,37 @@ def main() -> int:
     label = a.label or f"{a.arch}_{a.size or 'model'}"
 
     pairs = test_pairs(a.pairs_root)
-    if a.queries:
-        pairs = pairs[:a.queries]
     rng = random.Random(a.seed)
+    # Pools over every pair whatever is scored: truncating the pair list first would
+    # shrink the candidate pool with it, which once made a 20-query measurement look five
+    # times faster per query than the real thing.
     candidate_sets = pools(len(pairs), a.candidates, rng)
-    print(f"  {len(pairs):,} queries x {a.candidates} candidates, context {a.context}")
+    counts = {"molecule_to_text": a.queries or len(pairs),
+              "text_to_molecule": (a.queries_text_to_molecule or a.queries or len(pairs))}
+    print(f"  {len(pairs):,} pairs, {a.candidates} candidates, context {a.context}; "
+          f"scoring {counts['molecule_to_text']:,} and {counts['text_to_molecule']:,} "
+          f"queries in the two directions")
 
     handle = ModelHandle(arch=a.arch, modality=a.modality, model_path=a.model_path,
                          tokenizer_path=a.tokenizer_path, size=a.size,
-                         extras={"device": a.device})
+                         extras={"device": a.device, "bert_mlm_batch": a.bert_mlm_batch})
     adapter = build_adapter(handle)
     adapter.load()
+
+    summary = {"label": label, "arch": a.arch, "size": a.size,
+               "model_path": a.model_path, "separator": a.separator,
+               "context": a.context, "scored": "candidate positions only",
+               "bert_mlm_batch": a.bert_mlm_batch, "seed": a.seed, "directions": {}}
+    json_path = os.path.join(a.out_dir, f"retrieval-{label}.json")
+    tsv_path = os.path.join(a.out_dir, f"retrieval-{label}-ranks.tsv")
+
+    def write(results, rows):
+        summary["directions"] = results
+        json.dump(summary, open(json_path, "w"), indent=2)
+        with open(tsv_path, "w") as fh:
+            fh.write("model\tarch\tsize\tdirection\tquery\trank\ttrue_score\tbest_score\n")
+            for row in rows:
+                fh.write("\t".join(str(v) for v in row) + "\n")
 
     results = {}
     rows = []
@@ -135,7 +166,7 @@ def main() -> int:
             truncated = 0
             empty_span = 0
             started = time.time()
-            for qi, pool in enumerate(candidate_sets):
+            for qi, pool in enumerate(candidate_sets[:counts[direction]]):
                 molecule, description = pairs[qi]
                 query = molecule if direction == "molecule_to_text" else description
                 prefix = f"{query}{a.separator}"
@@ -168,7 +199,8 @@ def main() -> int:
                           f"({rate:.2f} query/s, R@1 so far "
                           f"{sum(1 for r in ranks if r == 1) / len(ranks):.3f})", flush=True)
             results[direction] = {
-                "queries": len(ranks), "candidates": a.candidates,
+                "queries": len(ranks), "pairs_drawn_from": len(pairs),
+                "candidates": a.candidates,
                 "recall@1": round(sum(1 for r in ranks if r == 1) / len(ranks), 4),
                 "recall@5": round(sum(1 for r in ranks if r <= 5) / len(ranks), 4),
                 "recall@10": round(sum(1 for r in ranks if r <= 10) / len(ranks), 4),
@@ -181,18 +213,11 @@ def main() -> int:
                 "seconds": round(time.time() - started, 1),
             }
             print(f"  {direction}: {json.dumps(results[direction])}", flush=True)
+            write(results, rows)
     finally:
         adapter.close()
 
-    summary = {"label": label, "arch": a.arch, "size": a.size,
-               "model_path": a.model_path, "separator": a.separator,
-               "context": a.context, "scored": "candidate positions only",
-               "seed": a.seed, "directions": results}
-    json.dump(summary, open(os.path.join(a.out_dir, f"retrieval-{label}.json"), "w"), indent=2)
-    with open(os.path.join(a.out_dir, f"retrieval-{label}-ranks.tsv"), "w") as fh:
-        fh.write("model\tarch\tsize\tdirection\tquery\trank\ttrue_score\tbest_score\n")
-        for row in rows:
-            fh.write("\t".join(str(v) for v in row) + "\n")
+    write(results, rows)
     print(f"  wrote retrieval-{label}.json and -ranks.tsv")
     return 0
 
