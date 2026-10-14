@@ -6,12 +6,19 @@ rather than taking a list, so a run that exists cannot be left out by a typo, an
 keeps the ones that diverged and the ones that were stopped -- those are the rows a
 reader checks first.
 
-Two things the rows have to carry beyond the loss, because the columns are not comparable
-without them:
+Both losses are in it. split says whether a row is the loss on the validation split or
+the loss on the batches the step trained on; the 2026-10-14 order asks for the two side by
+side, and the gap between them is the only thing in this table that speaks to overfitting.
+A training loss is not the same measurement as a validation one even within one run: it is
+read on data the step just fitted, and for BERT its mask is drawn again every step.
+
+Two more things the rows have to carry beyond the loss, because the columns are not
+comparable without them:
 
   metric    eval_loss_mask scores the 20% of positions BERT masked; val_loss scores every
             token a GPT-2 run predicted; val_loss_full_split is a checkpoint re-scored on
-            the whole validation split afterwards. Three different numbers.
+            the whole validation split afterwards; train_loss_mask and train_loss are the
+            training-batch counterparts of the first two. Five different numbers.
   eval_set  whether the evaluation read a fixed set of positions or drew them again at
             every evaluation. The 12,000-step BERT grid redrew its mask; the 24,000-step
             grid holds it. nanoGPT resamples its validation batches. Values from the two
@@ -98,6 +105,9 @@ def bert_rows(root, jobs):
         state = json.load(open(os.path.join(cks[-1], "trainer_state.json")))
         points = sorted((e["step"], e["eval_loss_mask"]) for e in state["log_history"]
                         if "eval_loss_mask" in e)
+        # The training loss is logged on its own steps, not the evaluation ones, so it is
+        # its own set of rows rather than a column beside them.
+        train = sorted((e["step"], e["loss"]) for e in state["log_history"] if "loss" in e)
         if not points:
             continue
         variant = m["variant"] or ""
@@ -117,8 +127,12 @@ def bert_rows(root, jobs):
                         job = parts[1]
         for step, value in points:
             rows.append((name, "bert", m["size"], f"{rate_of(m['tag']):g}", seed, step,
-                         f"{value:.6f}", "eval_loss_mask", job,
+                         f"{value:.6f}", "eval_loss_mask", "validation", job,
                          "fixed" if fixed else "resampled"))
+        for step, value in train:
+            # Training masks are drawn afresh every step whatever the evaluation does.
+            rows.append((name, "bert", m["size"], f"{rate_of(m['tag']):g}", seed, step,
+                         f"{value:.6f}", "train_loss_mask", "train", job, "resampled"))
         seen.append(name)
     return rows, seen
 
@@ -133,11 +147,13 @@ def gpt2_rows(roots, jobs):
             grid, ladder = GPT2_GRID.match(name), GPT2_LADDER.match(name)
             if not (grid or ladder):
                 continue
-            series = {}
+            # iter, train_loss, val_loss -- nanoGPT writes both at every evaluation.
+            series, train = {}, {}
             for path in glob.glob(os.path.join(run_dir, "logging_*.csv")):
                 for row in csv.reader(open(path)):
                     if row and row[0].strip().isdigit():
                         series[int(row[0])] = float(row[2])
+                        train[int(row[0])] = float(row[1])
             if not series:
                 continue
             if grid:
@@ -155,7 +171,10 @@ def gpt2_rows(roots, jobs):
             job = jobs.get(run_dir) or jobs.get(label, "")
             for step, value in sorted(series.items()):
                 rows.append((label, "gpt2", size, lr, seed, step, f"{value:.6f}",
-                             "val_loss", job, "resampled"))
+                             "val_loss", "validation", job, "resampled"))
+            for step, value in sorted(train.items()):
+                rows.append((label, "gpt2", size, lr, seed, step, f"{value:.6f}",
+                             "train_loss", "train", job, "resampled"))
             seen.append(label)
     return rows, seen
 
@@ -171,7 +190,8 @@ def rescored_rows(path, iters, jobs_hint):
             continue
         rows.append((f"gpt2_{name}", "gpt2", m["size"], f"{rate_of(m['tag']):g}",
                      int(m["seed"] or 42), row.get("checkpoint_iter") or iters,
-                     f"{row['loss']:.6f}", "val_loss_full_split", jobs_hint, "fixed"))
+                     f"{row['loss']:.6f}", "val_loss_full_split", "validation",
+                     jobs_hint, "fixed"))
         seen.append(f"gpt2_{name}:rescored")
     return rows, seen
 
@@ -196,23 +216,26 @@ def main() -> int:
     rows += g_rows + r_rows
     seen += g_seen + r_seen
 
-    columns = ["run", "arch", "size", "lr", "seed", "step", "value", "metric", "job", "eval_set"]
+    columns = ["run", "arch", "size", "lr", "seed", "step", "value", "metric", "split",
+               "job", "eval_set"]
     with open(a.out, "w") as fh:
         fh.write("\t".join(columns) + "\n")
         for row in rows:
             fh.write("\t".join(str(v) for v in row) + "\n")
 
-    missing = sorted({r[0] for r in rows if not r[8]})
+    missing = sorted({r[0] for r in rows if not r[9]})
     print(f"  {len(seen)} runs, {len(rows):,} rows -> {a.out}")
-    print(f"  rows without a job id: {sum(1 for r in rows if not r[8]):,}"
+    print(f"  rows without a job id: {sum(1 for r in rows if not r[9]):,}"
           + (f" (runs: {', '.join(missing)})" if missing else ""))
     for arch in ("bert", "gpt2"):
         names = sorted({r[0] for r in rows if r[1] == arch})
         print(f"  {arch}: {len(names)} runs")
         for n in names:
             pts = [r for r in rows if r[0] == n]
-            print(f"      {n:<42}{len(pts):>5} points  last step {pts[-1][5]:>7}  "
-                  f"{pts[-1][7]}  {pts[-1][9]}  job {pts[-1][8] or '(none)'}")
+            val = [r for r in pts if r[8] == "validation"]
+            trn = [r for r in pts if r[8] == "train"]
+            print(f"      {n:<42}{len(val):>5} validation +{len(trn):>5} train  "
+                  f"last step {pts[-1][5]:>7}  {pts[-1][10]}  job {pts[-1][9] or '(none)'}")
     return 0
 
 
