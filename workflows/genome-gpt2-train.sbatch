@@ -24,7 +24,7 @@
 # resume seam.
 #
 # Required: GENOME_SOURCE_ROOT, GENOME_SUBSET.
-# Optional: LR, EPOCHS, EVAL_INTERVAL, MB, GA, RUN_TAG, RUNS_ROOT, STAGE.
+# Optional: LR, EPOCHS, DECAY_EPOCHS, EVAL_INTERVAL, MB, GA, RUN_TAG, RUNS_ROOT, STAGE.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -77,9 +77,12 @@ export OMP_NUM_THREADS=8
 export GENOME_SUBSET="${SUBSET}"
 export SUBSET_GPT2_LR="${LR}"
 export SUBSET_GPT2_EPOCHS="${EPOCHS:-3}"
+# DECAY_EPOCHS holds the LR schedule at a different length from the run. Unset,
+# the config keeps the two equal, which is what every run so far did.
+[ -n "${DECAY_EPOCHS:-}" ] && export SUBSET_GPT2_LR_DECAY_EPOCHS="${DECAY_EPOCHS}"
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} subset=${SUBSET} LR=${LR} ==="
-echo "=== epochs=${SUBSET_GPT2_EPOCHS} eval_interval=${EVAL_INTERVAL:-config} MB=${MB} GA=${GA} ==="
+echo "=== epochs=${SUBSET_GPT2_EPOCHS} lr_decay_epochs=${SUBSET_GPT2_LR_DECAY_EPOCHS:-same as epochs} eval_interval=${EVAL_INTERVAL:-config} MB=${MB} GA=${GA} ==="
 echo "=== torchrun: ${TORCHRUN} ==="
 echo "=== outputs:  ${OUT} ==="
 echo "=== commit:   $(git rev-parse --short HEAD 2>/dev/null || echo unknown) ==="
