@@ -107,11 +107,34 @@ expected_global_batch = _GLOBAL_BATCH
 # from it here: overriding only max_iters at launch would leave a 9-epoch run
 # warming up over 2% of a 3-epoch schedule, which is 0.67% of its own.
 _N_EPOCH = int(os.environ.get("SUBSET_GPT2_EPOCHS", "3"))
+# SUBSET_GPT2_LR_DECAY_EPOCHS detaches the cosine schedule's length from the
+# run's length. Unset it and the two stay equal, which is every run so far.
+#
+# It exists for the schedule measurement the 2026-10-15 judgment asks for. The
+# 9-epoch campaign tripled max_iters, and because lr_decay_iters followed it the
+# stretch spent above 5e-5 tripled too: 29,215 steps became 87,643. Only 6 of 21
+# runs improved and 20 of 21 reversed by more than 0.01, so the question is
+# whether the extra data or the longer high-LR stretch did that. Setting this to
+# the old epoch count holds the whole LR curve -- warmup, cosine, floor -- where
+# the 3-epoch runs had it and lets the run continue at min_lr past its end, which
+# separates the two.
+_N_EPOCH_DECAY = int(os.environ.get("SUBSET_GPT2_LR_DECAY_EPOCHS", str(_N_EPOCH)))
 _ds_for_len = _load(dataset_dir)
 _train_n = len(_ds_for_len["train"])
-max_iters = (_N_EPOCH * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
-lr_decay_iters = max_iters
-warmup_iters = max(int(0.02 * max_iters), 100)  # ≈ 2 % of max_iters
+
+
+def _iters_for(n_epoch):
+    return (n_epoch * _train_n + _GLOBAL_BATCH - 1) // _GLOBAL_BATCH
+
+
+max_iters = _iters_for(_N_EPOCH)
+lr_decay_iters = _iters_for(_N_EPOCH_DECAY)
+# Warmup follows the decay length, not the run length, so the curve's leading
+# edge is identical to the schedule being borrowed. Deriving it from max_iters
+# instead would warm a 9-epoch run over 3,278 steps against the 1,092 the
+# 3-epoch schedule used, which is a second difference inside a measurement of
+# one.
+warmup_iters = max(int(0.02 * lr_decay_iters), 100)  # ≈ 2 % of lr_decay_iters
 del _ds_for_len
 
 # Smoke-test override for readiness verification only (charter 2026-07-14).
