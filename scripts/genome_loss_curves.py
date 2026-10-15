@@ -38,6 +38,29 @@ GPT2_METRIC = "val_loss"
 
 # A learning-rate arm: -lr1e3, -lr5p5e4, -lr2p5e5-prod. "p" stands in for the
 # decimal point, which cannot go in a directory name.
+# The table's columns, declared once. Adding one here used to mean finding
+# every place that unpacked a row by position: the summary at the end still
+# expected seven fields after `epochs` made it eight, and the job failed after
+# twenty-five minutes of work. The writer checks each row against this, so a
+# row of the wrong width fails at the row rather than somewhere downstream.
+COLUMNS = ["series", "arch", "subset", "epochs", "step", "value", "metric", "job"]
+_COL = {name: i for i, name in enumerate(COLUMNS)}
+
+
+
+def row_for(series, arch, subset, epochs, step, value, metric, job):
+    """One evaluation point, in COLUMNS order.
+
+    Here rather than inline so the width can be tested: the only check the
+    writer can make is that a row matches COLUMNS, and that check fires after
+    the run directories have been read.
+    """
+    row = (series, arch, subset, epochs if epochs else "", step,
+           f"{value:.6f}", metric, job)
+    assert len(row) == len(COLUMNS), (len(row), len(COLUMNS))
+    return row
+
+
 _LR_ARM = re.compile(r"-lr\d+(p\d+)?e-?\d+(-\w+)?$")
 
 
@@ -437,14 +460,17 @@ def main():
         # on disk rather than taken from a config.
         epochs = got.get("epochs") if got else None
         for step, value in points:
-            rows.append((series, arch, subset_of(base), epochs if epochs else "",
-                         step, f"{value:.6f}", metric, job))
+            rows.append(row_for(series, arch, subset_of(base), epochs, step,
+                                value, metric, job))
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
-        writer.writerow(["series", "arch", "subset", "epochs", "step", "value",
-                         "metric", "job"])
+        writer.writerow(COLUMNS)
+        bad = next((r for r in rows if len(r) != len(COLUMNS)), None)
+        if bad is not None:
+            raise SystemExit(f"row has {len(bad)} fields, COLUMNS has "
+                             f"{len(COLUMNS)}: {bad}")
         writer.writerows(rows)
 
     if args.meta_out:
@@ -458,7 +484,9 @@ def main():
         print(f"  wrote {args.meta_out}")
 
     by_series = {}
-    for series, _arch, subset, _s, _v, _m, job in rows:
+    for row in rows:
+        series, subset, job = (row[_COL["series"]], row[_COL["subset"]],
+                               row[_COL["job"]])
         got = by_series.setdefault(series, {"runs": set(), "points": 0, "jobs": set()})
         got["runs"].add(subset)
         got["points"] += 1
