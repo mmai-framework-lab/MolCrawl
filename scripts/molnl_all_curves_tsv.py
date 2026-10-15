@@ -38,10 +38,19 @@ import re
 
 BERT_NAME = re.compile(r"^bert_(?P<size>small|medium|large|xl)_(?:(?P<sched>24k)_)?"
                        r"lr(?P<tag>[0-9p]+e\d)(?:_(?P<variant>seed\d+|warmup|clip|both))?$")
+# The 2026-10-14 re-runs are named after what they repeat, not after their rate, so the
+# rate comes from the run's own manifest rather than from its directory name.
+BERT_RERUN = re.compile(r"^bert_(?P<size>small|medium|large|xl)_24k_rerun$")
+GPT2_FIXEDVAL = re.compile(r"^gpt2_(?P<size>small|medium|large|xl)_(?P<iters>\d+)_fixedval$")
 GPT2_GRID = re.compile(r"^gpt2_(?P<size>small|medium|large|xl)_(?P<iters>\d+)_"
                        r"lr(?P<tag>[0-9p]+e\d)(?:_seed(?P<seed>\d+))?$")
 GPT2_LADDER = re.compile(r"^molecule_nat_lang-(?P<size>small|medium|large|xl|ex-large)$")
 STEP_LINE = re.compile(r"^step (\d+): train loss ([\d.]+), val loss ([\d.]+)", re.M)
+
+
+def manifest(run_dir):
+    path = os.path.join(run_dir, "run_manifest.json")
+    return json.load(open(path)) if os.path.exists(path) else {}
 
 
 def rate_of(tag):
@@ -96,7 +105,8 @@ def bert_rows(root, jobs):
     for run_dir in sorted(glob.glob(os.path.join(root, "bert_*"))):
         name = os.path.basename(run_dir)
         m = BERT_NAME.match(name)
-        if not m:
+        rerun = None if m else BERT_RERUN.match(name)
+        if not (m or rerun):
             continue
         cks = sorted(glob.glob(os.path.join(run_dir, "checkpoint-*")),
                      key=lambda p: int(p.rsplit("-", 1)[1]))
@@ -110,14 +120,20 @@ def bert_rows(root, jobs):
         train = sorted((e["step"], e["loss"]) for e in state["log_history"] if "loss" in e)
         if not points:
             continue
-        variant = m["variant"] or ""
-        seed = int(variant[4:]) if variant.startswith("seed") else 42
+        info = manifest(run_dir)
+        if m:
+            size, lr = m["size"], f"{rate_of(m['tag']):g}"
+            variant = m["variant"] or ""
+            seed = int(variant[4:]) if variant.startswith("seed") else 42
+        else:
+            size = rerun["size"]
+            lr = f"{info.get('schedule', {}).get('learning_rate', 0):g}"
+            seed = int(info.get("seed", {}).get("seed", 42)
+                       if isinstance(info.get("seed"), dict) else info.get("seed", 42))
         # The fixed mask arrived with the 24,000-step grid; before it every evaluation
         # drew its masked positions again.
-        fixed = os.path.exists(os.path.join(run_dir, "run_manifest.json")) and \
-            (json.load(open(os.path.join(run_dir, "run_manifest.json")))
-             .get("eval", {}).get("fixed_mask", {}).get("enabled", False))
-        job = jobs.get(run_dir) or jobs.get(name, "")
+        fixed = info.get("eval", {}).get("fixed_mask", {}).get("enabled", False)
+        job = jobs.get(run_dir) or jobs.get(name, "") or str(info.get("run", {}).get("job_id", ""))
         if not job:
             log = os.path.join(run_dir, "segments.log")
             if os.path.exists(log):
@@ -126,12 +142,12 @@ def bert_rows(root, jobs):
                     if len(parts) >= 2 and parts[1].isdigit():
                         job = parts[1]
         for step, value in points:
-            rows.append((name, "bert", m["size"], f"{rate_of(m['tag']):g}", seed, step,
+            rows.append((name, "bert", size, lr, seed, step,
                          f"{value:.6f}", "eval_loss_mask", "validation", job,
                          "fixed" if fixed else "resampled"))
         for step, value in train:
             # Training masks are drawn afresh every step whatever the evaluation does.
-            rows.append((name, "bert", m["size"], f"{rate_of(m['tag']):g}", seed, step,
+            rows.append((name, "bert", size, lr, seed, step,
                          f"{value:.6f}", "train_loss_mask", "train", job, "resampled"))
         seen.append(name)
     return rows, seen
@@ -145,7 +161,8 @@ def gpt2_rows(roots, jobs):
                 continue
             name = os.path.basename(run_dir)
             grid, ladder = GPT2_GRID.match(name), GPT2_LADDER.match(name)
-            if not (grid or ladder):
+            fixedval = GPT2_FIXEDVAL.match(name) if not (grid or ladder) else None
+            if not (grid or ladder or fixedval):
                 continue
             # iter, train_loss, val_loss -- nanoGPT writes both at every evaluation.
             series, train = {}, {}
@@ -156,9 +173,15 @@ def gpt2_rows(roots, jobs):
                         train[int(row[0])] = float(row[1])
             if not series:
                 continue
+            info = manifest(run_dir)
             if grid:
                 size, lr = grid["size"], f"{rate_of(grid['tag']):g}"
                 seed = int(grid["seed"] or 42)
+            elif fixedval:
+                size = fixedval["size"]
+                lr = f"{info.get('schedule', {}).get('learning_rate', 0):g}"
+                seed = int(info.get("seed", {}).get("seed", 42)
+                           if isinstance(info.get("seed"), dict) else info.get("seed", 42))
             else:
                 size = "xl" if ladder["size"] == "ex-large" else ladder["size"]
                 # The ladder predates the grid: its rate is the one in gpt2_<size>.py,
@@ -167,11 +190,15 @@ def gpt2_rows(roots, jobs):
                       "large": "0.00025", "xl": "0.0002"}[size]
                 seed = {"small": 66, "medium": 55, "large": 60, "xl": 68}.get(size, 0)
             # The run directory distinguishes the three passes; the name alone does not.
-            label = name if grid else f"{os.path.basename(root)}/{name}"
-            job = jobs.get(run_dir) or jobs.get(label, "")
+            label = name if (grid or fixedval) else f"{os.path.basename(root)}/{name}"
+            job = (jobs.get(run_dir) or jobs.get(label, "")
+                   or str(info.get("run", {}).get("job_id", "")))
+            # nanoGPT resamples its validation batches unless the run asked it not to.
+            eval_set = ("fixed" if info.get("eval", {}).get("deterministic_val_eval")
+                        else "resampled")
             for step, value in sorted(series.items()):
                 rows.append((label, "gpt2", size, lr, seed, step, f"{value:.6f}",
-                             "val_loss", "validation", job, "resampled"))
+                             "val_loss", "validation", job, eval_set))
             for step, value in sorted(train.items()):
                 rows.append((label, "gpt2", size, lr, seed, step, f"{value:.6f}",
                              "train_loss", "train", job, "resampled"))
