@@ -149,8 +149,15 @@ def tokens_per_step(series, meta):
     return int(window) * int(batch)
 
 
-def caption(series, meta, n_runs, metric, many_subsets, per_step):
-    """The five things a loss figure has to state beside its curves."""
+def caption(series, meta, n_runs, metric, many_subsets, per_step, reached=None):
+    """The five things a loss figure has to state beside its curves.
+
+    `reached` is the furthest step any curve in the figure actually reached.
+    It is not the schedule's end: a run still going has drawn a tenth of the
+    tokens its config will eventually put through it, and "処理トークン" is a
+    statement about what happened, not about what was planned. Captioning the
+    plan over a run at 3% put 430 G beside an axis that stopped at 13 G.
+    """
     got = meta.get(series, {})
 
     def show(key, fmt="{}"):
@@ -166,7 +173,11 @@ def caption(series, meta, n_runs, metric, many_subsets, per_step):
     seen = ""
     if per_step:
         total = got.get("max_steps")
-        if isinstance(total, list):
+        end = max(total) if isinstance(total, list) else total
+        if end and reached and reached < end:
+            seen = (f"  |  処理トークン {reached * per_step / 1e9:,.0f} G"
+                    f"（予定 {end * per_step / 1e9:,.0f} G、走行中）")
+        elif isinstance(total, list):
             seen = (f"  |  処理トークン {total[0] * per_step / 1e9:,.0f}〜"
                     f"{total[1] * per_step / 1e9:,.0f} G")
         elif total:
@@ -258,10 +269,15 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     if per_step:
         # One decimal below 10 G and none above: a bare "{:,.0f} G" printed two
         # different decades as "0 G" apiece.
-        ax.xaxis.set_major_formatter(
-            lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
-                             f"{v / 1e9:.1f} G" if v >= 1e9 else
-                             f"{v / 1e6:,.0f} M"))
+        # The minor ticks get the same formatter. A log axis spanning less
+        # than a decade has at most one major tick, and matplotlib labels the
+        # minors itself -- the schedule measurement's axis read "3 x 10^9,
+        # 4 x 10^9, 6 x 10^9, 10 G", two notations on one axis.
+        _g = (lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
+                               f"{v / 1e9:.1f} G" if v >= 1e9 else
+                               f"{v / 1e6:,.0f} M"))
+        ax.xaxis.set_major_formatter(_g)
+        ax.xaxis.set_minor_formatter(_g)
     else:
         ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
     # The collapsed runs are a separate figure; without saying so in the title
@@ -275,7 +291,7 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     ax.tick_params(labelsize=11)
     ax.legend(fontsize=10, loc="upper right", framealpha=0.9)
     text = caption(series, meta, len(runs), metric,
-                   len({base_subset(s) for s in runs}) > 1, per_step)
+                   len({base_subset(s) for s in runs}) > 1, per_step, last_step)
     if per_step:
         text += (f"\n横軸は処理トークン数 = step × グローバルバッチ × 窓長"
                  f"（{per_step:,} トークン/step）。計算量 C = 6ND ではない。"

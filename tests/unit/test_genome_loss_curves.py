@@ -519,6 +519,46 @@ def test_a_run_that_recorded_nothing_says_nothing():
     assert lc._bert_eval_set("/nonexistent", {"log_history": []}) is None
 
 
+def test_a_run_still_going_is_captioned_with_what_it_has_processed():
+    """"処理トークン" is what happened, not what the config plans.
+
+    The schedule measurement was captioned 430 G -- max_iters x the tokens a
+    step puts through -- beside an x axis that stopped at 13 G, because it had
+    reached 5,000 of its 163,900 steps. The planned total is still stated, as
+    the plan, and the run is marked as still going.
+    """
+    meta = {"s": {"window": 1024, "global_batch": 2560, "max_steps": 163900,
+                  "epochs": 9, "lr": 0.0001, "eval_every": 1000,
+                  "eval_set": "valid から毎回抽選 64,000 行"}}
+    text = _plot().caption("s", meta, 1, "val_loss", False, 1024 * 2560,
+                           reached=5000)
+
+    assert "処理トークン 13 G（予定 430 G、走行中）" in text
+    assert "430 G  |" not in text
+
+
+def test_a_finished_run_keeps_the_plain_token_count():
+    """The marking is for runs that have not got there, and nothing else."""
+    meta = {"s": {"window": 1024, "global_batch": 2560, "max_steps": 163900,
+                  "epochs": 9, "lr": 0.0001, "eval_every": 1000,
+                  "eval_set": "valid から毎回抽選 64,000 行"}}
+    text = _plot().caption("s", meta, 1, "val_loss", False, 1024 * 2560,
+                           reached=163900)
+
+    assert "処理トークン 430 G" in text
+    assert "走行中" not in text
+
+
+def test_the_minor_ticks_are_labelled_like_the_major_ones():
+    """A log axis narrower than a decade has at most one major tick, and
+    matplotlib labels the minors in its own notation -- the figure read
+    "3 x 10^9, 4 x 10^9, 6 x 10^9, 10 G"."""
+    import inspect
+    src = inspect.getsource(_plot())
+
+    assert "set_minor_formatter" in src
+
+
 def test_the_caption_states_how_the_eval_rows_were_chosen():
     """Rule 3 of the 2026-10-05 directive: the draw method and the row count go
     in a footnote to any table of values, and a figure quoting losses is one."""
