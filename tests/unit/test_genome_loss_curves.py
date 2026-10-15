@@ -26,6 +26,30 @@ def test_the_window_tag_names_the_series():
     assert lc.series_of("bert-small-mammal_centered-smoke") == "smoke"
 
 
+def test_a_row_is_as_wide_as_the_header_says():
+    """The header and the row come from one list, so they cannot drift.
+
+    They did drift: `epochs` made the row eight fields while the summary at the
+    end of the job still unpacked seven, and the failure landed after
+    twenty-five minutes of reading run directories.
+    """
+    row = lc.row_for("gpt2-ep9", "gpt2", "mammal_centered", 9, 1000, 1.0803,
+                     "val_loss", "175277")
+    assert len(row) == len(lc.COLUMNS)
+    named = dict(zip(lc.COLUMNS, row))
+    assert named["epochs"] == 9
+    assert named["series"] == "gpt2-ep9"
+    assert named["job"] == "175277"
+
+
+def test_an_unknown_epoch_count_is_blank_rather_than_the_word_none():
+    """`None` written into a TSV reads as the four-letter string in every
+    reader that opens it, and sorts among the numbers."""
+    row = lc.row_for("gpt2-lr-sweep", "gpt2", "stab2-E", None, 100, 1.4,
+                     "val_loss", "")
+    assert dict(zip(lc.COLUMNS, row))["epochs"] == ""
+
+
 def test_the_schedule_measurement_is_its_own_series():
     """Nine epochs under the three-epoch LR schedule is a third thing.
 
