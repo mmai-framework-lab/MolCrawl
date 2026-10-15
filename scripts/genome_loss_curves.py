@@ -114,7 +114,12 @@ def subset_of(basename):
     name = re.sub(r"^(bert|gpt2)-small-", "", basename)
     if _LR_ARM.search(name):
         return re.sub(r"-(w1026|w1024)", "", name)
-    return re.sub(r"-(w1026|sat9|w1024-ep9|smoke|ep9)$", "", name)
+    # ep9-decay3 before ep9: the suffixes are anchored, so a longer one that
+    # ends in a shorter one has to be listed. Left out, the schedule
+    # measurement's label read mammal_centered-ep9-decay3 -- a subset that does
+    # not exist, which also put the epoch count out of reach because the train
+    # row count is looked up by the label.
+    return re.sub(r"-(w1026|sat9|w1024-ep9|smoke|ep9-decay3|ep9)$", "", name)
 
 
 def _sacct_rows(start, end, user):

@@ -26,6 +26,18 @@ def test_the_window_tag_names_the_series():
     assert lc.series_of("bert-small-mammal_centered-smoke") == "smoke"
 
 
+def test_the_longer_suffix_is_stripped_before_the_one_it_ends_in():
+    """`-ep9-decay3` ends in neither `-ep9` nor anything else anchored.
+
+    It read as the subset `mammal_centered-ep9-decay3`, which is not a subset,
+    and the epoch count is looked up by that label against the build on disk --
+    so the label being wrong left the epochs column empty as well.
+    """
+    assert lc.subset_of("gpt2-small-mammal_centered-ep9-decay3") == "mammal_centered"
+    assert lc.subset_of("gpt2-small-mammal_centered-ep9") == "mammal_centered"
+    assert lc.subset_of("bert-small-mammal_centered-w1024-ep9") == "mammal_centered"
+
+
 def test_a_row_is_as_wide_as_the_header_says():
     """The header and the row come from one list, so they cannot drift.
 
