@@ -71,6 +71,13 @@ echo "=== python:  ${PY} ==="
 echo "=== runs:    ${RUNS_ROOT} ==="
 echo "=== outputs: ${OUT_DIR} ==="
 
+echo ""; echo "########## 0. 単体テスト ##########"
+# The series rules and the epoch recovery are pure logic and are the part that
+# has been wrong: a nine-epoch run landed in the three-epoch series, and a
+# figure was captioned "epochs 3" over nine-epoch curves. Running them here
+# keeps the check on the same node as the work rather than on the login node.
+"${PY}" -m pytest -q tests/unit/test_genome_loss_curves.py || { echo "  FAILED: tests"; exit 1; }
+
 echo ""; echo "########## 1. 窓 512 の基準線（BERT のみ） ##########"
 # gpt2 is skipped: its build was already measured in the same pass as its loss
 # on 2026-09-16, and the tally reads every token of every row, so including it

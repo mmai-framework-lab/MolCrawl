@@ -64,6 +64,12 @@ def series_of(basename):
         # tag. Without it the two land in one series: three epochs and nine,
         # averaged together, on runs whose best points sit at 53-98% and 13-28%
         # of their schedules respectively.
+        #
+        # -ep9-decay3 is the schedule measurement: nine epochs of data under the
+        # three-epoch LR schedule. It is a third thing, and the suffix is
+        # matched before -ep9 because it does not end in it.
+        if basename.endswith("-ep9-decay3"):
+            return "gpt2-ep9-decay3"
         return "gpt2-ep9" if basename.endswith("-ep9") else "gpt2"
     if _LR_ARM.search(basename):
         return "bert-lr-sweep"
@@ -423,13 +429,22 @@ def main():
             for key, value in got.items():
                 slot.setdefault(key, set()).add(value)
         metric = BERT_METRIC if arch == "bert" else GPT2_METRIC
+        # The epoch count goes on the row, not only in the per-series metadata
+        # the captions read. Whoever opens the TSV asks which rows are three
+        # epochs and which are nine first, and `series` answers it only to
+        # someone who already knows that bert-w1026 is nine and bert-base is
+        # three. The value is the one the captions use, measured from the build
+        # on disk rather than taken from a config.
+        epochs = got.get("epochs") if got else None
         for step, value in points:
-            rows.append((series, arch, subset_of(base), step, f"{value:.6f}", metric, job))
+            rows.append((series, arch, subset_of(base), epochs if epochs else "",
+                         step, f"{value:.6f}", metric, job))
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
-        writer.writerow(["series", "arch", "subset", "step", "value", "metric", "job"])
+        writer.writerow(["series", "arch", "subset", "epochs", "step", "value",
+                         "metric", "job"])
         writer.writerows(rows)
 
     if args.meta_out:
