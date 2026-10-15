@@ -116,7 +116,21 @@ for d in "${RUNS_ROOT}"/${RUN_GLOB}/; do
     #
     # The newest checkpoint remains the last resort, for a run with neither.
     step=""
-    if [ -n "${ADOPTED_CSV:-}" ] && [ -f "${ADOPTED_CSV}" ]; then
+    # GPT-2 scores ckpt.pt below whatever this resolves, because that file is
+    # the best-val model. So read the step out of it rather than off the
+    # directory listing: without this the header printed the newest step as the
+    # "adopted" one while scoring a different model -- harmless to the number,
+    # and exactly the sort of line that gets quoted later. It matters most on
+    # the nine-epoch runs, whose best sits at 13-28% of the schedule.
+    if [ "${ARCH}" = "gpt2" ] && [ -f "${d}/ckpt.pt" ]; then
+        step=$("${PY}" -c "
+import sys, torch
+try:
+    print(torch.load(sys.argv[1], map_location='cpu', weights_only=False)['iter_num'])
+except Exception:
+    pass" "${d}/ckpt.pt" 2>/dev/null)
+    fi
+    if [ -z "${step}" ] && [ -n "${ADOPTED_CSV:-}" ] && [ -f "${ADOPTED_CSV}" ]; then
         step=$(awk -F, -v s="${subset}" 'NR>1 && $1==s {print $11}' "${ADOPTED_CSV}")
     fi
     if [ -z "${step}" ]; then
