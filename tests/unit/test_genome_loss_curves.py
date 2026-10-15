@@ -549,14 +549,19 @@ def test_a_finished_run_keeps_the_plain_token_count():
     assert "走行中" not in text
 
 
-def test_the_minor_ticks_are_labelled_like_the_major_ones():
-    """A log axis narrower than a decade has at most one major tick, and
-    matplotlib labels the minors in its own notation -- the figure read
-    "3 x 10^9, 4 x 10^9, 6 x 10^9, 10 G"."""
+def test_the_minors_are_labelled_only_on_an_axis_narrower_than_a_decade():
+    """Both ways of getting this wrong are in one figure's history.
+
+    Unlabelled, an axis under one decade shows matplotlib's own notation on
+    the minors and reads "3 x 10^9, 4 x 10^9, 6 x 10^9, 10 G". Labelled
+    everywhere, a three-decade axis runs them together: "8.0 G 9.0 G10 G".
+    """
     import inspect
     src = inspect.getsource(_plot())
 
     assert "set_minor_formatter" in src
+    assert "hi_x / lo_x < 10" in src
+    assert "NullFormatter" in src
 
 
 def test_the_caption_states_how_the_eval_rows_were_chosen():

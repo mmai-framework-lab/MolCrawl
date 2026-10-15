@@ -149,6 +149,13 @@ def tokens_per_step(series, meta):
     return int(window) * int(batch)
 
 
+def matplotlib_null_formatter():
+    """A formatter that prints nothing, imported late like pyplot itself."""
+    import matplotlib.ticker
+
+    return matplotlib.ticker.NullFormatter()
+
+
 def caption(series, meta, n_runs, metric, many_subsets, per_step, reached=None):
     """The five things a loss figure has to state beside its curves.
 
@@ -269,15 +276,21 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     if per_step:
         # One decimal below 10 G and none above: a bare "{:,.0f} G" printed two
         # different decades as "0 G" apiece.
-        # The minor ticks get the same formatter. A log axis spanning less
-        # than a decade has at most one major tick, and matplotlib labels the
-        # minors itself -- the schedule measurement's axis read "3 x 10^9,
-        # 4 x 10^9, 6 x 10^9, 10 G", two notations on one axis.
         _g = (lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
                                f"{v / 1e9:.1f} G" if v >= 1e9 else
                                f"{v / 1e6:,.0f} M"))
         ax.xaxis.set_major_formatter(_g)
-        ax.xaxis.set_minor_formatter(_g)
+        # The minors get a label only on an axis narrower than one decade.
+        # There, at most one major tick falls inside the range and matplotlib
+        # labels the minors in its own notation, so the axis carries two at
+        # once -- "3 x 10^9, 4 x 10^9, 6 x 10^9, 10 G". Wider than that, every
+        # decade has its own major tick and labelling the minors as well runs
+        # them together: "8.0 G 9.0 G10 G", "90 G100 G".
+        lo_x, hi_x = ax.get_xlim()
+        if lo_x > 0 and hi_x / lo_x < 10:
+            ax.xaxis.set_minor_formatter(_g)
+        else:
+            ax.xaxis.set_minor_formatter(matplotlib_null_formatter())
     else:
         ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
     # The collapsed runs are a separate figure; without saying so in the title
