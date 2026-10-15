@@ -26,6 +26,18 @@ def test_the_window_tag_names_the_series():
     assert lc.series_of("bert-small-mammal_centered-smoke") == "smoke"
 
 
+def test_the_schedule_measurement_is_its_own_series():
+    """Nine epochs under the three-epoch LR schedule is a third thing.
+
+    `-ep9-decay3` does not end in `-ep9`, so without its own rule it falls
+    through to the untagged `gpt2` series -- nine epochs of data averaged into
+    the three-epoch twenty-one, which is the defect `-ep9` was added to stop.
+    """
+    assert lc.series_of("gpt2-small-mammal_centered-ep9-decay3") == "gpt2-ep9-decay3"
+    assert lc.series_of("gpt2-small-mammal_centered-ep9") == "gpt2-ep9"
+    assert lc.series_of("gpt2-small-mammal_centered") == "gpt2"
+
+
 def test_an_untagged_run_is_the_512_series_not_a_fallback_bucket():
     """The production 21 carry no suffix, so 'no tag' is a series, not unknown."""
     assert lc.series_of("bert-small-global_random_seed1") == "bert-base"
