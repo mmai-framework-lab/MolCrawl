@@ -149,6 +149,25 @@ def tokens_per_step(series, meta):
     return int(window) * int(batch)
 
 
+def token_tick(value, _pos=None):
+    """A tick on the processed-token axis.
+
+    One decimal below 10 G and none above: a bare "{:,.0f} G" printed two
+    different decades as "0 G" apiece. Below 1 G it switches to M, because the
+    first evaluation of a short run lands there.
+    """
+    if value >= 1e10:
+        return f"{value / 1e9:,.0f} G"
+    if value >= 1e9:
+        return f"{value / 1e9:.1f} G"
+    return f"{value / 1e6:,.0f} M"
+
+
+def step_tick(value, _pos=None):
+    """A tick on the step axis, for the figures not drawn against tokens."""
+    return f"{int(value):,}"
+
+
 def matplotlib_null_formatter():
     """A formatter that prints nothing, imported late like pyplot itself."""
     import matplotlib.ticker
@@ -274,12 +293,7 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
         ax.set_xlabel("step")
     ax.set_ylabel(f"{metric}（nats/token）")
     if per_step:
-        # One decimal below 10 G and none above: a bare "{:,.0f} G" printed two
-        # different decades as "0 G" apiece.
-        _g = (lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
-                               f"{v / 1e9:.1f} G" if v >= 1e9 else
-                               f"{v / 1e6:,.0f} M"))
-        ax.xaxis.set_major_formatter(_g)
+        ax.xaxis.set_major_formatter(token_tick)
         # The minors get a label only on an axis narrower than one decade.
         # There, at most one major tick falls inside the range and matplotlib
         # labels the minors in its own notation, so the axis carries two at
@@ -288,11 +302,11 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
         # them together: "8.0 G 9.0 G10 G", "90 G100 G".
         lo_x, hi_x = ax.get_xlim()
         if lo_x > 0 and hi_x / lo_x < 10:
-            ax.xaxis.set_minor_formatter(_g)
+            ax.xaxis.set_minor_formatter(token_tick)
         else:
             ax.xaxis.set_minor_formatter(matplotlib_null_formatter())
     else:
-        ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
+        ax.xaxis.set_major_formatter(step_tick)
     # The collapsed runs are a separate figure; without saying so in the title
     # the two are told apart only by their file names.
     ax.set_title(("最後の 20 %: " if tail_fraction else "") + series
@@ -358,13 +372,10 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
     if per_step:
         ax.set_xscale("log")
         ax.set_xlabel("処理トークン数（対数）")
-        ax.xaxis.set_major_formatter(
-            lambda v, _pos: (f"{v / 1e9:,.0f} G" if v >= 1e10 else
-                             f"{v / 1e9:.1f} G" if v >= 1e9 else
-                             f"{v / 1e6:,.0f} M"))
+        ax.xaxis.set_major_formatter(token_tick)
     else:
         ax.set_xlabel("step")
-        ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
+        ax.xaxis.set_major_formatter(step_tick)
     ax.set_ylabel(f"{metric}（nats/token）")
     ax.set_title("mammal_centered: 3 エポックと 9 エポック", fontsize=15)
     ax.grid(alpha=0.25, linewidth=0.5)
