@@ -84,3 +84,68 @@ def test_greater_is_better_reverses_the_comparison():
         if control.should_save:
             saved.append(100 + i * 100)
     assert saved == [100, 300]
+
+
+# --- the ordering the mixin actually produces (added 2026-10-16) -------------
+#
+# MlmBreakdownMixin.evaluate calls super().evaluate() -- which fires on_evaluate --
+# and only afterwards adds eval_loss_mask through self.log(). Measured on compounds
+# BERT medium (job 151323): the callback saw no mask metric at on_evaluate, fell back
+# to eval_loss by default, and the eval_loss_mask minimum at step 14,700 was never
+# saved while worse steps were.
+
+
+def _mixin_order(cb, step, control, blend, mask):
+    """What the Trainer and the mixin do, in order, for one evaluation."""
+    cb.on_evaluate(None, _State(step), control, metrics={"eval_loss": blend})
+    cb.on_log(None, _State(step), control, logs={"eval_loss_mask": mask})
+    return control
+
+
+def test_mask_metric_is_seen_when_it_arrives_through_on_log():
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+    control = _Control()
+    _mixin_order(cb, 100, control, blend=0.9, mask=0.5)
+    assert control.should_save
+    assert cb.best == 0.5
+
+
+def test_the_measured_sequence_saves_the_mask_minimum():
+    """steps 14,400 / 14,700 / 14,900 from job 151323.
+
+    On eval_loss alone, 14,700 is not an improvement and 14,900 is; on
+    eval_loss_mask, 14,700 is the minimum. The mask is what the run is judged on.
+    """
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+    saved = []
+    for step, blend, mask in ((14400, 0.062527, 0.069282),
+                              (14700, 0.062566, 0.068337),
+                              (14900, 0.062389, 0.069432)):
+        control = _Control()
+        _mixin_order(cb, step, control, blend, mask)
+        if control.should_save:
+            saved.append(step)
+    assert 14700 in saved, "the mask minimum must be saved"
+    assert 14900 not in saved, "worse on the judged metric; must not be saved"
+    assert cb.best_step == 14700
+
+
+def test_no_silent_fallback_by_default():
+    """A run must not select on a metric it is not judged on without being told to."""
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+    control = _Control()
+    cb.on_evaluate(None, _State(100), control, metrics={"eval_loss": 2.0})
+    assert not control.should_save
+    assert cb.best is None
+
+
+def test_one_decision_per_step():
+    """on_evaluate and on_log both fire for one evaluation; the step is judged once."""
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+    control = _Control()
+    cb.on_log(None, _State(100), control, logs={"eval_loss_mask": 0.5})
+    assert control.should_save
+    control2 = _Control()
+    cb.on_log(None, _State(100), control2, logs={"eval_loss_mask": 0.4})
+    assert not control2.should_save, "the same step must not be reconsidered"
+    assert cb.best == 0.5
