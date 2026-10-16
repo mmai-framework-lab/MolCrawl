@@ -94,6 +94,40 @@ def _scan_boundary_id(dataset, boundary_id, n_rows=2000):
     }
 
 
+def resume_failure_action(exc, resume_checkpoint, pretrain_model_path):
+    """What to do when ``trainer.train(resume_from_checkpoint=...)`` raises.
+
+    Returns one of:
+
+    ``"reraise"``
+        Not a resume problem, or there was nothing to resume from. The original
+        exception is the answer.
+    ``"restart_finetune"``
+        A fine-tune checkpoint will not load, and the pretrained weights it started
+        from are still there. Those weights are the asset and a fine-tune is cheap,
+        so reload them and start the fine-tune again.
+    ``"stop"``
+        A pretraining checkpoint will not load and there is nothing to fall back to.
+        Restarting would train randomly initialised weights under the same name and
+        the run would read as complete, so stop instead.
+
+    The three substrings are what the recovery was originally written for: torch's
+    weights-only loader reports failures as "Weights only load failed" and names
+    ``WeightsUnpickler``, and the Trainer's own messages say "checkpoint". A
+    corrupt safetensors header ("Error while deserializing header") and a bad
+    pickle ("invalid load key") match none of them and reraise, which is why those
+    two failures already stopped a run before this function existed.
+    """
+    if not resume_checkpoint:
+        return "reraise"
+    text = str(exc).lower()
+    if not any(k in text for k in ("checkpoint", "weights only", "weightsunpickler")):
+        return "reraise"
+    if pretrain_model_path and os.path.exists(pretrain_model_path):
+        return "restart_finetune"
+    return "stop"
+
+
 def resolve_eval_split(available, requested=DEFAULT_EVAL_SPLIT):
     """Pick the split that feeds ``Trainer.eval_dataset``.
 
@@ -1307,13 +1341,13 @@ if __name__ == "__main__":
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)
     except Exception as e:
-        if resume_checkpoint and (
-            "checkpoint" in str(e).lower() or "weights only" in str(e).lower() or "weightsunpickler" in str(e).lower()
-        ):
+        _action = resume_failure_action(e, resume_checkpoint, pretrain_model_path)
+        if _action != "reraise":
             print(f"⚠️  Failed to resume from checkpoint: {e}")
-            # Re-initialise the model with pretrain weights (if available) so
-            # we don't accidentally train from random weights.
-            if pretrain_model_path and os.path.exists(pretrain_model_path):
+            # Re-initialise the model with pretrain weights and restart fine-tuning.
+            # A fine-tune is cheap and the pretrained weights are the asset, so a
+            # fine-tune checkpoint that will not load is worth starting over from them.
+            if _action == "restart_finetune":
                 _ckpt_dirs = sorted(
                     [d for d in os.listdir(pretrain_model_path) if d.startswith("checkpoint-")],
                     key=lambda x: int(x.split("-")[1]),
@@ -1321,9 +1355,30 @@ if __name__ == "__main__":
                 _load_path = os.path.join(pretrain_model_path, _ckpt_dirs[-1]) if _ckpt_dirs else pretrain_model_path
                 print(f"   Reloading pretrain weights from {_load_path} and restarting fine-tuning...")
                 trainer.model = BertForMaskedLM.from_pretrained(_load_path, config=model_config, ignore_mismatched_sizes=True)
+                trainer.train(resume_from_checkpoint=None)
             else:
-                print("   No pretrain_model_path available — starting from current model weights...")
-            trainer.train(resume_from_checkpoint=None)
+                # Pretraining. There are no weights to fall back to, so the restart
+                # this used to do began from random ones and silently discarded every
+                # step the checkpoint held. A run cut by the time limit and continued
+                # is the ordinary case for the larger sizes -- compounds BERT xl runs
+                # about 100 hours against a 96-hour limit -- and such a run would
+                # finish, report, and look complete while being a different run that
+                # started over. Stop instead, and say what to do.
+                # The step comes from the checkpoint's own name rather than from
+                # _resumed_step, which is assigned inside the manifest block and so
+                # may not exist here -- reading it would raise NameError and hide the
+                # error this message is about.
+                _ckpt_step = os.path.basename(str(resume_checkpoint)).split("-")[-1]
+                raise RuntimeError(
+                    f"Failed to resume pretraining from {resume_checkpoint}.\n"
+                    f"  original error: {type(e).__name__}: {e}\n"
+                    f"Not restarting from scratch: that would discard the {_ckpt_step} "
+                    "steps this checkpoint holds and train randomly initialised weights "
+                    "under the same name, which reads as a completed run.\n"
+                    "Either repair or remove the unreadable checkpoint and continue from "
+                    "an earlier one, or move the directory aside to start a genuinely "
+                    "fresh run."
+                ) from e
         else:
             raise
     finally:
