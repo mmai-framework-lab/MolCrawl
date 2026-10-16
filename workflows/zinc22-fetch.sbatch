@@ -13,9 +13,10 @@
 #   ZINC22_RECORD=<tsv>,ZINC22_RETRY=<txt>[,ZINC22_WORKERS=4][,ZINC22_AUTH=<user:password>] \
 #          workflows/zinc22-fetch.sbatch
 #
-# ZINC22_ONLY restricts the run to a space-separated list of tranches, which is how
-# two fetches are kept off each other's files: two processes writing one partial
-# would corrupt it, so a second fetch must name tranches the first has not reached.
+# ZINC22_ONLY restricts the run to a space-separated list of tranches and ZINC22_PART
+# takes one stride of the list as "I/N". Either keeps two fetches off each other's
+# files, which matters because two processes writing one partial would corrupt it.
+# ZINC22_PART also splits a single large tranche, which ZINC22_ONLY cannot.
 #
 # The 2D tranches sit behind HTTP Basic. ZINC publishes what to use on its own index
 # page at files.docking.org/zinc22/, stating the point is to keep the files out of
@@ -62,7 +63,8 @@ df -h "${ZINC22_DEST}" | tail -1
     --retry-list "${ZINC22_RETRY}" \
     --workers "${ZINC22_WORKERS:-4}" \
     ${ZINC22_LIMIT:+--limit "${ZINC22_LIMIT}"} \
-    ${ZINC22_ONLY:+--only-tranches ${ZINC22_ONLY}}
+    ${ZINC22_ONLY:+--only-tranches ${ZINC22_ONLY}} \
+    ${ZINC22_PART:+--part "${ZINC22_PART}"}
 rc=$?
 echo "=== rc=${rc} @ $(date -Is) ==="
 exit "${rc}"
