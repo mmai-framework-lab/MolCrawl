@@ -71,6 +71,13 @@ echo "=== python:  ${PY} ==="
 echo "=== runs:    ${RUNS_ROOT} ==="
 echo "=== outputs: ${OUT_DIR} ==="
 
+echo ""; echo "########## 0. 単体テスト ##########"
+# The series rules and the epoch recovery are pure logic and are the part that
+# has been wrong: a nine-epoch run landed in the three-epoch series, and a
+# figure was captioned "epochs 3" over nine-epoch curves. Running them here
+# keeps the check on the same node as the work rather than on the login node.
+"${PY}" -m pytest -q tests/unit/test_genome_loss_curves.py || { echo "  FAILED: tests"; exit 1; }
+
 echo ""; echo "########## 1. 窓 512 の基準線（BERT のみ） ##########"
 # gpt2 is skipped: its build was already measured in the same pass as its loss
 # on 2026-09-16, and the tally reads every token of every row, so including it
@@ -93,6 +100,8 @@ echo ""; echo "########## 2. TSV ##########"
     --sacct-start "${SACCT_START:-2026-08-01}" \
     --sacct-end "${SACCT_END:-2026-09-30}" \
     --train-root "bert-base=${SRC_ROOT_512}" "bert-sat9=${SRC_ROOT_512}" \
+        ${SRC_ROOT_GPT2:+"gpt2=${SRC_ROOT_GPT2}" "gpt2-ep9=${SRC_ROOT_GPT2}" \
+            "gpt2-ep9-decay3=${SRC_ROOT_GPT2}"} \
         ${SRC_ROOT_1026:+"bert-lr-sweep=${SRC_ROOT_1026}"} \
     --out "${TSV}" \
     --meta-out "${META}" || { echo "  FAILED: TSV"; exit 1; }
@@ -114,6 +123,8 @@ _stale=$(ls "${OUT_DIR}"/genome-loss-*.png 2>/dev/null | wc -l)
         "bert-w1026=${RESULTS_ROOT}/final-scores-bert-w1026" \
         "bert-lr-sweep=${RESULTS_ROOT}/final-scores-bert-w1026" \
         "gpt2=${RESULTS_ROOT}/final-scores-gpt2" \
+        "gpt2-ep9=${RESULTS_ROOT}/final-scores-gpt2" \
+        "gpt2-ep9-decay3=${RESULTS_ROOT}/final-scores-gpt2" \
     --baselines-tally \
         "bert-base=${TALLY}:bert" \
         "bert-sat9=${TALLY}:bert" \

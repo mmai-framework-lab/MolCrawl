@@ -134,8 +134,56 @@ def read_tsv(path):
     return curves, metric
 
 
-def caption(series, meta, n_runs, metric, many_subsets):
-    """The five things a loss figure has to state beside its curves."""
+def tokens_per_step(series, meta):
+    """Sequences per step times the length of one, from what the runs recorded.
+
+    A step is not the same amount of data in two series: the 512-window runs
+    process half of what the 1,026-window runs do at the same global batch.
+    Plotting against step would make the shorter-window series look faster for
+    a reason that has nothing to do with learning.
+    """
+    got = meta.get(series, {})
+    window, batch = got.get("window"), got.get("global_batch")
+    if isinstance(window, list) or isinstance(batch, list) or not window or not batch:
+        return None
+    return int(window) * int(batch)
+
+
+def token_tick(value, _pos=None):
+    """A tick on the processed-token axis.
+
+    One decimal below 10 G and none above: a bare "{:,.0f} G" printed two
+    different decades as "0 G" apiece. Below 1 G it switches to M, because the
+    first evaluation of a short run lands there.
+    """
+    if value >= 1e10:
+        return f"{value / 1e9:,.0f} G"
+    if value >= 1e9:
+        return f"{value / 1e9:.1f} G"
+    return f"{value / 1e6:,.0f} M"
+
+
+def step_tick(value, _pos=None):
+    """A tick on the step axis, for the figures not drawn against tokens."""
+    return f"{int(value):,}"
+
+
+def matplotlib_null_formatter():
+    """A formatter that prints nothing, imported late like pyplot itself."""
+    import matplotlib.ticker
+
+    return matplotlib.ticker.NullFormatter()
+
+
+def caption(series, meta, n_runs, metric, many_subsets, per_step, reached=None):
+    """The five things a loss figure has to state beside its curves.
+
+    `reached` is the furthest step any curve in the figure actually reached.
+    It is not the schedule's end: a run still going has drawn a tenth of the
+    tokens its config will eventually put through it, and "処理トークン" is a
+    statement about what happened, not about what was planned. Captioning the
+    plan over a run at 3% put 430 G beside an axis that stopped at 13 G.
+    """
     got = meta.get(series, {})
 
     def show(key, fmt="{}"):
@@ -146,10 +194,27 @@ def caption(series, meta, n_runs, metric, many_subsets):
             return f"{fmt.format(value[0])}〜{fmt.format(value[1])}"
         return fmt.format(value)
 
+    # Tokens seen at completion -- the fifth of the five conditions, and the
+    # one the x axis is now drawn in, so it has to be stated as a number too.
+    seen = ""
+    if per_step:
+        total = got.get("max_steps")
+        end = max(total) if isinstance(total, list) else total
+        if end and reached and reached < end:
+            seen = (f"  |  処理トークン {reached * per_step / 1e9:,.0f} G"
+                    f"（予定 {end * per_step / 1e9:,.0f} G、走行中）")
+        elif isinstance(total, list):
+            seen = (f"  |  処理トークン {total[0] * per_step / 1e9:,.0f}〜"
+                    f"{total[1] * per_step / 1e9:,.0f} G")
+        elif total:
+            seen = f"  |  処理トークン {total * per_step / 1e9:,.0f} G"
+
     line = (f"{series}  |  {n_runs} 本  |  窓 {show('window', '{:,}')}  |  "
             f"エポック {show('epochs')}  |  step {show('max_steps', '{:,}')}  |  "
             f"グローバルバッチ {show('global_batch', '{:,}')}  |  "
-            f"学習率 {show('lr')}  |  評価間隔 {show('eval_every', '{:,}')}  |  {metric}")
+            f"学習率 {show('lr')}  |  評価間隔 {show('eval_every', '{:,}')}{seen}  |  "
+            f"{metric}（nats/token）\n評価は {show('eval_set')}。"
+            f"取り方の違う値を同じ列に置かない。")
     if many_subsets:
         # Each run is scored on its own subset's valid split, so the curves are
         # not one task measured 21 ways. Height across subsets is not a ranking;
@@ -164,32 +229,37 @@ def caption(series, meta, n_runs, metric, many_subsets):
 
 
 def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
-         baseline_method=""):
+         baseline_method="", collapsed=False):
     plt = _pyplot()
-    fig, ax = plt.subplots(figsize=(11, 5.2))
+    fig, ax = plt.subplots(figsize=(18, 9))          # 大判
+    per_step = tokens_per_step(series, meta)
     last_step = max(s for pts in runs.values() for s, _ in pts)
     lo_step = last_step * (1 - tail_fraction) if tail_fraction else 0
 
     colours, by_arm = colour_map(runs)
-    seen, ys, labelled = set(), [], False
+    seen, ys, labelled, x_drawn = set(), [], False, []
     for subset, points in sorted(runs.items()):
         kept = [(s, v) for s, v in points if s >= lo_step]
         if not kept:
             continue
+        xs = [(s * per_step if per_step else s) for s, _ in kept]
+        x_drawn += [v for v in xs if v > 0]
+        ys_run = [v for _, v in kept]
         colour = colours[subset]
         key = subset if by_arm else family_of(subset)
-        ax.plot(*zip(*kept), color=colour, linewidth=1.0, alpha=0.75,
+        ax.plot(xs, ys_run, color=colour, linewidth=1.3, alpha=0.8,
                 label=key if key not in seen else None)
         seen.add(key)
         ys += [v for _, v in kept]
         best_step, best_value = min(kept, key=lambda p: p[1])
-        ax.plot([best_step], [best_value], marker="o", markersize=4.5,
-                color=colour, markeredgecolor="white", markeredgewidth=0.8, zorder=3)
+        best_x = best_step * per_step if per_step else best_step
+        ax.plot([best_x], [best_value], marker="o", markersize=6,
+                color=colour, markeredgecolor="white", markeredgewidth=1.0, zorder=3)
         if len(runs) <= 8 or tail_fraction:
             labelled = True
-            ax.annotate(f"{best_step:,}", (best_step, best_value),
-                        textcoords="offset points", xytext=(0, -12),
-                        ha="center", fontsize=6.5, color=colour)
+            ax.annotate(f"{best_step:,} step", (best_x, best_value),
+                        textcoords="offset points", xytext=(0, -14),
+                        ha="center", fontsize=8, color=colour)
 
     drawn = [baselines[k] for k in
              (s if s in baselines else base_subset(s) for s in runs)
@@ -210,21 +280,52 @@ def draw(series, runs, metric, meta, baselines, out_path, tail_fraction=None,
     # The step labels sit 12 points below their marker, so a figure that draws
     # them needs room underneath or the lowest run's label is cut by the axis.
     ax.set_ylim(min(ys) - span * (0.11 if labelled else 0.04), max(ys) + span * 0.04)
-    ax.set_xlim(lo_step, last_step)
-    ax.set_xlabel("step")
-    ax.set_ylabel(metric)
-    ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
-    ax.set_title(("最後の 20 %: " if tail_fraction else "") + series, fontsize=11)
+    if per_step:
+        # The left edge is the first point actually drawn, not step 1. Taking
+        # the schedule's start put three empty decades on a log axis, because
+        # the first evaluation lands at step 1,000 -- about 2.6 G tokens, not
+        # 2.6 M.
+        ax.set_xscale("log")
+        ax.set_xlim(min(x_drawn), last_step * per_step)
+        ax.set_xlabel("処理トークン数（対数）")
+    else:
+        ax.set_xlim(lo_step, last_step)
+        ax.set_xlabel("step")
+    ax.set_ylabel(f"{metric}（nats/token）")
+    if per_step:
+        ax.xaxis.set_major_formatter(token_tick)
+        # The minors get a label only on an axis narrower than one decade.
+        # There, at most one major tick falls inside the range and matplotlib
+        # labels the minors in its own notation, so the axis carries two at
+        # once -- "3 x 10^9, 4 x 10^9, 6 x 10^9, 10 G". Wider than that, every
+        # decade has its own major tick and labelling the minors as well runs
+        # them together: "8.0 G 9.0 G10 G", "90 G100 G".
+        lo_x, hi_x = ax.get_xlim()
+        if lo_x > 0 and hi_x / lo_x < 10:
+            ax.xaxis.set_minor_formatter(token_tick)
+        else:
+            ax.xaxis.set_minor_formatter(matplotlib_null_formatter())
+    else:
+        ax.xaxis.set_major_formatter(step_tick)
+    # The collapsed runs are a separate figure; without saying so in the title
+    # the two are told apart only by their file names.
+    ax.set_title(("最後の 20 %: " if tail_fraction else "") + series
+                 + ("（自分の基準線を上回って終わった run）" if collapsed else ""),
+                 fontsize=15)
     ax.grid(alpha=0.25, linewidth=0.5)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
-    ax.legend(fontsize=7.5, loc="upper right", framealpha=0.9)
-    fig.text(0.01, 0.015,
-             caption(series, meta, len(runs), metric,
-                     len({base_subset(s) for s in runs}) > 1), fontsize=6.6,
-             color="#555555")
-    fig.tight_layout(rect=(0, 0.035, 1, 1))
-    fig.savefig(out_path, dpi=150)
+    ax.tick_params(labelsize=11)
+    ax.legend(fontsize=10, loc="upper right", framealpha=0.9)
+    text = caption(series, meta, len(runs), metric,
+                   len({base_subset(s) for s in runs}) > 1, per_step, last_step)
+    if per_step:
+        text += (f"\n横軸は処理トークン数 = step × グローバルバッチ × 窓長"
+                 f"（{per_step:,} トークン/step）。計算量 C = 6ND ではない。"
+                 f"6ND は系列長由来の注意機構の項を含まない。")
+    fig.text(0.008, 0.012, text, fontsize=9, color="#555555")
+    fig.tight_layout(rect=(0, 0.055, 1, 1))
+    fig.savefig(out_path, dpi=200)
     plt.close(fig)
     print(f"  wrote {out_path}")
 
@@ -237,7 +338,12 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
     window, the same batch. Any other subset would change two things at once.
     """
     plt = _pyplot()
-    fig, ax = plt.subplots(figsize=(11, 5.2))
+    fig, ax = plt.subplots(figsize=(18, 9))
+    # Both sides are window 512 at global batch 2,560, so one tokens-per-step
+    # covers them and the axis matches every other figure here. Drawn against
+    # step this was the only figure left on a different axis -- and it is the
+    # one the three-versus-nine reading is made from.
+    per_step = tokens_per_step("bert-base", meta) or tokens_per_step("bert-sat9", meta)
     pairs = (("bert-base", "mammal_centered", "3 エポック (bert-base)", "#1b3a6b"),
              ("bert-sat9", "mammal_centered", "9 エポック (bert-sat9)", "#c2622d"))
     ys = []
@@ -246,14 +352,16 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
         if not points:
             print(f"  {series}/{subset} が無いので省いた")
             continue
-        ax.plot(*zip(*points), color=colour, linewidth=1.2, label=label)
+        xs = [(st * per_step if per_step else st) for st, _ in points]
+        ax.plot(xs, [v for _, v in points], color=colour, linewidth=1.6, label=label)
         ys += [v for _, v in points]
         best_step, best_value = min(points, key=lambda p: p[1])
-        ax.plot([best_step], [best_value], marker="o", markersize=5, color=colour,
-                markeredgecolor="white", markeredgewidth=0.8, zorder=3)
-        ax.annotate(f"{best_step:,} / {best_value:.4f}", (best_step, best_value),
-                    textcoords="offset points", xytext=(0, -13), ha="center",
-                    fontsize=7, color=colour)
+        best_x = best_step * per_step if per_step else best_step
+        ax.plot([best_x], [best_value], marker="o", markersize=7, color=colour,
+                markeredgecolor="white", markeredgewidth=1.0, zorder=3)
+        ax.annotate(f"{best_step:,} step / {best_value:.4f}", (best_x, best_value),
+                    textcoords="offset points", xytext=(0, -16), ha="center",
+                    fontsize=10, color=colour)
     if "mammal_centered" in baselines:
         value = baselines["mammal_centered"]
         ax.axhline(value, color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
@@ -261,19 +369,29 @@ def draw_epoch_pair(curves, metric, meta, baselines, out_path):
         ys.append(value)
     span = max(ys) - min(ys)
     ax.set_ylim(min(ys) - span * 0.11, max(ys) + span * 0.04)
-    ax.set_xlabel("step")
-    ax.set_ylabel(metric)
-    ax.xaxis.set_major_formatter(lambda v, _pos: f"{int(v):,}")
-    ax.set_title("mammal_centered: 3 エポックと 9 エポック", fontsize=11)
+    if per_step:
+        ax.set_xscale("log")
+        ax.set_xlabel("処理トークン数（対数）")
+        ax.xaxis.set_major_formatter(token_tick)
+    else:
+        ax.set_xlabel("step")
+        ax.xaxis.set_major_formatter(step_tick)
+    ax.set_ylabel(f"{metric}（nats/token）")
+    ax.set_title("mammal_centered: 3 エポックと 9 エポック", fontsize=15)
     ax.grid(alpha=0.25, linewidth=0.5)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
-    ax.legend(fontsize=8, loc="upper right", framealpha=0.9)
-    fig.text(0.01, 0.015, "窓 512・グローバルバッチ 2,560・学習率 1e-4・"
-             "指標 eval_loss_mask。両者とも mammal_centered の 1 本である。",
-             fontsize=6.6, color="#555555")
-    fig.tight_layout(rect=(0, 0.035, 1, 1))
-    fig.savefig(out_path, dpi=150)
+    ax.tick_params(labelsize=11)
+    ax.legend(fontsize=11, loc="upper right", framealpha=0.9)
+    note = ("窓 512・グローバルバッチ 2,560・学習率 1e-4・エポック 3 と 9・"
+            "指標 eval_loss_mask（nats/token）。両者とも mammal_centered の 1 本である。")
+    if per_step:
+        note += (f"\n横軸は処理トークン数 = step × グローバルバッチ × 窓長"
+                 f"（{per_step:,} トークン/step）。計算量 C = 6ND ではない。"
+                 f"6ND は系列長由来の注意機構の項を含まない。")
+    fig.text(0.008, 0.012, note, fontsize=9, color="#555555")
+    fig.tight_layout(rect=(0, 0.055, 1, 1))
+    fig.savefig(out_path, dpi=200)
     plt.close(fig)
     print(f"  wrote {out_path}")
 
@@ -310,6 +428,43 @@ def load_baselines(spec, tally_spec):
                 out[series][row["subset"]] = float(got)
                 method[series] = "組成の集計"
     return out, method
+
+
+def per_run_table(curves, metric, meta, baselines, out_path):
+    """Every run's best and final value, as a table beside the figures.
+
+    A log axis puts 0.06 and 0.07 on top of each other at the tail, so an
+    ordering the figure cannot resolve has to be readable somewhere. Best and
+    final are kept in separate columns rather than mixed into one: they answer
+    different questions, and a run whose best sits at 13% of its schedule is
+    not described by either number alone.
+    """
+    import csv
+    rows = []
+    for series in sorted(curves):
+        base = baselines.get(series, {})
+        per_step = tokens_per_step(series, meta)
+        for subset, points in sorted(curves[series].items()):
+            points = sorted(points)
+            best_step, best = min(points, key=lambda p: p[1])
+            last_step, last = points[-1]
+            line = base.get(subset) or base.get(base_subset(subset))
+            rows.append({
+                "series": series, "subset": subset, "metric": metric[series],
+                "best": f"{best:.6f}", "best_step": best_step,
+                "best_position_pct": f"{100 * best_step / last_step:.1f}",
+                "final": f"{last:.6f}", "final_step": last_step,
+                "reversal": f"{last - best:+.6f}",
+                "baseline": "" if line is None else f"{line:.6f}",
+                "ended_above_baseline": "" if line is None else int(last >= line),
+                "tokens_seen": "" if not per_step else last_step * per_step,
+            })
+    with open(out_path, "w", newline="") as handle:
+        writer = csv.DictWriter(handle, delimiter="\t", fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"  wrote {out_path}  ({len(rows)} rows)")
+    return rows
 
 
 def main():
@@ -351,12 +506,19 @@ def main():
         for name, runs in (("", learned), ("-collapsed", collapsed)):
             if not runs:
                 continue
+            is_collapsed = name == "-collapsed"
             draw(series, runs, metric[series], meta, base,
                  os.path.join(args.out_dir, f"{args.prefix}-{series}{name}.png"),
-                 baseline_method=method.get(series, ""))
+                 baseline_method=method.get(series, ""), collapsed=is_collapsed)
             draw(series, runs, metric[series], meta, base,
                  os.path.join(args.out_dir, f"{args.prefix}-{series}{name}-tail20.png"),
-                 tail_fraction=0.20, baseline_method=method.get(series, ""))
+                 tail_fraction=0.20, baseline_method=method.get(series, ""),
+                 collapsed=is_collapsed)
+
+    table = per_run_table(curves, metric, meta, baselines,
+                          os.path.join(args.out_dir, f"{args.prefix}-per-run.tsv"))
+    above = sum(1 for r in table if r["ended_above_baseline"] == 1)
+    print(f"  自分の基準線を上回って終わった run: {above} / {len(table)}")
 
     draw_epoch_pair(curves, "eval_loss_mask", meta, baselines.get("bert-base", {}),
                     os.path.join(args.out_dir, f"{args.prefix}-epoch-3-vs-9.png"))
