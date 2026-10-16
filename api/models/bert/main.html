@@ -77,6 +77,67 @@ config may set <code>eval_split_name</code> to pin a different split explicitly.
 <p>Precedence: the requested split, then <code>valid</code>, then <code>test</code>. Returns
 <code>None</code> when the dataset carries none of them.</p></div>
 </dd>
+<dt id="molcrawl.models.bert.main.resume_failure_action"><code class="name flex">
+<span>def <span class="ident">resume_failure_action</span></span>(<span>exc, resume_checkpoint, pretrain_model_path)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resume_failure_action(exc, resume_checkpoint, pretrain_model_path):
+    &#34;&#34;&#34;What to do when ``trainer.train(resume_from_checkpoint=...)`` raises.
+
+    Returns one of:
+
+    ``&#34;reraise&#34;``
+        Not a resume problem, or there was nothing to resume from. The original
+        exception is the answer.
+    ``&#34;restart_finetune&#34;``
+        A fine-tune checkpoint will not load, and the pretrained weights it started
+        from are still there. Those weights are the asset and a fine-tune is cheap,
+        so reload them and start the fine-tune again.
+    ``&#34;stop&#34;``
+        A pretraining checkpoint will not load and there is nothing to fall back to.
+        Restarting would train randomly initialised weights under the same name and
+        the run would read as complete, so stop instead.
+
+    The three substrings are what the recovery was originally written for: torch&#39;s
+    weights-only loader reports failures as &#34;Weights only load failed&#34; and names
+    ``WeightsUnpickler``, and the Trainer&#39;s own messages say &#34;checkpoint&#34;. A
+    corrupt safetensors header (&#34;Error while deserializing header&#34;) and a bad
+    pickle (&#34;invalid load key&#34;) match none of them and reraise, which is why those
+    two failures already stopped a run before this function existed.
+    &#34;&#34;&#34;
+    if not resume_checkpoint:
+        return &#34;reraise&#34;
+    text = str(exc).lower()
+    if not any(k in text for k in (&#34;checkpoint&#34;, &#34;weights only&#34;, &#34;weightsunpickler&#34;)):
+        return &#34;reraise&#34;
+    if pretrain_model_path and os.path.exists(pretrain_model_path):
+        return &#34;restart_finetune&#34;
+    return &#34;stop&#34;</code></pre>
+</details>
+<div class="desc"><p>What to do when <code>trainer.train(resume_from_checkpoint=...)</code> raises.</p>
+<p>Returns one of:</p>
+<p><code>"reraise"</code>
+Not a resume problem, or there was nothing to resume from. The original
+exception is the answer.
+<code>"restart_finetune"</code>
+A fine-tune checkpoint will not load, and the pretrained weights it started
+from are still there. Those weights are the asset and a fine-tune is cheap,
+so reload them and start the fine-tune again.
+<code>"stop"</code>
+A pretraining checkpoint will not load and there is nothing to fall back to.
+Restarting would train randomly initialised weights under the same name and
+the run would read as complete, so stop instead.</p>
+<p>The three substrings are what the recovery was originally written for: torch's
+weights-only loader reports failures as "Weights only load failed" and names
+<code>WeightsUnpickler</code>, and the Trainer's own messages say "checkpoint". A
+corrupt safetensors header ("Error while deserializing header") and a bad
+pickle ("invalid load key") match none of them and reraise, which is why those
+two failures already stopped a run before this function existed.</p></div>
+</dd>
 <dt id="molcrawl.models.bert.main.subsample_eval_split"><code class="name flex">
 <span>def <span class="ident">subsample_eval_split</span></span>(<span>dataset, random_sample=False, seed=42, rows: int = 10000)</span>
 </code></dt>
@@ -281,6 +342,7 @@ measured on a random sample all along.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="molcrawl.models.bert.main.resolve_eval_split" href="#molcrawl.models.bert.main.resolve_eval_split">resolve_eval_split</a></code></li>
+<li><code><a title="molcrawl.models.bert.main.resume_failure_action" href="#molcrawl.models.bert.main.resume_failure_action">resume_failure_action</a></code></li>
 <li><code><a title="molcrawl.models.bert.main.subsample_eval_split" href="#molcrawl.models.bert.main.subsample_eval_split">subsample_eval_split</a></code></li>
 </ul>
 </li>
