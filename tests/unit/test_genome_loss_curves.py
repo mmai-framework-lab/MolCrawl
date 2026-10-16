@@ -26,6 +26,54 @@ def test_the_window_tag_names_the_series():
     assert lc.series_of("bert-small-mammal_centered-smoke") == "smoke"
 
 
+def test_the_longer_suffix_is_stripped_before_the_one_it_ends_in():
+    """`-ep9-decay3` ends in neither `-ep9` nor anything else anchored.
+
+    It read as the subset `mammal_centered-ep9-decay3`, which is not a subset,
+    and the epoch count is looked up by that label against the build on disk --
+    so the label being wrong left the epochs column empty as well.
+    """
+    assert lc.subset_of("gpt2-small-mammal_centered-ep9-decay3") == "mammal_centered"
+    assert lc.subset_of("gpt2-small-mammal_centered-ep9") == "mammal_centered"
+    assert lc.subset_of("bert-small-mammal_centered-w1024-ep9") == "mammal_centered"
+
+
+def test_a_row_is_as_wide_as_the_header_says():
+    """The header and the row come from one list, so they cannot drift.
+
+    They did drift: `epochs` made the row eight fields while the summary at the
+    end of the job still unpacked seven, and the failure landed after
+    twenty-five minutes of reading run directories.
+    """
+    row = lc.row_for("gpt2-ep9", "gpt2", "mammal_centered", 9, 1000, 1.0803,
+                     "val_loss", "175277")
+    assert len(row) == len(lc.COLUMNS)
+    named = dict(zip(lc.COLUMNS, row))
+    assert named["epochs"] == 9
+    assert named["series"] == "gpt2-ep9"
+    assert named["job"] == "175277"
+
+
+def test_an_unknown_epoch_count_is_blank_rather_than_the_word_none():
+    """`None` written into a TSV reads as the four-letter string in every
+    reader that opens it, and sorts among the numbers."""
+    row = lc.row_for("gpt2-lr-sweep", "gpt2", "stab2-E", None, 100, 1.4,
+                     "val_loss", "")
+    assert dict(zip(lc.COLUMNS, row))["epochs"] == ""
+
+
+def test_the_schedule_measurement_is_its_own_series():
+    """Nine epochs under the three-epoch LR schedule is a third thing.
+
+    `-ep9-decay3` does not end in `-ep9`, so without its own rule it falls
+    through to the untagged `gpt2` series -- nine epochs of data averaged into
+    the three-epoch twenty-one, which is the defect `-ep9` was added to stop.
+    """
+    assert lc.series_of("gpt2-small-mammal_centered-ep9-decay3") == "gpt2-ep9-decay3"
+    assert lc.series_of("gpt2-small-mammal_centered-ep9") == "gpt2-ep9"
+    assert lc.series_of("gpt2-small-mammal_centered") == "gpt2"
+
+
 def test_an_untagged_run_is_the_512_series_not_a_fallback_bucket():
     """The production 21 carry no suffix, so 'no tag' is a series, not unknown."""
     assert lc.series_of("bert-small-global_random_seed1") == "bert-base"
@@ -362,3 +410,211 @@ def test_the_epoch_count_looks_for_the_build_not_the_label(tmp_path):
         == "mammal_centered"
     assert lc._LR_ARM.sub("", lc.subset_of("bert-small-global_random_seed4")) \
         == "global_random_seed4"
+
+
+@pytest.mark.parametrize("name,series,subset", [
+    ("gpt2-small-mammal_centered", "gpt2", "mammal_centered"),
+    ("gpt2-small-mammal_centered-ep9", "gpt2-ep9", "mammal_centered"),
+    ("gpt2-small-global_random_seed4-ep9", "gpt2-ep9", "global_random_seed4"),
+])
+def test_the_nine_epoch_series_is_not_the_three_epoch_one(name, series, subset):
+    """They share the production naming apart from the tag. Averaged together
+    they would mix runs whose best points sit at 53-98% and at 13-28% of their
+    schedules."""
+    assert lc.series_of(name) == series
+    assert lc.subset_of(name) == subset
+
+
+def test_a_step_is_converted_to_tokens_by_window_and_batch():
+    """A step is not the same amount of data in two series: at one global batch
+    the 512-window runs process half of what the 1,026-window runs do. Drawn
+    against step, the shorter window looks faster for a reason that has nothing
+    to do with learning."""
+    plot = _plot()
+    meta = {"bert-base": {"window": 512, "global_batch": 2560},
+            "bert-w1026": {"window": 1026, "global_batch": 2560}}
+
+    assert plot.tokens_per_step("bert-base", meta) == 512 * 2560
+    assert plot.tokens_per_step("bert-w1026", meta) == 1026 * 2560
+
+
+def test_a_series_whose_window_varies_gets_no_token_axis():
+    """Two windows in one series have no single tokens-per-step, and guessing
+    one would stretch half the curves against the other half."""
+    plot = _plot()
+
+    assert plot.tokens_per_step("mixed", {"mixed": {"window": [512, 1026],
+                                                    "global_batch": 2560}}) is None
+    assert plot.tokens_per_step("absent", {}) is None
+
+
+def test_the_token_axis_starts_where_the_data_does():
+    """The first evaluation lands at step 1,000 -- about 2.6 G tokens, not
+    2.6 M. Taking the schedule's start as the left edge put three empty decades
+    on the log axis."""
+    import inspect
+    src = inspect.getsource(_plot().draw)
+
+    assert "min(x_drawn)" in src
+    assert "max(lo_step, 1) * per_step" not in src
+
+
+def test_two_decades_do_not_print_the_same_tick_label():
+    """A bare thousands format rounded everything below 1 G to '0 G', so two
+    different decades carried the same label."""
+    def fmt(v):
+        return (f"{v / 1e9:,.0f} G" if v >= 1e10 else
+                f"{v / 1e9:.1f} G" if v >= 1e9 else
+                f"{v / 1e6:,.0f} M")
+
+    labels = [fmt(v) for v in (1e8, 5e8, 1e9, 2.6e9, 1e10, 1e11)]
+
+    assert len(set(labels)) == len(labels)
+    assert "0 G" not in labels
+
+
+def test_the_gpt2_epoch_count_is_not_a_literal(tmp_path):
+    """It was hardcoded to 3 while the config's _N_EPOCH was a literal 3.
+    SUBSET_GPT2_EPOCHS now raises it, and the nine-epoch series went out
+    captioned "epochs 3" until this stopped being a constant."""
+    import inspect
+    src = inspect.getsource(lc.gpt2_meta)
+
+    assert '"epochs": 3' not in src
+    assert '"epochs": None' in src
+
+
+def test_the_collapsed_figure_says_so_in_its_title():
+    """Two figures of one series differ only by which runs they hold. Told
+    apart by file name alone, the image on its own does not say which it is."""
+    import inspect
+    src = inspect.getsource(_plot().draw)
+
+    assert "collapsed" in inspect.signature(_plot().draw).parameters
+    assert "基準線を上回って終わった run" in src
+
+
+def test_every_figure_shares_one_x_axis():
+    """The three-versus-nine figure is drawn by its own function and was the
+    only one left on step after the axis changed -- and it is the figure the
+    reading is made from."""
+    import inspect
+    src = inspect.getsource(_plot().draw_epoch_pair)
+
+    assert "tokens_per_step" in src
+    assert 'ax.set_xscale("log")' in src
+    assert "figsize=(18, 9)" in src
+
+
+def test_the_eval_row_count_survives_a_missing_manifest():
+    """A loss has no meaning without how its rows were chosen. The manifest
+    carries it, but the twenty-one 512-window runs predate the manifest -- so
+    the count comes back out of the trainer's own timings instead."""
+    state = {"log_history": [{"eval_runtime": 20.0, "eval_samples_per_second": 500.0}]}
+
+    assert lc._bert_eval_set("/nonexistent", state) == "valid の取り方不明 10,000 行"
+
+
+def test_a_run_that_recorded_nothing_says_nothing():
+    assert lc._bert_eval_set("/nonexistent", {"log_history": []}) is None
+
+
+def test_a_run_still_going_is_captioned_with_what_it_has_processed():
+    """"処理トークン" is what happened, not what the config plans.
+
+    The schedule measurement was captioned 430 G -- max_iters x the tokens a
+    step puts through -- beside an x axis that stopped at 13 G, because it had
+    reached 5,000 of its 163,900 steps. The planned total is still stated, as
+    the plan, and the run is marked as still going.
+    """
+    meta = {"s": {"window": 1024, "global_batch": 2560, "max_steps": 163900,
+                  "epochs": 9, "lr": 0.0001, "eval_every": 1000,
+                  "eval_set": "valid から毎回抽選 64,000 行"}}
+    text = _plot().caption("s", meta, 1, "val_loss", False, 1024 * 2560,
+                           reached=5000)
+
+    assert "処理トークン 13 G（予定 430 G、走行中）" in text
+    assert "430 G  |" not in text
+
+
+def test_a_finished_run_keeps_the_plain_token_count():
+    """The marking is for runs that have not got there, and nothing else."""
+    meta = {"s": {"window": 1024, "global_batch": 2560, "max_steps": 163900,
+                  "epochs": 9, "lr": 0.0001, "eval_every": 1000,
+                  "eval_set": "valid から毎回抽選 64,000 行"}}
+    text = _plot().caption("s", meta, 1, "val_loss", False, 1024 * 2560,
+                           reached=163900)
+
+    assert "処理トークン 430 G" in text
+    assert "走行中" not in text
+
+
+def test_both_figure_functions_format_a_tick_the_same_way():
+    """The two figures are drawn by different functions and had a copy each.
+
+    That is how the three-versus-nine figure stayed on the step axis while the
+    other sixteen moved to tokens: a change made in one copy. One named
+    function now serves both.
+    """
+    pl = _plot()
+
+    assert pl.token_tick(2.6e9) == "2.6 G"
+    assert pl.token_tick(4.3e11) == "430 G"
+    assert pl.token_tick(6.5e8) == "650 M"
+    assert pl.step_tick(163900) == "163,900"
+
+    import inspect
+    src = inspect.getsource(pl)
+    assert src.count("lambda v, _pos") == 0
+
+
+def test_the_minors_are_labelled_only_on_an_axis_narrower_than_a_decade():
+    """Both ways of getting this wrong are in one figure's history.
+
+    Unlabelled, an axis under one decade shows matplotlib's own notation on
+    the minors and reads "3 x 10^9, 4 x 10^9, 6 x 10^9, 10 G". Labelled
+    everywhere, a three-decade axis runs them together: "8.0 G 9.0 G10 G".
+    """
+    import inspect
+    src = inspect.getsource(_plot())
+
+    assert "set_minor_formatter" in src
+    assert "hi_x / lo_x < 10" in src
+    assert "NullFormatter" in src
+
+
+def test_the_caption_states_how_the_eval_rows_were_chosen():
+    """Rule 3 of the 2026-10-05 directive: the draw method and the row count go
+    in a footnote to any table of values, and a figure quoting losses is one."""
+    import inspect
+    src = inspect.getsource(_plot().caption)
+
+    assert "eval_set" in src
+    assert "取り方の違う値を同じ列に置かない" in src
+
+
+def test_the_draw_method_is_read_from_the_log_not_assumed(tmp_path):
+    """The twenty-one 512-window runs predate the manifest, so their caption
+    said "取り方不明" for something the log states in words. main.py prints the
+    two paths differently, so the method is read, not inferred."""
+    (tmp_path / "mc-gen-bert-40320.out").write_text(
+        "📊 Eval on the first 10000 rows of 50000\n")
+
+    assert lc._eval_set_from_log(str(tmp_path), "40320") == "valid の先頭 10000 行"
+
+
+def test_a_random_draw_is_told_apart_from_a_head_cut(tmp_path):
+    """From 2026-10-05 new runs draw at random. A reader must never see the two
+    described the same way, nor their values put in one column."""
+    (tmp_path / "mc-gen-bert-99999.out").write_text(
+        "📊 Eval on a random 10000-row sample of 50000 (seed 42)\n")
+
+    assert lc._eval_set_from_log(str(tmp_path), "99999") == \
+        "valid から無作為 10000 行（seed 42）"
+
+
+def test_no_log_and_no_manifest_admits_it(tmp_path):
+    state = {"log_history": [{"eval_runtime": 20.0, "eval_samples_per_second": 500.0}]}
+
+    assert lc._bert_eval_set(str(tmp_path), state, str(tmp_path), "") == \
+        "valid の取り方不明 10,000 行"

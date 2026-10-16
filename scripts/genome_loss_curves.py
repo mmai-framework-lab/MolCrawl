@@ -38,6 +38,29 @@ GPT2_METRIC = "val_loss"
 
 # A learning-rate arm: -lr1e3, -lr5p5e4, -lr2p5e5-prod. "p" stands in for the
 # decimal point, which cannot go in a directory name.
+# The table's columns, declared once. Adding one here used to mean finding
+# every place that unpacked a row by position: the summary at the end still
+# expected seven fields after `epochs` made it eight, and the job failed after
+# twenty-five minutes of work. The writer checks each row against this, so a
+# row of the wrong width fails at the row rather than somewhere downstream.
+COLUMNS = ["series", "arch", "subset", "epochs", "step", "value", "metric", "job"]
+_COL = {name: i for i, name in enumerate(COLUMNS)}
+
+
+
+def row_for(series, arch, subset, epochs, step, value, metric, job):
+    """One evaluation point, in COLUMNS order.
+
+    Here rather than inline so the width can be tested: the only check the
+    writer can make is that a row matches COLUMNS, and that check fires after
+    the run directories have been read.
+    """
+    row = (series, arch, subset, epochs if epochs else "", step,
+           f"{value:.6f}", metric, job)
+    assert len(row) == len(COLUMNS), (len(row), len(COLUMNS))
+    return row
+
+
 _LR_ARM = re.compile(r"-lr\d+(p\d+)?e-?\d+(-\w+)?$")
 
 
@@ -58,7 +81,19 @@ def series_of(basename):
     if basename.startswith("stab"):
         return "gpt2-lr-sweep"
     if basename.startswith("gpt2"):
-        return "gpt2-lr-sweep" if _LR_ARM.search(basename) else "gpt2"
+        if _LR_ARM.search(basename):
+            return "gpt2-lr-sweep"
+        # The nine-epoch series shares the production naming apart from this
+        # tag. Without it the two land in one series: three epochs and nine,
+        # averaged together, on runs whose best points sit at 53-98% and 13-28%
+        # of their schedules respectively.
+        #
+        # -ep9-decay3 is the schedule measurement: nine epochs of data under the
+        # three-epoch LR schedule. It is a third thing, and the suffix is
+        # matched before -ep9 because it does not end in it.
+        if basename.endswith("-ep9-decay3"):
+            return "gpt2-ep9-decay3"
+        return "gpt2-ep9" if basename.endswith("-ep9") else "gpt2"
     if _LR_ARM.search(basename):
         return "bert-lr-sweep"
     for suffix, name in (("-w1026", "bert-w1026"), ("-sat9", "bert-sat9"),
@@ -79,7 +114,12 @@ def subset_of(basename):
     name = re.sub(r"^(bert|gpt2)-small-", "", basename)
     if _LR_ARM.search(name):
         return re.sub(r"-(w1026|w1024)", "", name)
-    return re.sub(r"-(w1026|sat9|w1024-ep9|smoke)$", "", name)
+    # ep9-decay3 before ep9: the suffixes are anchored, so a longer one that
+    # ends in a shorter one has to be listed. Left out, the schedule
+    # measurement's label read mammal_centered-ep9-decay3 -- a subset that does
+    # not exist, which also put the epoch count out of reach because the train
+    # row count is looked up by the label.
+    return re.sub(r"-(w1026|sat9|w1024-ep9|smoke|ep9-decay3|ep9)$", "", name)
 
 
 def _sacct_rows(start, end, user):
@@ -185,7 +225,7 @@ def job_id_for(run_dir, series, headers, sacct):
     return hits[0] if len(hits) == 1 else ""
 
 
-def bert_meta(run_dir):
+def bert_meta(run_dir, log_dir="", job=""):
     """Window, schedule and batch shape, read from what the run saved.
 
     Every figure has to state these beside its curves, and a caption typed by
@@ -208,7 +248,67 @@ def bert_meta(run_dir):
     return {"window": window, "max_steps": args.max_steps, "global_batch": batch,
             "lr": args.learning_rate, "warmup": args.warmup_steps,
             "eval_every": (evals[1] - evals[0]) if len(evals) > 1 else None,
+            "eval_set": _bert_eval_set(run_dir, state, log_dir, job),
             "epochs": _manifest_epochs(run_dir)}
+
+
+_EVAL_HEAD = re.compile(r"Eval on the first (\d[\d,]*) rows of (\d[\d,]*)")
+_EVAL_RANDOM = re.compile(r"Eval on a random (\d[\d,]*)-row sample of (\d[\d,]*) \(seed (\d+)\)")
+
+
+def _eval_set_from_log(log_dir, job):
+    """How main.py said it cut the split, read from that run's own log.
+
+    The two paths print differently -- "the first N rows" against "a random
+    N-row sample ... (seed S)" -- so the method is in the line, not inferred.
+    This is the only source for the runs that predate the manifest.
+    """
+    if not job or not os.path.isdir(log_dir):
+        return None
+    for path in sorted(glob.glob(os.path.join(log_dir, f"*-{job}.out"))):
+        try:
+            text = open(path, errors="replace").read()
+        except OSError:
+            continue
+        hit = _EVAL_RANDOM.search(text)
+        if hit:
+            return f"valid から無作為 {hit.group(1)} 行（seed {hit.group(3)}）"
+        hit = _EVAL_HEAD.search(text)
+        if hit:
+            return f"valid の先頭 {hit.group(1)} 行"
+    return None
+
+
+def _bert_eval_set(run_dir, state, log_dir="", job=""):
+    """How the evaluation rows were chosen, from what the run itself saved.
+
+    A loss has no meaning without this. The manifest carries it, but only the
+    runs new enough to write one -- the twenty-one 512-window runs predate it.
+    Their row count comes back out of the trainer's own timings instead:
+    eval_runtime x eval_samples_per_second is the number of rows it scored.
+    """
+    rows = None
+    manifest = os.path.join(run_dir, "run_manifest.json")
+    random_draw = None
+    if os.path.exists(manifest):
+        try:
+            got = json.load(open(manifest)).get("eval", {})
+            rows, random_draw = got.get("rows"), got.get("subset_random")
+        except (OSError, ValueError):
+            pass
+    if rows is None:
+        timed = [e for e in state.get("log_history", []) if "eval_runtime" in e]
+        if timed:
+            last = timed[-1]
+            rows = round(last["eval_runtime"] * last["eval_samples_per_second"])
+    if rows is not None and random_draw is not None:
+        how = "先頭" if random_draw is False else "無作為"
+        return f"valid の{how} {rows:,} 行"
+    # No manifest: the log says which way it cut, in so many words.
+    stated = _eval_set_from_log(log_dir, job)
+    if stated:
+        return stated
+    return None if rows is None else f"valid の取り方不明 {rows:,} 行"
 
 
 def _measured_epochs(root, subset, max_steps, batch, model):
@@ -261,9 +361,18 @@ def gpt2_meta(run_dir):
     return {"window": cfg.get("block_size"), "max_steps": cfg.get("max_iters"),
             "global_batch": cfg.get("batch_size") * cfg.get("gradient_accumulation_steps"),
             "lr": cfg.get("learning_rate"), "warmup": cfg.get("warmup_iters"),
-            # _N_EPOCH is a literal 3 in gpt2_small_subset.py, not an env
-            # override, so the config file is the record for GPT-2.
-            "eval_every": cfg.get("eval_interval"), "epochs": 3}
+            # Not a literal any more: SUBSET_GPT2_EPOCHS raises it, and the
+            # nine-epoch series was captioned "epochs 3" while that 3 was
+            # hardcoded here. Left as None so the measured path fills it from
+            # the build's train rows, the same way the BERT series are filled.
+            "eval_every": cfg.get("eval_interval"),
+            # nanoGPT redraws its evaluation rows every time, with replacement,
+            # rather than scoring a fixed subset. Not the same measurement as
+            # BERT's, which is why the two never share an axis.
+            "eval_set": (f"valid から毎回抽選 "
+                         f"{cfg.get('eval_iters', 0) * cfg.get('batch_size', 0):,} 行"
+                         f"（重複あり）"),
+            "epochs": None}
 
 
 def bert_points(run_dir):
@@ -331,7 +440,8 @@ def main():
             skipped.append(base)
             continue
         job = job_id_for(run_dir, series, headers, sacct)
-        got = bert_meta(run_dir) if arch == "bert" else gpt2_meta(run_dir)
+        got = (bert_meta(run_dir, args.log_dir, job) if arch == "bert"
+               else gpt2_meta(run_dir))
         if got and got.get("epochs") is None and series in train_root:
             # The label carries the arm so a sweep's curves do not share one
             # name; the build on disk is named for the subset alone. Passing
@@ -347,13 +457,25 @@ def main():
             for key, value in got.items():
                 slot.setdefault(key, set()).add(value)
         metric = BERT_METRIC if arch == "bert" else GPT2_METRIC
+        # The epoch count goes on the row, not only in the per-series metadata
+        # the captions read. Whoever opens the TSV asks which rows are three
+        # epochs and which are nine first, and `series` answers it only to
+        # someone who already knows that bert-w1026 is nine and bert-base is
+        # three. The value is the one the captions use, measured from the build
+        # on disk rather than taken from a config.
+        epochs = got.get("epochs") if got else None
         for step, value in points:
-            rows.append((series, arch, subset_of(base), step, f"{value:.6f}", metric, job))
+            rows.append(row_for(series, arch, subset_of(base), epochs, step,
+                                value, metric, job))
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
-        writer.writerow(["series", "arch", "subset", "step", "value", "metric", "job"])
+        writer.writerow(COLUMNS)
+        bad = next((r for r in rows if len(r) != len(COLUMNS)), None)
+        if bad is not None:
+            raise SystemExit(f"row has {len(bad)} fields, COLUMNS has "
+                             f"{len(COLUMNS)}: {bad}")
         writer.writerows(rows)
 
     if args.meta_out:
@@ -367,7 +489,9 @@ def main():
         print(f"  wrote {args.meta_out}")
 
     by_series = {}
-    for series, _arch, subset, _s, _v, _m, job in rows:
+    for row in rows:
+        series, subset, job = (row[_COL["series"]], row[_COL["subset"]],
+                               row[_COL["job"]])
         got = by_series.setdefault(series, {"runs": set(), "points": 0, "jobs": set()})
         got["runs"].add(subset)
         got["points"] += 1
