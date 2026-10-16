@@ -549,6 +549,25 @@ def test_a_finished_run_keeps_the_plain_token_count():
     assert "走行中" not in text
 
 
+def test_both_figure_functions_format_a_tick_the_same_way():
+    """The two figures are drawn by different functions and had a copy each.
+
+    That is how the three-versus-nine figure stayed on the step axis while the
+    other sixteen moved to tokens: a change made in one copy. One named
+    function now serves both.
+    """
+    pl = _plot()
+
+    assert pl.token_tick(2.6e9) == "2.6 G"
+    assert pl.token_tick(4.3e11) == "430 G"
+    assert pl.token_tick(6.5e8) == "650 M"
+    assert pl.step_tick(163900) == "163,900"
+
+    import inspect
+    src = inspect.getsource(pl)
+    assert src.count("lambda v, _pos") == 0
+
+
 def test_the_minors_are_labelled_only_on_an_axis_narrower_than_a_decade():
     """Both ways of getting this wrong are in one figure's history.
 
