@@ -21,19 +21,38 @@ import struct
 PF_DAY = 8.64e19
 
 
-def hf_params(ckpt):
-    """(total, non-embedding) from the safetensors header. No weights are read."""
-    with open(os.path.join(ckpt, "model.safetensors"), "rb") as fh:
+def _header(path):
+    with open(path, "rb") as fh:
         (n,) = struct.unpack("<Q", fh.read(8))
-        header = json.loads(fh.read(n))
+        return json.loads(fh.read(n))
+
+
+def hf_params(ckpt):
+    """(total, non-embedding) from the safetensors headers. No weights are read.
+
+    A model past a few GB is saved in shards with an index beside them, which is how the
+    xl checkpoints are written; reading only model.safetensors found nothing there.
+    """
+    single = os.path.join(ckpt, "model.safetensors")
+    if os.path.exists(single):
+        shards = [single]
+    else:
+        index = os.path.join(ckpt, "model.safetensors.index.json")
+        if not os.path.exists(index):
+            raise SystemExit(f"{ckpt}: neither model.safetensors nor an index beside it")
+        names = sorted(set(json.load(open(index))["weight_map"].values()))
+        shards = [os.path.join(ckpt, n) for n in names]
     total = 0
-    for name, meta in header.items():
-        if name == "__metadata__":
-            continue
-        size = 1
-        for dim in meta["shape"]:
-            size *= dim
-        total += size
+    seen = set()
+    for shard in shards:
+        for name, meta in _header(shard).items():
+            if name == "__metadata__" or name in seen:
+                continue
+            seen.add(name)
+            size = 1
+            for dim in meta["shape"]:
+                size *= dim
+            total += size
     conf = json.load(open(os.path.join(ckpt, "config.json")))
     h, v = conf["hidden_size"], conf["vocab_size"]
     pos = conf.get("max_position_embeddings", 0)
