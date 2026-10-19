@@ -383,6 +383,28 @@ def test_a_single_process_run_is_untouched():
     assert trainer._mlm_counts["mask"] == 800
 
 
+class _AccumulatingTrainer(_EvaluatingTrainer):
+    """The HF Trainer half, whose evaluation loop has filled the accumulators.
+
+    This has to sit *below* the mixin in the MRO: defining evaluate() on a subclass
+    of the mixin shadows the method under test, which is how the first version of
+    this test passed nothing through MlmBreakdownMixin.evaluate at all.
+    """
+
+    shard_sums = {"mask": 10.0, "copy": 0.0, "random": 0.0}
+    shard_counts = {"mask": 100, "copy": 0, "random": 0}
+
+    def evaluate(self, *args, **kwargs):
+        out = super().evaluate(*args, **kwargs)
+        self._mlm_sums = dict(self.shard_sums)
+        self._mlm_counts = dict(self.shard_counts)
+        return out
+
+
+class _AccumulatingBreakdown(MlmBreakdownMixin, _AccumulatingTrainer):
+    pass
+
+
 def test_evaluate_logs_the_reduced_value():
     """The number handed to self.log - and so to the callbacks - is the reduced one.
 
@@ -394,28 +416,20 @@ def test_evaluate_logs_the_reduced_value():
 
     monkeypatch = pytest.MonkeyPatch()
     try:
-        shard = ({"mask": 10.0, "copy": 0.0, "random": 0.0},
-                 {"mask": 100, "copy": 0, "random": 0})
-        # The four shards happen to be equal here; the world total is not 4x this one,
-        # so a value of 0.100 would mean the local shard was reported.
+        shard = (_AccumulatingTrainer.shard_sums, _AccumulatingTrainer.shard_counts)
+        # The four shards are equal here, and the world total is deliberately not
+        # four times one of them: a logged 0.100 would mean the shard was reported.
         totals = ({"mask": 50.0, "copy": 0.0, "random": 0.0},
                   {"mask": 400, "copy": 0, "random": 0})
         _install_fake_world(monkeypatch, [shard] * 4, totals)
 
-        class _Loaded(_EvaluatingBreakdown):
-            def evaluate(self, *args, **kwargs):
-                # Stand in for the accumulation prediction_step would have done.
-                out = _EvaluatingTrainer.evaluate(self, *args, **kwargs)
-                self._mlm_sums = dict(shard[0])
-                self._mlm_counts = dict(shard[1])
-                return out
-
-        trainer = _Loaded()
+        trainer = _AccumulatingBreakdown()
         trainer.mlm_mask_token_id = 4
         metrics = trainer.evaluate()
 
         assert trainer.logged == [{"eval_loss_mask": 0.125}]
         assert metrics["eval_loss_mask"] == 0.125  # 50/400, not the shard's 10/100
+        assert metrics["eval_loss"] == 0.0625  # what HF computed is left alone
         assert "eval_loss_copy" not in metrics  # no copy positions were scored
     finally:
         monkeypatch.undo()
