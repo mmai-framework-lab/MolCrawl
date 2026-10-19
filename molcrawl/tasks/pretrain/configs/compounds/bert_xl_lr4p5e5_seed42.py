@@ -81,3 +81,10 @@ per_device_eval_batch_size = 32
 # set_seed(seed) -- so a declaration is dead config that reads as a second knob.
 # main.py refuses a config whose data_seed disagrees with seed, for the same reason.
 seed = 42
+
+# The watchdog aborted the first attempt at these four runs at a save boundary
+# (jobs 178504/178506/178508/178510, 2026-10-16). rank 0 writes the checkpoint to
+# Lustre -- 6.5 GB for large, about 18 GB for xl -- while the other ranks wait at the
+# next collective, and HF's 1,800 s was not enough while a 1.17 TiB download shared
+# the filesystem. Two hours is generous for that write even under load.
+ddp_timeout = 7200
