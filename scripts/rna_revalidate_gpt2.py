@@ -98,16 +98,27 @@ def main(argv=None):
             if not os.path.exists(path):
                 print(f"  SKIP {os.path.basename(d)}: {name} が無い")
                 continue
-            runs.append((m.group(1), m.group(2), path))
+            runs.append((os.path.basename(d), m.group(1), m.group(2), path))
     if not runs:
         raise SystemExit(f"{a.runs_root} の下に測れる run が無い")
+    # 測る前に対象を書き出す。run 名の取り違えは、ここが空のまま長く回るより
+    # 先に見えたほうがよい。
+    print(f"  測る点 {len(runs)} 件")
+    for run, _size, _lr, path in runs:
+        print(f"    {run}  {os.path.relpath(path, os.path.join(a.runs_root, run))}")
 
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", newline="") as fh:
         w = csv.writer(fh, delimiter="\t")
-        w.writerow(["arch", "size", "learning_rate", "step", "val_loss_fixed",
-                    "rows", "batches", "checkpoint"])
-        for size, lr, path in runs:
+        # run 列は、最終 checkpoint を測ったときに seed が消えるために要る。
+        # checkpoint 列はそのとき "checkpoint-40320" になり、どの run の
+        # ものか言えなくなる。seed のばらつきはまさにそこを見るので、
+        # run 名そのものと、取り出した seed を別の列として持つ。
+        w.writerow(["arch", "size", "learning_rate", "seed", "run", "step",
+                    "val_loss_fixed", "rows", "batches", "checkpoint"])
+        for run, size, lr, path in runs:
+            sm = RUN_RE.search(run)
+            seed = (sm.group(3) if sm and sm.group(3) else "42")
             model, step = load_model(path, device)
             losses = []
             with torch.no_grad():
@@ -122,11 +133,12 @@ def main(argv=None):
                     _logits, loss = model(x.to(device), y.to(device))
                     losses.append(loss.item())
             mean = float(np.mean(losses))
-            w.writerow(["gpt2", size, LR_NUM.get(lr, lr), step, f"{mean:.6f}",
-                        n_rows, len(losses), os.path.basename(os.path.dirname(path))
+            w.writerow(["gpt2", size, LR_NUM.get(lr, lr), seed, run, step,
+                        f"{mean:.6f}", n_rows, len(losses),
+                        os.path.basename(os.path.dirname(path))
                         or os.path.basename(path)])
             fh.flush()
-            print(f"  {size:<7} lr{lr:<7} step {step:>7,}  "
+            print(f"  {size:<7} lr{lr:<7} seed {seed:<3} step {step:>7,}  "
                   f"固定検証 {mean:.4f}  バッチ {len(losses):,}")
             del model
             torch.cuda.empty_cache()
