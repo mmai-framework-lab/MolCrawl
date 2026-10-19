@@ -17,9 +17,16 @@ export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1 HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 TOKENIZERS_PARALLELISM=false TORCHDYNAMO_DISABLE=1
 cd "${REPO}"; mkdir -p workflows/slurm-logs
 
-# A git worktree holds only tracked files, so the interpreter is not inside it. Point
-# PYTHON at the main checkout's miniconda when running from one.
-PYTHON="${PYTHON:-${REPO}/miniconda/bin/python}"
+# A git worktree holds only tracked files, so the interpreter is not inside it.
+# Derive it from the main checkout the way workflows/bert-grid.sbatch does, so a
+# submission from a worktree needs nothing in the environment; job 187250 failed for
+# want of this. An explicit PYTHON still wins.
+if [ -x "${REPO}/miniconda/bin/python" ]; then
+  PYROOT="${REPO}"
+else
+  PYROOT="$(cd "$(git -C "${REPO}" rev-parse --git-common-dir)/.." && pwd)"
+fi
+PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 [ -x "${PYTHON}" ] || { echo "no interpreter at ${PYTHON}; export PYTHON=<main checkout>/miniconda/bin/python"; exit 1; }
 
 echo "=== unit tests ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
