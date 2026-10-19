@@ -91,12 +91,14 @@ per_device_eval_batch_size = 64
 # belong to the ladder configs, which this grid does not read.
 seed = 42
 
-# Margin for the largest checkpoint write -- 6.5 GB for large, about 18 GB for xl,
-# written by rank 0 to Lustre while the other ranks wait at the next collective.
+# HF's own default, stated here so the window is a choice rather than a leftover.
+# It covers the largest checkpoint write -- 6.5 GB for large, about 18 GB for xl,
+# written by rank 0 to Lustre while the other ranks wait at the next collective --
+# and no save on record has come near it.
 #
-# This is NOT what killed the first two attempts at these runs. That was a rank
-# divergence in the save decision (see the header above), and no timeout cures it:
-# the second attempt ran with this very setting and the log reads
-# Timeout(ms)=7200000, so the only thing two hours bought was a later death.
-# No save on record has ever come near 1,800 s.
-ddp_timeout = 7200
+# It is deliberately not longer. The first two attempts at these runs were killed by
+# a rank divergence in the save decision (see the header above), which no timeout
+# cures: the second attempt ran at 7,200 s, logged Timeout(ms)=7200000 and died the
+# same way, so the only thing the wider window bought was two hours of four idle
+# GPUs instead of thirty minutes.
+ddp_timeout = 1800
