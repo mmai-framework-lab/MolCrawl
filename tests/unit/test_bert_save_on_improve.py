@@ -149,3 +149,44 @@ def test_one_decision_per_step():
     cb.on_log(None, _State(100), control2, logs={"eval_loss_mask": 0.4})
     assert not control2.should_save, "the same step must not be reconsidered"
     assert cb.best == 0.5
+
+
+def test_one_value_per_world_keeps_the_ranks_in_step():
+    """The callback runs on every rank, so the value it reads must be the same one.
+
+    Measured on compounds BERT small seed 42 (job 186947). Each rank evaluated its
+    own quarter of the eval set and logged its own eval_loss_mask, so at step 2,200
+    the four ranks held 0.1139 / 0.1123 / 0.1128 / 0.1120. At step 2,300 three of
+    them improved - 0.1114 / 0.1109 / 0.1117 - and the fourth printed nothing,
+    having not improved on its own previous value. Those three entered the save path
+    while the fourth went on training: NCCL's last enqueued work was 36,394 on that
+    rank against 36,381 on the others, and the job died on the watchdog two hours
+    later with rng_state_0.pth missing from checkpoint-2300.
+
+    MlmBreakdownMixin.evaluate now sums the totals over the ranks before logging,
+    so there is one value per world. The first half of this test pins what that
+    buys; the second pins what it is protecting against.
+    """
+    reduced = [0.1128, 0.1113]  # the whole eval set, identical on every rank
+    decisions = []
+    for _ in range(4):
+        cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+        decisions.append(_feed(cb, reduced, start_step=2200, interval=100))
+    assert decisions == [[2200, 2300]] * 4, "the ranks disagreed on when to save"
+
+    # The unreduced case. The fourth rank's step-2,300 value is not in the log -- it
+    # printed nothing - so a worsened value stands in for it here.
+    per_rank = [
+        [0.1139, 0.1145],
+        [0.1123, 0.1109],
+        [0.1128, 0.1117],
+        [0.1120, 0.1114],
+    ]
+    local = []
+    for series in per_rank:
+        cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+        local.append(_feed(cb, series, start_step=2200, interval=100))
+    saved_at_2300 = [2300 in steps for steps in local]
+    assert saved_at_2300 == [False, True, True, True], (
+        "this is the split that deadlocked six runs"
+    )
