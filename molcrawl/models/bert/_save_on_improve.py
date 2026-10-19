@@ -38,28 +38,28 @@ class SaveOnMetricImprovement(TrainerCallback):
     """Request a checkpoint whenever ``metric`` reaches a new best."""
 
     def __init__(self, metric="eval_loss_mask", greater_is_better=False,
-                 fallback_metric="eval_loss"):
+                 fallback_metric=None):
         self.metric = metric
         self.fallback_metric = fallback_metric
         self.greater_is_better = bool(greater_is_better)
         self.best = None
         self.best_step = None
+        self._seen_step = None
         self._warned_fallback = False
         self._warned_missing = False
 
     def _value(self, metrics):
-        """The ranking metric for this evaluation, or None if it was not logged."""
-        for name in (self.metric, self.fallback_metric):
-            if metrics and name in metrics:
-                if name != self.metric and not self._warned_fallback:
-                    print(f"⚠️  save-on-improve: {self.metric!r} not in the eval metrics, "
-                          f"tracking {name!r} instead")
-                    self._warned_fallback = True
-                return float(metrics[name])
-        if not self._warned_missing:
-            print(f"⚠️  save-on-improve: neither {self.metric!r} nor "
-                  f"{self.fallback_metric!r} is in the eval metrics; no extra saves")
-            self._warned_missing = True
+        """The ranking metric for this report, or None if it is not in this one."""
+        if metrics and self.metric in metrics:
+            return float(metrics[self.metric])
+        if self.fallback_metric and metrics and self.fallback_metric in metrics:
+            # Only when a caller asked for one. Falling back by default is how a run
+            # ends up selecting its best checkpoint on a metric it is not judged on.
+            if not self._warned_fallback:
+                print(f"⚠️  save-on-improve: {self.metric!r} absent, tracking "
+                      f"{self.fallback_metric!r} as the caller asked")
+                self._warned_fallback = True
+            return float(metrics[self.fallback_metric])
         return None
 
     def _improves(self, value):
@@ -67,10 +67,11 @@ class SaveOnMetricImprovement(TrainerCallback):
             return True
         return value > self.best if self.greater_is_better else value < self.best
 
-    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
-        value = self._value(metrics)
-        if value is None:
+    def _consider(self, value, state, control):
+        """Raise should_save if this value is a new best for this step."""
+        if value is None or self._seen_step == state.global_step:
             return control
+        self._seen_step = state.global_step
         if not self._improves(value):
             return control
 
@@ -83,3 +84,20 @@ class SaveOnMetricImprovement(TrainerCallback):
             print(f"💾 {self.metric} improved to {value:.4f} at step "
                   f"{state.global_step}; saving off the interval")
         return control
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        """Where the breakdown metrics arrive.
+
+        MlmBreakdownMixin.evaluate calls super().evaluate() first -- which is what
+        fires on_evaluate -- and adds eval_loss_mask afterwards, through self.log().
+        So a callback watching on_evaluate never sees the mask metric and, with a
+        default fallback, silently tracked eval_loss instead; measured on compounds
+        BERT medium (job 151323), where the eval_loss_mask minimum at step 14,700
+        was therefore never saved. self.log() still runs inside _evaluate, before
+        the Trainer tests control.should_save, so raising the flag here works.
+        """
+        return self._consider(self._value(logs), state, control)
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        """Kept for metrics that do arrive here, such as a plain eval_loss."""
+        return self._consider(self._value(metrics), state, control)
