@@ -346,6 +346,16 @@ if __name__ == "__main__":
     # it decides whether the checkpoint behind a reported number still exists.
     save_on_improve = False
     save_on_improve_metric = None  # None => follow judge_on
+    # How long a rank waits at a collective before the NCCL watchdog aborts the run.
+    # None keeps HF's 1,800 s. The rank-0 checkpoint write goes to Lustre while the
+    # other ranks sit at the next collective, so the write has to finish inside this
+    # window: measured 2026-10-16, all four compounds BERT seed-42 runs were aborted
+    # by the watchdog at a save boundary, large after two saves of 6.5 GB each and xl
+    # at about 18 GB a save, two of them while a 1.17 TiB download was writing to the
+    # same filesystem. gpt2/train.py already passes 30 minutes explicitly and carries
+    # the same observation in a comment; this is the equivalent for the HF path, which
+    # had no setting at all.
+    ddp_timeout = None  # seconds; None => HF default
     # The id the packer wrote between documents. None falls back to the
     # tokenizer's sep_token_id, which is only right when the packer used it.
     boundary_token_id = None
@@ -748,6 +758,8 @@ if __name__ == "__main__":
         dataloader_num_workers=int(dataloader_num_workers),
         dataloader_pin_memory=bool(dataloader_pin_memory),
         ddp_find_unused_parameters=bool(globals().get("ddp_find_unused_parameters", False)),
+        **({"ddp_timeout": int(globals()["ddp_timeout"])}
+           if globals().get("ddp_timeout") else {}),
         # XL-scale opt-ins (defaults preserve existing config behaviour):
         #   torch_compile=True               : inductor kernel fusion,
         #                                      ~20-40% speedup after warmup
