@@ -19,7 +19,12 @@ import re
 import numpy as np
 import torch
 
-RUN_RE = re.compile(r"-(small|medium|large|xl)-lr(\w+)$")
+# run 名には接尾辞が付く。seed のばらつきを測る run は -seed1 / -seed17、
+# 9 エポックの走り直しは -9ep である。\w は - を含まないので、それらを
+# 別に受けないと末尾で一致しなくなり、「測れる run が無い」で落ちる。
+RUN_RE = re.compile(
+    r"-(small|medium|large|xl)-lr([0-9a-z]+?)(?:-seed(\d+))?(?:-9ep)?$"
+)
 LR_NUM = {"6e4": 6e-4, "3e4": 3e-4, "1p5e4": 1.5e-4, "1p2e3": 1.2e-3,
           "1e4": 1e-4, "1e3": 1e-3, "7p5e5": 7.5e-5}
 
