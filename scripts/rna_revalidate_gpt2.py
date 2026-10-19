@@ -70,6 +70,9 @@ def main(argv=None):
     ap.add_argument("--checkpoints", default="ckpt.pt,checkpoint-40320/training_state.bin",
                     help="各 run の中で読むファイル。コンマ区切りで複数")
     ap.add_argument("--only", default="", help="この文字列を含む run だけ測る")
+    # --only は部分一致なので、-seed1 を指定すると -seed17 も拾う。seed ごとに
+    # 1 ジョブ出すときはそれが二重測定になるため、名前そのもので選べるようにする。
+    ap.add_argument("--run", default="", help="run 名の完全一致。カンマ区切りで複数")
     a = ap.parse_args(argv)
 
     cfg = importlib.import_module(a.config.replace("/", ".").removesuffix(".py"))
@@ -88,10 +91,12 @@ def main(argv=None):
     print(f"  device {device}")
 
     wanted = [c.strip() for c in a.checkpoints.split(",") if c.strip()]
+    exact = {r.strip() for r in a.run.split(",") if r.strip()}
     runs = []
     for d in sorted(glob.glob(f"{a.runs_root}/*")):
-        m = RUN_RE.search(os.path.basename(d))
-        if not m or (a.only and a.only not in os.path.basename(d)):
+        base = os.path.basename(d)
+        m = RUN_RE.search(base)
+        if not m or (a.only and a.only not in base) or (exact and base not in exact):
             continue
         for name in wanted:
             path = os.path.join(d, name)
