@@ -193,7 +193,12 @@ def main(argv=None) -> int:
     print(f"取得バイト {got_bytes:,} = {got_bytes / 1024**4:.2f} TiB  所要 {el / 3600:.2f} 時間")
     print(f"記録 {args.record}")
     print(f"再取得の一覧 {args.retry_list}" + ("（空）" if not failed else f"（{failed} 件）"))
-    return 1 if failed else 0
+    # A pass that finished with files left to retry exits 0. The server drops
+    # connections and a retry list is the ordinary outcome of a pass, not a failure of
+    # the job: exiting non-zero made Slurm record FAILED, which is what a watcher
+    # keyed on job state wakes up for. The retry list is where "work remains" is
+    # said; the exit code says whether the pass itself ran.
+    return 0
 
 
 if __name__ == "__main__":
