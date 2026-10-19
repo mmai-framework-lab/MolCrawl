@@ -61,6 +61,10 @@ def house_style(from_dir=None):
 
 def draw(cfg, out_dir, house):
     INK, INK_2, SERIES = house.INK, house.INK_2, house.SERIES
+    # "series_colours" names a colour per series so that one report's figures can agree
+    # with each other: the shared list is positional, which gave xl a different colour
+    # here than in the figures drawn from scripts/molnl_loss_figures.py.
+    named = cfg.get("series_colours", {})
     finish, floors = house.finish, house.floors
     style, tokens_axis = house.style, house.tokens_axis
 
@@ -104,7 +108,8 @@ def draw(cfg, out_dir, house):
             factor = 6 * flops[name] * scale / per_unit if name in flops else scale
             xs = [s * factor for s, _ in pts]
             ys = [v for _, v in pts]
-            ax.plot(xs, ys, color=SERIES[order.index(name)], linewidth=1.6, zorder=3,
+            colour = named.get(name) or SERIES[order.index(name)]
+            ax.plot(xs, ys, color=colour, linewidth=1.6, zorder=3,
                     label=cfg.get("lr_labels", {}).get(name, name))
             print(f"    {panel['title'][:22]:24s} {name:<7} last={ys[-1]:.4f} "
                   f"best={min(ys):.4f}@{xs[ys.index(min(ys))]:.4g}")
