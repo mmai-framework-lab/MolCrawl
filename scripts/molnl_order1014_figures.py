@@ -229,7 +229,11 @@ def fig_retrieval(retrieval_dir, out_dir, caption):
         axes(ax, label, "")
         ax.set_ylim(0, max(0.02, max(ax.get_ylim())))
         ax.legend(frameon=False, fontsize=8.5, loc="upper right")
-    return save_two(fig, "7 モデルとも、どちらの向きでも偶然に選んだ場合と区別できない",
+    # The title is checked against the numbers: one of the fourteen (BERT medium,
+    # molecule to text, R@1 0.005) sits 2.24 standard errors *below* chance, so "cannot
+    # be told apart from chance" would be a claim this figure's own data contradicts.
+    return save_two(fig, "どのモデルも偶然を上回らない —— 14 測定のうち 13 は偶然と区別できず、"
+                         "残る 1 つは偶然より低い",
                     caption, os.path.join(out_dir, "molnl-retrieval.png"))
 
 
