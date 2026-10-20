@@ -160,18 +160,7 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
         ax.axhline(baseline, color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
                    label=f"基準線 {baseline:.4f}（採点と同一パス）")
         ys.append(baseline)
-    if tail:
-        # The band is set, not cut. Dropping the points above it and drawing on
-        # leaves the line joined across the gap, so a spike that left the band
-        # and came back is drawn as a straight climb that never happened --
-        # which is how the first version of this figure came out. Keeping every
-        # point and clipping to the band lets a spike leave the view instead.
-        inside = [v for v in ys if v <= tail]
-        span = tail - min(inside)
-        ax.set_ylim(min(inside) - span * 0.06, tail)
-    else:
-        span = max(ys) - min(ys)
-        ax.set_ylim(min(ys) - span * 0.06, max(ys) + span * 0.06)
+    ax.set_ylim(*band_limits(ys, tail))
     ax.set_xscale("log")
     ax.set_xlabel("処理トークン数（対数）")
     ax.set_ylabel("val_loss（nats/token）")
@@ -198,6 +187,23 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
     print(f"  wrote {out_path}")
+
+
+def band_limits(values, tail=None):
+    """The y range to show, given every drawn value.
+
+    With a band, the axis is clipped to it and every point is still plotted.
+    Dropping the points above the band and drawing on leaves the line joined
+    across the gap, so a spike that left the band and came back appears as a
+    straight climb that never happened -- which is how the first version of the
+    zoomed figure came out, with a rise of 0.018 across the middle of it.
+    """
+    if tail is None:
+        span = max(values) - min(values)
+        return min(values) - span * 0.06, max(values) + span * 0.06
+    inside = [v for v in values if v <= tail]
+    span = tail - min(inside)
+    return min(inside) - span * 0.06, tail
 
 
 def _token_tick(value, _pos=None):

@@ -38,18 +38,29 @@ def test_the_longer_suffix_is_stripped_before_the_one_it_ends_in():
     assert lc.subset_of("bert-small-mammal_centered-w1024-ep9") == "mammal_centered"
 
 
-def test_the_zoomed_figure_clips_rather_than_dropping_points():
+def test_the_band_clips_the_axis_and_keeps_every_point():
     """A spike that left the band and came back must not become a straight line.
 
     The first version kept only the points inside the band and drew on, so
     matplotlib joined across the gap: the nine-epoch curve showed a smooth
-    climb of 0.018 that never happened.
+    climb of 0.018 that never happened. The band decides the axis; the series
+    handed to plot() is untouched.
     """
-    import inspect
-    src = inspect.getsource(_schedule().draw_schedules)
+    sched = _schedule()
+    values = [1.09, 1.10, 1.32, 1.09]
 
-    assert "set_ylim" in src
-    assert "v <= tail" not in src
+    lo, hi = sched.band_limits(values, tail=1.12)
+    assert hi == 1.12                      # the spike is above the view
+    assert lo < 1.09                       # the band's floor has margin
+    assert lo > 1.08
+
+    lo, hi = sched.band_limits(values)     # no band: everything fits
+    assert lo < min(values) and hi > max(values)
+
+    import inspect
+    src = inspect.getsource(sched.draw_schedules)
+    assert "ax.plot(xs, vs" in src
+    assert "band_limits" in src
 
 
 def test_every_figure_module_loads_the_japanese_font():
