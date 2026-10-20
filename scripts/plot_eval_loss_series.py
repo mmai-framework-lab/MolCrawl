@@ -107,11 +107,29 @@ def tokens_axis(ax, cfg):
     ax.set_xscale(cfg.get("xscale", "log"))
     if cfg.get("xlim"):
         ax.set_xlim(*cfg["xlim"])
-    ax.xaxis.set_major_formatter(plt.FuncFormatter(
+    fmt = plt.FuncFormatter(
         lambda v, _: "" if v <= 0 else
         f"{v / 1e12:g}T" if v >= 1e12 else
         f"{v / 1e9:g}G" if v >= 1e9 else
-        f"{v / 1e6:g}M"))
+        f"{v / 1e6:g}M")
+    ax.xaxis.set_major_formatter(fmt)
+
+    # A panel zoomed into the tail of a run spans less than a decade, so the log
+    # axis places no major tick inside it and matplotlib falls back to labelling
+    # the minor ticks in its own notation: one figure read "6 x 10^10" beside
+    # "100G" on the same axis. Those panels get the same formatter.
+    #
+    # Wider panels must not: across two and a half decades every minor tick would
+    # be labelled and they overprint into a smear. The span is only known once
+    # the per-panel limits are set, which happens after this call, so the test is
+    # made at draw time rather than here.
+    def minor(v, pos):
+        lo, hi = ax.get_xlim()
+        if lo <= 0 or hi / lo >= 10:
+            return ""
+        return fmt(v, pos)
+
+    ax.xaxis.set_minor_formatter(plt.FuncFormatter(minor))
 
 
 def style(ax, xlabel, ylabel):
