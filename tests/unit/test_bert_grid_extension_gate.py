@@ -66,12 +66,17 @@ def world(tmp_path):
     out.mkdir(parents=True)
     (out / "segments.log").write_text("1 999999 2026-10-20T00:00:00+09:00\n", encoding="utf-8")
 
-    def write_checkpoint(step, prev_max_steps):
+    def write_checkpoint(step, prev_max_steps, scheduler=False):
         ckpt = out / f"checkpoint-{step}"
         ckpt.mkdir(exist_ok=True)
         (ckpt / "trainer_state.json").write_text(
             json.dumps({"max_steps": prev_max_steps, "global_step": step}), encoding="utf-8"
         )
+        sched = ckpt / "scheduler.pt"
+        if scheduler:
+            sched.write_bytes(b"not a real state dict")
+        elif sched.exists():
+            sched.unlink()
 
     cfg_dir = tmp_path / "configs" / "compounds"
     cfg_dir.mkdir(parents=True)
@@ -98,8 +103,8 @@ def world(tmp_path):
         return p
 
     def run(max_steps, scheduler=None, extend=None, segment="2",
-            prev_done=15000, prev_max_steps=15000):
-        write_checkpoint(prev_done, prev_max_steps)
+            prev_done=15000, prev_max_steps=15000, keep_scheduler=False):
+        write_checkpoint(prev_done, prev_max_steps, scheduler=keep_scheduler)
         cfg = write_config(max_steps, scheduler)
         env = dict(os.environ)
         env.update(
@@ -168,3 +173,19 @@ def test_constant_with_warmup_is_also_accepted(world):
     r = world(30000, scheduler="constant_with_warmup", extend="1")
     combined = r.stdout + r.stderr
     assert "schedule constant_with_warmup" in combined, combined[-2000:]
+
+
+def test_extend_refuses_an_inherited_scheduler_state(world):
+    """base_lrs comes back with it, so the config's learning_rate would be ignored.
+
+    LambdaLR.load_state_dict does self.__dict__.update(state_dict), which restores
+    base_lrs and last_epoch. get_lr returns base_lr * lambda(last_epoch), so a run
+    resuming with the old scheduler.pt continues at the original peak with the warmup
+    already behind it. Measured on a real checkpoint-15000/scheduler.pt: base_lrs
+    [0.001, 0.001], last_epoch 15000.
+    """
+    r = world(30000, scheduler="constant", extend="1", keep_scheduler=True)
+    assert r.returncode != 0
+    assert "scheduler.pt exists" in r.stderr
+    assert "base_lrs" in r.stderr
+    assert "keep optimizer.pt" in r.stderr

@@ -180,6 +180,28 @@ if [ "${EXTEND:-0}" = "1" ]; then
     echo "REFUSING: ${_main} declares lr_scheduler_type but does not pass it to" \
          "TrainingArguments, so the config's ${_cfg_sched} would be ignored." >&2
     exit 1; }
+  # HF restores the scheduler from the checkpoint, and LambdaLR.load_state_dict does
+  # self.__dict__.update(state_dict): that brings back base_lrs and last_epoch, not
+  # just the step counter. get_lr then returns base_lr * lambda(last_epoch). Read off
+  # a real checkpoint-15000/scheduler.pt: base_lrs [0.001, 0.001], last_epoch 15000.
+  # So an extension that inherits it runs at the ORIGINAL peak with the warmup already
+  # behind it -- the config's learning_rate and warmup_steps are both ignored, and the
+  # rate jumps to ten times the intended one. Refuse rather than let that happen
+  # silently. Extend from a copy of the checkpoint with scheduler.pt removed; the
+  # optimizer moments in optimizer.pt are kept, which is what a continuation needs.
+  _n_ckpt_pre=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null | wc -l)
+  if [ "${_n_ckpt_pre}" -ne 0 ]; then
+    _last_pre=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null \
+                | sed 's/.*checkpoint-//' | sort -n | tail -1)
+    if [ -f "${OUT}/checkpoint-${_last_pre}/scheduler.pt" ]; then
+      echo "REFUSING: EXTEND=1 but ${OUT}/checkpoint-${_last_pre}/scheduler.pt exists." \
+           "HF restores base_lrs and last_epoch from it, so ${CFG}'s learning_rate and" \
+           "warmup_steps would both be ignored and the run would continue at the" \
+           "original peak with no warmup. Remove scheduler.pt from the checkpoint this" \
+           "extension resumes from -- keep optimizer.pt." >&2
+      exit 1
+    fi
+  fi
   _extend=1
   echo "extension: EXTEND=1, schedule ${_cfg_sched}, target max_steps ${_cfg_steps}"
 fi
