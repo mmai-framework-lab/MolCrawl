@@ -37,11 +37,21 @@ SCHEDULE_LABEL = {"gpt2": "3 エポック（cosine 54,634）",
 
 
 def _pyplot():
-    """Imported here so the rules above can be tested without matplotlib."""
+    """Imported here so the rules above can be tested without matplotlib.
+
+    The order is load-bearing, and the same as plot_genome_loss_curves.py: the
+    backend is selected before pyplot is imported, and japanize_matplotlib sets
+    the font family as a side effect of its own import. Left out, every
+    Japanese character on the figure renders as an empty box -- which is how
+    the first version of these two figures came out.
+    """
     import matplotlib
     matplotlib.use("Agg")
+    import japanize_matplotlib  # noqa: F401  (no CJK font is installed system-wide)
     import matplotlib.pyplot as plt
-
+    # japanize_matplotlib set the family; only the minus sign is left, which
+    # IPAexGothic renders as a full-width dash without this.
+    plt.rcParams["axes.unicode_minus"] = False
     return plt
 
 

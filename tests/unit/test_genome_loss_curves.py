@@ -38,6 +38,21 @@ def test_the_longer_suffix_is_stripped_before_the_one_it_ends_in():
     assert lc.subset_of("bert-small-mammal_centered-w1024-ep9") == "mammal_centered"
 
 
+def test_every_figure_module_loads_the_japanese_font():
+    """Captions, axis labels and titles here are Japanese.
+
+    japanize_matplotlib sets the family as a side effect of its import, and no
+    CJK font is installed system-wide. The schedule figures shipped once with
+    every Japanese character as an empty box because this import was missing
+    from the second module.
+    """
+    import inspect
+    for module in (_plot(), _schedule()):
+        src = inspect.getsource(module._pyplot)
+        assert "japanize_matplotlib" in src
+        assert 'matplotlib.use("Agg")' in src
+
+
 def test_the_split_is_on_the_row_and_the_readers_filter_on_it():
     """Both splits sit in one table at the same steps from 2026-10-20.
 
