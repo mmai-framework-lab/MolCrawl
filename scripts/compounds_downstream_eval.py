@@ -151,6 +151,99 @@ def ecfp4(smiles, n_bits=2048):
     return out
 
 
+def tokenize_smiles(smiles, tokenizer_path, max_length, arch):
+    """Token ids in the tokenisation the compounds models were trained on.
+
+    ``build_encoder``'s own ``encode`` splits with ``list(s)``. That is right for a
+    character-level family and wrong here: 579 of the 612 entries in the compounds
+    vocabulary are multi-character SMILES tokens, so ``list()`` turns ``Br`` into
+    ``B`` + ``r``, ``Cl`` into ``C`` + ``l`` and ``[O-]`` into five characters.
+    Measured on ``CC(=O)Oc1ccccc1C(=O)[O-].[Na+]``: 23 tokens through the lexer, 30
+    by character. Feeding a model a tokenisation it was never trained on is the same
+    class of error as dropping position_ids, which inflated a reported [MASK] loss
+    about six-fold.
+
+    HF trunks get [CLS] and [SEP] the way ``_hf_encoder`` adds them; nanoGPT gets
+    neither, matching its own encode. The returned ``content`` slice says which
+    positions are the molecule, so pooling never averages a special token in.
+    """
+    sys.path.insert(0, os.getcwd())
+    from molcrawl.data.compounds.utils.tokenizer import CompoundsTokenizer
+
+    tok = CompoundsTokenizer(tokenizer_path, max_length)
+    vocab = tok.vocab if hasattr(tok, "vocab") else None
+    unk = (vocab or {}).get("[UNK]")
+    cls_id = (vocab or {}).get("[CLS]")
+    sep_id = (vocab or {}).get("[SEP]")
+    if arch != "gpt2" and (cls_id is None or sep_id is None):
+        raise SystemExit("the tokenizer has no [CLS]/[SEP]; cannot match _hf_encoder")
+
+    out, skipped = [], 0
+    budget = max_length - (2 if arch != "gpt2" else 0)
+    for s in smiles:
+        pieces = tok.tokenize(s)
+        if len(pieces) > budget or not pieces:
+            skipped += 1
+            out.append(None)
+            continue
+        ids = [(vocab or {}).get(t, unk) for t in pieces]
+        if any(i is None for i in ids):
+            skipped += 1
+            out.append(None)
+            continue
+        if arch == "gpt2":
+            out.append((ids, 0, len(ids)))
+        else:
+            out.append(([cls_id] + ids + [sep_id], 1, 1 + len(ids)))
+    return out, skipped
+
+
+def representations(smiles, model_path, arch, tokenizer_path, device,
+                    max_length=1024, untrained=False, init_seed=0, batch_rows=64):
+    """Mean-pooled final hidden states, one row per molecule.
+
+    ``build_encoder`` supplies ``forward`` and the hidden size, so the layer and the
+    final-normalisation convention are the shared ones -- after ``ln_f`` for nanoGPT,
+    ``last_hidden_state`` for HF.
+
+    **No padding anywhere.** That module pads nothing and builds no attention mask,
+    so a padded position would be attended to and would change the hidden states of
+    the real tokens by an amount that varies with how much padding a molecule
+    happens to need. Sequences are therefore grouped by exact token length and every
+    batch is uniform, which is the contract that module states.
+    """
+    import numpy as np
+    import torch
+
+    sys.path.insert(0, os.getcwd())
+    from molcrawl.models._representations import build_encoder
+
+    encoded, skipped = tokenize_smiles(smiles, tokenizer_path, max_length, arch)
+    forward, _encode_unused, hidden = build_encoder(
+        model_path, tokenizer_path, arch, device,
+        untrained=untrained, init_seed=init_seed)
+
+    feats = np.zeros((len(smiles), hidden), dtype=np.float32)
+    usable = [i for i, e in enumerate(encoded) if e is not None]
+    by_len = {}
+    for i in usable:
+        by_len.setdefault(len(encoded[i][0]), []).append(i)
+
+    with torch.no_grad():
+        for length in sorted(by_len):
+            idxs = by_len[length]
+            for off in range(0, len(idxs), batch_rows):
+                chunk = idxs[off:off + batch_rows]
+                ids = torch.tensor([encoded[i][0] for i in chunk],
+                                   dtype=torch.long, device=device)
+                h = forward(ids)
+                lo, hi = encoded[chunk[0]][1], encoded[chunk[0]][2]
+                pooled = h[:, lo:hi].mean(dim=1).float().cpu().numpy()
+                for row, i in zip(pooled, chunk):
+                    feats[i] = row
+    return feats, hidden, skipped, len(usable)
+
+
 def fit_and_score(features, y, folds, task, seed=42, max_iter=20000):
     """Fit on the training side of each fold, score the held-out side."""
     from sklearn.linear_model import LogisticRegression, Ridge
@@ -205,6 +298,14 @@ def main(argv=None) -> int:
     ap.add_argument("--data", required=True)
     ap.add_argument("--control-only", action="store_true",
                     help="only the ECFP4 control; no model is loaded")
+    ap.add_argument("--model", action="append", default=[], metavar="ARCH:SIZE:DIR",
+                    help="a run to read representations from; repeat for several")
+    ap.add_argument("--tokenizer", default="assets/molecules/vocab.txt",
+                    help="the SMILES vocabulary the runs were trained with")
+    ap.add_argument("--max-length", type=int, default=1024)
+    ap.add_argument("--device", default="cuda")
+    ap.add_argument("--untrained-seeds", type=int, default=0,
+                    help="how many untrained trunks to score as a floor, per arch")
     ap.add_argument("--limit", type=int, default=None, help="for a smoke test")
     ap.add_argument("--report", required=True)
     args = ap.parse_args(argv)
@@ -239,6 +340,39 @@ def main(argv=None) -> int:
     results["models"]["ECFP4+linear"] = {"arch": "none", "per_fold": per_fold,
                                          "mean": mean, "sd": sd}
     print(f"    ECFP4: {mean:.4f} ± {sd:.4f}  ({time.time() - t0:.0f} 秒)", flush=True)
+
+    for spec in (args.model if not args.control_only else []):
+        arch, size, run_dir = spec.split(":", 2)
+        ckpt, ckpt_name = adopted_checkpoint(run_dir, arch)
+        if ckpt is None:
+            print(f"    {arch} {size}: 採用 checkpoint が無い（{run_dir}）", flush=True)
+            continue
+        print(f"  --- {arch} {size}  {ckpt_name} ---", flush=True)
+        t0 = time.time()
+        feats, hidden, skipped, used = representations(
+            smiles, ckpt, arch, args.tokenizer, args.device,
+            max_length=args.max_length)
+        print(f"    表現 {used:,} 分子 × {hidden}  （長さ超過などで除外 {skipped:,}）"
+              f"  ({time.time() - t0:.0f} 秒)", flush=True)
+        per_fold, mean, sd = fit_and_score(feats, y, folds, kind)
+        results["models"][f"{arch}-{size}"] = {
+            "arch": arch, "size": size, "run_dir": run_dir,
+            "adopted_checkpoint": ckpt_name,
+            "adopted_value": adopted_value(run_dir, arch),
+            "hidden_size": hidden, "skipped": skipped, "scored": used,
+            "per_fold": per_fold, "mean": mean, "sd": sd,
+        }
+        print(f"    {arch} {size}: {mean:.4f} ± {sd:.4f}", flush=True)
+
+        for s in range(args.untrained_seeds):
+            feats_u, _h, _sk, _us = representations(
+                smiles, ckpt, arch, args.tokenizer, args.device,
+                max_length=args.max_length, untrained=True, init_seed=s)
+            pf, m, d = fit_and_score(feats_u, y, folds, kind)
+            results["models"][f"{arch}-{size}-untrained-seed{s}"] = {
+                "arch": arch, "size": size, "untrained": True, "init_seed": s,
+                "per_fold": pf, "mean": m, "sd": d}
+            print(f"    {arch} {size} 未学習 seed{s}: {m:.4f} ± {d:.4f}", flush=True)
 
     os.makedirs(os.path.dirname(args.report) or ".", exist_ok=True)
     with open(args.report, "w", encoding="utf-8") as fh:
