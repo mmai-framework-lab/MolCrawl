@@ -347,15 +347,34 @@ if __name__ == "__main__":
     save_on_improve = False
     save_on_improve_metric = None  # None => follow judge_on
     # How long a rank waits at a collective before the NCCL watchdog aborts the run.
-    # None keeps HF's 1,800 s. The rank-0 checkpoint write goes to Lustre while the
-    # other ranks sit at the next collective, so the write has to finish inside this
-    # window: measured 2026-10-16, all four compounds BERT seed-42 runs were aborted
-    # by the watchdog at a save boundary, large after two saves of 6.5 GB each and xl
-    # at about 18 GB a save, two of them while a 1.17 TiB download was writing to the
-    # same filesystem. gpt2/train.py already passes 30 minutes explicitly and carries
-    # the same observation in a comment; this is the equivalent for the HF path, which
-    # had no setting at all.
+    # None keeps HF's 1,800 s, which is the window a rank-0 checkpoint write has to
+    # finish inside while the other ranks sit at the next collective. Measured by the
+    # mtime span inside one checkpoint of each size: small 995 MB in 1 s, medium
+    # 3,492 MB in 4 s, large 6,605 MB in 8 s, xl 16,947 MB in 18 s. 1,800 s is two
+    # orders of magnitude more than the largest of those.
+    #
+    # The compounds BERT seed-42 runs aborted at save boundaries on 2026-10-16 and
+    # again on 2026-10-19 were NOT short of this window: the second attempt ran at
+    # 7,200 s, logged Timeout(ms)=7200000 and died the same way. The cause was a rank
+    # divergence in the save decision: the eval_loss_mask reaching the save callback
+    # was each rank's own eval shard, so a step where one rank failed to improve sent
+    # the others into the save path alone and the collectives stopped lining up. No
+    # timeout cures that, and a wider window only delays the report.
     ddp_timeout = None  # seconds; None => HF default
+    # Learning-rate schedule. None keeps HF's default, which is "linear": the rate
+    # decays from the peak to exactly 0.0 at max_steps. Measured on compounds BERT
+    # small seed 42 (job 187287), the last two logged values are 7.4074e-06 at step
+    # 14,900 and 0.0 at 15,000.
+    #
+    # That is why this key exists. A run extended past its original max_steps cannot
+    # keep a decaying schedule: HF has no separate decay length, so the schedule is
+    # recomputed over the new max_steps and the continuation is a different run.
+    # Setting "constant" (or "constant_with_warmup") removes the decay, which is what
+    # makes an extension a continuation rather than a rewrite.
+    #
+    # Any value HF's SchedulerType accepts is passed through unchanged; nothing is
+    # validated here, so a typo surfaces as HF's own error naming the valid names.
+    lr_scheduler_type = None  # e.g. "constant"; None => HF default ("linear")
     # The id the packer wrote between documents. None falls back to the
     # tokenizer's sep_token_id, which is only right when the packer used it.
     boundary_token_id = None
@@ -760,6 +779,10 @@ if __name__ == "__main__":
         ddp_find_unused_parameters=bool(globals().get("ddp_find_unused_parameters", False)),
         **({"ddp_timeout": int(globals()["ddp_timeout"])}
            if globals().get("ddp_timeout") else {}),
+        # Passed only when the config asked for one, so every config that does not
+        # mention it keeps HF's default and no existing run changes.
+        **({"lr_scheduler_type": str(globals()["lr_scheduler_type"])}
+           if globals().get("lr_scheduler_type") else {}),
         # XL-scale opt-ins (defaults preserve existing config behaviour):
         #   torch_compile=True               : inductor kernel fusion,
         #                                      ~20-40% speedup after warmup
