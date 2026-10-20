@@ -60,6 +60,16 @@
 # limit, not by shortening the run. The newest checkpoint's trainer_state.json carries
 # the max_steps it was trained under, and a continuation is refused unless the config's
 # max_steps matches it.
+#
+#   EXTEND=1       continue a FINISHED run to a larger max_steps
+# An extension exists to see whether the loss flattens past the original schedule. It
+# raises max_steps and follows a COMPLETED segment, which are the two things the rules
+# above refuse, so it is gated on the only thing that makes it safe: a constant
+# learning rate, which has no decay length to recompute. The gate also checks that
+# main.py reads lr_scheduler_type at all -- a config file is exec'd, so declaring the
+# key proves nothing about whether the trainer honours it. Downwards is still refused,
+# and so is any previous state other than COMPLETED. With EXTEND unset every path
+# behaves exactly as before.
 set -eo pipefail
 : "${CONFIG:?CONFIG=path to the config to run, e.g. molcrawl/tasks/pretrain/configs/rna/bert_small_lr3e4.py}"
 : "${SEGMENT:?SEGMENT=1 for the first, 2,3,... for each continuation}"
@@ -112,7 +122,7 @@ keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
         "gradient_accumulation_steps", "per_device_eval_batch_size", "expected_global_batch",
         "log_interval", "save_steps", "max_length", "document_masking", "save_on_improve",
         "bf16", "dataloader_num_workers", "dataloader_pin_memory", "adam_beta2",
-        "dataset_dir", "model_path")
+        "lr_scheduler_type", "dataset_dir", "model_path")
 for k in keys:
     print(f"{k}={g.get(k)}")
 PYEOF
@@ -134,6 +144,46 @@ mkdir -p "${OUT}"
 # and so nanoGPT -- which does not call it anywhere -- is covered too. Seconds, and
 # before the allocation is put to work.
 "${PYTHON}" -c 'import sys; from molcrawl.core.output_guard import assert_output_dir; assert_output_dir(sys.argv[1], what=sys.argv[2])' "${OUT}" "model_path" || exit 1
+
+# --- extension gate ---
+# Two of the guards below exist to stop a continuation from becoming a different run:
+# max_steps must match the checkpoint's, and the previous segment must have ended
+# TIMEOUT. An extension -- continuing a finished run to a larger max_steps to see
+# whether the loss flattens -- trips both on purpose, so it has to say so explicitly
+# and prove the one thing that makes it safe.
+#
+# EXTEND=1 opts in. Everything below is refused unless all of it holds, and with
+# EXTEND unset not one byte of the original behaviour changes.
+_extend=0
+if [ "${EXTEND:-0}" = "1" ]; then
+  _cfg_sched=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^lr_scheduler_type=//p')
+  case "${_cfg_sched}" in
+    constant|constant_with_warmup) ;;
+    *) echo "REFUSING: EXTEND=1 but ${CFG} has lr_scheduler_type=${_cfg_sched:-None}." \
+            "HF decays the rate over max_steps with no separate decay length, so" \
+            "extending under a decaying schedule recomputes the whole curve and" \
+            "continues a different run. Set lr_scheduler_type to constant or" \
+            "constant_with_warmup." >&2
+       exit 1;;
+  esac
+  # The config can declare the key whether or not the trainer reads it: a config file
+  # is exec'd, so configurator.py never sees an unknown name and sets an unused global
+  # instead. Confirm main.py honours it, because a silent fallback to "linear" here is
+  # exactly the corruption this gate is meant to prevent.
+  _main="molcrawl/models/bert/main.py"
+  grep -qE '^[[:space:]]*lr_scheduler_type[[:space:]]*=' "${_main}" || {
+    echo "REFUSING: ${_main} does not declare lr_scheduler_type, so it would ignore" \
+         "the config's ${_cfg_sched} and decay the rate anyway. The extension needs" \
+         "the schedule passthrough in main.py first." >&2
+    exit 1; }
+  grep -q 'globals().get("lr_scheduler_type")' "${_main}" || {
+    echo "REFUSING: ${_main} declares lr_scheduler_type but does not pass it to" \
+         "TrainingArguments, so the config's ${_cfg_sched} would be ignored." >&2
+    exit 1; }
+  _extend=1
+  echo "extension: EXTEND=1, schedule ${_cfg_sched}, target max_steps ${_cfg_steps}"
+fi
+# --- end extension gate ---
 
 # Segment guard. Counted before anything is loaded, so a wrong path costs seconds.
 _n_ckpt=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null | wc -l)
@@ -166,20 +216,32 @@ if [ "${SEGMENT}" != "1" ]; then
 $("${PYTHON}" -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s["max_steps"], int(s["global_step"]))' "${_state}")
 EOF
   if [ "${_prev_steps}" != "${_cfg_steps}" ]; then
-    echo "REFUSING: the checkpoint at step ${_last} was trained with max_steps=${_prev_steps}," \
-         "and ${CFG} says max_steps=${_cfg_steps}. HF decays the learning rate over" \
-         "max_steps with no separate decay length, so resuming under a different value" \
-         "compresses or stretches the schedule and continues a different run into the" \
-         "same directory. Run a config whose max_steps is ${_prev_steps}, or start a new" \
-         "run in another directory." >&2
-    exit 1
+    # An extension raises max_steps on purpose. Only upwards: a smaller value would
+    # still compress the schedule, and under a constant rate it would also mean the
+    # run is already past its own target.
+    if [ "${_extend}" = "1" ] && [ "${_cfg_steps}" -gt "${_prev_steps}" ]; then
+      echo "extension: max_steps ${_prev_steps} -> ${_cfg_steps} (constant rate, no decay to recompute)"
+    else
+      echo "REFUSING: the checkpoint at step ${_last} was trained with max_steps=${_prev_steps}," \
+           "and ${CFG} says max_steps=${_cfg_steps}. HF decays the learning rate over" \
+           "max_steps with no separate decay length, so resuming under a different value" \
+           "compresses or stretches the schedule and continues a different run into the" \
+           "same directory. Run a config whose max_steps is ${_prev_steps}, or start a new" \
+           "run in another directory." \
+           "$([ "${_extend}" = "1" ] && echo "EXTEND=1 raises max_steps, it does not lower it.")" >&2
+      exit 1
+    fi
   fi
   if [ "${_prev_done}" -ge "${_cfg_steps}" ]; then
     echo "REFUSING: the run already reached step ${_prev_done} of ${_cfg_steps}, so there is" \
          "nothing for this segment to do." >&2
     exit 1
   fi
-  echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
+  if [ "${_extend}" != "1" ]; then
+    echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
+  else
+    echo "schedule check: ${_prev_done}/${_cfg_steps} steps done, extending from ${_prev_steps}"
+  fi
 fi
 
 # --- continuation guard ---
@@ -220,20 +282,27 @@ if [ "${SEGMENT}" != "1" ]; then
     exit 1
   fi
   _prev_state=$(_prev_segment_state "${_prev_job}")
-  # A segment cancelled from outside the run -- a maintenance window, a wrong
-  # submission withdrawn -- stopped for a reason a resume will not repeat, which is the
-  # one thing this guard cannot tell by itself. RESUME_AFTER_CANCELLED carries the job
-  # id rather than a flag, so it authorises exactly one predecessor: a value left in the
-  # environment cannot wave a later segment of the same chain through, and it cannot be
-  # set once and forgotten. CANCELLED only; FAILED and NODE_FAIL stay refused, because
-  # those are the states whose cause a resume can repeat.
+  # Three ways past TIMEOUT, each needing its own say-so, because afterany fires on a
+  # crash and on a time-out alike and nothing the guard can see tells them apart.
+  #
+  # A cancellation from outside the run -- a maintenance window, a wrong submission
+  # withdrawn -- stopped for a reason a resume will not repeat. RESUME_AFTER_CANCELLED
+  # carries the job id rather than a flag, so it authorises exactly one predecessor: a
+  # value left in the environment cannot wave a later segment of the same chain through.
+  # CANCELLED only; FAILED and NODE_FAIL stay refused, because those are the states
+  # whose cause a resume can repeat.
+  #
+  # An extension follows a run that FINISHED, which is the one state this guard was
+  # written to refuse. COMPLETED is accepted under EXTEND=1 and nothing else is.
   if [ "${_prev_state}" = "CANCELLED" ] && [ -n "${RESUME_AFTER_CANCELLED:-}" ] \
      && [ "${RESUME_AFTER_CANCELLED}" = "${_prev_job}" ]; then
     echo "previous segment: ${_prev_seg} (job ${_prev_job}) was CANCELLED;" \
          "RESUME_AFTER_CANCELLED names it, so this continuation was asked for"
+  elif [ "${_extend}" = "1" ] && [ "${_prev_state}" = "COMPLETED" ]; then
+    echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended COMPLETED, extending it"
   elif [ "${_prev_state}" != "TIMEOUT" ]; then
     if [ "${_prev_state}" = "COMPLETED" ]; then
-      _why="it finished the run, so there is nothing to continue"
+      _why="it finished the run, so there is nothing to continue; EXTEND=1 is how a finished run is extended"
     elif [ "${_prev_state}" = "CANCELLED" ]; then
       _why="pass RESUME_AFTER_CANCELLED=${_prev_job} to say the cancellation came from outside the run"
     else
