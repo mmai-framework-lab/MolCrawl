@@ -121,11 +121,19 @@ def family_of(subset):
     return "global_random"
 
 
-def read_tsv(path):
+def read_tsv(path, split="validation"):
+    """The curves of one split. Validation unless asked otherwise.
+
+    The table carries both splits from 2026-10-20 on, at the same steps. Read
+    without the filter every curve here is drawn twice -- once rising, once not
+    -- and the figures would not say which was which.
+    """
     curves = defaultdict(lambda: defaultdict(list))
     metric = {}
     with open(path) as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
+            if row.get("split", "validation") != split:
+                continue
             curves[row["series"]][row["subset"]].append((int(row["step"]), float(row["value"])))
             metric[row["series"]] = row["metric"]
     for series in curves:

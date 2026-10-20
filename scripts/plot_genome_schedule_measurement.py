@@ -63,12 +63,16 @@ def read_per_run(path, series):
     return out
 
 
-def read_curves(path, series):
-    """{subset: [(step, value)]} for one series of the long-form table."""
+def read_curves(path, series, split="validation"):
+    """{subset: [(step, value)]} for one series and one split.
+
+    The table carries both splits at the same steps, so without the filter each
+    curve is drawn twice.
+    """
     out = defaultdict(list)
     with open(path) as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            if row["series"] in series:
+            if row["series"] in series and row.get("split", "validation") == split:
                 out[(row["series"], row["subset"])].append(
                     (int(row["step"]), float(row["value"])))
     return {k: sorted(v) for k, v in out.items()}

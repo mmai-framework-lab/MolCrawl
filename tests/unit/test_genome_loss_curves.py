@@ -38,6 +38,34 @@ def test_the_longer_suffix_is_stripped_before_the_one_it_ends_in():
     assert lc.subset_of("bert-small-mammal_centered-w1024-ep9") == "mammal_centered"
 
 
+def test_the_split_is_on_the_row_and_the_readers_filter_on_it():
+    """Both splits sit in one table at the same steps from 2026-10-20.
+
+    A reader that does not filter draws every curve twice, one rising and one
+    not, with nothing on the figure to say which is which.
+    """
+    assert "split" in lc.COLUMNS
+    row = dict(zip(lc.COLUMNS, lc.row_for(
+        "gpt2-ep9", "gpt2", "mammal_centered", 9, "train", 1000, 1.1,
+        "train_loss", "175277")))
+    assert row["split"] == "train"
+    assert row["metric"] == "train_loss"
+
+    import inspect
+    for src in (inspect.getsource(_plot().read_tsv),
+                inspect.getsource(_schedule().read_curves)):
+        assert 'split' in src
+
+
+def test_the_two_train_metrics_are_not_called_the_same_thing():
+    """HF logs the mean of the gradient batches over the logging window;
+    nanoGPT's estimate_loss draws a fresh sample at the evaluation point. They
+    are different quantities and the metric column has to keep them apart."""
+    assert lc.BERT_TRAIN_METRIC != lc.GPT2_TRAIN_METRIC
+    assert lc.BERT_TRAIN_METRIC != lc.BERT_METRIC
+    assert lc.GPT2_TRAIN_METRIC != lc.GPT2_METRIC
+
+
 def test_a_row_is_as_wide_as_the_header_says():
     """The header and the row come from one list, so they cannot drift.
 
@@ -45,8 +73,8 @@ def test_a_row_is_as_wide_as_the_header_says():
     end of the job still unpacked seven, and the failure landed after
     twenty-five minutes of reading run directories.
     """
-    row = lc.row_for("gpt2-ep9", "gpt2", "mammal_centered", 9, 1000, 1.0803,
-                     "val_loss", "175277")
+    row = lc.row_for("gpt2-ep9", "gpt2", "mammal_centered", 9, "validation",
+                     1000, 1.0803, "val_loss", "175277")
     assert len(row) == len(lc.COLUMNS)
     named = dict(zip(lc.COLUMNS, row))
     assert named["epochs"] == 9
@@ -57,8 +85,8 @@ def test_a_row_is_as_wide_as_the_header_says():
 def test_an_unknown_epoch_count_is_blank_rather_than_the_word_none():
     """`None` written into a TSV reads as the four-letter string in every
     reader that opens it, and sorts among the numbers."""
-    row = lc.row_for("gpt2-lr-sweep", "gpt2", "stab2-E", None, 100, 1.4,
-                     "val_loss", "")
+    row = lc.row_for("gpt2-lr-sweep", "gpt2", "stab2-E", None, "validation",
+                     100, 1.4, "val_loss", "")
     assert dict(zip(lc.COLUMNS, row))["epochs"] == ""
 
 
@@ -300,6 +328,16 @@ def _plot():
     import importlib.util
     src = Path(__file__).resolve().parents[2] / "scripts" / "plot_genome_loss_curves.py"
     spec = importlib.util.spec_from_file_location("_genome_plot2", src)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _schedule():
+    import importlib.util
+    src = (Path(__file__).resolve().parents[2] / "scripts"
+           / "plot_genome_schedule_measurement.py")
+    spec = importlib.util.spec_from_file_location("_genome_sched", src)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
