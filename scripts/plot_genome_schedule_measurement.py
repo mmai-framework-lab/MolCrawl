@@ -153,11 +153,6 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
     for (series, _subset), points in sorted(curves.items()):
         xs = [s * per_step for s, _ in points if s > 0]
         vs = [v for s, v in points if s > 0]
-        if tail:
-            keep = [(x, v) for x, v in zip(xs, vs) if v <= tail]
-            if not keep:
-                continue
-            xs, vs = [x for x, _ in keep], [v for _, v in keep]
         ax.plot(xs, vs, color=SCHEDULE_COLOUR[series], linewidth=1.6,
                 label=SCHEDULE_LABEL[series])
         ys += vs
@@ -165,8 +160,18 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
         ax.axhline(baseline, color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
                    label=f"基準線 {baseline:.4f}（採点と同一パス）")
         ys.append(baseline)
-    span = max(ys) - min(ys)
-    ax.set_ylim(min(ys) - span * 0.06, max(ys) + span * 0.06)
+    if tail:
+        # The band is set, not cut. Dropping the points above it and drawing on
+        # leaves the line joined across the gap, so a spike that left the band
+        # and came back is drawn as a straight climb that never happened --
+        # which is how the first version of this figure came out. Keeping every
+        # point and clipping to the band lets a spike leave the view instead.
+        inside = [v for v in ys if v <= tail]
+        span = tail - min(inside)
+        ax.set_ylim(min(inside) - span * 0.06, tail)
+    else:
+        span = max(ys) - min(ys)
+        ax.set_ylim(min(ys) - span * 0.06, max(ys) + span * 0.06)
     ax.set_xscale("log")
     ax.set_xlabel("処理トークン数（対数）")
     ax.set_ylabel("val_loss（nats/token）")
@@ -176,7 +181,8 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
         ax.spines[side].set_visible(False)
     ax.legend(fontsize=11, loc="upper right", framealpha=0.9)
     ax.set_title("mammal_centered: 学習率日程を 3 通りにした同一 subset の 3 本"
-                 + ("（値の近い区間だけを拡大）" if tail else ""), fontsize=15)
+                 + (f"（縦軸を {tail:.2f} までに切った拡大）" if tail else ""),
+                 fontsize=15)
     fig.text(0.01, 0.015,
              "GPT-2 small、subset は mammal_centered、seed 45、学習率 1e-4、min_lr 1e-5。"
              "グローバルバッチ 2,560 | 窓 1,024 | 評価間隔 1,000。"
@@ -184,7 +190,9 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
              "3 エポックは 54,634 step・143 G、9 エポックと decay3 は 163,900 step・430 G。"
              "\n評価は valid から毎回抽選 64,000 行（重複あり）。"
              "隣り合う評価点どうしの差は中央値 0.0019 で、3 本の差はその程度しかない。"
-             "順位は主張しない（seed のばらつき未測定）。数値は添付の表で読む。",
+             "順位は主張しない（seed のばらつき未測定）。数値は添付の表で読む。"
+             + ("\n拡大図は縦軸を切っているだけで、点は捨てていない。"
+                "帯の外へ出た曲線は視野の外へ出る。" if tail else ""),
              fontsize=11, va="bottom")
     fig.tight_layout(rect=(0, 0.075, 1, 1))
     fig.savefig(out_path, dpi=200)

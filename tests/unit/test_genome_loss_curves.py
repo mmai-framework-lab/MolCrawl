@@ -38,6 +38,20 @@ def test_the_longer_suffix_is_stripped_before_the_one_it_ends_in():
     assert lc.subset_of("bert-small-mammal_centered-w1024-ep9") == "mammal_centered"
 
 
+def test_the_zoomed_figure_clips_rather_than_dropping_points():
+    """A spike that left the band and came back must not become a straight line.
+
+    The first version kept only the points inside the band and drew on, so
+    matplotlib joined across the gap: the nine-epoch curve showed a smooth
+    climb of 0.018 that never happened.
+    """
+    import inspect
+    src = inspect.getsource(_schedule().draw_schedules)
+
+    assert "set_ylim" in src
+    assert "v <= tail" not in src
+
+
 def test_every_figure_module_loads_the_japanese_font():
     """Captions, axis labels and titles here are Japanese.
 
