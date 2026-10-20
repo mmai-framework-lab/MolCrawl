@@ -51,5 +51,6 @@ echo "  out: ${REVAL_OUT}"
   --rows "${REVAL_ROWS:-0}" \
   --batch-size "${REVAL_BATCH:-16}" \
   ${REVAL_CHECKPOINTS:+--checkpoints "${REVAL_CHECKPOINTS}"} \
-  ${ONLY:+--only "${ONLY}"}
+  ${ONLY:+--only "${ONLY}"} \
+  ${REVAL_RUN:+--run "${REVAL_RUN}"}
 echo "=== done @ $(date -Is) ==="

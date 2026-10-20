@@ -19,7 +19,12 @@ import re
 import numpy as np
 import torch
 
-RUN_RE = re.compile(r"-(small|medium|large|xl)-lr(\w+)$")
+# run 名には接尾辞が付く。seed のばらつきを測る run は -seed1 / -seed17、
+# 9 エポックの走り直しは -9ep である。\w は - を含まないので、それらを
+# 別に受けないと末尾で一致しなくなり、「測れる run が無い」で落ちる。
+RUN_RE = re.compile(
+    r"-(small|medium|large|xl)-lr([0-9a-z]+?)(?:-seed(\d+))?(?:-9ep)?$"
+)
 LR_NUM = {"6e4": 6e-4, "3e4": 3e-4, "1p5e4": 1.5e-4, "1p2e3": 1.2e-3,
           "1e4": 1e-4, "1e3": 1e-3, "7p5e5": 7.5e-5}
 
@@ -65,6 +70,9 @@ def main(argv=None):
     ap.add_argument("--checkpoints", default="ckpt.pt,checkpoint-40320/training_state.bin",
                     help="各 run の中で読むファイル。コンマ区切りで複数")
     ap.add_argument("--only", default="", help="この文字列を含む run だけ測る")
+    # --only は部分一致なので、-seed1 を指定すると -seed17 も拾う。seed ごとに
+    # 1 ジョブ出すときはそれが二重測定になるため、名前そのもので選べるようにする。
+    ap.add_argument("--run", default="", help="run 名の完全一致。カンマ区切りで複数")
     a = ap.parse_args(argv)
 
     cfg = importlib.import_module(a.config.replace("/", ".").removesuffix(".py"))
@@ -83,26 +91,39 @@ def main(argv=None):
     print(f"  device {device}")
 
     wanted = [c.strip() for c in a.checkpoints.split(",") if c.strip()]
+    exact = {r.strip() for r in a.run.split(",") if r.strip()}
     runs = []
     for d in sorted(glob.glob(f"{a.runs_root}/*")):
-        m = RUN_RE.search(os.path.basename(d))
-        if not m or (a.only and a.only not in os.path.basename(d)):
+        base = os.path.basename(d)
+        m = RUN_RE.search(base)
+        if not m or (a.only and a.only not in base) or (exact and base not in exact):
             continue
         for name in wanted:
             path = os.path.join(d, name)
             if not os.path.exists(path):
                 print(f"  SKIP {os.path.basename(d)}: {name} が無い")
                 continue
-            runs.append((m.group(1), m.group(2), path))
+            runs.append((os.path.basename(d), m.group(1), m.group(2), path))
     if not runs:
         raise SystemExit(f"{a.runs_root} の下に測れる run が無い")
+    # 測る前に対象を書き出す。run 名の取り違えは、ここが空のまま長く回るより
+    # 先に見えたほうがよい。
+    print(f"  測る点 {len(runs)} 件")
+    for run, _size, _lr, path in runs:
+        print(f"    {run}  {os.path.relpath(path, os.path.join(a.runs_root, run))}")
 
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", newline="") as fh:
         w = csv.writer(fh, delimiter="\t")
-        w.writerow(["arch", "size", "learning_rate", "step", "val_loss_fixed",
-                    "rows", "batches", "checkpoint"])
-        for size, lr, path in runs:
+        # run 列は、最終 checkpoint を測ったときに seed が消えるために要る。
+        # checkpoint 列はそのとき "checkpoint-40320" になり、どの run の
+        # ものか言えなくなる。seed のばらつきはまさにそこを見るので、
+        # run 名そのものと、取り出した seed を別の列として持つ。
+        w.writerow(["arch", "size", "learning_rate", "seed", "run", "step",
+                    "val_loss_fixed", "rows", "batches", "checkpoint"])
+        for run, size, lr, path in runs:
+            sm = RUN_RE.search(run)
+            seed = (sm.group(3) if sm and sm.group(3) else "42")
             model, step = load_model(path, device)
             losses = []
             with torch.no_grad():
@@ -117,11 +138,12 @@ def main(argv=None):
                     _logits, loss = model(x.to(device), y.to(device))
                     losses.append(loss.item())
             mean = float(np.mean(losses))
-            w.writerow(["gpt2", size, LR_NUM.get(lr, lr), step, f"{mean:.6f}",
-                        n_rows, len(losses), os.path.basename(os.path.dirname(path))
+            w.writerow(["gpt2", size, LR_NUM.get(lr, lr), seed, run, step,
+                        f"{mean:.6f}", n_rows, len(losses),
+                        os.path.basename(os.path.dirname(path))
                         or os.path.basename(path)])
             fh.flush()
-            print(f"  {size:<7} lr{lr:<7} step {step:>7,}  "
+            print(f"  {size:<7} lr{lr:<7} seed {seed:<3} step {step:>7,}  "
                   f"固定検証 {mean:.4f}  バッチ {len(losses):,}")
             del model
             torch.cuda.empty_cache()
