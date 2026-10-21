@@ -32,7 +32,9 @@ jobs:
           pip install pytest pytest-benchmark pytest-cov pytest-xdist
           pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           pip install transformers==4.45.1 accelerate==0.34.2
-          pip install pyarrow pandas scikit-learn scipy
+          # Pinned to environment.yaml: unpinned pyarrow resolves to a build that
+          # needs NumPy 2, while the research env (and the pin above) is NumPy 1.26.
+          pip install pyarrow==23.0.1 pandas==2.3.3 scikit-learn==1.6.1 scipy
           pip install rdkit-pypi
           pip install -e .
       - name: Run unit tests

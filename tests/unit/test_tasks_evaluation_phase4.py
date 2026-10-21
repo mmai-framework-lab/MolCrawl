@@ -84,7 +84,9 @@ def test_tabula_sapiens_probe(tmp_path: Path):
     handle = ModelHandle(arch="phase4-embed", modality="rna", model_path="x")
     result = TabulaSapiensEvaluator(
         handle=handle, output_dir=tmp_path / "out", jsonl_path=jsonl,
-        config={"test_fraction": 0.33, "seed": 0},
+        # Six cells leave two on the test side; the default floor of 20 per
+        # class would set every class aside and score nothing.
+        config={"test_fraction": 0.33, "seed": 0, "min_cells_per_label": 1},
     ).run()
     assert "accuracy" in result.metrics
     assert "f1_macro" in result.metrics
