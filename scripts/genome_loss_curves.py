@@ -35,6 +35,14 @@ import subprocess
 
 BERT_METRIC = "eval_loss_mask"
 GPT2_METRIC = "val_loss"
+# The training-data loss each path records at the same steps. The two are not
+# the same quantity and the metric column says which is which: HF logs the mean
+# of the gradient batches over the logging window, while nanoGPT's estimate_loss
+# draws a fresh sample of training sequences at the evaluation point. Both score
+# what their objective scores -- masked positions for BERT, every token for
+# GPT-2 -- so each sits on the same scale as its own validation value.
+BERT_TRAIN_METRIC = "loss"
+GPT2_TRAIN_METRIC = "train_loss"
 
 # A learning-rate arm: -lr1e3, -lr5p5e4, -lr2p5e5-prod. "p" stands in for the
 # decimal point, which cannot go in a directory name.
@@ -43,19 +51,20 @@ GPT2_METRIC = "val_loss"
 # expected seven fields after `epochs` made it eight, and the job failed after
 # twenty-five minutes of work. The writer checks each row against this, so a
 # row of the wrong width fails at the row rather than somewhere downstream.
-COLUMNS = ["series", "arch", "subset", "epochs", "step", "value", "metric", "job"]
+COLUMNS = ["series", "arch", "subset", "epochs", "split", "step", "value",
+           "metric", "job"]
 _COL = {name: i for i, name in enumerate(COLUMNS)}
 
 
 
-def row_for(series, arch, subset, epochs, step, value, metric, job):
+def row_for(series, arch, subset, epochs, split, step, value, metric, job):
     """One evaluation point, in COLUMNS order.
 
     Here rather than inline so the width can be tested: the only check the
     writer can make is that a row matches COLUMNS, and that check fires after
     the run directories have been read.
     """
-    row = (series, arch, subset, epochs if epochs else "", step,
+    row = (series, arch, subset, epochs if epochs else "", split, step,
            f"{value:.6f}", metric, job)
     assert len(row) == len(COLUMNS), (len(row), len(COLUMNS))
     return row
@@ -375,19 +384,27 @@ def gpt2_meta(run_dir):
             "epochs": None}
 
 
-def bert_points(run_dir):
-    """Every eval_loss_mask point, from the newest checkpoint's trainer_state."""
+def bert_points(run_dir, metric=BERT_METRIC):
+    """Every point of one metric, from the newest checkpoint's trainer_state.
+
+    The training rows are separate entries in the same log_history, written at
+    the same steps -- a row carrying `loss` carries no `eval_loss`, so the two
+    are told apart by which key is present rather than by position.
+    """
     steps = [int(p.rsplit("-", 1)[1]) for p in glob.glob(f"{run_dir}/checkpoint-*")
              if p.rsplit("-", 1)[1].isdigit()]
     if not steps:
         return []
     state = json.load(open(f"{run_dir}/checkpoint-{max(steps)}/trainer_state.json"))
-    return [(e["step"], float(e[BERT_METRIC]))
-            for e in state["log_history"] if BERT_METRIC in e]
+    if metric == BERT_TRAIN_METRIC:
+        return [(e["step"], float(e[metric])) for e in state["log_history"]
+                if metric in e and "eval_loss" not in e]
+    return [(e["step"], float(e[metric]))
+            for e in state["log_history"] if metric in e]
 
 
-def gpt2_points(run_dir):
-    """Every val_loss point, from the run's non-empty logging CSV.
+def gpt2_points(run_dir, metric=GPT2_METRIC):
+    """Every point of one metric, from the run's non-empty logging CSV.
 
     Nine of the 21 runs hold two CSVs, one second apart: two ranks each opened
     a file and only one wrote. They are not resumed segments -- there is no
@@ -397,9 +414,9 @@ def gpt2_points(run_dir):
     rows = []
     for path in sorted(glob.glob(f"{run_dir}/logging_*.csv")):
         with open(path) as handle:
-            got = [(int(r["iter"]), float(r[GPT2_METRIC]))
+            got = [(int(r["iter"]), float(r[metric]))
                    for r in csv.DictReader(handle, skipinitialspace=True)
-                   if r.get("iter", "").strip().isdigit()]
+                   if r.get("iter", "").strip().isdigit() and r.get(metric)]
         if got:
             rows.append(got)
     if len(rows) != 1:
@@ -427,6 +444,7 @@ def main():
     train_root = dict(item.partition("=")[::2] for item in args.train_root)
 
     rows, skipped, meta = [], [], {}
+    no_train = []
     for run_dir in sorted(glob.glob(f"{args.runs_root}/bert-small-*")
                           + glob.glob(f"{args.runs_root}/gpt2-small-*")
                           + glob.glob(f"{args.runs_root}/stab*")):
@@ -456,7 +474,6 @@ def main():
             slot = meta.setdefault(series, {})
             for key, value in got.items():
                 slot.setdefault(key, set()).add(value)
-        metric = BERT_METRIC if arch == "bert" else GPT2_METRIC
         # The epoch count goes on the row, not only in the per-series metadata
         # the captions read. Whoever opens the TSV asks which rows are three
         # epochs and which are nine first, and `series` answers it only to
@@ -464,9 +481,24 @@ def main():
         # three. The value is the one the captions use, measured from the build
         # on disk rather than taken from a config.
         epochs = got.get("epochs") if got else None
+        # Validation first, then the training-data loss at the same steps. The
+        # split column is what tells them apart: without it the two land in one
+        # column and a reader meets a curve that rises beside one that does not,
+        # with nothing on the row to say why.
+        if arch == "bert":
+            train_points = bert_points(run_dir, BERT_TRAIN_METRIC)
+            metric, train_metric = BERT_METRIC, BERT_TRAIN_METRIC
+        else:
+            train_points = gpt2_points(run_dir, GPT2_TRAIN_METRIC)
+            metric, train_metric = GPT2_METRIC, GPT2_TRAIN_METRIC
+        if not train_points:
+            no_train.append(base)
         for step, value in points:
-            rows.append(row_for(series, arch, subset_of(base), epochs, step,
-                                value, metric, job))
+            rows.append(row_for(series, arch, subset_of(base), epochs,
+                                "validation", step, value, metric, job))
+        for step, value in train_points:
+            rows.append(row_for(series, arch, subset_of(base), epochs,
+                                "train", step, value, train_metric, job))
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", newline="") as handle:
@@ -504,6 +536,12 @@ def main():
               f"{named}/{len(got['jobs'])} 種")
     if skipped:
         print(f"\n  評価点が取れなかった run: {skipped}")
+    if no_train:
+        # Named rather than counted: the order asks which series have no
+        # training record, and a number does not answer that.
+        print(f"\n  訓練損失の記録が無い run ({len(no_train)}):")
+        for base in sorted(no_train):
+            print(f"    {series_of(base):18s} {base}")
     print(f"\n  wrote {args.out}  ({len(rows):,} rows)")
 
 

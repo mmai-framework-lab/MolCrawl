@@ -37,11 +37,21 @@ SCHEDULE_LABEL = {"gpt2": "3 エポック（cosine 54,634）",
 
 
 def _pyplot():
-    """Imported here so the rules above can be tested without matplotlib."""
+    """Imported here so the rules above can be tested without matplotlib.
+
+    The order is load-bearing, and the same as plot_genome_loss_curves.py: the
+    backend is selected before pyplot is imported, and japanize_matplotlib sets
+    the font family as a side effect of its own import. Left out, every
+    Japanese character on the figure renders as an empty box -- which is how
+    the first version of these two figures came out.
+    """
     import matplotlib
     matplotlib.use("Agg")
+    import japanize_matplotlib  # noqa: F401  (no CJK font is installed system-wide)
     import matplotlib.pyplot as plt
-
+    # japanize_matplotlib set the family; only the minus sign is left, which
+    # IPAexGothic renders as a full-width dash without this.
+    plt.rcParams["axes.unicode_minus"] = False
     return plt
 
 
@@ -63,12 +73,16 @@ def read_per_run(path, series):
     return out
 
 
-def read_curves(path, series):
-    """{subset: [(step, value)]} for one series of the long-form table."""
+def read_curves(path, series, split="validation"):
+    """{subset: [(step, value)]} for one series and one split.
+
+    The table carries both splits at the same steps, so without the filter each
+    curve is drawn twice.
+    """
     out = defaultdict(list)
     with open(path) as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            if row["series"] in series:
+            if row["series"] in series and row.get("split", "validation") == split:
                 out[(row["series"], row["subset"])].append(
                     (int(row["step"]), float(row["value"])))
     return {k: sorted(v) for k, v in out.items()}
@@ -139,11 +153,6 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
     for (series, _subset), points in sorted(curves.items()):
         xs = [s * per_step for s, _ in points if s > 0]
         vs = [v for s, v in points if s > 0]
-        if tail:
-            keep = [(x, v) for x, v in zip(xs, vs) if v <= tail]
-            if not keep:
-                continue
-            xs, vs = [x for x, _ in keep], [v for _, v in keep]
         ax.plot(xs, vs, color=SCHEDULE_COLOUR[series], linewidth=1.6,
                 label=SCHEDULE_LABEL[series])
         ys += vs
@@ -151,8 +160,7 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
         ax.axhline(baseline, color=BASELINE_COLOUR, linestyle="--", linewidth=1.0,
                    label=f"基準線 {baseline:.4f}（採点と同一パス）")
         ys.append(baseline)
-    span = max(ys) - min(ys)
-    ax.set_ylim(min(ys) - span * 0.06, max(ys) + span * 0.06)
+    ax.set_ylim(*band_limits(ys, tail))
     ax.set_xscale("log")
     ax.set_xlabel("処理トークン数（対数）")
     ax.set_ylabel("val_loss（nats/token）")
@@ -162,7 +170,8 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
         ax.spines[side].set_visible(False)
     ax.legend(fontsize=11, loc="upper right", framealpha=0.9)
     ax.set_title("mammal_centered: 学習率日程を 3 通りにした同一 subset の 3 本"
-                 + ("（値の近い区間だけを拡大）" if tail else ""), fontsize=15)
+                 + (f"（縦軸を {tail:.2f} までに切った拡大）" if tail else ""),
+                 fontsize=15)
     fig.text(0.01, 0.015,
              "GPT-2 small、subset は mammal_centered、seed 45、学習率 1e-4、min_lr 1e-5。"
              "グローバルバッチ 2,560 | 窓 1,024 | 評価間隔 1,000。"
@@ -170,12 +179,31 @@ def draw_schedules(curves, baseline, per_step, out_path, tail=None):
              "3 エポックは 54,634 step・143 G、9 エポックと decay3 は 163,900 step・430 G。"
              "\n評価は valid から毎回抽選 64,000 行（重複あり）。"
              "隣り合う評価点どうしの差は中央値 0.0019 で、3 本の差はその程度しかない。"
-             "順位は主張しない（seed のばらつき未測定）。数値は添付の表で読む。",
+             "順位は主張しない（seed のばらつき未測定）。数値は添付の表で読む。"
+             + ("\n拡大図は縦軸を切っているだけで、点は捨てていない。"
+                "帯の外へ出た曲線は視野の外へ出る。" if tail else ""),
              fontsize=11, va="bottom")
     fig.tight_layout(rect=(0, 0.075, 1, 1))
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
     print(f"  wrote {out_path}")
+
+
+def band_limits(values, tail=None):
+    """The y range to show, given every drawn value.
+
+    With a band, the axis is clipped to it and every point is still plotted.
+    Dropping the points above the band and drawing on leaves the line joined
+    across the gap, so a spike that left the band and came back appears as a
+    straight climb that never happened -- which is how the first version of the
+    zoomed figure came out, with a rise of 0.018 across the middle of it.
+    """
+    if tail is None:
+        span = max(values) - min(values)
+        return min(values) - span * 0.06, max(values) + span * 0.06
+    inside = [v for v in values if v <= tail]
+    span = tail - min(inside)
+    return min(inside) - span * 0.06, tail
 
 
 def _token_tick(value, _pos=None):
