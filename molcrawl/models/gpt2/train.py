@@ -980,7 +980,7 @@ def save_checkpoint_hf(
     print(f"Checkpoint saved to {checkpoint_dir} (HuggingFace compatible format)")
 
 
-_WARNED_FOREIGN = set()
+_WARNED_FOREIGN: set[str] = set()
 
 
 def cleanup_old_checkpoints(base_dir, max_checkpoints, protect_step=None,
