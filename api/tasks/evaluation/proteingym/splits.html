@@ -55,7 +55,7 @@ workflows that want to aggregate per-assay metrics.</p>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="molcrawl.tasks.evaluation.proteingym.splits.filter_studies"><code class="name flex">
-<span>def <span class="ident">filter_studies</span></span>(<span>df: pd.DataFrame, studies: Iterable[str], column: str = 'study') ‑> pandas.core.frame.DataFrame</span>
+<span>def <span class="ident">filter_studies</span></span>(<span>df: pd.DataFrame, studies: Iterable[str], column: str = 'study') ‑> pandas.DataFrame</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -71,7 +71,7 @@ workflows that want to aggregate per-assay metrics.</p>
 <div class="desc"></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.proteingym.splits.group_by_study"><code class="name flex">
-<span>def <span class="ident">group_by_study</span></span>(<span>df: pd.DataFrame, column: str = 'study') ‑> Dict[str, pandas.core.frame.DataFrame]</span>
+<span>def <span class="ident">group_by_study</span></span>(<span>df: pd.DataFrame, column: str = 'study') ‑> Dict[str, pandas.DataFrame]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -90,7 +90,7 @@ workflows that want to aggregate per-assay metrics.</p>
 <div class="desc"><p>Return a <code>{study_name: subframe}</code> mapping.</p></div>
 </dd>
 <dt id="molcrawl.tasks.evaluation.proteingym.splits.sample_proteingym"><code class="name flex">
-<span>def <span class="ident">sample_proteingym</span></span>(<span>df: pd.DataFrame,<br>n_examples: Optional[int] = None,<br>stratify_bin: bool = True,<br>seed: int = 42) ‑> pandas.core.frame.DataFrame</span>
+<span>def <span class="ident">sample_proteingym</span></span>(<span>df: pd.DataFrame,<br>n_examples: Optional[int] = None,<br>stratify_bin: bool = True,<br>seed: int = 42) ‑> pandas.DataFrame</span>
 </code></dt>
 <dd>
 <details class="source">

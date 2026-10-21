@@ -43,8 +43,9 @@ Required row (gene) attribute: "ensembl_id"; Ensembl ID for each gene
 Required col (cell) attribute: "n_counts"; total read counts in that cell
 Optional col (cell) attribute: "filter_pass"; binary indicator of whether cell should be tokenized based on user-defined filtering criteria
 Optional col (cell) attributes: any other cell metadata can be passed on to the tokenized dataset as a custom attribute dictionary as shown below</p>
-<h2 id="usage">Usage</h2>
-<p>from geneformer import TranscriptomeTokenizer
+<p>Usage
+-----=
+from geneformer import TranscriptomeTokenizer
 tk = TranscriptomeTokenizer({"cell_type": "cell_type", "organ_major": "organ_major"}, nproc=4)
 tk.tokenize_data("loom_data_directory", "output_directory", "output_prefix")</p>
 </section>

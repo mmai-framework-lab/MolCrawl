@@ -133,8 +133,9 @@ def experiment_context(
         raise</code></pre>
 </details>
 <div class="desc"><p>Manage experiments with a context manager</p>
-<h2 id="usage">Usage</h2>
-<p>with experiment_context(
+<p>Usage
+-----=
+with experiment_context(
 name="Data Preparation",
 experiment_type=ExperimentType.DATA_PREPARATION,
 model_type=ModelType.GPT2,
@@ -169,8 +170,9 @@ exp.complete_step("step1")</p></div>
     return _SimpleStepContext(tracker, exp_id, step_name)</code></pre>
 </details>
 <div class="desc"><p>Simple step tracking context manager</p>
-<h2 id="usage">Usage</h2>
-<p>tracker = ExperimentTracker()
+<p>Usage
+-----=
+tracker = ExperimentTracker()
 exp_id = tracker.start_experiment(&hellip;)</p>
 <p>with simple_track(tracker, exp_id, "Data Loading"):
 # process
@@ -247,8 +249,9 @@ pass</p></div>
     return decorator</code></pre>
 </details>
 <div class="desc"><p>Decorator to track functions as experiments</p>
-<h2 id="usage">Usage</h2>
-<p>@track_experiment(
+<p>Usage
+-----=
+@track_experiment(
 name="GPT2 Training",
 experiment_type=ExperimentType.TRAINING,
 model_type=ModelType.GPT2,

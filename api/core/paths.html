@@ -81,15 +81,15 @@ el.replaceWith(d);
     return os.path.join(get_model_output_root(), domain, BERT_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of BERT model</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
 <dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
 <dd>Model size ('small', 'medium', 'large')</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>BERT output directory path</dd>
 </dl></div>
@@ -130,15 +130,15 @@ el.replaceWith(d);
     return os.path.join(LEARNING_SOURCE_DIR, domain, f&#34;custom_tokenizer_{model_type}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Get path for custom tokenizer output</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
 <dd>domain name ('genome_sequence', 'rna', etc.)</dd>
 <dt><strong><code>model_type</code></strong> :&ensp;<code>str</code></dt>
 <dd>model type ('bert', 'dnabert2')</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>custom tokenizer directory path</dd>
 </dl></div>
@@ -172,15 +172,15 @@ el.replaceWith(d);
     return base_path</code></pre>
 </details>
 <div class="desc"><p>Function to get dataset path</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>dataset_type</code></strong> :&ensp;<code>str</code></dt>
 <dd>dataset type ('uniprot', 'refseq', 'cellxgene', 'molecule_nat_lang')</dd>
 <dt><strong><code>relative_path</code></strong> :&ensp;<code>str</code></dt>
 <dd>relative path within the dataset</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>complete path</dd>
 </dl></div>
@@ -204,8 +204,9 @@ el.replaceWith(d);
     return get_refseq_tokenizer_path()</code></pre>
 </details>
 <div class="desc"><p>Get tokenizer path for genome sequence</p>
-<h2 id="returns">Returns</h2>
 <dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>Genome sequence tokenizer path (string)</dd>
 </dl></div>
@@ -252,15 +253,15 @@ el.replaceWith(d);
     return os.path.join(get_model_output_root(), domain, GPT2_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of GPT-2 model</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
 <dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
 <dd>Model size ('small', 'medium', 'large', 'xl', 'ex-large')</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>GPT-2 output directory path</dd>
 </dl></div>
@@ -321,15 +322,15 @@ el.replaceWith(d);
     return os.path.join(get_model_output_root(), domain, LLAMA_OUTPUT_BASE_DIR, f&#34;{domain}-{size_suffix}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of Llama-style decoder model</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
 <dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
 <dd>Model size ('small', 'medium', 'large', 'xl', 'ex-large')</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>Llama-style output directory path</dd>
 </dl></div>
@@ -411,15 +412,15 @@ el.replaceWith(d);
     return os.path.join(get_model_output_root(), domain, ROBERTA_OUTPUT_BASE_DIR, f&#34;{domain}-{model_size}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Function to get output path of RoBERTa model</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>domain</code></strong> :&ensp;<code>str</code></dt>
 <dd>domain name ('protein_sequence', 'genome_sequence', 'rna', 'compounds', 'molecule_nat_lang')</dd>
 <dt><strong><code>model_size</code></strong> :&ensp;<code>str</code></dt>
 <dd>Model size ('small', 'medium', 'large')</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>str</code></dt>
 <dd>RoBERTa output directory path</dd>
 </dl></div>

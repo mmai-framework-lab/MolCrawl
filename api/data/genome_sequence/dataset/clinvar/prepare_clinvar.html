@@ -41,24 +41,23 @@ el.replaceWith(d);
 embeds each variant in its GRCh38 genomic context, then tokenises the
 resulting sequences and saves a chunked HuggingFace DatasetDict for
 language-model fine-tuning.</p>
-<h2 id="pipeline">Pipeline</h2>
-<ol>
-<li>If <code>$CLINVAR_DIR/clinvar_sequences.csv</code> does not exist, download it
+<p>Pipeline
+-----=
+1. If <code>$CLINVAR_DIR/clinvar_sequences.csv</code> does not exist, download it
 automatically via :func:<code><a title="molcrawl.data.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences" href="#molcrawl.data.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences">download_clinvar_sequences()</a></code>:
 a. Load <code>gonzalobenegas/clinvar</code> from HuggingFace Hub.
 b. For each variant, extract a (2*flank)-bp window from the GRCh38
 reference FASTA, substituting the ALT allele for the variant copy.
 c. Write <code>chrom, pos, ref, alt, reference_sequence, variant_sequence,
-ClinicalSignificance</code> to the CSV.</li>
-<li>Read <code>reference_sequence</code> and <code>variant_sequence</code> columns.</li>
-<li>Deduplicate by exact sequence string.</li>
-<li>Shuffle and apply an 80 / 10 / 10 train / valid / test split.</li>
-<li>Tokenise with the genome SentencePiece BPE tokenizer (vocab_size=4096).</li>
-<li>Concatenate all token sequences into one long stream (with EOS between
-sequences), then chunk into fixed-length blocks of <em>context_length</em>.</li>
-<li>Save as a HuggingFace DatasetDict to
-<code>CLINVAR_DIR/training_ready_hf_dataset/</code>.</li>
-</ol>
+ClinicalSignificance</code> to the CSV.
+2. Read <code>reference_sequence</code> and <code>variant_sequence</code> columns.
+3. Deduplicate by exact sequence string.
+4. Shuffle and apply an 80 / 10 / 10 train / valid / test split.
+5. Tokenise with the genome SentencePiece BPE tokenizer (vocab_size=4096).
+6. Concatenate all token sequences into one long stream (with EOS between
+sequences), then chunk into fixed-length blocks of <em>context_length</em>.
+7. Save as a HuggingFace DatasetDict to
+<code>CLINVAR_DIR/training_ready_hf_dataset/</code>.</p>
 <p>Usage (standalone):
 LEARNING_SOURCE_DIR=learning_source_20260311 \
 python -m molcrawl.data.genome_sequence.dataset.clinvar.prepare_clinvar</p>
@@ -216,8 +215,9 @@ embed each variant in its GRCh38 genomic context.</p>
 <p>The result is a CSV with columns:
 chrom, pos, ref, alt, reference_sequence, variant_sequence,
 ClinicalSignificance</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>output_file</code></strong></dt>
 <dd>Destination path for the generated CSV.</dd>
 <dt><strong><code>ref_fasta</code></strong></dt>
@@ -288,14 +288,16 @@ decompressed automatically.</dd>
 (the uncompressed <code>.fna</code> path).
 If <em>dest_fasta</em> already exists the
 function returns immediately.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>dest_fasta</code></strong></dt>
 <dd>Destination path for the uncompressed FASTA
 (e.g. <code>dataset/GCA_000001405.28_GRCh38.p13_genomic.fna</code>).</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Path to the uncompressed FASTA file.</p></div>
+<p>Returns
+-----=
+Path to the uncompressed FASTA file.</p></div>
 </dd>
 <dt id="molcrawl.data.genome_sequence.dataset.clinvar.prepare_clinvar.prepare_clinvar"><code class="name flex">
 <span>def <span class="ident">prepare_clinvar</span></span>(<span>source_file: str | pathlib.Path,<br>output_dir: str | pathlib.Path,<br>tokenizer_path: str,<br>*,<br>ref_fasta: str | pathlib.Path | None = None,<br>context_length: int = 1024,<br>train_ratio: float = 0.8,<br>seed: int = 42,<br>num_proc: int = 4) ‑> str</span>
@@ -543,8 +545,9 @@ training dataset, and save it to <em>output_dir</em>.</p>
 <p>If <em>source_file</em> does not exist it is generated automatically by
 :func:<code><a title="molcrawl.data.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences" href="#molcrawl.data.genome_sequence.dataset.clinvar.prepare_clinvar.download_clinvar_sequences">download_clinvar_sequences()</a></code> using the GRCh38 reference FASTA
 at <em>ref_fasta</em> (defaults to <code>paths.GRCh38_REF_FASTA</code>).</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>source_file</code></strong></dt>
 <dd>Path to <code>clinvar_sequences.csv</code> inside <code>CLINVAR_DIR</code>.</dd>
 <dt><strong><code>output_dir</code></strong></dt>
@@ -566,8 +569,9 @@ between validation and test).</dd>
 <dt><strong><code>num_proc</code></strong></dt>
 <dd>Parallel workers for HuggingFace Dataset.map() operations.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Absolute path string of the saved dataset directory.</p></div>
+<p>Returns
+-----=
+Absolute path string of the saved dataset directory.</p></div>
 </dd>
 </dl>
 </section>

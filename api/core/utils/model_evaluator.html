@@ -185,8 +185,9 @@ ensuring consistent interface and shared functionality across different model ev
 <div class="desc"><p>Base class for all model evaluators.</p>
 <p>This abstract base class defines the common interface and shared functionality
 that all specific evaluator classes should implement.</p>
-<h2 id="attributes">Attributes</h2>
 <dl>
+<dt>Attributes</dt>
+<dt>-----=</dt>
 <dt><strong><code>model_path</code></strong> :&ensp;<code>str</code></dt>
 <dd>Path to the trained model</dd>
 <dt><strong><code>tokenizer_path</code></strong> :&ensp;<code>str</code></dt>
@@ -201,8 +202,9 @@ that all specific evaluator classes should implement.</p>
 <dd>Size of the vocabulary</dd>
 </dl>
 <p>Initialize the base evaluator.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>model_path</code></strong> :&ensp;<code>str</code></dt>
 <dd>Path to the trained model</dd>
 <dt><strong><code>tokenizer_path</code></strong> :&ensp;<code>str</code></dt>
@@ -240,13 +242,15 @@ def encode_sequence(self, sequence: str) -&gt; Union[list, torch.Tensor]:
     pass</code></pre>
 </details>
 <div class="desc"><p>Encode input sequence to model input format.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>sequence</code></strong> :&ensp;<code>str</code></dt>
 <dd>Input sequence to encode</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Encoded representation of the input sequence</p></div>
+<p>Returns
+-----=
+Encoded representation of the input sequence</p></div>
 </dd>
 <dt id="molcrawl.core.utils.model_evaluator.ModelEvaluator.get_model_info"><code class="name flex">
 <span>def <span class="ident">get_model_info</span></span>(<span>self) ‑> Dict[str, Any]</span>
@@ -277,8 +281,9 @@ def encode_sequence(self, sequence: str) -&gt; Union[list, torch.Tensor]:
     return info</code></pre>
 </details>
 <div class="desc"><p>Get information about the loaded model.</p>
-<h2 id="returns">Returns</h2>
-<p>Dictionary containing model information</p></div>
+<p>Returns
+-----=
+Dictionary containing model information</p></div>
 </dd>
 <dt id="molcrawl.core.utils.model_evaluator.ModelEvaluator.set_device"><code class="name flex">
 <span>def <span class="ident">set_device</span></span>(<span>self, device: str)</span>
@@ -303,8 +308,9 @@ def encode_sequence(self, sequence: str) -&gt; Union[list, torch.Tensor]:
         logger.info(f&#34;Moved model from {old_device} to {device}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Change the device for model evaluation.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>device</code></strong> :&ensp;<code>str</code></dt>
 <dd>New device to use (e.g., 'cuda', 'cpu')</dd>
 </dl></div>

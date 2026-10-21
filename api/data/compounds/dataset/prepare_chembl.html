@@ -194,8 +194,9 @@ python -m molcrawl.data.compounds.dataset.prepare_chembl &ndash;force</p>
     return True</code></pre>
 </details>
 <div class="desc"><p>Tokenise ChEMBL SMILES and save a HuggingFace DatasetDict.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>source_dir</code></strong></dt>
 <dd>Directory containing <code>smiles.txt</code> (output of
 <code>download_chembl.py</code>).</dd>
@@ -216,8 +217,9 @@ python -m molcrawl.data.compounds.dataset.prepare_chembl &ndash;force</p>
 <dt><strong><code>num_proc</code></strong></dt>
 <dd>Worker count for HuggingFace <code>.map()</code> parallelism.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p><code>True</code> on success, <code>False</code> on failure.</p></div>
+<p>Returns
+-----=
+<code>True</code> on success, <code>False</code> on failure.</p></div>
 </dd>
 </dl>
 </section>

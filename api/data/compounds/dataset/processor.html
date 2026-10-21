@@ -162,8 +162,9 @@ el.replaceWith(d);
     return results</code></pre>
 </details>
 <div class="desc"><p>Process all available datasets</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>compounds_dir</code></strong></dt>
 <dd>compounds directorypath of</dd>
 <dt><strong><code>dataset_types</code></strong></dt>
@@ -173,8 +174,9 @@ el.replaceWith(d);
 <dt><strong><code>num_processes</code></strong></dt>
 <dd>Number of parallel processing processes</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Dictionary of {dataset_type: processed_df}</p></div>
+<p>Returns
+-----=
+Dictionary of {dataset_type: processed_df}</p></div>
 </dd>
 </dl>
 </section>
@@ -332,8 +334,9 @@ el.replaceWith(d);
 1. Loading raw data
 2. Physical property calculations (if necessary)
 3. Saving processed data</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>dataset_info</code></strong></dt>
 <dd>Dataset information</dd>
 <dt><strong><code>compounds_dir</code></strong></dt>
@@ -344,7 +347,7 @@ el.replaceWith(d);
 <h3>Methods</h3>
 <dl>
 <dt id="molcrawl.data.compounds.dataset.processor.DatasetProcessor.process"><code class="name flex">
-<span>def <span class="ident">process</span></span>(<span>self, force: bool = False) ‑> pandas.core.frame.DataFrame | None</span>
+<span>def <span class="ident">process</span></span>(<span>self, force: bool = False) ‑> pandas.DataFrame | None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -392,13 +395,15 @@ el.replaceWith(d);
     return df</code></pre>
 </details>
 <div class="desc"><p>Process the dataset</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>force</code></strong></dt>
 <dd>Force reprocessing flag</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Processed DataFrame (None on error)</p></div>
+<p>Returns
+-----=
+Processed DataFrame (None on error)</p></div>
 </dd>
 </dl>
 </dd>

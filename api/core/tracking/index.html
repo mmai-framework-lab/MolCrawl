@@ -77,7 +77,7 @@ Simple API to manage experiments from each script</p></div>
 <dl>
 <dt id="molcrawl.core.tracking.DatasetType"><code class="flex name class">
 <span>class <span class="ident">DatasetType</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -538,7 +538,7 @@ class ExperimentLog:
 </dd>
 <dt id="molcrawl.core.tracking.ExperimentStatus"><code class="flex name class">
 <span>class <span class="ident">ExperimentStatus</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1017,8 +1017,9 @@ class ExperimentStep:
         output_file.write_text(experiment.to_json(), encoding=&#34;utf-8&#34;)</code></pre>
 </details>
 <div class="desc"><p>experiment tracker</p>
-<h2 id="usage">Usage</h2>
-<p>tracker = ExperimentTracker()
+<p>Usage
+-----=
+tracker = ExperimentTracker()
 exp_id = tracker.start_experiment(
 name="GPT2 ProteinGym Training",
 experiment_type=ExperimentType.TRAINING,
@@ -1029,8 +1030,9 @@ dataset_type=DatasetType.PROTEINGYM
 <h1 id="process">&hellip; process &hellip;</h1>
 <p>tracker.complete_step(exp_id, step_id)</p>
 <p>tracker.complete_experiment(exp_id, results={"accuracy": 0.95})</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>db_path</code></strong></dt>
 <dd>Database file path. If not specified, get from environment variable</dd>
 </dl></div>
@@ -1080,8 +1082,9 @@ dataset_type=DatasetType.PROTEINGYM
     self.log(experiment_id, &#34;INFO&#34;, &#34;Experiment completed successfully&#34;)</code></pre>
 </details>
 <div class="desc"><p>Complete the experiment</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>experiment_id</code></strong></dt>
 <dd>Experiment ID</dd>
 <dt><strong><code>results</code></strong></dt>
@@ -1135,8 +1138,9 @@ dataset_type=DatasetType.PROTEINGYM
     self.log(experiment_id, &#34;INFO&#34;, f&#34;Step completed: {step_id}&#34;)</code></pre>
 </details>
 <div class="desc"><p>complete the step</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>experiment_id</code></strong></dt>
 <dd>Experiment ID</dd>
 <dt><strong><code>step_id</code></strong></dt>
@@ -1196,8 +1200,9 @@ dataset_type=DatasetType.PROTEINGYM
     self.log(experiment_id, &#34;ERROR&#34;, f&#34;Experiment failed: {error_message}&#34;)</code></pre>
 </details>
 <div class="desc"><p>put the experiment into a failed state</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>experiment_id</code></strong></dt>
 <dd>Experiment ID</dd>
 <dt><strong><code>error_message</code></strong></dt>
@@ -1238,8 +1243,9 @@ dataset_type=DatasetType.PROTEINGYM
     self.log(experiment_id, &#34;ERROR&#34;, f&#34;Step failed: {step_id} - {error_message}&#34;)</code></pre>
 </details>
 <div class="desc"><p>put a step in a failed state</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>experiment_id</code></strong></dt>
 <dd>Experiment ID</dd>
 <dt><strong><code>step_id</code></strong></dt>
@@ -1327,8 +1333,9 @@ dataset_type=DatasetType.PROTEINGYM
     self.db.add_log(experiment_id, log)</code></pre>
 </details>
 <div class="desc"><p>add log</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>experiment_id</code></strong></dt>
 <dd>Experiment ID</dd>
 <dt><strong><code>level</code></strong></dt>
@@ -1412,8 +1419,9 @@ dataset_type=DatasetType.PROTEINGYM
     return experiment_id</code></pre>
 </details>
 <div class="desc"><p>Start experiment</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>name</code></strong></dt>
 <dd>Experiment name</dd>
 <dt><strong><code>experiment_type</code></strong></dt>
@@ -1431,8 +1439,9 @@ dataset_type=DatasetType.PROTEINGYM
 <dt><strong><code>notes</code></strong></dt>
 <dd>notes</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Experiment ID</p></div>
+<p>Returns
+-----=
+Experiment ID</p></div>
 </dd>
 <dt id="molcrawl.core.tracking.ExperimentTracker.start_step"><code class="name flex">
 <span>def <span class="ident">start_step</span></span>(<span>self,<br>experiment_id: str,<br>step_id: str,<br>step_name: str,<br>command: str | None = None,<br>metadata: Dict[str, Any] | None = None) ‑> str</span>
@@ -1484,8 +1493,9 @@ dataset_type=DatasetType.PROTEINGYM
     return step_id</code></pre>
 </details>
 <div class="desc"><p>start step</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>experiment_id</code></strong></dt>
 <dd>Experiment ID</dd>
 <dt><strong><code>step_id</code></strong></dt>
@@ -1497,14 +1507,15 @@ dataset_type=DatasetType.PROTEINGYM
 <dt><strong><code>metadata</code></strong></dt>
 <dd>metadata</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Step ID</p></div>
+<p>Returns
+-----=
+Step ID</p></div>
 </dd>
 </dl>
 </dd>
 <dt id="molcrawl.core.tracking.ExperimentType"><code class="flex name class">
 <span>class <span class="ident">ExperimentType</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1552,7 +1563,7 @@ dataset_type=DatasetType.PROTEINGYM
 </dd>
 <dt id="molcrawl.core.tracking.ModelType"><code class="flex name class">
 <span>class <span class="ident">ModelType</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1595,7 +1606,7 @@ dataset_type=DatasetType.PROTEINGYM
 </dd>
 <dt id="molcrawl.core.tracking.TaskCategory"><code class="flex name class">
 <span>class <span class="ident">TaskCategory</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">

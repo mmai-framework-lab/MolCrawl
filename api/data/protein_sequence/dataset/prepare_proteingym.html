@@ -40,18 +40,17 @@ el.replaceWith(d);
 <p>Converts ProteinGym v1.3 DMS substitution assay CSVs into the
 training_ready_hf_dataset format compatible with the existing
 protein_sequence training pipeline.</p>
-<h2 id="pipeline">Pipeline</h2>
-<ol>
-<li>Read every <code>&lt;assay&gt;.csv</code> from the substitutions directory.</li>
-<li>Collect <code>mutated_sequence</code> (mutant variants) AND <code>target_seq</code>
-(wild-type) as training sequences.</li>
-<li>Deduplicate by exact sequence string.</li>
-<li>Shuffle and apply an 80 / 10 / 10 train / valid / test split.</li>
-<li>Tokenise with <code>EsmSequenceTokenizer</code> (character-level, vocab_size=33).</li>
-<li>Concatenate all token sequences into one long stream (with EOS between
-sequences), then chunk into fixed-length blocks of <em>context_length</em>.</li>
-<li>Save as a HuggingFace DatasetDict to <code>output_dir/training_ready_hf_dataset/</code>.</li>
-</ol>
+<p>Pipeline
+-----=
+1. Read every <code>&lt;assay&gt;.csv</code> from the substitutions directory.
+2. Collect <code>mutated_sequence</code> (mutant variants) AND <code>target_seq</code>
+(wild-type) as training sequences.
+3. Deduplicate by exact sequence string.
+4. Shuffle and apply an 80 / 10 / 10 train / valid / test split.
+5. Tokenise with <code>EsmSequenceTokenizer</code> (character-level, vocab_size=33).
+6. Concatenate all token sequences into one long stream (with EOS between
+sequences), then chunk into fixed-length blocks of <em>context_length</em>.
+7. Save as a HuggingFace DatasetDict to <code>output_dir/training_ready_hf_dataset/</code>.</p>
 <p>Usage (standalone):
 LEARNING_SOURCE_DIR=learning_source_20260311 \
 python -m molcrawl.data.protein_sequence.dataset.prepare_proteingym \
@@ -241,8 +240,9 @@ assets/configs/protein_sequence.yaml</p>
 </details>
 <div class="desc"><p>Load ProteinGym DMS substitution CSV files from <em>source_dir</em>, build a
 language-model training dataset, and save it to <em>output_dir</em>.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>source_dir</code></strong></dt>
 <dd>Directory containing individual assay <code>*.csv</code> files
 (produced by <code>download_proteingym()</code>).</dd>
@@ -259,8 +259,9 @@ between validation and test).</dd>
 <dt><strong><code>num_proc</code></strong></dt>
 <dd>Parallel workers for HuggingFace Dataset.map() operations.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Absolute path string of the saved dataset directory.</p></div>
+<p>Returns
+-----=
+Absolute path string of the saved dataset directory.</p></div>
 </dd>
 </dl>
 </section>

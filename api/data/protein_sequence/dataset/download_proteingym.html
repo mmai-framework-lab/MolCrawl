@@ -39,8 +39,9 @@ el.replaceWith(d);
 <p>Download ProteinGym v1.3 DMS substitution data for fine-tuning.</p>
 <p>The downloaded CSV files are saved to <em>save_path</em> so that
 prepare_proteingym.py can read them directly.</p>
-<h2 id="usage">Usage</h2>
-<p>from molcrawl.data.protein_sequence.dataset.download_proteingym import download_proteingym
+<p>Usage
+-----=
+from molcrawl.data.protein_sequence.dataset.download_proteingym import download_proteingym
 download_proteingym("/path/to/proteingym_v1.3")</p>
 </section>
 <section>
@@ -100,13 +101,15 @@ DMS_ProteinGym_substitutions/
 ← one CSV per assay
 DMS_substitutions.csv
 ← reference metadata (one row per assay)</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>save_path</code></strong></dt>
 <dd>Destination directory (created if missing).</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>Path to the directory containing individual assay CSV files.</p></div>
+<p>Returns
+-----=
+Path to the directory containing individual assay CSV files.</p></div>
 </dd>
 </dl>
 </section>

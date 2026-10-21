@@ -239,13 +239,15 @@ Falls back to psutil if /proc/meminfo is absent (non-Linux).</p></div>
     return DatasetDict(splits)</code></pre>
 </details>
 <div class="desc"><p>Load SMolInstruct dataset from JSONL files in raw/ directory</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>dataset_path</code></strong></dt>
 <dd>Path to SMolInstruct directory (contains raw/ subdirectory)</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>DatasetDict with train/dev/test splits</p></div>
+<p>Returns
+-----=
+DatasetDict with train/dev/test splits</p></div>
 </dd>
 <dt id="molcrawl.data.molecule_nat_lang.utils.general.read_dataset"><code class="name flex">
 <span>def <span class="ident">read_dataset</span></span>(<span>dataset_path: Union[str, Path])</span>
@@ -342,13 +344,13 @@ Falls back to psutil if /proc/meminfo is absent (non-Linux).</p></div>
         raise</code></pre>
 </details>
 <div class="desc"><p>Read dataset from disk, supporting JSONL, split directories, and DatasetDict format</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>dataset_path</code></strong></dt>
 <dd>Path to the dataset directory</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
+<dt>Returns</dt>
+<dt>-----=</dt>
 <dt><code>dict</code> or <code>DatasetDict</code></dt>
 <dd>Dictionary of splits with Dataset objects</dd>
 </dl></div>
@@ -433,8 +435,9 @@ Falls back to psutil if /proc/meminfo is absent (non-Linux).</p></div>
         logger.info(f&#34;Saved {split} with {len(dataset[split])} samples&#34;)</code></pre>
 </details>
 <div class="desc"><p>Save dataset to disk or as parquet file</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>dataset</code></strong></dt>
 <dd>Dictionary of Dataset objects or DatasetDict</dd>
 <dt><strong><code>dataset_path</code></strong></dt>

@@ -352,8 +352,9 @@ written for that model (or -1 if skipped because output already existed).</p></d
     return True</code></pre>
 </details>
 <div class="desc"><p>Convert every <code>raw_files/*.raw</code> under <code>base_dir</code> to per-accession parquets.</p>
-<h2 id="output">Output</h2>
-<p><code>base_dir/parquet_bert/&lt;accession&gt;.parquet</code>
+<p>Output
+-----=
+<code>base_dir/parquet_bert/&lt;accession&gt;.parquet</code>
 <code>base_dir/parquet_gpt2/&lt;accession&gt;.parquet</code></p>
 <p>Skips accessions whose target parquets already exist (per model). On a
 fully-successful run, touches <code>raw_to_parquet_complete.marker</code>.</p></div>

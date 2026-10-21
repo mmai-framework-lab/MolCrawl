@@ -71,8 +71,9 @@ el.replaceWith(d);
     return md5.hexdigest()</code></pre>
 </details>
 <div class="desc"><p>Compute MD5 of the file.</p>
-<h2 id="parameters">Parameters</h2>
-<p>file_name (str): file name
+<p>Parameters
+-----=
+file_name (str): file name
 chunk_size (int, optional): chunk size for reading large files</p></div>
 </dd>
 <dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.download"><code class="name flex">
@@ -109,8 +110,9 @@ chunk_size (int, optional): chunk size for reading large files</p></div>
 </details>
 <div class="desc"><p>Download a file from the specified url.
 Skip the downloading step if there exists a file satisfying the given MD5.</p>
-<h2 id="parameters">Parameters</h2>
-<p>url (str): URL to download
+<p>Parameters
+-----=
+url (str): URL to download
 path (str): path to store the downloaded file
 save_file (str, optional): name of save file. If not specified, infer the file name from the URL.
 md5 (str, optional): MD5 of the file</p></div>
@@ -201,8 +203,9 @@ md5 (str, optional): MD5 of the file</p></div>
         return save_path</code></pre>
 </details>
 <div class="desc"><p>Extract files from a zip file. Currently, <code>zip</code>, <code>gz</code>, <code>tar.gz</code>, <code>tar</code> file types are supported.</p>
-<h2 id="parameters">Parameters</h2>
-<p>zip_file (str): file name
+<p>Parameters
+-----=
+zip_file (str): file name
 member (str, optional): extract specific member from the zip file.
 If not specified, extract all members.</p></div>
 </dd>
@@ -231,8 +234,9 @@ If not specified, extract all members.</p></div>
     return count</code></pre>
 </details>
 <div class="desc"><p>Get the number of lines in a file.</p>
-<h2 id="parameters">Parameters</h2>
-<p>file_name (str): file name
+<p>Parameters
+-----=
+file_name (str): file name
 chunk_size (int, optional): chunk size for reading large files</p></div>
 </dd>
 <dt id="molcrawl.data.compounds.dataset.organix13.opv.prepare_opv.smart_open"><code class="name flex">
@@ -266,8 +270,9 @@ chunk_size (int, optional): chunk size for reading large files</p></div>
 </details>
 <div class="desc"><p>Open a regular file or a zipped file.</p>
 <p>This function can be used as drop-in replacement of the builtin function <code>open()</code>.</p>
-<h2 id="parameters">Parameters</h2>
-<p>file_name (str): file name
+<p>Parameters
+-----=
+file_name (str): file name
 mode (str, optional): open mode for the file stream</p></div>
 </dd>
 </dl>
@@ -377,17 +382,13 @@ mode (str, optional): open mode for the file stream</p></div>
         df_out.to_parquet(os.path.join(self.path, &#34;opv.parquet&#34;))</code></pre>
 </details>
 <div class="desc"><p>Quantum mechanical calculations on organic photovoltaic candidate molecules.</p>
-<h2 id="statistics">Statistics</h2>
-<ul>
-<li>
-<h1 id="molecule-94576">Molecule: 94,576</h1>
-</li>
-<li>
-<h1 id="regression-task-8">Regression task: 8</h1>
-</li>
-</ul>
-<h2 id="parameters">Parameters</h2>
-<p>path (str): path to store the dataset
+<p>Statistics
+-----=
+- #Molecule: 94,576
+- #Regression task: 8</p>
+<p>Parameters
+-----=
+path (str): path to store the dataset
 verbose (int, optional): output verbose level
 **kwargs</p></div>
 <h3>Class variables</h3>
