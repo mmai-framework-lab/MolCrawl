@@ -284,3 +284,152 @@ def test_an_arm_without_position_ids_still_works():
         prediction_loss_only=True,
     )
     assert "position_ids" not in model.seen
+
+
+class _EvaluatingTrainer:
+    """Stands in for the HF Trainer half when evaluate() itself is under test."""
+
+    def __init__(self, device="cpu"):
+        self.args = SimpleNamespace(device=device)
+        self.logged = []
+
+    def evaluate(self, *args, **kwargs):
+        return {"eval_loss": 0.0625}
+
+    def log(self, values):
+        self.logged.append(dict(values))
+
+
+class _EvaluatingBreakdown(MlmBreakdownMixin, _EvaluatingTrainer):
+    pass
+
+
+def _shard(mask_sum, mask_n, copy_sum=1.0, copy_n=100, rand_sum=2.0, rand_n=100):
+    return (
+        {"mask": mask_sum, "copy": copy_sum, "random": rand_sum},
+        {"mask": mask_n, "copy": copy_n, "random": rand_n},
+    )
+
+
+def _install_fake_world(monkeypatch, shards, totals):
+    """Make torch.distributed look like a world of len(shards) ranks.
+
+    all_reduce checks that the calling rank packed its own shard in the order the
+    mixin promises, then writes the whole-world sum, which is what the real
+    collective leaves on every rank.
+    """
+    keys = ("mask", "copy", "random")
+    expected = {
+        tuple([float(s[k]) for k in keys] + [float(c[k]) for k in keys])
+        for s, c in shards
+    }
+    total_sums, total_counts = totals
+    result = [float(total_sums[k]) for k in keys] + [float(total_counts[k]) for k in keys]
+
+    def fake_all_reduce(tensor, op=None):
+        assert tuple(tensor.tolist()) in expected, "a rank packed something unexpected"
+        tensor.copy_(torch.tensor(result, dtype=tensor.dtype))
+
+    monkeypatch.setattr(torch.distributed, "is_available", lambda: True)
+    monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)
+    monkeypatch.setattr(torch.distributed, "get_world_size", lambda: len(shards))
+    monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
+
+
+def test_the_reported_mask_loss_covers_the_whole_eval_set():
+    """Four shards, four different local means, one reported number.
+
+    Without the reduction each rank divides its own shard and only rank 0's value
+    reaches trainer_state.json, so the figure described a quarter of the eval set.
+    """
+    import pytest
+
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        shards = [_shard(80.0, 800), _shard(84.0, 800), _shard(88.0, 800), _shard(92.0, 800)]
+        totals = (
+            {"mask": 344.0, "copy": 4.0, "random": 8.0},
+            {"mask": 3200, "copy": 400, "random": 400},
+        )
+        _install_fake_world(monkeypatch, shards, totals)
+
+        values = []
+        for sums, counts in shards:
+            trainer = _EvaluatingBreakdown()
+            trainer.mlm_mask_token_id = 4
+            trainer._reset_mlm_breakdown()
+            trainer._mlm_sums, trainer._mlm_counts = dict(sums), dict(counts)
+            # evaluate() resets the accumulators, so reduce directly here.
+            trainer._reduce_mlm_breakdown()
+            values.append(trainer._mlm_sums["mask"] / trainer._mlm_counts["mask"])
+
+        assert values == [344.0 / 3200] * 4, "the ranks still disagree"
+        # Not any single shard's mean: those were 0.1000, 0.1050, 0.1100, 0.1150.
+        assert abs(values[0] - 0.1075) < 1e-12
+    finally:
+        monkeypatch.undo()
+
+
+def test_a_single_process_run_is_untouched():
+    """Eval scripts and 1-GPU runs call the same path with no process group."""
+    trainer = _EvaluatingBreakdown()
+    trainer._reset_mlm_breakdown()
+    trainer._mlm_sums = {"mask": 80.0, "copy": 1.0, "random": 2.0}
+    trainer._mlm_counts = {"mask": 800, "copy": 100, "random": 100}
+
+    trainer._reduce_mlm_breakdown()
+
+    assert trainer._mlm_sums["mask"] == 80.0
+    assert trainer._mlm_counts["mask"] == 800
+
+
+class _AccumulatingTrainer(_EvaluatingTrainer):
+    """The HF Trainer half, whose evaluation loop has filled the accumulators.
+
+    This has to sit *below* the mixin in the MRO: defining evaluate() on a subclass
+    of the mixin shadows the method under test, which is how the first version of
+    this test passed nothing through MlmBreakdownMixin.evaluate at all.
+    """
+
+    shard_sums = {"mask": 10.0, "copy": 0.0, "random": 0.0}
+    shard_counts = {"mask": 100, "copy": 0, "random": 0}
+
+    def evaluate(self, *args, **kwargs):
+        out = super().evaluate(*args, **kwargs)
+        self._mlm_sums = dict(self.shard_sums)
+        self._mlm_counts = dict(self.shard_counts)
+        return out
+
+
+class _AccumulatingBreakdown(MlmBreakdownMixin, _AccumulatingTrainer):
+    pass
+
+
+def test_evaluate_logs_the_reduced_value():
+    """The number handed to self.log - and so to the callbacks - is the reduced one.
+
+    SaveOnMetricImprovement reads on_log, and it runs on every rank: if the value it
+    is handed is the local one, the save decision differs between ranks and the
+    collectives stop lining up.
+    """
+    import pytest
+
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        shard = (_AccumulatingTrainer.shard_sums, _AccumulatingTrainer.shard_counts)
+        # The four shards are equal here, and the world total is deliberately not
+        # four times one of them: a logged 0.100 would mean the shard was reported.
+        totals = ({"mask": 50.0, "copy": 0.0, "random": 0.0},
+                  {"mask": 400, "copy": 0, "random": 0})
+        _install_fake_world(monkeypatch, [shard] * 4, totals)
+
+        trainer = _AccumulatingBreakdown()
+        trainer.mlm_mask_token_id = 4
+        metrics = trainer.evaluate()
+
+        assert trainer.logged == [{"eval_loss_mask": 0.125}]
+        assert metrics["eval_loss_mask"] == 0.125  # 50/400, not the shard's 10/100
+        assert metrics["eval_loss"] == 0.0625  # what HF computed is left alone
+        assert "eval_loss_copy" not in metrics  # no copy positions were scored
+    finally:
+        monkeypatch.undo()

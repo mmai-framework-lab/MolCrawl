@@ -5,12 +5,22 @@
 # bert_large_lr2p8e4.py except for the seed and the output directory, so the pair
 # measures the seed alone.
 #
-# Launched after the fix in models/bert/_save_on_improve.py: that callback watched
-# on_evaluate, where eval_loss_mask has not arrived yet -- MlmBreakdownMixin adds it
-# after super().evaluate() returns -- so it fell back to eval_loss and the judged
-# metric's minimum was not always saved. Measured on medium lr2.8e-4 (job 151323),
-# whose minimum at step 14,700 has no checkpoint. These runs watch on_log, where the
-# metric does arrive, so the reported number's weights will exist.
+# Two fixes stand behind these runs, and the second only exists because the first
+# was incomplete.
+#
+# save_on_improve watched on_evaluate, where eval_loss_mask has not arrived yet --
+# MlmBreakdownMixin adds it after super().evaluate() returns -- so it fell back to
+# eval_loss and the judged metric's minimum was not always saved. Measured on medium
+# lr2.8e-4 (job 151323), whose minimum at step 14,700 has no checkpoint. It now
+# watches on_log, where the metric does arrive.
+#
+# But the value arriving at on_log was each rank's own eval shard. The callback runs
+# on every rank, so a step where one rank's local loss failed to improve sent the
+# others into the save path alone, the collectives stopped lining up, and NCCL's
+# watchdog took the job down. Six runs died that way before MlmBreakdownMixin was
+# made to sum its totals over the ranks: 178504/178506/178508/178510 on 2026-10-16
+# and 186947/186949 on 2026-10-19, small at step 2,300 and medium at step 2,700 on
+# both attempts.
 #
 # seed 9 stays. Its runs are not re-run and not overwritten: the output directory
 # here carries -seed42.
@@ -81,9 +91,14 @@ per_device_eval_batch_size = 64
 # belong to the ladder configs, which this grid does not read.
 seed = 42
 
-# The watchdog aborted the first attempt at these four runs at a save boundary
-# (jobs 178504/178506/178508/178510, 2026-10-16). rank 0 writes the checkpoint to
-# Lustre -- 6.5 GB for large, about 18 GB for xl -- while the other ranks wait at the
-# next collective, and HF's 1,800 s was not enough while a 1.17 TiB download shared
-# the filesystem. Two hours is generous for that write even under load.
-ddp_timeout = 7200
+# HF's own default, stated here so the window is a choice rather than a leftover.
+# It covers the largest checkpoint write -- 6.5 GB for large, about 18 GB for xl,
+# written by rank 0 to Lustre while the other ranks wait at the next collective --
+# and no save on record has come near it.
+#
+# It is deliberately not longer. The first two attempts at these runs were killed by
+# a rank divergence in the save decision (see the header above), which no timeout
+# cures: the second attempt ran at 7,200 s, logged Timeout(ms)=7200000 and died the
+# same way, so the only thing the wider window bought was two hours of four idle
+# GPUs instead of thirty minutes.
+ddp_timeout = 1800

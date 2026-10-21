@@ -70,10 +70,13 @@ def split_mlm_loss(logits, labels, input_ids, mask_token_id):
 class MlmBreakdownMixin:
     """Trainer mixin that reports the per-position-type eval breakdown.
 
-    ``prediction_step`` accumulates the split losses and ``evaluate`` adds
-    ``eval_loss_mask`` / ``eval_loss_copy`` / ``eval_loss_random`` to the returned
-    metrics and to the logs. ``eval_loss`` itself is left as HF computes it, so
-    comparisons with earlier runs still hold.
+    ``prediction_step`` accumulates the split losses, ``evaluate`` sums those
+    totals over the ranks and adds ``eval_loss_mask`` / ``eval_loss_copy`` /
+    ``eval_loss_random`` to the returned metrics and to the logs. ``eval_loss``
+    itself is left as HF computes it, so comparisons with earlier runs still hold.
+
+    The reduction is not optional: see ``_reduce_mlm_breakdown`` for the six runs
+    that deadlocked without it.
     """
 
     mlm_mask_token_id: int | None = None
@@ -110,9 +113,54 @@ class MlmBreakdownMixin:
             self._mlm_counts[k] += counts[k]
         return out
 
+    def _reduce_mlm_breakdown(self):
+        """Sum the per-position-type totals over the ranks.
+
+        Each rank accumulates over its own shard of the eval set, so without this
+        every rank holds a different ``eval_loss_mask``. Two consequences, both
+        measured on compounds BERT:
+
+        1. Only rank 0's value reaches ``trainer_state.json``, so the reported
+           figure covered a quarter of the eval set rather than all of it. The
+           spread between the four ranks at one step was 0.0010 to 0.0036 over
+           steps 1400-2200 of job 186947, against adjacent differences of 0.0001
+           to 0.0022 in the size ladder being judged.
+
+        2. Training deadlocked. ``SaveOnMetricImprovement`` runs on every rank and
+           raises ``control.should_save`` from the value it is handed, so a step
+           where one rank's local loss failed to improve sent the other ranks into
+           the save path alone. The collectives then stopped lining up and NCCL's
+           watchdog took the job down. Six runs died this way -- 178504, 178506,
+           178508, 178510, 186947 and 186949 -- small at step 2300 and medium at
+           step 2700 on both of their attempts, with the save requested by three
+           ranks of four and ``rng_state_0.pth`` missing from the checkpoint.
+
+        ``split_mlm_loss`` returns sums and counts rather than means for exactly
+        this reason; the combining step was never wired up.
+        """
+        if not (torch.distributed.is_available() and torch.distributed.is_initialized()):
+            return
+        if torch.distributed.get_world_size() <= 1:
+            return
+        keys = ("mask", "copy", "random")
+        packed = torch.tensor(
+            [float(self._mlm_sums[k]) for k in keys]
+            + [float(self._mlm_counts[k]) for k in keys],
+            dtype=torch.float64,
+            device=self.args.device,
+        )
+        # all_reduce leaves the same bits on every rank, so the quotient below and
+        # every decision taken from it agree without a further broadcast.
+        torch.distributed.all_reduce(packed, op=torch.distributed.ReduceOp.SUM)
+        totals = packed.tolist()
+        for i, k in enumerate(keys):
+            self._mlm_sums[k] = totals[i]
+            self._mlm_counts[k] = int(round(totals[len(keys) + i]))
+
     def evaluate(self, *args, **kwargs):
         self._reset_mlm_breakdown()
         metrics = super().evaluate(*args, **kwargs)
+        self._reduce_mlm_breakdown()
         prefix = kwargs.get("metric_key_prefix", "eval")
         extra = {}
         for k in ("mask", "copy", "random"):
