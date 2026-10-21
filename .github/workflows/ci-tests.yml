@@ -84,7 +84,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           pip install transformers==4.45.1 accelerate==0.34.2
-          pip install datasets
+          # Pinned to environment.yaml: unpinned datasets pulls a huggingface-hub
+          # (>=1.0) that transformers 4.45.1 refuses to import with.
+          pip install "datasets>=2.20,<3.0"
           pip install -e .
       - name: Test BERT initialization
         run: |
