@@ -26,6 +26,14 @@
 .App-header h1 {
   margin: 0 0 10px 0;
   font-size: 2.5em;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.App-header .header-logo {
+  height: 1.2em;
+  width: auto;
 }
 
 .App-header p {

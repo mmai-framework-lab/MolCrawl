@@ -1,4 +1,4 @@
-# MolCrawl
+# ![MolCrawl](assets/logo/molcrawl_logo_horizontal.png)
 
 [![CI Tests](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ci-tests.yml)
 [![Ruff Lint](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ruff.yml/badge.svg)](https://github.com/mmai-framework-lab/MolCrawl/actions/workflows/ruff.yml)

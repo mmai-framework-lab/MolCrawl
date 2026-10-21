@@ -46,9 +46,13 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
-.nav-brand h1 {
-    font-size: 1.5rem;
-    color: var(--primary-color);
+.nav-brand a {
+    display: flex;
+}
+
+.nav-brand img {
+    height: 32px;
+    width: auto;
 }
 
 .nav-links {
@@ -91,6 +95,13 @@ body {
     font-size: 4rem;
     margin-bottom: 1rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.hero-logo {
+    display: block;
+    width: min(420px, 80vw);
+    height: auto;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .tagline {
