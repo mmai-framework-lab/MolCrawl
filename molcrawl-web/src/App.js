@@ -421,7 +421,7 @@ function App() {
         <header className="App-header">
           <div className="header-content">
             <div className="header-title">
-              <h1>🧬 {t('header.title')}</h1>
+              <h1><img className="header-logo" src={`${process.env.PUBLIC_URL}/molcrawl-symbol-white.png`} alt="" />{t('header.title')}</h1>
               <p>{t('header.subtitle')}</p>
             </div>
             <LanguageSwitcher />
@@ -445,7 +445,7 @@ function App() {
         <header className="App-header">
           <div className="header-content">
             <div className="header-title">
-              <h1>🧬 {t('header.title')}</h1>
+              <h1><img className="header-logo" src={`${process.env.PUBLIC_URL}/molcrawl-symbol-white.png`} alt="" />{t('header.title')}</h1>
               <p>{t('header.subtitle')}</p>
             </div>
             <LanguageSwitcher />
@@ -469,7 +469,7 @@ function App() {
       <header className="App-header">
         <div className="header-content">
           <div className="header-title">
-            <h1>🧬 {t('header.title')}</h1>
+            <h1><img className="header-logo" src={`${process.env.PUBLIC_URL}/molcrawl-symbol-white.png`} alt="" />{t('header.title')}</h1>
             <p>{t('header.subtitle')}</p>
           </div>
           <LanguageSwitcher />
