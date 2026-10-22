@@ -246,7 +246,17 @@ dataloader_pin_memory = True
 # ``elif "preprocess_function" in globals():`` branch and trigger a full
 # ``.map()`` over ~95M rows just to re-derive a mask that is already correct.
 
-# Training seed (sequentially assigned across the 117 tracked pretrain configs
-# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
-# Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 35
+# Training seed. 35 until 2026-10-22, from the per-config assignment of
+# 2026-08-03; the judgment of 2026-10-22 puts every genome run on 42, BERT and
+# GPT-2 alike. The runs already on disk keep the seed they ran with and are not
+# re-seeded; they are re-run instead.
+#
+# data_seed is written because the same judgment asks for it. The Trainer in
+# this version never reads it -- _get_train_sampler returns a plain
+# RandomSampler seeded by set_seed(seed) -- and main.py's guard accepts it only
+# because it equals seed.
+#
+# The evaluation set is not touched here: BERT already reads a fixed first
+# 10,000 rows of valid, and the judgment leaves that as it is.
+seed = 42
+data_seed = 42

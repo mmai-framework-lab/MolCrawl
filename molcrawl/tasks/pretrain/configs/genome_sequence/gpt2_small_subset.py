@@ -164,6 +164,17 @@ if _smoke:
 # early_stopping OFF and are compute-matched).  gpt2/train.py reads this via globals().get.
 early_stopping = False
 
+# The validation set is fixed from 2026-10-22. The judgment of that date
+# withdraws the earlier one that let GPT-2 redraw, so each evaluation now reads
+# the same 64,000 sequences instead of drawing 64,000 with replacement. The
+# count does not change: eval_iters 200 x batch_size 320 either way.
+#
+# What this removes is the downward bias on best_val. Redrawing made every
+# evaluation a noisy estimate, and taking the minimum over 41-55 of them (three
+# epochs) or 124-165 (nine) picked up a different amount of that noise at each
+# length, so the two series' best values were not on one footing.
+deterministic_val_eval = True
+
 # eval_interval for production runs. 1,000 was the charter's compute-matched
 # value; 100 is the cross-modality value (directive 2026-09-15 §3). An eval is
 # eval_iters x 2 splits x batch_size forwards on rank 0 alone, about 1.7 training
@@ -217,7 +228,15 @@ pad_token_id = tokenizer.pad_token_id  # 5
 # `pad_token_id_for_loss = None` and skips the mask entirely.
 pad_token_id_for_loss = 5
 
-# Training seed (sequentially assigned across the 117 tracked pretrain configs
-# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
-# Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 45
+# Training seed. 45 until 2026-10-22, from the per-config assignment of
+# 2026-08-03; the judgment of 2026-10-22 puts every genome run on 42, BERT and
+# GPT-2 alike, and asks that no other value be used and that seeds not be
+# varied to measure spread. The runs already on disk keep the seed they ran
+# with and are not re-seeded; they are re-run instead.
+#
+# data_seed is written because the same judgment asks for it. It does nothing
+# on this path -- train.py has no data_seed, and one seed drives both the
+# weights and get_batch's draw -- and the guard accepts it only because it
+# equals seed. It is here so the config says what it was asked to say.
+seed = 42
+data_seed = 42
