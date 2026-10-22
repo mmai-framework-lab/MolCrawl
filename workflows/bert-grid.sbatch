@@ -190,6 +190,12 @@ fi
 # previous segment ended, and continue only from TIMEOUT. COMPLETED is refused too:
 # a run that finished has nothing to continue.
 #
+#   RESUME_AFTER_CANCELLED=<job id>   continue after that job was CANCELLED
+# A cancellation from outside the run -- a maintenance window -- is the one end state
+# whose cause a resume will not repeat, and the guard cannot tell it from a cancellation
+# that was a judgement about the run. The variable carries the predecessor's job id, so
+# it authorises one segment and not a chain.
+#
 # Every segment appends its job id to ${OUT}/segments.log, so the next one finds its
 # predecessor without being told. PREV_JOB overrides that, and is required for a
 # directory whose earlier segments predate the log.
@@ -214,17 +220,31 @@ if [ "${SEGMENT}" != "1" ]; then
     exit 1
   fi
   _prev_state=$(_prev_segment_state "${_prev_job}")
-  if [ "${_prev_state}" != "TIMEOUT" ]; then
+  # A segment cancelled from outside the run -- a maintenance window, a wrong
+  # submission withdrawn -- stopped for a reason a resume will not repeat, which is the
+  # one thing this guard cannot tell by itself. RESUME_AFTER_CANCELLED carries the job
+  # id rather than a flag, so it authorises exactly one predecessor: a value left in the
+  # environment cannot wave a later segment of the same chain through, and it cannot be
+  # set once and forgotten. CANCELLED only; FAILED and NODE_FAIL stay refused, because
+  # those are the states whose cause a resume can repeat.
+  if [ "${_prev_state}" = "CANCELLED" ] && [ -n "${RESUME_AFTER_CANCELLED:-}" ] \
+     && [ "${RESUME_AFTER_CANCELLED}" = "${_prev_job}" ]; then
+    echo "previous segment: ${_prev_seg} (job ${_prev_job}) was CANCELLED;" \
+         "RESUME_AFTER_CANCELLED names it, so this continuation was asked for"
+  elif [ "${_prev_state}" != "TIMEOUT" ]; then
     if [ "${_prev_state}" = "COMPLETED" ]; then
       _why="it finished the run, so there is nothing to continue"
+    elif [ "${_prev_state}" = "CANCELLED" ]; then
+      _why="pass RESUME_AFTER_CANCELLED=${_prev_job} to say the cancellation came from outside the run"
     else
       _why="a segment that did not run out of time may have stopped for a reason a resume would repeat"
     fi
     echo "REFUSING: segment ${_prev_seg} (job ${_prev_job}) ended ${_prev_state}, not TIMEOUT:" \
          "${_why}. Read its log before continuing." >&2
     exit 1
+  else
+    echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended TIMEOUT"
   fi
-  echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended TIMEOUT"
 fi
 echo "${SEGMENT} ${SLURM_JOB_ID:-local} $(date -Is)" >> "${_segments_log}"
 # --- end continuation guard ---
