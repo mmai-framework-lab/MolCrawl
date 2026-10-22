@@ -29,8 +29,21 @@ def _assigned(path, name):
     return None
 
 
-def test_there_are_four_of_them():
-    assert len(CONFIGS) == 4, [p.name for p in CONFIGS]
+# The arms the directive of 2026-10-16 named. An arm added later -- large at 1.5e-4,
+# after 2.8e-4 collapsed at this seed -- must be armed too, so the parametrised test
+# below runs over whatever the glob finds rather than over a fixed list. Counting them
+# here instead is what broke when the fifth arrived.
+EXPECTED_ARMS = {
+    "bert_small_lr1e3_seed42.py",
+    "bert_medium_lr2p8e4_seed42.py",
+    "bert_large_lr2p8e4_seed42.py",
+    "bert_xl_lr4p5e5_seed42.py",
+}
+
+
+def test_the_glob_finds_the_arms_it_is_meant_to():
+    found = {p.name for p in CONFIGS}
+    assert EXPECTED_ARMS <= found, EXPECTED_ARMS - found
 
 
 @pytest.mark.parametrize("path", CONFIGS, ids=lambda p: p.name)
