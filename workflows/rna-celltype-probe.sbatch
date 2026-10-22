@@ -1,5 +1,5 @@
 #!/bin/bash
-# GPT-2 の埋め込みで細胞種を線形分類する（Tabula Sapiens の評価器）。
+# 事前学習した幹の埋め込みで細胞種を線形分類する（Tabula Sapiens の評価器）。
 #
 # 分割は JSONL が持つものを使う -- 無作為に細胞を切ると同じドナーが両側に入り、
 # 線形プローブが細胞種ではなくドナー固有の信号を読める。
@@ -9,6 +9,9 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=4:00:00
+# PROBE_ARCH は gpt2 か bert。評価器は arch で adapter を選び、bert は
+# hf_mlm_adapter が HF 形式の MLM checkpoint として読む。ここを固定にしていた
+# ため、BERT を測るときに GPT-2 の読み方で開こうとして落ちる形になっていた。
 #SBATCH --job-name=rna-celltype-probe
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
@@ -30,7 +33,7 @@ export TOKENIZERS_PARALLELISM=false TORCHDYNAMO_DISABLE=1
 mkdir -p workflows/slurm-logs "${PROBE_OUT_DIR}"
 echo "=== rna-celltype-probe @ $(date -Is) on ${SLURMD_NODENAME:-$(hostname)} ==="
 echo "=== outputs: ${PROBE_OUT_DIR} ==="
-echo "model: ${MODEL_PATH}"
+echo "model: ${MODEL_PATH}  arch: ${PROBE_ARCH:-gpt2}"
 echo "jsonl: ${EVAL_JSONL}"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 "${PY}" -m molcrawl.tasks.evaluation.tabula_sapiens \
@@ -38,6 +41,6 @@ nvidia-smi --query-gpu=name --format=csv,noheader | head -1
   --jsonl-path "${EVAL_JSONL}" \
   --output-dir "${PROBE_OUT_DIR}" \
   --tokenizer-path "${TOKENIZER_DIR}" \
-  --arch gpt2 --modality rna \
+  --arch "${PROBE_ARCH:-gpt2}" --modality rna \
   ${MAX_CELLS:+--max-cells "${MAX_CELLS}"}
 echo "=== done @ $(date -Is) ==="
