@@ -56,8 +56,15 @@ def bert_counts(checkpoint_dir):
                     if ".embeddings.word_embeddings." in name
                     or ".embeddings.position_embeddings." in name
                     or ".embeddings.token_type_embeddings." in name)
-    return total, embedding, sorted(
-        name for name in shapes if ".embeddings." in name and "weight" in name)
+    # The names of the tables actually subtracted, not every tensor whose name
+    # contains "embeddings": the LayerNorm that sits in the embedding module is
+    # not an embedding and is not subtracted, and listing it as though it were
+    # misstates where the number came from.
+    subtracted = {name: numel(s) for name, s in shapes.items()
+                  if ".embeddings.word_embeddings." in name
+                  or ".embeddings.position_embeddings." in name
+                  or ".embeddings.token_type_embeddings." in name}
+    return total, embedding, subtracted
 
 
 def gpt2_counts(ckpt_path):
@@ -98,10 +105,13 @@ def main():
           f"{cfg.get('num_hidden_layers')} / {cfg.get('num_attention_heads')}")
     print(f"    vocab / max_position    {cfg.get('vocab_size')} / "
           f"{cfg.get('max_position_embeddings')}")
+    print("    引いた表の内訳          " + ", ".join(
+        f"{n.split('.embeddings.')[1].replace('.weight', '')} {v:,}"
+        for n, v in sorted(names.items())))
     print(f"    総パラメータ            {total:>13,}  ({total / 1e6:.2f}M)")
     print(f"    うち埋め込み            {emb:>13,}  ({emb / 1e6:.2f}M)")
     print(f"    非埋め込み              {total - emb:>13,}  ({(total - emb) / 1e6:.2f}M)")
-    print(f"    引いた表                {', '.join(n.split('.embeddings.')[1] for n in names)}")
+
     rows.append({"arch": "bert", "run": args.bert_run, "total": total,
                  "embedding": emb, "non_embedding": total - emb})
 
@@ -112,7 +122,9 @@ def main():
     print(f"\n  GPT-2  {args.gpt2_run}")
     print(f"    n_layer / n_head / n_embd {cfg.get('n_layer')} / "
           f"{cfg.get('n_head')} / {cfg.get('n_embd')}")
-    print(f"    vocab / block_size        {cfg.get('meta_vocab_size')} / "
+    # The checkpoint's config records meta_vocab_size only when the config set
+    # it; wte's own shape always says what the model was built with.
+    print(f"    vocab / block_size        {wte // cfg.get('n_embd', 1) if wte else '?'} / "
           f"{cfg.get('block_size')}")
     print(f"    総パラメータ            {total:>13,}  ({total / 1e6:.2f}M)")
     print(f"    うち位置表 wpe          {wpe:>13,}  ({wpe / 1e6:.2f}M)  ← 引く")
