@@ -54,6 +54,24 @@ save_steps = 1000  # multiple of eval_steps, so every checkpoint carries an eval
 # ranked on a number whose weights no longer exist.
 save_on_improve = True
 
+# Stop a run that has fallen into the degenerate solution instead of letting it spend
+# the rest of the schedule there. 2.395 is the degenerate floor measured for this
+# corpus -- unigram 2.635, unigram plus the copyable 10 per cent 2.395, left-neighbour
+# table 2.066 -- so a [MASK] loss that stays above it has not learned context.
+#
+# Measured on large seed 42 (job 187295): the loss reached 0.2389 at step 1,400, then
+# step 1,500 0.5287, step 1,600 1.6868 with grad_norm 6.422, and from step 1,700 it sat
+# between 2.47 and 2.87 through step 7,000. The collapse happened as warmup ended and
+# the rate reached its peak. With the threshold unset the detector only warned, so the
+# run went on spending four GPUs on the degenerate solution; at the default grace of
+# 5,000 steps it would have stopped around there instead of at 15,000.
+#
+# The grad_norm warning is not a substitute. It fired on medium (8.029) and xl (11.673),
+# which are both healthy, and large's 4.587 was the smallest of the three. What
+# separated them was the grad_norm as warmup ended: small 0.190, medium 0.505, xl 3.090,
+# large 6.422.
+degenerate_loss_threshold = 2.395
+
 # Confine attention to one document inside a packed block. Run 53767 passed this at
 # launch; without it a masked token attends across document boundaries.
 document_masking = True
