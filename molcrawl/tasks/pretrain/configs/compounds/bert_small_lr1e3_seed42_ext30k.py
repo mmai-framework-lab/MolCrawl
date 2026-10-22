@@ -96,12 +96,18 @@ per_device_eval_batch_size = 32
 # reads it and both refuse a config that declares one different from seed.
 seed = 42
 
-# The watchdog aborted the first attempt at these four runs at a save boundary
-# (jobs 178504/178506/178508/178510, 2026-10-16). rank 0 writes the checkpoint to
-# Lustre -- 6.5 GB for large, about 18 GB for xl -- while the other ranks wait at the
-# next collective, and HF's 1,800 s was not enough while a 1.17 TiB download shared
-# the filesystem. Two hours is generous for that write even under load.
-ddp_timeout = 7200
+# HF's own default, stated here so the window is a choice rather than a leftover. It
+# covers the largest checkpoint write -- measured by the mtime span inside one
+# checkpoint, small 995 MB in 1 s and xl 16,947 MB in 18 s -- and no save on record has
+# come near it.
+#
+# It is deliberately not longer. The runs aborted at save boundaries on 2026-10-16 and
+# 2026-10-19 were killed by a rank divergence in the save decision, not by this window:
+# the second attempt ran at 7,200 s, logged Timeout(ms)=7200000 and died the same way.
+# No timeout cures that, and a wider one only delays the report -- which it did on
+# 2026-10-20, when jobs 192553 and 192557 took two hours rather than thirty minutes to
+# surface the same divergence because they carried 7,200 s.
+ddp_timeout = 1800
 
 # Constant rate with a short ramp; see the header. Passed through by
 # models/bert/main.py only when a config sets it.
