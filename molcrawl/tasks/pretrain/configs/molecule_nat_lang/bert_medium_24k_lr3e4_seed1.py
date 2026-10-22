@@ -1,17 +1,19 @@
-"""mol_nl BERT medium 24,000 step・学習率 3e-4・seed 1。
+"""mol_nl BERT medium at 24,000 steps, learning rate 3e-4, seed 1.
 
-medium は 3 サイズのうち唯一、代表の学習率に seed が 1 本しかない。seed 3 本が揃うのは small
-1e-3 と large 1.7e-4 で、medium の 3 本は代表ではない 4.1e-4 にあり、そのうち seed 17 は step 13,000 で
-発散している。このため 2026-10-19 の報告では medium の行だけ seed 幅が書けず、medium と large の順位も
-幅つきでは言えていない。
+medium is the one size whose representative rate carries a single seed. The three-seed
+sets are small at 1e-3 and large at 1.7e-4; medium's three sit at 4.1e-4, which is not
+the rate that stands for it, and one of those three diverged at step 13,000. That is why
+the 2026-10-19 report leaves medium without a seed spread, and why the step from medium
+to large cannot be stated with one.
 
-この 3 本は同時に走らせる必要がある。PR #307 で eval_loss_mask が全ランク合算に直り、それ以前の値は
-rank 0 の 1/4 シャードのものだからである。既存の seed 42 の run は古い定義で測られており、新しい定義で
-測った seed 1・17 と混ぜた幅は、幅ではなく定義の差を測ることになる。
+All three seeds are run together rather than only the two that are missing. PR #307 made
+eval_loss_mask the sum over ranks where it had been rank 0's quarter shard, so the
+existing seed-42 run is measured under the other definition; a spread taken across the
+two would measure the definition rather than the seeds.
 
-seed 以外はすべて bert_medium_24k_lr3e4 から import する。
+Everything except the seed comes from bert_medium_24k_lr3e4, imported rather than copied.
 
-未投入。2026-10-22 時点で、3 本そろえて走らせるかどうかの判断待ち。
+Launched 2026-10-22 as job 199853.
 """
 
 from molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_medium_24k_lr3e4 import *  # noqa: F401,F403
