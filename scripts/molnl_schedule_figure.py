@@ -79,12 +79,14 @@ def main() -> int:
                     markeredgewidth=1.1, zorder=5)
             rows.append((size, label, best, points[best], steps[-1], points[steps[-1]]))
             if suffix == "3000":
-                # To the left of the mark: the minimum sits near the right edge of the
-                # panel, and a label to its right ran outside the axes.
-                ax.annotate(f"最小 {points[best]:.4f}\nstep {best:,}",
-                            (6 * n * best * TOKENS_PER_STEP / PF_DAY, points[best]),
-                            textcoords="offset points", xytext=(-8, -30), ha="right",
-                            fontsize=8, color=colour)
+                # In the empty upper corner rather than beside the mark: the minimum
+                # sits low and near the right edge, where a label either left the axes
+                # or lay across the tick labels. One marked point per panel, so no
+                # leader line is needed to say which point it describes.
+                ax.annotate(f"3,000 の最小 {points[best]:.4f}（step {best:,}）\n"
+                            f"最終 {points[steps[-1]]:.4f}",
+                            (0.97, 0.96), xycoords="axes fraction", ha="right",
+                            va="top", fontsize=8, color=colour)
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_title(f"{size}  {n / 1e6:.1f}M  lr {RATES[size]}", fontsize=10.5,
