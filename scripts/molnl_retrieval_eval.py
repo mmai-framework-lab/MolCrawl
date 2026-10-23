@@ -7,6 +7,21 @@ test pairs. Neither model was trained for retrieval -- there is no contrastive o
 and no projection head -- so the model is asked the only question it can answer: of these
 candidates, which pairing does it find least surprising.
 
+The 2026-10-23 judgment adds a second axis: the first measurements asked in a form the
+models never saw in pretraining, and the two mismatches are separated here so each can be
+read on its own.
+
+  --wrap inst            writes the record the way the corpus does,
+                         "<s>[INST] query [/INST]candidate<|endoftext|>", taken from
+                         decoding the packed corpus rather than from the formatting code.
+                         --wrap plain keeps the newline the first measurements used.
+  --molecule-notation    the corpus is built from osunlp/SMolInstruct, which writes
+                         molecules as SMILES; the evaluation pairs come from
+                         zjunlp/Mol-Instructions, which publishes SELFIES. "smiles"
+                         decodes each SELFIES and canonicalises it with RDKit. Only 9.0%
+                         of the corpus's own SMILES are in that canonical form, so this
+                         matches the notation, not the house style.
+
 Three things decide whether that question is asked properly.
 
   the order      a causal model cannot condition on text that comes after. The query is
@@ -62,6 +77,30 @@ def test_pairs(root, subset="molecular_description_generation"):
     return pairs
 
 
+def to_smiles(pairs):
+    """Rewrite each pair's molecule as a canonical SMILES, dropping what will not decode.
+
+    A pair whose molecule cannot be read is removed rather than carried as its SELFIES:
+    the point of the run is that every molecule is in the corpus's notation.
+    """
+    import selfies as selfies_mod
+    from rdkit import Chem, RDLogger
+
+    RDLogger.DisableLog("rdApp.*")
+    out, failed = [], 0
+    for molecule, description in pairs:
+        try:
+            smiles = selfies_mod.decoder(molecule)
+        except Exception:
+            smiles = None
+        mol = Chem.MolFromSmiles(smiles) if smiles else None
+        if mol is None:
+            failed += 1
+            continue
+        out.append((Chem.MolToSmiles(mol), description))
+    return out, failed
+
+
 def pools(n, k, rng):
     """For each query, the indices it ranks: itself first, then k-1 others."""
     out = []
@@ -105,6 +144,12 @@ def main() -> int:
     ap.add_argument("--modality", default="molecule_nat_lang")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--separator", default="\n", help="written between query and candidate")
+    ap.add_argument("--wrap", default="plain", choices=("plain", "inst"),
+                    help="plain joins with --separator; inst writes the corpus's own "
+                         "<s>[INST] ... [/INST]...<|endoftext|> record")
+    ap.add_argument("--molecule-notation", default="selfies", choices=("selfies", "smiles"),
+                    help="selfies keeps the pairs as published; smiles decodes them and "
+                         "canonicalises with RDKit, which is the notation the corpus uses")
     ap.add_argument("--bert-mlm-batch", type=int, default=256,
                     help="masked copies BERT scores in one forward; the adapter's own "
                          "default of 64 leaves a GB200 idle and the description->molecule "
@@ -126,6 +171,9 @@ def main() -> int:
     label = a.label or f"{a.arch}_{a.size or 'model'}"
 
     pairs = test_pairs(a.pairs_root)
+    if a.molecule_notation == "smiles":
+        pairs, failed = to_smiles(pairs)
+        print(f"  SELFIES -> canonical SMILES: {len(pairs):,} pairs, {failed} undecodable")
     rng = random.Random(a.seed)
     # Pools over every pair whatever is scored: truncating the pair list first would
     # shrink the candidate pool with it, which once made a 20-query measurement look five
@@ -145,6 +193,7 @@ def main() -> int:
 
     summary = {"label": label, "arch": a.arch, "size": a.size,
                "model_path": a.model_path, "separator": a.separator,
+               "wrap": a.wrap, "molecule_notation": a.molecule_notation,
                "context": a.context, "scored": "candidate positions only",
                "bert_mlm_batch": a.bert_mlm_batch, "seed": a.seed, "directions": {}}
     json_path = os.path.join(a.out_dir, f"retrieval-{label}.json")
@@ -169,11 +218,13 @@ def main() -> int:
             for qi, pool in enumerate(candidate_sets[:counts[direction]]):
                 molecule, description = pairs[qi]
                 query = molecule if direction == "molecule_to_text" else description
-                prefix = f"{query}{a.separator}"
+                prefix = (f"<s>[INST] {query} [/INST]" if a.wrap == "inst"
+                          else f"{query}{a.separator}")
                 scores = []
                 for c in pool:
                     candidate = pairs[c][1] if direction == "molecule_to_text" else pairs[c][0]
-                    whole = f"{prefix}{candidate}"
+                    whole = (f"{prefix}{candidate}<|endoftext|>" if a.wrap == "inst"
+                             else f"{prefix}{candidate}")
                     positions, length = candidate_span(adapter, prefix, whole, a.context)
                     if length >= a.context:
                         truncated += 1

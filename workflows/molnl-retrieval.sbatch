@@ -17,7 +17,9 @@
 #   sbatch --export=ALL,RUN_DIR=<run>,ARCH=gpt2|bert,SIZE=<size>,LABEL=<name>,\
 #          PAIRS_ROOT=<Mol-Instructions dir>,OUT_DIR=<dir> workflows/molnl-retrieval.sbatch
 #
-# Optional: CANDIDATES (default 100), QUERIES (0 = every test pair), QUERIES_T2M (same for
+# Optional: WRAP (plain|inst -- inst writes the corpus's own record form), NOTATION
+# (selfies|smiles -- the corpus is SMILES, the evaluation pairs are SELFIES),
+# CANDIDATES (default 100), QUERIES (0 = every test pair), QUERIES_T2M (same for
 # the description->molecule direction alone, which costs BERT one masked forward per
 # molecule token), CONTEXT (1024), BERT_MLM_BATCH, TOKENIZER_PATH, GPT2_TOKENIZER_DIR,
 # PYTHON.
@@ -73,6 +75,7 @@ rc=0
   --pairs-root "${PAIRS_ROOT}" --out-dir "${OUT_DIR}" \
   --candidates "${CANDIDATES:-100}" --queries "${QUERIES:-0}" \
   --queries-text-to-molecule "${QUERIES_T2M:-0}" \
+  --wrap "${WRAP:-plain}" --molecule-notation "${NOTATION:-selfies}" \
   ${BERT_MLM_BATCH:+--bert-mlm-batch "${BERT_MLM_BATCH}"} \
   --context "${CONTEXT:-1024}" || rc=$?
 echo "=== rc=${rc} @ $(date -Is) ==="
