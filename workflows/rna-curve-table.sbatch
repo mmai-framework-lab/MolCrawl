@@ -27,4 +27,13 @@ for d in ${CURVE_LOG_DIRS:-}; do _args+=(--log-dir "$d"); done
   --gpt2-root "${GPT2_RUNS_ROOT}" \
   --bert-root "${BERT_RUNS_ROOT}" \
   --out "${CURVE_OUT}" "${_args[@]}"
+# The downstream table takes its loss column out of the curve TSV just written,
+# so the same number cannot appear differently in the two files.
+if [ -n "${DOWNSTREAM_OUT:-}" ]; then
+    : "${EVAL_ROOT:?export EVAL_ROOT to the eval/ root when DOWNSTREAM_OUT is set}"
+    "${PY}" scripts/rna_downstream_table.py \
+      --eval-root "${EVAL_ROOT}" \
+      --curve-tsv "${CURVE_OUT}" \
+      --out "${DOWNSTREAM_OUT}"
+fi
 echo "=== done @ $(date -Is) ==="
