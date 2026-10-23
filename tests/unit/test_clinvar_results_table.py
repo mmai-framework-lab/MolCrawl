@@ -28,6 +28,23 @@ rt = _load("clinvar_results_table")
 ap = _load("clinvar_arch_pairs")
 
 
+def row(**fields):
+    """A table row built from the module's own column list.
+
+    These tests used to spell a row out as a bare list and read it back by
+    index. Adding `series`, `epochs` and `seed` moved every field after `arch`,
+    and four tests failed on a change that was correct. Building and reading
+    through COLUMNS means the next column costs nothing here.
+    """
+    unknown = set(fields) - set(rt.COLUMNS)
+    assert not unknown, f"not a column: {sorted(unknown)}"
+    return [str(fields.get(name, "")) for name in rt.COLUMNS]
+
+
+def field(built, name):
+    return built[rt.COLUMNS.index(name)]
+
+
 # --- the table ------------------------------------------------------------
 
 def test_a_fold_is_found_under_either_spelling():
@@ -55,9 +72,12 @@ def test_a_subset_lands_in_its_corpus_family(subset, family):
 def test_a_family_of_one_gets_no_range():
     """mammal_centered is one run. A range over one value is not a measure of
     anything, and printed beside two real ranges it reads as one."""
-    rows = [["run", "mammal_centered", "mammal_centered", "bert", "probe", "21", "0.80", "", ""],
-            ["run", "global_random_seed1", "global_random", "bert", "probe", "21", "0.70", "", ""],
-            ["run", "global_random_seed2", "global_random", "bert", "probe", "21", "0.76", "", ""]]
+    rows = [row(kind="run", subset="mammal_centered", family="mammal_centered",
+                arch="bert", method="probe", fold="21", auroc="0.80"),
+            row(kind="run", subset="global_random_seed1", family="global_random",
+                arch="bert", method="probe", fold="21", auroc="0.70"),
+            row(kind="run", subset="global_random_seed2", family="global_random",
+                arch="bert", method="probe", fold="21", auroc="0.76")]
 
     summary = {(s["family"], s["fold"]): s for s in rt.summarise(rows)}
 
@@ -68,9 +88,12 @@ def test_a_family_of_one_gets_no_range():
 def test_only_trained_runs_enter_the_group_summary():
     """The control and the floor are rows of the same table so they travel with
     it, but averaging them into a family would move the family's number."""
-    rows = [["run", "global_random_seed1", "global_random", "bert", "probe", "21", "0.70", "", ""],
-            ["model-free", "-", "-", "bert", "probe", "21", "0.62", "", ""],
-            ["untrained", "untrained_seed0", "-", "bert", "probe", "21", "0.58", "", ""]]
+    rows = [row(kind="run", subset="global_random_seed1", family="global_random",
+                arch="bert", method="probe", fold="21", auroc="0.70"),
+            row(kind="model-free", subset="-", family="-", arch="bert",
+                method="probe", fold="21", auroc="0.62"),
+            row(kind="untrained", subset="untrained_seed0", family="-",
+                arch="bert", method="probe", fold="21", auroc="0.58")]
 
     summary = rt.summarise(rows)
 
@@ -87,7 +110,8 @@ def test_the_checkpoint_step_comes_from_one_place_for_both_methods(tmp_path):
     zero = rt.run_rows(analysis, probe, "bert", "zeroshot")
     prob = rt.run_rows(analysis, probe, "bert", "probe")
 
-    assert zero[0][7] == "139000" and prob[0][7] == "139000"
+    assert field(zero[0], "checkpoint_step") == "139000"
+    assert field(prob[0], "checkpoint_step") == "139000"
 
 
 def test_a_nanogpt_checkpoint_name_carries_no_step(tmp_path):
@@ -96,7 +120,46 @@ def test_a_nanogpt_checkpoint_name_carries_no_step(tmp_path):
     analysis = {"runs": {"mammal_centered": {"per_fold": {"21": {"auroc": 0.7}}}}}
     probe = {"runs": {"mammal_centered": {"checkpoint": "ckpt.pt"}}}
 
-    assert rt.run_rows(analysis, probe, "gpt2", "probe")[0][7] == "ckpt.pt"
+    built = rt.run_rows(analysis, probe, "gpt2", "probe")[0]
+
+    assert field(built, "checkpoint_step") == "ckpt.pt"
+
+
+def test_the_series_and_its_seed_land_on_every_run_row():
+    """A fold analysis says nothing about the schedule or the seed it came
+    from, so the table has to carry both or a three-epoch row and a nine-epoch
+    row for one subset are indistinguishable."""
+    analysis = {"runs": {"mammal_centered": {"per_fold": {"21": {"auroc": 0.7}}}}}
+
+    built = rt.run_rows(analysis, {}, "gpt2", "probe", "gpt2-ep9", "9", "45")[0]
+
+    assert field(built, "series") == "gpt2-ep9"
+    assert field(built, "epochs") == "9"
+    assert field(built, "seed") == "45"
+
+
+def test_two_series_of_one_subset_are_summarised_apart():
+    """Averaging a three-epoch and a nine-epoch value for one subset reports a
+    number that describes neither."""
+    rows = [row(kind="run", subset="mammal_centered", family="mammal_centered",
+                arch="gpt2", series="gpt2", epochs="3", method="probe",
+                fold="21", auroc="0.60"),
+            row(kind="run", subset="mammal_centered", family="mammal_centered",
+                arch="gpt2", series="gpt2-ep9", epochs="9", method="probe",
+                fold="21", auroc="0.80")]
+
+    summary = rt.summarise(rows)
+
+    assert len(summary) == 2
+    assert {s["series"]: s["mean"] for s in summary} == pytest.approx(
+        {"gpt2": 0.60, "gpt2-ep9": 0.80})
+
+
+def test_a_source_spec_has_to_name_its_series_epochs_and_seed():
+    assert rt.parse_source("gpt2-ep9:9:45:/tmp/a.json") == (
+        "gpt2-ep9", "9", "45", "/tmp/a.json")
+    with pytest.raises(SystemExit):
+        rt.parse_source("/tmp/a.json")
 
 
 # --- the pairing ----------------------------------------------------------
