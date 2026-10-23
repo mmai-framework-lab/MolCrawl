@@ -176,7 +176,7 @@ def main(argv=None):
                 for split, name, val in (("train", "train_loss", tr), ("val", "val_loss", va)):
                     w.writerow([base, "gpt2", m.group(1), lr, ep, seed, step,
                                 split, name, f"{val:.6f}", eval_set, job])
-                    n += 2
+                    n += 1
 
         for d in sorted(glob.glob(f"{a.bert_root}/rna-*")):
             base = os.path.basename(d)
