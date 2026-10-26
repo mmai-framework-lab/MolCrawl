@@ -37,7 +37,8 @@ import os
 import re
 
 BERT_NAME = re.compile(r"^bert_(?P<size>small|medium|large|xl)_(?:(?P<sched>24k)_)?"
-                       r"lr(?P<tag>[0-9p]+e\d)(?:_(?P<variant>seed\d+|warmup|clip|both))?$")
+                       r"lr(?P<tag>[0-9p]+e\d)"
+                       r"(?:_(?P<variant>seed\d+|s\d+r|warmup|clip|both))?$")
 # The 2026-10-14 re-runs are named after what they repeat, not after their rate, so the
 # rate comes from the run's own manifest rather than from its directory name.
 BERT_RERUN = re.compile(r"^bert_(?P<size>small|medium|large|xl)_24k_rerun$")
@@ -124,7 +125,15 @@ def bert_rows(root, jobs):
         if m:
             size, lr = m["size"], f"{rate_of(m['tag']):g}"
             variant = m["variant"] or ""
-            seed = int(variant[4:]) if variant.startswith("seed") else 42
+            # seed<N> is that seed; s<N>r is seed N run again under its own name, which
+            # the 2026-10-22 medium set needed so the reduced metric had three seeds of
+            # its own. Anything else is the grid's 42.
+            if variant.startswith("seed"):
+                seed = int(variant[4:])
+            elif variant.startswith("s") and variant.endswith("r"):
+                seed = int(variant[1:-1])
+            else:
+                seed = 42
         else:
             size = rerun["size"]
             lr = f"{info.get('schedule', {}).get('learning_rate', 0):g}"
