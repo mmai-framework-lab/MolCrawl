@@ -84,12 +84,21 @@ echo "=== rna gpt2-${SIZE} ${SMOKE_MAX_ITERS:+SMOKE max_iters=${SMOKE_MAX_ITERS}
 # EXPECT_COMMIT to refuse to start on anything else rather than silently
 # continuing a run on different code.
 if [ -n "${EXPECT_COMMIT:-}" ]; then
-  ACTUAL=$(git -C "${REPO}" rev-parse --short HEAD)
-  if [ "${ACTUAL}" != "${EXPECT_COMMIT}" ]; then
-    echo "FATAL: ${REPO} is at ${ACTUAL}, expected ${EXPECT_COMMIT}" >&2
+  # Both sides are resolved to the full hash before comparing. `rev-parse --short`
+  # picks its length from how many objects the repository holds, so the same commit
+  # prints seven characters one week and eight the next; comparing that against a
+  # string pins the abbreviation rather than the commit.
+  ACTUAL=$(git -C "${REPO}" rev-parse HEAD)
+  WANT=$(git -C "${REPO}" rev-parse --verify --quiet "${EXPECT_COMMIT}^{commit}" || true)
+  if [ -z "${WANT}" ]; then
+    echo "FATAL: EXPECT_COMMIT=${EXPECT_COMMIT} does not name a commit in ${REPO}" >&2
     exit 1
   fi
-  echo "commit guard: ${ACTUAL} == ${EXPECT_COMMIT}"
+  if [ "${ACTUAL}" != "${WANT}" ]; then
+    echo "FATAL: ${REPO} is at ${ACTUAL}, expected ${WANT} (from ${EXPECT_COMMIT})" >&2
+    exit 1
+  fi
+  echo "commit guard: ${ACTUAL} matches ${EXPECT_COMMIT}"
 fi
 echo "repo:   ${REPO}"
 echo "branch: $(git -C "${REPO}" rev-parse --abbrev-ref HEAD)  head: $(git -C "${REPO}" rev-parse --short HEAD)"

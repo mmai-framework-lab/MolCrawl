@@ -42,10 +42,21 @@ echo "=== ${SLURM_JOB_NAME:-link} @ $(date -Is) on ${SLURMD_NODENAME} ==="
 # have moved in between. Refuse to continue a run on different code rather than
 # finding out from the loss curve.
 if [ -n "${EXPECT_COMMIT:-}" ]; then
-    ACTUAL=$(git rev-parse --short HEAD)
-    [ "${ACTUAL}" = "${EXPECT_COMMIT}" ] || {
-        echo "FATAL: repo is at ${ACTUAL}, expected ${EXPECT_COMMIT}" >&2; exit 1; }
-    echo "commit guard: ${ACTUAL} == ${EXPECT_COMMIT}"
+    # Resolve both sides to the full hash before comparing. The guard used to
+    # compare `rev-parse --short HEAD` against the string it was given, and the
+    # length of that abbreviation is chosen by git from how many objects the
+    # repository holds -- it is not a property of the commit. It grew from seven
+    # characters to eight between 2026-10-22 and 2026-10-26, so links queued with
+    # EXPECT_COMMIT=1c45ad6 met a repo reporting 1c45ad6d and refused to start on
+    # the commit they were pinned to. Twenty links, each gone in two seconds.
+    ACTUAL=$(git rev-parse HEAD)
+    WANT=$(git rev-parse --verify --quiet "${EXPECT_COMMIT}^{commit}" || true)
+    [ -n "${WANT}" ] || {
+        echo "FATAL: EXPECT_COMMIT=${EXPECT_COMMIT} does not name a commit here" >&2; exit 1; }
+    [ "${ACTUAL}" = "${WANT}" ] || {
+        echo "FATAL: repo is at ${ACTUAL}, expected ${WANT} (from ${EXPECT_COMMIT})" >&2
+        exit 1; }
+    echo "commit guard: ${ACTUAL} matches ${EXPECT_COMMIT}"
 fi
 echo "config: ${GRID_CONFIG}"
 echo "branch: $(git rev-parse --abbrev-ref HEAD)  head: $(git rev-parse --short HEAD)"
