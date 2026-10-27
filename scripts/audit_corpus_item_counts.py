@@ -61,8 +61,34 @@ def group_by_prefix(per_file):
 
 
 def arrow_rows(path):
-    """Row count of one arrow file, from its schema block."""
+    """Row count of one arrow file, or of a save_to_disk directory of them.
+
+    ``datasets.save_to_disk`` writes a *directory* named ``<split>.arrow`` holding
+    ``data-NNNNN-of-NNNNN.arrow`` shards. The first submission of this audit passed
+    that directory where a file was expected and stopped. Both spellings are
+    accepted now, because which one a modality has is not predictable from the name.
+
+    ``dataset_info.json`` sits beside the shards and is deliberately not read: it is
+    written once per build and copied into every split directory, so for these
+    builds all three splits report the train count. Reading it returns one number
+    three times. The shards are counted instead.
+    """
     import pyarrow as pa
+
+    if os.path.isdir(path):
+        shards = sorted(
+            os.path.join(path, f) for f in os.listdir(path) if f.endswith(".arrow")
+        )
+        if not shards:
+            raise ValueError(f"no .arrow shards under {path}")
+        total = 0
+        per_shard = {}
+        for shard in shards:
+            counted = arrow_rows(shard)
+            per_shard[os.path.basename(shard)] = counted["rows"]
+            total += counted["rows"]
+        return {"rows": total, "format": "save_to_disk-dir",
+                "shards": len(shards), "per_shard": per_shard}
 
     with pa.memory_map(path, "rb") as source:
         try:
@@ -125,8 +151,8 @@ def main(argv=None):
             print(f"    {name:36s} {rows:>12,}", flush=True)
 
     for label, path in _pairs(args.arrow, "--arrow"):
-        if not os.path.isfile(path):
-            raise SystemExit(f"{label}: not a file: {path}")
+        if not os.path.exists(path):
+            raise SystemExit(f"{label}: no such path: {path}")
         print(f"=== {label}: {path}", flush=True)
         try:
             entry = arrow_rows(path)
@@ -134,8 +160,9 @@ def main(argv=None):
             entry = {"error": f"{type(exc).__name__}: {exc}"}
             print(f"  unreadable: {entry['error']}", flush=True)
         else:
-            print(f"  {entry['rows']:,} rows ({entry['format']}, "
-                  f"{entry['batches']} batches)", flush=True)
+            parts = entry.get("batches", entry.get("shards"))
+            print(f"  {entry['rows']:,} rows ({entry['format']}, {parts} parts)",
+                  flush=True)
         entry["path"] = path
         result["arrow"][label] = entry
 
