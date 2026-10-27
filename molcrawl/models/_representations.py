@@ -75,6 +75,10 @@ def _nanogpt_encoder(model_path, tok, device, untrained, init_seed):
         return tr.ln_f(x)
 
     def encode(seqs):
+        if tok is None:
+            raise RuntimeError(
+                "build_encoder was called without a tokenizer_path, so encode() is not"
+                " available; tokenise in the caller and pass ids to forward()")
         return torch.tensor([tok.convert_tokens_to_ids(list(s)) for s in seqs],
                             dtype=torch.long, device=device)
 
@@ -97,6 +101,10 @@ def _hf_encoder(model_path, tok, device, untrained, init_seed):
         return model(input_ids=ids).last_hidden_state
 
     def encode(seqs):
+        if tok is None:
+            raise RuntimeError(
+                "build_encoder was called without a tokenizer_path, so encode() is not"
+                " available; tokenise in the caller and pass ids to forward()")
         cls, sep = tok.cls_token_id, tok.sep_token_id
         return torch.tensor(
             [[cls] + tok.convert_tokens_to_ids(list(s)) + [sep] for s in seqs],
@@ -105,7 +113,7 @@ def _hf_encoder(model_path, tok, device, untrained, init_seed):
     return forward, encode, int(model.config.hidden_size)
 
 
-def build_encoder(model_path: str, tokenizer_path: str, arch: str, device: str,
+def build_encoder(model_path: str, tokenizer_path: str | None, arch: str, device: str,
                   untrained: bool = False, init_seed: int = 0
                   ) -> Tuple[Callable, Callable, int]:
     """Return ``(forward, encode, hidden_size)`` for a trunk.
@@ -117,9 +125,24 @@ def build_encoder(model_path: str, tokenizer_path: str, arch: str, device: str,
 
     The two families are built by separate helpers rather than by two branches
     here, so that each one's ``forward`` and ``encode`` are named once.
-    """
-    from transformers import AutoTokenizer
 
-    tok = AutoTokenizer.from_pretrained(tokenizer_path)
+    ``tokenizer_path`` may be left empty by a caller that tokenises for itself. The
+    returned ``encode`` then raises instead of being silently wrong, and ``forward``
+    and the hidden size are unaffected -- the trunk does not need a tokenizer to run
+    ids through it.
+
+    That is not a convenience. ``AutoTokenizer.from_pretrained`` wants a directory
+    holding a tokenizer config, and compounds has none: the vocabulary is a bare
+    ``vocab.txt`` read by ``CompoundsTokenizer``, and the checkpoints carry no
+    tokenizer files. ``encode`` would be wrong there anyway, because it splits with
+    ``list(s)`` and 579 of the 612 compounds tokens are multi-character. A caller that
+    must do its own tokenisation should not also have to produce a tokenizer it will
+    not use.
+    """
+    tok = None
+    if tokenizer_path:
+        from transformers import AutoTokenizer
+
+        tok = AutoTokenizer.from_pretrained(tokenizer_path)
     build = _nanogpt_encoder if arch == "gpt2" else _hf_encoder
     return build(model_path, tok, device, untrained, init_seed)

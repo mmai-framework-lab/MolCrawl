@@ -219,8 +219,13 @@ def representations(smiles, model_path, arch, tokenizer_path, device,
     from molcrawl.models._representations import build_encoder
 
     encoded, skipped = tokenize_smiles(smiles, tokenizer_path, max_length, arch)
+    # No tokenizer_path: this function tokenises with CompoundsTokenizer, because
+    # build_encoder's own encode splits with list(s) and 579 of the 612 compounds
+    # tokens are multi-character. Passing the vocab.txt path would fail anyway --
+    # AutoTokenizer wants a directory holding a tokenizer config, and compounds has
+    # none. Only forward and the hidden size are taken from here.
     forward, _encode_unused, hidden = build_encoder(
-        model_path, tokenizer_path, arch, device,
+        model_path, None, arch, device,
         untrained=untrained, init_seed=init_seed)
 
     feats = np.zeros((len(smiles), hidden), dtype=np.float32)
