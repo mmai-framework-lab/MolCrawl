@@ -86,8 +86,19 @@ def count_splits(ds_dir: Path):
         sdir = ds_dir / split
         if not sdir.is_dir():
             continue
+        # Count only the dataset shards named in state.json (data-*.arrow). The
+        # split dir also holds leftover cache-*.arrow from the map() step; globbing
+        # *.arrow sums those too and overcounts (train 9.5M -> 85.8M).
+        import json as _json
+
+        state = sdir / "state.json"
+        if state.exists():
+            names = [f["filename"] for f in _json.load(open(state)).get("_data_files", [])]
+            shards = [sdir / nm for nm in names]
+        else:
+            shards = sorted(sdir.glob("data-*.arrow"))
         n = 0
-        for af in sorted(sdir.glob("*.arrow")):
+        for af in shards:
             with ipc.open_stream(open(af, "rb")) as reader:
                 for batch in reader:
                     n += batch.num_rows
