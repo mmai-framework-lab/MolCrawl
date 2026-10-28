@@ -40,7 +40,10 @@ export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
 mkdir -p "${OUT_DIR}"
 
 # The run list is built the same way in every task, so the index is stable.
-mapfile -t RUNS < <(ls -d "${RUNS_ROOT}"/${RUN_GLOB:-bert-small-*-w1026}/ 2>/dev/null | sed 's:/$::' | sort)
+# C collation, because the shell's locale decides whether seed1 sorts before
+# seed10 and the index has to mean the same thing in the submitted list.
+mapfile -t RUNS < <(ls -d "${RUNS_ROOT}"/${RUN_GLOB:-bert-small-*-w1026}/ 2>/dev/null \
+                    | sed 's:/$::' | LC_ALL=C sort)
 [ "${#RUNS[@]}" -gt 0 ] || { echo "no runs matched under ${RUNS_ROOT}" >&2; exit 1; }
 
 IDX="${SLURM_ARRAY_TASK_ID:-0}"
