@@ -42,6 +42,8 @@ export PYTHONPATH="${REPO}:${REPO}/scripts:${PYTHONPATH:-}"
 export LD_LIBRARY_PATH="${PYROOT}/miniconda/lib:${LD_LIBRARY_PATH:-}"
 export PYTHONUNBUFFERED=1
 export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+# The corpus is packed with GPT-2 BPE and has to be decoded to be read back.
+export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
 cd "${REPO}"; mkdir -p workflows/slurm-logs
 
 echo "=== pair overlap on ${SLURMD_NODENAME} @ $(date -Is) ==="
