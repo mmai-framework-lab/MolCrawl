@@ -36,8 +36,11 @@ from molnl_loss_figures import INK, SIZE_COLOUR, axes  # noqa: E402
 FLOOR = 3.8638
 WINDOW = 10
 # The rate that stands for each size, and for xl every rate that held.
+# One definition of eval_loss_mask across the three: the grid's own seed-42 runs all
+# predate PR #307. The medium re-run s42r reads 0.0574 under the new definition against
+# this run's 0.0570, and the caption says so.
 LEARNS = [("small", "bert_small_24k_lr1e3", "1e-3"),
-          ("medium", "bert_medium_24k_lr3e4_s42r", "3e-4"),
+          ("medium", "bert_medium_24k_lr3e4", "3e-4"),
           ("large", "bert_large_24k_lr1p7e4", "1.7e-4")]
 XL = [("bert_xl_24k_lr6e5", "6e-5"), ("bert_xl_24k_lr4p3e5", "4.3e-5"),
       ("bert_xl_24k_lr3p1e5", "3.1e-5"), ("bert_xl_24k_lr2p2e5", "2.2e-5")]
@@ -79,16 +82,23 @@ def main() -> int:
     n_xl = n_of["xl"]
     # The four xl rates land within 0.22 of each other, which is nothing on a log axis
     # spanning two decades, so their labels are stacked rather than placed at the points.
+    # Stacked downwards: upwards they run into the floor line, which is only 0.8 above.
     for i, (run, rate) in enumerate(XL):
         y = window(run)
         ax.plot([n_xl], [y], marker="D", ms=7, markerfacecolor="white",
                 markeredgecolor=SIZE_COLOUR["xl"], markeredgewidth=1.6, zorder=5)
         ax.annotate(f"xl  lr {rate}  {y:.4f}", (n_xl, y), textcoords="offset points",
-                    xytext=(14, 26 - 17 * i), ha="left", fontsize=8.5,
+                    xytext=(16, -4 - 17 * i), ha="left", fontsize=8.5,
                     color=SIZE_COLOUR["xl"],
                     arrowprops=dict(arrowstyle="-", color=SIZE_COLOUR["xl"],
                                     lw=0.6, alpha=0.6))
         rows.append(("xl", rate, n_xl, y))
+    # To the right of large and well under xl's labels: the only clear strip at this
+    # height. The three sizes are one band and the figure has to say so rather than
+    # leave three labelled points to be read as an ordering.
+    ax.annotate("3 サイズとも区別が付かない\n（差 0.0005 と 0.0026、seed 幅 0.0013〜0.0015 の 0.3〜2.0 倍）",
+                (n_of["large"] * 1.9, 0.075), fontsize=8.5, color="#666666",
+                ha="left", va="bottom")
     ax.axhline(FLOOR, color="#888888", linestyle="--", linewidth=1.2)
     ax.annotate(f"何も学ばない場合 {FLOOR}", (0.02, FLOOR), xycoords=("axes fraction", "data"),
                 va="bottom", fontsize=8.5, color="#666666")
@@ -99,12 +109,13 @@ def main() -> int:
     axes(ax, "到達値（nats/token）", "非埋め込みパラメータ数")
     ax.plot([], [], marker="o", color="#777777", linestyle="none", label="学習に入ったサイズ（各自の最良学習率）")
     ax.plot([], [], marker="D", markerfacecolor="white", markeredgecolor="#777777",
-            color="#777777", linestyle="none", markeredgewidth=1.6, label="xl（発散しなかった 4 つの学習率）")
+            color="#777777", linestyle="none", markeredgewidth=1.6,
+            label="xl（発散しなかった 4 つの学習率・いずれも未到達）")
     # Under the floor annotation and above the three points: the corners are taken.
     ax.legend(frameon=False, fontsize=9, loc="upper left", labelcolor=INK,
               bbox_to_anchor=(0.02, 0.78))
 
-    title = "xl は 24,000 step を使い切っても学習に入らない —— large との差は 50 倍"
+    title = "xl は 24,000 step を使い切っても到達せず、小さい 3 サイズは互いに区別が付かない"
     fig.suptitle(title, fontsize=11.5, color=INK, x=0.008, ha="left")
     caption = open(a.caption, encoding="utf-8").read().strip()
     line_h = (7.5 * 1.35) / (fig.get_size_inches()[1] * 72)

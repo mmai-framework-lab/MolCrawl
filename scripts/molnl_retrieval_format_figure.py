@@ -105,9 +105,13 @@ def main() -> int:
     panels[0].legend(frameon=False, fontsize=8.5, ncol=2, loc="upper left")
 
     # Checked against the drawn numbers: all fourteen inst/smiles measurements sit above
-    # chance, while every inst/selfies one is within noise of it.
+    # chance, while every inst/selfies one is within noise of it. The split by whether
+    # the corpus holds the pair (2026-10-27 judgment section 3) says who makes that:
+    # on the 895 pairs it does not hold, GPT-2's eight measurements fall back to chance
+    # and BERT's molecule->text three do not. Drawn here is all 1,000, so the title has
+    # to carry that or the figure overstates what it shows.
     title = ("コーパスと同じ表記とマーカーで訊くと 14 測定すべてが偶然を上回る"
-             " —— マーカー単独では動かない")
+             " —— ただし GPT-2 の分は重なり 105 対が作っている")
     fig.suptitle(title, fontsize=11.5, color=INK, x=0.008, ha="left")
     caption = open(a.caption, encoding="utf-8").read().strip()
     line_h = (7.5 * 1.35) / (fig.get_size_inches()[1] * 72)

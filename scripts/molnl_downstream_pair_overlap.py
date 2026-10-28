@@ -24,8 +24,13 @@ distinct molecule-shaped string in the corpus across a process pool and answers 
 molecule question on that set instead. The sampled canonical share is reported either way,
 because it is what says how much the written-form count is worth.
 
+--pair-index-out writes which pairs matched, by their index in the test-pair order,
+which is the order scripts/molnl_retrieval_eval.py numbers its queries in. That is what
+lets an already scored retrieval measurement be split into the pairs the corpus holds and
+the pairs it does not, without scoring anything again.
+
     python scripts/molnl_downstream_pair_overlap.py --dataset <packed corpus> \
-        --pairs-root <Mol-Instructions dir> --out <json>
+        --pairs-root <Mol-Instructions dir> --out <json> --pair-index-out <json>
 """
 
 from __future__ import annotations
@@ -121,6 +126,13 @@ def main() -> int:
     ap.add_argument("--canonical-corpus", action="store_true",
                     help="canonicalise every corpus molecule instead of matching as written")
     ap.add_argument("--processes", type=int, default=8)
+    ap.add_argument("--pair-index-out",
+                    help="JSON listing which test pairs matched, by their index in the "
+                         "test-pair order, so an already scored measurement can be split "
+                         "into the pairs the corpus contains and the pairs it does not")
+    ap.add_argument("--show-records", type=int, default=0,
+                    help="print this many corpus records as read, before splitting, so "
+                         "the record form a measurement imitates is in the run's own log")
     ap.add_argument("--out")
     a = ap.parse_args()
 
@@ -145,6 +157,11 @@ def main() -> int:
           f"{undecodable} could not be decoded", flush=True)
 
     data = load_from_disk(a.dataset)
+    if a.show_records:
+        text = tokenizer.decode(data[a.split][0][a.column])
+        for chunk in text.split("<|endoftext|>")[:a.show_records]:
+            print(f"  record as read: {chunk + '<|endoftext|>'!r}", flush=True)
+
     seen_mol, seen_desc = set(), set()
     pair_hits = {}
     written = set() if a.canonical_corpus else None
@@ -194,7 +211,8 @@ def main() -> int:
     # A pair counts as trained on when the record carrying the description also carries
     # the molecule -- compared after canonicalising the record's own side.
     pairs_in_one_record = 0
-    for mol_text, desc in pairs:
+    paired_at = []
+    for i, (mol_text, desc) in enumerate(pairs):
         target = canon.get(mol_text)
         if not target or desc not in pair_hits:
             continue
@@ -202,6 +220,7 @@ def main() -> int:
             mol = Chem.MolFromSmiles(other)
             if mol is not None and Chem.MolToSmiles(mol) == target:
                 pairs_in_one_record += 1
+                paired_at.append(i)
                 break
 
     out = {
@@ -222,6 +241,19 @@ def main() -> int:
     print(f"  同一レコードに対で在る: {pairs_in_one_record:,} / {len(pairs):,}")
     if canonical_share is not None:
         print(f"  コーパス SMILES のうち既に正規形: {same:,}/{ok:,} = {canonical_share:.3f}")
+    if a.pair_index_out:
+        index = {
+            "subset": a.subset, "split": a.split, "pairs": len(pairs),
+            "order": "the test-pair order scripts/molnl_retrieval_eval.py scores in",
+            "pairs_in_one_record": paired_at,
+            "description_in_corpus": [i for i, (_, d) in enumerate(pairs)
+                                      if d in seen_desc],
+            "molecule_in_corpus_as_written": [i for i, (m, _) in enumerate(pairs)
+                                              if canon.get(m) in seen_mol],
+        }
+        json.dump(index, open(a.pair_index_out, "w"), indent=2)
+        print(f"  wrote {a.pair_index_out} "
+              f"({len(paired_at)} pair indices)")
     if a.out:
         json.dump(out, open(a.out, "w"), indent=2)
         print(f"  wrote {a.out}")
