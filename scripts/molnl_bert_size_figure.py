@@ -82,12 +82,13 @@ def main() -> int:
     n_xl = n_of["xl"]
     # The four xl rates land within 0.22 of each other, which is nothing on a log axis
     # spanning two decades, so their labels are stacked rather than placed at the points.
+    # Stacked downwards: upwards they run into the floor line, which is only 0.8 above.
     for i, (run, rate) in enumerate(XL):
         y = window(run)
         ax.plot([n_xl], [y], marker="D", ms=7, markerfacecolor="white",
                 markeredgecolor=SIZE_COLOUR["xl"], markeredgewidth=1.6, zorder=5)
         ax.annotate(f"xl  lr {rate}  {y:.4f}", (n_xl, y), textcoords="offset points",
-                    xytext=(14, 26 - 17 * i), ha="left", fontsize=8.5,
+                    xytext=(16, -4 - 17 * i), ha="left", fontsize=8.5,
                     color=SIZE_COLOUR["xl"],
                     arrowprops=dict(arrowstyle="-", color=SIZE_COLOUR["xl"],
                                     lw=0.6, alpha=0.6))
