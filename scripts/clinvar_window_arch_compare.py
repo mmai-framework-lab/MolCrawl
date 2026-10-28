@@ -227,8 +227,10 @@ def main():
         write_tsv(args.out_paired_tsv, paired)
         print(f"  wrote {args.out_paired_tsv}  ({len(paired)} 行)")
 
-    label = {"window": "BERT 窓全体 − GPT-2 窓全体（式を揃えた組）",
-             "variant": "BERT 変異 1 点 − GPT-2 窓全体（従来の組・式が違う）"}
+    # The difference is gpt2 - bert, so the label has to read that way round:
+    # a negative median means BERT scored higher.
+    label = {"window": "GPT-2 窓全体 − BERT 窓全体（式を揃えた組）",
+             "variant": "GPT-2 窓全体 − BERT 変異 1 点（従来の組・式が違う）"}
     lines = ["| 組 | 区分 | 本数 | 差の中央値 | 範囲 | GPT-2 有利 / BERT 有利 | 符号付き順位 |",
              "|---|---|---:|---:|---|---|---|"]
     for rec in rows:
