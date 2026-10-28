@@ -59,7 +59,27 @@ def rows_from_window_json(path):
         n, value = got.get(f"n_chr{fold}"), got.get(f"auroc_chr{fold}")
         if n and value is not None:
             per[fold] = (int(n), float(value))
-    return got.get("input_form"), got.get("positions"), per
+    return got.get("input_form"), got.get("positions"), per, int(got.get("n_variants", 0))
+
+
+def full_scorings(paths):
+    """The scorings that covered the whole variant table, and why the rest went.
+
+    The same directory holds timing probes, which score a prefix of the table
+    with --max-variants. They are the same file shape as a full scoring and
+    would otherwise be averaged in beside it, so anything short of the largest
+    table seen is dropped and named.
+    """
+    read = {}
+    for path in paths:
+        subset = os.path.basename(path)[len("window-"):-len(".json")]
+        read[path] = (subset,) + rows_from_window_json(path)
+    if not read:
+        return [], []
+    full = max(rec[4] for rec in read.values())
+    keep = [(p, rec) for p, rec in read.items() if rec[4] == full]
+    drop = [(p, rec) for p, rec in read.items() if rec[4] != full]
+    return sorted(keep), sorted(drop)
 
 
 def rows_from_predictions(path):
@@ -121,12 +141,13 @@ def main():
     out = []
     for spec in args.window_dir:
         series, root = spec.split(":", 1)
-        found = sorted(glob.glob(os.path.join(root, "window-*.json")))
-        for path in found:
-            subset = os.path.basename(path)[len("window-"):-len(".json")]
-            input_form, positions, per = rows_from_window_json(path)
+        keep, drop = full_scorings(glob.glob(os.path.join(root, "window-*.json")))
+        for _path, (subset, input_form, positions, per, _n) in keep:
             emit(out, series, subset, input_form, positions, per)
-        print(f"  {series}: {len(found)} 本  ({root})")
+        print(f"  {series}: {len(keep)} 本  ({root})")
+        for path, (subset, _f, _p, _per, n) in drop:
+            print(f"    除外 {subset}: {n:,} 件しか採点していない  "
+                  f"({os.path.basename(path)})")
 
     for spec in args.predictions_dir:
         series, input_form, positions, root = spec.split(":", 3)
