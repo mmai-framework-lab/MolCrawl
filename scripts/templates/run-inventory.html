@@ -1,0 +1,236 @@
+<title>学習 run 一覧</title>
+<style>
+:root{
+  --ground:#f3f4f6; --surface:#ffffff; --surface-2:#e8eaee; --surface-3:#f7f8fa;
+  --ink:#161a1f; --ink-2:#3b424b; --muted:#69707a;
+  --line:#d9dde3; --line-2:#c0c6ce;
+  --accent:#26506e; --accent-w:#e5edf4;
+  --live:#2b6a45; --live-w:#e3efe8;
+  --copy:#6d6357; --copy-w:#eeeae4;
+  --warn:#9c3f31; --warn-w:#f7e6e3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0f1215; --surface:#181c21; --surface-2:#212730; --surface-3:#1c2128;
+    --ink:#e6eaef; --ink-2:#c3cad3; --muted:#8d95a0;
+    --line:#293038; --line-2:#3b434e;
+    --accent:#79aed4; --accent-w:#152734;
+    --live:#75bd97; --live-w:#152a1f;
+    --copy:#a89a89; --copy-w:#272219;
+    --warn:#e28a7c; --warn-w:#31201e;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0f1215; --surface:#181c21; --surface-2:#212730; --surface-3:#1c2128;
+  --ink:#e6eaef; --ink-2:#c3cad3; --muted:#8d95a0;
+  --line:#293038; --line-2:#3b434e;
+  --accent:#79aed4; --accent-w:#152734;
+  --live:#75bd97; --live-w:#152a1f;
+  --copy:#a89a89; --copy-w:#272219;
+  --warn:#e28a7c; --warn-w:#31201e;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",system-ui,-apple-system,sans-serif;
+  font-size:14px;line-height:1.7;font-feature-settings:"palt" 1}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:76rem;margin:0 auto;padding:0 18px 70px}
+
+.mast{padding:38px 0 18px;border-bottom:2px solid var(--ink);margin-bottom:20px}
+.eyebrow{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
+h1{margin:0 0 10px;font-size:clamp(23px,4vw,32px);line-height:1.28;font-weight:600}
+.dek{margin:0;max-width:62ch;color:var(--ink-2);font-size:14.5px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin:18px 0}
+.stat{background:var(--surface);padding:12px 14px}
+.stat .k{display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:3px}
+.stat .v{font-family:ui-monospace,monospace;font-size:21px;line-height:1.1;font-weight:500;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:11px;color:var(--muted);margin-left:2px;font-family:inherit}
+.stat.w .v{color:var(--warn)}
+
+.ctl{display:flex;flex-wrap:wrap;gap:9px 12px;align-items:center;margin:0 0 12px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:3px}
+.ctl input[type=search]{flex:1 1 15rem;min-width:11rem;font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line-2);border-radius:3px;background:var(--surface-3);color:var(--ink)}
+.ctl input[type=search]::placeholder{color:var(--muted)}
+.ctl label{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.03em}
+.ctl select{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--line-2);border-radius:3px;background:var(--surface-3);color:var(--ink)}
+.ctl .cnt{font-family:ui-monospace,monospace;font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.ctl .cnt b{color:var(--ink);font-weight:600}
+button.rst{font:inherit;font-size:12px;padding:5px 11px;border:1px solid var(--line-2);border-radius:3px;background:var(--surface-3);color:var(--ink-2);cursor:pointer}
+button.rst:hover{background:var(--accent-w);border-color:var(--accent);color:var(--accent)}
+
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:82rem;font-size:12.5px}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap;
+  border-bottom:1px solid var(--line-2);padding:9px 10px;text-align:left;cursor:pointer;user-select:none}
+thead th:hover{color:var(--accent)}
+thead th .ar{opacity:.35;margin-left:4px;font-size:9px}
+thead th.on{color:var(--accent)} thead th.on .ar{opacity:1}
+td{padding:6px 10px;border-bottom:1px solid var(--line);line-height:1.6;vertical-align:top}
+tbody tr:nth-child(even){background:var(--surface-3)}
+tbody tr:hover{background:var(--accent-w)}
+td.n{text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.run{font-family:ui-monospace,monospace;font-size:11.5px;word-break:break-all;min-width:17rem}
+td.dt{font-family:ui-monospace,monospace;white-space:nowrap;font-size:11.5px}
+.b{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.03em;padding:1px 7px;border-radius:2px;white-space:nowrap;line-height:1.6}
+.b.live{background:var(--live-w);color:var(--live)}
+.b.copy{background:var(--copy-w);color:var(--copy)}
+.b.none{background:var(--warn-w);color:var(--warn)}
+.b.ok{background:var(--surface-2);color:var(--muted)}
+.b.man{background:var(--live-w);color:var(--live)}
+.empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+.note{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--surface);border-radius:0 3px 3px 0;padding:13px 17px;margin:16px 0 0;font-size:13px;line-height:1.75}
+.note p{margin:0 0 8px;max-width:64ch} .note p:last-child{margin:0}
+.note .lab{display:block;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:5px;font-family:ui-monospace,monospace}
+.note.add{border-left-color:var(--live)}
+.note.add .lab{color:var(--live)}
+footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:var(--muted);font-size:11.5px;line-height:1.7}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <p class="eyebrow">MolCrawl · {{ASOF}} 時点</p>
+  <h1>学習 run 一覧</h1>
+  {{DEK}}
+</header>
+
+{{STATS}}
+
+<div class="ctl">
+  <input type="search" id="q" placeholder="run 名・ツリー・ホストで検索…" autocomplete="off">
+  <label for="fo">出自</label><select id="fo"><option value="">すべて</option><option>実走行</option><option>コピー</option></select>
+  <label for="ft">ツリー</label><select id="ft"><option value="">すべて</option></select>
+  <label for="fa">実装</label><select id="fa"><option value="">すべて</option><option>nanoGPT</option><option>HF</option></select>
+  <label for="fp">設定記録</label><select id="fp"><option value="">すべて</option><option value="なし">なし のみ</option><option value="run_manifest">manifest あり</option></select>
+  <label for="fb">バッチ</label><select id="fb"><option value="">すべて</option><option value="ne">2,560 以外</option><option value="un">不明</option></select>
+  <label for="fc">棚卸し</label><select id="fc"><option value="">すべて</option>{{COHORTS}}</select>
+  <button class="rst" id="rst">解除</button>
+  <span class="cnt"><b id="n">402</b> / 402 件</span>
+</div>
+
+<div class="tw">
+  <table>
+    <thead><tr>
+      <th data-k="0">ツリー<span class="ar">↕</span></th>
+      <th data-k="1">run<span class="ar">↕</span></th>
+      <th data-k="2">ホスト<span class="ar">↕</span></th>
+      <th data-k="3">出自<span class="ar">↕</span></th>
+      <th data-k="4" class="on">開始<span class="ar">↑</span></th>
+      <th data-k="5">終了<span class="ar">↕</span></th>
+      <th data-k="6">実時間<span class="ar">↕</span></th>
+      <th data-k="7">step<span class="ar">↕</span></th>
+      <th data-k="8">実装<span class="ar">↕</span></th>
+      <th data-k="9">実効バッチ<span class="ar">↕</span></th>
+      <th data-k="10">LR<span class="ar">↕</span></th>
+      <th data-k="11">seed<span class="ar">↕</span></th>
+      <th data-k="12">max_iters<span class="ar">↕</span></th>
+      <th data-k="13">設定の記録<span class="ar">↕</span></th>
+      <th data-k="15">データセット<span class="ar">↕</span></th>
+      <th data-k="14">曲線の記録<span class="ar">↕</span></th>
+    </tr></thead>
+    <tbody id="tb"></tbody>
+  </table>
+  <div class="empty" id="none" hidden>該当する run がありません</div>
+</div>
+
+<div class="note">
+  <span class="lab">列の読み方</span>
+  <p><strong>出自</strong> — 「持ち込み」は旧環境から <span class="m">2026-07-23</span> にコピーしたもので、<strong>mtime がコピー日に潰れているため実時間を算出できません</strong>（終了と実時間が「—」「不明」）。開始時刻だけはファイル名に残っています。</p>
+  <p><strong>実時間</strong> — 壁時計です。<strong>GPU-h ではありません。</strong>1 run が 4 GPU を占有するので、GPU-h はおおむね 4 倍になります。</p>
+  <p><strong>実効バッチ・LR・seed・max_iters</strong> — <strong>2026-08-31 に <code>ckpt.pt</code> と <code>training_args.bin</code> から回収した実走行値です</strong>（384 run、エラー 0）。config ファイルの値ではありません。<strong>2,560 以外は赤で示しています</strong> —— 旧世代のラダーはバッチが揃っておらず、旧 molecule_nat_lang は small 640 / medium 以上 160 でした。<code>training_args.bin</code> に GPU 数が無いため HF 側は <code>epoch × 行数 ÷ (per_device × grad_accum × step)</code> で逆算しており、<strong>逆算できなかった run は「—」</strong>です。nanoGPT は GPU 非依存。</p>
+  <p><strong>設定の記録</strong> — <span class="m">ckpt.pt(config)</span> と <span class="m">training_args</span> は<strong>バイナリで、grep も diff もできません</strong>。平文で読めるのは <span class="m">run_manifest</span> だけで、<strong>402 run 中 1 本</strong>です（<span class="m">#154</span> が 8/29 なので遡及しません）。<strong>「なし」の 18 run は設定を復元できません。</strong></p>
+  <p><strong>読んだデータセットは、どの run にも記録がありません</strong> — 回収した 384 run すべてを確認しました。nanoGPT の config 42 項目にあるのは <span class="m">dataset</span> という<strong>モダリティ名だけ</strong>で（<span class="m">genome_sequence</span> など）、<span class="m">out_dir</span> / <span class="m">tensorboard_dir</span> / <span class="m">pretrain_dir</span> は出力先です。HF の <span class="m">TrainingArguments</span> 122 項目に<strong>データセットの path は 1 つもありません</strong>（<span class="m">data</span> を含む key は <span class="m">data_seed</span> と <span class="m">dataloader_*</span> のみ）。そのため<strong>この表の run と、学習に使った成果物を突き合わせる手段が今はありません。</strong>同じ穴を <span class="m">#154</span> の manifest が塞ぎますが、遡及しません。</p>
+</div>
+
+<div class="note add">
+  <span class="lab">2026-09-01 追記 — この表が指す成果物の保全</span>
+  <p><strong>ここに並ぶ run の checkpoint を含め、<span class="m">learning_source*</span> 12 ツリーの全ファイルの MD5 を取りました。</strong>
+  <strong>96,805 ファイル / 29.47 TiB、読み取り失敗 0</strong>（<span class="m">job 73329</span>、54 分）。
+  全バイトのハッシュにサイズと mtime を添え、ディレクトリ単位の指紋も併記してあります。
+  台帳は <span class="m">tmp/learning-source-md5-2026-08-31.jsonl</span>。</p>
+  <p><strong>なぜ要るか</strong> — genome / protein / rna のデータセットは <span class="m">#134</span>（8/20、split に seed を入れた）より前の生成で、
+  <strong>同じスクリプトを流し直しても同じ分割になりません</strong>。今ディスクにあるものが唯一の原本です。
+  <strong>複製は取っていません。</strong>ハッシュは改変と消失を検出できますが、復元はできません。</p>
+  <p><strong>内訳</strong> — 成果物 <strong>21.60 TiB</strong> / キャッシュ類（<span class="m">_cache</span>・<span class="m">hf_cache</span>・pip・xdg・<span class="m">__pycache__</span>）<strong>7.87 TiB</strong>。
+  実体の重複は <strong>0.093 TiB</strong> しかありません —— 当初「重複 342.6 GiB」と見たものは<strong>大半がシンボリックリンク</strong>で、実体は 1 部だけでした。</p>
+  <p><strong>リンク切れが 4,841 本</strong> — genome 21 subset の <span class="m">extracted_files/</span> の FASTA が、旧マシンの絶対パス <span class="m">/work/hps0/…</span> を指したままです。
+  <strong>うち 4,832 本は実体が同じツリーの <span class="m">_og2_stage/batch*</span> にあり、貼り直せば通ります</strong>。本当に失われているのは 9 本で、NCBI の公開アセンブリです。
+  <strong>貼り直しはまだ行っていません。</strong>
+  なお <span class="m">parquet</span> 以降の工程は <strong>21 subset すべて実体が揃っています</strong>ので、学習に投入した側は欠けていません。</p>
+</div>
+
+{{NOTES}}
+
+<footer>{{FOOTER}}</footer>
+</div>
+
+<script>
+const D =
+{{ROWS}};
+const tb=document.getElementById("tb"), q=document.getElementById("q"),
+      fb=document.getElementById("fb"), fo=document.getElementById("fo"), ft=document.getElementById("ft"),
+      fa=document.getElementById("fa"), fp=document.getElementById("fp"),
+      fc=document.getElementById("fc"),
+      nEl=document.getElementById("n"), none=document.getElementById("none");
+const trees=[...new Set(D.map(r=>r[0]))].sort();
+for(const t of trees){const o=document.createElement("option");o.value=t;o.textContent=t||"(本体)";ft.appendChild(o);}
+let sortK=4, sortDir=1;
+const numeric=new Set([6,7,9,11,12]);
+function val(r,k){ if(!numeric.has(k)) return (r[k]||"").toLowerCase();
+  const v=parseFloat(r[k]); return isNaN(v)?-1:v; }
+function badge(v,cls){return `<span class="b ${cls}">${v}</span>`;}
+function recBadge(v){
+  if(v==="なし") return badge("なし","none");
+  if(v.includes("run_manifest")) return badge("manifest","man")+" "+`<span class="b ok">${v.replace("run_manifest+","")}</span>`;
+  return `<span class="b ok">${v}</span>`;
+}
+function render(){
+  const s=q.value.trim().toLowerCase();
+  let rows=D.filter(r=>{
+    if(fo.value && r[3]!==fo.value) return false;
+    if(ft.value!=="" && r[0]!==ft.value) return false;
+    if(fa.value && r[8]!==fa.value) return false;
+    if(fp.value==="なし" && r[13]!=="なし") return false;
+    if(fp.value==="run_manifest" && !r[13].includes("run_manifest")) return false;
+    if(fb.value==="ne" && (!r[9]||r[9]==="2560")) return false;
+    if(fb.value==="un" && r[9]) return false;
+    if(fc.value && r[16]!==fc.value) return false;
+    if(s && !(r[0]+" "+r[1]+" "+r[2]+" "+(r[15]||"")).toLowerCase().includes(s)) return false;
+    return true;
+  });
+  rows.sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);return (x<y?-1:x>y?1:0)*sortDir;});
+  nEl.textContent=rows.length;
+  none.hidden = rows.length>0;
+  tb.innerHTML = rows.map(r=>`<tr>
+    <td class="m" style="font-size:11px;white-space:nowrap">${r[0]||"(本体)"}</td>
+    <td class="run">${r[1]}</td>
+    <td class="m" style="font-size:11px">${r[2]}</td>
+    <td>${badge(r[3], r[3]==="実走行"?"live":"copy")}</td>
+    <td class="dt">${r[4]}</td>
+    <td class="dt">${r[5]}</td>
+    <td class="n">${r[6]==="不明"?'<span style="color:var(--muted)">不明</span>':r[6]+" h"}</td>
+    <td class="n">${r[7]||"—"}</td>
+    <td class="m" style="font-size:11px">${r[8]}</td>
+    <td class="n">${r[9]?(r[9]==="2560"?r[9]:'<span class="b none">'+r[9]+'</span>'):'<span style="color:var(--muted)">&mdash;</span>'}</td>
+    <td class="n" style="font-size:11px">${r[10]||"&mdash;"}</td>
+    <td class="n" style="font-size:11px">${r[11]||"&mdash;"}</td>
+    <td class="n" style="font-size:11px">${r[12]||"&mdash;"}</td>
+    <td class="m" style="font-size:10.5px">${r[15]?r[15]:'<span style="color:var(--muted)">&mdash;</span>'}</td>
+    <td>${recBadge(r[13])}</td>
+    <td class="m" style="font-size:10.5px;color:var(--muted)">${r[14]}</td>
+  </tr>`).join("");
+}
+document.querySelectorAll("thead th").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const k=+th.dataset.k;
+    if(k===sortK) sortDir*=-1; else {sortK=k; sortDir=1;}
+    document.querySelectorAll("thead th").forEach(o=>{o.classList.remove("on");o.querySelector(".ar").textContent="↕";});
+    th.classList.add("on"); th.querySelector(".ar").textContent = sortDir>0?"↑":"↓";
+    render();
+  });
+});
+[q,fo,ft,fa,fp,fb,fc].forEach(el=>el.addEventListener("input",render));
+document.getElementById("rst").addEventListener("click",()=>{q.value="";fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";render();});
+render();
+</script>
