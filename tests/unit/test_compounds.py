@@ -213,11 +213,15 @@ class TestCompoundsGPT2Verification:
 class TestCompoundsPerformance:
     """Performance tests for Compounds processing."""
 
-    def test_tokenization_speed(self, benchmark):
+    # Neither test runs a benchmark yet, so neither asks for the benchmark fixture.
+    # Asking for it made both error during setup instead of skipping: pytest-benchmark
+    # 4.x reads node._nodeid, which pytest 8.4 removed, and CI installs both unpinned.
+    # Whoever enables these takes the fixture back together with pytest-benchmark>=5.1.
+    def test_tokenization_speed(self):
         """Measure the speed of Tokenization."""
         pytest.skip("Benchmark to be implemented")
 
-    def test_scaffold_generation_speed(self, benchmark):
+    def test_scaffold_generation_speed(self):
         """Measure the speed of Scaffold generation."""
         from molcrawl.data.compounds.utils.preprocessing import prepare_scaffolds
 
