@@ -13,6 +13,10 @@
 #   sbatch --export=ALL,DATASET=<packed corpus>,PAIRS_ROOT=<Mol-Instructions dir>,\
 #          OUT=<json>,PAIR_INDEX_OUT=<json> workflows/molnl-pair-overlap.sbatch
 #
+# selfies is not in the training environment. Where it is installed as a plain
+# directory, carry it in on PYTHONPATH, which is appended to rather than replaced:
+#   --export=ALL,PYTHONPATH=<dir holding selfies>,DATASET=...
+#
 # Optional: SUBSET, SPLIT, SHOW_RECORDS (print this many records as read, which is how
 # the record form a retrieval measurement imitates is checked), CANONICAL_CORPUS=1
 # (canonicalise every corpus molecule as well -- adds about 40 minutes), PROCESSES,
