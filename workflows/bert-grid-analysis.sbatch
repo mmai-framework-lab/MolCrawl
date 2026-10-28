@@ -12,6 +12,11 @@
 #
 #   sbatch --export=ALL,GRID_CONFIG=<file.json>,GRID_TSV=<file.tsv>[,GRID_FIG_DIR=<dir>] \
 #          workflows/bert-grid-analysis.sbatch
+#
+# GRID_REDRAW_ONLY=1 draws from the TSV already on disk and does not re-derive
+# it. That is what re-rendering a figure for a finished report needs: the arms
+# have run further since the report was written, and a redraw must not move the
+# numbers the text around the figure quotes.
 set -eo pipefail
 
 : "${GRID_CONFIG:?set GRID_CONFIG to the JSON naming the run roots}"
@@ -34,7 +39,13 @@ cd "${REPO}"; mkdir -p workflows/slurm-logs
 
 echo "=== grid analysis on ${SLURMD_NODENAME} @ $(date -Is) ==="
 rc=0
-"${PYTHON}" scripts/bert_grid_summary.py --config "${GRID_CONFIG}" --out "${GRID_TSV}" || rc=$?
+if [ "${GRID_REDRAW_ONLY:-0}" = "1" ]; then
+  [ -f "${GRID_TSV}" ] || {
+    echo "GRID_REDRAW_ONLY=1 but ${GRID_TSV} is not a file" >&2; exit 1; }
+  echo "redraw only: ${GRID_TSV} is left exactly as it is"
+else
+  "${PYTHON}" scripts/bert_grid_summary.py --config "${GRID_CONFIG}" --out "${GRID_TSV}" || rc=$?
+fi
 if [ "${rc}" -eq 0 ] && [ -n "${GRID_FIG_DIR:-}" ]; then
   "${PYTHON}" scripts/plot_grid_analysis.py --summary "${GRID_TSV}" --out-dir "${GRID_FIG_DIR}" \
       --config "${GRID_CONFIG}" || rc=$?

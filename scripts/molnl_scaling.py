@@ -39,6 +39,8 @@ matplotlib.use("Agg")
 import japanize_matplotlib                           # noqa: E402,F401
 import matplotlib.pyplot as plt                      # noqa: E402
 
+from plot_eval_loss_series import write_caption  # noqa: E402  (one place writes premises)
+
 INK, INK_2, INK_3 = "#0f161a", "#53626c", "#8695a0"
 SURFACE, RULE = "#fcfcfb", "#d7e0e5"
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"]
@@ -180,16 +182,13 @@ def style(ax, xlabel, ylabel):
 
 
 def finish(fig, title, caption, path):
-    import textwrap
+    """Save the figure; the premises go beside it as text, never into it."""
     fig.suptitle(title, fontsize=13.5, fontweight="bold", color=INK, x=.012, ha="left", y=.985)
-    wrapped = "\n".join(textwrap.wrap(caption, width=132, break_long_words=True))
-    fig.subplots_adjust(bottom=max(.20, .10 + .035 * (wrapped.count("\n") + 1)))
-    fig.text(.012, .012, wrapped, fontsize=7.6, color=INK_3, ha="left", va="bottom",
-             linespacing=1.6)
     fig.patch.set_facecolor(SURFACE)
     fig.savefig(path, dpi=200, facecolor=SURFACE, bbox_inches="tight")
     plt.close(fig)
     print(f"  wrote {os.path.basename(path)}")
+    write_caption(path, caption)
 
 
 def envelope(arms):
