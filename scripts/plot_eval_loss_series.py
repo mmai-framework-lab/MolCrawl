@@ -502,7 +502,9 @@ def fig_points(cfg, out_dir):
             ax.annotate("", xy=(n, v * 0.985), xytext=(n, v),
                         arrowprops=dict(arrowstyle="->", color=c, lw=1.3))
         label = ser["label"]
-        if len(done) >= 2:
+        # The slope is only meaningful when x is a parameter count. A figure whose
+        # x axis is something else (a loss, a learning rate) switches it off.
+        if cfg.get("fit", True) and len(done) >= 2:
             lx = [math.log10(p[0]) for p in done]
             ly = [math.log10(p[1]) for p in done]
             mx, my = sum(lx) / len(lx), sum(ly) / len(ly)
