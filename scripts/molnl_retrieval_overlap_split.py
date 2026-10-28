@@ -92,8 +92,11 @@ def main() -> int:
             if abs(whole["recall@1"] - summary["recall@1"]) > 1e-9:
                 raise SystemExit(f"{d['label']} {direction}: ranks give "
                                  f"{whole['recall@1']} against {summary['recall@1']}")
+            # Not "1,000 pairs": BERT scores 250 queries in the description->molecule
+            # direction, and a row that says 1,000 next to a count of 250 reads as an
+            # error. The count stands in the pairs column; the name says which range.
             sets = {
-                "1,000 対すべて": list(per_query.values()),
+                "全体（採点したクエリ）": list(per_query.values()),
                 "895 対（コーパスに無い）": [r for q, r in per_query.items()
                                              if q not in inside],
                 "105 対（コーパスに在る）": [r for q, r in per_query.items()
