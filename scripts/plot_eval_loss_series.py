@@ -20,7 +20,6 @@ import argparse
 import glob
 import json
 import re
-import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -148,24 +147,47 @@ def style(ax, xlabel, ylabel):
         ax.set_ylabel(ylabel, color=INK_2, fontsize=9)
 
 
+CAPTION_SUFFIX = ".caption.txt"
+
+
+def caption_path(out) -> Path:
+    """Where a figure's premises live: beside the figure, under its own name."""
+    return Path(out).with_suffix(CAPTION_SUFFIX)
+
+
+def write_caption(out, caption) -> None:
+    """Write the premises as text next to the figure instead of into it.
+
+    The five conditions a loss figure has to carry (step / epoch / dataset /
+    global batch / tokens seen) are never drawn into the image. A premise that
+    has to be corrected the morning of a meeting cannot be corrected inside a
+    PNG, so it travels as text and the deck renderer places it as a textbox --
+    editable in PowerPoint, and on the slide rather than in the picture.
+    """
+    path = caption_path(out)
+    if not caption:
+        # A file left over from an earlier render would otherwise be read as if
+        # it belonged to the figure now on disk.
+        path.unlink(missing_ok=True)
+        return
+    path.write_text(caption.strip() + "\n", encoding="utf-8")
+    print(f"  wrote {path.name}")
+
+
 def finish(fig, title, caption, out, bottom=0.0):
+    """Save the figure, and write its premises beside it as text.
+
+    ``bottom`` is still accepted: the callers reserve a strip for the caption
+    with tight_layout, and nothing is drawn in it now, so bbox_inches="tight"
+    crops it away. The axes box itself is unchanged, which keeps a figure
+    re-rendered today comparable with the same figure drawn before.
+    """
     fig.suptitle(title, fontsize=13.5, fontweight="bold", color=INK, x=.012, ha="left", y=.985)
-    # Wrap before drawing: bbox_inches="tight" sizes the canvas around a single
-    # long line, which stretches the figure to several times its intended width.
-    wrapped = "\n".join(textwrap.wrap(caption, width=132, break_long_words=True))
-    # Each wrapped line needs its own strip of canvas. A fixed margin fits two and
-    # lets a longer caption print over the x axis.
-    _lines = wrapped.count("\n") + 1
-    if _lines > 2:
-        # Never below what the caller asked for: this runs after tight_layout and
-        # would otherwise pull the axes back down onto a long caption.
-        fig.subplots_adjust(bottom=max(.16, bottom, .10 + .035 * _lines))
-    fig.text(.012, .012, wrapped, fontsize=7.6, color=INK_3, ha="left", va="bottom",
-             linespacing=1.6)
     fig.patch.set_facecolor(SURFACE)
     fig.savefig(out, dpi=200, facecolor=SURFACE, bbox_inches="tight")
     plt.close(fig)
     print(f"  wrote {out.name}")
+    write_caption(out, caption)
 
 
 def floors(ax, items, side="right"):
@@ -520,7 +542,9 @@ def fig_points(cfg, out_dir):
             ax.annotate("", xy=(n, v * 0.985), xytext=(n, v),
                         arrowprops=dict(arrowstyle="->", color=c, lw=1.3))
         label = ser["label"]
-        if len(done) >= 2:
+        # The slope is only meaningful when x is a parameter count. A figure whose
+        # x axis is something else (a loss, a learning rate) switches it off.
+        if cfg.get("fit", True) and len(done) >= 2:
             lx = [math.log10(p[0]) for p in done]
             ly = [math.log10(p[1]) for p in done]
             mx, my = sum(lx) / len(lx), sum(ly) / len(ly)

@@ -30,14 +30,21 @@ matplotlib.use("Agg")
 import japanize_matplotlib  # noqa: F401  (registers a CJK font)
 import matplotlib.pyplot as plt
 
-from plot_eval_loss_series import INK_2, SERIES, finish, floors, style, write_tsv
+from plot_eval_loss_series import INK_2, INK_3, SERIES, finish, floors, style, write_tsv
 
 PF_DAY = 8.64e19
 
 
 def rows_of(path: Path):
+    """Rows of a TSV, ignoring the "#" preamble some of these files carry.
+
+    Several workstreams write the run's conditions as comment lines above the
+    header. Feeding those to DictReader makes the first comment the header and
+    every column disappears.
+    """
     with open(path, encoding="utf-8") as fh:
-        return list(csv.DictReader(fh, delimiter="\t"))
+        lines = [line for line in fh if not line.startswith("#")]
+    return list(csv.DictReader(lines, delimiter="\t"))
 
 
 def select(rows, where: dict):
@@ -147,6 +154,90 @@ def fig_groups(rows, cfg, out_dir):
               ["group", "member", "step", "pfdays", "value"])
 
 
+def fig_panels(rows, cfg, out_dir):
+    """One panel per model size, the learning rates drawn inside it.
+
+    The appendix view: a reader checking one size's sweep follows a colour inside
+    a panel, which is what this is for. The cross-size claim belongs to the
+    figures that overlay sizes, not here.
+    """
+    groups = cfg["panels"]
+    cols = cfg.get("cols") or min(len(groups), 4)
+    rows_n = (len(groups) + cols - 1) // cols
+    fig, axes = plt.subplots(rows_n, cols,
+                             figsize=(cfg.get("panel_w", 4.6) * cols,
+                                      cfg.get("panel_h", 3.4) * rows_n + .8),
+                             squeeze=False)
+    lr_col = cfg.get("lr_column", "lr")
+    drawn = []
+    for i, g in enumerate(groups):
+        ax = axes[i // cols][i % cols]
+        sel = select(rows, g["where"])
+        rates = sorted({r[lr_col] for r in sel}, key=lambda v: float(v))
+        for j, rate in enumerate(rates):
+            spec = {"where": {**g["where"], lr_col: rate},
+                    "params": g.get("params", cfg.get("params")),
+                    "tokens_per_step": g.get("tokens_per_step", cfg.get("tokens_per_step"))}
+            pts = curve(rows, cfg, spec)
+            if not pts:
+                continue
+            ax.plot([p[0] for p in pts], [p[1] for p in pts], color=SERIES[j % len(SERIES)],
+                    linewidth=1.5, zorder=3, label=f"{float(rate):g}")
+            drawn += [{"panel": g["title"], "lr": rate, "step": p[2],
+                       "pfdays": f"{p[0]:.6f}", "value": f"{p[1]:.6f}"} for p in pts]
+        ax.set_title(g["title"], fontsize=cfg.get("title_size", 10.5), color=INK_2, loc="left", pad=6)
+        axes_common(ax, cfg, cfg.get("xlabel", "学習に使った計算量（PF-days、C = 6ND）")
+                    if i // cols == rows_n - 1 else "")
+        if i % cols:
+            ax.set_ylabel("")
+        ax.legend(frameon=False, fontsize=8.5, labelcolor=INK_2, title=cfg.get("legend_title", "学習率"),
+                  title_fontsize=8, loc=cfg.get("legend_loc", "lower left"))
+    for k in range(len(groups), rows_n * cols):
+        axes[k // cols][k % cols].axis("off")
+    fig.tight_layout(rect=(0, cfg.get("rect_bottom", .22), 1, .95))
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"], bottom=cfg.get("rect_bottom", .22))
+    if cfg.get("tsv", True):
+        write_tsv(out_dir / Path(cfg["file"]).with_suffix(".tsv").name, drawn,
+                  ["panel", "lr", "step", "pfdays", "value"])
+
+
+def fig_ecdf(rows, cfg, out_dir):
+    """How a per-assay score is distributed, one line per model.
+
+    A mean over 217 assays hides that the spread is wider than the gap between
+    models. The cumulative curve puts both on the same picture: the horizontal
+    distance between two lines is the difference, the slope is the spread.
+    """
+    fig, ax = plt.subplots(figsize=(cfg.get("width", 10.5), cfg.get("height", 6.2)))
+    value_col = cfg.get("value_column", "value")
+    drawn = []
+    for i, ser in enumerate(cfg["series"]):
+        vals = sorted(float(r[value_col]) for r in select(rows, ser["where"])
+                      if r[value_col] not in ("", "nan"))
+        if not vals:
+            print(f"  ! no rows: {ser['label']}")
+            continue
+        ys = [(k + 1) / len(vals) for k in range(len(vals))]
+        ax.step(vals, ys, where="post", color=SERIES[i % len(SERIES)], linewidth=1.8,
+                label=f"{ser['label']}（n={len(vals)}）")
+        mid = vals[len(vals) // 2]
+        print(f"    {ser['label'][:28]:30s} n={len(vals):3} 中央値={mid:.4f} "
+              f"平均={sum(vals) / len(vals):.4f}")
+        drawn += [{"series": ser["label"], "value": f"{v:.6f}", "cumulative": f"{y:.4f}"}
+                  for v, y in zip(vals, ys)]
+    if cfg.get("vline") is not None:
+        ax.axvline(cfg["vline"], color=INK_3, linewidth=1, linestyle=(0, (6, 4)), zorder=2)
+    ax.set_xlim(*cfg.get("xlim", (-0.4, 0.9)))
+    ax.set_ylim(0, 1)
+    style(ax, cfg["xlabel"], cfg["ylabel"])
+    ax.legend(frameon=False, fontsize=10, labelcolor=INK_2, title=cfg.get("legend_title"),
+              title_fontsize=9.5, loc=cfg.get("legend_loc", "upper left"))
+    fig.tight_layout(rect=(0, cfg.get("rect_bottom", .20), 1, .95))
+    finish(fig, cfg["title"], cfg["caption"], out_dir / cfg["file"], bottom=cfg.get("rect_bottom", .20))
+    write_tsv(out_dir / Path(cfg["file"]).with_suffix(".tsv").name, drawn,
+              ["series", "value", "cumulative"])
+
+
 def fig_points(rows, cfg, out_dir):
     fig, ax = plt.subplots(figsize=(cfg.get("width", 10.5), cfg.get("height", 6.4)))
     value_col = cfg.get("value_column", "value")
@@ -191,7 +282,8 @@ def fig_points(rows, cfg, out_dir):
               ["series", "x", "best", "n_points"])
 
 
-MODE = {"series": fig_series, "groups": fig_groups, "points": fig_points}
+MODE = {"series": fig_series, "groups": fig_groups, "points": fig_points,
+        "panels": fig_panels, "ecdf": fig_ecdf}
 
 
 def main() -> int:

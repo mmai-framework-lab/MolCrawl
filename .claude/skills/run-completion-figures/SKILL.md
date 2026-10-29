@@ -68,6 +68,13 @@ The old cut -- a panel per size with the rates coloured inside it -- still belon
 in an appendix, for reading one size's rate sweep. It is not the figure a size
 comparison is made from, because the eye cannot carry a colour across panels.
 
+**The caption is never drawn into the figure.** `finish()` writes it to
+`<figure>.caption.txt` beside the PNG and draws nothing at the foot of the image;
+the deck renderer reads that file and puts the text on the slide as a textbox.
+The premises get re-worded up to the morning of the meeting, and a PNG cannot be
+corrected in PowerPoint -- so they travel as text, and nothing is ever re-typed
+from a figure into a slide.
+
 The caption carries, in this order: max_steps and epochs, the training set in
 tokens and sequences, the global batch, the tokens seen at completion, the
 definition of the unit (1 PF-day = 10^15 FLOP/s x 86,400 s = 8.64e19), where N
@@ -120,6 +127,7 @@ Three things to get right before quoting a FLOPs number:
 | 4 | Best and final values are not mixed in one table, and the evaluation set and scored tokens are the same across the compared runs | MLM scores 20% of tokens; an autoregressive loss scores all of them |
 | 5 | No ordering is claimed without seed variance behind it (3 seeds minimum), and the spread is stated | differences of 0.0001 have been quoted against a seed spread of 0.0006-0.0011 |
 | 6 | The five conditions are in the caption: step / epoch / training dataset / global batch / tokens seen. Units are nats/token, rows are sequences | |
+| 6b | The caption is in the `.caption.txt` beside the figure and reaches the slide as editable text, not as pixels inside the PNG | a premise corrected an hour before the meeting must not need the figure re-rendered |
 | 7 | The model-free floor is drawn, per modality | a loss has no meaning without the value a model that learned nothing reaches |
 | 8 | Runs still going, runs cut short, and bounds that were never crossed are marked as such (an arrow, not a point) | |
 | 9 | Counts are recomputed from the table, never carried over from the previous report | "15 collapsed" survived three revisions after it had become 25 |

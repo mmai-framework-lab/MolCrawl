@@ -8,12 +8,12 @@ there is a floor at all.
 
 from __future__ import annotations
 
-import textwrap
-
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+
+from plot_eval_loss_series import write_caption  # noqa: E402  (one place writes premises)
 
 INK = "#222222"
 SIZE_COLOUR = {"small": "#1f6fb4", "medium": "#c8571b", "large": "#2e7d32",
@@ -116,10 +116,10 @@ def floor_line(ax, value, name):
 
 
 def save(fig, ax, title, note, path):
+    """Save the figure; ``note`` is written beside it, not drawn inside it."""
     ax.set_title(title, fontsize=11, color=INK, loc="left")
-    lines = [ln for raw in note.split("\n") for ln in textwrap.wrap(raw, 112)]
-    fig.text(0.012, 0.012, "\n".join(lines), fontsize=7.5, color="#666666", va="bottom")
-    fig.tight_layout(rect=(0, 0.035 + 0.026 * len(lines), 1, 1))
+    fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
+    write_caption(path, note)
     return path
