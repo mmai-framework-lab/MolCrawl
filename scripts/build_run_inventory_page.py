@@ -28,8 +28,19 @@ from pathlib import Path
 
 PREFIX = "learning_source"
 # The published row: tree, run, host, origin, start, end, hours, steps, arch,
-# batch, lr, seed, max_iters, params_rec, curve_rec -- then the three this build adds.
-DATASET, COHORT, DOWNSTREAM = 15, 16, 17
+# batch, lr, seed, max_iters, params_rec, curve_rec -- then the four this build adds.
+DATASET, COHORT, DOWNSTREAM, HEALTH = 15, 16, 17, 18
+
+# How the checkpoint-metric audit's verdict reads in the table. A run whose
+# saved checkpoint is not the minimum of the metric it was judged on cannot be
+# quoted as that minimum, and the table has to say so on the row itself.
+HEALTH_LABEL = {
+    "yes": ("一致", "ok"),
+    "no judged metric in history": ("採点指標なし", "warn"),
+    "n/a (§2: not through this decision)": ("対象外", "na"),
+}
+HEALTH_GONE = ("最良が消滅", "bad")      # the judged minimum has no checkpoint left
+HEALTH_OTHER = ("保存が別 step", "bad")  # it has one, at a step that was not saved as best
 
 # What the page says about the evaluations it cannot join yet. Named one by one,
 # because "the rest" would hide which evaluation is missing and why.
@@ -59,6 +70,46 @@ def to_row(r, cohort):
             str(r["batch"] or ""), str(r["lr"] or ""), str(r["seed"] or ""),
             str(r["max_iters"] or ""), r["params_rec"], r["curve_rec"],
             r["dataset"], cohort]
+
+
+def tree_and_run(path: str):
+    """(tree as the table prints it, run) from an absolute run directory.
+
+    Found by name rather than by cutting a prefix: these paths were written by
+    whichever checkout ran the audit.
+    """
+    parts = Path(path).parts
+    for i, part in enumerate(parts):
+        if part.startswith(PREFIX):
+            return suffix(part), str(Path(*parts[i + 1:])) if i + 1 < len(parts) else ""
+    return "", path
+
+
+def load_health(path: Path):
+    """(tree, run) -> (label, css class, what the verdict rests on).
+
+    The audit records one run per entry with the directory it read, so the key is
+    the same pair the run scan writes and nothing has to be matched by name.
+    """
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    out = {}
+    for r in doc.get("runs", []):
+        verdict = r.get("match")
+        if verdict == "no":
+            label, cls = (HEALTH_GONE if r.get("checkpoint_at_judged_min") in (None, "")
+                          else HEALTH_OTHER)
+        else:
+            label, cls = HEALTH_LABEL.get(verdict, (verdict or "", "na"))
+        judged = r.get("judged_on") or "—"
+        jmin = r.get("judged_min") or {}
+        detail = (f"採点指標 {judged}／保存された checkpoint step "
+                  f"{r.get('best_model_checkpoint_step')}")
+        if jmin.get("step") is not None:
+            detail += f"／採点最小は step {jmin['step']}"
+            if jmin.get("value") is not None:
+                detail += f"（{jmin['value']:.6g}）"
+        out[tree_and_run(r.get("run_dir", ""))] = (label, cls, detail)
+    return out, len(doc.get("unreadable", []))
 
 
 def load_downstream(path: Path):
@@ -112,6 +163,7 @@ def main() -> int:
     ap.add_argument("--old-rows", required=True)
     ap.add_argument("--new-tsv", required=True)
     ap.add_argument("--downstream", required=True)
+    ap.add_argument("--health", required=True)
     ap.add_argument("--template", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--asof", required=True)
@@ -121,6 +173,7 @@ def main() -> int:
     old = json.loads(Path(args.old_rows).read_text(encoding="utf-8"))
     new = load_new(Path(args.new_tsv))
     down = load_downstream(Path(args.downstream))
+    health, unreadable = load_health(Path(args.health))
     old_cohort, new_cohort = f"〜{args.previous}", f"{args.previous} 以降"
 
     # (tree, run) -> the evaluations that scored it. The same pair is the key on
@@ -132,6 +185,10 @@ def main() -> int:
     def mark(key):
         return "／".join(sorted(evals.get(key, ())))
 
+    def health_of(key):
+        label, cls, detail = health.get(key, ("", "", ""))
+        return [label, cls, detail]
+
     rows, seen = [], set()
     missing = []
     for r in old:
@@ -140,12 +197,21 @@ def main() -> int:
         hit = new.get(key)
         if hit is None:
             missing.append(f"{r[0] or '(本体)'}/{r[1]}")
-        rows.append(list(r) + [hit["dataset"] if hit else "", old_cohort, mark(key)])
-    added = [to_row(r, new_cohort) + [mark(k)] for k, r in new.items() if k not in seen]
+        rows.append(list(r) + [hit["dataset"] if hit else "", old_cohort, mark(key)]
+                    + health_of(key))
+    added = [to_row(r, new_cohort) + [mark(k)] + health_of(k)
+             for k, r in new.items() if k not in seen]
     rows.extend(added)
 
-    joined = {k for k in evals if k in {(r[0], r[1]) for r in rows}}
+    here = {(r[0], r[1]) for r in rows}
+    joined = {k for k in evals if k in here}
     unjoined = sorted(k for k in evals if k not in joined)
+    h_joined = sorted(k for k in health if k not in here)
+    h_counts: dict[str, int] = {}
+    for r in rows:
+        if r[HEALTH]:
+            h_counts[r[HEALTH]] = h_counts.get(r[HEALTH], 0) + 1
+    bad = h_counts.get(HEALTH_GONE[0], 0) + h_counts.get(HEALTH_OTHER[0], 0)
 
     live = sum(1 for r in rows if r[3] == "実走行")
     copied = sum(1 for r in rows if r[3] == "コピー")
@@ -163,6 +229,7 @@ def main() -> int:
              + stat("manifest あり", f"{manifest:,}")
              + stat("記録なし", f"{norec:,}", warn=True)
              + stat("下流あり", f"{len(joined):,}")
+             + stat("採用が不一致", f"{bad:,}", warn=True)
              + "</div>")
 
     # What the period added, counted from the rows rather than recalled.
@@ -200,6 +267,32 @@ def main() -> int:
   <span class="m">training_args.bin</span> から回収したもので、<strong>今回の走査では復元できません</strong>
   （manifest が無いため）。棚卸し列でどちらの版の行かを絞り込めます。
   {"<strong>前回の表にあって、今回ディスク上に見つからなかった run が " + str(len(missing)) + " 本あります</strong>（" + "、".join("<span class='m'>" + html.escape(m) + "</span>" for m in missing) + "）。行は残してあります。" if missing else "前回の表の run は全て今回も見つかりました。"}</p>
+</div>'''
+
+    audited = sum(1 for r in rows if r[HEALTH])
+    tally = "".join(
+        f'<tr><td>{html.escape(k)}</td><td class="n">{v}</td></tr>'
+        for k, v in sorted(h_counts.items(), key=lambda kv: -kv[1]))
+    healthnote = f'''<div class="note warnbox">
+  <span class="lab">採用した checkpoint が、採点した指標の最小かどうか</span>
+  <p><strong>{audited:,} run を照合し、{bad:,} run が一致しませんでした。</strong>
+  「採用」列に出しています。<strong>この {bad:,} run は、その run の最良値として引用できません</strong> ——
+  保存判定が追っていた指標と、採点に使った指標が別だったためです。</p>
+  <div class="tw" style="margin:10px 0"><table style="min-width:0">
+  <thead><tr><th>照合結果</th><th style="text-align:right">run</th></tr></thead>
+  <tbody>{tally}</tbody></table></div>
+  <p><strong>不一致の内訳は 2 通りで、重いのは前者です。</strong>
+  <strong>「最良が消滅」</strong>は、採点指標が最小になった step に checkpoint が残っていないもの
+  （評価は走ったが、その step で保存されなかった）。<strong>重みが無いので採り直せません。</strong>
+  <strong>「保存が別 step」</strong>は checkpoint はあるが、最良として記録された step が別のもので、
+  こちらは選び直せます。</p>
+  <p><strong>「対象外」はこの判定を通らない run、「採点指標なし」は履歴にその指標が無い run です。</strong>
+  空欄は照合していない run —— 照合は {audited:,} run が対象で、
+  目録の残りは対象外です（照合側にあって目録に無い run は {len(h_joined)} 本）。
+  読めなかったファイルが {unreadable} 件あります。</p>
+  <p>出所は <span class="m">report/checkpoint-metric-match-240464.json</span>
+  （同じ照合が 3 本ありますが、<strong>240464 が最新で <span class="m">seed_configured</span> などの項目が増えた版</strong>です。
+  他の 2 本との差は、進んだ 3 run と増えた項目だけで、判定は同じです）。</p>
 </div>'''
 
     mods = ", ".join(sorted({r["modality"] for r in down}))
@@ -241,7 +334,7 @@ def main() -> int:
     page = Path(args.template).read_text(encoding="utf-8")
     for key, value in (("{{ASOF}}", args.asof), ("{{DEK}}", dek), ("{{STATS}}", stats),
                        ("{{COHORTS}}", cohorts), ("{{NOTES}}", notes), ("{{FOOTER}}", footer),
-                       ("{{DOWNSTREAM}}", downstream),
+                       ("{{DOWNSTREAM}}", downstream), ("{{HEALTH}}", healthnote),
                        ("{{ROWS}}", json.dumps(rows, ensure_ascii=False, separators=(",", ":")))):
         assert key in page, key
         page = page.replace(key, value)
@@ -249,6 +342,9 @@ def main() -> int:
     print(f"wrote {args.out}  {len(rows):,} run（追加 {len(added):,}／欠落 {len(missing)}）")
     print(f"  下流 {len(down):,} 行 / {len(joined):,} run に結合"
           + (f"／目録に無い run {len(unjoined)}: {unjoined}" if unjoined else "／欠落 0"))
+    print(f"  採用の照合 {audited:,} run（不一致 {bad:,}）"
+          + (f"／目録に無い run {len(h_joined)}" if h_joined else "／欠落 0")
+          + f"／読めなかったファイル {unreadable}")
     return 0
 
 

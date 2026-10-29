@@ -79,6 +79,12 @@ td.dt{font-family:ui-monospace,monospace;white-space:nowrap;font-size:11.5px}
 .b.ok{background:var(--surface-2);color:var(--muted)}
 .b.man{background:var(--live-w);color:var(--live)}
 .b.ds{background:var(--accent-w);color:var(--accent)}
+.b.bad{background:var(--warn-w);color:var(--warn)}
+.b.na{background:var(--surface-2);color:var(--muted)}
+.b.warn{background:var(--copy-w);color:var(--copy)}
+.note.warnbox{border-left-color:var(--warn)}
+.note.warnbox .lab{color:var(--warn)}
+td.hl{cursor:help}
 h2{margin:36px 0 8px;padding-top:14px;border-top:2px solid var(--ink);font-size:19px;font-weight:600;line-height:1.3}
 table.ds{min-width:74rem}
 tr.grp td{background:var(--surface-2);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
@@ -117,6 +123,7 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
   <label for="fb">バッチ</label><select id="fb"><option value="">すべて</option><option value="ne">2,560 以外</option><option value="un">不明</option></select>
   <label for="fc">棚卸し</label><select id="fc"><option value="">すべて</option>{{COHORTS}}</select>
   <label for="fd">下流</label><select id="fd"><option value="">すべて</option><option value="y">あり のみ</option><option value="n">なし のみ</option></select>
+  <label for="fh">採用</label><select id="fh"><option value="">すべて</option><option value="bad">不一致 のみ</option><option value="一致">一致 のみ</option><option value="未">未照合 のみ</option></select>
   <button class="rst" id="rst">解除</button>
   <span class="cnt"><b id="n">402</b> / 402 件</span>
 </div>
@@ -139,6 +146,7 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
       <th data-k="12">max_iters<span class="ar">↕</span></th>
       <th data-k="13">設定の記録<span class="ar">↕</span></th>
       <th data-k="15">データセット<span class="ar">↕</span></th>
+      <th data-k="18">採用<span class="ar">↕</span></th>
       <th data-k="17">下流<span class="ar">↕</span></th>
       <th data-k="14">曲線の記録<span class="ar">↕</span></th>
     </tr></thead>
@@ -146,6 +154,8 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
   </table>
   <div class="empty" id="none" hidden>該当する run がありません</div>
 </div>
+
+{{HEALTH}}
 
 {{DOWNSTREAM}}
 
@@ -187,6 +197,7 @@ const tb=document.getElementById("tb"), q=document.getElementById("q"),
       fb=document.getElementById("fb"), fo=document.getElementById("fo"), ft=document.getElementById("ft"),
       fa=document.getElementById("fa"), fp=document.getElementById("fp"),
       fc=document.getElementById("fc"), fd=document.getElementById("fd"),
+      fh=document.getElementById("fh"),
       nEl=document.getElementById("n"), none=document.getElementById("none");
 const trees=[...new Set(D.map(r=>r[0]))].sort();
 for(const t of trees){const o=document.createElement("option");o.value=t;o.textContent=t||"(本体)";ft.appendChild(o);}
@@ -213,6 +224,9 @@ function render(){
     if(fc.value && r[16]!==fc.value) return false;
     if(fd.value==="y" && !r[17]) return false;
     if(fd.value==="n" && r[17]) return false;
+    if(fh.value==="bad" && r[19]!=="bad") return false;
+    if(fh.value==="一致" && r[18]!=="一致") return false;
+    if(fh.value==="未" && r[18]) return false;
     if(s && !(r[0]+" "+r[1]+" "+r[2]+" "+(r[15]||"")+" "+(r[17]||"")).toLowerCase().includes(s)) return false;
     return true;
   });
@@ -234,6 +248,7 @@ function render(){
     <td class="n" style="font-size:11px">${r[11]||"&mdash;"}</td>
     <td class="n" style="font-size:11px">${r[12]||"&mdash;"}</td>
     <td class="m" style="font-size:10.5px">${r[15]?r[15]:'<span style="color:var(--muted)">&mdash;</span>'}</td>
+    <td class="hl" title="${(r[20]||"").replace(/"/g,"&quot;")}">${r[18]?badge(r[18],r[19]):'<span style="color:var(--muted)">&mdash;</span>'}</td>
     <td>${r[17]?r[17].split("／").map(e=>badge(e,"ds")).join(" "):'<span style="color:var(--muted)">&mdash;</span>'}</td>
     <td>${recBadge(r[13])}</td>
     <td class="m" style="font-size:10.5px;color:var(--muted)">${r[14]}</td>
@@ -250,12 +265,13 @@ document.querySelectorAll("#rt thead th").forEach(th=>{
     render();
   });
 });
-[q,fo,ft,fa,fp,fb,fc,fd].forEach(el=>el.addEventListener("input",render));
-document.getElementById("rst").addEventListener("click",()=>{q.value="";fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";fd.value="";render();});
+[q,fo,ft,fa,fp,fb,fc,fd,fh].forEach(el=>el.addEventListener("input",render));
+function clearFilters(){fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";fd.value="";fh.value="";}
+document.getElementById("rst").addEventListener("click",()=>{q.value="";clearFilters();render();});
 // The join, made usable: a run name in the downstream table searches for it above.
 document.querySelectorAll("td.xr").forEach(td=>{
   td.addEventListener("click",()=>{
-    q.value=td.dataset.run; fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";fd.value="";
+    q.value=td.dataset.run; clearFilters();
     render();
     document.querySelector(".ctl").scrollIntoView({behavior:"smooth",block:"center"});
   });
