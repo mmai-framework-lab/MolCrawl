@@ -30,6 +30,8 @@ PREFIX = "learning_source"
 # The published row: tree, run, host, origin, start, end, hours, steps, arch,
 # batch, lr, seed, max_iters, params_rec, curve_rec -- then the four this build adds.
 DATASET, COHORT, DOWNSTREAM, HEALTH = 15, 16, 17, 18
+# 19 and 20 carry the verdict's css class and the detail behind it.
+REPORT = 21
 
 # How the checkpoint-metric audit's verdict reads in the table. A run whose
 # saved checkpoint is not the minimum of the metric it was judged on cannot be
@@ -164,6 +166,8 @@ def main() -> int:
     ap.add_argument("--new-tsv", required=True)
     ap.add_argument("--downstream", required=True)
     ap.add_argument("--health", required=True)
+    ap.add_argument("--reports", required=True,
+                    help="JSON mapping a run to its per-run page, from run_report_pages.py")
     ap.add_argument("--template", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--asof", required=True)
@@ -174,6 +178,9 @@ def main() -> int:
     new = load_new(Path(args.new_tsv))
     down = load_downstream(Path(args.downstream))
     health, unreadable = load_health(Path(args.health))
+    # The index is keyed by the tree as the scan spells it; the table uses the suffix.
+    reports = {(suffix(k.split("\t")[0]), k.split("\t")[1]): v
+               for k, v in json.loads(Path(args.reports).read_text(encoding="utf-8")).items()}
     old_cohort, new_cohort = f"〜{args.previous}", f"{args.previous} 以降"
 
     # (tree, run) -> the evaluations that scored it. The same pair is the key on
@@ -198,8 +205,8 @@ def main() -> int:
         if hit is None:
             missing.append(f"{r[0] or '(本体)'}/{r[1]}")
         rows.append(list(r) + [hit["dataset"] if hit else "", old_cohort, mark(key)]
-                    + health_of(key))
-    added = [to_row(r, new_cohort) + [mark(k)] + health_of(k)
+                    + health_of(key) + [reports.get(key, "")])
+    added = [to_row(r, new_cohort) + [mark(k)] + health_of(k) + [reports.get(k, "")]
              for k, r in new.items() if k not in seen]
     rows.extend(added)
 
@@ -230,6 +237,7 @@ def main() -> int:
              + stat("記録なし", f"{norec:,}", warn=True)
              + stat("下流あり", f"{len(joined):,}")
              + stat("採用が不一致", f"{bad:,}", warn=True)
+             + stat("個別ページ", f"{len(reports):,}")
              + "</div>")
 
     # What the period added, counted from the rows rather than recalled.
@@ -267,6 +275,22 @@ def main() -> int:
   <span class="m">training_args.bin</span> から回収したもので、<strong>今回の走査では復元できません</strong>
   （manifest が無いため）。棚卸し列でどちらの版の行かを絞り込めます。
   {"<strong>前回の表にあって、今回ディスク上に見つからなかった run が " + str(len(missing)) + " 本あります</strong>（" + "、".join("<span class='m'>" + html.escape(m) + "</span>" for m in missing) + "）。行は残してあります。" if missing else "前回の表の run は全て今回も見つかりました。"}</p>
+</div>'''
+
+    starts = sorted(r[4] for r in rows if r[REPORT])
+    span = f"{starts[0]} 〜 {starts[-1]}" if starts else "—"
+    manifest_runs = sum(1 for r in rows if "run_manifest" in r[13])
+    reportnote = f'''<div class="note add">
+  <span class="lab">run ごとの条件のページ</span>
+  <p><strong>{len(reports):,} run に個別ページを付けました（{span} の run）。</strong>
+  表の run 名が<strong>下線付きのものはその run のページに飛びます</strong> ——
+  いつ・どのノードで走ったか、どの commit のコードか、どのデータセットを読んだか、
+  グローバルバッチの組み方、目的関数、採点と保存の規則、そして
+  <strong>既定から変えた設定だけ</strong>を並べてあります。</p>
+  <p><strong>対象は <span class="m">run_manifest.json</span> を持つ run だけです。</strong>
+  今 {manifest_runs:,} run あり、そのうち直近の {len(reports):,} 本を出しています
+  —— manifest の無い run は条件が記録されていないので、ページにしても空欄が並ぶだけです。
+  <strong>残りも同じ手順で増やせます。</strong></p>
 </div>'''
 
     audited = sum(1 for r in rows if r[HEALTH])
@@ -335,6 +359,7 @@ def main() -> int:
     for key, value in (("{{ASOF}}", args.asof), ("{{DEK}}", dek), ("{{STATS}}", stats),
                        ("{{COHORTS}}", cohorts), ("{{NOTES}}", notes), ("{{FOOTER}}", footer),
                        ("{{DOWNSTREAM}}", downstream), ("{{HEALTH}}", healthnote),
+                       ("{{REPORTS}}", reportnote),
                        ("{{ROWS}}", json.dumps(rows, ensure_ascii=False, separators=(",", ":")))):
         assert key in page, key
         page = page.replace(key, value)

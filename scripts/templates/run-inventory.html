@@ -91,6 +91,8 @@ tr.grp td{background:var(--surface-2);font-size:10.5px;letter-spacing:.09em;text
   color:var(--accent);font-weight:700;border-bottom:1px solid var(--line-2)}
 tr.grp .gn{float:right;font-family:ui-monospace,monospace;font-size:11px;font-weight:400;
   letter-spacing:0;text-transform:none;color:var(--muted)}
+a.rl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+a.rl:hover{background:var(--accent-w)}
 td.xr{cursor:pointer;color:var(--accent);text-decoration:underline dotted;text-underline-offset:2px}
 td.xr:hover{background:var(--accent-w)}
 table.ds thead th,.note thead th{cursor:default}
@@ -124,6 +126,7 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
   <label for="fc">棚卸し</label><select id="fc"><option value="">すべて</option>{{COHORTS}}</select>
   <label for="fd">下流</label><select id="fd"><option value="">すべて</option><option value="y">あり のみ</option><option value="n">なし のみ</option></select>
   <label for="fh">採用</label><select id="fh"><option value="">すべて</option><option value="bad">不一致 のみ</option><option value="一致">一致 のみ</option><option value="未">未照合 のみ</option></select>
+  <label for="fr">個別ページ</label><select id="fr"><option value="">すべて</option><option value="y">あり のみ</option></select>
   <button class="rst" id="rst">解除</button>
   <span class="cnt"><b id="n">402</b> / 402 件</span>
 </div>
@@ -154,6 +157,8 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
   </table>
   <div class="empty" id="none" hidden>該当する run がありません</div>
 </div>
+
+{{REPORTS}}
 
 {{HEALTH}}
 
@@ -197,7 +202,7 @@ const tb=document.getElementById("tb"), q=document.getElementById("q"),
       fb=document.getElementById("fb"), fo=document.getElementById("fo"), ft=document.getElementById("ft"),
       fa=document.getElementById("fa"), fp=document.getElementById("fp"),
       fc=document.getElementById("fc"), fd=document.getElementById("fd"),
-      fh=document.getElementById("fh"),
+      fh=document.getElementById("fh"), fr=document.getElementById("fr"),
       nEl=document.getElementById("n"), none=document.getElementById("none");
 const trees=[...new Set(D.map(r=>r[0]))].sort();
 for(const t of trees){const o=document.createElement("option");o.value=t;o.textContent=t||"(本体)";ft.appendChild(o);}
@@ -227,6 +232,7 @@ function render(){
     if(fh.value==="bad" && r[19]!=="bad") return false;
     if(fh.value==="一致" && r[18]!=="一致") return false;
     if(fh.value==="未" && r[18]) return false;
+    if(fr.value==="y" && !r[21]) return false;
     if(s && !(r[0]+" "+r[1]+" "+r[2]+" "+(r[15]||"")+" "+(r[17]||"")).toLowerCase().includes(s)) return false;
     return true;
   });
@@ -235,7 +241,7 @@ function render(){
   none.hidden = rows.length>0;
   tb.innerHTML = rows.map(r=>`<tr>
     <td class="m" style="font-size:11px;white-space:nowrap">${r[0]||"(本体)"}</td>
-    <td class="run">${r[1]}</td>
+    <td class="run">${r[21]?`<a class="rl" href="run/${r[21]}">${r[1]}</a>`:r[1]}</td>
     <td class="m" style="font-size:11px">${r[2]}</td>
     <td>${badge(r[3], r[3]==="実走行"?"live":"copy")}</td>
     <td class="dt">${r[4]}</td>
@@ -265,8 +271,8 @@ document.querySelectorAll("#rt thead th").forEach(th=>{
     render();
   });
 });
-[q,fo,ft,fa,fp,fb,fc,fd,fh].forEach(el=>el.addEventListener("input",render));
-function clearFilters(){fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";fd.value="";fh.value="";}
+[q,fo,ft,fa,fp,fb,fc,fd,fh,fr].forEach(el=>el.addEventListener("input",render));
+function clearFilters(){fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";fd.value="";fh.value="";fr.value="";}
 document.getElementById("rst").addEventListener("click",()=>{q.value="";clearFilters();render();});
 // The join, made usable: a run name in the downstream table searches for it above.
 document.querySelectorAll("td.xr").forEach(td=>{
