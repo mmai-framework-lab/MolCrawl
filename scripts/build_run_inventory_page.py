@@ -6,8 +6,14 @@ unchanged -- their learning rate, seed and batch were recovered from binaries in
 2026-08-31 and cannot be recovered again -- and the scan only adds runs that were
 not in it, plus the dataset each run read where the manifest now records it.
 
+The downstream evaluations come in as a second table, joined to the runs on
+(tree, run) -- the pair ``run_inventory_scan.py`` writes and
+``downstream_inventory_scan.py`` repeats -- so a score can be traced back to the
+run whose checkpoint was scored, and a run shows which evaluations used it.
+
     python scripts/build_run_inventory_page.py --old-rows <json> --new-tsv <tsv> \
-        --template <html> --out <html> --asof 2026-10-28 --previous 2026-09-01
+        --downstream <tsv> --template <html> --out <html> \
+        --asof 2026-10-28 --previous 2026-09-01
 
 Paths live in the inputs, not here: this repository is public.
 """
@@ -22,8 +28,15 @@ from pathlib import Path
 
 PREFIX = "learning_source"
 # The published row: tree, run, host, origin, start, end, hours, steps, arch,
-# batch, lr, seed, max_iters, params_rec, curve_rec -- then the two this build adds.
-DATASET, COHORT = 15, 16
+# batch, lr, seed, max_iters, params_rec, curve_rec -- then the three this build adds.
+DATASET, COHORT, DOWNSTREAM = 15, 16, 17
+
+# What the page says about the evaluations it cannot join yet. Named one by one,
+# because "the rest" would hide which evaluation is missing and why.
+UNJOINED = [
+    ("genome ClinVar", "series と subset で機種を表しており run 名が無い（84 行・BERT のみ）"),
+    ("rna 下流", "arch・size・lr・checkpoint のみで、生成元のスクリプトも特定できていない"),
+]
 
 
 def suffix(tree: str) -> str:
@@ -48,6 +61,46 @@ def to_row(r, cohort):
             r["dataset"], cohort]
 
 
+def load_downstream(path: Path):
+    """The downstream rows, with the tree spelled as the run table spells it."""
+    with open(path, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh, delimiter="\t"))
+    for r in rows:
+        r["tree"] = suffix(r["tree"])
+    return rows
+
+
+def downstream_table(rows):
+    """One table, grouped by modality. The run cell filters the table above it."""
+    out = []
+    for modality in sorted({r["modality"] for r in rows}):
+        group = [r for r in rows if r["modality"] == modality]
+        out.append(f'<tr class="grp"><td colspan="10">{html.escape(modality)}'
+                   f'<span class="gn">{len(group)} 行 / '
+                   f'{len({(r["tree"], r["run"]) for r in group})} run</span></td></tr>')
+        for r in sorted(group, key=lambda r: (r["eval"], r["arch"], r["size"], r["run"])):
+            value = r["value"] or "—"
+            if r["value"] and r["sd"]:
+                value += f' <small>±{r["sd"]}</small>'
+            control = (f'{html.escape(r["control"])} {r["control_value"]}'
+                       if r["control_value"] else "—")
+            base = (f'{html.escape(r["baseline"])} {r["baseline_value"]}'
+                    if r["baseline_value"] else "—")
+            out.append(
+                f'<tr><td>{html.escape(r["eval"])}</td>'
+                f'<td class="m" style="font-size:11px">{html.escape(r["metric"])}</td>'
+                f'<td class="m" style="font-size:11px">{html.escape(r["arch"])}</td>'
+                f'<td class="m" style="font-size:11px">{html.escape(r["size"])}</td>'
+                f'<td class="run xr" data-run="{html.escape(r["run"])}" '
+                f'title="この run で上の表を絞り込みます">{html.escape(r["run"])}</td>'
+                f'<td class="m" style="font-size:10.5px">{html.escape(r["checkpoint"]) or "—"}</td>'
+                f'<td class="n">{value}</td><td class="n">{control}</td>'
+                f'<td class="n">{base}</td>'
+                f'<td class="m" style="font-size:10px;color:var(--muted)">'
+                f'{html.escape(r["source"])}</td></tr>')
+    return "".join(out)
+
+
 def stat(label, value, unit="", warn=False):
     u = f'<small>{unit}</small>' if unit else ""
     cls = ' class="stat w"' if warn else ' class="stat"'
@@ -58,6 +111,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--old-rows", required=True)
     ap.add_argument("--new-tsv", required=True)
+    ap.add_argument("--downstream", required=True)
     ap.add_argument("--template", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--asof", required=True)
@@ -66,7 +120,17 @@ def main() -> int:
 
     old = json.loads(Path(args.old_rows).read_text(encoding="utf-8"))
     new = load_new(Path(args.new_tsv))
+    down = load_downstream(Path(args.downstream))
     old_cohort, new_cohort = f"〜{args.previous}", f"{args.previous} 以降"
+
+    # (tree, run) -> the evaluations that scored it. The same pair is the key on
+    # both sides, so a run that no evaluation names simply gets an empty cell.
+    evals: dict[tuple[str, str], set[str]] = {}
+    for r in down:
+        evals.setdefault((r["tree"], r["run"]), set()).add(r["eval"])
+
+    def mark(key):
+        return "／".join(sorted(evals.get(key, ())))
 
     rows, seen = [], set()
     missing = []
@@ -76,9 +140,12 @@ def main() -> int:
         hit = new.get(key)
         if hit is None:
             missing.append(f"{r[0] or '(本体)'}/{r[1]}")
-        rows.append(list(r) + [hit["dataset"] if hit else "", old_cohort])
-    added = [to_row(r, new_cohort) for k, r in new.items() if k not in seen]
+        rows.append(list(r) + [hit["dataset"] if hit else "", old_cohort, mark(key)])
+    added = [to_row(r, new_cohort) + [mark(k)] for k, r in new.items() if k not in seen]
     rows.extend(added)
+
+    joined = {k for k in evals if k in {(r[0], r[1]) for r in rows}}
+    unjoined = sorted(k for k in evals if k not in joined)
 
     live = sum(1 for r in rows if r[3] == "実走行")
     copied = sum(1 for r in rows if r[3] == "コピー")
@@ -95,6 +162,7 @@ def main() -> int:
              + stat("実時間", f"{hours:,.0f}", "h")
              + stat("manifest あり", f"{manifest:,}")
              + stat("記録なし", f"{norec:,}", warn=True)
+             + stat("下流あり", f"{len(joined):,}")
              + "</div>")
 
     # What the period added, counted from the rows rather than recalled.
@@ -134,8 +202,38 @@ def main() -> int:
   {"<strong>前回の表にあって、今回ディスク上に見つからなかった run が " + str(len(missing)) + " 本あります</strong>（" + "、".join("<span class='m'>" + html.escape(m) + "</span>" for m in missing) + "）。行は残してあります。" if missing else "前回の表の run は全て今回も見つかりました。"}</p>
 </div>'''
 
+    mods = ", ".join(sorted({r["modality"] for r in down}))
+    downstream = f'''<h2 id="ds">下流評価</h2>
+<p class="dek"><strong>{len(down):,} 行 / {len(joined):,} run。</strong>
+1 行が 1 つの評価 × 1 モデルで、採点した事前学習 run と checkpoint を持ちます。
+<strong>run 名をクリックすると、上の表をその run で絞り込みます。</strong>
+いま入っているのは {html.escape(mods)} です。</p>
+<div class="tw"><table class="ds">
+  <thead><tr><th>評価</th><th>指標</th><th>実装</th><th>サイズ</th><th>採点した run</th>
+  <th>checkpoint</th><th style="text-align:right">値</th><th style="text-align:right">対照</th>
+  <th style="text-align:right">参考</th><th>出所</th></tr></thead>
+  <tbody>{downstream_table(down)}</tbody>
+</table></div>
+<div class="note">
+  <span class="lab">何が入っていて、何が入っていないか</span>
+  <p><strong>下流側が run を記録している評価だけを入れています。</strong>
+  compounds は結果 JSON の <span class="m">models.&lt;name&gt;.run_dir</span> と
+  <span class="m">adopted_checkpoint</span>、molnl は <span class="m">model_path</span>（checkpoint まで）、
+  protein は <span class="m">scripts/protein_proteingym_tables.py</span> の
+  <span class="m">MODELS</span> が持つ run ディレクトリを<strong>取り込んで</strong>います（写していません）。
+  <strong>下流が指す {len(evals):,} run は全て目録の行に一致しました（欠落 0）。</strong></p>
+  <p><strong>入れていないもの:</strong></p>
+  <ul>{"".join(f"<li><strong>{html.escape(n)}</strong> — {why}</li>" for n, why in UNJOINED)}</ul>
+  <p><strong><span class="m">(arch, size, lr)</span> で突き合わせることはしていません。</strong>
+  この鍵は run を一意に決めません —— 目録には bert/small/4.1e-4 が 3 本
+  （本体・seed 1・seed 17）、bert/large/3.5e-5 が 2 本（本体・再走）あります。
+  表の値から当てにいかず、<strong>記録のある所だけを結んでいます。</strong></p>
+</div>'''
+
     footer = (f'集計元 <span class="m">report/run-inventory-{args.asof}.tsv</span>'
               f'（走査スクリプト <span class="m">scripts/run_inventory_scan.py</span>）'
+              f'<br>下流の集計元 <span class="m">report/downstream-inventory-2026-10-29.tsv</span>'
+              f'（走査スクリプト <span class="m">scripts/downstream_inventory_scan.py</span>）'
               f'<br>{args.previous} 時点の集計元 <span class="m">tmp/run-inventory-2026-08-31.tsv</span> ／ '
               f'保全台帳 <span class="m">tmp/learning-source-md5-2026-08-31.jsonl</span>')
 
@@ -143,11 +241,14 @@ def main() -> int:
     page = Path(args.template).read_text(encoding="utf-8")
     for key, value in (("{{ASOF}}", args.asof), ("{{DEK}}", dek), ("{{STATS}}", stats),
                        ("{{COHORTS}}", cohorts), ("{{NOTES}}", notes), ("{{FOOTER}}", footer),
+                       ("{{DOWNSTREAM}}", downstream),
                        ("{{ROWS}}", json.dumps(rows, ensure_ascii=False, separators=(",", ":")))):
         assert key in page, key
         page = page.replace(key, value)
     Path(args.out).write_text(page, encoding="utf-8")
     print(f"wrote {args.out}  {len(rows):,} run（追加 {len(added):,}／欠落 {len(missing)}）")
+    print(f"  下流 {len(down):,} 行 / {len(joined):,} run に結合"
+          + (f"／目録に無い run {len(unjoined)}: {unjoined}" if unjoined else "／欠落 0"))
     return 0
 
 
