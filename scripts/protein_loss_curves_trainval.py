@@ -29,16 +29,21 @@ BERTO = REPO / "learning_source_protein_runs/protein_sequence/bert-output"
 GPT2O = REPO / "learning_source_protein_runs/protein_sequence/gpt2-output"
 
 # size -> (run dir name, lr label). BERT large uses the seed-42 re-run (judgment §1).
+# xl added after completion (protein-judgment-2026-10-29 §4): BERT xl is the best
+# of the six-point LR grid, lr 2.4e-5 (protein_sequence-xl-lr2p4e5).
 BERT = {
     "small": ("protein_sequence-small-lr3e4", "3e-4"),
     "medium": ("protein_sequence-medium-lr1e4", "1e-4"),
     "large": ("protein_sequence-large-lr3p5e5-rerun", "3.5e-5"),
+    "xl": ("protein_sequence-xl-lr2p4e5", "2.4e-5"),
 }
-# GPT-2 uses the seed-42 fixed-val re-runs (judgment §1).
+# GPT-2 uses the seed-42 fixed-val re-runs (judgment §1); xl is the seed-42
+# fixed-val re-run protein_sequence-ex-large-rerun (protein-judgment-2026-10-29 §4).
 GPT2 = {
     "small": ("protein_sequence-small-rerun", "1.2e-3"),
     "medium": ("protein_sequence-medium-rerun", "6e-4"),
     "large": ("protein_sequence-large-rerun", "6e-4"),
+    "xl": ("protein_sequence-ex-large-rerun", "6e-4"),
 }
 COLUMNS = ["run", "arch", "size", "lr", "seed", "step", "split", "metric", "value", "eval_set", "job"]
 

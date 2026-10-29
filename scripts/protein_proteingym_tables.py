@@ -38,6 +38,15 @@ MODELS = [
     ("gpt2", "xl", "6e-4", 1001, "protein_sequence-gpt2-xl-best", RUNS_U50 / "retrain2-gpt2-xl-lr6e-4-s1001", "val_loss", "gpt2"),
 ]
 
+# protein-judgment-2026-10-29 §1/§3: BERT xl never learned in pretraining, so its
+# downstream was cut off (option c). Its ProteinGym spearman is not a confirmed value
+# and must not appear in the tables -- the 42/217 partial scores are dropped and the
+# spearman cells are left empty with this status. The pretrain loss (the LR-grid result,
+# received in §2) is kept, since it is a real measurement and is what marks the model
+# as non-learning.
+CUTOFF = {("bert", "xl")}
+CUTOFF_NOTE = "未測定・事前学習で非学習のため打ち切り"
+
 
 def bert_loss_step(run_dir):
     cks = sorted((int(os.path.basename(p).split("-")[-1]) for p in glob.glob(str(run_dir / "checkpoint-*"))), reverse=True)
@@ -122,6 +131,9 @@ def main():
             ck = m["step"] if m["step"] is not None else ""
             for a in assays:
                 nmut = ref.get(a, {}).get("DMS_total_number_mutants", "")
+                if (arch, size) in CUTOFF:
+                    fh.write(f"{arch}\t{size}\t{lr}\t{seed}\t{ck}\t{a}\t{nmut}\t\t{CUTOFF_NOTE}\n")
+                    continue
                 sp, _n = assay_spearman_n(slug, a)
                 if sp is not None:
                     fh.write(f"{arch}\t{size}\t{lr}\t{seed}\t{ck}\t{a}\t{nmut}\t{sp:.6f}\tdone\n")
@@ -135,13 +147,17 @@ def main():
         fh.write("arch\tsize\tlr\tcheckpoint\tpretrain_loss\tloss_metric\tn_assay_done\tspearman_mean\tspearman_median\tspearman_min\tspearman_max\tstatus\n")
         for arch, size, lr, _seed, slug, _predir, lossmetric, _kind in MODELS:
             m = meta[(arch, size)]
+            ck = m["step"] if m["step"] is not None else ""
+            loss = f"{m['loss']:.4f}" if m["loss"] is not None else ""
+            if (arch, size) in CUTOFF:
+                # keep the real pretrain loss; drop every ProteinGym cell.
+                fh.write(f"{arch}\t{size}\t{lr}\t{ck}\t{loss}\t{lossmetric}\t\t\t\t\t\t{CUTOFF_NOTE}\n")
+                continue
             vals = []
             for a in assays:
                 sp, _ = assay_spearman_n(slug, a)
                 if sp is not None:
                     vals.append(sp)
-            ck = m["step"] if m["step"] is not None else ""
-            loss = f"{m['loss']:.4f}" if m["loss"] is not None else ""
             if vals:
                 mean = f"{statistics.mean(vals):.4f}"
                 med = f"{statistics.median(vals):.4f}"
