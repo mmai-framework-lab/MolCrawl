@@ -30,6 +30,21 @@ Usage:
 
 The output dir is fixed to:
     <LEARNING_SOURCE_DIR>/genome_sequence/analysis/clinvar_evaluation/
+
+Older generation; not on any current reporting path.
+
+The checkpoint step is written into the path: ``checkpoint-60000`` for BERT and
+``checkpoint-50000`` for GPT-2, under whatever ``--base-dir`` /
+``LEARNING_SOURCE_DIR`` names, which for these runs was
+``learning_source_20260617/genome_sequence/``. **In those runs 60000 and 50000
+are the largest checkpoint, that is the final one, and not the adopted one.**
+
+No figure or table reported now comes from here. The current genome ClinVar
+path reads ``learning_source_genome_runs/`` and resolves each run's adopted
+checkpoint (``scripts/clinvar_zeroshot_bert_rescore.py``,
+``scripts/clinvar_linear_probe.py``); those two stop rather than fall back to
+the final step. This file is kept as the record of what produced the 2026-06
+numbers.
 """
 
 from __future__ import annotations

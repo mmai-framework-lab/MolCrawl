@@ -10,6 +10,10 @@
 #
 # The GPU is not used. gpu is the only partition with compute nodes here.
 #
+# The table carries one note line on what input_form means per series: the
+# column reads as "not matched" while each architecture is scored in its own
+# training-time form. The part the rows cannot say is passed in with --note.
+#
 # Required: RESULTS_ROOT. Optional: WINDOW_DIR, OUT, BERT_WINDOW_ONLY, WITH_EP3.
 
 set -uo pipefail
@@ -43,6 +47,12 @@ CMP_ARGS=()
 if [ -z "${BERT_WINDOW_ONLY:-}" ]; then
     CMP_ARGS+=(--predictions-dir "gpt2-ep9:bare:window:${RESULTS_ROOT}/clinvar-zeroshot-gpt2-ep9")
     CMP_ARGS+=(--predictions-dir "bert-w1026-variant:bare:variant:${RESULTS_ROOT}/clinvar-zeroshot-bert-w1026")
+    # The one series whose form is not its training-time one. The 2026-09-09
+    # evaluator passed add_special_tokens=True, and this tokeniser has [CLS]
+    # and [SEP] in its vocabulary but no post-processor template, so nothing
+    # was prepended: BERT read 1,024 bare bases. Checked by encoding a row
+    # (job 207150, scripts/check_clinvar_scored_position.py).
+    CMP_ARGS+=(--note "bert-w1026-variant は 2026-09-09 の評価経路で、BERT に 1,024 トークンをそのまま入れている。これは BERT の学習時の形ではない（このトークナイザは [CLS]/[SEP] を語彙に持つが後処理のテンプレートを持たず、add_special_tokens=True でも何も付かない）。")
     if [ -n "${WITH_EP3:-}" ]; then
         CMP_ARGS+=(--predictions-dir "gpt2:bare:window:${RESULTS_ROOT}/clinvar-zeroshot-gpt2-w1024")
     fi

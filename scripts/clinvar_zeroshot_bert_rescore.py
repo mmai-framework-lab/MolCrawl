@@ -81,20 +81,36 @@ def read_rows(path, chroms, limit=None):
 
 
 def adopted_checkpoint(run_dir):
-    """The checkpoint the run adopted, from the newest trainer_state."""
+    """The checkpoint the run adopted, from the newest trainer_state.
+
+    Returns (path, step). The run moved between checkouts after it finished, so
+    ``best_model_checkpoint`` holds an absolute path that may no longer exist;
+    the basename still names the step, and that directory is looked for under
+    ``run_dir``.
+
+    When the field is missing, or names a directory that is not there, this
+    stops. It used to fall back to the largest step, which is the final
+    checkpoint -- a value scored from it would be reported as the adopted one
+    with nothing in the output saying otherwise.
+    """
     steps = [int(p.rsplit("-", 1)[1]) for p in glob.glob(f"{run_dir}/checkpoint-*")
              if p.rsplit("-", 1)[1].isdigit()]
     if not steps:
-        return None
+        raise SystemExit(f"{run_dir} carries no checkpoint-<step> directory")
     state = json.load(open(f"{run_dir}/checkpoint-{max(steps)}/trainer_state.json"))
     best = state.get("best_model_checkpoint")
-    if best and os.path.isdir(best):
-        return best
-    if best:                       # recorded elsewhere; take the basename
-        local = os.path.join(run_dir, os.path.basename(best))
-        if os.path.isdir(local):
-            return local
-    return f"{run_dir}/checkpoint-{max(steps)}"
+    if not best:
+        raise SystemExit(
+            f"{run_dir}/checkpoint-{max(steps)}/trainer_state.json has no "
+            f"best_model_checkpoint; the adopted checkpoint cannot be resolved "
+            f"and the final step ({max(steps)}) is not a substitute for it")
+    name = os.path.basename(best.rstrip("/"))
+    for candidate in (best, os.path.join(run_dir, name)):
+        if os.path.isdir(candidate):
+            return candidate, int(name.rsplit("-", 1)[1])
+    raise SystemExit(
+        f"{run_dir}: best_model_checkpoint names {best}, which is not a "
+        f"directory here either as given or as {run_dir}/{name}")
 
 
 def sequence_logprob(model, torch, F, ids_row, positions, mask_id, pos_batch):
@@ -140,8 +156,8 @@ def main():
     labels = [y for _c, _r, _v, y in rows]
     print(f"  {len(rows):,} 変異（病原性 {sum(labels):,} / 良性 {len(labels) - sum(labels):,}）")
 
-    ckpt = adopted_checkpoint(args.run_dir)
-    print(f"  checkpoint: {ckpt}")
+    ckpt, ckpt_step = adopted_checkpoint(args.run_dir)
+    print(f"  checkpoint: {ckpt}  (step {ckpt_step:,})")
     tok = AutoTokenizer.from_pretrained(args.tokenizer)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if args.bf16 else torch.float32
@@ -194,6 +210,7 @@ def main():
     elapsed = time.time() - t0
 
     out = {"run_dir": args.run_dir, "checkpoint": ckpt,
+           "checkpoint_step": ckpt_step,
            "input_form": args.input_form, "positions": args.positions,
            "bf16": args.bf16, "n_variants": len(rows), "seconds": round(elapsed, 1),
            "variants_per_second": round(len(rows) / elapsed, 3),

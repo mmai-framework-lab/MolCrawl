@@ -20,6 +20,13 @@ differently:
       which the per-chromosome AUROCs are computed here
 
 Both paths end in the same columns, so the series can be compared row for row.
+
+The ``input_form`` column is not a formatting choice. ``wrapped`` is
+``[CLS]`` + 1,024 bases + ``[SEP]`` = 1,026 tokens, which is what the genome
+BERT runs were trained on; ``bare`` is the 1,024 bases alone, which is what
+nanoGPT was trained on. The two architectures therefore read as "not matched"
+in the column while each is in fact being scored in its own training-time
+form, so the table carries one note line saying so.
 """
 import argparse
 import csv
@@ -127,6 +134,23 @@ def emit(out, series, subset, input_form, positions, per):
                     "n_variants": total, "auroc": mean})
 
 
+def note_line(rows, extra):
+    """One comment line: what each series' input_form is, and what it means.
+
+    Read on its own, the column looks like two series that were not matched.
+    The forms per series come from the rows, so the line cannot drift from the
+    table it sits on; anything the rows do not carry comes in through --note.
+    """
+    forms = dict.fromkeys((r["series"], r["input_form"]) for r in rows)
+    listed = "、".join(f"{series}={form}" for series, form in forms)
+    parts = ["input_form は採点時に入力した形である。"
+             "wrapped は [CLS]+1,024+[SEP] の 1,026 トークンで、genome BERT の学習時の形。"
+             "bare は特別なトークンを持たない 1,024 トークンで、nanoGPT の学習時の形。"
+             f"この表の系列: {listed}。"]
+    parts.extend(extra)
+    return "# " + "".join(parts) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--window-dir", action="append", default=[],
@@ -136,6 +160,8 @@ def main():
                     metavar="series:input_form:positions:path",
                     help="repeatable: a directory of <subset>/predictions.jsonl")
     ap.add_argument("--out-tsv", required=True)
+    ap.add_argument("--note", action="append", default=[],
+                    help="appended to the note line, for what the rows cannot say")
     args = ap.parse_args()
 
     out = []
@@ -165,6 +191,7 @@ def main():
               "n_variants", "auroc"]
     os.makedirs(os.path.dirname(args.out_tsv) or ".", exist_ok=True)
     with open(args.out_tsv, "w", newline="") as handle:
+        handle.write(note_line(out, args.note))
         writer = csv.DictWriter(handle, delimiter="\t", fieldnames=fields)
         writer.writeheader()
         for rec in out:
