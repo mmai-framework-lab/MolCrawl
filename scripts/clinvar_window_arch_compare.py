@@ -1,19 +1,28 @@
-"""The architecture comparison, taken at one scoring formula on both sides.
+"""The architecture comparison, taken at the same scored positions on both sides.
 
 The comparison in the §7 table of the 2026-10-15 report puts BERT's zero-shot
 AUROC beside GPT-2's, but the two were not the same quantity: BERT masked the
 variant position alone and GPT-2 took the log-likelihood of the whole 1,024
 token window. Read as a table the rows look like one measurement each, and
-nothing in them says the formula differed.
+nothing in them says where each side scored.
 
 So two pairings come out here, side by side:
 
   window   BERT over the whole window against GPT-2 over the whole window --
-           the same formula on both sides, which is what the 21 window
+           the same positions on both sides, which is what the 21 window
            scorings were produced for
   variant  BERT at the variant position against GPT-2 over the whole window --
            the pairing the earlier table reported, kept so the change from
-           fixing the formula can be read off rather than inferred
+           matching the positions can be read off rather than inferred
+
+Matching the positions is not matching the likelihood, and neither pairing is
+an architecture comparison. BERT averages conditional probabilities with each
+position masked in turn and both flanks visible -- a pseudo-log-likelihood --
+while GPT-2 multiplies probabilities each conditioned on the left context
+alone. Both flanks make a token easier to predict, so what is left of the gap
+is flattered towards BERT by an amount no one has separated out.
+report/proteingym-method.md settled this for protein, where the two are not
+compared as superiority; the same holds here.
 
 Differences are paired by subset and signed GPT-2 minus BERT, so a negative
 value means BERT scored higher. That is the sign convention the §7 table
@@ -229,8 +238,17 @@ def main():
 
     # The difference is gpt2 - bert, so the label has to read that way round:
     # a negative median means BERT scored higher.
-    label = {"window": "GPT-2 窓全体 − BERT 窓全体（式を揃えた組）",
-             "variant": "GPT-2 窓全体 − BERT 変異 1 点（従来の組・式が違う）"}
+    #
+    # "位置を揃えた", not "式を揃えた". Scoring the whole window on both sides
+    # matches *where* the two score, not *how* they build the likelihood: BERT
+    # averages conditional probabilities with both flanks visible at every
+    # position (a pseudo-log-likelihood), GPT-2 multiplies probabilities each
+    # conditioned on the left alone. Seeing both sides makes the token easier to
+    # predict, so the remaining gap flatters BERT by an amount nobody has split
+    # out. report/proteingym-method.md settled the same point for protein:
+    # the two are not compared as superiority.
+    label = {"window": "GPT-2 窓全体 − BERT 窓全体（採点位置は揃い、尤度の作り方は違う）",
+             "variant": "GPT-2 窓全体 − BERT 変異 1 点（採点位置も違う・従来の組）"}
     lines = ["| 組 | 区分 | 本数 | 差の中央値 | 範囲 | GPT-2 有利 / BERT 有利 | 符号付き順位 |",
              "|---|---|---:|---:|---|---|---|"]
     for rec in rows:

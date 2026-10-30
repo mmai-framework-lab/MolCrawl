@@ -164,10 +164,11 @@ def test_gpt2_adopts_the_best_val_file_at_the_run_root(tmp_path):
     (tmp_path / "ckpt.pt").write_text("x")
     (tmp_path / "checkpoint-99000").mkdir()
 
-    path, label = lp.adopted_checkpoint(str(tmp_path), "gpt2")
+    path, label, step = lp.adopted_checkpoint(str(tmp_path), "gpt2")
 
     assert label == "ckpt.pt"
     assert path.endswith("ckpt.pt")
+    assert step is None                        # the file name carries no step
 
 
 def test_bert_adopts_the_checkpoint_trainer_state_names(tmp_path):
@@ -177,15 +178,48 @@ def test_bert_adopts_the_checkpoint_trainer_state_names(tmp_path):
     (tmp_path / "checkpoint-3000" / "trainer_state.json").write_text(json.dumps(
         {"best_model_checkpoint": str(tmp_path / "checkpoint-1000")}))
 
-    path, label = lp.adopted_checkpoint(str(tmp_path), "bert")
+    path, label, step = lp.adopted_checkpoint(str(tmp_path), "bert")
 
     assert label == "checkpoint-1000"          # not the newest, which is 3000
     assert path.endswith("checkpoint-1000")
+    assert step == 1000                        # and the step goes to the output
 
 
 def test_a_run_with_no_checkpoint_reports_nothing_rather_than_guessing(tmp_path):
-    assert lp.adopted_checkpoint(str(tmp_path), "gpt2") == (None, None)
-    assert lp.adopted_checkpoint(str(tmp_path), "bert") == (None, None)
+    assert lp.adopted_checkpoint(str(tmp_path), "gpt2") == (None, None, None)
+    assert lp.adopted_checkpoint(str(tmp_path), "bert") == (None, None, None)
+
+
+def test_an_unnamed_adopted_checkpoint_stops_instead_of_taking_the_last(tmp_path):
+    """The final step is not a stand-in for the adopted one.
+
+    Falling back to max(steps) scored the final checkpoint and reported the
+    value as the adopted model's, with nothing in the output to tell the two
+    apart.
+    """
+    import json
+    for step in (1000, 2000):
+        (tmp_path / f"checkpoint-{step}").mkdir()
+    (tmp_path / "checkpoint-2000" / "trainer_state.json").write_text(json.dumps(
+        {"log_history": []}))
+
+    with pytest.raises(SystemExit) as caught:
+        lp.adopted_checkpoint(str(tmp_path), "bert")
+
+    assert "best_model_checkpoint" in str(caught.value)
+    assert "2000" in str(caught.value)
+
+
+def test_an_adopted_checkpoint_that_is_not_on_disk_stops(tmp_path):
+    import json
+    (tmp_path / "checkpoint-2000").mkdir()
+    (tmp_path / "checkpoint-2000" / "trainer_state.json").write_text(json.dumps(
+        {"best_model_checkpoint": str(tmp_path / "checkpoint-1000")}))
+
+    with pytest.raises(SystemExit) as caught:
+        lp.adopted_checkpoint(str(tmp_path), "bert")
+
+    assert "1000" in str(caught.value)
 
 
 # ---------------------------------------------------------------------------

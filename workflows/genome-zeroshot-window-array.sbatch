@@ -64,9 +64,16 @@ echo "=== wrapped / window -> ${OUT} ==="
 BF16_FLAG="--bf16"
 [ -n "${NO_BF16:-}" ] && BF16_FLAG=""
 
-if [ -s "${OUT}" ] && [ -z "${FORCE:-}" ]; then
+# Skip only when both halves are there. The first pass wrote the aggregate
+# alone, so a subset with an aggregate and no per-variant scores is unfinished
+# work, not work already done, and the interval comparison needs the rows.
+PREDS="${OUT%.json}-predictions.jsonl"
+if [ -s "${OUT}" ] && [ -s "${PREDS}" ] && [ -z "${FORCE:-}" ]; then
     echo "既にある、飛ばす: ${OUT}"
     exit 0
+fi
+if [ -s "${OUT}" ] && [ ! -s "${PREDS}" ]; then
+    echo "集計はあるが変異ごとの値が無い、採点し直す: ${OUT}"
 fi
 
 "${PY}" scripts/clinvar_zeroshot_bert_rescore.py \

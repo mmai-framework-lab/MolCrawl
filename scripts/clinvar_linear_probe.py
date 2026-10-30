@@ -85,24 +85,41 @@ def variant_token_index(arch, window_len):
 def adopted_checkpoint(run_dir, arch):
     """The checkpoint the run adopted -- not its newest one.
 
+    Returns (path, label, step); step is None for nanoGPT, whose file carries
+    no step in its name. A run that has produced no checkpoint at all returns
+    (None, None, None), and the caller names it and moves on.
+
     nanoGPT rewrites ckpt.pt at the run root whenever validation improves, so
     that file is the best-val model. HF keeps every checkpoint and names the
     adopted one in the newest trainer_state; on the 21 genome BERT runs the
     adopted and newest checkpoints differ in every one.
+
+    When trainer_state does not name one, or names a directory that is not
+    there, this stops. It used to take the largest step instead, which is the
+    final checkpoint, and the probe value would then be reported as the adopted
+    model's with nothing in the output saying which step it came from.
     """
     if arch == "gpt2":
         path = os.path.join(run_dir, "ckpt.pt")
-        return (path, "ckpt.pt") if os.path.exists(path) else (None, None)
+        return (path, "ckpt.pt", None) if os.path.exists(path) else (None, None, None)
     steps = [int(p.rsplit("-", 1)[1]) for p in glob.glob(os.path.join(run_dir, "checkpoint-*"))
              if p.rsplit("-", 1)[1].isdigit()]
     if not steps:
-        return None, None
+        return None, None, None
     state = json.load(open(os.path.join(run_dir, f"checkpoint-{max(steps)}",
                                         "trainer_state.json")))
     best = state.get("best_model_checkpoint")
-    step = int(os.path.basename(best).rsplit("-", 1)[1]) if best else max(steps)
+    if not best:
+        raise SystemExit(
+            f"{run_dir}/checkpoint-{max(steps)}/trainer_state.json has no "
+            f"best_model_checkpoint; the adopted checkpoint cannot be resolved "
+            f"and the final step ({max(steps)}) is not a substitute for it")
+    step = int(os.path.basename(best.rstrip("/")).rsplit("-", 1)[1])
     path = os.path.join(run_dir, f"checkpoint-{step}")
-    return (path, f"checkpoint-{step}") if os.path.isdir(path) else (None, None)
+    if not os.path.isdir(path):
+        raise SystemExit(f"{run_dir}: the adopted checkpoint is step {step}, "
+                         f"and {path} is not a directory")
+    return path, f"checkpoint-{step}", step
 
 
 def representations(rows, forward, encode, at, batch_size, base_span):
@@ -307,21 +324,25 @@ def main():
             if ref is None:
                 raise SystemExit(f"no run under {args.run_glob} carries a checkpoint "
                                  f"to take the architecture from")
-            path, label = adopted_checkpoint(ref, args.arch)
+            path, label, _step = adopted_checkpoint(ref, args.arch)
             for sd in seeds:
+                # No step: the reference run's weights are never read, so
+                # recording its step beside an untrained fit would name a
+                # checkpoint that did not produce the value.
                 jobs.append((f"untrained_seed{sd}", path,
-                             f"{os.path.basename(ref)}/{label} の構成のみ", True, sd))
+                             f"{os.path.basename(ref)}/{label} の構成のみ", None,
+                             True, sd))
         else:
             for d in runs:
                 d = d.rstrip("/")
                 subset = os.path.basename(d).split("-small-", 1)[-1]
                 if args.run_tag and subset.endswith("-" + args.run_tag):
                     subset = subset[: -len(args.run_tag) - 1]
-                path, label = adopted_checkpoint(d, args.arch)
+                path, label, step = adopted_checkpoint(d, args.arch)
                 if path is None:
                     print(f"  {subset}: checkpoint なし")
                     continue
-                jobs.append((subset, path, label, False, 0))
+                jobs.append((subset, path, label, step, False, 0))
 
         window = len(rows[0]["reference_sequence"])
         at = variant_token_index(args.arch, window)
@@ -333,7 +354,7 @@ def main():
               f"平均の範囲 {base_span[0]}..{base_span[0] + base_span[1] - 1}"
               f"（塩基 {base_span[1]} 個、特別なトークンを含まない）\n")
 
-        for name, path, label, untrained, sd in jobs:
+        for name, path, label, step, untrained, sd in jobs:
             t0 = time.monotonic()
             fwd, enc, hidden = build_encoder(path, args.tokenizer, args.arch, device,
                                              untrained=untrained, init_seed=sd)
@@ -345,6 +366,7 @@ def main():
                 write_predictions(os.path.join(args.pred_dir, name, "predictions.jsonl"),
                                   rows, held)
             results["runs"][name] = {"checkpoint": label,
+                                     "checkpoint_step": step,
                                      "untrained": untrained,
                                      "init_seed": sd if untrained else None,
                                      "hidden_size": hidden,

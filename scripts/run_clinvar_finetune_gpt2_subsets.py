@@ -13,6 +13,17 @@ Output layout:
             trainer/
         clinvar_finetune_results.csv
         clinvar_finetune_summary.csv
+
+Older generation; not on any current reporting path.
+
+The checkpoint step is written into the path: ``checkpoint-50000``, under
+whatever ``--base-dir`` / ``LEARNING_SOURCE_DIR`` names, which for these runs
+was ``learning_source_20260617/genome_sequence/``. **In those runs 50000 is the
+largest checkpoint, that is the final one, and not the adopted one.**
+
+No figure or table reported now comes from here; the current genome ClinVar
+path reads ``learning_source_genome_runs/`` and resolves each run's adopted
+checkpoint. Kept as the record of what produced the 2026-06 numbers.
 """
 
 from __future__ import annotations
