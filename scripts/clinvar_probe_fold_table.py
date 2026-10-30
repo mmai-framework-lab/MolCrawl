@@ -86,7 +86,13 @@ def per_fold(block):
 
 
 def verify(root, runs):
-    """Recompute one series from predictions.jsonl; return the largest gap."""
+    """Recompute one series from predictions.jsonl.
+
+    Returns (compared, subset, fold, gap). `compared` is counted separately
+    from the gap, because exact agreement and no comparison at all both leave
+    the largest gap at zero and they are not the same result.
+    """
+    compared = 0
     worst = (None, None, 0.0)
     for subset, block in sorted(runs.items()):
         path = os.path.join(root, subset, "predictions.jsonl")
@@ -108,9 +114,10 @@ def verify(root, runs):
                 continue
             mine = auroc([y for y, _ in got], [s for _, s in got])
             gap = abs(mine - said)
+            compared += 1
             if gap > worst[2]:
                 worst = (subset, fold, gap)
-    return worst
+    return (compared,) + worst
 
 
 def main():
@@ -166,9 +173,13 @@ def main():
     if args.verify_predictions:
         name, root = args.verify_predictions.split(":", 1)
         runs = json.load(open(os.path.join(root, "probe.json")))["runs"]
-        subset, fold, gap = verify(root, runs)
-        print(f"  照合 {name}: predictions.jsonl から再計算した最大差 "
-              f"{gap:.2e}" + (f"（{subset} {fold}）" if subset else "（照合なし）"))
+        compared, subset, fold, gap = verify(root, runs)
+        if not compared:
+            print(f"  照合 {name}: predictions.jsonl が見つからず照合できていない")
+        else:
+            where = f"（{subset} {fold}）" if subset else "（全件一致）"
+            print(f"  照合 {name}: {compared} 件を predictions.jsonl から再計算、"
+                  f"最大差 {gap:.2e}{where}")
 
     fields = ["series", "subset", "chrom", "n_train", "n_variants", "auroc"]
     os.makedirs(os.path.dirname(args.out_tsv) or ".", exist_ok=True)
