@@ -9,6 +9,8 @@
 #
 # Directive all-checkpoint-metric-order-2026-10-28-v2 §3/§4/§6: for every BERT run,
 # does best_model_checkpoint point at the step where eval_loss_mask bottomed out.
+# The 2026-10-30 judgment §1 adds MISMATCHES: the production BERT runs that do not
+# match, on their own, in the same columns.
 #
 # Reads trainer_state.json and run_manifest.json. No GPU work, no weight file is
 # opened and nothing is written inside a run directory. The allocation is here
@@ -53,6 +55,7 @@ OUT_DIR="${REPORT_DIR:-${PYROOT}/tmp}"
 REPORT="${REPORT:-${OUT_DIR}/checkpoint-metric-match-${SLURM_JOB_ID}.json}"
 TSV="${TSV:-${OUT_DIR}/checkpoint-metric-match-${SLURM_JOB_ID}.tsv}"
 CONDITIONS="${CONDITIONS:-${OUT_DIR}/run-conditions-${SLURM_JOB_ID}.tsv}"
+MISMATCHES="${MISMATCHES:-${OUT_DIR}/checkpoint-metric-mismatches-${SLURM_JOB_ID}.tsv}"
 mkdir -p "${OUT_DIR}"
 
 echo "=== checkpoint metric match ${SLURM_JOB_ID} on ${SLURMD_NODENAME} @ $(date -Is) ==="
@@ -61,11 +64,13 @@ echo "roots : ${AUDIT_ROOTS}"
 echo "report: ${REPORT}"
 echo "tsv   : ${TSV}"
 echo "cond  : ${CONDITIONS}"
+echo "mism  : ${MISMATCHES}"
 echo
 
 "${PYTHON}" scripts/audit_checkpoint_metric_match.py \
   "${ROOT_ARGS[@]}" --report "${REPORT}" --tsv "${TSV}" \
-  --tsv-conditions "${CONDITIONS}" && rc=0 || rc=$?
+  --tsv-conditions "${CONDITIONS}" --tsv-mismatches "${MISMATCHES}" \
+  && rc=0 || rc=$?
 # Taken explicitly: under `set -e` a trailing $? can only be 0.
 echo
 echo "=== rc=${rc} @ $(date -Is) ==="

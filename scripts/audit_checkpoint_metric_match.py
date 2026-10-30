@@ -391,6 +391,33 @@ def walk_root(root, modality):
     return rows, skipped
 
 
+# Diagnostic, throughput and smoke runs, named by the convention the run names
+# follow. They are measured and reported like any other run; this rule only marks
+# them, because §7 asks for the conditions a *result* was taken under and these
+# runs produced none. Lived in build_run_conditions_deck.py until 2026-10-30; it is
+# here so the deck, the TSV and the §1 extract cannot disagree about what counts.
+DIAGNOSTIC = re.compile(
+    r"diag|smoke|tput|microbatch|trial|aborted|pathcheck|envprobe|dsvl|lrprobe"
+    r"|lrpilot|reprobe|demoH4|8x80|effbatch|nodocmask|docmask-P|warmup2k|mlm015"
+    r"|esmopt|bertswap|stopped|rpb-|sat9|bf16$|fp32$",
+    re.I,
+)
+
+
+def is_production(row):
+    """Whether this run's numbers stand behind a reported result.
+
+    Three ways out: the DeepSpeed comparison tree (`other_ds`), a name matching
+    DIAGNOSTIC, and a run with no job_id -- the generation that predates
+    run_manifest.json, whose conditions cannot be stated.
+    """
+    if row.get("modality") == "other_ds":
+        return False
+    if DIAGNOSTIC.search(row.get("run") or ""):
+        return False
+    return bool(row.get("job_id"))
+
+
 TSV_COLUMNS = [
     # §6 names the columns this TSV must carry; the rest are what §4 asks to be
     # able to say without opening the JSON.
@@ -414,6 +441,7 @@ TSV_COLUMNS = [
     ("eval_points", lambda r: (r.get("judged_min") or {}).get("points", "")),
     ("history_coverage", lambda r: _num(r.get("history_coverage"), 3)),
     ("job_id", lambda r: r.get("job_id") or ""),
+    ("production", lambda r: "yes" if r.get("production") else "no"),
 ]
 
 
@@ -500,6 +528,10 @@ def main(argv=None):
     ap.add_argument("--report", required=True)
     ap.add_argument("--tsv", help="§6: one row per run, the metric comparison")
     ap.add_argument("--tsv-conditions", help="§7: one row per run, the conditions")
+    ap.add_argument("--tsv-mismatches",
+                    help="§1 of the 2026-10-30 judgment: the same columns as "
+                         "--tsv, carrying the production BERT runs whose saved "
+                         "best checkpoint is not the judged minimum")
     args = ap.parse_args(argv)
 
     rows, skipped = [], []
@@ -538,14 +570,20 @@ def main(argv=None):
                   f"{_ckpt(r['checkpoint_at_judged_min'])}", flush=True)
 
     rows.sort(key=lambda r: (r["modality"], r["arch"], str(r.get("size")), r["run"]))
+    for row in rows:
+        row["production"] = is_production(row)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.report)) or ".", exist_ok=True)
     with open(args.report, "w") as fh:
         json.dump({"runs": rows, "unreadable": skipped}, fh, indent=2, ensure_ascii=False)
     print(f"\nwrote {args.report}", flush=True)
 
-    for path, columns in ((args.tsv, TSV_COLUMNS),
-                          (args.tsv_conditions, CONDITION_COLUMNS)):
+    mismatched_production = [r for r in rows if r["arch"] == "bert"
+                             and r["match"] == "no" and r["production"]]
+    for path, columns, subset in ((args.tsv, TSV_COLUMNS, rows),
+                                  (args.tsv_conditions, CONDITION_COLUMNS, rows),
+                                  (args.tsv_mismatches, TSV_COLUMNS,
+                                   mismatched_production)):
         if not path:
             continue
         # A BOM, because these are opened in Excel and read in Slack, where a
@@ -553,15 +591,24 @@ def main(argv=None):
         with open(path, "w", newline="", encoding="utf-8-sig") as fh:
             writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
             writer.writerow([name for name, _ in columns])
-            for row in rows:
+            for row in subset:
                 writer.writerow([fn(row) for _, fn in columns])
-        print(f"wrote {path}", flush=True)
+        print(f"wrote {path} ({len(subset)} rows)", flush=True)
 
     bert = [r for r in rows if r["arch"] == "bert"]
     print(f"\n{len(rows)} runs, {len(bert)} bert, "
           f"{sum(1 for r in bert if r['match'] == 'yes')} match, "
           f"{sum(1 for r in bert if r['match'] == 'no')} mismatch, "
           f"{sum(1 for r in bert if r['match'] not in ('yes', 'no'))} undecided")
+    prod = [r for r in bert if r["production"]]
+    print(f"production bert {len(prod)}, "
+          f"{sum(1 for r in prod if r['match'] == 'yes')} match, "
+          f"{len(mismatched_production)} mismatch")
+    by_modality = {}
+    for r in mismatched_production:
+        by_modality[r["modality"]] = by_modality.get(r["modality"], 0) + 1
+    for modality, count in sorted(by_modality.items(), key=lambda kv: -kv[1]):
+        print(f"  {modality}: {count}")
     return 0
 
 
