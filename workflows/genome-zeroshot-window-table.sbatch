@@ -10,7 +10,7 @@
 #
 # The GPU is not used. gpu is the only partition with compute nodes here.
 #
-# Required: RESULTS_ROOT. Optional: WINDOW_DIR, OUT, BERT_WINDOW_ONLY.
+# Required: RESULTS_ROOT. Optional: WINDOW_DIR, OUT, BERT_WINDOW_ONLY, WITH_EP3.
 
 set -uo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -30,17 +30,22 @@ OUT="${OUT:-${RESULTS_ROOT}/analyses/ep9/zeroshot-window-21.tsv}"
 # no [CLS]/[SEP]. They are in the table by default: a table that carries only
 # the BERT side cannot be checked against the comparison it feeds.
 #
-# gpt2 (three epochs) is read from clinvar-zeroshot-gpt2-w1024, not from
-# clinvar-zeroshot-gpt2. That directory scored at context_length 512 with flank
-# 64, while the nine-epoch series and -w1024 both scored at 1024 with flank 512,
-# so a row from it would differ by the scoring window and not by the epochs.
+# The three-epoch GPT-2 series is not among them. The 2026-10-30 judgment puts
+# that series away: nine epochs is the base, and the three-epoch runs go into
+# neither a figure nor the text. Its outputs stay on disk, and WITH_EP3=1 reads
+# them back -- from clinvar-zeroshot-gpt2-w1024, not from clinvar-zeroshot-gpt2,
+# which scored at context_length 512 with flank 64, so a row from that directory
+# would differ by the scoring window and not by the epochs.
 #
-# BERT_WINDOW_ONLY=1 drops them and leaves the whole-window BERT rows alone.
+# BERT_WINDOW_ONLY=1 drops the comparison series and leaves the whole-window
+# BERT rows alone.
 CMP_ARGS=()
 if [ -z "${BERT_WINDOW_ONLY:-}" ]; then
     CMP_ARGS+=(--predictions-dir "gpt2-ep9:bare:window:${RESULTS_ROOT}/clinvar-zeroshot-gpt2-ep9")
-    CMP_ARGS+=(--predictions-dir "gpt2:bare:window:${RESULTS_ROOT}/clinvar-zeroshot-gpt2-w1024")
     CMP_ARGS+=(--predictions-dir "bert-w1026-variant:bare:variant:${RESULTS_ROOT}/clinvar-zeroshot-bert-w1026")
+    if [ -n "${WITH_EP3:-}" ]; then
+        CMP_ARGS+=(--predictions-dir "gpt2:bare:window:${RESULTS_ROOT}/clinvar-zeroshot-gpt2-w1024")
+    fi
 fi
 
 echo "=== node=$(hostname) job=${SLURM_JOB_ID:-none} @ $(date -Is) ==="

@@ -100,7 +100,6 @@ ZS_BERT="${RESULTS_ROOT}/clinvar-zeroshot-bert-w1026"
 
 ########## 1-2. fold 別 ##########
 fold zeroshot-gpt2-ep9 "${ZS_EP9}" "${MARKOV}" markov "5-mer Markov"
-fold zeroshot-gpt2-ep3-w1024 "${ZS_EP3}" "${MARKOV}" markov "5-mer Markov"
 fold probe-gpt2-ep9 "${PROBE_EP9}" \
      "${RESULTS_ROOT}/clinvar-probe-gpt2-ep9/model_free/predictions.jsonl" \
      score "モデル不使用（14 特徴）"
@@ -111,11 +110,16 @@ pair ep9-gpt2-zeroshot-vs-bert-zeroshot "${ZS_EP9}" "${ZS_BERT}" \
 pair ep9-gpt2-probe-vs-bert-probe "${PROBE_EP9}" "${PROBE_BERT}" \
      "GPT-2 probe 9ep" "BERT probe 9ep"
 
-########## 4. エポックの差そのもの ##########
-pair gpt2-zeroshot-ep9-vs-ep3 "${ZS_EP9}" "${ZS_EP3}" \
-     "GPT-2 zeroshot 9ep" "GPT-2 zeroshot 3ep"
-pair gpt2-probe-ep9-vs-ep3 "${PROBE_EP9}" "${PROBE_EP3}" \
-     "GPT-2 probe 9ep" "GPT-2 probe 3ep"
+########## 4. エポックの差そのもの（WITH_EP3=1 のときだけ） ##########
+# 2026-10-30 の判断書により、3 エポックの系列は図表にも本文にも出さない。
+# 出力は消していないので、WITH_EP3=1 で元どおり出る。
+if [ -n "${WITH_EP3:-}" ]; then
+    fold zeroshot-gpt2-ep3-w1024 "${ZS_EP3}" "${MARKOV}" markov "5-mer Markov"
+    pair gpt2-zeroshot-ep9-vs-ep3 "${ZS_EP9}" "${ZS_EP3}" \
+         "GPT-2 zeroshot 9ep" "GPT-2 zeroshot 3ep"
+    pair gpt2-probe-ep9-vs-ep3 "${PROBE_EP9}" "${PROBE_EP3}" \
+         "GPT-2 probe 9ep" "GPT-2 probe 3ep"
+fi
 
 echo ""; echo "---- rc=${rc} ----"
 ls -la "${OUT_DIR}" | sed 's/^/  /'
