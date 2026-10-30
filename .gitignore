@@ -112,3 +112,11 @@ chatlogs/
 # Ad-hoc / one-off workspace dirs
 temp_compounds/
 ncbi-result.txt
+
+# Local environments built on the cluster (evaluation-only env, DeepSpeed build,
+# its wheelhouse). They are installed in place and read by job scripts; never tracked.
+envs/
+
+# Tokenizer files fetched once for offline runs (HF_HUB_OFFLINE); job scripts read
+# ${MAIN}/assets/tokenizers/gpt2. Downloaded, not authored.
+assets/tokenizers/
