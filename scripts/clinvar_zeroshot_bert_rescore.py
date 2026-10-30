@@ -22,6 +22,13 @@ likelier sequence.
 `--max-variants` scores a prefix instead of the whole table. It is for timing:
 the window mode is 1,024 times the work of the variant mode, so its cost is
 measured before it is paid.
+
+Every run writes its per-variant scores beside the aggregate, as
+``<out stem>-predictions.jsonl``. This is not optional. Keeping only the
+aggregate AUROCs once cost a second pass over 21 runs -- about 90 GPU-hours --
+because a bootstrap interval cannot be resampled from a mean. `--no-predictions`
+exists for the timing probes, which score a prefix and whose rows are not a
+measurement of anything.
 """
 import argparse
 import csv
@@ -120,6 +127,8 @@ def main():
     ap.add_argument("--position-batch", type=int, default=512,
                     help="window mode: masked copies per forward pass")
     ap.add_argument("--bf16", action="store_true")
+    ap.add_argument("--no-predictions", action="store_true",
+                    help="timing probes only: skip the per-variant scores")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -200,6 +209,20 @@ def main():
             out[f"auroc_chr{fold}"] = auroc([y for y, _ in got], [s for _, s in got])
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+
+    # The per-variant scores go out first, so a crash between the two files
+    # leaves the rows and not just the mean.
+    if not args.no_predictions:
+        stem = args.out[:-len(".json")] if args.out.endswith(".json") else args.out
+        preds = f"{stem}-predictions.jsonl"
+        with open(preds, "w") as handle:
+            for (chrom, _ref, _var, label), score in zip(rows, scores):
+                handle.write(json.dumps(
+                    {"chrom": chrom, "fold": f"chr{chrom}",
+                     "label_pathogenic": label, "score": score}) + "\n")
+        out["predictions"] = os.path.basename(preds)
+        print(f"  wrote {preds}  ({len(scores):,} 行)")
+
     json.dump(out, open(args.out, "w"), indent=2)
     print(f"\n  {args.input_form}/{args.positions}: AUROC {out['auroc_all']:.6f}  "
           f"{elapsed:.0f}s  {out['variants_per_second']:.3f} 変異/秒")
