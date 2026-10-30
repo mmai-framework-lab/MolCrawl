@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
 from pathlib import Path
 
 import matplotlib
@@ -33,6 +35,10 @@ from pptx.util import Emu, Inches, Pt
 # Categorical slots 1-3 of the reference palette, in fixed order. Never cycled.
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
 INK = "#0b0b0b"
+# What a deck marks with ==...== : the part of a table or a bullet that moved in
+# the period being reported. One accent only, so "new" cannot be confused with
+# the categorical colours a chart uses.
+ACCENT = "#c0392b"
 INK_2 = "#52514e"
 INK_3 = "#8a8984"
 SURFACE = "#fcfcfb"
@@ -42,9 +48,88 @@ SLIDE_W, SLIDE_H = Inches(13.333), Inches(7.5)
 MARGIN = Inches(0.62)
 BODY_W = SLIDE_W - 2 * MARGIN
 
+# The footnote block. It is type on the slide, not pixels in a picture: the
+# premises a loss figure has to carry (step / epoch / dataset / global batch /
+# tokens seen) get corrected and re-worded right up to the meeting, and a PNG
+# cannot be corrected in PowerPoint.
+NOTE_PT = 9.0
+NOTE_BASE = Inches(6.88)        # the footer line and the page number sit at 6.95
+CAPTION_SUFFIX = ".caption.txt"  # written beside each figure by the plotting scripts
+
 
 def _rgb(h: str) -> RGBColor:
     return RGBColor.from_string(h.lstrip("#").upper())
+
+
+def _segments(text):
+    """[(text, marked)] for a line written with ==...== around what to accent."""
+    out, last = [], 0
+    for m in re.finditer(r"==(.+?)==", text):
+        if m.start() > last:
+            out.append((text[last:m.start()], False))
+        out.append((m.group(1), True))
+        last = m.end()
+    if last < len(text):
+        out.append((text[last:], False))
+    return out or [(text, False)]
+
+
+def _runs(para, text, size, *, color=INK, bold=False, space_after=0):
+    """Write a line, accenting the ==...== parts of it."""
+    para.space_after = Pt(space_after)
+    for chunk, marked in _segments(text):
+        r = para.add_run()
+        r.text = chunk
+        r.font.size = Pt(size)
+        r.font.bold = bold or marked
+        r.font.color.rgb = _rgb(ACCENT if marked else color)
+    return para
+
+
+def _caption_of(png: Path) -> str:
+    """A figure's premises, as the plotting script wrote them beside the PNG.
+
+    The figures are drawn by scripts/plot_eval_loss_series.py and its callers,
+    which write the caption to <figure>.caption.txt rather than into the image.
+    Reading it here is what keeps the two from drifting: nothing is re-typed.
+    """
+    path = Path(png).with_suffix(CAPTION_SUFFIX)
+    return path.read_text(encoding="utf-8-sig").strip() if path.exists() else ""
+
+
+def _wrapped_lines(text: str, pt: float, width_in: float) -> int:
+    """How many lines a footnote wraps to, counting a CJK character as one em."""
+    per_line = width_in / (pt / 72.0)
+    units = sum(1.0 if ord(c) > 0x2E80 else 0.55 for c in text)
+    return max(1, math.ceil(units / per_line))
+
+
+def _add_notes(slide, notes) -> int:
+    """Lay the footnote block out upwards from the footer; return its top.
+
+    The block is measured rather than given a fixed height: the premises of a
+    loss figure run to several lines, and whatever they leave is what the figure
+    above them may use.
+    """
+    if not notes:
+        return Inches(6.70)
+    width_in = BODY_W / 914400
+    # Step the type down rather than let the premises of a long figure take a
+    # third of the slide. 8 pt is the floor: below that it stops being readable
+    # from the back of the room, and the block is allowed to be tall instead.
+    for pt in (NOTE_PT, 8.5, 8.0):
+        # One line of slack: an unbreakable run such as a file path wraps where
+        # the estimate did not, and the block must never reach the footer line.
+        lines = sum(_wrapped_lines(n, pt, width_in) for n in notes) + 1
+        height = Inches(lines * pt * 1.35 / 72 + 0.08 * len(notes))
+        if height <= Inches(1.45) or pt == 8.0:
+            break
+    top = NOTE_BASE - height
+    tf = _box(slide, MARGIN, top, BODY_W, height)
+    for i, note in enumerate(notes):
+        para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        _runs(para, note, pt, color=INK_3, space_after=3)
+    return top
 
 
 def _box(slide, left, top, width, height):
@@ -218,11 +303,11 @@ def _add_table(slide, table, top):
     # PowerPoint grows a row when its text wraps, so a tall table can run off the
     # slide. Step the type down as the row count rises rather than trusting the
     # nominal height.
-    body_pt, head_pt, row_in = (11.0, 11.5, 0.32)
+    body_pt, head_pt, row_in = (12.5, 13.0, 0.35)
     if rows >= 10:
-        body_pt, head_pt, row_in = (9.5, 10.0, 0.27)
+        body_pt, head_pt, row_in = (11.0, 11.5, 0.30)
     elif rows >= 8:
-        body_pt, head_pt, row_in = (10.5, 11.0, 0.29)
+        body_pt, head_pt, row_in = (12.0, 12.5, 0.32)
     height = Inches(row_in) * rows
     shape = slide.shapes.add_table(rows, cols, MARGIN, top, BODY_W, height)
     tbl = shape.table
@@ -230,51 +315,65 @@ def _add_table(slide, table, top):
         tbl.columns[j].width = Emu(int(BODY_W * w))
     for j, h in enumerate(table["header"]):
         cell = tbl.cell(0, j)
-        cell.text = h
         p = cell.text_frame.paragraphs[0]
         p.alignment = PP_ALIGN.LEFT
-        for r in p.runs:
-            r.font.size = Pt(head_pt)
-            r.font.bold = True
-            r.font.color.rgb = _rgb(INK)
+        _runs(p, h, head_pt, color=INK, bold=True)
     for i, row in enumerate(table["rows"], start=1):
         for j, val in enumerate(row):
             cell = tbl.cell(i, j)
-            cell.text = str(val)
             p = cell.text_frame.paragraphs[0]
-            for r in p.runs:
-                r.font.size = Pt(body_pt)
-                r.font.color.rgb = _rgb(INK if j == 0 else INK_2)
+            _runs(p, str(val), body_pt, color=INK if j == 0 else INK_2)
     return top + height
 
 
 def _render_title(slide, s, _):  # noqa: D401
     tf = _box(slide, MARGIN, Inches(2.35), BODY_W, Inches(1.5))
-    _run(tf.paragraphs[0], s["title"], 40, bold=True)
+    _run(tf.paragraphs[0], s["title"], 44, bold=True)
     if s.get("subtitle"):
-        _run(tf.add_paragraph(), s["subtitle"], 19, color=INK_2, space_after=0)
+        _run(tf.add_paragraph(), s["subtitle"], 21, color=INK_2, space_after=0)
     tf2 = _box(slide, MARGIN, Inches(4.35), BODY_W, Inches(2.2))
     for i, line in enumerate(s.get("lines", [])):
         p = tf2.paragraphs[0] if i == 0 else tf2.add_paragraph()
-        _run(p, line, 14, color=INK_2, space_after=7)
+        _runs(p, line, 16, color=INK_2, space_after=4)
     return None
 
 
 def _render_body(slide, s, assets):
-    tf = _box(slide, MARGIN, Inches(0.46), BODY_W, Inches(1.15))
-    _run(tf.paragraphs[0], s["title"], 25, bold=True)
+    tf = _box(slide, MARGIN, Inches(0.42), BODY_W, Inches(1.15))
+    _run(tf.paragraphs[0], s["title"], 28, bold=True)
 
-    top = Inches(1.52)
-    size = 13.5 if s.get("chart") else 14
+    # The footnotes go down first, because what they leave is the room the figure
+    # above them gets. A figure brings its own premises with it, read from the
+    # text file beside it, and they are never baked into the picture.
+    notes = [s["note"]] if s.get("note") else []
+    if (s.get("chart") or {}).get("type") == "image":
+        premises = _caption_of(s["chart"]["path"])
+        if premises:
+            notes.append(premises)
+    note_top = _add_notes(slide, notes)
+
+    top = Inches(1.50)
+    size = 15.5 if s.get("chart") else 16
+    # A bullet advances by the height of its own lines plus one gap. The gap is
+    # deliberately half of what the line height is: the list should read as a
+    # list, not as separate paragraphs.
+    line_in = 0.29 if size >= 16 else 0.28
     for i, b in enumerate(s.get("bullets", [])):
         tfb = _box(slide, MARGIN, top, BODY_W, Inches(0.5))
         p = tfb.paragraphs[0]
         _run(p, "▪ ", size, bold=True, color=SERIES[i % 3])
-        _run(p, b, size, color=INK)
-        top = top + Inches(0.46 if len(b) < 62 else 0.58 if len(b) < 100 else 0.76)
+        _runs(p, b, size, color=INK)
+        wrapped = 1 if len(b) < 58 else 2 if len(b) < 116 else 3
+        top = top + Inches(line_in * wrapped + line_in / 2)
 
-    top = top + Inches(0.12)
+    top = top + Inches(0.10)
     bottom = top
+    # Tables come before a figure: a slide that carries both reads as "here are
+    # the numbers, here is the shape of them". Rendering only one of the two
+    # silently dropped the other.
+    for tbl in s.get("tables") or ([s["table"]] if s.get("table") else []):
+        bottom = _add_table(slide, tbl, top)
+        top = bottom + Inches(0.14)
     if s.get("chart"):
         png = assets / f"{s['id']}.png"
         CHARTS[s["chart"]["type"]](s["chart"], png)
@@ -283,18 +382,22 @@ def _render_body(slide, s, assets):
         probe = slide.shapes.add_picture(str(png), 0, 0)
         native_w, native_h = probe.width, probe.height
         probe._element.getparent().remove(probe._element)
-        avail_h = Inches(6.70) - top
+        # Never negative: a slide whose bullets and footnotes already meet is
+        # reported by the check below rather than crashing on a negative scale.
+        avail_h = max(note_top - top - Inches(0.10), Inches(1.2))
         scale = min(BODY_W / native_w, avail_h / native_h)
         w, h = int(native_w * scale), int(native_h * scale)
         left = MARGIN + int((BODY_W - w) / 2)
-        slide.shapes.add_picture(str(png), left, top, width=w, height=h)
-        bottom = top + h
-    elif s.get("table"):
-        bottom = _add_table(slide, s["table"], top)
+        # Centre it in the band as well as across it. A wide figure is limited by
+        # the width, so it no longer fills the height now that the premises have
+        # left the picture, and hanging it from the top leaves the slide bottom-heavy.
+        y = top + max(0, int((avail_h - h) / 2))
+        slide.shapes.add_picture(str(png), left, y, width=w, height=h)
+        bottom = y + h
 
-    if s.get("note"):
-        tfn = _box(slide, MARGIN, Inches(6.78), BODY_W, Inches(0.6))
-        _run(tfn.paragraphs[0], s["note"], 9.5, color=INK_3)
+    if notes and bottom > note_top:
+        print(f"  ! {s['id']}: content runs into the footnote block "
+              f"({bottom / 914400:.2f} in vs {note_top / 914400:.2f} in)")
     return bottom
 
 
