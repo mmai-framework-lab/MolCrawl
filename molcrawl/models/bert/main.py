@@ -12,6 +12,7 @@ try:
         EarlyStoppingCallback,
         Trainer,
         TrainingArguments,
+        set_seed,
     )
 except ImportError:
     pass  # Not available in documentation-only environments (e.g. pdoc)
@@ -401,9 +402,13 @@ if __name__ == "__main__":
     log_interval = 100
     save_steps = 1000  # Default value, can be overridden in config
     # Training seed (base). Each config file overrides this via the configurator
-    # (per-config sequential seed). Consumed by HF TrainingArguments below
-    # (seed= + data_seed=), which seeds model init, dataloader shuffling, and
-    # data sampling. HF Trainer's default is 42 — keeping that as the base.
+    # (per-config sequential seed). Used in two places below, which together are
+    # what makes the value take effect: set_seed(seed) right after the configurator
+    # runs, which fixes the weights' initialisation, and seed= on TrainingArguments,
+    # which is what transformers re-seeds from at the start of training and so fixes
+    # the data order. A config that names a seed and gets another one is refused at
+    # startup. HF Trainer's default is 42 — keeping that as the base, so a config
+    # that names no seed runs at 42.
     seed = 42
     # -----------------------------------------------------------------------------
     config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
@@ -440,6 +445,16 @@ if __name__ == "__main__":
             " the data order follows set_seed(seed). Drop data_seed from the config"
             " and set seed alone, or implement the separation before declaring it."
         )
+    # Seed everything here, the moment the configurator has resolved the value and
+    # before anything random has happened. The model is built further down, and
+    # Trainer.__init__ does not exist yet, so its own set_seed(args.seed) call
+    # (trainer.py:406) would land after the weights were already drawn: between
+    # 2026-10-02 and 2026-10-30 nothing seeded the initialisation at all, and
+    # before that the restored seed= still only reached it after construction.
+    # transformers' set_seed covers random, numpy and torch (CPU and CUDA).
+    set_seed(int(seed))
+    print(f"🌱 seed {int(seed)} — weights initialisation and data order", flush=True)
+
     config = {k: globals()[k] for k in config_keys}  # will be useful for logging
     # The same filter again, now that the config file has run. What it adds are
     # names a config *introduced* rather than overrode -- expected_global_batch,
@@ -715,9 +730,15 @@ if __name__ == "__main__":
         learning_rate=learning_rate,
         weight_decay=weight_decay,
         # Training seed from config (per-config sequential value, boss directive
-        # Passed so run_manifest.json records the one seed under both names. It has no
-        # effect of its own in transformers 4.45.1 (see the refusal above): the data
-        # order comes from set_seed(seed).
+        # 2026-08-03). seed= is read by transformers: Trainer.__init__ and the start
+        # of the training loop both call set_seed(args.seed) (trainer.py:406, :2010),
+        # which is what fixes the data order. Dropping this line on 2026-10-02 left
+        # args.seed at HF's default 42, so six runs asked for seed 1 or 17 and ran at
+        # 42 (measured 2026-10-28 across 310 BERT runs).
+        seed=seed,
+        # data_seed= has no effect of its own in transformers 4.45.1 (see the refusal
+        # above; trainer.py never reads it). It is passed so run_manifest.json records
+        # the one seed under both names.
         data_seed=seed,
         # AdamW optimizer settings — production spec (2026-07-08):
         # betas = (0.9, 0.95) instead of HF default (0.9, 0.999).
@@ -803,6 +824,22 @@ if __name__ == "__main__":
         dataloader_persistent_workers=bool(dataloader_persistent_workers),
         ddp_bucket_cap_mb=int(globals().get("ddp_bucket_cap_mb", 25)),
     )
+
+    # The seed that will actually take effect, checked against the one the config
+    # named. A mismatch is what went unnoticed for four weeks: TrainingArguments
+    # silently keeps its default when the value is not passed, and the only place it
+    # showed up afterwards was run_manifest.json, which records both names and was
+    # read for the first time on 2026-10-28. Printed on every run, and fatal when it
+    # disagrees, so the next such edit cannot reach a result.
+    if int(training_args.seed) != int(seed):
+        raise SystemExit(
+            f"config asked for seed={seed} but TrainingArguments resolved to"
+            f" seed={training_args.seed}: transformers would seed the data order from"
+            " its own value. Pass seed= through to TrainingArguments."
+        )
+    print(f"🌱 TrainingArguments.seed {training_args.seed}"
+          f" (data_seed {training_args.data_seed}, unread by transformers 4.45.1)",
+          flush=True)
 
     # A run whose effective global batch is not the one the schedule was derived
     # from is not the model it claims to be, and cannot be compared with the rest
