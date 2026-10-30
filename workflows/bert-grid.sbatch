@@ -194,12 +194,53 @@ if [ "${EXTEND:-0}" = "1" ]; then
     _last_pre=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null \
                 | sed 's/.*checkpoint-//' | sort -n | tail -1)
     if [ -f "${OUT}/checkpoint-${_last_pre}/scheduler.pt" ]; then
-      echo "REFUSING: EXTEND=1 but ${OUT}/checkpoint-${_last_pre}/scheduler.pt exists." \
-           "HF restores base_lrs and last_epoch from it, so ${CFG}'s learning_rate and" \
-           "warmup_steps would both be ignored and the run would continue at the" \
-           "original peak with no warmup. Remove scheduler.pt from the checkpoint this" \
-           "extension resumes from -- keep optimizer.pt." >&2
-      exit 1
+      # Two different resumes reach this line and only one of them is dangerous.
+      #
+      # A NEW extension resumes from a checkpoint the previous, shorter schedule wrote.
+      # Its scheduler.pt carries that run's peak, so restoring it runs this config at
+      # ten times the intended rate -- the case this guard exists for.
+      #
+      # A LATER SEGMENT of an extension already under way resumes from a checkpoint
+      # THIS config wrote. Its scheduler.pt carries this config's own constant rate, so
+      # restoring it is not merely safe but correct, and refusing it would mean every
+      # segment boundary needed the file removed by hand -- which is how four segments
+      # of the compounds 45,000-step extension came back FAILED on 2026-10-29/30.
+      #
+      # Tell them apart by what the checkpoint was trained under, not by the file's
+      # presence: its own max_steps, and the rate it was last logged at. The danger is
+      # always a rate ABOVE this config's, so the rate check is one-sided and a
+      # checkpoint taken inside the warmup ramp still passes.
+      _cfg_lr=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^learning_rate=//p')
+      read -r _ck_steps _ck_lr <<EOF
+$("${PYTHON}" -c 'import json, sys
+s = json.load(open(sys.argv[1]))
+rates = [h["learning_rate"] for h in s.get("log_history", []) if "learning_rate" in h]
+print(s.get("max_steps"), repr(rates[-1]) if rates else "none")' \
+        "${OUT}/checkpoint-${_last_pre}/trainer_state.json" 2>/dev/null)
+EOF
+      _same_schedule=0
+      if [ "${_ck_steps}" = "${_cfg_steps}" ] && [ -n "${_ck_lr}" ]; then
+        "${PYTHON}" -c 'import sys
+ck, cfg = float(sys.argv[1]), float(sys.argv[2])
+sys.exit(0 if ck <= cfg * (1.0 + 1e-9) else 1)' "${_ck_lr}" "${_cfg_lr}" 2>/dev/null \
+          && _same_schedule=1
+      fi
+      if [ "${_same_schedule}" = "1" ]; then
+        echo "extension: checkpoint-${_last_pre} was written by this same schedule" \
+             "(its max_steps ${_ck_steps} = the config's, last rate ${_ck_lr} <=" \
+             "${_cfg_lr}), so its scheduler.pt holds this config's own rate and is" \
+             "kept -- a segment continuation, not a new extension"
+      else
+        echo "REFUSING: EXTEND=1 but ${OUT}/checkpoint-${_last_pre}/scheduler.pt exists" \
+             "and that checkpoint was not written by this schedule (its max_steps" \
+             "${_ck_steps:-unreadable} against the config's ${_cfg_steps}, its last rate" \
+             "${_ck_lr:-unreadable} against the config's ${_cfg_lr})." \
+             "HF restores base_lrs and last_epoch from it, so ${CFG}'s learning_rate and" \
+             "warmup_steps would both be ignored and the run would continue at the" \
+             "original peak with no warmup. Remove scheduler.pt from the checkpoint this" \
+             "extension resumes from -- keep optimizer.pt." >&2
+        exit 1
+      fi
     fi
   fi
   _extend=1
