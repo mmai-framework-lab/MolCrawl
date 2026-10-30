@@ -78,6 +78,25 @@ td.dt{font-family:ui-monospace,monospace;white-space:nowrap;font-size:11.5px}
 .b.none{background:var(--warn-w);color:var(--warn)}
 .b.ok{background:var(--surface-2);color:var(--muted)}
 .b.man{background:var(--live-w);color:var(--live)}
+.b.ds{background:var(--accent-w);color:var(--accent)}
+.b.bad{background:var(--warn-w);color:var(--warn)}
+.b.na{background:var(--surface-2);color:var(--muted)}
+.b.warn{background:var(--copy-w);color:var(--copy)}
+.note.warnbox{border-left-color:var(--warn)}
+.note.warnbox .lab{color:var(--warn)}
+td.hl{cursor:help}
+h2{margin:36px 0 8px;padding-top:14px;border-top:2px solid var(--ink);font-size:19px;font-weight:600;line-height:1.3}
+table.ds{min-width:74rem}
+tr.grp td{background:var(--surface-2);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent);font-weight:700;border-bottom:1px solid var(--line-2)}
+tr.grp .gn{float:right;font-family:ui-monospace,monospace;font-size:11px;font-weight:400;
+  letter-spacing:0;text-transform:none;color:var(--muted)}
+a.rl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+a.rl:hover{background:var(--accent-w)}
+td.xr{cursor:pointer;color:var(--accent);text-decoration:underline dotted;text-underline-offset:2px}
+td.xr:hover{background:var(--accent-w)}
+table.ds thead th,.note thead th{cursor:default}
+table.ds thead th:hover,.note thead th:hover{color:var(--muted)}
 .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
 .note{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--surface);border-radius:0 3px 3px 0;padding:13px 17px;margin:16px 0 0;font-size:13px;line-height:1.75}
 .note p{margin:0 0 8px;max-width:64ch} .note p:last-child{margin:0}
@@ -105,12 +124,15 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
   <label for="fp">設定記録</label><select id="fp"><option value="">すべて</option><option value="なし">なし のみ</option><option value="run_manifest">manifest あり</option></select>
   <label for="fb">バッチ</label><select id="fb"><option value="">すべて</option><option value="ne">2,560 以外</option><option value="un">不明</option></select>
   <label for="fc">棚卸し</label><select id="fc"><option value="">すべて</option>{{COHORTS}}</select>
+  <label for="fd">下流</label><select id="fd"><option value="">すべて</option><option value="y">あり のみ</option><option value="n">なし のみ</option></select>
+  <label for="fh">採用</label><select id="fh"><option value="">すべて</option><option value="bad">不一致 のみ</option><option value="一致">一致 のみ</option><option value="未">未照合 のみ</option></select>
+  <label for="fr">個別ページ</label><select id="fr"><option value="">すべて</option><option value="y">あり のみ</option></select>
   <button class="rst" id="rst">解除</button>
   <span class="cnt"><b id="n">402</b> / 402 件</span>
 </div>
 
 <div class="tw">
-  <table>
+  <table id="rt">
     <thead><tr>
       <th data-k="0">ツリー<span class="ar">↕</span></th>
       <th data-k="1">run<span class="ar">↕</span></th>
@@ -127,12 +149,20 @@ footer{border-top:1px solid var(--line);padding-top:16px;margin-top:26px;color:v
       <th data-k="12">max_iters<span class="ar">↕</span></th>
       <th data-k="13">設定の記録<span class="ar">↕</span></th>
       <th data-k="15">データセット<span class="ar">↕</span></th>
+      <th data-k="18">採用<span class="ar">↕</span></th>
+      <th data-k="17">下流<span class="ar">↕</span></th>
       <th data-k="14">曲線の記録<span class="ar">↕</span></th>
     </tr></thead>
     <tbody id="tb"></tbody>
   </table>
   <div class="empty" id="none" hidden>該当する run がありません</div>
 </div>
+
+{{REPORTS}}
+
+{{HEALTH}}
+
+{{DOWNSTREAM}}
 
 <div class="note">
   <span class="lab">列の読み方</span>
@@ -171,7 +201,8 @@ const D =
 const tb=document.getElementById("tb"), q=document.getElementById("q"),
       fb=document.getElementById("fb"), fo=document.getElementById("fo"), ft=document.getElementById("ft"),
       fa=document.getElementById("fa"), fp=document.getElementById("fp"),
-      fc=document.getElementById("fc"),
+      fc=document.getElementById("fc"), fd=document.getElementById("fd"),
+      fh=document.getElementById("fh"), fr=document.getElementById("fr"),
       nEl=document.getElementById("n"), none=document.getElementById("none");
 const trees=[...new Set(D.map(r=>r[0]))].sort();
 for(const t of trees){const o=document.createElement("option");o.value=t;o.textContent=t||"(本体)";ft.appendChild(o);}
@@ -196,7 +227,13 @@ function render(){
     if(fb.value==="ne" && (!r[9]||r[9]==="2560")) return false;
     if(fb.value==="un" && r[9]) return false;
     if(fc.value && r[16]!==fc.value) return false;
-    if(s && !(r[0]+" "+r[1]+" "+r[2]+" "+(r[15]||"")).toLowerCase().includes(s)) return false;
+    if(fd.value==="y" && !r[17]) return false;
+    if(fd.value==="n" && r[17]) return false;
+    if(fh.value==="bad" && r[19]!=="bad") return false;
+    if(fh.value==="一致" && r[18]!=="一致") return false;
+    if(fh.value==="未" && r[18]) return false;
+    if(fr.value==="y" && !r[21]) return false;
+    if(s && !(r[0]+" "+r[1]+" "+r[2]+" "+(r[15]||"")+" "+(r[17]||"")).toLowerCase().includes(s)) return false;
     return true;
   });
   rows.sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);return (x<y?-1:x>y?1:0)*sortDir;});
@@ -204,7 +241,7 @@ function render(){
   none.hidden = rows.length>0;
   tb.innerHTML = rows.map(r=>`<tr>
     <td class="m" style="font-size:11px;white-space:nowrap">${r[0]||"(本体)"}</td>
-    <td class="run">${r[1]}</td>
+    <td class="run">${r[21]?`<a class="rl" href="run/${r[21]}">${r[1]}</a>`:r[1]}</td>
     <td class="m" style="font-size:11px">${r[2]}</td>
     <td>${badge(r[3], r[3]==="実走行"?"live":"copy")}</td>
     <td class="dt">${r[4]}</td>
@@ -217,20 +254,33 @@ function render(){
     <td class="n" style="font-size:11px">${r[11]||"&mdash;"}</td>
     <td class="n" style="font-size:11px">${r[12]||"&mdash;"}</td>
     <td class="m" style="font-size:10.5px">${r[15]?r[15]:'<span style="color:var(--muted)">&mdash;</span>'}</td>
+    <td class="hl" title="${(r[20]||"").replace(/"/g,"&quot;")}">${r[18]?badge(r[18],r[19]):'<span style="color:var(--muted)">&mdash;</span>'}</td>
+    <td>${r[17]?r[17].split("／").map(e=>badge(e,"ds")).join(" "):'<span style="color:var(--muted)">&mdash;</span>'}</td>
     <td>${recBadge(r[13])}</td>
     <td class="m" style="font-size:10.5px;color:var(--muted)">${r[14]}</td>
   </tr>`).join("");
 }
-document.querySelectorAll("thead th").forEach(th=>{
+// Scoped to the run table: the notes and the downstream table also have thead
+// th, and those carry no data-k and no .ar, so a click there threw.
+document.querySelectorAll("#rt thead th").forEach(th=>{
   th.addEventListener("click",()=>{
     const k=+th.dataset.k;
     if(k===sortK) sortDir*=-1; else {sortK=k; sortDir=1;}
-    document.querySelectorAll("thead th").forEach(o=>{o.classList.remove("on");o.querySelector(".ar").textContent="↕";});
+    document.querySelectorAll("#rt thead th").forEach(o=>{o.classList.remove("on");o.querySelector(".ar").textContent="↕";});
     th.classList.add("on"); th.querySelector(".ar").textContent = sortDir>0?"↑":"↓";
     render();
   });
 });
-[q,fo,ft,fa,fp,fb,fc].forEach(el=>el.addEventListener("input",render));
-document.getElementById("rst").addEventListener("click",()=>{q.value="";fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";render();});
+[q,fo,ft,fa,fp,fb,fc,fd,fh,fr].forEach(el=>el.addEventListener("input",render));
+function clearFilters(){fo.value="";ft.value="";fa.value="";fp.value="";fb.value="";fc.value="";fd.value="";fh.value="";fr.value="";}
+document.getElementById("rst").addEventListener("click",()=>{q.value="";clearFilters();render();});
+// The join, made usable: a run name in the downstream table searches for it above.
+document.querySelectorAll("td.xr").forEach(td=>{
+  td.addEventListener("click",()=>{
+    q.value=td.dataset.run; clearFilters();
+    render();
+    document.querySelector(".ctl").scrollIntoView({behavior:"smooth",block:"center"});
+  });
+});
 render();
 </script>
