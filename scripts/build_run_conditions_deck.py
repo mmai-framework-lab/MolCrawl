@@ -24,22 +24,10 @@ import argparse
 import csv
 import json
 import os
-import re
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.util import Emu, Pt
-
-# Diagnostic, throughput and smoke runs. They are in the audit report and in the
-# full TSV; they are kept off the deck because §7 asks for the conditions the
-# results were taken under, and these runs produced no result. The rule is printed
-# on the lead slide so the reader can see what was left out.
-DIAGNOSTIC = re.compile(
-    r"diag|smoke|tput|microbatch|trial|aborted|pathcheck|envprobe|dsvl|lrprobe"
-    r"|lrpilot|reprobe|demoH4|8x80|effbatch|nodocmask|docmask-P|warmup2k|mlm015"
-    r"|esmopt|bertswap|stopped|rpb-|sat9|bf16$|fp32$",
-    re.I,
-)
 
 COLUMNS = [
     ("size", 0.072),
@@ -198,15 +186,16 @@ def main(argv=None):
 
     # The audit script's own helpers produce these two columns; importing them
     # keeps one definition rather than a second one that can drift.
-    from audit_checkpoint_metric_match import eval_set_description, seed_description
+    from audit_checkpoint_metric_match import (
+        eval_set_description,
+        is_production,
+        seed_description,
+    )
 
     rows = []
     excluded = 0
     for row in audit["runs"]:
-        if row["modality"] == "other_ds" and not args.all:
-            excluded += 1
-            continue
-        if not args.all and (DIAGNOSTIC.search(row["run"]) or not row.get("job_id")):
+        if not args.all and not is_production(row):
             excluded += 1
             continue
         row = dict(row)

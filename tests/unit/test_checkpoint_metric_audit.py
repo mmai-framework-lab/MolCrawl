@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"
 
 from audit_checkpoint_metric_match import (  # noqa: E402
     eval_set_description,
+    is_production,
     metric_minimum,
     model_size,
     seed_description,
@@ -129,3 +130,26 @@ def test_a_seed_the_config_asked_for_but_did_not_get_is_shown():
         "42（config は 1 を指定。効いていない）"
     assert seed_description({"seed": 9, "seed_configured": 9}) == "9"
     assert seed_description({"seed": 42, "seed_configured": None}) == "42"
+
+
+def test_a_production_run_needs_a_name_a_tree_and_a_job():
+    row = {"modality": "rna", "run": "rna-small-lr3e4", "job_id": "122417"}
+    assert is_production(row)
+
+
+def test_the_three_ways_out_of_the_production_set():
+    # The DeepSpeed comparison tree, a diagnostic name, and the generation that
+    # predates run_manifest.json and so records no job_id.
+    assert not is_production({"modality": "other_ds", "run": "r0-ds", "job_id": "1"})
+    assert not is_production({"modality": "rna", "run": "bert_small-bf16",
+                              "job_id": "1"})
+    assert not is_production({"modality": "genome_sequence",
+                              "run": "bert-small-global_random_seed7", "job_id": None})
+
+
+def test_a_production_name_is_not_caught_by_the_diagnostic_rule():
+    for run in ("compounds-medium-lr2p8e4-seed42-ext45k",
+                "protein_sequence-xl-lr3p4e5",
+                "bert-small-global_random_seed1-w1026",
+                "rna-large-lr1p3e4"):
+        assert is_production({"modality": "x", "run": run, "job_id": "1"}), run
