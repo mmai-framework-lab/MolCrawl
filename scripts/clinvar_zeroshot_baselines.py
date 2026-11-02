@@ -126,9 +126,16 @@ def main():
     ap.add_argument("--k", type=int, default=5)
     ap.add_argument("--out", default="")
     ap.add_argument("--scores-out", default="",
-                    help="per-variant baseline scores, needed to pair them "
-                         "against a model's scores variant for variant")
+                    help="where the per-variant baseline scores go; defaults to "
+                         "<--out stem>-scores.jsonl")
     args = ap.parse_args()
+
+    # The per-variant scores are not optional. The interval comparison pairs a
+    # model against these baselines variant for variant, and an AUROC cannot be
+    # unpicked back into the rows it came from.
+    if not args.scores_out and args.out:
+        stem = args.out[:-len(".json")] if args.out.endswith(".json") else args.out
+        args.scores_out = f"{stem}-scores.jsonl"
 
     import numpy as np
 
@@ -177,9 +184,17 @@ def main():
         os.makedirs(os.path.dirname(args.scores_out) or ".", exist_ok=True)
         with open(args.scores_out, "w") as fh:
             for r, u, m, y in zip(rows, uni, mk, labels):
+                c = (r.get("chrom") or "").replace("chr", "").strip()
+                pos = (r.get("pos") or "").strip()
                 fh.write(json.dumps({
                     "vcv_id": r.get("vcv_id"),
-                    "chrom": (r.get("chrom") or "").replace("chr", "").strip(),
+                    "chrom": c,
+                    "pos": int(pos) if pos.isdigit() else r.get("pos"),
+                    "ref_allele": r.get("ref"),
+                    "alt_allele": r.get("alt"),
+                    "clinical_significance":
+                        (r.get("ClinicalSignificance") or "").strip(),
+                    "fold": f"chr{c}",
                     "label_pathogenic": y,
                     "unigram": u,
                     "markov": m,

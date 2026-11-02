@@ -19,8 +19,9 @@
 # are submitted at once, Slurm starts the ones it can place, and the rest wait
 # their turn without any of them being dropped.
 #
-# A subset whose output file is already there is skipped, so a run that was
-# measured before this array existed is not paid for twice. FORCE=1 rescores it.
+# A subset whose output is already there, with per-variant rows that carry the
+# column NEED_COL names, is skipped, so a run measured before this array existed
+# is not paid for twice. FORCE=1 rescores it anyway.
 #
 # Required: RUNS_ROOT, CSV, TOKENIZER, OUT_DIR.
 # Optional: RUN_GLOB, CHROMS, POSITION_BATCH, FORCE, NO_BF16.
@@ -64,16 +65,22 @@ echo "=== wrapped / window -> ${OUT} ==="
 BF16_FLAG="--bf16"
 [ -n "${NO_BF16:-}" ] && BF16_FLAG=""
 
-# Skip only when both halves are there. The first pass wrote the aggregate
-# alone, so a subset with an aggregate and no per-variant scores is unfinished
-# work, not work already done, and the interval comparison needs the rows.
+# Skip only when the per-variant rows are there and carry the column named in
+# NEED_COL. Two passes were paid for want of this: the first wrote the aggregate
+# alone, and the second a bare score, which cannot be joined back to a variant
+# and cannot be re-summed over a narrower range. A file that predates a column
+# is unfinished work, not work already done.
 PREDS="${OUT%.json}-predictions.jsonl"
-if [ -s "${OUT}" ] && [ -s "${PREDS}" ] && [ -z "${FORCE:-}" ]; then
+NEED_COL="${NEED_COL:-score_window}"
+have_col() { [ -s "$1" ] && head -1 "$1" | grep -q "\"${NEED_COL}\"" ; }
+if [ -s "${OUT}" ] && have_col "${PREDS}" && [ -z "${FORCE:-}" ]; then
     echo "既にある、飛ばす: ${OUT}"
     exit 0
 fi
 if [ -s "${OUT}" ] && [ ! -s "${PREDS}" ]; then
     echo "集計はあるが変異ごとの値が無い、採点し直す: ${OUT}"
+elif [ -s "${PREDS}" ] && ! have_col "${PREDS}"; then
+    echo "変異ごとの値に ${NEED_COL} が無い、採点し直す: ${PREDS}"
 fi
 
 "${PY}" scripts/clinvar_zeroshot_bert_rescore.py \
