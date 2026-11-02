@@ -94,6 +94,10 @@ workflows/_*
 # time of writing) and a broad `git add workflows` sweeps all of it into a commit.
 workflows/slurm-logs/
 
+# Submission records: one job-id-per-line TSV per submitter run (read back by
+# scripts/check_job_outcomes.py). Run artifacts, not source.
+workflows/submit-records/
+
 # Scratch workspace. Session-scoped notes, HuggingFace caches, autopilot runtime
 # state and one-off survey output all live here; none of it is ever committed.
 # Supersedes the per-subdirectory rules that had accumulated for this directory.
