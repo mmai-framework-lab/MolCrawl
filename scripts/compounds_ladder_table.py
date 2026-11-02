@@ -27,12 +27,22 @@ TRAIN_WINDOWS = 398_917
 SEQ_PER_STEP = 2_560
 TOKENS_PER_SEQ = 1_024
 
-# (size, learning rate as written in the config, run directory)
+# (size, learning rate as written in the config, run directory, the stage before it)
+#
+# The fourth value is the run this one continued. The improvement a stage bought is
+# worth a column of its own: for large it is -0.000078, smaller than the gaps between
+# neighbouring sizes in this very table, and a value shown without it reads as though
+# the longer schedule had bought something it did not. It is read from that run rather
+# than written in, so a further stage needs no editing here.
 BERT_ARMS = [
-    ("small", "1e-4", "compounds-small-lr1e3-seed42-ext30k"),
-    ("medium", "2.8e-5", "compounds-medium-lr2p8e4-seed42-ext30k"),
-    ("large", "1.5e-5", "compounds-large-lr1p5e4-seed42-ext30k"),
-    ("xlarge", "4.5e-6", "compounds-xl-lr4p5e5-seed42-ext30k"),
+    ("small", "1e-4", "compounds-small-lr1e3-seed42-ext45k",
+     "compounds-small-lr1e3-seed42-ext30k"),
+    ("medium", "2.8e-5", "compounds-medium-lr2p8e4-seed42-ext45k",
+     "compounds-medium-lr2p8e4-seed42-ext30k"),
+    ("large", "1.5e-5", "compounds-large-lr1p5e4-seed42-ext45k",
+     "compounds-large-lr1p5e4-seed42-ext30k"),
+    ("xlarge", "4.5e-6", "compounds-xl-lr4p5e5-seed42-ext45k",
+     "compounds-xl-lr4p5e5-seed42-ext30k"),
 ]
 
 GPT2_ARMS = [
@@ -57,6 +67,9 @@ COLUMNS = [
     "adopted_tokens",
     "best_is_final_eval",
     "final_minus_best",
+    "prev_stage_value",
+    "prev_stage_steps",
+    "minus_prev_stage",
     "source",
 ]
 
@@ -121,7 +134,23 @@ def last_checkpoint(run: Path) -> Path:
     return run / f"checkpoint-{steps[-1]}"
 
 
-def bert_row(root: Path, size: str, lr: str, dirname: str) -> list[str]:
+def bert_best(run: Path) -> tuple[float, int, int]:
+    """The smallest eval_loss_mask in a run, its step, and the run's last step.
+
+    Read from log_history rather than from best_metric, so that a stage whose
+    best_metric fell back to another metric cannot quietly supply the number.
+    """
+    checkpoint = last_checkpoint(run)
+    with open(checkpoint / "trainer_state.json") as fh:
+        state = json.load(fh)
+    evals = [h for h in state["log_history"] if "eval_loss_mask" in h]
+    if not evals:
+        raise SystemExit(f"{run}: no eval_loss_mask in log_history")
+    best = min(evals, key=lambda h: h["eval_loss_mask"])
+    return best["eval_loss_mask"], int(best["step"]), int(state["global_step"])
+
+
+def bert_row(root: Path, size: str, lr: str, dirname: str, prev: str) -> list[str]:
     run = root / dirname
     checkpoint = last_checkpoint(run)
     with open(checkpoint / "trainer_state.json") as fh:
@@ -140,6 +169,7 @@ def bert_row(root: Path, size: str, lr: str, dirname: str) -> list[str]:
 
     step = int(scanned["step"])
     final = evals[-1]
+    prev_value, _, prev_steps = bert_best(root / prev)
     return [
         "bert",
         size,
@@ -155,6 +185,9 @@ def bert_row(root: Path, size: str, lr: str, dirname: str) -> list[str]:
         str(tokens(step)),
         "yes" if final["step"] == scanned["step"] else "no",
         f"{final['eval_loss_mask'] - scanned['eval_loss_mask']:+.6f}",
+        f"{prev_value:.6f}",
+        str(prev_steps),
+        f"{scanned['eval_loss_mask'] - prev_value:+.6f}",
         f"{dirname}/{checkpoint.name}/trainer_state.json",
     ]
 
@@ -194,6 +227,9 @@ def gpt2_row(root: Path, size: str, lr: str, dirname: str) -> list[str]:
         str(tokens(best_step)),
         "yes" if best_step == run_steps else "no",
         f"{final_value - best_value:+.6f}",
+        "",  # no stage before it: these runs were not continued from a shorter one
+        "",
+        "",
         f"{dirname}/checkpoint-*/training_args.json",
     ]
 
