@@ -24,11 +24,25 @@ the window mode is 1,024 times the work of the variant mode, so its cost is
 measured before it is paid.
 
 Every run writes its per-variant scores beside the aggregate, as
-``<out stem>-predictions.jsonl``. This is not optional. Keeping only the
-aggregate AUROCs once cost a second pass over 21 runs -- about 90 GPU-hours --
-because a bootstrap interval cannot be resampled from a mean. `--no-predictions`
-exists for the timing probes, which score a prefix and whose rows are not a
-measurement of anything.
+``<out stem>-predictions.jsonl``. There is no flag for leaving them out.
+Keeping only the aggregate AUROCs cost one pass over 21 runs -- about 90
+GPU-hours -- because a bootstrap interval cannot be resampled from a mean, and
+the pass that fixed that cost another, because its rows carried the score
+alone: nothing to join a row back to a variant, and no way to change what the
+score is summed over.
+
+Each row now carries the variant's identity -- the VCV id, the chromosome, the
+position, both alleles, the ClinVar call -- and, for every range below, the
+reference sequence's value, the variant sequence's value, and their difference.
+
+In window mode the ranges are the whole 1,024 positions, the 257 within 128
+bases of the variant, the 65 within 32, and the variant position alone. All
+four come out of one pass: every position is masked and scored anyway, so
+narrowing the range only changes which of those values are added up, and the
+GPU cost is identical. Whether the range matters is then a question the file
+can answer -- a position far from the variant moves with the sequence rather
+than with the substitution, and summing 1,024 of them may bury the one
+position that differs.
 """
 import argparse
 import csv
@@ -39,6 +53,10 @@ import sys
 import time
 
 FOLDS = ("21", "22", "X")
+
+# How far from the variant a range reaches, in bases. None is the whole window,
+# 0 the variant position alone. 128 and 32 give 257 and 65 positions.
+RANGES = (("window", None), ("flank128", 128), ("flank32", 32), ("point", 0))
 
 
 def auroc(labels, scores):
@@ -62,19 +80,37 @@ def auroc(labels, scores):
 
 
 def read_rows(path, chroms, limit=None):
+    """The variants to score, each with what identifies it.
+
+    A score on its own cannot be joined back to a variant, so the VCV id, the
+    position, both alleles and the ClinVar call travel with the row and are
+    written out beside the values.
+
+    A variant whose ClinVar call conflicts, or which is neither pathogenic nor
+    benign, is left out here rather than later, so every count downstream is
+    the count of rows actually scored.
+    """
     csv.field_size_limit(min(sys.maxsize, 2**31 - 1))
     out = []
     for r in csv.DictReader(open(path, newline="")):
         c = (r.get("chrom") or "").replace("chr", "").strip()
         if c not in chroms:
             continue
-        sig = (r.get("ClinicalSignificance") or "").lower()
-        if "conflicting" in sig:
+        sig = (r.get("ClinicalSignificance") or "").strip()
+        low = sig.lower()
+        if "conflicting" in low:
             continue
-        p, b = "pathogenic" in sig, "benign" in sig
+        p, b = "pathogenic" in low, "benign" in low
         if p == b:
             continue
-        out.append((c, r["reference_sequence"], r["variant_sequence"], 1 if p else 0))
+        pos = (r.get("pos") or "").strip()
+        out.append({"vcv_id": r.get("vcv_id"), "chrom": c,
+                    "pos": int(pos) if pos.isdigit() else pos,
+                    "ref_allele": r.get("ref"), "alt_allele": r.get("alt"),
+                    "clinical_significance": sig,
+                    "label_pathogenic": 1 if p else 0,
+                    "reference_sequence": r["reference_sequence"],
+                    "variant_sequence": r["variant_sequence"]})
         if limit and len(out) >= limit:
             break
     return out
@@ -113,9 +149,17 @@ def adopted_checkpoint(run_dir):
         f"directory here either as given or as {run_dir}/{name}")
 
 
-def sequence_logprob(model, torch, F, ids_row, positions, mask_id, pos_batch):
-    """Mean log prob of the true token over `positions`, each masked alone."""
-    total = 0.0
+def position_logprobs(model, torch, F, ids_row, positions, mask_id, pos_batch):
+    """Log prob of the true token at each of `positions`, each masked alone.
+
+    Returns (values, total). `values` holds one float per position, in the
+    order of `positions`, which is what the narrower ranges are summed from.
+    `total` is accumulated the way it was before the ranges existed -- one
+    reduction per chunk on the device, added in chunk order -- so the
+    whole-window value is arrived at by the same arithmetic as the runs of
+    2026-10-30 and can be checked against them.
+    """
+    values, total = [], 0.0
     for start in range(0, len(positions), pos_batch):
         chunk = positions[start:start + pos_batch]
         batch = ids_row.unsqueeze(0).repeat(len(chunk), 1).clone()
@@ -125,8 +169,44 @@ def sequence_logprob(model, torch, F, ids_row, positions, mask_id, pos_batch):
         logits = model(input_ids=batch,
                        attention_mask=torch.ones_like(batch)).logits
         lp = F.log_softmax(logits[range(len(chunk)), chunk].float(), dim=-1)
-        total += float(lp.gather(1, truth.unsqueeze(1)).sum())
-    return total / len(positions)
+        got = lp.gather(1, truth.unsqueeze(1))
+        total += float(got.sum())
+        values.extend(got.squeeze(1).tolist())
+    return values, total
+
+
+def range_slice(n, at, half):
+    """The index range a half-width covers, clipped to the window."""
+    if half is None:
+        return 0, n
+    return max(0, at - half), min(n, at + half + 1)
+
+
+def range_means(values, at, total=None):
+    """Mean log prob over each range, from one pass's per-position values.
+
+    The mean rather than the sum, because AUROC does not change when every
+    score is divided by the same constant, and a mean is the same quantity
+    whether the range holds 1,024 positions or one.
+
+    `total` is the whole window's sum as the device reduced it; when it is
+    given, the window's mean is that number divided by the count instead of a
+    second summation in a different order.
+    """
+    out = {}
+    for name, half in RANGES:
+        lo, hi = range_slice(len(values), at, half)
+        if half is None and total is not None:
+            out[name] = total / (hi - lo)
+        else:
+            out[name] = sum(values[lo:hi]) / (hi - lo)
+    return out
+
+
+def range_counts(n, at):
+    """How many positions each range covers."""
+    return {name: (lambda lo, hi: hi - lo)(*range_slice(n, at, half))
+            for name, half in RANGES}
 
 
 def main():
@@ -143,8 +223,6 @@ def main():
     ap.add_argument("--position-batch", type=int, default=512,
                     help="window mode: masked copies per forward pass")
     ap.add_argument("--bf16", action="store_true")
-    ap.add_argument("--no-predictions", action="store_true",
-                    help="timing probes only: skip the per-variant scores")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -153,7 +231,7 @@ def main():
     from transformers import AutoModelForMaskedLM, AutoTokenizer
 
     rows = read_rows(args.csv, set(args.chroms.split(",")), args.max_variants)
-    labels = [y for _c, _r, _v, y in rows]
+    labels = [r["label_pathogenic"] for r in rows]
     print(f"  {len(rows):,} 変異（病原性 {sum(labels):,} / 良性 {len(labels) - sum(labels):,}）")
 
     ckpt, ckpt_step = adopted_checkpoint(args.run_dir)
@@ -165,7 +243,7 @@ def main():
     model.to(device).eval()
 
     wrapped = args.input_form == "wrapped"
-    window = len(rows[0][1])
+    window = len(rows[0]["reference_sequence"])
     offset = 1 if wrapped else 0
     cls_id, sep_id, mask_id = tok.cls_token_id, tok.sep_token_id, tok.mask_token_id
 
@@ -173,76 +251,126 @@ def main():
         ids = tok.convert_tokens_to_ids(list(seq))
         return ([cls_id] + ids + [sep_id]) if wrapped else ids
 
+    # Variant mode scores one position, so the only range it can report is that
+    # position. Window mode scores all of them and reports all four.
+    names = [name for name, _half in RANGES] if args.positions == "window" else ["point"]
+    counts = (range_counts(window, window // 2) if args.positions == "window"
+              else {"point": 1})
+    scored = {name: [] for name in names}
+    lls = {"ref": {name: [] for name in names},
+           "var": {name: [] for name in names}}
+
     t0 = time.time()
-    scores = []
     if args.positions == "variant":
         at = window // 2 + offset
         with torch.no_grad():
             for lo in range(0, len(rows), args.variant_batch):
                 chunk = rows[lo:lo + args.variant_batch]
-                got = []
-                for which in (1, 2):
-                    ids = torch.tensor([encode(r[which]) for r in chunk],
+                got = {}
+                for side, key in (("ref", "reference_sequence"),
+                                  ("var", "variant_sequence")):
+                    ids = torch.tensor([encode(r[key]) for r in chunk],
                                        dtype=torch.long, device=device)
                     truth = ids[:, at].clone()
                     ids[:, at] = mask_id
                     logits = model(input_ids=ids,
                                    attention_mask=torch.ones_like(ids)).logits
                     lp = F.log_softmax(logits[:, at].float(), dim=-1)
-                    got.append(lp.gather(1, truth.unsqueeze(1)).squeeze(1))
-                scores.extend((got[0] - got[1]).tolist())
+                    got[side] = lp.gather(1, truth.unsqueeze(1)).squeeze(1).tolist()
+                for ref_lp, var_lp in zip(got["ref"], got["var"]):
+                    lls["ref"]["point"].append(ref_lp)
+                    lls["var"]["point"].append(var_lp)
+                    scored["point"].append(ref_lp - var_lp)
                 if lo % (args.variant_batch * 50) == 0:
                     print(f"    {lo:,} / {len(rows):,}  {time.time() - t0:.0f}s", flush=True)
     else:
         positions = list(range(offset, offset + window))
+        at = window // 2          # index into `positions`, where the variant is
         with torch.no_grad():
-            for i, (_c, ref, var, _y) in enumerate(rows):
-                vals = []
-                for seq in (ref, var):
-                    ids_row = torch.tensor(encode(seq), dtype=torch.long, device=device)
-                    vals.append(sequence_logprob(model, torch, F, ids_row, positions,
-                                                 mask_id, args.position_batch))
-                scores.append(vals[0] - vals[1])
+            for i, row in enumerate(rows):
+                got = {}
+                for side, key in (("ref", "reference_sequence"),
+                                  ("var", "variant_sequence")):
+                    ids_row = torch.tensor(encode(row[key]), dtype=torch.long,
+                                           device=device)
+                    values, total = position_logprobs(
+                        model, torch, F, ids_row, positions, mask_id,
+                        args.position_batch)
+                    got[side] = range_means(values, at, total)
+                for name in names:
+                    lls["ref"][name].append(got["ref"][name])
+                    lls["var"][name].append(got["var"][name])
+                    scored[name].append(got["ref"][name] - got["var"][name])
                 if i and i % 10 == 0:
                     rate = (i + 1) / (time.time() - t0)
                     print(f"    {i + 1:,} / {len(rows):,}  {rate:.2f} 変異/秒  "
                           f"全 21,350 件なら {21350 / rate / 3600:.1f} 時間", flush=True)
     elapsed = time.time() - t0
 
+    primary = "window" if args.positions == "window" else "point"
     out = {"run_dir": args.run_dir, "checkpoint": ckpt,
            "checkpoint_step": ckpt_step,
            "input_form": args.input_form, "positions": args.positions,
            "bf16": args.bf16, "n_variants": len(rows), "seconds": round(elapsed, 1),
            "variants_per_second": round(len(rows) / elapsed, 3),
-           "auroc_all": auroc(labels, scores)}
-    three = [(y, s) for (c, _r, _v, y), s in zip(rows, scores) if c in FOLDS]
-    if three:
-        out["n_three"] = len(three)
-        out["auroc_three"] = auroc([y for y, _ in three], [s for _, s in three])
-    for fold in FOLDS:
-        got = [(y, s) for (c, _r, _v, y), s in zip(rows, scores) if c == fold]
-        if got:
-            out[f"n_chr{fold}"] = len(got)
-            out[f"auroc_chr{fold}"] = auroc([y for y, _ in got], [s for _, s in got])
+           "primary_range": primary, "ranges": {}}
+    for name in names:
+        values = scored[name]
+        block = {"n_positions": counts[name], "auroc_all": auroc(labels, values)}
+        three = [(r["label_pathogenic"], s) for r, s in zip(rows, values)
+                 if r["chrom"] in FOLDS]
+        if three:
+            block["n_three"] = len(three)
+            block["auroc_three"] = auroc([y for y, _ in three], [s for _, s in three])
+        for fold in FOLDS:
+            got = [(r["label_pathogenic"], s) for r, s in zip(rows, values)
+                   if r["chrom"] == fold]
+            if got:
+                block[f"n_chr{fold}"] = len(got)
+                block[f"auroc_chr{fold}"] = auroc([y for y, _ in got],
+                                                  [s for _, s in got])
+        out["ranges"][name] = block
+
+    # The primary range keeps the top-level key names the aggregates had before
+    # the ranges existed, because the window table and the fold table read them.
+    for key, value in out["ranges"][primary].items():
+        if key != "n_positions":
+            out[key] = value
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
 
     # The per-variant scores go out first, so a crash between the two files
-    # leaves the rows and not just the mean.
-    if not args.no_predictions:
-        stem = args.out[:-len(".json")] if args.out.endswith(".json") else args.out
-        preds = f"{stem}-predictions.jsonl"
-        with open(preds, "w") as handle:
-            for (chrom, _ref, _var, label), score in zip(rows, scores):
-                handle.write(json.dumps(
-                    {"chrom": chrom, "fold": f"chr{chrom}",
-                     "label_pathogenic": label, "score": score}) + "\n")
-        out["predictions"] = os.path.basename(preds)
-        print(f"  wrote {preds}  ({len(scores):,} 行)")
+    # leaves the rows and not just the mean. The sequences are not repeated
+    # here: they are in the CSV, and the VCV id joins a row back to them.
+    stem = args.out[:-len(".json")] if args.out.endswith(".json") else args.out
+    preds = f"{stem}-predictions.jsonl"
+    columns = None
+    with open(preds, "w") as handle:
+        for i, row in enumerate(rows):
+            rec = {"vcv_id": row["vcv_id"], "chrom": row["chrom"],
+                   "pos": row["pos"], "ref_allele": row["ref_allele"],
+                   "alt_allele": row["alt_allele"],
+                   "clinical_significance": row["clinical_significance"],
+                   "fold": f"chr{row['chrom']}",
+                   "label_pathogenic": row["label_pathogenic"]}
+            for name in names:
+                rec[f"ll_ref_{name}"] = lls["ref"][name][i]
+                rec[f"ll_var_{name}"] = lls["var"][name][i]
+                rec[f"score_{name}"] = scored[name][i]
+            columns = columns or list(rec)
+            handle.write(json.dumps(rec) + "\n")
+    out["predictions"] = os.path.basename(preds)
+    out["prediction_columns"] = columns
+    out["prediction_rows"] = len(rows)
+    print(f"  wrote {preds}  ({len(rows):,} 行 / {len(columns or [])} 列)")
 
     json.dump(out, open(args.out, "w"), indent=2)
     print(f"\n  {args.input_form}/{args.positions}: AUROC {out['auroc_all']:.6f}  "
           f"{elapsed:.0f}s  {out['variants_per_second']:.3f} 変異/秒")
+    for name in names:
+        block = out["ranges"][name]
+        print(f"    {name:9s} ({block['n_positions']:,} 箇所): "
+              f"AUROC {block['auroc_all']:.6f}")
     print(f"  wrote {args.out}")
 
 

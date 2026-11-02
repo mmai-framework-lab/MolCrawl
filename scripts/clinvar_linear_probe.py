@@ -226,6 +226,10 @@ def write_predictions(path, rows, held):
     Without these, the fold AUROCs are all that survives and nothing can be
     compared variant for variant afterwards -- neither probe against probe nor
     probe against the model-free control. chrY is never held out and is omitted.
+
+    Each line carries what identifies the variant -- the VCV id, the position,
+    both alleles, the ClinVar call -- so a row can be joined to the zero-shot
+    rows and to the CSV without depending on the order it was written in.
     """
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     n = 0
@@ -233,7 +237,13 @@ def write_predictions(path, rows, held):
         for r, s in zip(rows, held):
             if np.isnan(s):
                 continue
+            pos = (r.get("pos") or "").strip()
             fh.write(json.dumps({"vcv_id": r.get("vcv_id"), "chrom": r["_chrom"],
+                                 "pos": int(pos) if pos.isdigit() else r.get("pos"),
+                                 "ref_allele": r.get("ref"),
+                                 "alt_allele": r.get("alt"),
+                                 "clinical_significance":
+                                     (r.get("ClinicalSignificance") or "").strip(),
                                  "fold": "chr" + r["_chrom"],
                                  "label_pathogenic": int(r["_y"]),
                                  "score": float(s)}) + "\n")
@@ -265,8 +275,15 @@ def main():
                          "run's config and leaves the weights at init, instead "
                          "of probing the trained runs")
     ap.add_argument("--pred-dir", default="",
-                    help="write <pred-dir>/<name>/predictions.jsonl for each probe")
+                    help="where the per-probe predictions.jsonl go; defaults to "
+                         "the directory --out is written to")
     args = ap.parse_args()
+
+    # The per-variant values are not optional. A run that keeps only the fold
+    # AUROCs cannot be compared variant for variant afterwards, and the only
+    # way back is to fit everything again.
+    if not args.pred_dir:
+        args.pred_dir = os.path.dirname(args.out) or "."
 
     import torch
 
@@ -297,9 +314,8 @@ def main():
 
     mf = model_free_features(rows)
     per_fold, overall, held = probe(mf, rows, args.C, args.seed, args.max_iter)
-    if args.pred_dir:
-        write_predictions(os.path.join(args.pred_dir, "model_free", "predictions.jsonl"),
-                          rows, held)
+    write_predictions(os.path.join(args.pred_dir, "model_free", "predictions.jsonl"),
+                      rows, held)
     results["model_free"] = {"overall_auroc": overall, "per_fold": per_fold,
                              "n_features": int(mf.shape[1])}
     print(f"  {'model-free (置換型 12 + CpG + GC)':44s} 全体 {overall:.4f}   "
@@ -362,9 +378,8 @@ def main():
             t_feat = time.monotonic() - t0
             pf, ov, held = probe(feats, rows, args.C, args.seed, args.max_iter)
             t_all = time.monotonic() - t0
-            if args.pred_dir:
-                write_predictions(os.path.join(args.pred_dir, name, "predictions.jsonl"),
-                                  rows, held)
+            write_predictions(os.path.join(args.pred_dir, name, "predictions.jsonl"),
+                              rows, held)
             results["runs"][name] = {"checkpoint": label,
                                      "checkpoint_step": step,
                                      "untrained": untrained,

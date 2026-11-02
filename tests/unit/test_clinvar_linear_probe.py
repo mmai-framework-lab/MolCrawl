@@ -141,7 +141,9 @@ def test_predictions_hold_exactly_the_held_out_variants(tmp_path):
 
     assert n == len(lines) == 120                    # 3 folds x 40, chrY omitted
     assert {x["fold"] for x in lines} == {"chr21", "chr22", "chrX"}
-    assert all(set(x) == {"vcv_id", "chrom", "fold", "label_pathogenic", "score"}
+    assert all(set(x) == {"vcv_id", "chrom", "pos", "ref_allele", "alt_allele",
+                          "clinical_significance", "fold", "label_pathogenic",
+                          "score"}
                for x in lines)
 
 
