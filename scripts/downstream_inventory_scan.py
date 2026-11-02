@@ -43,6 +43,31 @@ COLUMNS = ["modality", "eval", "metric", "better", "arch", "size", "tree", "run"
            "checkpoint", "value", "sd", "control", "control_value",
            "baseline", "baseline_value", "n", "set", "source"]
 
+# Which way is better, per metric. The column used to be the constant "higher",
+# which is right for three of the four metrics here and wrong for RMSE: nine rows
+# of the 2026-10-29 table said a larger solubility error was the better one, and a
+# reader ranking by that column read the four compounds sizes backwards.
+#
+# Keyed by the metric rather than by the task, because the sources do not share a
+# task vocabulary -- retrieval has directions, ProteinGym has assays -- while they
+# all name a metric. The same direction is declared for the compounds tasks in
+# scripts/compounds_downstream_eval.DIRECTION, keyed by task; that one feeds the
+# improvement's sign and this one only labels the column, so they are left apart
+# rather than one importing the other.
+DIRECTION = {
+    "rmse": "lower",
+    "mae": "lower",
+    "roc-auc": "higher",
+    "rocauc": "higher",
+    "auroc": "higher",
+    "spearman": "higher",
+    "recall@1": "higher",
+    "mrr": "higher",
+    "accuracy": "higher",
+    "r2": "higher",
+}
+UNKNOWN_DIRECTION = "UNKNOWN"
+
 # The compounds JSONs use the task's own slug; these are what a report calls them.
 TASK_LABEL = {"herg": "hERG 阻害", "solubility": "水溶解度", "smoke": "疎通確認"}
 DIRECTION_LABEL = {"molecule_to_text": "検索 分子→説明文",
@@ -79,6 +104,26 @@ def split_run(path: str, strip: str, prefix: str = "learning_source"):
     return parts[0], str(Path(*parts[1:])) if len(parts) > 1 else "", checkpoint
 
 
+def better_for(metric: str, unknown: list) -> str:
+    """Which way is better for this metric.
+
+    Named for what it returns rather than ``direction``: read_retrieval already
+    uses that word for the retrieval direction (molecule_to_text), and a helper
+    called ``direction`` was shadowed by it at run time.
+
+    An undeclared metric is marked rather than guessed. Guessing is what put
+    "higher" on RMSE, and a wrong direction is worse than a missing one: it reads
+    as a fact and reverses the ranking, where a marker sends the reader to the
+    metric. The names are collected so the run says which ones it did not know.
+    """
+    key = (metric or "").strip().lower()
+    if key in DIRECTION:
+        return DIRECTION[key]
+    if metric and metric not in unknown:
+        unknown.append(metric)
+    return UNKNOWN_DIRECTION
+
+
 def row(**kw):
     r = {c: "" for c in COLUMNS}
     r.update(kw)
@@ -89,7 +134,7 @@ def fmt(v, nd=4):
     return "" if v is None else f"{float(v):.{nd}f}"
 
 
-def read_compounds(spec, report: Path, strip: str, rows):
+def read_compounds(spec, report: Path, strip: str, rows, unknown):
     """A task's JSON carries the model, the untrained seeds and the fingerprint."""
     trained = report / spec["dir"]
     control = report / spec["control_dir"] if spec.get("control_dir") else None
@@ -114,7 +159,8 @@ def read_compounds(spec, report: Path, strip: str, rows):
             rows.append(row(
                 modality=spec["modality"],
                 eval=TASK_LABEL.get(d.get("task", ""), d.get("task", "")),
-                metric=d.get("metric", ""), better="higher",
+                metric=d.get("metric", ""),
+                better=better_for(d.get("metric", ""), unknown),
                 arch=m.get("arch", ""), size=m.get("size", ""),
                 tree=tree, run=run, checkpoint=m.get("adopted_checkpoint", "") or ck,
                 value=fmt(m.get("mean")), sd=fmt(m.get("sd")),
@@ -125,7 +171,7 @@ def read_compounds(spec, report: Path, strip: str, rows):
                 set=spec.get("set", ""), source=f"{spec['dir']}/{jf.name}"))
 
 
-def read_retrieval(spec, report: Path, strip: str, rows):
+def read_retrieval(spec, report: Path, strip: str, rows, unknown):
     """One row per direction: the two directions are separate evaluations."""
     for jf in sorted((report / spec["dir"]).glob("*.json")):
         d = json.loads(jf.read_text(encoding="utf-8"))
@@ -140,7 +186,8 @@ def read_retrieval(spec, report: Path, strip: str, rows):
             rows.append(row(
                 modality=spec["modality"],
                 eval=f"{label}（{variant}）" if variant else label,
-                metric="recall@1", better="higher",
+                metric="recall@1",
+                better=better_for("recall@1", unknown),
                 arch=d.get("arch", ""), size=d.get("size", ""),
                 tree=tree, run=run, checkpoint=ck,
                 value=fmt(m.get("recall@1")),
@@ -150,7 +197,7 @@ def read_retrieval(spec, report: Path, strip: str, rows):
                 set=spec.get("set", ""), source=f"{spec['dir']}/{jf.name}"))
 
 
-def read_proteingym(spec, report: Path, strip: str, rows):
+def read_proteingym(spec, report: Path, strip: str, rows, unknown):
     """(arch, size) -> run directory comes from the table script's own MODELS."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from protein_proteingym_tables import MODELS  # noqa: E402  (one place names the runs)
@@ -170,7 +217,8 @@ def read_proteingym(spec, report: Path, strip: str, rows):
             done = r.get("status") == "done"
             rows.append(row(
                 modality=spec["modality"], eval="ProteinGym", metric="Spearman",
-                better="higher", arch=r["arch"], size=r["size"],
+                better=better_for("Spearman", unknown),
+                arch=r["arch"], size=r["size"],
                 tree=tree, run=run, checkpoint=ck,
                 value=r["spearman_mean"] if done else "",
                 sd="", control="", control_value="",
@@ -196,13 +244,14 @@ def main() -> int:
     strip = cfg.get("strip", "")
 
     rows: list[dict] = []
+    unknown: list[str] = []
     for spec in cfg["sources"]:
         reader = READERS.get(spec["kind"])
         if reader is None:
             print(f"  unknown kind {spec['kind']!r}, skipped", file=sys.stderr)
             continue
         before = len(rows)
-        reader(spec, report, strip, rows)
+        reader(spec, report, strip, rows, unknown)
         print(f"  {spec['kind']:16s} {spec.get('dir') or spec.get('per_model')}"
               f"  {len(rows) - before} 行")
 
@@ -213,6 +262,13 @@ def main() -> int:
         w.writerows(rows)
     runs = {(r["tree"], r["run"]) for r in rows}
     print(f"wrote {args.out} ({len(rows)} 行 / {len(runs)} run)")
+    if unknown:
+        marked = sum(1 for r in rows if r["better"] == UNKNOWN_DIRECTION)
+        print(f"  向きを宣言していない指標 {len(unknown)} 種 / {marked} 行: "
+              f"{', '.join(sorted(unknown))}", file=sys.stderr)
+        print("  DIRECTION に足してから読むこと", file=sys.stderr)
+    for metric, better in sorted({(r["metric"], r["better"]) for r in rows}):
+        print(f"  {metric:<10}{better}")
     return 0
 
 
