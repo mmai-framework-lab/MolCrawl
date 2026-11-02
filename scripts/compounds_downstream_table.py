@@ -58,7 +58,12 @@ def row(trained_path: Path, untrained_path: Path) -> list[str]:
 
     task = doc["task"]
     baseline = trained_models["ECFP4+linear"]
-    name = next(k for k in trained_models if k != "ECFP4+linear")
+    # Named by exclusion rather than by position. When --untrained-seeds is used the
+    # trained model and its untrained controls come out of one run and land in one
+    # report, so "the entry that is not the fingerprint" is no longer unique and a
+    # positional pick would depend on the order json happened to write.
+    name = next(k for k in trained_models
+                if k != "ECFP4+linear" and "-untrained-seed" not in k)
     trained = trained_models[name]
 
     seeds = []

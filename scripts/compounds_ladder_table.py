@@ -11,6 +11,14 @@ GPT-2 it is read from ``training_args.json`` in the retained checkpoints, whose
 Epochs and tokens are derived here rather than copied, from the training window
 count and the global batch, so that a longer schedule needs no hand arithmetic.
 
+Two parameter columns, named apart because they have been mixed up.
+``params_total`` is every parameter in the checkpoint. ``params_nonembedding``
+is the 6ND count the figures put on their compute axis, and it is the smaller
+one: a 616-token vocabulary adds parameters that barely add work. The two
+conventions differ by architecture and that is deliberate -- nanoGPT ties
+``lm_head`` to ``wte``, so the token embedding does enter a matrix multiply
+there and is not subtracted, while BERT's is.
+
 Usage:
     compounds_ladder_table.py --bert-root DIR --gpt2-root DIR --out FILE
 """
@@ -55,11 +63,14 @@ GPT2_ARMS = [
 COLUMNS = [
     "arch",
     "size",
-    "params",
+    "params_total",
+    "params_nonembedding",
     "hidden",
     "layers",
     "learning_rate",
     "steps_run",
+    "lr_at_last_step",
+    "lr_ends_at_zero",
     "metric",
     "adopted_value",
     "adopted_step",
@@ -125,6 +136,37 @@ def gpt2_param_count(config: dict) -> int:
     )
 
 
+def bert_nonembedding(params: int, config: dict) -> int:
+    """The 6ND count: the token and position embeddings and the embedding layer norm
+    are taken out, matching scripts/bert_grid_summary.non_embedding."""
+    h = config["hidden_size"]
+    return params - (config["vocab_size"] * h + config["max_position_embeddings"] * h + 2 * h)
+
+
+def gpt2_nonembedding(params: int, config: dict) -> int:
+    """The 6ND count for nanoGPT: only the position embedding comes out.
+
+    ``wte`` is tied to ``lm_head``, so those parameters sit in the output matrix
+    multiply and subtracting them would understate the compute.
+    """
+    return params - config["n_positions"] * config["n_embd"]
+
+
+def bert_final_rate(state: dict) -> tuple[str, str]:
+    """The learning rate the last logged step ran at, and whether it reached zero.
+
+    The compounds schedule is three stages: 1 to 15,000 decays linearly to zero,
+    and each later stage warms up over 500 steps and then holds a tenth of the
+    stage-1 peak. log_history is restored on resume, so the zero at the end of
+    stage 1 is still in it -- the question is what the *last* step ran at, which
+    is why this reads the end of the list rather than its minimum.
+    """
+    rates = [h["learning_rate"] for h in state["log_history"] if "learning_rate" in h]
+    if not rates:
+        return "", ""
+    return f"{rates[-1]:.3e}", "yes" if rates[-1] == 0 else "no"
+
+
 def last_checkpoint(run: Path) -> Path:
     steps = sorted(
         int(p.name.split("-")[1]) for p in run.glob("checkpoint-*") if p.is_dir()
@@ -173,11 +215,13 @@ def bert_row(root: Path, size: str, lr: str, dirname: str, prev: str) -> list[st
     return [
         "bert",
         size,
-        str(safetensors_param_count(checkpoint)),
+        str(total := safetensors_param_count(checkpoint)),
+        str(bert_nonembedding(total, config)),
         str(config["hidden_size"]),
         str(config["num_hidden_layers"]),
         lr,
         str(state["global_step"]),
+        *bert_final_rate(state),
         "eval_loss_mask",
         value,
         str(step),
@@ -215,11 +259,16 @@ def gpt2_row(root: Path, size: str, lr: str, dirname: str) -> list[str]:
     return [
         "gpt2",
         size,
-        str(gpt2_param_count(config)),
+        str(total := gpt2_param_count(config)),
+        str(gpt2_nonembedding(total, config)),
         str(config["n_embd"]),
         str(config["n_layer"]),
         lr,
         str(run_steps),
+        # nanoGPT's training_args.json records the configured base rate, not the
+        # value the step ran at, so there is nothing here to report truthfully.
+        "",
+        "",
         "val_loss",
         f"{best_value:.6f}",
         str(best_step),
