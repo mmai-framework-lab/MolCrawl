@@ -1,0 +1,47 @@
+﻿# The runs the paper's size ladder stands on, one per modality x architecture x size.
+#
+# This file is the list, not the numbers. Every value in the cross-check table is read
+# from the run itself (scripts/ladder_checkpoint_crosscheck.py); what is recorded here is
+# which run each rung names and where that choice is written down, so a rung can be
+# argued with rather than guessed at.
+#
+# on_ladder=no means the size has no rung: the reason is in the note, and the run column
+# names the closest arm when there is one, or "-" when there is none.
+#
+# genome_sequence has one size. The 21 subsets sit at that size, and the main table takes
+# mammal_centered; the other 20 are the supplement. Four sizes do not apply there.
+modality	arch	size	run	on_ladder	source	note
+compounds	bert	small	compounds-small-lr1e3-seed42-ext45k	yes	report/compounds-ladder-2026-11-02.tsv	45,000 step の 3 段目
+compounds	bert	medium	compounds-medium-lr2p8e4-seed42-ext45k	yes	report/compounds-ladder-2026-11-02.tsv	45,000 step の 3 段目
+compounds	bert	large	compounds-large-lr1p5e4-seed42-ext45k	yes	report/compounds-ladder-2026-11-02.tsv	45,000 step の 3 段目
+compounds	bert	xl	compounds-xl-lr4p5e5-seed42-ext45k	yes	report/compounds-ladder-2026-11-02.tsv	45,000 でも平坦に達していない
+compounds	gpt2	small	compounds-small-lr8e4-seed42	yes	report/compounds-ladder-2026-11-02.tsv
+compounds	gpt2	medium	compounds-medium-lr8e4-seed42	yes	report/compounds-ladder-2026-11-02.tsv
+compounds	gpt2	large	compounds-large-lr1p6e3	yes	report/compounds-ladder-2026-11-02.tsv
+compounds	gpt2	ex-large	compounds-ex-large-lr1p6e3	yes	report/compounds-ladder-2026-11-02.tsv	4 段目の名前は ex-large
+molecule_nat_lang	bert	small	bert_small_24k_lr1e3	yes	scripts/molnl_bert_size_figure.py の LEARNS
+molecule_nat_lang	bert	medium	bert_medium_24k_lr3e4	yes	scripts/molnl_bert_size_figure.py の LEARNS	seed 42・格子の run（PR #307 より前の定義）
+molecule_nat_lang	bert	large	bert_large_24k_lr1p7e4	yes	scripts/molnl_bert_size_figure.py の LEARNS
+molecule_nat_lang	bert	xl	bert_xl_24k_lr6e5	no	report/molnl-judgment-1027-response.md §6	4 つの学習率はいずれも未到達。使わないものとして扱う
+molecule_nat_lang	gpt2	small	gpt2_small_1500_fixedval	yes	scripts/molnl_order1014_figures.py	固定評価集合での再走行
+molecule_nat_lang	gpt2	medium	gpt2_medium_1500_fixedval	yes	scripts/molnl_order1014_figures.py	固定評価集合での再走行
+molecule_nat_lang	gpt2	large	gpt2_large_1500_fixedval	yes	scripts/molnl_order1014_figures.py	固定評価集合での再走行
+molecule_nat_lang	gpt2	xl	gpt2_xl_1500_fixedval	yes	scripts/molnl_order1014_figures.py	固定評価集合での再走行
+protein_sequence	bert	small	protein_sequence-small-lr3e4	yes	report/protein-order-2026-11-02b-response.md §2
+protein_sequence	bert	medium	protein_sequence-medium-lr1e4	yes	report/protein-order-2026-11-02b-response.md §2
+protein_sequence	bert	large	protein_sequence-large-lr3p5e5-rerun	yes	report/protein-order-2026-11-02b-response.md §2	採点は production の -lr3p5e5 で行っており、張り替えは判断待ち
+protein_sequence	bert	xl	protein_sequence-xl-lr2p4e5	no	report/protein-order-2026-11-02b-response.md §1	この学習率の格子では学習しなかった
+protein_sequence	gpt2	small	protein_sequence-small-rerun	yes	report/protein-order-2026-11-02b-response.md §2	seed 42 の確定系列
+protein_sequence	gpt2	medium	protein_sequence-medium-rerun	yes	report/protein-order-2026-11-02b-response.md §2	seed 42 の確定系列
+protein_sequence	gpt2	large	protein_sequence-large-rerun	yes	report/protein-order-2026-11-02b-response.md §2	seed 42 の確定系列
+protein_sequence	gpt2	ex-large	protein_sequence-ex-large-rerun	yes	report/protein-order-2026-11-02b-response.md §2	4 段目の名前は ex-large
+rna	bert	small	rna-small-lr3e4	yes	report/rna-judgment-2026-10-22b-response.md の 3 サイズ表
+rna	bert	medium	rna-medium-lr3e4	yes	report/rna-judgment-2026-10-22b-response.md の 3 サイズ表
+rna	bert	large	rna-large-lr1p7e4	yes	report/rna-judgment-2026-10-22b-response.md の 3 サイズ表
+rna	bert	xl	rna-xl-lr2p5e5	no	report/rna-progress-2026-11-02.md §1	走行中（約 65,000 / 120,960）。到達値は未確定
+rna	gpt2	small	rna-gpt2-small-lr1p2e3-9ep	yes	report/rna-revalidate-9ep-2026-10-22/small-*-ckpt.tsv	全 4,300,848 系列で 4 本中の最小
+rna	gpt2	medium	rna-gpt2-medium-lr1p2e3-9ep	yes	report/rna-revalidate-9ep-2026-10-22/medium-*-ckpt.tsv	全 4,300,848 系列で 4 本中の最小
+rna	gpt2	large	rna-gpt2-large-lr6e4-9ep	yes	report/rna-revalidate-9ep-2026-10-22/large-*-ckpt.tsv	全 4,300,848 系列で 4 本中の最小
+rna	gpt2	xl	rna-gpt2-xl-lr6e4-9ep	no	report/rna-progress-2026-11-02.md §3.1	固定 3,200 系列では最小だが、6e-4 と 3e-4 の差 0.0002 は読めない。全系列の測り直しが未実施
+genome_sequence	bert	small	bert-small-mammal_centered-w1026	yes	scripts/assemble_paper_metrics.py の主表仕様	主表が取る subset。残り 20 subset は付録で、本件の判定は 21 本とも同じ（§3）
+genome_sequence	gpt2	small	gpt2-small-mammal_centered-ep9	yes	scripts/assemble_paper_metrics.py の主表仕様	主表が取る subset。残り 20 subset は付録で、本件の判定は 21 本とも同じ（§3）
