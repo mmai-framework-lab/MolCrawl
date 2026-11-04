@@ -263,3 +263,121 @@ def test_final_scores_wins_over_the_unmatched_pair_when_both_are_given(tmp_path)
                 "--out", str(tmp_path / "o.json")])
 
     assert out["correlations"]["退化解からの余裕"]["source"]["from"] == "final-scores"
+
+
+# ---------------------------------------------------------------------------
+# The rescorer of 2026-11-02 writes its rows flat -- window-<subset>-predictions
+# .jsonl -- with one score column per summing range, and the two controls do not
+# cover the same variants: the 5-mer Markov file carries chrY's 29 and the
+# model-free control does not. So the pattern, the score column and the
+# intersection all have to be arguments rather than assumptions.
+# ---------------------------------------------------------------------------
+
+
+def test_the_subset_name_is_read_from_either_layout():
+    assert fa.subset_name("/a/global_random_seed4/predictions.jsonl") \
+        == "global_random_seed4"
+    assert fa.subset_name("/a/window-global_random_seed4-predictions.jsonl") \
+        == "global_random_seed4"
+    assert fa.subset_name("/a/window-mammal_centered.json") == "mammal_centered"
+
+
+def _flat_campaign(tmp_path, extra_in_baseline=0):
+    """Rows in the 2026-11-02 layout, with four range columns.
+
+    `extra_in_baseline` variants are added to the baseline alone, standing for
+    the chrY rows the Markov file has and the model-free control has not.
+    """
+    import json
+    rows = []
+    for i, (chrom, label) in enumerate(
+            [("21", 1), ("21", 0), ("22", 1), ("22", 0), ("X", 1), ("X", 0)] * 2):
+        rows.append({"vcv_id": f"V{i:02d}", "chrom": chrom,
+                     "label_pathogenic": label, "markov": 0.1 * (i % 5)})
+    base = list(rows)
+    for j in range(extra_in_baseline):
+        base.append({"vcv_id": f"Y{j:02d}", "chrom": "Y",
+                     "label_pathogenic": j % 2, "markov": 0.3})
+    b = tmp_path / "b.jsonl"
+    b.write_text("\n".join(json.dumps(r) for r in base) + "\n")
+
+    scores = tmp_path / "s"
+    scores.mkdir()
+    for name, shift in {"global_random_seed1": 0.4,
+                        "eukaryote_matched_random_seed1": 0.2}.items():
+        scores.joinpath(f"window-{name}-predictions.jsonl").write_text("\n".join(
+            json.dumps({
+                "vcv_id": r["vcv_id"], "chrom": r["chrom"],
+                "label_pathogenic": r["label_pathogenic"],
+                "score_window": r["markov"] + shift * r["label_pathogenic"],
+                "score_flank128": r["markov"],
+                "score_flank32": r["markov"] - shift * r["label_pathogenic"],
+                "score_point": 0.0,
+            }) for r in rows) + "\n")
+    return scores, b
+
+
+def _flat_args(scores, b, out, key):
+    return ["--scores-dir", str(scores),
+            "--scores-pattern", "window-*-predictions.jsonl",
+            "--score-key", key, "--baseline-scores", str(b),
+            "--baseline-key", "markov", "--rounds", "20", "--out", str(out)]
+
+
+def test_a_range_column_is_picked_by_name_and_recorded(tmp_path):
+    scores, b = _flat_campaign(tmp_path)
+    got = _run(_flat_args(scores, b, tmp_path / "o.json", "score_flank32"))
+    assert got["score_key"] == "score_flank32"
+    assert set(got["runs"]) == {"global_random_seed1",
+                                "eukaryote_matched_random_seed1"}
+
+
+def test_the_ranges_do_not_give_the_same_answer(tmp_path):
+    """score_window favours the pathogenic rows and score_flank32 opposes them,
+    so a comparison run on one range must not report the other's verdict."""
+    scores, b = _flat_campaign(tmp_path)
+    wide = _run(_flat_args(scores, b, tmp_path / "w.json", "score_window"))
+    narrow = _run(_flat_args(scores, b, tmp_path / "n.json", "score_flank32"))
+    s = "global_random_seed1"
+    assert wide["runs"][s]["overall_auroc"] > narrow["runs"][s]["overall_auroc"]
+
+
+def test_variants_the_runs_do_not_score_are_dropped_from_the_baseline(tmp_path):
+    scores, b = _flat_campaign(tmp_path, extra_in_baseline=3)
+    got = _run(_flat_args(scores, b, tmp_path / "o.json", "score_window"))
+    assert got["dropped_from_baseline"] == 3
+    assert got["dropped_from_runs"] == 0
+    assert got["n_variants"] == 12
+    assert "Y" not in got["folds"]
+
+
+def test_a_range_column_that_is_not_there_stops_the_run(tmp_path):
+    import sys
+    scores, b = _flat_campaign(tmp_path)
+    argv = _flat_args(scores, b, tmp_path / "o.json", "score_flank256")
+    old = sys.argv
+    sys.argv = ["x"] + argv
+    try:
+        with pytest.raises(SystemExit) as e:
+            fa.main()
+    finally:
+        sys.argv = old
+    assert "score_flank256" in str(e.value)
+
+
+def test_a_run_missing_a_shared_variant_stops_the_run(tmp_path):
+    import sys
+    scores, b = _flat_campaign(tmp_path)
+    # The shared set is taken off the first file in sorted order, which is the
+    # eukaryote one, so the file that has to lose a row is the other.
+    p = scores / "window-global_random_seed1-predictions.jsonl"
+    p.write_text("".join(p.read_text().splitlines(keepends=True)[:-1]))
+    argv = _flat_args(scores, b, tmp_path / "o.json", "score_window")
+    old = sys.argv
+    sys.argv = ["x"] + argv
+    try:
+        with pytest.raises(SystemExit) as e:
+            fa.main()
+    finally:
+        sys.argv = old
+    assert "global_random_seed1" in str(e.value)

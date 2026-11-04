@@ -22,6 +22,20 @@ windowing, and how far each run got from its own degenerate baseline. The second
 uses the margin rather than raw loss because the 21 valid splits are not the same
 data and their losses are not on one scale.
 
+**The summing range is an argument, not a fixed choice.** The rescorer of
+2026-11-02 writes one column per range -- ``score_window`` over all 1,024
+positions, ``score_flank128`` over 257, ``score_flank32`` over 65,
+``score_point`` over the variant position alone -- and ``--score-key`` picks
+which one this comparison is run on. The interval is therefore reported four
+times over the same variants and the same baseline, which is what says whether
+beating the baseline depends on how wide a neighbourhood is summed.
+
+**The two controls do not cover the same variants.** The 5-mer Markov file has
+21,350 rows, chrY's 29 included; the model-free control has 21,321 and leaves
+chrY out. Every figure here is per fold over chr21/22/X, so chrY never enters
+one, but the run and the baseline are still intersected by ``vcv_id`` rather
+than required to match, and the size of the intersection is printed and stored.
+
 A margin is only meaningful when both of its terms are measured on the same
 positions. Pass ``--final-scores``, whose scorers compute the loss and the
 baseline in one pass over the whole valid split. The older
@@ -121,6 +135,20 @@ def pearson_spearman(x, y):
     return corr(x, y), corr(rank(x), rank(y))
 
 
+def subset_name(path):
+    """The subset a per-variant file belongs to, for either layout.
+
+    ``<subset>/predictions.jsonl`` names it in the directory; the rescorer of
+    2026-11-02 writes ``window-<subset>-predictions.jsonl`` flat in one.
+    """
+    b = os.path.basename(path)
+    if b == "predictions.jsonl":
+        return os.path.basename(os.path.dirname(path))
+    b = b[:-len("-predictions.jsonl")] if b.endswith("-predictions.jsonl") else \
+        os.path.splitext(b)[0]
+    return b[len("window-"):] if b.startswith("window-") else b
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scores-dir", required=True)
@@ -140,6 +168,15 @@ def main():
                          "final.py. Preferred over --degenerate-baselines with "
                          "--per-run-csv: those two measure the margin's terms on "
                          "different ranges, these measure both in one pass")
+    ap.add_argument("--score-key", default="score",
+                    help="field in the run's rows holding the score. The 2026-11-02 "
+                         "rescorer writes score_window / score_flank128 / "
+                         "score_flank32 / score_point; the older per-run "
+                         "predictions.jsonl writes 'score'")
+    ap.add_argument("--scores-pattern", default="*/predictions.jsonl",
+                    help="glob under --scores-dir for the per-variant files. The "
+                         "rescorer of 2026-11-02 writes them flat, as "
+                         "window-<subset>-predictions.jsonl")
     ap.add_argument("--rounds", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=1026)
     ap.add_argument("--out", default="")
@@ -148,25 +185,49 @@ def main():
     base = {json.loads(x)["vcv_id"]: json.loads(x)
             for x in open(args.baseline_scores)}
     order = sorted(base)
-    labels = np.array([base[v]["label_pathogenic"] for v in order])
-    chrom = np.array([base[v]["chrom"] for v in order])
     key = args.baseline_key
-    missing = [v for v in order[:1] if key not in base[v]]
-    if missing:
+    if key not in base[order[0]]:
         raise SystemExit(f"{args.baseline_scores}: no field {key!r}; it has "
                          f"{sorted(base[order[0]])}")
     name = args.baseline_name or key
+
+    paths = sorted(glob.glob(os.path.join(args.scores_dir, args.scores_pattern)))
+    if not paths:
+        raise SystemExit(f"{args.scores_dir}: nothing matched {args.scores_pattern!r}")
+
+    # The baseline's variants and the run's need not be the same set: the
+    # model-free control leaves chrY out and the Markov baseline does not. Take
+    # the intersection once, off the first file, and hold every run to it, so
+    # every number below is over one set of variants.
+    first = {json.loads(x)["vcv_id"] for x in open(paths[0])}
+    if args.score_key not in json.loads(open(paths[0]).readline()):
+        have = sorted(json.loads(open(paths[0]).readline()))
+        raise SystemExit(f"{paths[0]}: no field {args.score_key!r}; it has {have}")
+    shared = sorted(set(order) & first)
+    dropped_baseline = len(order) - len(shared)
+    dropped_runs = len(first) - len(shared)
+    order = shared
+    labels = np.array([base[v]["label_pathogenic"] for v in order])
+    chrom = np.array([base[v]["chrom"] for v in order])
     mk = np.array([base[v][key] for v in order], dtype=float)
 
     runs = {}
-    for f in sorted(glob.glob(os.path.join(args.scores_dir, "*", "predictions.jsonl"))):
-        s = os.path.basename(os.path.dirname(f))
-        rec = {json.loads(x)["vcv_id"]: json.loads(x)["score"] for x in open(f)}
-        if set(rec) != set(order):
-            raise SystemExit(f"{s}: scores a different variant set from the baseline")
+    for f in paths:
+        s = subset_name(f)
+        rec = {}
+        for x in open(f):
+            r = json.loads(x)
+            rec[r["vcv_id"]] = r[args.score_key]
+        if not set(order) <= set(rec):
+            raise SystemExit(f"{s}: misses {len(set(order) - set(rec)):,} of the "
+                             f"{len(order):,} variants the first file shares with "
+                             f"the baseline")
         runs[s] = np.array([rec[v] for v in order], dtype=float)
 
-    print(f"  runs {len(runs)}   variants {len(order):,}")
+    print(f"  runs {len(runs)}   variants {len(order):,}   range {args.score_key}")
+    if dropped_baseline or dropped_runs:
+        print(f"  共通集合を取った: 基準線側 {dropped_baseline} 件、run 側 "
+              f"{dropped_runs} 件を外した")
     print(f"  baseline ({name}) overall {auroc(labels, mk):.4f}")
     print("\n  === fold ごとの構成 ===")
     for c in FOLDS:
@@ -180,6 +241,10 @@ def main():
                 for c in FOLDS}
 
     out = {"baseline_key": key, "baseline_name": name,
+           "score_key": args.score_key, "n_variants": len(order),
+           "dropped_from_baseline": dropped_baseline,
+           "dropped_from_runs": dropped_runs,
+           "rounds": args.rounds, "seed": args.seed,
            "baseline_overall": auroc(labels, mk), "folds": {}, "runs": {}}
     for c in FOLDS:
         sel = chrom == c
