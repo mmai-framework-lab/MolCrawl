@@ -89,7 +89,7 @@ def main():
             continue
         pairs += 1
         with open(fn) as a, open(fo) as b:
-            for ln, (x, y) in enumerate(zip(a, b), start=1):
+            for x, y in zip(a, b):
                 rn, ro = json.loads(x), json.loads(y)
                 if args.old_score_key not in ro:
                     break
