@@ -173,8 +173,11 @@ def main() -> int:
     undecodable = sum(1 for v in canon.values() if v is None)
     wanted_mol = {v for v in canon.values() if v}
     wanted_desc = {d for _, d in pairs}
-    print(f"  SELFIES -> canonical SMILES: {len(wanted_mol):,} distinct, "
-          f"{undecodable} could not be decoded", flush=True)
+    step = "SMILES as written -> RDKit canonical" if a.pairs_file \
+        else "SELFIES -> canonical SMILES"
+    print(f"  {step}: {len(wanted_mol):,} distinct canonical of "
+          f"{len(canon):,} distinct written, {undecodable} RDKit would not read",
+          flush=True)
 
     data = load_from_disk(a.dataset)
     if a.show_records:
@@ -245,7 +248,8 @@ def main() -> int:
 
     out = {
         "subset": a.subset, "split": a.split, "pairs": len(pairs),
-        "selfies_undecodable": undecodable,
+        "molecules_as_written": len(canon),
+        "molecules_rdkit_would_not_read": undecodable,
         "distinct_molecules": len(wanted_mol), "distinct_descriptions": len(wanted_desc),
         "molecules_in_corpus_as_written": len(seen_mol),
         "molecules_in_corpus_canonical": molecules_canonical,
