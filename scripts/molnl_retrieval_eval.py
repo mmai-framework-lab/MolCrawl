@@ -77,6 +77,24 @@ def test_pairs(root, subset="molecular_description_generation"):
     return pairs
 
 
+def frozen_pairs(path):
+    """[(molecule, description)] from a pair file written once and read by everything.
+
+    The molecule is taken as written. A pair file is how the SMolInstruct test split is
+    scored: its molecules are already in the corpus's spelling, so decoding and
+    canonicalising them -- what --molecule-notation smiles does for Mol-Instructions'
+    SELFIES -- would put back the notation mismatch that split removes.
+    """
+    pairs = []
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                d = json.loads(line)
+                pairs.append((d["molecule"], d["description"]))
+    return pairs
+
+
 def to_smiles(pairs):
     """Rewrite each pair's molecule as a canonical SMILES, dropping what will not decode.
 
@@ -139,7 +157,12 @@ def main() -> int:
     ap.add_argument("--arch", required=True, choices=("gpt2", "bert"))
     ap.add_argument("--size", default=None)
     ap.add_argument("--label", default=None, help="name for the output files")
-    ap.add_argument("--pairs-root", required=True)
+    ap.add_argument("--pairs-root",
+                    help="the Mol-Instructions directory; --pairs-file replaces it")
+    ap.add_argument("--pairs-file",
+                    help="JSON Lines of {molecule, description}, read as written. Set "
+                         "for the SMolInstruct test split, whose molecules are already "
+                         "in the corpus's notation")
     ap.add_argument("--tokenizer-path", default=None)
     ap.add_argument("--modality", default="molecule_nat_lang")
     ap.add_argument("--device", default="cuda")
@@ -170,10 +193,19 @@ def main() -> int:
     os.makedirs(a.out_dir, exist_ok=True)
     label = a.label or f"{a.arch}_{a.size or 'model'}"
 
-    pairs = test_pairs(a.pairs_root)
-    if a.molecule_notation == "smiles":
-        pairs, failed = to_smiles(pairs)
-        print(f"  SELFIES -> canonical SMILES: {len(pairs):,} pairs, {failed} undecodable")
+    if a.pairs_file:
+        pairs = frozen_pairs(a.pairs_file)
+        print(f"  pairs from {a.pairs_file}: {len(pairs):,}, molecules as written")
+    elif a.pairs_root:
+        pairs = test_pairs(a.pairs_root)
+        if a.molecule_notation == "smiles":
+            pairs, failed = to_smiles(pairs)
+            print(f"  SELFIES -> canonical SMILES: {len(pairs):,} pairs, "
+                  f"{failed} undecodable")
+    else:
+        raise SystemExit("give --pairs-file or --pairs-root")
+    if not pairs:
+        raise SystemExit("no pairs to score")
     rng = random.Random(a.seed)
     # Pools over every pair whatever is scored: truncating the pair list first would
     # shrink the candidate pool with it, which once made a 20-query measurement look five
@@ -193,7 +225,10 @@ def main() -> int:
 
     summary = {"label": label, "arch": a.arch, "size": a.size,
                "model_path": a.model_path, "separator": a.separator,
-               "wrap": a.wrap, "molecule_notation": a.molecule_notation,
+               "wrap": a.wrap,
+               "molecule_notation": "as_written" if a.pairs_file else a.molecule_notation,
+               "pairs_file": a.pairs_file, "pairs_root": a.pairs_root,
+               "pairs": len(pairs),
                "context": a.context, "scored": "candidate positions only",
                "bert_mlm_batch": a.bert_mlm_batch, "seed": a.seed, "directions": {}}
     json_path = os.path.join(a.out_dir, f"retrieval-{label}.json")

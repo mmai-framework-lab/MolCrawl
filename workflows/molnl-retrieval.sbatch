@@ -17,6 +17,10 @@
 #   sbatch --export=ALL,RUN_DIR=<run>,ARCH=gpt2|bert,SIZE=<size>,LABEL=<name>,\
 #          PAIRS_ROOT=<Mol-Instructions dir>,OUT_DIR=<dir> workflows/molnl-retrieval.sbatch
 #
+# PAIRS_FILE=<jsonl> replaces PAIRS_ROOT and is what the SMolInstruct test split is
+# scored from: the pairs are frozen into one file so the scoring and the overlap check
+# cannot drift apart, and the molecules are taken in the corpus's own spelling.
+#
 # Optional: WRAP (plain|inst -- inst writes the corpus's own record form), NOTATION
 # (selfies|smiles -- the corpus is SMILES, the evaluation pairs are SELFIES),
 # CANDIDATES (default 100), QUERIES (0 = every test pair), QUERIES_T2M (same for
@@ -27,7 +31,9 @@ set -eo pipefail
 
 : "${RUN_DIR:?set RUN_DIR to the run directory to evaluate}"
 : "${ARCH:?set ARCH to gpt2 or bert}"
-: "${PAIRS_ROOT:?set PAIRS_ROOT to the Mol-Instructions dataset directory}"
+if [ -z "${PAIRS_FILE:-}" ]; then
+  : "${PAIRS_ROOT:?set PAIRS_ROOT to the Mol-Instructions dataset directory, or PAIRS_FILE to a frozen pair file}"
+fi
 : "${OUT_DIR:?set OUT_DIR to where the json and tsv are written}"
 
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
@@ -42,6 +48,10 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false
 export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+# A molnl checkpoint carries no tokenizer of its own, so the adapter falls back to the
+# corpus's GPT-2 BPE -- which it cannot download on a compute node. Three jobs died 28
+# seconds in for want of this line. Same default the corpus scan uses.
+export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
 cd "${REPO}"; mkdir -p workflows/slurm-logs "${OUT_DIR}"
 
 if [ "${ARCH}" = "gpt2" ]; then
@@ -72,7 +82,8 @@ rc=0
 "${PYTHON}" scripts/molnl_retrieval_eval.py \
   --model-path "${MODEL}" --arch "${ARCH}" ${SIZE:+--size "${SIZE}"} \
   ${LABEL:+--label "${LABEL}"} ${TOKENIZER_PATH:+--tokenizer-path "${TOKENIZER_PATH}"} \
-  --pairs-root "${PAIRS_ROOT}" --out-dir "${OUT_DIR}" \
+  ${PAIRS_FILE:+--pairs-file "${PAIRS_FILE}"} \
+  ${PAIRS_ROOT:+--pairs-root "${PAIRS_ROOT}"} --out-dir "${OUT_DIR}" \
   --candidates "${CANDIDATES:-100}" --queries "${QUERIES:-0}" \
   --queries-text-to-molecule "${QUERIES_T2M:-0}" \
   --wrap "${WRAP:-plain}" --molecule-notation "${NOTATION:-selfies}" \
