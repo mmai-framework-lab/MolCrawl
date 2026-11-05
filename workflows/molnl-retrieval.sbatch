@@ -48,6 +48,10 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false
 export HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+# A molnl checkpoint carries no tokenizer of its own, so the adapter falls back to the
+# corpus's GPT-2 BPE -- which it cannot download on a compute node. Three jobs died 28
+# seconds in for want of this line. Same default the corpus scan uses.
+export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
 cd "${REPO}"; mkdir -p workflows/slurm-logs "${OUT_DIR}"
 
 if [ "${ARCH}" = "gpt2" ]; then

@@ -24,9 +24,12 @@
 set -eo pipefail
 
 : "${DATASET:?set DATASET to the packed training_ready_hf_dataset the models read}"
-: "${PAIRS_ROOT:?set PAIRS_ROOT to the Mol-Instructions dataset directory}"
+if [ -z "${PAIRS_FILE:-}" ]; then
+  : "${PAIRS_ROOT:?set PAIRS_ROOT to the Mol-Instructions dataset directory, or PAIRS_FILE to a frozen pair file}"
+fi
 [ -d "${DATASET}" ] || { echo "DATASET=${DATASET} is not a directory" >&2; exit 1; }
-[ -d "${PAIRS_ROOT}" ] || { echo "PAIRS_ROOT=${PAIRS_ROOT} is not a directory" >&2; exit 1; }
+[ -z "${PAIRS_ROOT:-}" ] || [ -d "${PAIRS_ROOT}" ] || { echo "PAIRS_ROOT=${PAIRS_ROOT} is not a directory" >&2; exit 1; }
+[ -z "${PAIRS_FILE:-}" ] || [ -f "${PAIRS_FILE}" ] || { echo "PAIRS_FILE=${PAIRS_FILE} is not a file" >&2; exit 1; }
 
 REPO="${SLURM_SUBMIT_DIR:-$PWD}"
 if [ -x "${REPO}/miniconda/bin/python" ]; then
@@ -52,7 +55,9 @@ echo "=== pairs:  ${PAIRS_ROOT} ==="
 echo "=== out:    ${OUT:-<none>} / ${PAIR_INDEX_OUT:-<none>} ==="
 rc=0
 "${PYTHON}" scripts/molnl_downstream_pair_overlap.py \
-  --dataset "${DATASET}" --pairs-root "${PAIRS_ROOT}" \
+  --dataset "${DATASET}" \
+  ${PAIRS_FILE:+--pairs-file "${PAIRS_FILE}"} \
+  ${PAIRS_ROOT:+--pairs-root "${PAIRS_ROOT}"} \
   --split "${SPLIT:-train}" --subset "${SUBSET:-molecular_description_generation}" \
   --processes "${PROCESSES:-8}" \
   ${SHOW_RECORDS:+--show-records "${SHOW_RECORDS}"} \
