@@ -117,7 +117,12 @@ def records(dataset, split, column, tokenizer):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset", required=True)
-    ap.add_argument("--pairs-root", required=True)
+    ap.add_argument("--pairs-root",
+                    help="the Mol-Instructions directory; --pairs-file replaces it")
+    ap.add_argument("--pairs-file",
+                    help="JSON Lines of {molecule, description} to check instead, taken "
+                         "as written. The overlap has to be measured on the same pairs "
+                         "that were scored, so both read one file")
     ap.add_argument("--subset", default="molecular_description_generation")
     ap.add_argument("--split", default="train")
     ap.add_argument("--column", default="input_ids")
@@ -136,7 +141,6 @@ def main() -> int:
     ap.add_argument("--out")
     a = ap.parse_args()
 
-    import selfies as selfies_mod
     from datasets import load_from_disk
     from rdkit import Chem, RDLogger
 
@@ -144,12 +148,28 @@ def main() -> int:
 
     RDLogger.DisableLog("rdApp.*")
     tokenizer = MoleculeNatLangTokenizer().tokenizer
-    pairs = test_pairs(a.pairs_root, a.subset)
-    print(f"  test pairs: {len(pairs):,}", flush=True)
+    if a.pairs_file:
+        pairs = [(d["molecule"], d["description"]) for d in
+                 (json.loads(line) for line in open(a.pairs_file, encoding="utf-8")
+                  if line.strip())]
+        print(f"  pairs from {a.pairs_file}: {len(pairs):,}, molecules as written",
+              flush=True)
+    elif a.pairs_root:
+        pairs = test_pairs(a.pairs_root, a.subset)
+        print(f"  test pairs: {len(pairs):,}", flush=True)
+    else:
+        raise SystemExit("give --pairs-file or --pairs-root")
 
     canon = {}
-    for mol_text, _ in pairs:
-        canon[mol_text] = canonical(mol_text, selfies_mod, Chem)
+    if a.pairs_file:
+        # The pair file already holds SMILES, so only RDKit's canonical form is needed.
+        for mol_text, _ in pairs:
+            mol = Chem.MolFromSmiles(mol_text)
+            canon[mol_text] = Chem.MolToSmiles(mol) if mol is not None else None
+    else:
+        import selfies as selfies_mod
+        for mol_text, _ in pairs:
+            canon[mol_text] = canonical(mol_text, selfies_mod, Chem)
     undecodable = sum(1 for v in canon.values() if v is None)
     wanted_mol = {v for v in canon.values() if v}
     wanted_desc = {d for _, d in pairs}
