@@ -1,30 +1,11 @@
 data_preparation:
-  # Path to a directory containing one file per species to download from refseq (see assets/genome_species_list/species for example)
-  # Possible groups are archaea, bacteria, fungi, invertebrate, metagenomes, plant, protozoa, vertebrate_mammalian, vertebrate_other, viral.
-  path_species: "assets/genome_species_list/filtered_species_refseq"
-  # Num of parallel worker to use, note that for download the worker are capped to 3
+  pipeline: single_nucleotide
+
+  input_dir: learning_source/refseq_genomes/fasta
+  output_dir: learning_source/refseq_genomes/processed_gpt2_n10_parallel
+
   num_worker: 8
-  max_lines_per_file: 10000
-  # Size of the vocabulary of the BPE tokenizer
-  vocab_size: 4096
-  # Number of CPU workers for Process4: raw → parquet conversion.
-  # Defaults to num_worker if not specified; set this field to override.
-  # Bumped 4 → 8 (2026-05-23) after job 18141 hit --time=24:00:00 having
-  # processed only 35/262 species at ~45 min each. With 256G mem to spare,
-  # higher concurrency in HF datasets.map is the bottleneck.
-  num_proc_parquet: 8
-  # Batch size for Process4: raw → parquet conversion.
-  # Values between 512 and 4096 are practical. 2048 or higher is fine if memory allows.
-  parquet_batch_size: 2048
-  # Only specify this to redirect heavy processing to a separate directory (e.g. a local SSD).
-  # If not set, GENOME_SEQUENCE_DIR is used.
-  local_base_dir: ""
-  # Number of genome sequence to use to train the BPE tokenizer.
-  # We will sample input_sentence_size randomly from input_sentence_size * 2 number of sequence.
-  # So input_sentence_size * 2 / max_lines_per_file will be randomly selected for the BPE training.
-  input_sentence_size: 200000
-  # Per-species download timeout in seconds (default: 1800 = 30 min)
-  # If a single species download hangs longer than this, the process is killed and the species is retried.
-  species_timeout: 1800
-  # Maximum number of retries per species before giving up and moving to the next species
-  max_retries: 2
+  num_shards: 64
+
+  # 0: 全件処理。試験時は32にし、output_dirも別にする。
+  pilot_files: 0
