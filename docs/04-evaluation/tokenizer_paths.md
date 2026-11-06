@@ -42,22 +42,22 @@ The in-house training code wires each modality to the following
 tokenizers:
 
 - **genome_sequence (GPT-2 / BERT)**: SentencePiece.  The path is
-  pinned by `molcrawl.config.paths.get_refseq_tokenizer_path()` to
+  pinned by `molcrawl.core.paths.get_refseq_tokenizer_path()` to
   `"<LEARNING_SOURCE_DIR>/genome_sequence/spm_tokenizer.model"`
-  (`molcrawl/config/paths.py:22`).
+  (`molcrawl/core/paths.py:28`).
 - **protein_sequence (GPT-2 / BERT)**:
-  `molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer`
+  `molcrawl.data.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer`
   (wrapper around the HF `EsmTokenizer`).  No external file.
 - **compounds (GPT-2 / BERT)**:
-  `molcrawl.compounds.utils.tokenizer.CompoundsTokenizer`, initialised
+  `molcrawl.data.compounds.utils.tokenizer.CompoundsTokenizer`, initialised
   from `assets/molecules/vocab.txt`
-  (`molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py:14`,
-  `molcrawl/bert/configs/compounds.py:9`).
+  (`molcrawl/tasks/pretrain/configs/compounds/gpt2_small.py:13`,
+  `molcrawl/tasks/pretrain/configs/compounds/bert_small.py:13`).
 - **rna (GPT-2 / BERT)**:
-  `molcrawl.rna.dataset.geneformer.tokenizer.TranscriptomeTokenizer`.
+  `molcrawl.data.rna.dataset.geneformer.tokenizer.TranscriptomeTokenizer`.
   Builds the Geneformer WordLevel vocabulary internally.
 - **molecule_nat_lang (GPT-2 / BERT)**:
-  `molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer`
+  `molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer`
   (wraps the HF GPT-2 tokenizer).  No external file.
 
 External HuggingFace models (ChemBERTa-2 / ESM-2 / DNABERT-2)

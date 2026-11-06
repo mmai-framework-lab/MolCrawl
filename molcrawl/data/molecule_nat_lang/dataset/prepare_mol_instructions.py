@@ -211,7 +211,7 @@ def prepare_mol_instructions(
         raise FileNotFoundError(
             f"Mol-Instructions source directory not found: {source_dir}\n"
             "Run the download step first:\n"
-            "  python -m molcrawl.preparation.preparation_script_molecule_related_nat_lang "
+            "  python molcrawl/data/molecule_nat_lang/preparation.py "
             "assets/configs/molecule_nat_lang_config.yaml --datasets mol_instructions --download-only"
         )
 

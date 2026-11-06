@@ -201,8 +201,8 @@ for the full list.
 | `eval-molecule-nat-lang.sh`           | `molcrawl.tasks.evaluation.molecule_nat_lang`           | molecule_nat_lang | molecule / caption pair likelihood          |
 | `eval-chemllmbench.sh`                | `molcrawl.tasks.evaluation.chemllmbench`                | molecule_nat_lang | 9 sub-tasks (3 currently wired)             |
 | `eval-chebi20.sh`                     | `molcrawl.tasks.evaluation.chebi20`                     | molecule_nat_lang | bidirectional generation                    |
-| (credential-gated) `eval-data-cosmic.sh` | `molcrawl.tasks.evaluation.cosmic`                   | genome_sequence   | requires COSMIC_EMAIL / COSMIC_PASSWORD     |
-| (credential-gated) `eval-data-omim.sh`   | `molcrawl.tasks.evaluation.omim`                     | genome_sequence   | requires OMIM_API_KEY                       |
+| (credential-gated) `data/eval-data-cosmic.sh` | `molcrawl.tasks.evaluation.cosmic`                   | genome_sequence   | requires COSMIC_EMAIL / COSMIC_PASSWORD     |
+| (credential-gated) `data/eval-data-omim.sh`   | `molcrawl.tasks.evaluation.omim`                     | genome_sequence   | requires OMIM_API_KEY                       |
 
 **Common features**:
 
@@ -276,15 +276,15 @@ Evaluation scripts use the following environment variables:
 
 ```bash
 # Initial setup
-./workflows/00_first.sh
+./workflows/00-first.sh
 
 # Basic data preparation flow
 export LEARNING_SOURCE_DIR=/data/learning_source
 
 # Phase 1: Dataset preparation
-./workflows/01_compounds_prepare.sh
-./workflows/01_genome-sequence_prepare.sh
-./workflows/01_protein-sequence_prepare.sh
+./workflows/01-compounds_prepare.sh
+./workflows/01-genome_sequence-prepare.sh
+./workflows/01-protein_sequence-prepare.sh
 # ... other datasets
 
 # Phase 2: GPT-2 format conversion (if needed)
@@ -292,7 +292,7 @@ export LEARNING_SOURCE_DIR=/data/learning_source
 # ... corresponding GPT-2 preparation scripts
 
 # Phase 3: Training (optional)
-./workflows/03a-compounds-guacamol-train-small.sh
+./workflows/03a-compounds_guacamol-train-small.sh
 # ... corresponding training scripts
 
 # Evaluation (arch-agnostic harness)
@@ -406,7 +406,7 @@ wrapper convention. Each takes an env-var-style configuration:
 ```bash
 # ClinVar — pathogenic/benign variant classification (genome decoder)
 MODEL_PATH=$LEARNING_SOURCE_DIR/genome_sequence/gpt2-output/.../ckpt.pt \
-TOKENIZER_PATH=assets/genome/sentencepiece.model \
+TOKENIZER_PATH=$LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model \
 CLINVAR_CSV=$LEARNING_SOURCE_DIR/eval/clinvar/clinvar_sequences.csv \
 N_PER_CLASS=1000 BOOTSTRAP=100 \
 bash workflows/eval-clinvar.sh
@@ -548,7 +548,7 @@ in the table earlier in this README. Highlights:
 - `eval-moleculenet.sh`, `eval-moses.sh`, `eval-chembl-heldout.sh`
 - `eval-rna-benchmark.sh`, `eval-tabula-sapiens.sh`, `eval-replogle-perturb-seq.sh`
 - `eval-molecule-nat-lang.sh`, `eval-chemllmbench.sh`, `eval-chebi20.sh`
-- (credential-gated) `eval-data-cosmic.sh`, `eval-data-omim.sh` — paired
+- (credential-gated) `data/eval-data-cosmic.sh`, `data/eval-data-omim.sh` — paired
   with `molcrawl.tasks.evaluation.{cosmic,omim}` and `.env`
 
 ### 🛠️ **Development Scripts** (4 scripts)

@@ -2,7 +2,7 @@
 # Register a molecule_nat_lang pair CSV.
 #
 # The pair file (smiles + caption) is produced by
-# molcrawl/preparation/preparation_script_molecule_nat_lang.py.
+# molcrawl/data/molecule_nat_lang/preparation.py.
 # Provide its path through MOLECULE_NAT_LANG_SOURCE; this workflow
 # only places it inside the standard eval directory and writes a
 # manifest entry.

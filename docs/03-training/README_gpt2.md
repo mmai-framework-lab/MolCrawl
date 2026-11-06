@@ -33,7 +33,7 @@ This step:
 
 Run:
 
-`python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/<dataset>/train_gpt2_small_config.py`
+`python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/<dataset>/gpt2_small.py`
 
 Each dataset has a corresponding config that defines training parameters.
 
@@ -55,7 +55,7 @@ Single node, 4 GPUs:
 
 Set these in:
 
-`path/to/corresponding/dataset/train_gpt2_config.py`
+`molcrawl/tasks/pretrain/configs/<dataset>/gpt2_<size>.py`
 
 ### Important Parameters
 

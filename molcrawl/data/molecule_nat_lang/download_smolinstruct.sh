@@ -6,7 +6,7 @@
 # ローカルにダウンロードします。
 #
 # 使用方法:
-#   bash scripts/preparation/download_smolinstruct.sh [output_directory]
+#   bash molcrawl/data/molecule_nat_lang/download_smolinstruct.sh [output_directory]
 #
 # 必要条件:
 #   - huggingface_hub Pythonパッケージ
@@ -182,8 +182,8 @@ if [ $? -eq 0 ]; then
     log_info ""
     log_info "Next steps:"
     log_info "1. Run the preparation script:"
-    log_info "   python scripts/preparation/preparation_script_molecule_related_nat_lang.py \\"
-    log_info "     assets/configs/molecule_nat_lang.yaml"
+    log_info "   python molcrawl/data/molecule_nat_lang/preparation.py \\"
+    log_info "     assets/configs/molecule_nat_lang_config.yaml"
 else
     log_error "Dataset download failed!"
     exit 1

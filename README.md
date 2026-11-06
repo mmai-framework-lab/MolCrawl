@@ -65,6 +65,12 @@ echo 'export LEARNING_SOURCE_DIR="$(pwd)/learning_source"' >> ~/.bashrc
 
 Make sure this directory has at least 100GB of free space. Hugging Face cache will be stored inside `${LEARNING_SOURCE_DIR}/.cache/huggingface/`.
 
+Model output must live outside `LEARNING_SOURCE_DIR`: BERT training refuses to start when its output directory is inside that tree.
+
+```bash
+export MODEL_OUTPUT_ROOT="$(pwd)/learning_source_runs"
+```
+
 ---
 
 ### 3. Create Environment (Anaconda not allowed)
@@ -101,11 +107,11 @@ this path automatically when it exists; otherwise set it manually.
 ### 4. Preprocess Raw Data (Download + Tokenize)
 
 ```bash
-python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml
-python -m molcrawl.preparation.preparation_script_protein_sequence assets/configs/protein_sequence.yaml
-python -m molcrawl.preparation.preparation_script_rna assets/configs/rna.yaml
-python -m molcrawl.preparation.preparation_script_compounds assets/configs/compounds.yaml
-python -m molcrawl.preparation.preparation_script_molecule_nat_lang assets/configs/molecule_nat_lang.yaml
+python molcrawl/data/genome_sequence/preparation.py assets/configs/genome_sequence.yaml
+python molcrawl/data/protein_sequence/preparation.py assets/configs/protein_sequence.yaml
+python molcrawl/data/rna/preparation.py assets/configs/rna.yaml
+python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml
+python molcrawl/data/molecule_nat_lang/preparation.py assets/configs/molecule_nat_lang_config.yaml
 ```
 
 ---
@@ -116,9 +122,17 @@ python -m molcrawl.preparation.preparation_script_molecule_nat_lang assets/confi
 python molcrawl/data/genome_sequence/dataset/prepare_gpt2.py assets/configs/genome_sequence.yaml
 python molcrawl/data/protein_sequence/dataset/prepare_gpt2.py assets/configs/protein_sequence.yaml
 python molcrawl/data/rna/dataset/prepare_gpt2.py assets/configs/rna.yaml
-python molcrawl/data/compounds/dataset/prepare_gpt2.py assets/configs/compounds.yaml
-python molcrawl/data/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang.yaml
+
+# Compounds: packed 1024-token blocks, read by both the GPT-2 and the BERT configs
+MOLCRAWL_REPO="$(pwd)" ORGANIX13_DIR="${LEARNING_SOURCE_DIR}/compounds/organix13" \
+python scripts/run_phase1_2_training_ready_v4_packed.py
+
+# Molecule NL: the configs read training_ready_hf_dataset_shuffled
+PREP_OUT_SUFFIX=_shuffled \
+python molcrawl/data/molecule_nat_lang/dataset/prepare_gpt2.py assets/configs/molecule_nat_lang_config.yaml
 ```
+
+`molcrawl/data/compounds/dataset/prepare_gpt2.py` builds the GuacaMol benchmark dataset, not the pretraining corpus.
 
 ---
 
@@ -170,24 +184,31 @@ python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_na
 
 #### BERT (Encoder)
 
+These configs assume 4 GPUs. The protein, compounds and molecule NL configs declare `expected_global_batch = 2560` and stop at startup on any other GPU count.
+
 ```bash
-python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/genome_sequence/bert_small.py
-python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/protein_sequence/bert_small.py
-python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/rna/bert_small.py
-python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py
-python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small.py
+torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/genome_sequence/bert_small.py
+torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/protein_sequence/bert_small.py
+torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/rna/bert_small.py
+torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py
+torchrun --standalone --nproc_per_node=4 molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small.py
 ```
 
-Make sure the GPT-2 dataset preparation step (`prepare_gpt2.py`) has been completed before BERT training, since BERT uses the same prepared dataset format.
+For a smoke test on another GPU count, state the resulting batch explicitly. The run is then not comparable with the 2,560 ladder.
+
+```bash
+python molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py --expected_global_batch=640
+```
+
+Make sure the dataset step above has been completed before BERT training, since BERT uses the same prepared dataset format.
 
 ---
 
-#### Multi-GPU (Single Node, for GPT-2 and BERT)
+#### Multi-GPU (Single Node, GPT-2)
 
-Both GPT-2 and BERT support Distributed Data Parallel (DDP) via `torchrun` (use GPU 0 and 2 on a 3-GPU machine).
+GPT-2 supports Distributed Data Parallel (DDP) via `torchrun` (use GPU 0 and 2 on a 3-GPU machine). BERT also runs under `torchrun`, as shown above.
 
 ```bash
-# GPT2
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
 molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/genome_sequence/gpt2_small.py
@@ -207,36 +228,16 @@ molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/compounds/gpt2_sma
 CUDA_VISIBLE_DEVICES=0,2 \
 torchrun --standalone --nproc_per_node=2 \
 molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_small.py
-
-# BERT
-CUDA_VISIBLE_DEVICES=0,2 \
-torchrun --standalone --nproc_per_node=2 \
-molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/genome_sequence/bert_small.py
-
-CUDA_VISIBLE_DEVICES=0,2 \
-torchrun --standalone --nproc_per_node=2 \
-molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/protein_sequence/bert_small.py
-
-CUDA_VISIBLE_DEVICES=0,2 \
-torchrun --standalone --nproc_per_node=2 \
-molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/rna/bert_small.py
-
-CUDA_VISIBLE_DEVICES=0,2 \
-torchrun --standalone --nproc_per_node=2 \
-molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/compounds/bert_small.py
-
-CUDA_VISIBLE_DEVICES=0,2 \
-torchrun --standalone --nproc_per_node=2 \
-molcrawl/models/bert/main.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small.py
 ```
 
 Effective batch size:
 
 ```text
-effective_batch_size = batch_size × gradient_accumulation_steps × num_gpus
+GPT-2: effective_batch_size = batch_size × gradient_accumulation_steps
+BERT:  effective_batch_size = batch_size × gradient_accumulation_steps × num_gpus
 ```
 
-Adjust `batch_size` or `gradient_accumulation_steps` accordingly to maintain reproducibility.
+The GPT-2 value does not depend on the GPU count; the BERT value does.
 
 ---
 
@@ -268,8 +269,8 @@ python molcrawl/models/gpt2/test_checkpoint.py \
 
 Optional arguments:
 
-- `--max_test_samples` (default: use full test set)
-  Limit the number of test samples for faster evaluation.
+- `--max_test_samples` (default: 1000)
+  Maximum number of test samples to evaluate.
 
 - `--convert_to_hf` (default: False)
   Convert the trained checkpoint to Hugging Face format after evaluation.
@@ -278,7 +279,7 @@ Optional arguments:
 
 #### BERT
 
-Runs evaluation on the test split using masked language modeling (MLM) metrics. It also supports prediction inspection and embedding extraction depending on configuration.
+Runs a checkpoint check on short sample texts: basic inference, masked language modeling (MLM), embedding generation, batch processing and performance.
 
 ```bash
 python molcrawl/models/bert/test_checkpoint.py \
@@ -288,14 +289,14 @@ python molcrawl/models/bert/test_checkpoint.py \
 
 Optional arguments:
 
-- `--max_test_samples` (default: use full test set)
-  Limit the number of test samples for faster evaluation.
+- `--dataset_path`
+  Evaluation dataset path.
 
-- `--extract_embeddings` (default: False)
-  Export hidden representations (embeddings) from the model.
+- `--vocab_path`
+  Vocabulary file path (compounds: `vocab.txt`, genome_sequence: `spm_tokenizer.model`).
 
-- `--show_predictions` (default: False)
-  Print sample masked-token predictions for qualitative inspection.
+- `--test_texts`
+  Sample texts to use instead of the per-domain defaults.
 
 ---
 

@@ -8,7 +8,7 @@
 
 ### Python 設定
 
-- `molcrawl/config/paths.py`: Python スクリプト向けのパス定数
+- `molcrawl/core/paths.py`: Python スクリプト向けのパス定数
 
 ### Shell 設定
 

@@ -6,7 +6,7 @@ Download the GuacaMol benchmark dataset from Figshare.
 https://figshare.com/projects/GuacaMol/56639
 
 How to use:
-    python src/preparation/download_guacamol.py
+    python molcrawl/data/compounds/download_guacamol.py
 
 environmental variables:
     LEARNING_SOURCE_DIR: Base directory where dataset is saved (required)
