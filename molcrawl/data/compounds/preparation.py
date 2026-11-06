@@ -6,18 +6,18 @@ Partial downloads are supported through individual dataset processing.
 
 Usage example:
     # Process the entire dataset
-    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml
+    python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml
 
     # Download only specific datasets
-    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml \
+    python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml \
         --download-only --datasets zinc20 opv
 
     # Processing and tokenization only (if downloaded)
-    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml \
+    python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml \
         --skip-download
 
     # forced reprocessing
-    python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml --force
+    python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml --force
 """
 
 import logging

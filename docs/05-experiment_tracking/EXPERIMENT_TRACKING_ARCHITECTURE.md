@@ -8,7 +8,7 @@ Provide a lightweight and extensible system to track ML experiment execution, st
 
 ### Core Python Module
 
-Location: `molcrawl/experiment_tracker/`
+Location: `molcrawl/core/tracking/`
 
 - `models.py`: Experiment/Step/Log models and enums
 - `database.py`: SQLite access layer
@@ -63,7 +63,7 @@ Stores logs with:
 
 ## API Layer
 
-FastAPI (`molcrawl/experiment_tracker/api.py`) provides endpoints for:
+FastAPI (`molcrawl/core/tracking/api.py`) provides endpoints for:
 - listing experiments
 - reading details
 - filtering by status/type/model/dataset
@@ -73,16 +73,11 @@ FastAPI (`molcrawl/experiment_tracker/api.py`) provides endpoints for:
 
 Evaluation scripts use a structured output policy under `LEARNING_SOURCE_DIR`, and utility code is centralized at:
 
-- `molcrawl/utils/evaluation_output.py`
+- `molcrawl/core/utils/evaluation_output.py`
 
 Related scripts include:
-- `molcrawl/tasks/evaluation/proteingym/gpt2_evaluation.py`
-- `molcrawl/tasks/evaluation/clinvar/gpt2_evaluation.py`
-- `molcrawl/tasks/evaluation/cosmic/gpt2_evaluation.py`
-- `molcrawl/tasks/evaluation/omim/gpt2_evaluation.py`
-- `molcrawl/tasks/evaluation/protein_classification/gpt2_evaluation.py`
-- `molcrawl/tasks/evaluation/proteingym/bert_evaluation.py`
-- `molcrawl/tasks/evaluation/clinvar/bert_evaluation.py`
+- `molcrawl/tasks/evaluation/rna_benchmark/evaluation.py`
+- `molcrawl/tasks/evaluation/rna_benchmark/prepare_h5ad_legacy.py`
 
 ## Extension Points
 

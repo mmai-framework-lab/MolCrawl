@@ -195,7 +195,7 @@ if __name__ == "__main__":
         logger.error(msg=f"Expected location: {base_dataset_dir}")
         logger.error(msg="")
         logger.error(msg="Please download the dataset first using:")
-        logger.error(msg="  bash src/preparation/download_smolinstruct.sh")
+        logger.error(msg="  bash molcrawl/data/molecule_nat_lang/download_smolinstruct.sh")
         logger.error(msg="")
         logger.error(msg="Or manually download from Hugging Face:")
         logger.error(msg="  https://huggingface.co/datasets/osunlp/SMolInstruct")

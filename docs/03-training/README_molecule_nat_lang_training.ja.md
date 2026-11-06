@@ -60,7 +60,7 @@ bash workflows/03c-molecule_nat_lang-train-bert-small.sh
 直接実行:
 
 ```bash
-python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/train_gpt2_config.py
+python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_small.py
 ```
 
 ワークフロースクリプト:
@@ -129,6 +129,6 @@ bash workflows/02-molecule_nat_lang-prepare-gpt2.sh
 ## 関連ファイル
 
 - BERT config: `molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small.py`
-- GPT-2 config: `molcrawl/tasks/pretrain/configs/molecule_nat_lang/train_gpt2_config.py`
+- GPT-2 config: `molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_small.py`
 - 互換性テスト: `molcrawl/preparation/test_molecule_nat_lang_compatibility.py`
 - データセット比較レポート: `docs/07-reports/molecule_nat_lang_dataset_comparison_report.md`

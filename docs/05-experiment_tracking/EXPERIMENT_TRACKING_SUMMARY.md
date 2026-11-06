@@ -12,11 +12,11 @@ An experiment tracking stack for this repository to unify:
 
 ### Core
 
-- `molcrawl/experiment_tracker/models.py`
-- `molcrawl/experiment_tracker/database.py`
-- `molcrawl/experiment_tracker/tracker.py`
-- `molcrawl/experiment_tracker/helpers.py`
-- `molcrawl/experiment_tracker/api.py`
+- `molcrawl/core/tracking/models.py`
+- `molcrawl/core/tracking/database.py`
+- `molcrawl/core/tracking/tracker.py`
+- `molcrawl/core/tracking/helpers.py`
+- `molcrawl/core/tracking/api.py`
 
 ### UI
 

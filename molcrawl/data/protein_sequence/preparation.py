@@ -11,7 +11,7 @@ The output will be the a subdir of the output_dir containing a dataset name dire
 
 You can run this script with the following command:
 
-python scripts/preparation_script_protein_sequence.py assets/configs/protein_sequence.yaml
+python molcrawl/data/protein_sequence/preparation.py assets/configs/protein_sequence.yaml
 
 """
 

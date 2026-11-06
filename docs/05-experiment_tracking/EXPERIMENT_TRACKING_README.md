@@ -18,7 +18,7 @@ It is built for local or self-managed usage with lightweight components.
 
 ```text
 riken-dataset-fundational-model/
-├── molcrawl/experiment_tracker/
+├── molcrawl/core/tracking/
 │   ├── __init__.py
 │   ├── models.py
 │   ├── database.py

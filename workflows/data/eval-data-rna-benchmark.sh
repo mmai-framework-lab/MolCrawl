@@ -2,7 +2,7 @@
 # Register an existing tokenised scRNA-seq JSONL for rna_benchmark.
 #
 # The tokenised cells JSONL is produced by the existing
-# molcrawl/preparation/preparation_script_rna.py pipeline; we do not
+# molcrawl/data/rna/preparation.py pipeline; we do not
 # re-download raw expression here.  This workflow simply places (or
 # symlinks) the JSONL into the standard eval directory and writes a
 # manifest entry.
@@ -24,7 +24,7 @@ ed_init rna_benchmark
 
 if [ -z "${RNA_BENCHMARK_SOURCE:-}" ]; then
     ed_skip_with_instructions \
-        "set RNA_BENCHMARK_SOURCE to the JSONL produced by molcrawl/preparation/preparation_script_rna.py."
+        "set RNA_BENCHMARK_SOURCE to the JSONL produced by molcrawl/data/rna/preparation.py."
 fi
 
 dest="$(ed_dest)/source.jsonl"

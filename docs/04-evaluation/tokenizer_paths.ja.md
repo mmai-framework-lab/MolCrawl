@@ -24,11 +24,11 @@
 
 `molcrawl` の訓練コードが各モダリティで採用しているトークナイザは次の通りです。
 
-- **genome_sequence (GPT-2 / BERT)**: SentencePiece（`spm.SentencePieceProcessor`）。パスは `molcrawl.config.paths.get_refseq_tokenizer_path()` が返す `"<LEARNING_SOURCE_DIR>/genome_sequence/spm_tokenizer.model"` に固定されています (`molcrawl/config/paths.py:22`)。
-- **protein_sequence (GPT-2 / BERT)**: `molcrawl.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer` (HuggingFace `EsmTokenizer` ラッパ)。ファイルパスは持ちません。
-- **compounds (GPT-2 / BERT)**: `molcrawl.compounds.utils.tokenizer.CompoundsTokenizer` で、ボキャブラリファイル `assets/molecules/vocab.txt` を読みます (`molcrawl/gpt2/configs/compounds/train_gpt2_small_config.py:14`, `molcrawl/bert/configs/compounds.py:9`)。
-- **rna (GPT-2 / BERT)**: `molcrawl.rna.dataset.geneformer.tokenizer.TranscriptomeTokenizer`。内部で Geneformer の WordLevel 辞書を構築するのでパス指定不要です。
-- **molecule_nat_lang (GPT-2 / BERT)**: `molcrawl.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer`（HF の GPT-2 tokenizer ラッパ）。外部ファイル不要。
+- **genome_sequence (GPT-2 / BERT)**: SentencePiece（`spm.SentencePieceProcessor`）。パスは `molcrawl.core.paths.get_refseq_tokenizer_path()` が返す `"<LEARNING_SOURCE_DIR>/genome_sequence/spm_tokenizer.model"` に固定されています (`molcrawl/core/paths.py:28`)。
+- **protein_sequence (GPT-2 / BERT)**: `molcrawl.data.protein_sequence.dataset.tokenizer.EsmSequenceTokenizer` (HuggingFace `EsmTokenizer` ラッパ)。ファイルパスは持ちません。
+- **compounds (GPT-2 / BERT)**: `molcrawl.data.compounds.utils.tokenizer.CompoundsTokenizer` で、ボキャブラリファイル `assets/molecules/vocab.txt` を読みます (`molcrawl/tasks/pretrain/configs/compounds/gpt2_small.py:13`, `molcrawl/tasks/pretrain/configs/compounds/bert_small.py:13`)。
+- **rna (GPT-2 / BERT)**: `molcrawl.data.rna.dataset.geneformer.tokenizer.TranscriptomeTokenizer`。内部で Geneformer の WordLevel 辞書を構築するのでパス指定不要です。
+- **molecule_nat_lang (GPT-2 / BERT)**: `molcrawl.data.molecule_nat_lang.utils.tokenizer.MoleculeNatLangTokenizer`（HF の GPT-2 tokenizer ラッパ）。外部ファイル不要。
 
 外部 HuggingFace 系モデル（ChemBERTa-2 / ESM-2 / DNABERT-2）は、それぞれの PyPI / HF 配布の Auto Tokenizer を使います。`--model-path` が HF のスナップショットディレクトリであれば、同じディレクトリを `--tokenizer-path` に渡せば十分です。
 

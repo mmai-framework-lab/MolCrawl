@@ -93,7 +93,7 @@ def prepare_gpt2_dataset(compounds_dir: str):
             f"No tokenized datasets found in {compounds_path / 'tokenized'}\n\n"
             f"Please run the preparation script first:\n"
             f"  LEARNING_SOURCE_DIR={os.environ.get('LEARNING_SOURCE_DIR', 'learning_source_YYYYMMDD')} "
-            f"python src/preparation/preparation_script_compounds.py assets/configs/compounds.yaml"
+            f"python molcrawl/data/compounds/preparation.py assets/configs/compounds.yaml"
         )
 
     # Integration

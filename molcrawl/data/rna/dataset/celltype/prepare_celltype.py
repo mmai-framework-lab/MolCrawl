@@ -180,7 +180,7 @@ def prepare_celltype(
         raise FileNotFoundError(
             f"Cell type dataset not found: {dataset_arrow}\n"
             "Run the download step first:\n"
-            "  python -m molcrawl.preparation.preparation_script_rna "
+            "  python molcrawl/data/rna/preparation.py "
             "assets/configs/rna.yaml --datasets celltype"
         )
 

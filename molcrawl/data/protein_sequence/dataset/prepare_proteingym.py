@@ -114,7 +114,7 @@ def prepare_proteingym(
         raise FileNotFoundError(
             f"ProteinGym source directory not found: {source_dir}\n"
             "Run the download step first:\n"
-            "  python -m molcrawl.preparation.preparation_script_protein_sequence"
+            "  python molcrawl/data/protein_sequence/preparation.py"
             " assets/configs/protein_sequence.yaml --datasets proteingym --download-only"
         )
 

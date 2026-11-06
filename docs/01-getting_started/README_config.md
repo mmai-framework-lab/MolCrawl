@@ -8,7 +8,7 @@ This document explains the configuration files used to centrally manage dataset 
 
 ### Python Configuration
 
-- `molcrawl/config/paths.py`: path constants for Python scripts
+- `molcrawl/core/paths.py`: path constants for Python scripts
 
 ### Shell Configuration
 

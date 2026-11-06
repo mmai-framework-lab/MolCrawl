@@ -8,7 +8,7 @@ There will be multiple directories generated in the output_dir provided in the c
 
 You can call this script with the following command:
 
-    python scripts/preparation_script_rna.py assets/configs/rna.yaml
+    python molcrawl/data/rna/preparation.py assets/configs/rna.yaml
 """
 
 import datetime

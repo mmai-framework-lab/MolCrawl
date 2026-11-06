@@ -20,7 +20,7 @@ source URL.
 Set `LEARNING_SOURCE_DIR` before running any script:
 
 ```bash
-source molcrawl/config/env.sh   # or: export LEARNING_SOURCE_DIR=...
+source molcrawl/core/env.sh   # or: export LEARNING_SOURCE_DIR=...
 ```
 
 ## 2. Download everything in one go
@@ -62,7 +62,7 @@ bash workflows/data/eval-data-all.sh
 ### 4.1 ClinVar (open access)
 
 ```bash
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 bash workflows/data/eval-data-clinvar.sh
 ls "$LEARNING_SOURCE_DIR/eval/clinvar"
 # variant_summary.txt.gz  submission_summary.txt.gz  manifest.json

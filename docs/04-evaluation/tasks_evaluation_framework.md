@@ -107,7 +107,7 @@ The Phase 0 smoke workflow verifies the whole `BaseEvaluator -> adapter
 
 ```bash
 export MODEL_PATH=runs_train_gpt2_genome_small/ckpt.pt
-export TOKENIZER_PATH=assets/tokenizers/genome.model
+export TOKENIZER_PATH=$LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model
 export CLINVAR_DATA=learning_source/eval/clinvar/clinvar_small.csv
 export MAX_EXAMPLES=16
 
@@ -124,7 +124,7 @@ and `REPORT.md` have been written.
 ```bash
 python -m molcrawl.tasks.evaluation.clinvar \
   --model-path runs_train_gpt2_genome_small/ckpt.pt \
-  --tokenizer-path assets/tokenizers/genome.model \
+  --tokenizer-path $LEARNING_SOURCE_DIR/genome_sequence/spm_tokenizer.model \
   --clinvar-data learning_source/eval/clinvar/clinvar.csv \
   --arch gpt2 --modality genome_sequence \
   --output-dir experiment_data/eval/clinvar
@@ -158,7 +158,7 @@ python -m molcrawl.tasks.evaluation.moleculenet \
 ```bash
 python -m molcrawl.tasks.evaluation.moses \
   --model-path runs_train_gpt2_compounds_small/ckpt.pt \
-  --tokenizer-path assets/molecules/spm.model \
+  --tokenizer-path assets/molecules/vocab.txt \
   --arch gpt2 --modality compounds \
   --reference-dir learning_source/eval/moses \
   --num-samples 30000 \

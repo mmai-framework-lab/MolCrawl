@@ -13,7 +13,7 @@
 呼び出し前に `LEARNING_SOURCE_DIR` を設定してください:
 
 ```bash
-source molcrawl/config/env.sh   # もしくは export LEARNING_SOURCE_DIR=...
+source molcrawl/core/env.sh   # もしくは export LEARNING_SOURCE_DIR=...
 ```
 
 ## 2. 一括ダウンロード
@@ -54,7 +54,7 @@ bash workflows/data/eval-data-all.sh
 ### 4.1 ClinVar（公開データ、無認証）
 
 ```bash
-source molcrawl/config/env.sh
+source molcrawl/core/env.sh
 bash workflows/data/eval-data-clinvar.sh
 ls "$LEARNING_SOURCE_DIR/eval/clinvar"
 # variant_summary.txt.gz  submission_summary.txt.gz  manifest.json

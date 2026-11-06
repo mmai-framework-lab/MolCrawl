@@ -31,13 +31,13 @@
 
 実行:
 
-`python gpt2/train.py path/to/corresponding/dataset/train_gpt2_config.py`
+`python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/<dataset>/gpt2_small.py`
 
-各データセットには学習パラメータを定義した `train_gpt2_config.py` が対応しています。
+各データセットには学習パラメータを定義した `gpt2_<size>.py` が対応しています。
 
 例:
 
-`python gpt2/train.py gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
+`python molcrawl/models/gpt2/train.py molcrawl/tasks/pretrain/configs/molecule_nat_lang/gpt2_large.py`
 
 これで学習が開始され、チェックポイント（例: `out/ckpt.pt`）が保存されます。
 
@@ -49,23 +49,11 @@
 
 `torchrun --standalone --nproc_per_node=4 config_file.py`
 
-### 4. 学習済みチェックポイントからサンプル生成
-
-実行:
-
-`python gpt2/sample.py {config.py}`
-
-学習時に使用したものと同じ config ファイルを使ってください。
-
-例:
-
-`python gpt2/sample.py gpt2/configs/molecule_nat_lang/train_gpt2_large_config.py`
-
 ## 設定パラメータ
 
 以下で設定します:
 
-`path/to/corresponding/dataset/train_gpt2_config.py`
+`molcrawl/tasks/pretrain/configs/<dataset>/gpt2_<size>.py`
 
 ### 重要パラメータ
 
