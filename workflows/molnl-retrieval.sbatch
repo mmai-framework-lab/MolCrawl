@@ -25,8 +25,10 @@
 # (selfies|smiles -- the corpus is SMILES, the evaluation pairs are SELFIES),
 # CANDIDATES (default 100), QUERIES (0 = every test pair), QUERIES_T2M (same for
 # the description->molecule direction alone, which costs BERT one masked forward per
-# molecule token), CONTEXT (1024), BERT_MLM_BATCH, TOKENIZER_PATH, GPT2_TOKENIZER_DIR,
-# PYTHON.
+# molecule token), DIRECTIONS (molecule_to_text, text_to_molecule, or both -- one at a
+# time keeps a BERT measurement inside the wall clock limit, and LABEL has to differ or
+# the first direction's own output is overwritten), CONTEXT (1024), BERT_MLM_BATCH,
+# TOKENIZER_PATH, GPT2_TOKENIZER_DIR, PYTHON.
 set -eo pipefail
 
 : "${RUN_DIR:?set RUN_DIR to the run directory to evaluate}"
@@ -86,6 +88,7 @@ rc=0
   ${PAIRS_ROOT:+--pairs-root "${PAIRS_ROOT}"} --out-dir "${OUT_DIR}" \
   --candidates "${CANDIDATES:-100}" --queries "${QUERIES:-0}" \
   --queries-text-to-molecule "${QUERIES_T2M:-0}" \
+  ${DIRECTIONS:+--directions "${DIRECTIONS}"} \
   --wrap "${WRAP:-plain}" --molecule-notation "${NOTATION:-selfies}" \
   ${BERT_MLM_BATCH:+--bert-mlm-batch "${BERT_MLM_BATCH}"} \
   --context "${CONTEXT:-1024}" || rc=$?

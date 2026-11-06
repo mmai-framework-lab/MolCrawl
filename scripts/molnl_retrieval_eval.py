@@ -187,6 +187,12 @@ def main() -> int:
                     help="overrides --queries for the description->molecule direction, "
                          "which for BERT costs one masked forward per molecule token and "
                          "is some 6x the other direction")
+    ap.add_argument("--directions", default=",".join(DIRECTIONS),
+                    help="comma separated subset of " + ",".join(DIRECTIONS) + ". One "
+                         "direction at a time keeps a BERT measurement inside a wall "
+                         "clock limit; the candidate pools do not depend on what is "
+                         "scored, so a direction taken on its own is the same "
+                         "measurement it would have been in a run of both")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out-dir", required=True)
     a = ap.parse_args()
@@ -206,6 +212,11 @@ def main() -> int:
         raise SystemExit("give --pairs-file or --pairs-root")
     if not pairs:
         raise SystemExit("no pairs to score")
+    wanted = [d.strip() for d in a.directions.split(",") if d.strip()]
+    unknown = [d for d in wanted if d not in DIRECTIONS]
+    if unknown or not wanted:
+        raise SystemExit(f"--directions takes a subset of {','.join(DIRECTIONS)}, "
+                         f"got {a.directions!r}")
     rng = random.Random(a.seed)
     # Pools over every pair whatever is scored: truncating the pair list first would
     # shrink the candidate pool with it, which once made a 20-query measurement look five
@@ -230,7 +241,8 @@ def main() -> int:
                "pairs_file": a.pairs_file, "pairs_root": a.pairs_root,
                "pairs": len(pairs),
                "context": a.context, "scored": "candidate positions only",
-               "bert_mlm_batch": a.bert_mlm_batch, "seed": a.seed, "directions": {}}
+               "bert_mlm_batch": a.bert_mlm_batch, "seed": a.seed,
+               "directions_scored": wanted, "directions": {}}
     json_path = os.path.join(a.out_dir, f"retrieval-{label}.json")
     tsv_path = os.path.join(a.out_dir, f"retrieval-{label}-ranks.tsv")
 
@@ -245,7 +257,7 @@ def main() -> int:
     results = {}
     rows = []
     try:
-        for direction in DIRECTIONS:
+        for direction in wanted:
             ranks = []
             truncated = 0
             empty_span = 0
