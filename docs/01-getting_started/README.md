@@ -197,6 +197,14 @@ You can run this script with the following command:
 python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml
 ```
 
+The command above uses the legacy RefSeq/BPE pipeline. For single-nucleotide preprocessing of downloaded FASTA files, use:
+
+```bash
+python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence_single_nucleotide.yaml
+```
+
+See [RefSeq preprocessing](../02-datasets/refseq_preprocessing.ja.md) for configuration and Slurm usage.
+
 #### Configuration (Genome Sequence)
 
 ```yaml

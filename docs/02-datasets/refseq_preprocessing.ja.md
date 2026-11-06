@@ -156,21 +156,37 @@ python tests/preparation/genome/test_parallel.py
 
 Run preprocessing from the repository root:
 
-    python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml
+    python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence_single_nucleotide.yaml
 
 Inspect the command without starting preprocessing:
 
-    python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence.yaml --dry-run
+    python -m molcrawl.preparation.preparation_script_genome_sequence assets/configs/genome_sequence_single_nucleotide.yaml --dry-run
 
 The YAML must set `data_preparation.pipeline: single_nucleotide`.
 It controls `input_dir`, `output_dir`, `num_worker`, `num_shards`,
-and `pilot_files`. Relative paths are resolved from the working directory.
+`pilot_files`, and `parquet_batch_size`. Relative paths are resolved from the working directory.
 This entry point does not accept the former BPE configuration fields.
 
 Submit the configuration through Slurm:
 
-    sbatch -A ACCOUNT -p PARTITION workflows/01-genome_sequence-prepare-refseq.slurm assets/configs/genome_sequence.yaml
+    sbatch -A ACCOUNT -p PARTITION workflows/01-genome_sequence-prepare-refseq.slurm assets/configs/genome_sequence_single_nucleotide.yaml
 
 In YAML mode, the configuration controls paths and parallelism.
 REFSEQ_BASE and REFSEQ_WORKERS do not override those values.
 Slurm resource requests must be supplied separately for the target cluster.
+
+### Parquet書き出しのバッチサイズ
+
+このYAMLでは `parquet_batch_size: 512` を指定します。
+これは書き出し時のレコード数で、学習時のバッチサイズではありません。
+
+小型ゲノム8件から作成した約33.27 MiBのrawを使って比較しました。
+1プロセスでは512・2048・4096を各3回、
+8プロセス同時実行では512・2048を各3回測定しました。
+8並列の完了時間中央値はいずれも約3.265秒で、
+512の方が個別プロセスの最大メモリ使用量をわずかに抑えられたため、
+512を暫定採用しています。
+
+バッチサイズ間の出力内容・順序・スキーマ・件数の一致と、
+YAMLから起動する8ファイル・8並列の正常終了を確認しています。
+この試験は大型ゲノムの最大メモリや本番全体の最適値を保証しません。

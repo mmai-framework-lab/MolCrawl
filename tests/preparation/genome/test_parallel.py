@@ -63,7 +63,7 @@ class LauncherTests(unittest.TestCase):
                 'import argparse\nfrom pathlib import Path\n'
                 'def build_parser():\n'
                 '    p=argparse.ArgumentParser()\n'
-                '    for name in ("input","output","model","chunk_size","n_split_threshold","max_n_frac"):\n'
+                '    for name in ("input","output","model","chunk_size","n_split_threshold","max_n_frac","parquet_batch_size"):\n'
                 '        p.add_argument("--"+name)\n'
                 '    return p\n'
                 'if __name__ == "__main__":\n'

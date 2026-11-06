@@ -92,10 +92,13 @@ def main():
     parser.add_argument('--input', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--workers', type=int, default=8)
+    parser.add_argument('--parquet-batch-size', type=int, default=2048)
     parser.add_argument('--shards', type=int, default=64)
     parser.add_argument('--pilot', type=int, default=0,
                         help='Stop discovery after the first N FASTAs; 0 uses all files.')
     args = parser.parse_args()
+    if args.parquet_batch_size < 1:
+        parser.error('parquet-batch-size must be positive')
     if args.workers < 1 or args.shards < 1 or args.pilot < 0:
         parser.error('workers/shards must be positive; pilot must be nonnegative')
     # Check the actual executable entry point BEFORE touching the large input tree.
@@ -191,6 +194,7 @@ def main():
         command = [sys.executable, '-u', '-m', MODULE,
                    '--input', str(stage), '--output', str(result), '--model', 'gpt2',
                    '--chunk_size', '1024', '--n_split_threshold', '10', '--max_n_frac', '0.1']
+        command += ['--parquet_batch_size', str(args.parquet_batch_size)]
         print(f'shard {index}: starting {len(group)} files', flush=True)
         t0 = time.monotonic()
         with open(root / 'preprocess.log', 'w') as log:

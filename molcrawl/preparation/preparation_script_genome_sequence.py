@@ -31,12 +31,23 @@ def main():
     if not isinstance(config, dict):
         parser.error("YAML must contain a data_preparation mapping")
 
+    if "pipeline" not in config:
+        command = [
+            sys.executable, "-u", "-m",
+            "molcrawl.data.genome_sequence.preparation",
+            args.config,
+        ]
+        print(shlex.join(command), flush=True)
+        if args.dry_run:
+            return 0
+        return subprocess.call(command)
+
     if config.get("pipeline") != "single_nucleotide":
         parser.error("Set data_preparation.pipeline to single_nucleotide")
 
     allowed = {
         "pipeline", "input_dir", "output_dir",
-        "num_worker", "num_shards", "pilot_files",
+        "num_worker", "num_shards", "pilot_files", "parquet_batch_size",
     }
     unknown = set(config) - allowed
     if unknown:
@@ -51,6 +62,7 @@ def main():
         ("num_worker", 8, 1),
         ("num_shards", 64, 1),
         ("pilot_files", 0, 0),
+        ("parquet_batch_size", 2048, 1),
     ):
         value = config.get(name, default)
         if type(value) is not int or value < minimum:
@@ -65,6 +77,7 @@ def main():
         "--workers", str(config["num_worker"]),
         "--shards", str(config["num_shards"]),
         "--pilot", str(config["pilot_files"]),
+        "--parquet-batch-size", str(config["parquet_batch_size"]),
     ]
     print(shlex.join(command), flush=True)
 

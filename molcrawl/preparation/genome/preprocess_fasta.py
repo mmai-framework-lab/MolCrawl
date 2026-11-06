@@ -356,71 +356,77 @@ def process_fasta_to_raw(
 # --------------------------------------------------------------------------- #
 
 def raw_file_to_parquet(
-    raw_path: str,
-    parquet_path: str,
-    model: str,
-    chunk_size: int,
-    max_n_frac: float,
-    mlm_prob: float,
-    rng: random.Random,
-) -> Tuple[int, int]:
-    """Chunk, filter, tokenize one .raw file and write a .parquet file.
+    raw_path, parquet_path, model, chunk_size, max_n_frac,
+    mlm_prob, rng, parquet_batch_size=2048,
+):
+    """Write tokenized records in bounded batches, preserving record order."""
+    import tempfile
+    import pyarrow as pa
+    import pyarrow.parquet as pq
 
-    Each line of the .raw file is a normalized sub-sequence (variable length).
-    This function applies model-specific fixed-length chunking [EVO2-REF-5],
-    high-N chunk filtering [EVO2-REF-6], and single-nucleotide tokenization
-    [EVO2-REF-7] in sequence.
-
-    Parameters
-    ----------
-    chunk_size  : nucleotides per chunk (e.g. 510 for BERT, 1024 for GPT-2)
-    max_n_frac  : discard chunks whose N fraction exceeds this value
-
-    Returns
-    -------
-    (n_records_written, n_chunks_discarded_n)
-    """
-    try:
-        import pyarrow as pa
-        import pyarrow.parquet as pq
-    except ImportError:
-        sys.exit(
-            "[ERROR] pyarrow is required for parquet output.\n"
-            "Install with: pip install pyarrow"
-        )
+    if type(parquet_batch_size) is not int or parquet_batch_size < 1:
+        raise ValueError("parquet_batch_size must be a positive integer")
 
     records = []
+    n_written = 0
     n_discarded = 0
+    writer = None
+    temporary = None
 
-    with open(raw_path) as fh:
-        for line in fh:
-            subseq = line.rstrip("\n")
-            if not subseq:
-                continue
-
-            # [EVO2-REF-5] fixed-length chunking
-            for chunk_str in chunk_sequence_str(subseq, chunk_size, chunk_size):
-
-                # [EVO2-REF-6] high-N chunk filter
-                if n_fraction_str(chunk_str) > max_n_frac:
-                    n_discarded += 1
-                    continue
-
-                ids = tokenize_str(chunk_str)  # [EVO2-REF-7]
-
-                if model == "bert":
-                    record = process_chunk_bert(ids, mlm_prob, rng)
-                else:  # gpt2, evo2
-                    record = process_chunk_causal(ids)
-
-                records.append(record)
-
-    if records:
-        os.makedirs(os.path.dirname(parquet_path) or ".", exist_ok=True)
+    def flush():
+        nonlocal writer, temporary, n_written
+        if not records:
+            return
         table = pa.Table.from_pylist(records)
-        pq.write_table(table, parquet_path, compression="snappy")
+        if writer is None:
+            directory = os.path.dirname(parquet_path) or "."
+            os.makedirs(directory, exist_ok=True)
+            fd, temporary = tempfile.mkstemp(
+                prefix=".parquet-", suffix=".part", dir=directory,
+            )
+            os.close(fd)
+            writer = pq.ParquetWriter(
+                temporary, table.schema, compression="snappy",
+            )
+        writer.write_table(table, row_group_size=len(records))
+        n_written += len(records)
+        records.clear()
 
-    return len(records), n_discarded
+    try:
+        with open(raw_path) as fh:
+            for line in fh:
+                subseq = line.rstrip("\n")
+                if not subseq:
+                    continue
+                for chunk_str in chunk_sequence_str(
+                    subseq, chunk_size, chunk_size,
+                ):
+                    if n_fraction_str(chunk_str) > max_n_frac:
+                        n_discarded += 1
+                        continue
+                    ids = tokenize_str(chunk_str)
+                    if model == "bert":
+                        record = process_chunk_bert(ids, mlm_prob, rng)
+                    else:
+                        record = process_chunk_causal(ids)
+                    records.append(record)
+                    if len(records) >= parquet_batch_size:
+                        flush()
+        flush()
+        if writer is not None:
+            writer.close()
+            writer = None
+            os.replace(temporary, parquet_path)
+            temporary = None
+    finally:
+        try:
+            if writer is not None:
+                writer.close()
+        finally:
+            if temporary is not None and os.path.exists(temporary):
+                os.unlink(temporary)
+
+    return n_written, n_discarded
 
 
 # --------------------------------------------------------------------------- #
@@ -554,6 +560,7 @@ def run_pipeline(args) -> None:
                 max_n_frac=args.max_n_frac,
                 mlm_prob=args.mlm_prob,
                 rng=rng,
+                parquet_batch_size=args.parquet_batch_size,
             )
             total_records += n_rec; total_discarded += n_disc
             print(
@@ -641,6 +648,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="MLM masking probability (BERT only). Default: 0.15.")
     p.add_argument("--seed", type=int, default=42,
                    help="RNG seed for MLM masking. Default: 42.")
+    p.add_argument("--parquet_batch_size", type=int, default=2048,
+                   help="Records per Parquet write batch; default: 2048.")
     return p
 
 

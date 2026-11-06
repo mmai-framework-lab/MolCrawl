@@ -1,0 +1,13 @@
+data_preparation:
+  pipeline: single_nucleotide
+
+  input_dir: learning_source/refseq_genomes/fasta
+  output_dir: learning_source/refseq_genomes/processed_gpt2_n10_parallel
+
+  num_worker: 8
+  num_shards: 64
+
+  # 0: 全件処理。試験時は32にし、output_dirも別にする。
+  pilot_files: 0
+  # Number of records per Parquet write batch, per worker.
+  parquet_batch_size: 512
