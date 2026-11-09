@@ -16,9 +16,11 @@
 # INVENTORY_ROOT (walked for checkpoints that carry no tokenizer), MODALITY,
 # GPT2_TOKENIZER_DIR, PYTHON.
 #
-# No GPU: --gpus=0 keeps it off the accelerators while still running on a compute node,
-# because nothing here may run on a login node. The tokenizer tiers and the nanoGPT
-# metadata read are the whole cost.
+# The work needs no GPU -- the tokenizer tiers and the nanoGPT metadata read are the
+# whole cost -- but --gpus=0 does not get it an allocation without one: the gpu partition
+# is the default, bills by GPU, and job 305167 came back with ReqTRES gres/gpu=1. The
+# line stays because it states the intent; what it buys is a compute node rather than a
+# login node, where nothing here may run.
 set -eo pipefail
 
 : "${OUT:?set OUT to the json to write}"

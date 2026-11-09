@@ -12,8 +12,10 @@
 #   sbatch --export=ALL,RETRIEVAL_DIR=<dir>,OUT=<tsv>[,JOBS=<ids>] \
 #          workflows/molnl-smoltest-summary.sbatch
 #
-# No GPU, and small enough to be mistaken for something that could run on a login node.
-# It runs here because nothing in this project runs on a login node.
+# The work needs no GPU and is small enough to be mistaken for something that could run
+# on a login node. It runs here because nothing in this project runs on a login node.
+# --gpus=0 does not stop one being allocated: the partition bills by GPU and gave this
+# job gres/gpu=1 anyway.
 set -eo pipefail
 
 : "${RETRIEVAL_DIR:?set RETRIEVAL_DIR to the directory holding retrieval-*.json}"
