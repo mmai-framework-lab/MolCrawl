@@ -108,9 +108,21 @@ def scoring_tokenizers(modality):
                              tokenizer_path=None, size=None,
                              extras={"device": "cpu"})
         adapter = build_adapter(handle)
+        # The two adapters name the step differently -- the MLM one walks tiers in
+        # _load_tokenizer, the GPT-2 one builds per modality in _build_tokenizer -- and
+        # assuming one name left the GPT-2 side of this question unanswered once.
         try:
-            tokenizer = adapter._load_tokenizer()  # noqa: SLF001  the tier under test
-            out[arch] = describe(tokenizer, f"adapter tiers for ({arch}, {modality})")
+            if hasattr(adapter, "_load_tokenizer"):
+                tokenizer = adapter._load_tokenizer()  # noqa: SLF001
+                where = f"_load_tokenizer tiers for ({arch}, {modality})"
+            elif hasattr(adapter, "_build_tokenizer"):
+                tokenizer = adapter._build_tokenizer(modality)[0]  # noqa: SLF001
+                where = f"_build_tokenizer({modality}) for {arch}"
+            else:
+                raise AttributeError(
+                    f"{type(adapter).__name__} exposes neither _load_tokenizer nor "
+                    "_build_tokenizer")
+            out[arch] = describe(tokenizer, where)
         except Exception as exc:  # noqa: BLE001
             out[arch] = {"error": f"{type(exc).__name__}: {exc}"}
         out[arch]["checkpoint"] = model_path
