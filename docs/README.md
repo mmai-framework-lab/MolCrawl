@@ -39,6 +39,7 @@
 
 - [ProteinGym Evaluation for BERT Models](06-operations/README_proteingym_bert.md)
 - [ProteinGym Evaluation for GPT-2 Models](06-operations/README_proteingym_gpt2.md)
+- [Resuming a Run under torch >= 2.6](06-operations/CHECKPOINT_RESUME_TORCH26.md)
 
 ## 07 – Reports
 
@@ -70,3 +71,12 @@
 ## 10 – File Tree
 
 - [Repository File Tree](10-file-tree/FILE_TREE.md)
+
+## 11 – Decision Records
+
+Standing decisions about this project's runs and reported values. Unlike 07, a
+record here is revised as the campaign proceeds rather than describing one point
+in time, so what it says is current.
+
+- [Adopted Checkpoints – genome BERT](11-decisions/GENOME_ADOPTED_CHECKPOINTS_BERT.md)
+- [Adopted Checkpoints – genome GPT-2](11-decisions/GENOME_ADOPTED_CHECKPOINTS_GPT2.md)

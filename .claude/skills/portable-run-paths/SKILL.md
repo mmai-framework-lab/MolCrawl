@@ -78,9 +78,10 @@ HF stores `best_model_checkpoint` in `trainer_state.json` as an absolute path.
 Move the tree and 100+ of those files point at nothing.
 
 Record **step numbers**, not paths, in anything meant to outlive the run —
-`_results/` CSVs and `docs/06-operations/GENOME_ADOPTED_CHECKPOINTS_*.ja.md` do
+`_results/` CSVs and `docs/11-decisions/GENOME_ADOPTED_CHECKPOINTS_*.md` do
 this (those two were under `_results/` until 2026-10-30, where `learning_source*`
-is gitignored and a rewrite left no history). Read the field for its step number
+is gitignored and a rewrite left no history, and under `docs/06-operations/`
+until 2026-11-09). Read the field for its step number
 (`int(path.rsplit("-", 1)[1])`) rather than opening the path.
 
 ## Before submitting a sweep

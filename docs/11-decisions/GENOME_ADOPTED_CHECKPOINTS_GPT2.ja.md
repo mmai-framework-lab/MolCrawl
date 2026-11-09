@@ -4,7 +4,9 @@
 グローバルバッチ 2,560, `max_iters` は subset ごと）
 
 この run 群を下流（detector / genome BERT 比較 / §7 評価）で使うときの取り扱い。
-BERT 側は `GENOME_ADOPTED_CHECKPOINTS_BERT.ja.md`。
+BERT 側は `GENOME_ADOPTED_CHECKPOINTS_BERT.ja.md`（英語版は
+`GENOME_ADOPTED_CHECKPOINTS_BERT.md`）。本書の英語版は
+`GENOME_ADOPTED_CHECKPOINTS_GPT2.md`。
 
 ---
 
