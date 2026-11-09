@@ -124,22 +124,33 @@ def test_a_run_count_that_is_not_the_campaign_is_refused(tmp_path):
 
 # --- the interval table ---------------------------------------------------
 
-def _interval_json(path, score_key, name="5-mer Markov", beats=(1, 1, 0)):
-    json.dump({
+def _interval_json(path, score_key, name="5-mer Markov", beats=(1, 1, 0),
+                   control_aurocs=(0.55, 0.56, 0.57), group=True, pooled=False):
+    body = {
         "baseline_key": "markov", "baseline_name": name,
         "score_key": score_key, "n_variants": 21321, "rounds": 2000,
         "seed": 1026,
-        "folds": {"21": {"n": 2858, "pathogenic_rate": 0.21,
-                         "baseline_auroc": 0.55},
-                  "22": {"n": 4990, "pathogenic_rate": 0.20,
-                         "baseline_auroc": 0.56},
-                  "X": {"n": 13473, "pathogenic_rate": 0.48,
-                        "baseline_auroc": 0.57}},
-        "runs": {"global_random_seed1": {"per_fold": {
-            c: {"auroc": 0.65, "diff_vs_baseline": 0.09,
-                "diff_ci": [0.02, 0.16], "beats_baseline": bool(b)}
-            for c, b in zip(("21", "22", "X"), beats)}}},
-    }, open(path, "w"))
+        "folds": {c: {"n": n, "pathogenic_rate": r, "baseline_auroc": a}
+                  for c, n, r, a in zip(("21", "22", "X"),
+                                        (2858, 4990, 13473),
+                                        (0.21, 0.20, 0.48), control_aurocs)},
+        "runs": {"global_random_seed1": {
+            "folds_beaten": sum(beats),
+            "auroc_weighted_mean": 0.65,
+            "per_fold": {
+                c: {"auroc": 0.65, "diff_vs_baseline": 0.09,
+                    "diff_ci": [0.02, 0.16], "beats_baseline": bool(b)}
+                for c, b in zip(("21", "22", "X"), beats)}}},
+    }
+    if group:
+        body["group_test"] = {
+            "metric": "auroc_weighted_mean", "global_random_n": 10,
+            "global_random_median": 0.6810, "eukaryote_matched_n": 10,
+            "eukaryote_matched_median": 0.6442, "u": 78.0, "z": 2.1174,
+            "p_two_sided": 0.0343, "prob_x_gt_y": 0.78}
+    if pooled:
+        body["baseline_overall"] = 0.5493
+    json.dump(body, open(path, "w"))
     return path
 
 
@@ -184,3 +195,71 @@ def test_an_interval_file_labelled_with_the_wrong_range_is_refused(tmp_path):
     with pytest.raises(SystemExit) as e:
         _run(it, ["--json", f"window:{p}", "--out", str(tmp_path / "iv.tsv")])
     assert "score_point" in str(e.value)
+
+
+# --- the summary table (judgment of 2026-11-09) ---------------------------
+
+def test_the_beat_count_sits_beside_the_controls_own_values(tmp_path):
+    """§4.1: 20 of 21 and 6 of 21 differ because the controls differ in
+    strength, so the counts are never tabled without the values that say so."""
+    p = _interval_json(tmp_path / "i.json", "score_window",
+                       name="モデル不使用（14 特徴）", beats=(1, 1, 1),
+                       control_aurocs=(0.6213, 0.6343, 0.6534))
+    out, summary = tmp_path / "iv.tsv", tmp_path / "sum.tsv"
+    _run(it, ["--json", f"window:{p}", "--out", str(out),
+              "--summary-out", str(summary)])
+    row = _tsv(summary)[0]
+    assert row["control"] == "モデル不使用（14 特徴）"
+    assert row["runs_beating_all_three"] == "1" and row["n_runs"] == "1"
+    assert float(row["control_auroc_chr21"]) == pytest.approx(0.6213)
+    assert float(row["control_auroc_chrX"]) == pytest.approx(0.6534)
+    assert row["pathogenic_rate_chrX"] == "0.48"
+
+
+def test_the_summary_carries_no_pooled_auroc(tmp_path):
+    p = _interval_json(tmp_path / "i.json", "score_window")
+    summary = tmp_path / "sum.tsv"
+    _run(it, ["--json", f"window:{p}", "--out", str(tmp_path / "iv.tsv"),
+              "--summary-out", str(summary)])
+    cols = list(_tsv(summary)[0])
+    assert not [c for c in cols if c in ("control_auroc", "baseline_overall",
+                                         "auroc_all", "overall_auroc")]
+
+
+def test_the_group_row_names_the_quantity_it_ranked(tmp_path):
+    """§4.2: the table has to say it ranked the count-weighted mean, so it
+    cannot be mistaken for the earlier one built on a pooled AUROC."""
+    p = _interval_json(tmp_path / "i.json", "score_window")
+    summary = tmp_path / "sum.tsv"
+    _run(it, ["--json", f"window:{p}", "--out", str(tmp_path / "iv.tsv"),
+              "--summary-out", str(summary)])
+    row = _tsv(summary)[0]
+    assert row["group_metric"] == "auroc_weighted_mean"
+    assert float(row["global_random_median"]) == pytest.approx(0.6810)
+    assert float(row["eukaryote_matched_median"]) == pytest.approx(0.6442)
+    assert row["mann_whitney_u"] == "78.0" and row["z"] == "2.1174"
+
+
+def test_a_scoring_that_still_carries_a_pooled_value_is_refused(tmp_path):
+    p = _interval_json(tmp_path / "i.json", "score_window", pooled=True)
+    with pytest.raises(SystemExit) as e:
+        _run(it, ["--json", f"window:{p}", "--out", str(tmp_path / "iv.tsv"),
+                  "--summary-out", str(tmp_path / "sum.tsv")])
+    assert "2026-11-09" in str(e.value)
+
+
+def test_one_summary_row_per_control_and_range(tmp_path):
+    specs = []
+    for rng in ("window", "flank128"):
+        for ctl in ("5-mer Markov", "モデル不使用（14 特徴）"):
+            q = tmp_path / f"i-{rng}-{len(specs)}.json"
+            _interval_json(q, f"score_{rng}", name=ctl)
+            specs += ["--json", f"{rng}:{q}"]
+    summary = tmp_path / "sum.tsv"
+    _run(it, specs + ["--out", str(tmp_path / "iv.tsv"),
+                      "--summary-out", str(summary)])
+    rows = _tsv(summary)
+    assert len(rows) == 4
+    assert {(r["control"], r["range"]) for r in rows} == {
+        (c, r) for c in ("5-mer Markov", "モデル不使用（14 特徴）")
+        for r in ("window", "flank128")}

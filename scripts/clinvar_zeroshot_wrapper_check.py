@@ -17,6 +17,15 @@ wrong.
 The score is the campaign's: mask the variant position, take the log
 probability of the base that is actually there, and subtract the variant
 sequence's value from the reference's.
+
+**Due before this is run again: the per-variant rows.** It keeps only the two
+AUROCs, and §7 of the judgment of 2026-11-09 holds that it is the genome script
+still doing so. Nothing is to be re-scored for this reason, so the fix lands the
+next time the comparison is run: write one row per variant carrying `vcv_id`,
+`chrom`, `pos`, `ref_allele`, `alt_allele`, `clinical_significance`,
+`label_pathogenic` and the value under each of the two input forms, the way
+`clinvar_zeroshot_bert_rescore.py` writes its rows, and check the file with
+`scripts/check_per_variant_outputs.py` before reporting an AUROC from it.
 """
 import argparse
 import csv

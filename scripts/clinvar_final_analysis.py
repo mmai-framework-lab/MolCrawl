@@ -14,7 +14,18 @@ sample sizes it can be by less than the interval width.
 
 **A group difference needs a group test.** Whether `global_random` sits above
 `eukaryote_matched` is a question about two sets of ten independent subsets, so
-it gets a rank test rather than a comparison of the two ranges.
+it gets a rank test rather than a comparison of the two ranges. The quantity it
+ranks is the mean over the three chromosomes weighted by how many variants each
+carries, not one AUROC over the three pooled together.
+
+**No value pooled over the three chromosomes is reported.** §4.1 of the
+judgment of 2026-11-09: the model-free control's pooled AUROC is 0.5493 while
+its per-chromosome values are 0.6213 to 0.6534, because the pathogenic rate is
+about 20 per cent on chr21 and chr22 and about 48 per cent on chrX. A number
+that sits below every value it is made of cannot carry the strength of a
+control, so the controls are reported per chromosome and the pooled figure is
+not written at all -- the same treatment `genome-probe-judgment-2026-10-27`
+§2 gave the probe's `overall`.
 
 The correlations are there to check whether the group difference is explained by
 something other than corpus composition: how much of each subset was lost to
@@ -135,6 +146,18 @@ def pearson_spearman(x, y):
     return corr(x, y), corr(rank(x), rank(y))
 
 
+def weighted_mean(per_fold, counts):
+    """AUROC over the three chromosomes, weighted by how many variants each has.
+
+    The weights are the variant counts, so this is what a per-chromosome table
+    summarises to. It is not the AUROC of the three pooled together: that one
+    mixes three different pathogenic rates and can fall below every value it is
+    made of, which is why §4.1 of the judgment of 2026-11-09 withdrew it.
+    """
+    num = sum(counts[c] * per_fold[c]["auroc"] for c in FOLDS)
+    return num / sum(counts[c] for c in FOLDS)
+
+
 def subset_name(path):
     """The subset a per-variant file belongs to, for either layout.
 
@@ -228,7 +251,8 @@ def main():
     if dropped_baseline or dropped_runs:
         print(f"  共通集合を取った: 基準線側 {dropped_baseline} 件、run 側 "
               f"{dropped_runs} 件を外した")
-    print(f"  baseline ({name}) overall {auroc(labels, mk):.4f}")
+    # No pooled value for the control: §4.1 of the judgment of 2026-11-09.
+    print(f"  baseline ({name}) は染色体別に出す（まとめた値は出さない）")
     print("\n  === fold ごとの構成 ===")
     for c in FOLDS:
         sel = chrom == c
@@ -245,7 +269,7 @@ def main():
            "dropped_from_baseline": dropped_baseline,
            "dropped_from_runs": dropped_runs,
            "rounds": args.rounds, "seed": args.seed,
-           "baseline_overall": auroc(labels, mk), "folds": {}, "runs": {}}
+           "folds": {}, "runs": {}}
     for c in FOLDS:
         sel = chrom == c
         out["folds"][c] = {"n": int(sel.sum()), "pathogenic_rate": float(labels[sel].mean()),
@@ -265,24 +289,34 @@ def main():
                       "diff_ci": [lo, hi], "beats_baseline": bool(beat)}
             line.append(f"{a:.4f} {'+' if beat else ' '}[{lo:+.3f},{hi:+.3f}]")
         n_beat = sum(1 for c in FOLDS if row[c]["beats_baseline"])
+        counts = {c: out["folds"][c]["n"] for c in FOLDS}
         out["runs"][s] = {"per_fold": row, "folds_beaten": n_beat,
+                          "auroc_weighted_mean": weighted_mean(row, counts),
                           "overall_auroc": auroc(labels, v)}
         print(f"  {s:36s} " + "  ".join(line) + f"   {n_beat}/3")
 
     won = [s for s, t in out["runs"].items() if t["folds_beaten"] == len(FOLDS)]
     print(f"\n  3 fold すべてで基準線を越えた subset: {len(won)} / {len(runs)}")
-    for s in sorted(won, key=lambda k: -out["runs"][k]["overall_auroc"]):
+    for s in sorted(won, key=lambda k: -out["runs"][k]["auroc_weighted_mean"]):
         print(f"    {s}")
 
     # --- group test -------------------------------------------------------
-    g1 = [t["overall_auroc"] for s, t in out["runs"].items() if s.startswith("global_random")]
-    g2 = [t["overall_auroc"] for s, t in out["runs"].items()
+    # Ranked on the count-weighted mean, not on one AUROC over the three
+    # chromosomes pooled: §4.2 of the judgment of 2026-11-09. The quantity is
+    # named in the output so a table built from it can say what it ranks.
+    METRIC = "auroc_weighted_mean"
+    g1 = [t[METRIC] for s, t in out["runs"].items() if s.startswith("global_random")]
+    g2 = [t[METRIC] for s, t in out["runs"].items()
           if s.startswith("eukaryote_matched")]
     if g1 and g2:
         mw = mann_whitney(g1, g2)
-        out["group_test"] = {"global_random_n": len(g1), "eukaryote_matched_n": len(g2),
+        out["group_test"] = {"metric": METRIC,
+                             "global_random_n": len(g1),
+                             "global_random_median": float(np.median(g1)),
+                             "eukaryote_matched_n": len(g2),
+                             "eukaryote_matched_median": float(np.median(g2)),
                              **mw}
-        print("\n  === 群間（mammal_centered は 1 本なので除外） ===")
+        print("\n  === 群間（mammal_centered は 1 本なので除外、件数加重平均で検定） ===")
         print(f"  global_random n={len(g1)} 中央 {np.median(g1):.4f}   "
               f"eukaryote_matched n={len(g2)} 中央 {np.median(g2):.4f}")
         print(f"  Mann-Whitney U={mw['u']:.0f}  z={mw['z']:.3f}  p={mw['p_two_sided']:.2e}"

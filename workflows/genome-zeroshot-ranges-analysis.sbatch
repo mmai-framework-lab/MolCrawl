@@ -26,7 +26,11 @@
 #      model and the probe's model-free 14-feature control, each over all four
 #      ranges. 8 runs of the same bootstrap, 2,000 rounds, seed 1026.
 #
-#   5. Those 8 outputs gathered into the second attachment.
+#   5. Those 8 outputs gathered into the second attachment, plus the summary
+#      table the judgment of 2026-11-09 asks for: the number of runs that
+#      cleared each control on all three chromosomes beside that control's own
+#      per-chromosome AUROCs (§4.1), and the group test ranked on the
+#      count-weighted mean rather than a pooled AUROC (§4.2).
 #
 # The GPU is not used. gpu is the only partition with compute nodes here.
 #
@@ -102,7 +106,8 @@ done
 echo ""; echo "################ 5. 区間の表 ################"
 if [ "${#SPECS[@]}" -gt 0 ]; then
     "${PY}" scripts/clinvar_range_interval_table.py "${SPECS[@]}" \
-        --out "${OUT_DIR}/zeroshot-bert-w1026-intervals.tsv" || rc=1
+        --out "${OUT_DIR}/zeroshot-bert-w1026-intervals.tsv" \
+        --summary-out "${OUT_DIR}/zeroshot-bert-w1026-controls-groups.tsv" || rc=1
 else
     echo "区間の出力が 1 つも無い" >&2; rc=1
 fi
