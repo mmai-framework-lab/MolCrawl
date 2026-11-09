@@ -4,7 +4,9 @@
 窓 1,026, グローバルバッチ 2,560, LR 1e-4, `max_steps` は subset ごとに 122,684〜163,900）
 
 この run 群を下流（ClinVar ゼロショット / 線形プローブ / GPT-2 との比較）で使うときの取り扱い。
-GPT-2 側は `GENOME_ADOPTED_CHECKPOINTS_GPT2.ja.md`。
+GPT-2 側は `GENOME_ADOPTED_CHECKPOINTS_GPT2.ja.md`（英語版は
+`GENOME_ADOPTED_CHECKPOINTS_GPT2.md`）。本書の英語版は
+`GENOME_ADOPTED_CHECKPOINTS_BERT.md`。
 
 ---
 
