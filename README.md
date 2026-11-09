@@ -302,41 +302,24 @@ Optional arguments:
 
 ## Dataset Statistics
 
-Genome Sequence
+Measured on 2026-11-09 from the builds the production pretrain configs read
+(`workflows/readme-dataset-stats.sbatch` reproduces them).
 
-- Number of sequences: 248,678
-- Vocabulary size: 4096
-- Number of tokens: 3,025,575,847
+- **Items**: what one source record is for that modality, counted in the source the build was made from.
+- **Windows**: the 1,024-token blocks the models train on, as train / valid / test.
+- **Tokens**: windows × 1,024 over all three splits, i.e. the packed total including separators.
 
-Protein Sequence (UniRef50)
+| Modality | Source | Items | Windows (train / valid / test) | Tokens |
+| --- | --- | --- | --- | --- |
+| Protein Sequence | UniRef50, downloaded 2026-07-29 | 38,794,121 sequences | 9,538,464 / 1,193,356 / 1,191,822 | 12,209,809,408 |
+| RNA | CELLxGENE, 52 tissues | 22,475,847 cells | 34,407,040 / 4,300,848 / 4,300,176 | 44,040,257,536 |
+| Compounds | OrganiX13 | 12,989,358 molecules (12,989,305 in the packed build) | 398,917 / 49,813 / 49,924 | 510,621,696 |
+| Molecule-related Natural Language | SMolInstruct | 3,267,176 / 17,781 / 30,344 records | 318,118 / 1,631 / 2,981 | 330,475,520 |
+| Genome Sequence (per subset, 21 subsets) | NCBI assemblies | 28–1,029 assemblies | 34,896,768–46,620,417 / 50,000 / 50,000 | 35,836,690,432–47,841,707,008 |
 
-- Size of the dataset: 18G
-- Samples: 66,000,000
-- Tokens: 19,182,955,286
+Notes:
 
-RNA-seq (scRNAseq expression data)
-
-- Size of the dataset: 221G
-- Samples: 35,822,843
-- Tokens: 90,711,564,293
-
-Compounds
-
-- Size of the dataset: 954M
-- Samples: 13,288,710
-- SMILES tokens: 526,014,485
-- Scaffold tokens: 350,007,581
-
-Molecule-related Natural Language
-
-- Size of the dataset: 8.9G
-- Training samples: 3,288,855
-- Training tokens: 460,447,039
-- Validation samples: 20,498
-- Validation tokens: 2,568,952
-- Test samples: 33,061
-- Test tokens: 4,514,586
-- Total samples: 3,342,414
-- Total tokens: 467,530,577
+- RNA: each cell is cut to 2,048 genes before packing; a cell averages 1,959 tokens, so it spans about two windows.
+- Genome: the figures are for the GPT-2 build of each subset (`gpt2_small_subset.py`, single-nucleotide vocabulary of 10). The BERT build of each subset has its own windows.
 
 ---
