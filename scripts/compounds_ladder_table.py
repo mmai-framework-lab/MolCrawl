@@ -30,6 +30,14 @@ anyway, because the ramp was kept so that the 30,000-step values and the
 worse validation point just after the 30,000 boundary and two do not, so nothing
 is concluded from it; it is stated because the values are read as one schedule.
 
+That drop is measured, not inferred: the rate Trainer logged at the first point
+after each of the eight stage heads is a fifth of that stage's constant, which is
+the 100th step of a 500-step ramp from zero. ``scripts/lr_at_stage_head_tsv.py``
+reads it back. It is worth measuring because the 45,000-step configs describe it
+the other way round -- "there is no jump from nothing at this resume point as
+there was at 15,000" is about the rate the previous stage ENDED on, not about
+where the new ramp begins.
+
 Usage:
     compounds_ladder_table.py --bert-root DIR --gpt2-root DIR --out FILE
 """
