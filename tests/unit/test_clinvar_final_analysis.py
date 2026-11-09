@@ -282,11 +282,13 @@ def test_the_subset_name_is_read_from_either_layout():
     assert fa.subset_name("/a/window-mammal_centered.json") == "mammal_centered"
 
 
-def _flat_campaign(tmp_path, extra_in_baseline=0):
+def _flat_campaign(tmp_path, extra_in_baseline=0, groups=1):
     """Rows in the 2026-11-02 layout, with four range columns.
 
     `extra_in_baseline` variants are added to the baseline alone, standing for
     the chrY rows the Markov file has and the model-free control has not.
+    `groups` is how many subsets each of `global_random` and
+    `eukaryote_matched` gets, since the rank test needs more than one.
     """
     import json
     rows = []
@@ -303,8 +305,11 @@ def _flat_campaign(tmp_path, extra_in_baseline=0):
 
     scores = tmp_path / "s"
     scores.mkdir()
-    for name, shift in {"global_random_seed1": 0.4,
-                        "eukaryote_matched_random_seed1": 0.2}.items():
+    shifts = {}
+    for i in range(1, groups + 1):
+        shifts[f"global_random_seed{i}"] = 0.4 + 0.01 * i
+        shifts[f"eukaryote_matched_random_seed{i}"] = 0.2 + 0.01 * i
+    for name, shift in shifts.items():
         scores.joinpath(f"window-{name}-predictions.jsonl").write_text("\n".join(
             json.dumps({
                 "vcv_id": r["vcv_id"], "chrom": r["chrom"],
@@ -339,7 +344,8 @@ def test_the_ranges_do_not_give_the_same_answer(tmp_path):
     wide = _run(_flat_args(scores, b, tmp_path / "w.json", "score_window"))
     narrow = _run(_flat_args(scores, b, tmp_path / "n.json", "score_flank32"))
     s = "global_random_seed1"
-    assert wide["runs"][s]["overall_auroc"] > narrow["runs"][s]["overall_auroc"]
+    assert (wide["runs"][s]["auroc_weighted_mean"]
+            > narrow["runs"][s]["auroc_weighted_mean"])
 
 
 def test_variants_the_runs_do_not_score_are_dropped_from_the_baseline(tmp_path):
@@ -381,3 +387,59 @@ def test_a_run_missing_a_shared_variant_stops_the_run(tmp_path):
     finally:
         sys.argv = old
     assert "global_random_seed1" in str(e.value)
+
+
+# ---------------------------------------------------------------------------
+# §4.1 and §4.2 of the judgment of 2026-11-09. A value pooled over the three
+# chromosomes mixes three pathogenic rates: the model-free control's pooled
+# AUROC is 0.5493 while its per-chromosome values are 0.6213 to 0.6534, below
+# everything it is made of. So the controls are reported per chromosome and no
+# pooled figure is written, and the group test ranks the count-weighted mean.
+# ---------------------------------------------------------------------------
+
+
+def test_the_weighted_mean_is_weighted_by_the_variant_counts():
+    per_fold = {"21": {"auroc": 0.60}, "22": {"auroc": 0.70}, "X": {"auroc": 0.65}}
+    counts = {"21": 2858, "22": 4990, "X": 13473}
+    want = (2858 * 0.60 + 4990 * 0.70 + 13473 * 0.65) / 21321
+    assert fa.weighted_mean(per_fold, counts) == pytest.approx(want)
+
+
+def test_the_weighted_mean_is_not_the_pooled_auroc(tmp_path):
+    """The two are different quantities, and only the weighted mean is stored
+    in a form the group test reads."""
+    scores, b = _flat_campaign(tmp_path)
+    got = _run(_flat_args(scores, b, tmp_path / "o.json", "score_window"))
+    t = got["runs"]["global_random_seed1"]
+    counts = {c: got["folds"][c]["n"] for c in ("21", "22", "X")}
+    assert t["auroc_weighted_mean"] == pytest.approx(
+        fa.weighted_mean(t["per_fold"], counts))
+
+
+def test_no_pooled_control_auroc_is_written(tmp_path):
+    scores, b = _flat_campaign(tmp_path)
+    got = _run(_flat_args(scores, b, tmp_path / "o.json", "score_window"))
+    assert "baseline_overall" not in got
+    for c in ("21", "22", "X"):
+        assert "baseline_auroc" in got["folds"][c]
+
+
+def test_the_group_test_names_the_quantity_it_ranked(tmp_path):
+    scores, b = _flat_campaign(tmp_path, groups=5)
+    got = _run(_flat_args(scores, b, tmp_path / "o.json", "score_window"))
+    g = got["group_test"]
+    assert g["metric"] == "auroc_weighted_mean"
+    assert g["global_random_n"] == 5 and g["eukaryote_matched_n"] == 5
+    assert "global_random_median" in g and "eukaryote_matched_median" in g
+
+
+def test_the_group_median_is_the_median_of_the_weighted_means(tmp_path):
+    """The median stored for a group has to be the median of the quantity the
+    test ranked, not of the pooled value it replaced."""
+    import statistics
+    scores, b = _flat_campaign(tmp_path, groups=5)
+    got = _run(_flat_args(scores, b, tmp_path / "o.json", "score_window"))
+    want = statistics.median([t["auroc_weighted_mean"]
+                              for s, t in got["runs"].items()
+                              if s.startswith("global_random")])
+    assert got["group_test"]["global_random_median"] == pytest.approx(want)
