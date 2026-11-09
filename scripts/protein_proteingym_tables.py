@@ -21,21 +21,26 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 RUNS_PROD = REPO / "learning_source_protein_runs/protein_sequence"
-RUNS_U50 = REPO / "learning_source_20260730_protein_uniref50/protein_sequence/runs"
 EVAL = REPO / "learning_source_20260730_protein_uniref50/experiment_data/eval"
 PGDIR = REPO / "learning_source_20260730_protein_uniref50/eval/proteingym/unpacked/DMS_ProteinGym_substitutions"
 REF = REPO / "learning_source_20260625-newBERT/protein_sequence/proteingym/proteingym_v1.3/DMS_substitutions.csv"
 
 # arch, size, lr, train seed, eval slug, pretrain-loss source dir, loss metric, kind
+#
+# protein-order-2026-11-02 §3 (decision B) + protein-judgment-2026-11-09 §5: every model
+# is now sourced from its seed-42 confirmed series and scored on that same series' weights
+# (the …-s42 slugs). The GPT-2 four moved off their seed-1001 runs onto the seed-42
+# -rerun runs, and BERT large moved off the production run onto -rerun. BERT small/medium
+# were already seed-42 (-best, scored on checkpoint-33531); BERT xl is the cut-off model.
 MODELS = [
     ("bert", "small", "3e-4", 42, "protein_sequence-bert-small-best", RUNS_PROD / "bert-output/protein_sequence-small-lr3e4", "eval_loss_mask", "bert"),
     ("bert", "medium", "1e-4", 42, "protein_sequence-bert-medium-best", RUNS_PROD / "bert-output/protein_sequence-medium-lr1e4", "eval_loss_mask", "bert"),
-    ("bert", "large", "3.5e-5", 42, "protein_sequence-bert-large-best", RUNS_PROD / "bert-output/protein_sequence-large-lr3p5e5", "eval_loss_mask", "bert"),
+    ("bert", "large", "3.5e-5", 42, "protein_sequence-bert-large-s42", RUNS_PROD / "bert-output/protein_sequence-large-lr3p5e5-rerun", "eval_loss_mask", "bert"),
     ("bert", "xl", "2.4e-5", 42, "protein_sequence-bert-xl-best", RUNS_PROD / "bert-output/protein_sequence-xl-lr2p4e5", "eval_loss_mask", "bert"),
-    ("gpt2", "small", "1.2e-3", 1001, "protein_sequence-gpt2-small-best", RUNS_PROD / "gpt2-output/protein_sequence-small-lr1p2e3", "val_loss", "gpt2"),
-    ("gpt2", "medium", "6e-4", 1001, "protein_sequence-gpt2-medium-best", RUNS_U50 / "retrain2-gpt2-medium-lr6e-4-s1001", "val_loss", "gpt2"),
-    ("gpt2", "large", "6e-4", 1001, "protein_sequence-gpt2-large-best", RUNS_U50 / "retrain2-gpt2-large-lr6e-4-s1001", "val_loss", "gpt2"),
-    ("gpt2", "xl", "6e-4", 1001, "protein_sequence-gpt2-xl-best", RUNS_U50 / "retrain2-gpt2-xl-lr6e-4-s1001", "val_loss", "gpt2"),
+    ("gpt2", "small", "1.2e-3", 42, "protein_sequence-gpt2-small-s42", RUNS_PROD / "gpt2-output/protein_sequence-small-rerun", "val_loss", "gpt2"),
+    ("gpt2", "medium", "6e-4", 42, "protein_sequence-gpt2-medium-s42", RUNS_PROD / "gpt2-output/protein_sequence-medium-rerun", "val_loss", "gpt2"),
+    ("gpt2", "large", "6e-4", 42, "protein_sequence-gpt2-large-s42", RUNS_PROD / "gpt2-output/protein_sequence-large-rerun", "val_loss", "gpt2"),
+    ("gpt2", "xl", "6e-4", 42, "protein_sequence-gpt2-xl-s42", RUNS_PROD / "gpt2-output/protein_sequence-ex-large-rerun", "val_loss", "gpt2"),
 ]
 
 # protein-judgment-2026-10-29 §1/§3: BERT xl never learned in pretraining, so its
@@ -54,8 +59,15 @@ def bert_loss_step(run_dir):
         f = run_dir / f"checkpoint-{ck}" / "trainer_state.json"
         if f.exists():
             ts = json.load(open(f))
-            e = [x["eval_loss_mask"] for x in ts.get("log_history", []) if "eval_loss_mask" in x]
-            return (min(e) if e else None), ck
+            # The step the loss column reports is where eval_loss_mask is lowest, not the
+            # newest checkpoint dir: for BERT small/medium the newest saved dir (33531) has
+            # no eval logged, and the run's best is earlier (32000 / 32900). Scored
+            # checkpoint vs best-loss step is reconciled in the reached-loss table.
+            e = [(x["step"], x["eval_loss_mask"]) for x in ts.get("log_history", []) if "eval_loss_mask" in x]
+            if not e:
+                return None, None
+            step, val = min(e, key=lambda t: t[1])
+            return val, step
     return None, None
 
 
@@ -119,8 +131,24 @@ def main():
             status = "done"
         else:
             status = "running"
+        # scored_ck: the step of the checkpoint ProteinGym actually ran on, read from a
+        # scored metrics.json. It sits alongside spearman in the per-assay/per-model tables,
+        # so it names the downstream weights -- which for GPT-2 is the ckpt.pt (its adopted
+        # step) and for BERT the scored checkpoint dir (33531 for small/medium, 32000 for
+        # large). The best-loss step (meta["step"]) can differ; the reached-loss table joins
+        # the two. An empty string when nothing is scored.
+        scored_ck = ""
+        for a in assays:
+            mf = EVAL / slug / f"proteingym_{a}_sweep" / "metrics.json"
+            if mf.exists():
+                try:
+                    base = os.path.basename(json.load(open(mf))["details"]["model_path"].rstrip("/"))
+                    scored_ck = step if kind == "gpt2" else (int(base.split("-")[-1]) if base.startswith("checkpoint-") else "")
+                except Exception:
+                    scored_ck = ""
+                break
         meta[(arch, size)] = dict(lr=lr, seed=seed, slug=slug, loss=loss, step=step,
-                                  lossmetric=lossmetric, status=status, n_done=n_done)
+                                  lossmetric=lossmetric, status=status, n_done=n_done, scored_ck=scored_ck)
 
     # ---- §1 per-assay ----
     p1 = out / "proteingym-per-assay.tsv"
@@ -128,7 +156,7 @@ def main():
         fh.write("arch\tsize\tlr\tseed\tcheckpoint\tassay\tn_mutant\tspearman\tstatus\n")
         for arch, size, lr, seed, slug, _predir, _lossmetric, _kind in MODELS:
             m = meta[(arch, size)]
-            ck = m["step"] if m["step"] is not None else ""
+            ck = "" if (arch, size) in CUTOFF else m["scored_ck"]
             for a in assays:
                 nmut = ref.get(a, {}).get("DMS_total_number_mutants", "")
                 if (arch, size) in CUTOFF:
@@ -138,20 +166,29 @@ def main():
                 if sp is not None:
                     fh.write(f"{arch}\t{size}\t{lr}\t{seed}\t{ck}\t{a}\t{nmut}\t{sp:.6f}\tdone\n")
                 else:
-                    st = "not_started" if m["status"] == "not_started" else "running"
+                    # metrics.json present but spearman undefined (e.g. tied predictions) is
+                    # "nan", not "running": the assay was scored, it just has no usable value.
+                    mf = EVAL / slug / f"proteingym_{a}_sweep" / "metrics.json"
+                    if mf.exists():
+                        st = "nan"
+                    else:
+                        st = "not_started" if m["status"] == "not_started" else "running"
                     fh.write(f"{arch}\t{size}\t{lr}\t{seed}\t{ck}\t{a}\t{nmut}\t\t{st}\n")
 
     # ---- §2 per-model ----
     p2 = out / "proteingym-per-model.tsv"
     with open(p2, "w") as fh:
-        fh.write("arch\tsize\tlr\tcheckpoint\tpretrain_loss\tloss_metric\tn_assay_done\tspearman_mean\tspearman_median\tspearman_min\tspearman_max\tstatus\n")
+        # n_assay_scored = assays with a complete metrics.json (the sweep ran); n_assay_nonnan
+        # = those with a defined spearman (the denominator of the mean). The gap is the handful
+        # of assays whose spearman is undefined for every model -- 217 vs 214 here.
+        fh.write("arch\tsize\tlr\tcheckpoint\tpretrain_loss\tloss_metric\tn_assay_scored\tn_assay_nonnan\tspearman_mean\tspearman_median\tspearman_min\tspearman_max\tstatus\n")
         for arch, size, lr, _seed, slug, _predir, lossmetric, _kind in MODELS:
             m = meta[(arch, size)]
-            ck = m["step"] if m["step"] is not None else ""
+            ck = "" if (arch, size) in CUTOFF else m["scored_ck"]
             loss = f"{m['loss']:.4f}" if m["loss"] is not None else ""
             if (arch, size) in CUTOFF:
                 # keep the real pretrain loss; drop every ProteinGym cell.
-                fh.write(f"{arch}\t{size}\t{lr}\t{ck}\t{loss}\t{lossmetric}\t\t\t\t\t\t{CUTOFF_NOTE}\n")
+                fh.write(f"{arch}\t{size}\t{lr}\t{ck}\t{loss}\t{lossmetric}\t\t\t\t\t\t\t{CUTOFF_NOTE}\n")
                 continue
             vals = []
             for a in assays:
@@ -166,11 +203,50 @@ def main():
             else:
                 mean = med = lo = hi = ""
             st = "done" if m["status"] == "done" else ("not_started" if m["status"] == "not_started" else "running")
-            fh.write(f"{arch}\t{size}\t{lr}\t{ck}\t{loss}\t{lossmetric}\t{len(vals)}\t{mean}\t{med}\t{lo}\t{hi}\t{st}\n")
+            fh.write(f"{arch}\t{size}\t{lr}\t{ck}\t{loss}\t{lossmetric}\t{m['n_done']}\t{len(vals)}\t{mean}\t{med}\t{lo}\t{hi}\t{st}\n")
+
+    # ---- reached pretraining loss, one row per model (protein-judgment-2026-11-09 §5) ----
+    # Each model's reached loss and the checkpoint actually scored for ProteinGym, so loss
+    # and downstream can be traced to the same run. For GPT-2 the scored file is ckpt.pt
+    # (nanoGPT keeps the best-val checkpoint), whose step is not in the filename -- it is in
+    # loss_step. For BERT the scored checkpoint is a dir; where it differs from the best-loss
+    # step (small/medium were scored on the final 33531, which carries no eval), the note says so.
+    def scored_checkpoint(slug):
+        for a in assays:
+            mf = EVAL / slug / f"proteingym_{a}_sweep" / "metrics.json"
+            if mf.exists():
+                try:
+                    mp = json.load(open(mf))["details"]["model_path"]
+                except Exception:
+                    return ""
+                return os.path.basename(mp.rstrip("/"))
+        return ""
+
+    p4 = out / "proteingym-reached-loss.tsv"
+    with open(p4, "w") as fh:
+        fh.write("arch\tsize\tlr\trun\tseed\tloss_metric\treached_loss\tloss_step\tscored_checkpoint\tvalidation_set\tnote\n")
+        for arch, size, lr, seed, slug, predir, lossmetric, _kind in MODELS:
+            m = meta[(arch, size)]
+            run = os.path.basename(str(predir))
+            loss = f"{m['loss']:.4f}" if m["loss"] is not None else ""
+            step = m["step"] if m["step"] is not None else ""
+            valset = "run val split (seed 42)"
+            if (arch, size) in CUTOFF:
+                sc = "—（下流打ち切り）"
+                note = CUTOFF_NOTE
+            else:
+                sc = scored_checkpoint(slug)
+                note = ""
+                if _kind == "bert" and sc.startswith("checkpoint-"):
+                    sc_step = sc.split("-")[-1]
+                    if str(step) != sc_step:
+                        note = f"採点は {sc}（最終・eval 記録なし）／到達損失は run 最良 step {step}"
+            fh.write(f"{arch}\t{size}\t{lr}\t{run}\t{seed}\t{lossmetric}\t{loss}\t{step}\t{sc}\t{valset}\t{note}\n")
 
     # ---- §3 set stats ----
     print(f"wrote {p1}")
     print(f"wrote {p2}")
+    print(f"wrote {p4}")
     print(f"assays (CSV list): {len(assays)}; reference rows: {len(ref)}")
     nm = [int(ref[a]["DMS_total_number_mutants"]) for a in assays if a in ref and ref[a].get("DMS_total_number_mutants", "").isdigit()]
     orgs = {ref[a].get("source_organism", "") for a in assays if a in ref}

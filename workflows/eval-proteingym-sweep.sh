@@ -56,6 +56,26 @@ echo "[pg-sweep] model:            ${MODEL_PATH}"
 echo "[pg-sweep] slug:             ${MODEL_SLUG}"
 echo "[pg-sweep] device:           ${DEVICE}"
 
+# An assay is "done" only when its metrics.json is fully written and parseable -- not
+# merely when some file exists in its leaf. A segment cut by the wall clock can leave a
+# half-written REPORT.md (REPORT.md is written after metrics.json, see ReportWriter), and
+# the old `find -name REPORT.md` test would then skip that assay forever without a score.
+# metrics.json is written first and in one shot, so a parseable metrics.json with the
+# score keys present (a NaN spearman still counts -- the assay was scored) is the reliable
+# completion marker. Mirrors the genome array fix: judge by content, not by file presence.
+assay_complete() {  # $1 = metrics.json path
+    "$PYTHON" -c '
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(1)
+m = d.get("metrics", {})
+ok = ("spearman" in m) and (d.get("details", {}).get("num_variants") is not None)
+sys.exit(0 if ok else 1)
+' "$1" 2>/dev/null
+}
+
 OK=0; SKIP=0; FAIL=0; PLANNED=0
 for csv in $ASSAYS; do
     name=$(basename "$csv" .csv)
@@ -65,7 +85,7 @@ for csv in $ASSAYS; do
     PLANNED=$((PLANNED+1))
 
     outdir="${LSD%/}/experiment_data/eval/${MODEL_SLUG}/proteingym_${name}_sweep"
-    if find "$outdir" -name REPORT.md 2>/dev/null | grep -q .; then
+    if [[ -f "${outdir}/metrics.json" ]] && assay_complete "${outdir}/metrics.json"; then
         echo "[pg-sweep] SKIP done: ${name}"
         SKIP=$((SKIP+1))
         continue
