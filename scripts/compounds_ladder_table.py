@@ -19,6 +19,17 @@ conventions differ by architecture and that is deliberate -- nanoGPT ties
 ``lm_head`` to ``wte``, so the token embedding does enter a matrix multiply
 there and is not subtracted, while BERT's is.
 
+The caveat that goes with these four values (2026-11-09 judgement §1.1). Each
+stage begins with a 500-step warmup and ``constant_with_warmup`` ramps it from
+zero, so there is a stretch at the head of every stage where the rate is below
+the stage's own constant. At step 15,000 that follows a stage which decayed to
+zero, but at step 30,000 it follows a stage that ended at a tenth of the peak
+and holding it -- the rate drops back to zero there and climbs over 500 steps
+anyway, because the ramp was kept so that the 30,000-step values and the
+45,000-step ones were measured under the same shape. Two of the four arms get a
+worse validation point just after the 30,000 boundary and two do not, so nothing
+is concluded from it; it is stated because the values are read as one schedule.
+
 Usage:
     compounds_ladder_table.py --bert-root DIR --gpt2-root DIR --out FILE
 """
