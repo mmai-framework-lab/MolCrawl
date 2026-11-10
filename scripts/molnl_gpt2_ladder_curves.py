@@ -11,7 +11,7 @@ things make them a different picture, and the figures keep them apart:
   instead of 373. Each pass gets its own axes; their schedules are not the same length.
 - the metric is nanoGPT's validation loss over whole sequences, not BERT's
   eval_loss_mask over masked positions, so its floor is a different number. BERT's
-  3.8638 is the unigram floor over masked positions; the next-token one is 4.6514,
+  4.6449 is the unigram floor over masked positions; the next-token one is 4.6514,
   measured by scripts/molnl_unigram_floor.py (job 138304).
 
     python scripts/molnl_gpt2_ladder_curves.py --runs-root <dir> --out-dir <dir>

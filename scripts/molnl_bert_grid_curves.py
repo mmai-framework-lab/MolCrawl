@@ -10,9 +10,11 @@ Two things it refuses to do, both from that order:
   On one linear axis the six are a flat line at the bottom.
 - it never thins the evaluation points. Every one of the 120 per run is drawn.
 
-The baseline is the unigram floor measured on this corpus (job 22503): a model that
-predicts the corpus's token frequencies and reads nothing scores 3.8638 on the masked
-positions. A loss above it means the run learned nothing usable.
+The baseline is the unigram floor on the validation split: a model that predicts the
+corpus's token frequencies and reads nothing scores 4.6449 on the masked positions there.
+A loss above it means the run learned nothing usable. The axis is the valid
+eval_loss_mask, so the floor is the valid one; the 3.8638 that stood here was the same
+measurement taken on train (job 22503, 2026-08-12).
 
     python scripts/molnl_bert_grid_curves.py --runs-root <dir> --out-dir <dir>
 """
@@ -31,7 +33,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from molnl_loss_figures import (ARM_COLOURS, SIZE_COLOUR, axes, best_point,  # noqa: E402
                                 fit_y, floor_line, label_bests, new_figure, save)
 
-BASELINE = 3.8638          # unigram floor on the masked positions, mol_nl (job 22503)
+BASELINE = 4.6449          # unigram floor on the masked positions, molnl valid
+                           # split: report/mlm-baselines-20261102/full/molnl.json
 SIZES = ("small", "medium", "large")
 LRS = (("1e4", "1e-4", 1e-4), ("3e4", "3e-4", 3e-4), ("1e3", "1e-3", 1e-3))
 LR_COLOUR = {"1e-4": "#1f6fb4", "3e-4": "#c8571b", "1e-3": "#2e7d32"}
@@ -196,7 +199,8 @@ def write_tsv(runs, out_dir):
     with open(path, "w") as fh:
         fh.write("# molecule_nat_lang BERT learning-rate grid, eval_loss_mask at every evaluation\n")
         fh.write("# " + PRECONDITIONS.replace("·", "|") + "\n")
-        fh.write(f"# unigram floor on this corpus: {BASELINE} (job 22503)\n")
+        fh.write(f"# unigram floor on the valid split: {BASELINE} "
+                 "(report/mlm-baselines-20261102/full/molnl.json)\n")
         fh.write("size\tlearning_rate\tstep\teval_loss_mask\tsegment\n")
         for size in SIZES:
             for _, lr, _ in LRS:

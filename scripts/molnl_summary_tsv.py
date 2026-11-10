@@ -31,7 +31,13 @@ PF_DAY = 8.64e19
 TOKENS_PER_STEP = 2_621_440
 TRAIN_TOKENS = 325_752_832
 WINDOW = 10
-FLOOR = {"bert": 3.8638, "gpt2": 4.6514}
+# molnl valid split, [MASK] rate 0.2, on training_ready_hf_dataset_shuffled:
+# report/mlm-baselines-20261102/full/molnl.json (unigram, fit on 200,000 train
+# rows and scored on the 1,631 valid rows). The figures' y axis is the valid
+# eval_loss_mask, so the floor has to be the valid one too. The 3.8638 that stood
+# here was measured on the train split (job 22503, 2026-08-12) and sits 0.78 below.
+# The GPT-2 value was already measured on valid.
+FLOOR = {"bert": 4.6449, "gpt2": 4.6514}
 
 
 def read_table(path):

@@ -43,7 +43,12 @@ from molnl_loss_figures import INK, SIZE_COLOUR, axes  # noqa: E402
 
 PF_DAY = 8.64e19
 WINDOW = 10
-FLOOR = {"bert": ("何も学ばない場合（[MASK] 位置のユニグラム）", 3.8638),
+# molnl valid split, [MASK] rate 0.2, on training_ready_hf_dataset_shuffled:
+# report/mlm-baselines-20261102/full/molnl.json (unigram, fit on 200,000 train
+# rows and scored on the 1,631 valid rows). The figures' y axis is the valid
+# eval_loss_mask, so the floor has to be the valid one too. The 3.8638 that stood
+# here was measured on the train split (job 22503, 2026-08-12) and sits 0.78 below.
+FLOOR = {"bert": ("何も学ばない場合（[MASK] 位置のユニグラム）", 4.6449),
          "gpt2": ("何も学ばない場合（次トークンのユニグラム）", 4.6514)}
 # (arch, size, the run as it was, the run repeated under the 2026-10-14 order)
 PAIRS = [
