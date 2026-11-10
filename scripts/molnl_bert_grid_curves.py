@@ -76,8 +76,16 @@ def collect(runs_root):
 
 
 def learned(run):
-    """Did the arm ever get below the unigram floor?"""
-    return min(run["vals"]) < BASELINE
+    """Did the arm get below the unigram floor and stay there?
+
+    The first half alone used to be the whole test, and it worked only because the floor
+    in use was the train-split one, 0.78 below the valid floor this axis is scored on.
+    Moving the floor to 4.6449 let large lr 3e-4 in: it dipped to 4.4285 at step 300 and
+    then diverged to 7.48, so by the one-sided test it "learned" and would have been drawn
+    beside the six arms that reached 0.07 to 0.19 -- the exact mixing this script's
+    docstring refuses. An arm that ended back above the floor did not learn.
+    """
+    return min(run["vals"]) < BASELINE and run["vals"][-1] < BASELINE
 
 
 def fig_by_size(runs, out_dir):
