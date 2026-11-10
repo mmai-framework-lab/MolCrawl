@@ -246,6 +246,32 @@ def main() -> int:
     print(f"  {len(pairs):,} pairs, {len(wanted):,} distinct canonical molecules, "
           f"{len(unreadable)} RDKit would not read", flush=True)
 
+    # The rank checks come before the scan. They cost a second, the scan costs twelve
+    # minutes, and a failed check after the scan throws the scan away -- which is what
+    # happened on the first run of this.
+    print("== ranks ==", flush=True)
+    frames, source, disagreements = read_ranks(a.ranks_dir)
+    if disagreements:
+        raise SystemExit(f"rank files disagree for the same frame: {disagreements}")
+    stored = stored_metrics(a.ranks_dir)
+    mismatches = []
+    for key, ranks in sorted(frames.items()):
+        full = metrics([ranks[q] for q in sorted(ranks)])
+        want = stored.get(key)
+        if not want:
+            mismatches.append({"frame": "/".join(key), "why": "no stored summary"})
+            continue
+        for field in ("recall@1", "recall@5", "recall@10", "mrr", "median_rank"):
+            # The scoring runs wrote these rounded to four decimals, so the comparison is
+            # at that precision. A tighter one fails on the rounding alone: bert large
+            # molecule_to_text recomputes to 0.18289224 against a stored 0.1829.
+            if abs(full[field] - want[field]) > 5e-5:
+                mismatches.append({"frame": "/".join(key), "field": field,
+                                   "recomputed": full[field], "stored": want[field]})
+    if mismatches:
+        raise SystemExit(f"the ranks do not reproduce the scoring summaries: {mismatches}")
+    print(f"  {len(frames)} frames, all reproducing their scoring summary", flush=True)
+
     print("== train scan ==", flush=True)
     scan = scan_train(a.arrow_train, wanted, a.processes, a.batch_size, a.tokenizer_dir)
     in_train_mols = set(scan["molecules_matched"])
@@ -272,26 +298,6 @@ def main() -> int:
         print(f"  {task}: {n} molecules, {task_totals[task]:,} occurrences", flush=True)
     print(f"  molecules occurring in {' or '.join(MOLECULE_TASKS)}: "
           f"{len(in_molecule_tasks)}", flush=True)
-
-    print("== ranks ==", flush=True)
-    frames, source, disagreements = read_ranks(a.ranks_dir)
-    if disagreements:
-        raise SystemExit(f"rank files disagree for the same frame: {disagreements}")
-    stored = stored_metrics(a.ranks_dir)
-    mismatches = []
-    for key, ranks in sorted(frames.items()):
-        full = metrics([ranks[q] for q in sorted(ranks)])
-        want = stored.get(key)
-        if not want:
-            mismatches.append({"frame": "/".join(key), "why": "no stored summary"})
-            continue
-        for field in ("recall@1", "recall@5", "recall@10", "mrr", "median_rank"):
-            if abs(full[field] - want[field]) > 5e-7:
-                mismatches.append({"frame": "/".join(key), "field": field,
-                                   "recomputed": full[field], "stored": want[field]})
-    if mismatches:
-        raise SystemExit(f"the ranks do not reproduce the scoring summaries: {mismatches}")
-    print(f"  {len(frames)} frames, all reproducing their scoring summary", flush=True)
 
     subsets = (("molecule_in_train", in_train),
                ("molecule_not_in_train", not_in_train),
