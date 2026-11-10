@@ -29,6 +29,20 @@ recorded best points at a checkpoint that exists.
 
 Off unless a config sets ``save_on_improve = True``: it changes which
 checkpoints a run writes, and no run in flight should have that move under it.
+
+``require_metric`` stops a run whose judged metric never arrives. It exists for one
+case only: a config that names a metric of its own. ``eval_loss_mask`` is computed
+for every BERT run and reaches ``on_log``, so the default name cannot go missing;
+a name someone typed can, and then the callback would quietly never fire and the
+run would keep only its grid checkpoints, with nothing in the log to show it. The
+2026-11-10 judgement declined a guard for the default name on exactly that ground
+-- a guard for a state that cannot happen -- and left this narrower one open.
+
+The check waits for the second evaluation rather than the first. An evaluation logs
+its own metrics, fires ``on_evaluate``, and only then does ``MlmBreakdownMixin`` add
+the mask metric through ``self.log()``, so at the first ``on_evaluate`` a metric
+that does arrive has not arrived yet. One full cycle has to complete before absence
+means absence.
 """
 
 from transformers import TrainerCallback
@@ -38,15 +52,18 @@ class SaveOnMetricImprovement(TrainerCallback):
     """Request a checkpoint whenever ``metric`` reaches a new best."""
 
     def __init__(self, metric="eval_loss_mask", greater_is_better=False,
-                 fallback_metric=None):
+                 fallback_metric=None, require_metric=False):
         self.metric = metric
         self.fallback_metric = fallback_metric
         self.greater_is_better = bool(greater_is_better)
+        self.require_metric = bool(require_metric)
         self.best = None
         self.best_step = None
         self._seen_step = None
         self._warned_fallback = False
         self._warned_missing = False
+        self._ever_seen = False
+        self._eval_cycles = 0
 
     def _value(self, metrics):
         """The ranking metric for this report, or None if it is not in this one."""
@@ -69,6 +86,8 @@ class SaveOnMetricImprovement(TrainerCallback):
 
     def _consider(self, value, state, control):
         """Raise should_save if this value is a new best for this step."""
+        if value is not None:
+            self._ever_seen = True
         if value is None or self._seen_step == state.global_step:
             return control
         self._seen_step = state.global_step
@@ -100,4 +119,25 @@ class SaveOnMetricImprovement(TrainerCallback):
 
     def on_evaluate(self, args, state, control, metrics=None, **kwargs):
         """Kept for metrics that do arrive here, such as a plain eval_loss."""
-        return self._consider(self._value(metrics), state, control)
+        control = self._consider(self._value(metrics), state, control)
+        self._eval_cycles += 1
+        self._require_arrival(state)
+        return control
+
+    def _require_arrival(self, state):
+        """Stop a run whose named metric has not arrived after a full cycle.
+
+        Only when the caller asked. The run is a config error, not a training
+        failure: every checkpoint it would go on to write is chosen by the save
+        grid alone, and the number the ladder reports would not be one of them.
+        """
+        if not self.require_metric or self._ever_seen or self._eval_cycles < 2:
+            return
+        raise RuntimeError(
+            f"save-on-improve: {self.metric!r} has not appeared in any metrics or "
+            f"log after {self._eval_cycles} evaluations (step {state.global_step}). "
+            "The name comes from this run's config, so it is a configuration error: "
+            "no extra checkpoint would ever be written and the best checkpoint would "
+            "be whichever one the save grid happened to catch. Fix the metric name, "
+            "or drop save_on_improve_metric to follow judge_on."
+        )

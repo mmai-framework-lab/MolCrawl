@@ -1194,8 +1194,16 @@ if __name__ == "__main__":
         from molcrawl.models.bert._save_on_improve import SaveOnMetricImprovement
 
         _improve_on = str(globals().get("save_on_improve_metric") or judge_on)
-        callbacks.append(SaveOnMetricImprovement(metric=_improve_on))
+        # Stop only on a name this config chose. eval_loss_mask is computed for every
+        # BERT run and reaches on_log, so the default cannot go missing; a typed name
+        # can, and the callback would then never fire with nothing in the log to say so.
+        _require_improve_metric = _improve_on != "eval_loss_mask"
+        callbacks.append(SaveOnMetricImprovement(
+            metric=_improve_on, require_metric=_require_improve_metric))
         print(f"💾 Save-on-improve: an extra checkpoint whenever {_improve_on} reaches a new best")
+        if _require_improve_metric:
+            print(f"   {_improve_on} is named by this config, not the default; the run stops "
+                  f"if it has not arrived after two evaluations")
 
     # An id that never appears turns document masking into a no-op. That is how
     # it went unnoticed on protein, on molecule_nat_lang and on RNA: the collator
