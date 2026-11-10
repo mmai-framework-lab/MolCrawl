@@ -21,6 +21,11 @@
 # scored from: the pairs are frozen into one file so the scoring and the overlap check
 # cannot drift apart, and the molecules are taken in the corpus's own spelling.
 #
+# PAIRS_FILE is the current path. The outputs of the PAIRS_ROOT round were deleted on
+# 2026-11-10 under the judgment's 3.3, so a run with PAIRS_ROOT measures something this
+# project no longer holds results for. The Mol-Instructions distribution itself stays --
+# the judgment keeps it -- which is why the argument is still here.
+#
 # Optional: WRAP (plain|inst -- inst writes the corpus's own record form), NOTATION
 # (selfies|smiles -- the corpus is SMILES, the evaluation pairs are SELFIES),
 # CANDIDATES (default 100), QUERIES (0 = every test pair), QUERIES_T2M (same for

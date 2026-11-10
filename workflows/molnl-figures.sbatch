@@ -11,12 +11,15 @@
 # not belong on the login node here.
 #
 #   sbatch --export=ALL,FIG_DIR=<dir>,TABLE=<all-curves tsv>,SIZES=<model sizes json>,\
-#          RETRIEVAL_DIR=<formats dir>,BASELINE_DIR=<first measurements dir>,\
-#          PAIR_INDEX=<pair index json>,CAPTION_SIZE=<file>,CAPTION_RETRIEVAL=<file> \
-#          workflows/molnl-figures.sbatch
+#          CAPTION_SIZE=<file> workflows/molnl-figures.sbatch
 #
 # Each step runs only when the inputs it needs are given, so one figure can be redrawn
-# without the others. Optional: SPLIT_TSV (where the overlap split is written), PYTHON.
+# without the others. Optional: PYTHON.
+#
+# Two steps were taken out on 2026-11-10: the retrieval-format figures and the overlap
+# split, both drawn from the Mol-Instructions retrieval measurements that the judgment's
+# 3.3 deleted. The scripts behind them are still in scripts/, with their inputs gone; this
+# file no longer names the measurements, so nothing here regenerates them by habit.
 set -eo pipefail
 
 : "${FIG_DIR:?set FIG_DIR to the directory the figures are written into}"
@@ -40,25 +43,10 @@ echo "=== molnl figures on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "=== figures: ${FIG_DIR} ==="
 rc=0
 
-if [ -n "${RETRIEVAL_DIR:-}" ] && [ -n "${BASELINE_DIR:-}" ] && [ -n "${CAPTION_RETRIEVAL:-}" ]; then
-  for metric in recall@1 mrr; do
-    "${PYTHON}" scripts/molnl_retrieval_format_figure.py \
-      --formats-dir "${RETRIEVAL_DIR}" --baseline-dir "${BASELINE_DIR}" \
-      --metric "${metric}" --out-dir "${FIG_DIR}" \
-      --caption "${CAPTION_RETRIEVAL}" || rc=$?
-  done
-fi
-
 if [ -n "${TABLE:-}" ] && [ -n "${SIZES:-}" ] && [ -n "${CAPTION_SIZE:-}" ]; then
   "${PYTHON}" scripts/molnl_bert_size_figure.py \
     --table "${TABLE}" --sizes "${SIZES}" --out-dir "${FIG_DIR}" \
     --caption "${CAPTION_SIZE}" || rc=$?
-fi
-
-if [ -n "${RETRIEVAL_DIR:-}" ] && [ -n "${PAIR_INDEX:-}" ]; then
-  "${PYTHON}" scripts/molnl_retrieval_overlap_split.py \
-    --ranks-dir "${RETRIEVAL_DIR}" --pair-index "${PAIR_INDEX}" \
-    --out "${SPLIT_TSV:-${FIG_DIR}/molnl-retrieval-overlap-split.tsv}" || rc=$?
 fi
 
 echo "=== rc=${rc} @ $(date -Is) ==="
