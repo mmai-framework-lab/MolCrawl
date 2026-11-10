@@ -190,3 +190,80 @@ def test_one_value_per_world_keeps_the_ranks_in_step():
     assert saved_at_2300 == [False, True, True, True], (
         "this is the split that deadlocked six runs"
     )
+
+
+# --- require_metric: stopping a run whose named metric never arrives -------------
+#
+# The 2026-11-10 judgement declined a guard for the default metric, because
+# eval_loss_mask is computed for every BERT run and reaches on_log, so "it never
+# arrives" is not a state that can happen. It left open the one case where the name
+# is not the default: a config that typed its own. These cases fix that boundary.
+
+
+def _eval(cb, step, metrics=None, logs=None):
+    """One evaluation cycle in the order HF runs it: log, then on_evaluate."""
+    control = _Control()
+    if logs is not None:
+        cb.on_log(None, _State(step), control, logs=logs)
+    cb.on_evaluate(None, _State(step), control, metrics=metrics or {})
+    return control
+
+
+def test_a_metric_that_never_arrives_is_tolerated_by_default():
+    """The default name cannot go missing, so no run is stopped for it."""
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask")
+    for step in (100, 200, 300, 400):
+        _eval(cb, step, metrics={"eval_loss": 0.9})
+    assert cb.best is None  # nothing tracked, and nothing raised
+
+
+def test_a_named_metric_that_never_arrives_stops_the_run():
+    cb = SaveOnMetricImprovement(metric="eval_loss_typo", require_metric=True)
+    _eval(cb, 100, metrics={"eval_loss": 0.9})  # one cycle is not enough
+    try:
+        _eval(cb, 200, metrics={"eval_loss": 0.8})
+    except RuntimeError as exc:
+        assert "eval_loss_typo" in str(exc)
+        assert "config" in str(exc)
+        assert "200" in str(exc)
+    else:
+        raise AssertionError("the second evaluation should have raised")
+
+
+def test_the_first_evaluation_does_not_stop_the_run():
+    """A metric that does arrive arrives after on_evaluate, through on_log."""
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask", require_metric=True)
+    _eval(cb, 100, metrics={"eval_loss": 0.9})  # the mask metric is not here yet
+    assert cb._eval_cycles == 1  # and no exception
+
+
+def test_a_metric_that_arrives_through_on_log_is_not_missing():
+    """The real path for the mask metric: logged after on_evaluate has fired."""
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask", require_metric=True)
+    for step in (100, 200, 300):
+        control = _Control()
+        cb.on_evaluate(None, _State(step), control, metrics={"eval_loss": 0.9})
+        cb.on_log(None, _State(step), control, logs={"eval_loss_mask": 1.0 - step / 1000})
+    assert cb.best_step == 300
+
+
+def test_arriving_once_is_enough_even_if_a_later_cycle_lacks_it():
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask", require_metric=True)
+    _eval(cb, 100, logs={"eval_loss_mask": 0.9})
+    for step in (200, 300, 400):
+        _eval(cb, step, metrics={"eval_loss": 0.8})  # absent from here on
+    assert cb.best == 0.9  # tolerated: absence is only a config error at the start
+
+
+def test_the_guard_is_off_unless_asked():
+    assert SaveOnMetricImprovement(metric="whatever").require_metric is False
+    assert SaveOnMetricImprovement(metric="whatever", require_metric=True).require_metric is True
+
+
+def test_the_fallback_counts_as_arrival():
+    """A caller that asked for a fallback is getting values; nothing to stop."""
+    cb = SaveOnMetricImprovement(metric="eval_loss_mask", fallback_metric="eval_loss",
+                                 require_metric=True)
+    _eval(cb, 100, metrics={"eval_loss": 0.9})
+    _eval(cb, 200, metrics={"eval_loss": 0.8})
+    assert cb.best == 0.8
