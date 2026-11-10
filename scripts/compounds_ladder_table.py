@@ -38,6 +38,18 @@ the other way round -- "there is no jump from nothing at this resume point as
 there was at 15,000" is about the rate the previous stage ENDED on, not about
 where the new ramp begins.
 
+**What the caveat applies to, and what it does not.** It applies to a difference read
+ACROSS stages, and to nothing else (2026-11-10 judgement §1.1). The adopted values
+themselves are not inside a ramp: the four adopted steps are 38,900 to 44,800, which
+is 8,900 steps or more past the 30,000 head.
+
+**A column of stage values is a column of stage minima.** Where these four values are
+tabulated beside a 15,000 and a 30,000 column, every one of those columns holds that
+stage's lowest point, not the value at the boundary step. On large the 30,000 column
+is 0.065906 at step 29,800 while the boundary step itself is 0.066789. Anyone adding
+the caveat to such a table has to keep that straight, or the note lands on a number
+it is not about.
+
 Usage:
     compounds_ladder_table.py --bert-root DIR --gpt2-root DIR --out FILE
 """
