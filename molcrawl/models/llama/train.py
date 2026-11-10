@@ -113,9 +113,9 @@ compile = False  # use PyTorch 2.0 to compile the model to be faster
 # Training seed (base). Overridden by the configurator when a config file sets
 # `seed = N`. Consumed below to seed torch / torch.cuda / numpy / Python
 # random; per-rank offset (seed + ddp_rank) is applied so DDP ranks still draw
-# distinct mini-batches. 1337 kept as the base to match the historical value
-# used before the config-level seed was introduced.
-seed = 1337
+# distinct mini-batches. 42 since 2026-11-10, the value every config in the tree
+# names; the historical base was nanoGPT's 1337.
+seed = 42
 # -----------------------------------------------------------------------------
 config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
 if __name__ == "__main__":
@@ -206,9 +206,9 @@ if __name__ == "__main__":
         )
         print(f"Wandb initialized: {wandb_run.url}")
 
-    # Full seed control (boss directive 2026-08-03). Config `seed` overrides
-    # the 1337 default via the configurator; per-rank offset preserves the
-    # DDP behaviour of distinct mini-batches per rank.
+    # Full seed control (boss directive 2026-08-03). Config `seed` overrides the
+    # base 42 via the configurator; per-rank offset preserves the DDP behaviour of
+    # distinct mini-batches per rank.
     _rank_seed = seed + seed_offset
     torch.manual_seed(_rank_seed)
     torch.cuda.manual_seed_all(_rank_seed)

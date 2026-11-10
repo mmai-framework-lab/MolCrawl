@@ -17,19 +17,28 @@ that declares one different from `seed` -- see "One seed, not two" below.
 
 **Existing runs keep the seed they ran with. Nothing is re-run to change a seed.**
 
-## The two exceptions, and how to tell which case you are in
+## The one exception, and the case that now needs a decision
 
 | Case | Seed | How to recognise it |
 |---|---|---|
 | A new run, standing on its own | **42** | nothing existing will be tabulated next to it |
-| **A point added to an existing grid** | **the seed that grid already uses** | its number will sit in a table beside arms that already ran |
 | **A run measuring seed variance** | **1 and 17** | the point of the run is the spread itself |
+| A point added to a grid whose arms ran at another seed | **ask first** | its number will sit in a table beside arms that already ran |
 
-The middle row is the one that gets missed. A rate filled in between two existing
-rates, a size added to a ladder, a rerun of one arm with a longer schedule -- all
-of these are read against arms that already exist, and **a different seed puts
-seed variance inside a difference that is supposed to be about the rate or the
-size.** The compounds BERT grid runs at **seed 9**; an arm added to it stays at 9.
+**On 2026-11-10 every config in the tree was set to 42** (matsubara, carrying the
+2026-09-30 directive through the whole tree). The per-config numbers assigned on
+2026-08-03, and the seeds the grids ran at -- compounds BERT **9**, protein BERT
+**82** and **77**, rna BERT **106**, protein GPT-2 **1001** -- are no longer
+anywhere under `configs/`. The 32 variance arms keep 1 and 17.
+
+That removes the number a grid continuation used to copy, and the problem it solved
+has not gone away: a rate filled in between two existing rates, a size added to a
+ladder, a rerun of one arm with a longer schedule are all read against arms that
+already ran, and **a different seed puts seed variance inside a difference that is
+supposed to be about the rate or the size.** For a continuation, read the earlier
+arms' seed out of their `run_manifest.json`, and then either say in the report that
+the new point ran at a different seed, or get a decision before launching. Do not
+put the old number back into a config without that decision.
 
 Before writing the number, check what the neighbours use:
 

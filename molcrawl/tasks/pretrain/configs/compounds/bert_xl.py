@@ -86,7 +86,8 @@ bf16 = True
 expected_global_batch = 2560
 per_device_eval_batch_size = 8
 
-# Training seed (sequentially assigned across the tracked pretrain configs on
-# 2026-08-03; boss directive to fix per-config seeds for reproducibility).
-# Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 118
+# Training seed. 42 for every config in this tree (igarashi's order of 2026-09-30,
+# applied across the tree on 2026-11-10); the per-config numbers assigned on
+# 2026-08-03 are gone. Only the variance arms keep 1 and 17, and what a run used is
+# recorded in its run_manifest.json.
+seed = 42

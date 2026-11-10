@@ -3,7 +3,9 @@
 The compounds sets are written in source-parquet order, whose leading rows are shorter
 than the file as a whole, so a leading slice reports a loss below the split's own. It
 must also be the same rows for every ladder size, which is why it is not drawn with the
-run's training seed - each config carries a different one.
+run's training seed. Until 2026-11-10 each config carried a different seed and that was
+what forced the point; the tree now declares 42 everywhere, and the subset still comes
+from EVAL_SUBSET_SEED, so the rows stay put whatever a training seed does later.
 
 Off by default: protein, RNA and genome shuffle in prep, so their leading rows are
 already a random sample and switching would only move the number by resampling noise.
@@ -100,12 +102,33 @@ def test_only_compounds_bert_opts_in():
 
 
 @pytest.mark.parametrize("modality", ["compounds", "protein_sequence"])
-def test_training_seeds_differ_between_ladder_sizes(modality):
-    """The premise of the test above, pinned against the configs."""
-    seeds = set()
+def test_the_ladder_sizes_do_not_steer_the_subset(modality):
+    """The premise of the test above, pinned against the configs.
+
+    It used to be that the three sizes carried three different training seeds, so a
+    subset drawn from ``seed`` would have given each size its own eval rows. Since
+    2026-11-10 they all declare 42, which removes that particular trap but not the
+    invariant: the rows come from ``EVAL_SUBSET_SEED``, and no config may override
+    it, or two arms stop sharing the set the moment one of them moves.
+    """
+    seeds, overrides = set(), []
     for size in ("small", "medium", "large"):
-        text = (CONFIG_ROOT / modality / f"bert_{size}.py").read_text(encoding="utf-8")
-        seeds.update(
-            line.split("=", 1)[1].strip() for line in text.splitlines() if line.startswith("seed =")
-        )
-    assert len(seeds) == 3, f"{modality}: expected one seed per size, got {seeds}"
+        path = CONFIG_ROOT / modality / f"bert_{size}.py"
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith("seed ="):
+                seeds.add(line.split("=", 1)[1].strip())
+            if line.startswith("eval_subset_seed"):
+                overrides.append(f"{path.name}: {line}")
+    assert seeds == {"42"}, f"{modality}: the tree declares 42, got {seeds}"
+    assert not overrides, overrides
+
+
+def test_no_config_anywhere_overrides_the_subset_seed():
+    """One constant for every arm: EVAL_SUBSET_SEED in models/bert/main.py."""
+    offenders = [
+        path.relative_to(CONFIG_ROOT).as_posix()
+        for path in CONFIG_ROOT.rglob("*.py")
+        if any(line.startswith("eval_subset_seed")
+               for line in path.read_text(encoding="utf-8").splitlines())
+    ]
+    assert offenders == [], offenders

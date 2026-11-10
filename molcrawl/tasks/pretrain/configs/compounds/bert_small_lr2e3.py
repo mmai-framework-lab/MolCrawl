@@ -69,5 +69,8 @@ expected_global_batch = 2560
 # term that scales -- 32 x 1,024 x 616 vocab = 81 MB here.
 per_device_eval_batch_size = 32
 
-# Same seed across all three arms so the grid differs in the learning rate alone.
-seed = 9
+# Training seed 42, as every config in this tree now declares (igarashi's order of
+# 2026-09-30, applied across the tree on 2026-11-10). The runs behind this grid's
+# published numbers ran at seed 9, which is what their run_manifest.json records; a
+# run started from this config now differs from them in the seed as well.
+seed = 42

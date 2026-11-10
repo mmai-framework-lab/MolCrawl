@@ -8,7 +8,10 @@ from molcrawl.tasks.pretrain.configs.protein_sequence.gpt2_xl import *  # noqa: 
 
 learning_rate = 1.2e-3
 min_lr = 1.2e-4            # peak/10
-seed = 1001               # match the 6e-4 arm for a same-seed comparison
+# Training seed 42 (igarashi's order of 2026-09-30, applied across the tree on
+# 2026-11-10). The 1.2e-3 arms ran at 1001 to match the 6e-4 arm; that pairing is
+# recorded in those runs' manifests.
+seed = 42
 out_dir = get_gpt2_output_path("protein_sequence", "xl") + "-lr1p2e3"
 
 # §5.2: use the fixed (deterministic) validation eval (protein-order-2026-09-25 §4-7).

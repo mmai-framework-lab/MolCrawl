@@ -14,8 +14,10 @@
 #
 #   sbatch --export=ALL,SIZE=medium,LR=1e-3,SEED=20,... workflows/compounds-lr-sweep.sbatch
 #
-# The seed is held at the ladder value so the existing run serves as a fourth point on
-# the same curve. Results go to their own directory; the ladder outputs are untouched.
+# The seed is held at the value the existing ladder run used, so that run serves as a
+# fourth point on the same curve. Since 2026-11-10 the configs all declare 42, so that
+# value comes from the earlier run's run_manifest.json, not from the config tree.
+# Results go to their own directory; the ladder outputs are untouched.
 # TimeLimit is set for the slowest size this script is used with, not the fastest:
 # xl measures 29.6 GPU-h over 4 GPUs, i.e. 7.4 hours of wall, and large 3.1. A 3-hour
 # limit killed xl before it wrote a single eval point and cut large off at iter 1500

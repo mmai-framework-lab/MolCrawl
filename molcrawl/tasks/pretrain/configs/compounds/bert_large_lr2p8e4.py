@@ -81,7 +81,8 @@ expected_global_batch = 2560
 # term that scales -- 64 x 1,024 x 616 vocab here.
 per_device_eval_batch_size = 64
 
-# Seed 9, the same value the small grid used, so the size grid differs in size and
-# learning rate alone. The per-config sequential seeds (medium 8, large 7, xl 118)
-# belong to the ladder configs, which this grid does not read.
-seed = 9
+# Training seed 42, as every config in this tree now declares (igarashi's order of
+# 2026-09-30, applied across the tree on 2026-11-10). The runs behind this grid's
+# published numbers ran at seed 9, which is what their run_manifest.json records; a
+# run started from this config now differs from them in the seed as well.
+seed = 42
