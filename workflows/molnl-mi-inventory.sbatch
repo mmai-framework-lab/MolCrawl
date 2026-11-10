@@ -10,7 +10,7 @@
 # 2026-11-10 judgment 3.3: count what the Mol-Instructions retrieval round left behind,
 # and, with DELETE=1, remove exactly what the manifest from a counting run lists.
 #
-#   sbatch --export=ALL,REPORT_ROOT=<dir>,MANIFEST=<json> \
+#   sbatch --export=ALL,REPORT_ROOT=<dir>,MANIFEST=<json>[,EXCLUDE_UNDER=<dir>] \
 #          workflows/molnl-mi-inventory.sbatch
 #   sbatch --export=ALL,MANIFEST=<json>,DELETE=1 workflows/molnl-mi-inventory.sbatch
 #
@@ -47,8 +47,10 @@ else
   [ -d "${REPORT_ROOT}" ] || { echo "REPORT_ROOT=${REPORT_ROOT} is not a directory" >&2; exit 1; }
   echo "=== molnl Mol-Instructions inventory of ${REPORT_ROOT} @ $(date -Is) ==="
   rc=0
+  EXCL_ARGS=()
+  for e in ${EXCLUDE_UNDER:-}; do EXCL_ARGS+=(--exclude-under "${e}"); done
   "${PYTHON}" scripts/molnl_mol_instructions_inventory.py \
-    --report-root "${REPORT_ROOT}" --manifest "${MANIFEST}" || rc=$?
+    --report-root "${REPORT_ROOT}" --manifest "${MANIFEST}" "${EXCL_ARGS[@]}" || rc=$?
 fi
 echo "=== rc=${rc} @ $(date -Is) ==="
 exit "${rc}"

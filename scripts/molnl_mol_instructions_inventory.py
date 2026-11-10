@@ -27,6 +27,12 @@ The rules, in the order they are applied:
 Reports are never in scope. A .md or .html file says what was measured and why, and the
 judgment asks for the measurements to go, not for the record of them.
 
+--exclude-under keeps a subtree out of the scope the scan found. It exists because the
+scan found two directories the approval does not cover: report/_scratch/fmtsmoke and
+report/_scratch/mlmbatch, smoke runs of the format and the MLM batch shape, 21 files and
+440 rank rows. The judgment approves four directories, so the deletion is run against a
+manifest with those two excluded, and they are reported rather than taken along.
+
     python scripts/molnl_mol_instructions_inventory.py --report-root <dir> \
         --manifest <json>                        # count and write the manifest
     python scripts/molnl_mol_instructions_inventory.py --manifest <json> --delete
@@ -110,8 +116,18 @@ def frames_of(paths):
     return labels
 
 
-def inventory(root):
+def inventory(root, exclude=()):
+    exclude = tuple(os.path.join(os.path.abspath(e), "") for e in exclude)
+
+    def excluded(path):
+        full = os.path.join(os.path.abspath(path), "")
+        return any(full.startswith(e) for e in exclude)
+
     dirs = measurement_dirs(root)
+    for directory, info in dirs.items():
+        if info["in_scope"] and excluded(directory):
+            info["in_scope"] = False
+            info["excluded_by_request"] = True
     scope_dirs = [d for d, info in dirs.items() if info["in_scope"]]
     measurements = []
     for directory in scope_dirs:
@@ -157,8 +173,8 @@ def inventory(root):
                 continue
             if os.path.splitext(path)[0] in stems:
                 figures.append(path)
-    figures.sort()
-    tables.sort()
+    figures = sorted(p for p in figures if not excluded(p))
+    tables = sorted(p for p in tables if not excluded(p))
 
     original, duplicate = rank_rows(measurements)
     groups = {
@@ -187,14 +203,18 @@ def main() -> int:
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--delete", action="store_true",
                     help="remove exactly the paths the manifest lists, nothing else")
+    ap.add_argument("--exclude-under", action="append", default=[],
+                    help="keep this subtree out of scope; repeatable")
     a = ap.parse_args()
 
     if not a.delete:
         if not a.report_root:
             raise SystemExit("--report-root is required unless --delete is given")
-        found = inventory(a.report_root)
+        found = inventory(a.report_root, a.exclude_under)
+        found["excluded_under"] = [os.path.abspath(e) for e in a.exclude_under]
         for directory, info in found["retrieval_directories"].items():
-            mark = "DELETE" if info["in_scope"] else "keep  "
+            mark = "DELETE" if info["in_scope"] else (
+                "EXCLUDED" if info.get("excluded_by_request") else "keep  ")
             print(f"  {mark} {directory}: {info['summaries']} summaries, "
                   f"{info['smoltest_summaries']} of the test-split round", flush=True)
         for group, paths in found["groups"].items():
