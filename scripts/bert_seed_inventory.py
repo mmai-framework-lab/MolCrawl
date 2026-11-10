@@ -110,6 +110,18 @@ def read_args_seed_from_checkpoint(run_dir):
     return None, "no training_args.bin in any checkpoint"
 
 
+def tree_label(root):
+    """The run tree, named by its last two path components.
+
+    A bare basename is not enough: three of the compounds roots end in
+    ``compounds`` (``learning_source_20260805_compounds_packed/compounds`` and two
+    others), so the column and the provenance block would say the same word for
+    three different trees.
+    """
+    parts = [p for p in root.rstrip("/").split(os.sep) if p]
+    return "/".join(parts[-2:]) if len(parts) >= 2 else (parts[0] if parts else root)
+
+
 def produced_something(row):
     """Whether this run left anything a result could be read from.
 
@@ -190,7 +202,7 @@ def collect(roots, read_args_seed=read_args_seed_from_checkpoint):
     rows = []
     for modality, root in roots:
         found, unreadable = walk_root(root, modality)
-        tree = os.path.basename(root.rstrip("/")) or root
+        tree = tree_label(root)
         for row in found:
             if row.get("arch") != "bert":
                 continue
@@ -220,7 +232,7 @@ def provenance(roots, generated_by):
         " and comes from the newest checkpoint's training_args.bin",
     ]
     for modality, root in roots:
-        lines.append(f"# note: root {modality}={os.path.basename(root.rstrip('/')) or root}")
+        lines.append(f"# note: root {modality}={tree_label(root)}")
     return lines
 
 

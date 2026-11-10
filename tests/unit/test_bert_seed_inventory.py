@@ -22,8 +22,20 @@ from bert_seed_inventory import (  # noqa: E402
     inventory_row,
     provenance,
     row_without_trainer_state,
+    tree_label,
     write_tsv,
 )
+
+
+def test_three_trees_ending_in_compounds_get_three_different_labels():
+    labels = {
+        tree_label("/x/MolCrawl/learning_source_compounds_runs"),
+        tree_label("/x/MolCrawl/learning_source_20260805_compounds_packed/compounds"),
+        tree_label("/x/MolCrawl/learning_source_20260723_b200prep/compounds"),
+        tree_label("/x/MolCrawl/learning_source/compounds"),
+    }
+    assert len(labels) == 4
+    assert "learning_source/compounds" in labels
 
 
 def write_manifest(run_dir, config_seed=None, used_seed=None, lr=None,
