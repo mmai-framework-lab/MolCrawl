@@ -115,6 +115,24 @@ per-run の全項目は `_results/bert21-per-run.csv`、eval 系列そのもの�
   resume と本書と CSV には影響しない（step 番号で記録しているため）。
   このフィールドを直接読まず、採用 step は `bert21-per-run.csv` の `adopted_step` 列を見ること
 
+## この系列が使った seed
+
+**42 ではなく 35。** `learning_source_genome_runs` の production BERT 25 本はすべて
+35 で走った。各 run の `run_manifest.json` から読んだ値で、一覧は
+`report/rt1-bert-seed-inventory-2026-11-10.tsv`（2026-11-10）。採用した 21 本の
+`bert-small-<subset>-w1026` と、`mammal_centered-w1026` の学習率探り 3 本を含む。
+
+**他の 4 モダリティは 42、genome の GPT-2 側は 45。** genome を他モダリティと並べる表や図には
+seed が違うことを書く。書かなければ 42 と読まれる。GPT-2 側の値は
+`GENOME_ADOPTED_CHECKPOINTS_GPT2.ja.md` にある。
+
+**35 はいまのツリーのどの config にも無い。** `configs/genome_sequence/bert_small_subset.py`
+の `seed = 35` が出どころで、2026-08-03 に振られ（`db950fad`）、2026-10-22 の判断で 42 に
+変えた（`2a8a1437`）。その判断は系列を 42 で走らせ直す前提だったが、2026-11-10 判断書の
+3.2 で走らせ直しは取り消された（セット内で揃っているのでこのまま）。いまの config から 35 は
+再現できないので、値は run 側から読む（`run_manifest.json` の `seed.seed`、または任意の
+checkpoint の `training_args.bin`）。
+
 ## 記録項目
 
 9 エポックの per-run 値（best / best@step / 最終値 / 反転幅 / 処理トークン数）は、

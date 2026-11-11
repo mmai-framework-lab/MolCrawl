@@ -148,6 +148,26 @@ What was recorded about this series stands, and is not withdrawn:
   directly: take the adopted step from the `adopted_step` column of
   `bert21-per-run.csv`.
 
+## The seed these runs used
+
+**Seed 35, not 42.** All 25 production BERT runs in `learning_source_genome_runs`
+went at 35, read from their `run_manifest.json` and listed in
+`report/rt1-bert-seed-inventory-2026-11-10.tsv` (2026-11-10). That covers the 21
+adopted `bert-small-<subset>-w1026` runs and the three `mammal_centered-w1026`
+learning-rate probes.
+
+**The other four modalities are at 42, and genome's GPT-2 side is at 45.** A table
+or figure that puts genome beside another modality has to say so, or the reader
+assumes 42. The GPT-2 value is in `GENOME_ADOPTED_CHECKPOINTS_GPT2.md`.
+
+**35 is in no config in this tree.** It was `seed = 35` in
+`configs/genome_sequence/bert_small_subset.py`, assigned on 2026-08-03
+(`db950fad`) and changed to 42 on 2026-10-22 (`2a8a1437`) by the judgment of that
+date, which also planned to re-run the series at 42. The judgment of 2026-11-10
+section 3.2 cancelled that re-run: the set agrees with itself, so it stays as it
+is. Nothing in the current tree reproduces 35, so read it back from a run --
+`run_manifest.json` (`seed.seed`) or any checkpoint's `training_args.bin`.
+
 ## What is recorded where
 
 The nine-epoch per-run values (best, best@step, final value, reversal, tokens

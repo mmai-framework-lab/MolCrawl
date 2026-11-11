@@ -232,7 +232,11 @@ pad_token_id_for_loss = 5
 # 2026-08-03; the judgment of 2026-10-22 puts every genome run on 42, BERT and
 # GPT-2 alike, and asks that no other value be used and that seeds not be
 # varied to measure spread. The runs already on disk keep the seed they ran
-# with and are not re-seeded; they are re-run instead.
+# with and are not re-seeded, and the judgment of 2026-11-10 section 3.2 does
+# not re-run them. Measured on 2026-11-11: the 21 adopted nine-epoch runs went
+# at 45, so 45 appears in no config in this tree either. The value a run used
+# is in its run_manifest.json (seed.seed) and in
+# docs/11-decisions/GENOME_ADOPTED_CHECKPOINTS_GPT2.md.
 #
 # data_seed is written because the same judgment asks for it. It does nothing
 # on this path -- train.py has no data_seed, and one seed drives both the

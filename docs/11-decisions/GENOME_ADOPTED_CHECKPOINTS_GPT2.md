@@ -85,6 +85,25 @@ What was recorded about this series stands, and is not withdrawn:
   recovered. Its adopted checkpoint (step 34,000) predates the spike, so it is
   unaffected.
 
+## The seed these runs used
+
+**Seed 45, not 42.** The 21 adopted nine-epoch runs went at 45, read from their
+`run_manifest.json` on 2026-11-11. In the same tree two runs carry 42, the
+`-decay3` variants of `eukaryote_matched_random_seed2-ep9` and
+`global_random_seed3-ep9`; neither is part of the adopted series.
+
+**The other four modalities are at 42, and genome's BERT side is at 35.** A table
+or figure that puts genome beside another modality has to say so. The BERT value
+is in `GENOME_ADOPTED_CHECKPOINTS_BERT.md`.
+
+**45 is in no config in this tree.** It was `seed = 45` in
+`configs/genome_sequence/gpt2_small_subset.py`, assigned on 2026-08-03
+(`db950fad`) and changed to 42 on 2026-10-22 (`2a8a1437`). The runs are not
+re-seeded and, since the judgment of 2026-11-10 section 3.2, not re-run either.
+Read the value back from a run's `run_manifest.json` (`seed.seed`). A full GPT-2
+seed inventory across all five modalities is still owed under section 5 of that
+judgment.
+
 ## What is recorded where
 
 The nine-epoch per-run values (best, best@step, final value, reversal, tokens
