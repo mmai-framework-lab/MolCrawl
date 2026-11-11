@@ -120,6 +120,10 @@ per_device_eval_batch_size = 32
 # stores it on TrainingArguments and never consults it, and the data order follows
 # set_seed(seed) -- so a declaration is dead config that reads as a second knob.
 # main.py refuses a config whose data_seed disagrees with seed, for the same reason.
+# Training seed 42. This arm is the seed-42 rerun of a grid whose own runs went at
+# seed 9. Since 2026-11-10 every config in this tree declares 42 (igarashi's order
+# of 2026-09-30), so the suffix in the name no longer marks a difference from the
+# base arm, only the output directory does.
 seed = 42
 
 # HF's own default, stated here so the window is a choice rather than a leftover.

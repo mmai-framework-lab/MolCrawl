@@ -76,4 +76,8 @@ per_device_eval_batch_size = 64
 # stores it on TrainingArguments and never consults it, and the data order follows
 # set_seed(seed) -- so a declaration is dead config that reads as a second knob.
 # main.py refuses a config whose data_seed disagrees with seed, for the same reason.
-seed = 9
+# Training seed 42, as every config in this tree now declares (igarashi's order of
+# 2026-09-30, applied across the tree on 2026-11-10). The runs behind this grid's
+# published numbers ran at seed 9, which is what their run_manifest.json records; a
+# run started from this config now differs from them in the seed as well.
+seed = 42

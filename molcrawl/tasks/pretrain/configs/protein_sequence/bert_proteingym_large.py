@@ -71,7 +71,8 @@ gradient_accumulation_steps = 5 * 16
 # Protein sequence vocabulary size (EsmSequenceTokenizer: 33 character-level tokens)
 meta_vocab_size = len(tokenizer.get_vocab())
 
-# Training seed (sequentially assigned across the 117 tracked pretrain configs
-# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
-# Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 79
+# Training seed. 42 for every config in this tree (igarashi's order of 2026-09-30,
+# applied across the tree on 2026-11-10); the per-config numbers assigned on
+# 2026-08-03 are gone. Only the variance arms keep 1 and 17, and what a run used is
+# recorded in its run_manifest.json.
+seed = 42

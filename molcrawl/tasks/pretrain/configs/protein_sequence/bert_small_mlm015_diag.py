@@ -100,7 +100,8 @@ gradient_accumulation_steps = 5 * 16
 # ESM tokenizer uses character-level tokenization for protein sequences
 meta_vocab_size = len(tokenizer.get_vocab())
 
-# Training seed (sequentially assigned across the 117 tracked pretrain configs
-# on 2026-08-03; boss directive to fix per-config seeds for reproducibility).
-# Consumed by the runner via configurator; do NOT change once a run has started.
-seed = 82
+# Training seed 42, as every config in this tree declares (igarashi's order of
+# 2026-09-30, applied across the tree on 2026-11-10, and to this file on 2026-11-11).
+# The diagnostic runs launched from it went at seed 82; that value is in their
+# training_args.bin and in docs/07-reports/protein_bert_mlm_diagnostic_configs.md.
+seed = 42

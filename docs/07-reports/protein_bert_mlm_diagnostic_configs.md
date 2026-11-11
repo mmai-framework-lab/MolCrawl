@@ -110,13 +110,12 @@ config is itself recorded in the output.
 
 ## Two things to settle, not settled here
 
-1. **Seed.** These five configs declare `seed = 82`, which is what the runs used. Since
-   2026-11-10 every config in the tree declares 42, and both
-   `scripts/check_seed_declarations.py` and `tests/unit/test_config_seed_42.py` fail on a
-   config that is off 42 without being a variance arm. If this branch and the seed branch
-   both land as they are, those five files are what fails. Either set them to 42 -- the
-   82 stays recorded in the outputs, the logs and this document -- or name them as
-   exceptions in the checker.
+1. **Seed: settled on 2026-11-11.** These five configs were committed declaring
+   `seed = 82`, which is what their runs used, and were set to 42 together with the rest
+   of the tree in the commit that followed this one. The 82 stays recorded in each run's
+   `training_args.bin`, in the job logs and in the tables above, so nothing is lost by
+   the configs no longer naming it. The only configs left off 42 are the 32 variance
+   arms, whose seed is the subject of the run.
 2. **Relaunching.** None of these files reproduces its run unchanged: the mlm015 pair's
    effective batch came from a launch override, and the three post-run edits listed above
    are in the files. Treat them as the record of an investigation, not as runnable

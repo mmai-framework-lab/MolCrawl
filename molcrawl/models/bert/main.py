@@ -401,14 +401,15 @@ if __name__ == "__main__":
     per_device_eval_batch_size = 8
     log_interval = 100
     save_steps = 1000  # Default value, can be overridden in config
-    # Training seed (base). Each config file overrides this via the configurator
-    # (per-config sequential seed). Used in two places below, which together are
+    # Training seed (base). Each config file overrides this via the configurator,
+    # and since 2026-11-10 every config in the tree names 42 as well -- only the
+    # variance arms name 1 and 17. Used in two places below, which together are
     # what makes the value take effect: set_seed(seed) right after the configurator
     # runs, which fixes the weights' initialisation, and seed= on TrainingArguments,
     # which is what transformers re-seeds from at the start of training and so fixes
     # the data order. A config that names a seed and gets another one is refused at
     # startup. HF Trainer's default is 42 — keeping that as the base, so a config
-    # that names no seed runs at 42.
+    # that names no seed runs at 42, and so does the GPT-2 path.
     seed = 42
     # -----------------------------------------------------------------------------
     config_keys = [k for k, v in globals().items() if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
