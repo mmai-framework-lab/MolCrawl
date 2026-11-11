@@ -15,7 +15,9 @@ For each of the 14 frames this prints, for Recall@1:
               approximation because 0 of 102 happens here twice and the approximation is
               worthless at a zero cell.
 
-It reads the json the split run wrote. Nothing is scored and nothing is scanned.
+It reads the json the split run wrote. Nothing is scored and nothing is scanned. The
+checkpoints come along from that json, because the report-tsv convention requires a
+``# checkpoint:`` key on a table with no progress column and this table has none.
 
     python scripts/molnl_trainsplit_difference.py --split-json <json> --out <tsv>
 """
@@ -97,6 +99,8 @@ def main() -> int:
         fh.write("# model: several (columns: arch,size)\n")
         fh.write("# run: molecule_nat_lang retrieval on the SMolInstruct test split, the "
                  "pairs whose molecule occurs in train against the rest\n")
+        for name, path in data.get("checkpoints", {}).items():
+            fh.write(f"# checkpoint: {name}: {path}\n")
         fh.write(f"# source: {os.path.abspath(a.split_json)}\n")
         fh.write(f"# generated: "
                  f"{datetime.now().astimezone().isoformat(timespec='seconds')}"

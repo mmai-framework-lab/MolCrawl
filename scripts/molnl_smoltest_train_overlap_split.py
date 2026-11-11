@@ -219,13 +219,22 @@ def metrics(ranks):
 
 
 def stored_metrics(ranks_dir):
-    """What the scoring runs wrote, to check the ranks are the same measurement."""
-    out = {}
+    """What the scoring runs wrote, to check the ranks are the same measurement.
+
+    The checkpoints come back with it. The report-tsv convention requires a
+    ``# checkpoint:`` key on a table with no progress column, and these tables have none,
+    so the path each frame was scored from has to travel from the scoring summaries into
+    the provenance block rather than be looked up by hand afterwards.
+    """
+    out, checkpoints = {}, {}
     for path in sorted(glob.glob(os.path.join(ranks_dir, "retrieval-*.json"))):
         summary = json.load(open(path, encoding="utf-8"))
+        if summary.get("model_path"):
+            checkpoints.setdefault(f"{summary['arch']} {summary['size']}",
+                                   summary["model_path"])
         for direction, result in summary.get("directions", {}).items():
             out[(summary["arch"], summary["size"], direction)] = result
-    return out
+    return out, checkpoints
 
 
 def main() -> int:
@@ -253,7 +262,7 @@ def main() -> int:
     frames, source, disagreements = read_ranks(a.ranks_dir)
     if disagreements:
         raise SystemExit(f"rank files disagree for the same frame: {disagreements}")
-    stored = stored_metrics(a.ranks_dir)
+    stored, checkpoints = stored_metrics(a.ranks_dir)
     mismatches = []
     for key, ranks in sorted(frames.items()):
         full = metrics([ranks[q] for q in sorted(ranks)])
@@ -324,6 +333,7 @@ def main() -> int:
         "train_scan": {k: v for k, v in scan.items() if k != "task_counts_by_molecule"},
         "task_counts_by_molecule": scan["task_counts_by_molecule"],
         "rank_file_per_frame": {"/".join(k): v for k, v in sorted(source.items())},
+        "checkpoints": checkpoints,
         "split_metrics": rows,
     }
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
@@ -338,6 +348,8 @@ def main() -> int:
         fh.write("# model: several (columns: arch,size)\n")
         fh.write("# run: molecule_nat_lang retrieval on the SMolInstruct test split, "
                  "split by whether the pair's molecule occurs in train\n")
+        for name, path in checkpoints.items():
+            fh.write(f"# checkpoint: {name}: {path}\n")
         fh.write(f"# source: pairs {os.path.abspath(a.pairs_file)}\n")
         fh.write(f"# source: ranks {os.path.abspath(a.ranks_dir)}\n")
         fh.write(f"# source: train split {os.path.abspath(a.arrow_train)}\n")
