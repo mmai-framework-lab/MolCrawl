@@ -1,0 +1,83 @@
+# DIAGNOSTIC config (untracked): protein bert-small with the ESM-standard MLM optimizer.
+#
+# Root-cause test (2026-08-25). Production protein bert-small (run 24870) collapses to the
+# unigram marginal. Work-1 showed the SAME BertForMaskedLM learns protein MLM when run under
+# the esm2 pipeline (eval 2.67->2.56). The only optimizer differences between the collapsing
+# bert/main.py recipe and the learning esm2 recipe are:
+#     adam_beta2 : 0.95 (GPT-2 production spec) -> 0.999 (HF/BERT/ESM standard)
+#     warmup_steps: 200 -> 2000
+# This config is bert_small.py with ONLY those two changed, so a run here vs 24870 isolates the
+# optimizer bundle. Learns -> optimizer was the culprit AND this IS the shippable small recipe.
+#
+# Everything else (LR 3e-4, eff-batch 2560, max_steps, document_masking, threshold, seed) is
+# identical to production bert_small.py.
+
+from typing import Any, Dict, List
+
+import torch
+from transformers import DataCollatorForLanguageModeling
+
+from molcrawl.core.paths import UNIPROT_DATASET_DIR, get_bert_output_path
+from molcrawl.data.protein_sequence.utils.bert_tokenizer import create_bert_protein_tokenizer
+
+tokenizer = create_bert_protein_tokenizer()
+
+
+def preprocess_function(examples):
+    if "input_ids" in examples:
+        input_ids = examples["input_ids"]
+        if isinstance(input_ids[0], list):
+            attention_masks = []
+            for seq in input_ids:
+                pad_token_id = (
+                    tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
+                )
+                attention_masks.append([1 if token != pad_token_id else 0 for token in seq])
+            examples["attention_mask"] = attention_masks
+        else:
+            pad_token_id = (
+                tokenizer.pad_token_id if hasattr(tokenizer, "pad_token_id") and tokenizer.pad_token_id is not None else 0
+            )
+            examples["attention_mask"] = [1 if token != pad_token_id else 0 for token in input_ids]
+    return examples
+
+
+class ProteinSequenceDataCollator(DataCollatorForLanguageModeling):
+    def torch_call(self, examples: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
+        for example in examples:
+            if "sequence_tokens" in example and "input_ids" not in example:
+                example["input_ids"] = example.pop("sequence_tokens")
+        return super().torch_call(examples)
+
+
+data_collator = ProteinSequenceDataCollator(tokenizer=tokenizer, mlm=True, mlm_probability=0.2)
+
+max_steps = 11177  # 3 epochs of train at global batch 2560 = floor(3*9,538,464/2560)
+early_stopping = False
+document_masking = True
+degenerate_loss_threshold = None  # boss 2026-08-26: collapse detector OFF for protein (level-line stop cannot tell a slow-descending run from a stalled one; same as genome)
+model_size = "small"
+model_path = get_bert_output_path("protein_sequence", model_size)  # overridden via --model_path on launch
+max_length = 1024
+dataset_dir = UNIPROT_DATASET_DIR
+learning_rate = 0.0004  # boss 2026-08-26: re-measure best LR under FIXED optimizer (beta2=0.999); 3e-4 was least-bad under the collapsed optimizer. 4e-4 = value work-1 learned at.
+weight_decay = 0.01
+log_interval = 100
+save_steps = 1000
+
+# Keep the checkpoint the reported number came from. Evaluation is 10x finer than
+# saving here (100 against 1,000), so the minimum lands off the save grid nine
+# times in ten and best_model_checkpoint points at a neighbour instead.
+save_on_improve = True
+
+# --- THE ONLY CHANGES vs bert_small.py: ESM-standard MLM optimizer ---
+adam_beta2 = 0.999   # was 0.95 (GPT-2 spec); ESM/BERT MLM standard
+warmup_steps = 2000  # was 200; matches esm2/main.py
+# --------------------------------------------------------------------
+
+batch_size = 8
+per_device_eval_batch_size = 8
+gradient_accumulation_steps = 5 * 16  # eff-batch 2560 (same as production)
+
+meta_vocab_size = len(tokenizer.get_vocab())
+seed = 82
