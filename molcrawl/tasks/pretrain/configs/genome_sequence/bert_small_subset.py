@@ -249,7 +249,13 @@ dataloader_pin_memory = True
 # Training seed. 35 until 2026-10-22, from the per-config assignment of
 # 2026-08-03; the judgment of 2026-10-22 puts every genome run on 42, BERT and
 # GPT-2 alike. The runs already on disk keep the seed they ran with and are not
-# re-seeded; they are re-run instead.
+# re-seeded. The judgment of 2026-11-10 section 3.2 settled what happens to
+# them: the 25 production BERT runs in learning_source_genome_runs all went at
+# 35, they agree with each other, and they are NOT re-run. So 35 appears in no
+# config in this tree, and the value a genome run used is read from its
+# run_manifest.json (seed.seed) or its checkpoints' training_args.bin, listed
+# in report/rt1-bert-seed-inventory-2026-11-10.tsv and written up in
+# docs/11-decisions/GENOME_ADOPTED_CHECKPOINTS_BERT.md.
 #
 # data_seed is written because the same judgment asks for it. The Trainer in
 # this version never reads it -- _get_train_sampler returns a plain

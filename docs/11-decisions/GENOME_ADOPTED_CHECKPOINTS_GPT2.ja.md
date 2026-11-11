@@ -71,6 +71,22 @@ per-run の全項目は `_results/b21-per-run.csv`、val 系列そのものは `
 - `mammal_centered` は step 52,000 でスパイクし、回復する前に run が終わっている。
   採用 checkpoint（step 34,000）はスパイク発生前なので影響を受けない
 
+## この系列が使った seed
+
+**42 ではなく 45。** 採用した 9 エポック 21 本は 45 で走った。各 run の
+`run_manifest.json` から 2026-11-11 に読んだ値。同じツリーに 42 の run が 2 本あるが、
+`eukaryote_matched_random_seed2-ep9` と `global_random_seed3-ep9` の `-decay3` 版で、
+どちらも採用系列ではない。
+
+**他の 4 モダリティは 42、genome の BERT 側は 35。** genome を他モダリティと並べる表や図には
+seed が違うことを書く。BERT 側の値は `GENOME_ADOPTED_CHECKPOINTS_BERT.ja.md` にある。
+
+**45 はいまのツリーのどの config にも無い。** `configs/genome_sequence/gpt2_small_subset.py`
+の `seed = 45` が出どころで、2026-08-03 に振られ（`db950fad`）、2026-10-22 に 42 へ変えた
+（`2a8a1437`）。run は seed を振り直さず、2026-11-10 判断書 3.2 以降は走らせ直しもしない。
+値は run の `run_manifest.json`（`seed.seed`）から読む。5 モダリティ分の GPT-2 seed 一覧は
+同判断書の 5 項として未了。
+
 ## 記録項目
 
 9 エポックの per-run 値（best / best@step / 最終値 / 反転幅 / 処理トークン数）は、
