@@ -17,6 +17,11 @@ not worth reading there.
 
     python scripts/molnl_retrieval_overlap_split.py --ranks-dir <dir> \
         --pair-index <json> --out <tsv>
+
+The measurements this reads were deleted on 2026-11-10 under the 2026-11-10 judgment's
+3.3. Nothing in workflows/ names them any more. The script is kept because it takes its
+input directory as an argument and says in one place how that round was drawn; running it
+again needs the measurements scored again first.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure what a model that reads nothing scores on this corpus.
 
-The GPT-2 figures had no reference line. The 3.8638 measured for molecule_nat_lang is the
+The GPT-2 figures had no reference line. The 4.6449 measured for molecule_nat_lang on the valid split is the
 unigram floor over masked positions, which is the reference for BERT's eval_loss_mask and
 not for next-token loss: different positions, different metric (2026-09-25 order §5).
 

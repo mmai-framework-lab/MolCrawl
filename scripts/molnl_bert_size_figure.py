@@ -33,7 +33,12 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from molnl_loss_figures import INK, SIZE_COLOUR, axes  # noqa: E402
 
-FLOOR = 3.8638
+# molnl valid split, [MASK] rate 0.2, on training_ready_hf_dataset_shuffled:
+# report/mlm-baselines-20261102/full/molnl.json (unigram, fit on 200,000 train
+# rows and scored on the 1,631 valid rows). The figures' y axis is the valid
+# eval_loss_mask, so the floor has to be the valid one too. The 3.8638 that stood
+# here was measured on the train split (job 22503, 2026-08-12) and sits 0.78 below.
+FLOOR = 4.6449
 WINDOW = 10
 # The rate that stands for each size, and for xl every rate that held.
 # One definition of eval_loss_mask across the three: the grid's own seed-42 runs all

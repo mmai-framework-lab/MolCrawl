@@ -288,6 +288,17 @@ def draw(arms, title, caption, ylabel, path, floor=None, floor_label=""):
     return fits
 
 
+# molnl valid split, [MASK] rate 0.2, on training_ready_hf_dataset_shuffled:
+# report/mlm-baselines-20261102/full/molnl.json (unigram, fit on 200,000 train rows and
+# scored on the 1,631 valid rows). The y axis of these figures is the valid
+# eval_loss_mask, so the floor has to be the valid one too; the 3.8638 that stood here was
+# the same measurement taken on the train split (job 22503, 2026-08-12), 0.78 below it.
+BERT_FLOOR = 4.6449
+# Already a valid-side measurement: report/molnl-gpt2-unigram-floor.json, train
+# frequencies scored on valid.
+GPT2_FLOOR = 4.6514
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--bert-root", required=True)
@@ -297,11 +308,11 @@ def main() -> int:
     os.makedirs(a.out_dir, exist_ok=True)
 
     sets = [
-        ("bert24k", bert_arms(a.bert_root, "bert_*_24k_lr*"), "eval_loss_mask（nats/token）", 3.8638,
+        ("bert24k", bert_arms(a.bert_root, "bert_*_24k_lr*"), "eval_loss_mask（nats/token）", BERT_FLOOR,
          "何も学ばない場合"),
         ("bert12k", bert_arms(a.bert_root, "bert_*_lr*", exclude="_24k_"),
-         "eval_loss_mask（nats/token）", 3.8638, "何も学ばない場合"),
-        ("gpt2", gpt2_arms(a.gpt2_root), "val loss（nats/token）", 4.6514, "何も学ばない場合"),
+         "eval_loss_mask（nats/token）", BERT_FLOOR, "何も学ばない場合"),
+        ("gpt2", gpt2_arms(a.gpt2_root), "val loss（nats/token）", GPT2_FLOOR, "何も学ばない場合"),
     ]
     rows = []
     for key, arms, _ylabel, floor, _floor_label in sets:
@@ -315,6 +326,18 @@ def main() -> int:
                   f"window={x['window']:.4f} sd={x['sd']:.4f} {where}")
     named = {k: v for k, (v, *_rest) in
              {k: (arms,) for k, arms, *_ in sets}.items()}
+
+    def ratio_phrase(arms_, floor_):
+        """How far above the drawn points the floor sits, from the points themselves.
+
+        This sentence used to carry a hand-copied range, which is wrong the moment the
+        floor moves. It is computed here so the caption cannot drift from the figure.
+        """
+        vals = [x["window"] for x in arms_
+                if x["window"] is not None and x["window"] < floor_]
+        if not vals:
+            return ""
+        return f"（どの点もその {floor_ / max(vals):.0f}〜{floor_ / min(vals):.0f} 分の 1）"
     base = ("前提: グローバルバッチ 2,560 系列（2.62M トークン/step）/ 訓練データ 325.8M トークン"
             "（318,118 系列 × 1,024）。横軸は C = 6ND、N は checkpoint から数えた非埋め込みパラメータ数。"
             "6ND は系列長由来の注意項（系列長 1,024 で 13〜18%）を含まない。1 つの格子の中では全 arm が"
@@ -322,12 +345,14 @@ def main() -> int:
             "フロンティアではない。seed は各 arm 1 本で seed 間のばらつきは未測定 —— 順位として読まないこと。"
             "白抜きの印は走行中の run。")
     bert_caption = (base + " max_steps 24,000 / 193.1 epoch / 学習トークン 62.9G（完走時）。"
-                    "縦軸は eval_loss_mask（[MASK] 位置のみを採点）。何も学ばないモデルの 3.8638 は軸の外（どの点もその 45〜65 分の 1）。"
+                    f"縦軸は eval_loss_mask（[MASK] 位置のみを採点）。何も学ばないモデルの {BERT_FLOOR} は軸の外"
+                    f"{ratio_phrase(named['bert24k'], BERT_FLOOR)}。"
                     "色は学習率を表すが、格子ごとに学習率の組が違うので BERT の図と GPT-2 の図で同じ色は同じ値ではない。"
                     "発散した 3 本（small 1.3e-3・medium 5.5e-4・medium 7.4e-4）はこの図に含めない。")
     gpt2_caption = (base + " max_iters 1,500 / 12.07 epoch / 学習トークン 3.93G。"
                     "縦軸は系列全体の次トークン損失。BERT と同じ軸には載せない（採点対象が違う）。"
-                    "何も学ばないモデルの 4.6514 は軸の外（どの点もその 6〜8 分の 1）。"
+                    f"何も学ばないモデルの {GPT2_FLOOR} は軸の外"
+                    f"{ratio_phrase(named['gpt2'], GPT2_FLOOR)}。"
                     "色は学習率を表すが、格子ごとに学習率の組が違うので BERT の図と同じ色は同じ値ではない。")
     fits_all = {}
     def below(arms_, floor_):
@@ -335,15 +360,15 @@ def main() -> int:
         return [x for x in arms_ if x["window"] is not None and x["window"] < floor_]
 
     fits_all["bert24k"] = draw(
-        below(named["bert24k"], 3.8638),
+        below(named["bert24k"], BERT_FLOOR),
         "molecule_nat_lang BERT 24,000 step —— 同じ学習率でのサイズ比較と、各サイズ最良の包絡",
         bert_caption, "eval_loss_mask（nats/token）",
-        os.path.join(a.out_dir, "scaling-bert-24k.png"), 3.8638, "何も学ばない場合")
+        os.path.join(a.out_dir, "scaling-bert-24k.png"), BERT_FLOOR, "何も学ばない場合")
     fits_all["gpt2"] = draw(
-        below(named["gpt2"], 4.6514),
+        below(named["gpt2"], GPT2_FLOOR),
         "molecule_nat_lang GPT-2 1,500 iteration —— 同じ学習率でのサイズ比較と、各サイズ最良の包絡",
         gpt2_caption, "val loss（nats/token）",
-        os.path.join(a.out_dir, "scaling-gpt2.png"), 4.6514, "何も学ばない場合")
+        os.path.join(a.out_dir, "scaling-gpt2.png"), GPT2_FLOOR, "何も学ばない場合")
     print("\n=== 傾き（log-log 最小二乗、L ∝ C^a）===")
     for key, fits in fits_all.items():
         for lr, slope, resid, n in fits:

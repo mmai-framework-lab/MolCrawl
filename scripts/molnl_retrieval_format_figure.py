@@ -15,6 +15,11 @@ eval_loss_mask against val_loss the two are the same measurement here.
 
     python scripts/molnl_retrieval_format_figure.py --formats-dir <dir> --baseline-dir <dir> \
         --out-dir <dir> --caption <file>
+
+The measurements this reads were deleted on 2026-11-10 under the 2026-11-10 judgment's
+3.3. Nothing in workflows/ names them any more. The script is kept because it takes its
+input directory as an argument and says in one place how that round was drawn; running it
+again needs the measurements scored again first.
 """
 
 from __future__ import annotations

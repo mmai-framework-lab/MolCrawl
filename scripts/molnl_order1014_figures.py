@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The three figures the 2026-10-14 order's answers are read off.
+"""The two figures the 2026-10-14 order's answers are read off.
 
 What each one is for:
 
@@ -8,10 +8,6 @@ What each one is for:
              same arm as the bar. The question §2 asks is whether holding the validation
              set changes the per-size picture, which is a question about distances, so
              the distance the seeds already cover has to be on the same figure.
-  retrieval  Recall@1 and MRR for all seven models in both directions, against what
-             picking at random gives. BERT and GPT-2 share this axis -- a recall is a
-             downstream metric, not a loss, so the two are comparable here in a way their
-             losses are not.
   gap        the training loss beside the validation loss, which is what §4's table
              carries and what says whether these runs are fitting their corpus.
 
@@ -19,15 +15,19 @@ The attained and gap figures keep the two architectures in separate panels with 
 y axes: eval_loss_mask scores the 20% of positions BERT masked and val_loss scores every
 token GPT-2 predicted, and no axis makes those one number.
 
+There was a third figure here, Recall@1 and MRR for the seven models on one axis. The
+2026-11-10 judgment removes it twice over: 3.3 deletes the measurements it was drawn from,
+and 3.1 refuses the comparison it put on one axis, because the two architectures' scores
+come from different estimators even where the candidate set is the same.
+
     python scripts/molnl_order1014_figures.py --table <tsv> --sizes <json> \
-        --retrieval-dir <dir> --out-dir <dir>
+        --out-dir <dir>
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import glob
 import json
 import math
 import os
@@ -43,7 +43,12 @@ from molnl_loss_figures import INK, SIZE_COLOUR, axes  # noqa: E402
 
 PF_DAY = 8.64e19
 WINDOW = 10
-FLOOR = {"bert": ("何も学ばない場合（[MASK] 位置のユニグラム）", 3.8638),
+# molnl valid split, [MASK] rate 0.2, on training_ready_hf_dataset_shuffled:
+# report/mlm-baselines-20261102/full/molnl.json (unigram, fit on 200,000 train
+# rows and scored on the 1,631 valid rows). The figures' y axis is the valid
+# eval_loss_mask, so the floor has to be the valid one too. The 3.8638 that stood
+# here was measured on the train split (job 22503, 2026-08-12) and sits 0.78 below.
+FLOOR = {"bert": ("何も学ばない場合（[MASK] 位置のユニグラム）", 4.6449),
          "gpt2": ("何も学ばない場合（次トークンのユニグラム）", 4.6514)}
 # (arch, size, the run as it was, the run repeated under the 2026-10-14 order)
 PAIRS = [
@@ -174,69 +179,6 @@ def save_two(fig, title, caption, path, legend=None):
     return path
 
 
-def mrr_error(retrieval_dir, label, direction):
-    """95% on the mean of 1/rank, from the ranks the run wrote.
-
-    The proportion formula is not the error of an MRR: 1/rank is not a 0/1 draw. The
-    per-query ranks are saved, so the spread is taken from them.
-    """
-    path = os.path.join(retrieval_dir, f"retrieval-{label}-ranks.tsv")
-    if not os.path.exists(path):
-        return None
-    values = [1.0 / int(r["rank"]) for r in
-              csv.DictReader(open(path, encoding="utf-8"), delimiter="\t")
-              if r["direction"] == direction]
-    if len(values) < 2:
-        return None
-    mean = sum(values) / len(values)
-    var = sum((v - mean) ** 2 for v in values) / (len(values) - 1)
-    return 1.96 * math.sqrt(var / len(values))
-
-
-def fig_retrieval(retrieval_dir, out_dir, caption):
-    runs = {}
-    for path in sorted(glob.glob(os.path.join(retrieval_dir, "retrieval-*.json"))):
-        if path.endswith("-ranks.tsv"):
-            continue
-        d = json.load(open(path))
-        runs[d["label"]] = d
-    order = [f"{a}_{s}" for a, s, *_ in PAIRS]
-    order = [n for n in order if n in runs]
-    fig, panels = plt.subplots(1, 2, figsize=(11.2, 4.8))
-    xs = range(len(order))
-    for ax, (key, chance, label) in zip(panels, (
-            ("recall@1", 0.01, "Recall@1"),
-            ("mrr", 0.0519, "MRR"))):
-        for j, direction in enumerate(DIRECTION_NAME):
-            ys, errs = [], []
-            for name in order:
-                v = runs[name]["directions"][direction]
-                ys.append(v[key])
-                if key == "recall@1":
-                    p, n = v["recall@1"], v["queries"]
-                    errs.append(1.96 * math.sqrt(max(p, 1e-4) * (1 - p) / n))
-                else:
-                    errs.append(mrr_error(retrieval_dir, name, direction) or 0.0)
-            ax.errorbar([x + (j - .5) * .18 for x in xs], ys, yerr=errs, fmt="o", ms=6,
-                        capsize=3, linewidth=0, elinewidth=1.1,
-                        color=("#1f6fb4", "#c8571b")[j], label=DIRECTION_NAME[direction])
-        ax.axhline(chance, color="#888888", linestyle="--", linewidth=1)
-        # Over the axis, not over the points: every model sits on this line.
-        ax.annotate(f"偶然に選んだ場合 {chance}", (0.5, 1.012), xycoords="axes fraction",
-                    ha="center", va="bottom", fontsize=8.5, color="#666666")
-        ax.set_xticks(list(xs))
-        ax.set_xticklabels([n.replace("_", "\n") for n in order], fontsize=8.5)
-        axes(ax, label, "")
-        ax.set_ylim(0, max(0.02, max(ax.get_ylim())))
-        ax.legend(frameon=False, fontsize=8.5, loc="upper right")
-    # The title is checked against the numbers: one of the fourteen (BERT medium,
-    # molecule to text, R@1 0.005) sits 2.24 standard errors *below* chance, so "cannot
-    # be told apart from chance" would be a claim this figure's own data contradicts.
-    return save_two(fig, "どのモデルも偶然を上回らない —— 14 測定のうち 13 は偶然と区別できず、"
-                         "残る 1 つは偶然より低い",
-                    caption, os.path.join(out_dir, "molnl-retrieval.png"))
-
-
 def fig_gap(val, train, sizes, out_dir, caption):
     fig, panels = plt.subplots(1, 2, figsize=(11.2, 5.6))
     for ax, arch in zip(panels, ("bert", "gpt2")):
@@ -276,7 +218,6 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--table", required=True)
     ap.add_argument("--sizes", required=True)
-    ap.add_argument("--retrieval-dir", required=True)
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--captions", required=True, help="JSON: {figure: caption}")
     a = ap.parse_args()
@@ -285,7 +226,6 @@ def main() -> int:
     sizes = json.load(open(a.sizes))
     caps = json.load(open(a.captions, encoding="utf-8"))
     for path in (fig_attained(val, sizes, a.out_dir, caps["attained"]),
-                 fig_retrieval(a.retrieval_dir, a.out_dir, caps["retrieval"]),
                  fig_gap(val, train, sizes, a.out_dir, caps["gap"])):
         print(f"  wrote {path}")
     return 0
