@@ -233,7 +233,7 @@ def main() -> int:
 
     found = json.load(open(a.manifest, encoding="utf-8"))
     removed = missing = 0
-    for group, paths in found["groups"].items():
+    for paths in found["groups"].values():
         for path in paths:
             if not os.path.exists(path):
                 missing += 1
