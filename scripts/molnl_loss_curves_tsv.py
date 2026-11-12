@@ -17,7 +17,8 @@ convention allows rather than its normal form:
               rather than in two columns.
 
 Only the adopted runs go in -- one per size per architecture, the seven the retrieval
-scoring was run on. molnl BERT xl is not among them: four of its rates held to 24,000
+scoring was run on. The provenance names each one's adopted checkpoint, which for BERT is
+what its trainer_state calls best_model_checkpoint and need not be the last step. molnl BERT xl is not among them: four of its rates held to 24,000
 steps and none was adopted, so there is no one run to put in this file for that cell.
 That absence is in the provenance rather than left to be noticed.
 
@@ -68,6 +69,11 @@ def bert_rows(root, name, size):
         raise SystemExit(f"{run}: no checkpoint to read a trainer_state.json from")
     state = json.load(open(os.path.join(cks[-1], "trainer_state.json"), encoding="utf-8"))
     source = f"{name}/{os.path.basename(cks[-1])}/trainer_state.json"
+    # The curve is read from the last checkpoint because that is where the whole log
+    # history is, but the adopted checkpoint is the one the trainer settled on, and for
+    # large those are not the same step: the best sits at 23,800 of 24,000. Naming the
+    # last one as adopted is how the protein tables came to quote terminal checkpoints.
+    best = os.path.basename((state.get("best_model_checkpoint") or "").rstrip("/"))
     lr, seed = lr_and_seed(run)
     rows = []
     for entry in state["log_history"]:
@@ -79,7 +85,7 @@ def bert_rows(root, name, size):
         if "eval_loss_mask" in entry:
             rows.append(("bert", size, lr, seed, step, "valid",
                          f"{entry['eval_loss_mask']:.6f}", "eval_loss_mask", source))
-    return rows, os.path.basename(cks[-1])
+    return rows, (best or os.path.basename(cks[-1]))
 
 
 def gpt2_rows(root, name, size):

@@ -79,20 +79,27 @@ def check_adopted(rows, adopted_json):
     """Does every BERT row name the checkpoint that run's trainer settled on?"""
     if not adopted_json or not os.path.exists(adopted_json):
         return ["the adopted-checkpoint json was not given or does not exist"]
+    # Keyed by size, so a row is checked against its own run rather than against the set
+    # of all three. bert large's best sits at 23,800 and small's and medium's at 24,000;
+    # a membership test would pass a row that named another size's checkpoint.
     best = {}
     for entry in json.load(open(adopted_json, encoding="utf-8")):
         run = os.path.basename((entry.get("run") or "").rstrip("/"))
         path = entry.get("best_model_checkpoint") or ""
-        if path:
-            best[run] = os.path.basename(path.rstrip("/"))
+        for size in ("small", "medium", "large", "xl"):
+            if path and f"_{size}_" in run:
+                best[size] = (run, os.path.basename(path.rstrip("/")))
     problems = []
     for row in rows:
         if row["arch"] != "bert":
             continue
-        named = row["adopted_checkpoint"]
-        if named not in best.values():
-            problems.append(f"{row['arch']} {row['size']}: scored {named}, which is no "
-                            f"run's best_model_checkpoint ({sorted(set(best.values()))})")
+        if row["size"] not in best:
+            problems.append(f"bert {row['size']}: no run in the adopted json")
+            continue
+        run, want = best[row["size"]]
+        if row["adopted_checkpoint"] != want:
+            problems.append(f"bert {row['size']}: scored {row['adopted_checkpoint']}, "
+                            f"but {run} settled on {want}")
     return problems
 
 
