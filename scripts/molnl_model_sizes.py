@@ -85,17 +85,29 @@ def nanogpt_params(path):
     return total, total - embed, ck.get("model_args", {})
 
 
-def tokens_per_step(run_dir):
+def batch_shape(run_dir):
+    """tokens per step, and the two numbers it is the product of.
+
+    A table that states only the product cannot be checked: 2,621,440 is as consistent
+    with 2,560 sequences of 1,024 as with 1,280 of 2,048. The 2026-11-12 order asks for
+    both, so both come out of the manifest the run wrote.
+    """
     path = os.path.join(run_dir, "run_manifest.json")
     if not os.path.exists(path):
-        return None
+        return {}
     batch = json.load(open(path)).get("batch", {})
-    if "tokens_per_step" in batch:
-        return batch["tokens_per_step"]
-    for key in ("effective_global_batch", "global_batch"):
-        if key in batch:
-            return batch[key] * batch.get("seq_len", batch.get("max_length", 1024))
-    return None
+    sequences = batch.get("effective_global_batch") or batch.get("global_batch")
+    seq_len = batch.get("seq_len", batch.get("max_length"))
+    tokens = batch.get("tokens_per_step")
+    if tokens is None and sequences and seq_len:
+        tokens = sequences * seq_len
+    return {"tokens_per_step": tokens,
+            "global_batch_sequences": sequences,
+            "sequence_length": seq_len}
+
+
+def tokens_per_step(run_dir):
+    return batch_shape(run_dir).get("tokens_per_step")
 
 
 def main() -> int:
@@ -115,20 +127,42 @@ def main() -> int:
         cks = sorted(glob.glob(os.path.join(run, "checkpoint-*")),
                      key=lambda p: int(p.rsplit("-", 1)[1]))
         total, nonembed, conf = hf_params(cks[-1])
-        tps = tokens_per_step(run)
+        shape = batch_shape(run)
+        tps = shape.get("tokens_per_step")
         out[name] = {"arch": "bert", "total": total, "non_embedding": nonembed,
-                     "tokens_per_step": tps, "layers": conf["num_hidden_layers"],
+                     "non_embedding_rule": ("total - (vocab + max_position) * hidden - 2 * "
+                                            "hidden; the same subtraction as "
+                                            "scripts/compounds_ladder_table.bert_nonembedding"),
+                     "layers": conf["num_hidden_layers"],
                      "hidden": conf["hidden_size"], "vocab": conf["vocab_size"],
-                     "checkpoint": os.path.basename(cks[-1])}
+                     "checkpoint": os.path.basename(cks[-1]), **shape}
         print(f"{'bert':<5}{name:<28}{total:>14,}{nonembed:>15,}{tps:>13,}"
               f"{conf['num_hidden_layers']:>5}{conf['hidden_size']:>6}")
     for name in a.gpt2_runs:
         run = os.path.join(a.gpt2_root, name)
         total, nonembed, margs = nanogpt_params(os.path.join(run, "ckpt.pt"))
-        tps = tokens_per_step(run)
+        shape = batch_shape(run)
+        tps = shape.get("tokens_per_step")
+        # Two subtractions are in use in this repository and they disagree for a tied
+        # GPT-2. This file takes wte and wpe off (Kaplan's N, what molnl's compute axis
+        # has always used); scripts/compounds_ladder_table.gpt2_nonembedding takes only
+        # wpe off, on the ground that wte is tied to lm_head and so its parameters do
+        # enter the output matrix multiply. The 2026-11-12 order asks for the compounds
+        # derivation, so both are written and named rather than one being silently
+        # swapped for the other under the same key.
+        wte = (margs.get("vocab_size") or 0) * (margs.get("n_embd") or 0)
         out[name] = {"arch": "gpt2", "total": total, "non_embedding": nonembed,
-                     "tokens_per_step": tps, "layers": margs.get("n_layer"),
-                     "hidden": margs.get("n_embd"), "vocab": margs.get("vocab_size")}
+                     "non_embedding_rule": ("total - wte - wpe (Kaplan's N; what molnl's "
+                                            "PF-days axis uses)"),
+                     "non_embedding_compounds_rule": nonembed + wte,
+                     "non_embedding_compounds_rule_note": ("total - wpe only; wte is tied "
+                                                           "to lm_head and enters the "
+                                                           "output matmul. Matches "
+                                                           "scripts/compounds_ladder_table"
+                                                           ".gpt2_nonembedding"),
+                     "layers": margs.get("n_layer"),
+                     "hidden": margs.get("n_embd"), "vocab": margs.get("vocab_size"),
+                     "checkpoint": "ckpt.pt", **shape}
         print(f"{'gpt2':<5}{name:<28}{total:>14,}{nonembed:>15,}{tps:>13,}"
               f"{margs.get('n_layer', 0):>5}{margs.get('n_embd', 0):>6}")
     print(f"\n  1 PF-day = {PF_DAY:.3g} FLOP. C = 6ND omits the attention term, "
