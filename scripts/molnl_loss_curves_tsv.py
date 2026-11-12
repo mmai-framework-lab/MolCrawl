@@ -183,17 +183,27 @@ def main() -> int:
         fh.write("# run: molecule_nat_lang, the adopted run of each size\n")
         for frame, path in adopted.items():
             fh.write(f"# checkpoint: {frame}: {path}\n")
-        for name, entry in sorted(sizes.items(),
-                                  key=lambda kv: (ARCH_ORDER.get(kv[1]["arch"], 9), kv[0])):
-            line = (f"# params: {entry['arch']} {name}: non-embedding "
+        # Keyed by architecture and size, in that order, because that is what the order
+        # asks these two to be stated per: a run name alone makes a reader work out which
+        # size it is.
+        size_of = {name: size for size, name in
+                   pairs(a.bert_runs) + pairs(a.gpt2_runs)}
+        def by_frame(item):
+            name, entry = item
+            return (ARCH_ORDER.get(entry["arch"], 9),
+                    SIZE_ORDER.get(size_of.get(name, ""), 9))
+        for name, entry in sorted(sizes.items(), key=by_frame):
+            frame = f"{entry['arch']} {size_of.get(name, '?')}"
+            line = (f"# params: {frame} ({name}): non-embedding "
                     f"{entry['non_embedding']:,} of {entry['total']:,} total")
             if entry.get("non_embedding_compounds_rule"):
                 line += (f"; by the compounds subtraction "
                          f"{entry['non_embedding_compounds_rule']:,}")
             fh.write(line + "\n")
-        for name, entry in sorted(sizes.items()):
+        for name, entry in sorted(sizes.items(), key=by_frame):
             if entry.get("tokens_per_step"):
-                fh.write(f"# tokens_per_step: {entry['arch']} {name}: "
+                fh.write(f"# tokens_per_step: {entry['arch']} "
+                         f"{size_of.get(name, '?')} ({name}): "
                          f"{entry['tokens_per_step']:,} = "
                          f"{entry['global_batch_sequences']:,} sequences x "
                          f"{entry['sequence_length']:,} tokens\n")

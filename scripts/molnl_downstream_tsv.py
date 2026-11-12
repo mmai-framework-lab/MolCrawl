@@ -48,6 +48,19 @@ def adopted_of(summary):
     return os.path.basename(path)
 
 
+def run_and_checkpoint(summary):
+    """<run directory>/<checkpoint>, for the provenance block.
+
+    The column holds the bare name the order asks for, but four GPT-2 rows all reading
+    ckpt.pt say nothing about which run each came from, so the provenance carries the run
+    as well.
+    """
+    path = (summary.get("model_path") or "").rstrip("/")
+    if not path:
+        return ""
+    return f"{os.path.basename(os.path.dirname(path))}/{os.path.basename(path)}"
+
+
 def rows_of(path):
     summary = json.load(open(path, encoding="utf-8"))
     source = os.path.basename(path)
@@ -58,7 +71,8 @@ def rows_of(path):
         candidates = result["candidates"]
         common = {"arch": summary["arch"], "size": summary["size"],
                   "direction": direction, "pairs": n, "candidates": candidates,
-                  "adopted_checkpoint": adopted, "source": source}
+                  "adopted_checkpoint": adopted, "source": source,
+                  "_run_and_checkpoint": run_and_checkpoint(summary)}
         for k in RECALLS:
             key = f"recall@{k}"
             chance = k / candidates
@@ -141,7 +155,8 @@ def main() -> int:
                                    "median_rank")).index(r["metric"])))
     checkpoints = {}
     for row in rows:
-        checkpoints.setdefault(f"{row['arch']} {row['size']}", row["adopted_checkpoint"])
+        checkpoints.setdefault(f"{row['arch']} {row['size']}",
+                               row["_run_and_checkpoint"] or row["adopted_checkpoint"])
 
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8", newline="\n") as fh:
