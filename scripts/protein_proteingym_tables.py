@@ -27,14 +27,17 @@ REF = REPO / "learning_source_20260625-newBERT/protein_sequence/proteingym/prote
 
 # arch, size, lr, train seed, eval slug, pretrain-loss source dir, loss metric, kind
 #
-# protein-order-2026-11-02 §3 (decision B) + protein-judgment-2026-11-09 §5: every model
-# is now sourced from its seed-42 confirmed series and scored on that same series' weights
-# (the …-s42 slugs). The GPT-2 four moved off their seed-1001 runs onto the seed-42
-# -rerun runs, and BERT large moved off the production run onto -rerun. BERT small/medium
-# were already seed-42 (-best, scored on checkpoint-33531); BERT xl is the cut-off model.
+# protein-order-2026-11-02 §3 (decision B) + protein-judgment-2026-11-09 §5 +
+# protein-judgment-2026-11-10 §3.2/§5: every model is now sourced from its seed-42
+# confirmed series and scored on that same series' ADOPTED checkpoint (the …-s42 slugs).
+# The GPT-2 four moved off their seed-1001 runs onto the seed-42 -rerun runs, BERT large
+# moved off the production run onto -rerun, and BERT small/medium were rescored on their
+# argmin eval_loss_mask checkpoint (= best_model_checkpoint: 32000 / 32900) instead of the
+# final 33531 -- so every model's reached loss and its downstream score now come from the
+# same run and the same step. BERT xl is the cut-off model.
 MODELS = [
-    ("bert", "small", "3e-4", 42, "protein_sequence-bert-small-best", RUNS_PROD / "bert-output/protein_sequence-small-lr3e4", "eval_loss_mask", "bert"),
-    ("bert", "medium", "1e-4", 42, "protein_sequence-bert-medium-best", RUNS_PROD / "bert-output/protein_sequence-medium-lr1e4", "eval_loss_mask", "bert"),
+    ("bert", "small", "3e-4", 42, "protein_sequence-bert-small-s42", RUNS_PROD / "bert-output/protein_sequence-small-lr3e4", "eval_loss_mask", "bert"),
+    ("bert", "medium", "1e-4", 42, "protein_sequence-bert-medium-s42", RUNS_PROD / "bert-output/protein_sequence-medium-lr1e4", "eval_loss_mask", "bert"),
     ("bert", "large", "3.5e-5", 42, "protein_sequence-bert-large-s42", RUNS_PROD / "bert-output/protein_sequence-large-lr3p5e5-rerun", "eval_loss_mask", "bert"),
     ("bert", "xl", "2.4e-5", 42, "protein_sequence-bert-xl-best", RUNS_PROD / "bert-output/protein_sequence-xl-lr2p4e5", "eval_loss_mask", "bert"),
     ("gpt2", "small", "1.2e-3", 42, "protein_sequence-gpt2-small-s42", RUNS_PROD / "gpt2-output/protein_sequence-small-rerun", "val_loss", "gpt2"),
@@ -61,14 +64,31 @@ def bert_loss_step(run_dir):
             ts = json.load(open(f))
             # The step the loss column reports is where eval_loss_mask is lowest, not the
             # newest checkpoint dir: for BERT small/medium the newest saved dir (33531) has
-            # no eval logged, and the run's best is earlier (32000 / 32900). Scored
-            # checkpoint vs best-loss step is reconciled in the reached-loss table.
+            # no eval logged, and the run's best is earlier (32000 / 32900). This argmin step
+            # equals the run's best_model_checkpoint, which is the checkpoint now scored.
             e = [(x["step"], x["eval_loss_mask"]) for x in ts.get("log_history", []) if "eval_loss_mask" in x]
             if not e:
                 return None, None
             step, val = min(e, key=lambda t: t[1])
             return val, step
     return None, None
+
+
+def bert_best_ckpt(run_dir):
+    """The run's best_model_checkpoint step, read from the newest trainer_state.json.
+
+    protein-judgment-2026-11-10 §3.3: this is the checkpoint HF Trainer marked best, which
+    the reached-loss table checks the scored checkpoint against. None if unrecorded.
+    """
+    cks = sorted((int(os.path.basename(p).split("-")[-1]) for p in glob.glob(str(run_dir / "checkpoint-*"))), reverse=True)
+    for ck in cks:
+        f = run_dir / f"checkpoint-{ck}" / "trainer_state.json"
+        if f.exists():
+            bmc = json.load(open(f)).get("best_model_checkpoint")
+            if bmc:
+                return int(os.path.basename(str(bmc).rstrip("/")).split("-")[-1])
+            return None
+    return None
 
 
 def gpt2_loss_step(run_dir):
@@ -133,10 +153,10 @@ def main():
             status = "running"
         # scored_ck: the step of the checkpoint ProteinGym actually ran on, read from a
         # scored metrics.json. It sits alongside spearman in the per-assay/per-model tables,
-        # so it names the downstream weights -- which for GPT-2 is the ckpt.pt (its adopted
-        # step) and for BERT the scored checkpoint dir (33531 for small/medium, 32000 for
-        # large). The best-loss step (meta["step"]) can differ; the reached-loss table joins
-        # the two. An empty string when nothing is scored.
+        # so it names the downstream weights -- for GPT-2 the ckpt.pt (its adopted step) and
+        # for BERT the scored checkpoint dir (now the adopted checkpoint: 32000 small/large,
+        # 32900 medium). It equals the best-loss step (meta["step"]); the reached-loss table
+        # joins the two and checks them against best_model_checkpoint. Empty when unscored.
         scored_ck = ""
         for a in assays:
             mf = EVAL / slug / f"proteingym_{a}_sweep" / "metrics.json"
@@ -205,12 +225,15 @@ def main():
             st = "done" if m["status"] == "done" else ("not_started" if m["status"] == "not_started" else "running")
             fh.write(f"{arch}\t{size}\t{lr}\t{ck}\t{loss}\t{lossmetric}\t{m['n_done']}\t{len(vals)}\t{mean}\t{med}\t{lo}\t{hi}\t{st}\n")
 
-    # ---- reached pretraining loss, one row per model (protein-judgment-2026-11-09 §5) ----
+    # ---- reached pretraining loss, one row per model (protein-judgment-2026-11-09 §5,
+    #      -2026-11-10 §3.3) ----
     # Each model's reached loss and the checkpoint actually scored for ProteinGym, so loss
-    # and downstream can be traced to the same run. For GPT-2 the scored file is ckpt.pt
-    # (nanoGPT keeps the best-val checkpoint), whose step is not in the filename -- it is in
-    # loss_step. For BERT the scored checkpoint is a dir; where it differs from the best-loss
-    # step (small/medium were scored on the final 33531, which carries no eval), the note says so.
+    # and downstream can be traced to the same run and the same step. For GPT-2 the scored
+    # file is ckpt.pt (nanoGPT keeps the best-val checkpoint), whose step is not in the
+    # filename -- it is in loss_step; GPT-2's ckpt.pt is best by construction, so it is out
+    # of scope for the best_model_checkpoint check (§3.3). For pretrained BERT the scored
+    # checkpoint dir is checked against the run's best_model_checkpoint, and the note states
+    # the result one line each.
     def scored_checkpoint(slug):
         for a in assays:
             mf = EVAL / slug / f"proteingym_{a}_sweep" / "metrics.json"
@@ -224,24 +247,43 @@ def main():
 
     p4 = out / "proteingym-reached-loss.tsv"
     with open(p4, "w") as fh:
-        fh.write("arch\tsize\tlr\trun\tseed\tloss_metric\treached_loss\tloss_step\tscored_checkpoint\tvalidation_set\tnote\n")
+        fh.write("arch\tsize\tlr\trun\tseed\tloss_metric\treached_loss\tloss_step\t"
+                 "scored_checkpoint\tbest_model_checkpoint\tscored_eq_best\tvalidation_set\tnote\n")
         for arch, size, lr, seed, slug, predir, lossmetric, _kind in MODELS:
             m = meta[(arch, size)]
             run = os.path.basename(str(predir))
             loss = f"{m['loss']:.4f}" if m["loss"] is not None else ""
             step = m["step"] if m["step"] is not None else ""
             valset = "run val split (seed 42)"
+            best_col = ""      # best_model_checkpoint step (BERT only)
+            eq_col = ""        # yes / no / — ; whether the scored checkpoint is the best one
             if (arch, size) in CUTOFF:
                 sc = "—（下流打ち切り）"
+                best_col = "—"
+                eq_col = "—"
                 note = CUTOFF_NOTE
-            else:
+            elif _kind == "bert":
                 sc = scored_checkpoint(slug)
+                best = bert_best_ckpt(predir)
+                best_col = f"checkpoint-{best}" if best is not None else "(not recorded)"
+                sc_step = sc.split("-")[-1] if sc.startswith("checkpoint-") else ""
+                if best is not None and sc_step == str(best):
+                    eq_col = "yes"
+                    note = "scored checkpoint matches best_model_checkpoint"
+                elif best is not None:
+                    eq_col = "no"
+                    note = (f"scored {sc} != best_model_checkpoint checkpoint-{best} "
+                            "(verify unless the latest was adopted on purpose)")
+                else:
+                    eq_col = "—"
+                    note = "best_model_checkpoint not recorded"
+            else:  # gpt2: ckpt.pt is best by construction -- out of scope for the §3.3 check
+                sc = scored_checkpoint(slug)
+                best_col = "n/a (GPT-2 ckpt.pt, out of scope)"
+                eq_col = "—"
                 note = ""
-                if _kind == "bert" and sc.startswith("checkpoint-"):
-                    sc_step = sc.split("-")[-1]
-                    if str(step) != sc_step:
-                        note = f"採点は {sc}（最終・eval 記録なし）／到達損失は run 最良 step {step}"
-            fh.write(f"{arch}\t{size}\t{lr}\t{run}\t{seed}\t{lossmetric}\t{loss}\t{step}\t{sc}\t{valset}\t{note}\n")
+            fh.write(f"{arch}\t{size}\t{lr}\t{run}\t{seed}\t{lossmetric}\t{loss}\t{step}\t"
+                     f"{sc}\t{best_col}\t{eq_col}\t{valset}\t{note}\n")
 
     # ---- §3 set stats ----
     print(f"wrote {p1}")
