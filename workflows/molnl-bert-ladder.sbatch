@@ -377,7 +377,16 @@ echo "4-GPU launch required: under HF the effective batch is per_device x grad_a
 echo "segment=${SEGMENT}  ${_n_ckpt} checkpoint(s) present  $([ "${SEGMENT}" = 1 ] && echo 'starting from scratch' || echo "resuming from step ${_last}")"
 echo "--- config values as resolved (not grepped: the grid configs import their base) ---"
 printf '%s\n' "${_cfg_dump}" | sed 's/^/    /'
-echo "baselines (mol_nl, job 22503): unigram 3.8638 / degenerate 3.4774 / left 2.2533 / both 1.2804"
+# What this run's eval_loss_mask is read against. It is measured on the VALID split,
+# which is the split the metric is computed on: unigram 4.6449 and the blended
+# degenerate level 4.1780 (report/mlm-baselines-20261102/full/molnl.json, 1,631 rows,
+# mask rate 0.2, fit on 200,000 train rows).
+#
+# The four numbers this line used to print -- unigram 3.8638 / degenerate 3.4774 /
+# left 2.2533 / both 1.2804, job 22503 -- are the same measurement on the TRAIN split.
+# The floor differs by split, so printing them next to a validation metric invited the
+# comparison that 2026-11-10 corrected everywhere else.
+echo "baselines (mol_nl, valid split, report/mlm-baselines-20261102): unigram 4.6449 / blended degenerate 4.1780   [train split, job 22503: unigram 3.8638 / degenerate 3.4774]"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 
 rc=0
