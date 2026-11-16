@@ -687,6 +687,10 @@ if __name__ == "__main__":
               "(training masks are untouched, so no gradient changes)")
 
     # Early stopping configuration
+    # On by default -- kept so on 2026-11-16, with GPT-2 brought to the same default
+    # (matsubara). Until LoggedMetricEarlyStopping it never fired; see
+    # models/bert/_early_stopping. A config that must run its full schedule says
+    # early_stopping = False.
     early_stopping = globals().get("early_stopping", True)  # Enable by default
     early_stopping_patience = globals().get("early_stopping_patience", 10)  # Default patience
     if early_stopping:
