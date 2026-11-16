@@ -382,7 +382,10 @@ def check(out):
                 parsed = [s for ev in phases for s, _ in ev if s <= ck_step]
                 add(case.name, "steps vs trainer_state", logged == parsed,
                     f"checkpoint-{ck_step} log_history {logged}, read from stdout {parsed}")
-                es = (state.get("stateful_callbacks") or {}).get("EarlyStoppingCallback")
+                # HF keys the state by class name: EarlyStoppingCallback before the
+                # fix, LoggedMetricEarlyStopping after it.
+                es = next((v for k, v in (state.get("stateful_callbacks") or {}).items()
+                           if "EarlyStopping" in k), None)
                 want = case.phases[-1].overrides["early_stopping"]
                 if want:
                     detail = json.dumps(es) if es else "absent"
