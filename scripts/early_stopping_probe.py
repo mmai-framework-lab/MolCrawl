@@ -397,6 +397,8 @@ def check(out):
         alt = [k for k, s in case.alternative.items() if s == actual]
         add(case.name, "last eval vs expected", exp_ok if constant else None,
             f"actual {actual}, expected {case.expected}" + (f" -- matches '{alt[0]}'" if alt else ""))
+        if not case.phases[-1].overrides["early_stopping"]:
+            stop = None  # disabled: the rule never applies, the run ends at max
         want = stop if stop is not None else last_max
         add(case.name, "last eval vs rule replay", want == actual,
             f"rule on the logged losses ends at {want}"

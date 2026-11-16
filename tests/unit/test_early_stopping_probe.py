@@ -102,6 +102,10 @@ def test_hf_improvement_between_saves_is_judged_against_the_stale_best(mod):
 
 def test_every_expected_step_is_what_the_replay_gives_on_constant_loss(mod):
     for case in mod.CASES:
+        if not case.phases[-1].overrides["early_stopping"]:
+            key = "max_iters" if case.arch == "gpt2" else "max_steps"
+            assert case.expected == case.phases[-1].overrides[key], case.name
+            continue
         if case.arch == "gpt2":
             best, counter, stop = 1e9, 0, None
             for i, ph in enumerate(case.phases):
