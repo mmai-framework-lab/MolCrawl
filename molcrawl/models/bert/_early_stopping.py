@@ -21,6 +21,16 @@ metric.
 ``on_log`` also carries the plain ``eval_loss`` dict that ``Trainer.evaluate`` logs
 itself, so a run whose ``metric_for_best_model`` falls back to ``eval_loss`` is
 decided from that one. Training-loss dicts carry neither and are ignored.
+
+``on_train_begin`` exists for one case: turning early stopping ON for a run whose
+checkpoints were written with it OFF. ``Trainer._save_checkpoint`` writes every
+``ExportableState`` callback into ``state.stateful_callbacks`` and indexes that dict
+by class name with no default, while a resume restores the dict from the checkpoint
+-- which, for a run that had no such callback, has no entry for this one. The first
+save after the resume then dies with ``KeyError: 'LoggedMetricEarlyStopping'``
+*after* the step was trained and evaluated. Measured on the molnl BERT extensions of
+2026-11-16: jobs 355708 and 355711 both reached step 24,100, improved on the value
+they resumed from, and crashed on writing that improvement.
 """
 
 from __future__ import annotations
@@ -34,6 +44,18 @@ class LoggedMetricEarlyStopping(EarlyStoppingCallback):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._decided_step = None
+
+    def on_train_begin(self, args, state, control, **kwargs):
+        """Make sure this callback has a slot in the state the next save will write.
+
+        ``setdefault``, not assignment: a resume that did restore this callback's own
+        entry keeps the counter it had, and the live value is written over it at the
+        next save either way.
+        """
+        callbacks = getattr(state, "stateful_callbacks", None)
+        if isinstance(callbacks, dict):
+            callbacks.setdefault(type(self).__name__, self.state())
+        return control
 
     def _metric_key(self, args):
         key = args.metric_for_best_model
