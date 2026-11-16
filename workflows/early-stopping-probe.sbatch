@@ -70,7 +70,7 @@ echo "outputs: ${OUT}"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 
 echo "--- unit tests for the rules the check replays ---"
-"${PYTHON}" -m pytest -q tests/unit/test_early_stopping_probe.py
+"${PYTHON}" -m pytest -q tests/unit/test_early_stopping_probe.py tests/unit/test_bert_early_stopping.py
 
 "${PYTHON}" scripts/early_stopping_probe.py write-configs "${OUT}"
 

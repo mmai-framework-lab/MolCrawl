@@ -9,7 +9,6 @@ try:
     from transformers import (
         BertConfig,
         BertForMaskedLM,
-        EarlyStoppingCallback,
         Trainer,
         TrainingArguments,
         set_seed,
@@ -1072,8 +1071,13 @@ if __name__ == "__main__":
     # Configure callbacks
     callbacks = []
     if early_stopping:
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=early_stopping_patience))
-        print(f"📋 Added EarlyStoppingCallback (patience={early_stopping_patience})")
+        # Not HF's EarlyStoppingCallback: it reads the metric in on_evaluate, before
+        # MlmBreakdownMixin has added eval_loss_mask, and so never stopped a run
+        # (job 355167). See models/bert/_early_stopping.
+        from molcrawl.models.bert._early_stopping import LoggedMetricEarlyStopping
+
+        callbacks.append(LoggedMetricEarlyStopping(early_stopping_patience=early_stopping_patience))
+        print(f"📋 Added LoggedMetricEarlyStopping (patience={early_stopping_patience})")
 
     # HF Trainer's default get_decay_parameter_names excludes bias and LayerNorm
     # from the weight-decay group but INCLUDES nn.Embedding.weight (word_embeddings,
