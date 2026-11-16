@@ -88,7 +88,12 @@ save_checkpoint_steps = None  # save checkpoint every N steps (None = use eval_i
 max_checkpoints = 3  # maximum number of checkpoints to keep (None = keep all)
 keep_legacy_ckpt = False  # if True, also save ckpt.pt for backward compatibility
 # early stopping
-early_stopping = False  # if True, stop training when validation loss stops improving
+# On by default since 2026-11-16, the same default as the BERT path (matsubara).
+# A config that must run its full schedule says early_stopping = False; every
+# pretraining config that has run so far does. Patience counts evaluations, so
+# it means patience * eval_interval steps. Verified end to end by
+# workflows/early-stopping-probe.sbatch (job 355213).
+early_stopping = True  # stop training when validation loss stops improving
 early_stopping_patience = 10  # number of eval_intervals to wait before stopping
 # data
 dataset = "openwebtext"
