@@ -50,6 +50,18 @@
 # limit, not by shortening the run. The newest checkpoint's trainer_state.json carries
 # the max_steps it was trained under, and a continuation is refused unless the config's
 # max_steps matches it.
+#
+#   EXTEND=1       continue a FINISHED run to a larger max_steps
+# An extension exists to run a finished schedule on to where the validation loss stops
+# falling. It raises max_steps and follows a COMPLETED segment, which are the two things
+# the rules above refuse, so it is gated on the only thing that makes it safe: a constant
+# learning rate, which has no decay length to recompute. The gate also checks that
+# main.py reads lr_scheduler_type at all -- a config file is exec'd, so declaring the key
+# proves nothing about whether the trainer honours it. Downwards is still refused, and so
+# is any previous state other than COMPLETED. With EXTEND unset every path behaves
+# exactly as before. This is workflows/bert-grid.sbatch's gate, which the compounds
+# extensions of 2026-10 ran under, with its wording kept so the two files stay readable
+# against each other.
 set -eo pipefail
 : "${CONFIG:?CONFIG=path to the config to run, e.g. molcrawl/tasks/pretrain/configs/molecule_nat_lang/bert_small_lr3e4.py}"
 : "${SEGMENT:?SEGMENT=1 for the first, 2,3,... for each continuation}"
@@ -110,7 +122,7 @@ g = runpy.run_path(sys.argv[1])
 keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
         "gradient_accumulation_steps", "per_device_eval_batch_size", "expected_global_batch",
         "log_interval", "save_steps", "max_length", "document_masking", "save_on_improve",
-        "dataset_dir")
+        "early_stopping", "early_stopping_patience", "lr_scheduler_type", "dataset_dir")
 for k in keys:
     print(f"{k}={g.get(k)}")
 PYEOF
@@ -122,6 +134,109 @@ _cfg_steps=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^max_steps=//p')
 # and so nanoGPT -- which does not call it anywhere -- is covered too. Seconds, and
 # before the allocation is put to work.
 "${PYTHON}" -c 'import sys; from molcrawl.core.output_guard import assert_output_dir; assert_output_dir(sys.argv[1], what=sys.argv[2])' "${OUT}" "model_path" || exit 1
+
+# --- extension gate ---
+# Two of the guards below exist to stop a continuation from becoming a different run:
+# max_steps must match the checkpoint's, and the previous segment must have ended
+# TIMEOUT. An extension -- continuing a finished run to a larger max_steps to see
+# whether the loss flattens -- trips both on purpose, so it has to say so explicitly
+# and prove the one thing that makes it safe.
+#
+# EXTEND=1 opts in. Everything below is refused unless all of it holds, and with
+# EXTEND unset not one byte of the original behaviour changes.
+_extend=0
+if [ "${EXTEND:-0}" = "1" ]; then
+  _cfg_sched=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^lr_scheduler_type=//p')
+  case "${_cfg_sched}" in
+    constant|constant_with_warmup) ;;
+    *) echo "REFUSING: EXTEND=1 but ${CFG} has lr_scheduler_type=${_cfg_sched:-None}." \
+            "HF decays the rate over max_steps with no separate decay length, so" \
+            "extending under a decaying schedule recomputes the whole curve and" \
+            "continues a different run. Set lr_scheduler_type to constant or" \
+            "constant_with_warmup." >&2
+       exit 1;;
+  esac
+  # The config can declare the key whether or not the trainer reads it: a config file
+  # is exec'd, so configurator.py never sees an unknown name and sets an unused global
+  # instead. Confirm main.py honours it, because a silent fallback to "linear" here is
+  # exactly the corruption this gate is meant to prevent.
+  _main="molcrawl/models/bert/main.py"
+  grep -qE '^[[:space:]]*lr_scheduler_type[[:space:]]*=' "${_main}" || {
+    echo "REFUSING: ${_main} does not declare lr_scheduler_type, so it would ignore" \
+         "the config's ${_cfg_sched} and decay the rate anyway. The extension needs" \
+         "the schedule passthrough in main.py first." >&2
+    exit 1; }
+  grep -q 'globals().get("lr_scheduler_type")' "${_main}" || {
+    echo "REFUSING: ${_main} declares lr_scheduler_type but does not pass it to" \
+         "TrainingArguments, so the config's ${_cfg_sched} would be ignored." >&2
+    exit 1; }
+  # HF restores the scheduler from the checkpoint, and LambdaLR.load_state_dict does
+  # self.__dict__.update(state_dict): that brings back base_lrs and last_epoch, not
+  # just the step counter. get_lr then returns base_lr * lambda(last_epoch). Read off
+  # a real checkpoint-15000/scheduler.pt: base_lrs [0.001, 0.001], last_epoch 15000.
+  # So an extension that inherits it runs at the ORIGINAL peak with the warmup already
+  # behind it -- the config's learning_rate and warmup_steps are both ignored, and the
+  # rate jumps to ten times the intended one. Refuse rather than let that happen
+  # silently. Extend from a copy of the checkpoint with scheduler.pt removed; the
+  # optimizer moments in optimizer.pt are kept, which is what a continuation needs.
+  _n_ckpt_pre=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null | wc -l)
+  if [ "${_n_ckpt_pre}" -ne 0 ]; then
+    _last_pre=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null \
+                | sed 's/.*checkpoint-//' | sort -n | tail -1)
+    if [ -f "${OUT}/checkpoint-${_last_pre}/scheduler.pt" ]; then
+      # Two different resumes reach this line and only one of them is dangerous.
+      #
+      # A NEW extension resumes from a checkpoint the previous, shorter schedule wrote.
+      # Its scheduler.pt carries that run's peak, so restoring it runs this config at
+      # ten times the intended rate -- the case this guard exists for.
+      #
+      # A LATER SEGMENT of an extension already under way resumes from a checkpoint
+      # THIS config wrote. Its scheduler.pt carries this config's own constant rate, so
+      # restoring it is not merely safe but correct, and refusing it would mean every
+      # segment boundary needed the file removed by hand -- which is how four segments
+      # of the compounds 45,000-step extension came back FAILED on 2026-10-29/30.
+      #
+      # Tell them apart by what the checkpoint was trained under, not by the file's
+      # presence: its own max_steps, and the rate it was last logged at. The danger is
+      # always a rate ABOVE this config's, so the rate check is one-sided and a
+      # checkpoint taken inside the warmup ramp still passes.
+      _cfg_lr=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^learning_rate=//p')
+      read -r _ck_steps _ck_lr <<EOF
+$("${PYTHON}" -c 'import json, sys
+s = json.load(open(sys.argv[1]))
+rates = [h["learning_rate"] for h in s.get("log_history", []) if "learning_rate" in h]
+print(s.get("max_steps"), repr(rates[-1]) if rates else "none")' \
+        "${OUT}/checkpoint-${_last_pre}/trainer_state.json" 2>/dev/null)
+EOF
+      _same_schedule=0
+      if [ "${_ck_steps}" = "${_cfg_steps}" ] && [ -n "${_ck_lr}" ]; then
+        "${PYTHON}" -c 'import sys
+ck, cfg = float(sys.argv[1]), float(sys.argv[2])
+sys.exit(0 if ck <= cfg * (1.0 + 1e-9) else 1)' "${_ck_lr}" "${_cfg_lr}" 2>/dev/null \
+          && _same_schedule=1
+      fi
+      if [ "${_same_schedule}" = "1" ]; then
+        echo "extension: checkpoint-${_last_pre} was written by this same schedule" \
+             "(its max_steps ${_ck_steps} = the config's, last rate ${_ck_lr} <=" \
+             "${_cfg_lr}), so its scheduler.pt holds this config's own rate and is" \
+             "kept -- a segment continuation, not a new extension"
+      else
+        echo "REFUSING: EXTEND=1 but ${OUT}/checkpoint-${_last_pre}/scheduler.pt exists" \
+             "and that checkpoint was not written by this schedule (its max_steps" \
+             "${_ck_steps:-unreadable} against the config's ${_cfg_steps}, its last rate" \
+             "${_ck_lr:-unreadable} against the config's ${_cfg_lr})." \
+             "HF restores base_lrs and last_epoch from it, so ${CFG}'s learning_rate and" \
+             "warmup_steps would both be ignored and the run would continue at the" \
+             "original peak with no warmup. Remove scheduler.pt from the checkpoint this" \
+             "extension resumes from -- keep optimizer.pt." >&2
+        exit 1
+      fi
+    fi
+  fi
+  _extend=1
+  echo "extension: EXTEND=1, schedule ${_cfg_sched}, target max_steps ${_cfg_steps}"
+fi
+# --- end extension gate ---
 
 # Segment guard. Counted before anything is loaded, so a wrong path costs seconds.
 _n_ckpt=$(find "${OUT}" -maxdepth 1 -type d -name 'checkpoint-*' 2>/dev/null | wc -l)
@@ -154,13 +269,21 @@ if [ "${SEGMENT}" != "1" ]; then
 $("${PYTHON}" -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s["max_steps"], int(s["global_step"]))' "${_state}")
 EOF
   if [ "${_prev_steps}" != "${_cfg_steps}" ]; then
-    echo "REFUSING: the checkpoint at step ${_last} was trained with max_steps=${_prev_steps}," \
-         "and ${CFG} says max_steps=${_cfg_steps}. HF decays the learning rate over" \
-         "max_steps with no separate decay length, so resuming under a different value" \
-         "compresses or stretches the schedule and continues a different run into the" \
-         "same directory. Run a config whose max_steps is ${_prev_steps}, or start a new" \
-         "run in another directory." >&2
-    exit 1
+    # An extension raises max_steps on purpose. Only upwards: a smaller value would
+    # still compress the schedule, and under a constant rate it would also mean the
+    # run is already past its own target.
+    if [ "${_extend}" = "1" ] && [ "${_cfg_steps}" -gt "${_prev_steps}" ]; then
+      echo "extension: max_steps ${_prev_steps} -> ${_cfg_steps} (constant rate, no decay to recompute)"
+    else
+      echo "REFUSING: the checkpoint at step ${_last} was trained with max_steps=${_prev_steps}," \
+           "and ${CFG} says max_steps=${_cfg_steps}. HF decays the learning rate over" \
+           "max_steps with no separate decay length, so resuming under a different value" \
+           "compresses or stretches the schedule and continues a different run into the" \
+           "same directory. Run a config whose max_steps is ${_prev_steps}, or start a new" \
+           "run in another directory." \
+           "$([ "${_extend}" = "1" ] && echo "EXTEND=1 raises max_steps, it does not lower it.")" >&2
+      exit 1
+    fi
   fi
   # A chained segment that turns out not to be needed exits 0 rather than failing.
   # Two jobs per run are queued up front because nobody knows whether 24,000 steps fit
@@ -172,7 +295,11 @@ EOF
          "segment. Exiting without training."
     exit 0
   fi
-  echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
+  if [ "${_extend}" != "1" ]; then
+    echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
+  else
+    echo "schedule check: ${_prev_done}/${_cfg_steps} steps done, extending from ${_prev_steps}"
+  fi
 fi
 
 # --- continuation guard ---
@@ -207,17 +334,36 @@ if [ "${SEGMENT}" != "1" ]; then
     exit 1
   fi
   _prev_state=$(_prev_segment_state "${_prev_job}")
-  if [ "${_prev_state}" != "TIMEOUT" ]; then
+  # An extension follows a run that FINISHED, which is the one state this guard was
+  # written to refuse. COMPLETED is accepted under EXTEND=1 and nothing else is.
+  if [ "${_extend}" = "1" ] && [ "${_prev_state}" = "COMPLETED" ]; then
+    # COMPLETED covers two endings and only one of them may be extended. A schedule that
+    # ran to its end has more steps to give; a run that early-stopped exited 0 at the
+    # step where the validation loss stopped falling, and resuming it would walk straight
+    # past the answer the stop was there to give. Tell them apart by the checkpoint's own
+    # numbers, not by the exit status.
+    if [ "${_prev_done}" -lt "${_prev_steps}" ]; then
+      echo "REFUSING: segment ${_prev_seg} (job ${_prev_job}) ended COMPLETED at step" \
+           "${_prev_done} of its own max_steps ${_prev_steps}, which is where early" \
+           "stopping leaves a run. An extension continues a schedule that finished, not" \
+           "one that stopped because the metric stopped improving. Read its log, and" \
+           "raise the patience in the config if the stop was premature." >&2
+      exit 1
+    fi
+    echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended COMPLETED at its own" \
+         "max_steps ${_prev_steps}, extending it"
+  elif [ "${_prev_state}" != "TIMEOUT" ]; then
     if [ "${_prev_state}" = "COMPLETED" ]; then
-      _why="it finished the run, so there is nothing to continue"
+      _why="it finished the run, so there is nothing to continue; EXTEND=1 is how a finished run is extended"
     else
       _why="a segment that did not run out of time may have stopped for a reason a resume would repeat"
     fi
     echo "REFUSING: segment ${_prev_seg} (job ${_prev_job}) ended ${_prev_state}, not TIMEOUT:" \
          "${_why}. Read its log before continuing." >&2
     exit 1
+  else
+    echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended TIMEOUT"
   fi
-  echo "previous segment: ${_prev_seg} (job ${_prev_job}) ended TIMEOUT"
 fi
 echo "${SEGMENT} ${SLURM_JOB_ID:-local} $(date -Is)" >> "${_segments_log}"
 # --- end continuation guard ---
