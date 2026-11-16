@@ -19,6 +19,7 @@ the number it actually runs with.
 from __future__ import annotations
 
 import ast
+import math
 from pathlib import Path
 
 CONFIGS = Path(__file__).resolve().parents[2] / "molcrawl/tasks/pretrain/configs"
@@ -118,7 +119,10 @@ def test_the_bert_extensions_run_at_a_constant_tenth_of_their_peak():
         base, values = read(MOLNL / f"{parent}.py"), read(MOLNL / f"{ext}.py")
         assert values["lr_scheduler_type"] == "constant_with_warmup", ext
         assert values["warmup_steps"] == 500, ext
-        assert values["learning_rate"] == base["learning_rate"] / 10, (
+        # A tenth, compared as a ratio: 3e-5 and 3e-4 / 10 are different floats
+        # (2.9999999999999997e-05), and writing the division into the config to make them
+        # equal would put arithmetic where the rate a run trains at should be readable.
+        assert math.isclose(values["learning_rate"], base["learning_rate"] / 10, rel_tol=1e-9), (
             ext, values["learning_rate"], base["learning_rate"])
         assert base["max_steps"] == 24000, parent
         assert values["max_steps"] == 48000, ext
@@ -134,7 +138,7 @@ def test_the_gpt2_extensions_leave_the_decay_length_where_it_was():
         assert values["lr_decay_iters"] == 1500, ext
         assert values["max_iters"] == 3000, ext
         assert values["init_from"] == "resume", ext
-        assert values["min_lr"] == values["learning_rate"] / 10, ext
+        assert math.isclose(values["min_lr"], values["learning_rate"] / 10, rel_tol=1e-9), ext
 
 
 def test_nothing_but_the_schedule_moves():
