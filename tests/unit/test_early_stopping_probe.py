@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -24,8 +25,14 @@ def mod():
     path = repo_root() / "scripts" / "early_stopping_probe.py"
     spec = importlib.util.spec_from_file_location("early_stopping_probe", path)
     m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
-    return m
+    # dataclass resolves its string annotations through sys.modules[cls.__module__],
+    # so the module has to be registered before it executes.
+    sys.modules[spec.name] = m
+    try:
+        spec.loader.exec_module(m)
+        yield m
+    finally:
+        sys.modules.pop(spec.name, None)
 
 
 def flat(steps, value=2.0):
