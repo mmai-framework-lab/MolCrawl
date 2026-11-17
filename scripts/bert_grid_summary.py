@@ -49,23 +49,59 @@ def newest_checkpoint(run_dir: Path) -> Path | None:
     return max(cks, key=lambda p: int(p.name.split("-")[1])) if cks else None
 
 
-def param_count(ckpt: Path) -> int | None:
-    """Sum the tensor shapes in the safetensors header. No weights are read."""
-    path = ckpt / "model.safetensors"
-    if not path.exists():
-        return None
+def _header(path: Path) -> dict:
+    """The safetensors header of one file. No weights are read."""
     with open(path, "rb") as fh:
         (header_len,) = struct.unpack("<Q", fh.read(8))
-        header = json.loads(fh.read(header_len))
+        return json.loads(fh.read(header_len))
+
+
+def param_count(ckpt: Path) -> int | None:
+    """Sum the tensor shapes in the safetensors header(s). No weights are read.
+
+    A checkpoint over the single-file limit is written as shards plus an index,
+    and then `model.safetensors` does not exist at all. Reading only that name
+    returned no parameter count for every xl run, which silently dropped the
+    largest size from any figure drawn against compute.
+    """
+    single = ckpt / "model.safetensors"
+    index = ckpt / "model.safetensors.index.json"
+    if single.exists():
+        shards = [single]
+    elif index.exists():
+        weight_map = json.loads(index.read_text(encoding="utf-8"))["weight_map"]
+        shards = [ckpt / name for name in sorted(set(weight_map.values()))]
+        if not all(s.exists() for s in shards):
+            return None
+    else:
+        return None
+    # A tensor shared between shards is listed once per shard it appears in, so
+    # the names are collected before the shapes are multiplied out.
+    shapes: dict[str, list[int]] = {}
+    for shard in shards:
+        for name, meta in _header(shard).items():
+            if name == "__metadata__":
+                continue
+            shapes[name] = meta["shape"]
     total = 0
-    for name, meta in header.items():
-        if name == "__metadata__":
-            continue
+    for shape in shapes.values():
         n = 1
-        for dim in meta["shape"]:
+        for dim in shape:
             n *= dim
         total += n
     return total
+
+
+def schedule(ckpt: Path) -> tuple[int | None, int | None]:
+    """The step this checkpoint was written at, and the step the run was asked for.
+
+    An arm cut short keeps writing checkpoints, so the newest one is where it
+    stopped and not where the schedule ended. Without both numbers a row cannot
+    say whether the arm finished, and a table that mixes the two compares an arm
+    at 85,000 steps against one at 120,960.
+    """
+    st = json.loads((ckpt / "trainer_state.json").read_text())
+    return st.get("global_step"), st.get("max_steps")
 
 
 def series(ckpt: Path, key: str = "eval_loss_mask"):
@@ -137,6 +173,7 @@ def main() -> int:
                 continue
             collapsed, turned, best_before, best = verdict(steps, values, floor)
             conf = json.loads((ckpt / "config.json").read_text())
+            stopped, planned = schedule(ckpt)
             row = {
                 "modality": group["modality"],
                 "run": run_dir.name,
@@ -148,6 +185,9 @@ def main() -> int:
                 "layers": conf.get("num_hidden_layers"),
                 "vocab": conf.get("vocab_size"),
                 "last_step": steps[-1],
+                "stopped_step": stopped,
+                "max_steps": planned,
+                "reached_schedule": int(bool(stopped and planned and stopped >= planned)),
                 "last_tokens": steps[-1] * TOKENS_PER_STEP,
                 "last_pfdays": round(6 * (non_embedding(param_count(ckpt), conf) or 0)
                                      * steps[-1] * TOKENS_PER_STEP / PF_DAY, 3),
@@ -169,7 +209,8 @@ def main() -> int:
             shown = f"{row['params']:,}" if row["params"] else "不明"
             print(f"    {group['modality']:9s} {row['size']:6s} lr={row['lr']:<9g} "
                   f"N={shown:>11} last={values[-1]:.4f} best={best:.4f} "
-                  f"{pattern_of(values[-1], floor, best) if collapsed else '健全'}",
+                  f"{pattern_of(values[-1], floor, best) if collapsed else '健全'} "
+                  f"{stopped}/{planned}{'' if row['reached_schedule'] else ' 途中'}",
                   file=sys.stderr)
 
     columns = list(rows[0]) if rows else []
