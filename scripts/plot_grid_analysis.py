@@ -34,8 +34,12 @@ from plot_eval_loss_series import (  # one house style, one place to change it
 PF_DAY = 8.64e19  # 1 petaflop/s-day; the unit OpenAI's compute figures use
 
 MODALITIES = ["protein", "rna", "molnl", "compounds"]
-SIZES = ["small", "medium", "large"]
-MARKERS = {"small": "o", "medium": "s", "large": "^"}
+# xl belongs here. It was left out while no xl run had finished, and the figures
+# then went on dropping every xl arm in silence: the loss-against-compute figure
+# drew three sizes from a four-size grid, and nothing said so. A size missing
+# from SIZES is not reported as missing anywhere.
+SIZES = ["small", "medium", "large", "xl"]
+MARKERS = {"small": "o", "medium": "s", "large": "^", "xl": "D"}
 
 
 def load(path: Path):
@@ -235,6 +239,15 @@ def main() -> int:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = load(Path(args.summary))
+    # Every size in the summary has to be one the figures know how to draw. The
+    # alternative is what happened before: a size absent from SIZES is dropped
+    # from every figure and nothing anywhere says a size is missing.
+    unknown = sorted({r["size"] for r in rows} - set(SIZES))
+    if unknown:
+        raise SystemExit(
+            f"{args.summary} carries size(s) {', '.join(unknown)}, which the figures "
+            f"do not draw. Add them to SIZES and MARKERS in {Path(__file__).name} "
+            f"rather than letting the figures leave them out in silence.")
     cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
     caps = cfg.get("captions", {})
     slopes = fig_lr_vs_size(rows, cfg, out_dir, caps.get("lr_vs_size", ""))
