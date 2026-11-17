@@ -195,10 +195,17 @@ def main():
     ap.add_argument("--cross-check", action="store_true")
     ap.add_argument("--allow-running", action="store_true",
                     help="write the file even where a run has not stopped yet")
+    ap.add_argument("--arch", action="append", choices=("bert", "gpt2"),
+                    help="write only these architectures. The order asks for one file "
+                         "holding all seven, so a filtered file is an interim one and "
+                         "says so in its provenance")
     args = ap.parse_args()
+    wanted = tuple(args.arch) if args.arch else ("bert", "gpt2")
 
     rows, provenance, problems = [], [], []
     for arch, size, original, extension, resume in RUNS:
+        if arch not in wanted:
+            continue
         root = args.bert_root if arch == "bert" else args.gpt2_root
         reader = bert_rows if arch == "bert" else gpt2_rows
         got, best, reached, ceiling, trouble = reader(root, size, original, extension,
@@ -223,11 +230,21 @@ def main():
     with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("#! report-tsv 1\n")
         fh.write("# model: several (columns: arch,size)\n")
-        fh.write("# run: molecule_nat_lang, the seven adopted runs continued past their "
-                 "schedule (2026-11-17 order, item 2)\n")
+        if wanted == ("bert", "gpt2"):
+            fh.write("# run: molecule_nat_lang, the seven adopted runs continued past their "
+                     "schedule (2026-11-17 order, item 2)\n")
+        else:
+            fh.write("# run: molecule_nat_lang, the {} runs of the seven adopted runs continued "
+                     "past their schedule. INTERIM: the 2026-11-17 order's item 2 asks for one "
+                     "file holding all seven, and this holds only the ones that have stopped. "
+                     "The complete file supersedes it and carries these same rows\n".format(
+                         " and ".join(wanted)))
         fh.write("# source: each run's own files: an HF run's trainer_state.json at its newest "
                  "checkpoint, a nanoGPT run's logging_*.csv\n")
-        fh.write(f"# generated: {datetime.now().astimezone().isoformat(timespec='seconds')}\n")
+        # The convention's form is "<ISO8601+09:00> by <script>"
+        # (docs/07-reports/report_tsv_columns.md).
+        stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+        fh.write(f"# generated: {stamp} by scripts/{os.path.basename(__file__)}\n")
         for line in provenance:
             fh.write(line + "\n")
         fh.write("# note: lr is the rate in effect at that step, not the arm's peak. BERT's is "
