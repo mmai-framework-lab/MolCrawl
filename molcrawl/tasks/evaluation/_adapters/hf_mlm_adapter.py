@@ -335,6 +335,96 @@ class HfMlmAdapter(ModelAdapter):
 
         return LikelihoodOutput(log_likelihood=likelihoods, num_tokens=num_tokens)
 
+    def masked_marginal_logprobs(
+        self,
+        reference: Any,
+        context_length: int = 512,
+        positions: Optional[Sequence[int]] = None,
+    ):
+        """Masked-marginal log-probability rows for one reference sequence.
+
+        Each non-special token position is masked in turn (the rest of the
+        sequence stays unmasked, so the encoder sees full context) and the
+        whole ``log_softmax`` row at that position is recorded. This is the
+        building block for ProteinGym substitution scoring by masked
+        marginals: a variant's effect is
+        ``sum_i logP(mut_i | ref, i masked) - logP(wt_i | ref, i masked)``
+        over the substituted positions ``i``. Because the rows depend only on
+        the reference, they are computed once (cost ~ O(seq_len) forward
+        passes) and reused across every variant that shares the reference, so
+        total cost is independent of the number of variants — unlike
+        :meth:`score_likelihood`, which re-masks the whole sequence per
+        variant (cost ~ O(n_variants x seq_len)).
+
+        ``reference`` is a string (encoded through ``self.tokenizer``) or a
+        pre-tokenised int list (treated as the id stream directly), matching
+        :meth:`score_likelihood`. ``positions`` optionally restricts which
+        non-special positions are scored.
+
+        Returns ``(ids, rows)`` where ``ids`` is the encoded reference
+        token-id list (including special tokens) and ``rows`` maps each
+        scored non-special position to a 1-D ``float32`` numpy array of
+        length ``vocab_size`` (the masked ``log_softmax`` at that position).
+        """
+        if self.model is None:
+            raise RuntimeError("HfMlmAdapter.load() must be called first")
+        import numpy as np
+        torch = self._torch
+        import torch.nn.functional as F
+
+        mask_id = getattr(self.tokenizer, "mask_token_id", None)
+        if mask_id is None:
+            raise RuntimeError(
+                "HfMlmAdapter.masked_marginal_logprobs requires a tokenizer "
+                "with a mask_token_id; got None."
+            )
+        special_ids = set(getattr(self.tokenizer, "all_special_ids", ()) or ())
+
+        cfg = getattr(self.model, "config", None)
+        max_pos = (
+            getattr(cfg, "max_position_embeddings", None) if cfg is not None else None
+        )
+        if max_pos is not None:
+            context_length = min(int(context_length), max(1, int(max_pos) - 2))
+
+        if isinstance(reference, (list, tuple)) and (
+            not reference or isinstance(reference[0], (int, _np_integer()))
+        ):
+            ids = [int(t) for t in reference]
+            if context_length is not None and len(ids) > context_length:
+                ids = ids[:context_length]
+        else:
+            ids = self._encode(reference, max_length=context_length)
+
+        scored = [i for i, tok in enumerate(ids) if tok not in special_ids]
+        if positions is not None:
+            want = set(int(p) for p in positions)
+            scored = [i for i in scored if i in want]
+
+        rows: dict = {}
+        if not ids or not scored:
+            return ids, rows
+
+        base = torch.tensor(ids, dtype=torch.long, device=self.device)
+        mlm_batch_size = int(self.handle.extras.get("bert_mlm_batch", 64))
+        with torch.no_grad():
+            for start in range(0, len(scored), mlm_batch_size):
+                pos_chunk = scored[start : start + mlm_batch_size]
+                batch = base.unsqueeze(0).repeat(len(pos_chunk), 1).clone()
+                for row, pos in enumerate(pos_chunk):
+                    batch[row, pos] = mask_id
+                attn = torch.ones_like(batch)
+                logits = self.model(input_ids=batch, attention_mask=attn).logits
+                log_probs = F.log_softmax(logits, dim=-1)
+                for row, pos in enumerate(pos_chunk):
+                    rows[pos] = (
+                        log_probs[row, pos, :]
+                        .detach()
+                        .to("cpu", dtype=torch.float32)
+                        .numpy()
+                    )
+        return ids, rows
+
     def embed(
         self,
         inputs: Sequence[Any],
