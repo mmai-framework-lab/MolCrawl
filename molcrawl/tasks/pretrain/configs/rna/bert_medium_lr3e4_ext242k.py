@@ -30,3 +30,25 @@ learning_rate = 3e-5  # a tenth of this arm's peak 3e-4
 lr_scheduler_type = "constant_with_warmup"
 early_stopping = False  # the order asks for it explicitly; the base sets it too
 model_path = get_bert_output_path("rna", "medium") + "-lr3e4-ext242k"
+
+# Collapse detection, approved 2026-11-18. A collapsed run never recovers, so stop it
+# rather than spend the added 120,960 steps at the degenerate level -- about 2,970 GPU
+# hours on xl. The detector reads eval_loss_mask, the metric the order ranks on.
+#
+# 9.0 is measured, not derived. Across the fourteen rna arms that ended collapsed, the
+# LOWEST sustained level is 9.3737 (large 3e-4, median of its last 2,000 steps, range
+# 9.3704-9.3753), so 9.0 catches every one of them with 0.37 to spare. It also sits
+# 5.7 above the worst value this extension starts from (xl 3.3168).
+#
+# The obvious derivation would be wrong, and only xl shows why. Scaling the unigram
+# floor by the non-copy fraction gives 0.9 x 9.3710 = 8.4296, but a HEALTHY xl 2.5e-5
+# run is still above 8.5 at step 20,800 and above 8.0 at step 59,000 -- far past the
+# 5,000-step grace period. Any threshold below 9.0 would stop a run that was working.
+#
+# grace_steps is compared against the absolute global_step, and this run resumes at
+# 120,960, so the detector is live from its first evaluation rather than waiting out a
+# plateau that has already been crossed. patience 5 at log_interval 100 means 500
+# steps above the line before stopping.
+degenerate_loss_threshold = 9.0
+degenerate_patience = 5
+degenerate_grace_steps = 5000

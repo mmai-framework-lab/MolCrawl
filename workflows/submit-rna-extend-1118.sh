@@ -21,9 +21,17 @@
 #                             the full hash of a commit that will not move.
 #
 # Eight links at the 4-day limit covers xl BERT, which held 120,960 steps in
-# 30.96 days over nine segments; the smaller sizes finish sooner and a surplus
-# link exits in minutes. Links are chained afterany, and bert-grid.sbatch checks
-# the predecessor's end state itself.
+# 30.96 days over nine segments; the smaller sizes finish sooner.
+#
+# Links after the first are chained afternotok, not afterany, so a link that
+# COMPLETES ends the chain. Both ways a link can complete mean "do not continue":
+# it reached max_steps, or the collapse detector set should_training_stop, which
+# also exits 0 and so lands as COMPLETED. Under afterany the next link would
+# instead resume the collapsed model, run its own patience out and stop again --
+# bounded, but about 500 steps per remaining link, which on xl is three hours
+# each. A TIMEOUT or a crash is "notok" and still releases the successor, where
+# bert-grid.sbatch checks the end state and refuses the ones a resume would
+# repeat.
 #
 # The first BERT link has no predecessor in its own segments.log, because the copy
 # is fresh, so PREV_JOB carries the nine-epoch run's last job and EXTEND=1 is what
@@ -105,7 +113,7 @@ if [ "${SIDE}" = "bert" ] || [ "${SIDE}" = "both" ]; then
       # segments.log in the output directory.
       [ "${i}" = "1" ] && exp="${exp},PREV_JOB=${prev}"
       args=(--job-name="rna-bert-${tag}-ext-S${seg}" --account="${SLURM_ACCOUNT}" --export="${exp}")
-      [ -n "${dep}" ] && args+=(--dependency=afterany:"${dep}")
+      [ -n "${dep}" ] && args+=(--dependency=afternotok:"${dep}")
       jid=$(_submit "bert-ext-${tag}-S${seg}" "${args[@]}" workflows/bert-grid.sbatch)
       echo "    link ${i}/${BERT_LINKS}: segment ${seg}, job ${jid}${dep:+ (after ${dep})}"
       dep="${jid}"; total=$(( total + 1 ))
@@ -134,7 +142,9 @@ if [ "${SIDE}" = "gpt2" ] || [ "${SIDE}" = "both" ]; then
       exp="${exp},GRID_CONFIG=${cfg}"
       [ -n "${EXPECT_COMMIT:-}" ] && exp="${exp},EXPECT_COMMIT=${EXPECT_COMMIT}"
       args=(--job-name="rna-gpt2-${tag}-ext-C${i}" --account="${SLURM_ACCOUNT}" --export="${exp}")
-      [ -n "${dep}" ] && args+=(--dependency=afterany:"${dep}")
+      # GPT-2 has no collapse detector, so a COMPLETED link here means max_iters was
+      # reached. Ending the chain on it is right for the same reason.
+      [ -n "${dep}" ] && args+=(--dependency=afternotok:"${dep}")
       jid=$(_submit "gpt2-ext-${tag}-C${i}" "${args[@]}" workflows/rna-gpt2-grid.sbatch)
       echo "    link ${i}/${GPT2_LINKS}: job ${jid}${dep:+ (after ${dep})}"
       dep="${jid}"; total=$(( total + 1 ))

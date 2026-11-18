@@ -186,3 +186,37 @@ def test_rewrite_scheduler_writes_what_the_launcher_checks(tmp_path):
     assert after["_is_initial"] is True
     # The lambdas are rebuilt by the new config, so the stored placeholders stay.
     assert after["lr_lambdas"] == [{}, {}]
+
+
+# The measured bracket the collapse threshold has to sit inside. Both ends come from
+# report/rt1-rna-curves-20261117.tsv, read on eval_loss_mask: the worst value the four
+# extensions start from, and the lowest sustained level among the fourteen arms that
+# ended collapsed (large 3e-4, median of its last 2,000 steps).
+WORST_HEALTHY_START = 3.3168
+LOWEST_COLLAPSED_LEVEL = 9.3737
+
+
+@pytest.mark.parametrize("ext,arm,size,peak", BERT_ARMS)
+def test_bert_extension_stops_on_collapse(ext, arm, size, peak):
+    """Approved 2026-11-18: do not spend the added steps at the degenerate level.
+
+    The threshold has to be above every healthy value and below every collapsed
+    one, and the window is wide -- but only on the upper side. Scaling the unigram
+    floor by the non-copy fraction (0.9 x 9.3710 = 8.4296) lands inside the range a
+    healthy xl run occupies for its first 20,800 steps, so the derivation that
+    works for compounds does not work here.
+    """
+    e = load(ext)
+    assert e.degenerate_loss_threshold is not None, "collapse detection is off"
+    assert WORST_HEALTHY_START < e.degenerate_loss_threshold < LOWEST_COLLAPSED_LEVEL
+    # Stated rather than inherited, so the run's own file answers what it did.
+    assert e.degenerate_patience == 5
+    # Compared against the absolute global_step, and this resumes at 120,960, so any
+    # value below that leaves the detector live from the first evaluation.
+    assert e.degenerate_grace_steps < NINE_EPOCH_STEPS
+
+
+def test_the_collapse_threshold_is_the_same_across_the_four_arms():
+    """One corpus, one floor. A per-arm value would be a per-arm definition."""
+    values = {load(ext).degenerate_loss_threshold for ext, _, _, _ in BERT_ARMS}
+    assert values == {9.0}
