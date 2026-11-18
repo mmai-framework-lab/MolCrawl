@@ -252,10 +252,7 @@ ok = (st.get("last_epoch") == 0 and base
 print("1" if ok else "0")' \
           "${OUT}/checkpoint-${_last_pre}/scheduler.pt" "${_cfg_lr}" 2>/dev/null)
         if [ "${_rewritten}" = "1" ]; then
-          echo "extension: checkpoint-${_last_pre}/scheduler.pt was re-pointed at this" \
-               "config (base_lrs ${_cfg_lr}, last_epoch 0), so restoring it applies" \
-               "this schedule from its first step and optimizer.pt still loads"
-          _same_schedule=1
+          _sched_rewritten=1
         fi
       fi
       if [ "${_same_schedule}" = "1" ]; then
@@ -263,6 +260,17 @@ print("1" if ok else "0")' \
              "(its max_steps ${_ck_steps} = the config's, last rate ${_ck_lr} <=" \
              "${_cfg_lr}), so its scheduler.pt holds this config's own rate and is" \
              "kept -- a segment continuation, not a new extension"
+      elif [ "${_sched_rewritten:-0}" = "1" ]; then
+        # Said here rather than inside the check above, so exactly one of these three
+        # lines is printed. The first version set _same_schedule and fell into the
+        # message above as well, which then stated "its max_steps ${_ck_steps} = the
+        # config's" about a checkpoint whose max_steps is the OLD one -- the whole
+        # reason this case exists. Every BERT link of the rna 2026-11-18 extension
+        # carries that contradictory pair; the runs were right and the log was not.
+        echo "extension: checkpoint-${_last_pre}/scheduler.pt was re-pointed at this" \
+             "config (base_lrs ${_cfg_lr}, last_epoch 0) while the checkpoint itself" \
+             "was written under max_steps ${_ck_steps}, so restoring it applies this" \
+             "config's schedule from its first step and optimizer.pt still loads"
       else
         echo "REFUSING: EXTEND=1 but ${OUT}/checkpoint-${_last_pre}/scheduler.pt exists" \
              "and that checkpoint was not written by this schedule (its max_steps" \
