@@ -135,12 +135,22 @@ def args_for(out_dir, max_steps, lr, warmup, sched, save_steps):
         return TrainingArguments(no_cuda=True, **kw)
 
 
-def rates(trainer):
-    return [
+def rates(trainer, after=None):
+    """Logged rates, optionally only the ones this run added.
+
+    HF restores log_history from the checkpoint, so on a resume the head of the
+    list belongs to the ORIGINAL run. Reading it without a floor reports the
+    previous schedule's warmup back as the extension's -- which the first version
+    of this probe did, and it made all three hand-overs look identical.
+    """
+    out = [
         (h["step"], h["learning_rate"])
         for h in trainer.state.log_history
         if "learning_rate" in h
     ]
+    if after is not None:
+        out = [(s, lr) for s, lr in out if s > after]
+    return out
 
 
 def prepare(ckpt_src, dest, how, new_lr):
@@ -230,7 +240,7 @@ def main():
                 callbacks=[watch],
             )
             ext.train(resume_from_checkpoint=dest)
-            first = rates(ext)[: a.warmup + 3]
+            first = rates(ext, after=a.pre_steps)[: a.warmup + 3]
             case = {
                 "at_train_begin": watch.seen,
                 "first_rates": first,

@@ -225,6 +225,39 @@ ck, cfg = float(sys.argv[1]), float(sys.argv[2])
 sys.exit(0 if ck <= cfg * (1.0 + 1e-9) else 1)' "${_ck_lr}" "${_cfg_lr}" 2>/dev/null \
           && _same_schedule=1
       fi
+      # A STAGED REWRITE is the third case, and it is the one that keeps the moments.
+      #
+      # The instruction below -- remove scheduler.pt, keep optimizer.pt -- does not do
+      # the second half. transformers 4.45.1 guards BOTH loads with one `if` on
+      # scheduler.pt's existence (trainer.py:3204), so removing the file leaves the
+      # Adam moments unloaded. Measured on 2026-11-18, job 363888, with
+      # scripts/probe_extend_resume_scheduler.py: optimizer state entries at train
+      # begin were 42 with the file present and 0 with it removed.
+      #
+      # So prepare the copy instead of amputating it: re-point scheduler.pt at this
+      # config, base_lrs to its learning_rate and last_epoch to 0. Restoring that is
+      # not merely safe but correct -- it is this config's own schedule read from its
+      # first step, warmup included -- and optimizer.pt loads because the file is
+      # there. scripts/prepare_rna_extension.py --scheduler rewrite writes it.
+      #
+      # The check is on the file's contents, so a checkpoint that was not prepared
+      # this way still falls through to the refusal below.
+      if [ "${_same_schedule}" != "1" ]; then
+        _rewritten=$("${PYTHON}" -c 'import sys, torch
+st = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+lr = float(sys.argv[2])
+base = st.get("base_lrs") or []
+ok = (st.get("last_epoch") == 0 and base
+      and all(abs(float(b) - lr) <= abs(lr) * 1e-9 for b in base))
+print("1" if ok else "0")' \
+          "${OUT}/checkpoint-${_last_pre}/scheduler.pt" "${_cfg_lr}" 2>/dev/null)
+        if [ "${_rewritten}" = "1" ]; then
+          echo "extension: checkpoint-${_last_pre}/scheduler.pt was re-pointed at this" \
+               "config (base_lrs ${_cfg_lr}, last_epoch 0), so restoring it applies" \
+               "this schedule from its first step and optimizer.pt still loads"
+          _same_schedule=1
+        fi
+      fi
       if [ "${_same_schedule}" = "1" ]; then
         echo "extension: checkpoint-${_last_pre} was written by this same schedule" \
              "(its max_steps ${_ck_steps} = the config's, last rate ${_ck_lr} <=" \
@@ -237,8 +270,11 @@ sys.exit(0 if ck <= cfg * (1.0 + 1e-9) else 1)' "${_ck_lr}" "${_cfg_lr}" 2>/dev/
              "${_ck_lr:-unreadable} against the config's ${_cfg_lr})." \
              "HF restores base_lrs and last_epoch from it, so ${CFG}'s learning_rate and" \
              "warmup_steps would both be ignored and the run would continue at the" \
-             "original peak with no warmup. Remove scheduler.pt from the checkpoint this" \
-             "extension resumes from -- keep optimizer.pt." >&2
+             "original peak with no warmup. Re-point scheduler.pt at this config" \
+             "(base_lrs = its learning_rate, last_epoch = 0) with" \
+             "scripts/prepare_rna_extension.py --scheduler rewrite, or equivalent." \
+             "Removing the file also works for the rate but leaves the Adam moments" \
+             "unloaded, because transformers guards both loads with one condition." >&2
         exit 1
       fi
     fi

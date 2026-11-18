@@ -144,3 +144,45 @@ def test_gpt2_extension_does_not_stop_early(ext, arm, peak):
     e = load(ext)
     assert "early_stopping" in vars(e), "the framework default is True; say it here"
     assert e.early_stopping is False
+
+
+def test_rewrite_scheduler_writes_what_the_launcher_checks(tmp_path):
+    """The staging rewrite and the bert-grid guard have to agree on the contract.
+
+    workflows/bert-grid.sbatch accepts a scheduler.pt whose base_lrs equal the
+    config's learning_rate and whose last_epoch is 0, because that file is this
+    config's own schedule read from its first step. The file is kept rather than
+    deleted so that optimizer.pt loads at all: transformers 4.45.1 guards both
+    loads with one condition on scheduler.pt's existence (trainer.py:3204), so
+    removing it leaves the Adam moments unloaded -- measured 2026-11-18, job
+    363888, 42 optimizer state entries with the file present against 0 without.
+    """
+    torch = pytest.importorskip("torch")
+    from scripts.prepare_rna_extension import rewrite_scheduler
+
+    path = tmp_path / "scheduler.pt"
+    torch.save(
+        {
+            "base_lrs": [2.5e-05, 2.5e-05],
+            "last_epoch": 120960,
+            "_step_count": 120961,
+            "_is_initial": False,
+            "_get_lr_called_within_step": False,
+            "_last_lr": [0.0, 0.0],
+            "lr_lambdas": [{}, {}],
+        },
+        path,
+    )
+
+    before = rewrite_scheduler(str(path), 2.5e-06)
+    assert before["base_lrs"] == [2.5e-05, 2.5e-05]
+    assert before["last_epoch"] == 120960
+
+    after = torch.load(path, map_location="cpu", weights_only=False)
+    assert after["base_lrs"] == [2.5e-06, 2.5e-06]
+    assert after["last_epoch"] == 0
+    assert after["_step_count"] == 1
+    assert after["_last_lr"] == [0.0, 0.0]
+    assert after["_is_initial"] is True
+    # The lambdas are rebuilt by the new config, so the stored placeholders stay.
+    assert after["lr_lambdas"] == [{}, {}]

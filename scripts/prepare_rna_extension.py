@@ -19,6 +19,13 @@ Both are answered the same way: give the extension its own output directory and 
 copy of the resume point in it. The extension configs already name those directories;
 this script asks them rather than being told, so a path appears in one place only.
 
+**The two frameworks sit under different roots.** get_bert_output_path appends
+``rna/bert-output`` to MODEL_OUTPUT_ROOT, while the GPT-2 configs append only the run
+name -- and the nine-epoch GPT-2 points were launched with MODEL_OUTPUT_ROOT pointing
+at ``learning_source_rna_runs/gpt2-grid``. One process can only hold one value, since
+the configs read the environment at import. So ``--framework`` runs one side at a
+time, and workflows/rna-extend-prepare.sbatch calls this twice with the two roots.
+
 The scheduler is the other half, for BERT. HF restores it from the checkpoint and
 ``LambdaLR.load_state_dict`` does ``self.__dict__.update(state_dict)``, which brings
 back ``base_lrs`` and ``last_epoch``. Read off a real rna checkpoint-120960:
@@ -175,6 +182,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scheduler", choices=("remove", "rewrite"), required=True,
                     help="how the BERT copies hand scheduler.pt over; see the module docstring")
+    ap.add_argument("--framework", choices=("bert", "gpt2", "both"), default="both",
+                    help="which side to stage; the two live under different roots")
     ap.add_argument("--only", default="", help="substring filter on the extension config name")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--verify", action="store_true",
@@ -185,9 +194,13 @@ def main():
         raise SystemExit("set MODEL_OUTPUT_ROOT; the configs derive every path from it")
 
     total = 0
+    staged = 0
     for framework, arm, ext in PAIRS:
+        if a.framework != "both" and framework != a.framework:
+            continue
         if a.only and a.only not in ext:
             continue
+        staged += 1
         src_mod, ext_mod = load(arm), load(ext)
         src, dst = run_dir(framework, src_mod), run_dir(framework, ext_mod)
         print(f"\n== {ext}  ({framework})")
@@ -198,7 +211,10 @@ def main():
         else:
             total += stage_gpt2(src, dst, a.dry_run, a.verify)
 
-    print(f"\n=== {'would copy' if a.dry_run else 'copied'} {human(total)} in total")
+    if not staged:
+        raise SystemExit(f"--framework {a.framework} --only {a.only!r} selected nothing")
+    print(f"\n=== {staged} run(s), {'would copy' if a.dry_run else 'copied'} "
+          f"{human(total)} in total")
     root = os.environ["MODEL_OUTPUT_ROOT"]
     st = os.statvfs(root)
     print(f"=== free under {root}: {human(st.f_bavail * st.f_frsize)}")
