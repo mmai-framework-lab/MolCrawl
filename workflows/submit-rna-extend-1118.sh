@@ -16,6 +16,13 @@
 #   DRY_RUN=1                 print the plan, submit nothing
 #   PLAIN_SBATCH=1            bypass sbatch-watched.sh (not the default: a run of
 #                             this length needs a watcher outside the session)
+#   SUBMIT_RECORD=<file>      where sbatch-watched.sh appends the job ids. Defaults
+#                             to <runs root>/_submissions/rna-extend-1118.tsv --
+#                             beside the outputs rather than in this worktree, which
+#                             is disposable, and outside the session, which is the
+#                             point: four compounds runs once died on a Friday and
+#                             the only record of what had been submitted was in the
+#                             session that submitted them.
 #   EXPECT_COMMIT=<sha>       pin the checkout each link runs. Optional, and a
 #                             rewritten history kills every queued link, so pass
 #                             the full hash of a commit that will not move.
@@ -84,8 +91,18 @@ if [ -x "./miniconda/bin/python" ]; then PYROOT="$PWD"; else
 PYTHON="${PYROOT}/miniconda/bin/python"
 [ -x "${PYTHON}" ] || { echo "no python under ${PYROOT}/miniconda -- set PYROOT" >&2; exit 1; }
 
+# sbatch-watched.sh refuses without this, so default it rather than fail eight chains
+# in at the first link.
+if [ -z "${SUBMIT_RECORD:-}" ]; then
+  _rec_root="${BERT_ROOT:-${GPT2_ROOT:-}}"
+  [ -n "${_rec_root}" ] || { echo "set BERT_ROOT or GPT2_ROOT (or SUBMIT_RECORD)" >&2; exit 1; }
+  SUBMIT_RECORD="${_rec_root}/_submissions/rna-extend-1118.tsv"
+fi
+export SUBMIT_RECORD
+
 total=0
 echo "=== rna extension to 241,920 steps ==="
+echo "  submission record: ${SUBMIT_RECORD}"
 echo "  side=${SIDE}  links: bert ${BERT_LINKS}, gpt2 ${GPT2_LINKS}"
 echo "  submit via: $([ -n "${DRY_RUN:-}" ] && echo 'dry run' || { [ -n "${PLAIN_SBATCH:-}" ] && echo 'plain sbatch' || echo 'sbatch-watched.sh'; })"
 
