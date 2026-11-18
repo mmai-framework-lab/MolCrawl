@@ -30,16 +30,30 @@ set -uo pipefail
 REPO="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "${REPO}"
 
-LSD="${LEARNING_SOURCE_DIR:-${REPO}/learning_source_20260730_protein_uniref50}"
-RUNS="${REPO}/learning_source_protein_runs/protein_sequence"
+# Data, checkpoints and the interpreter live in the MAIN checkout even when this
+# runs from a worktree (learning_source* and ./miniconda are not in a worktree).
+# Resolve the main checkout through git's common dir (portable-run-paths rule 3).
+MAIN="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)"
+[ -n "${MAIN}" ] || MAIN="${REPO}"
+LSD="${LEARNING_SOURCE_DIR:-${MAIN}/learning_source_20260730_protein_uniref50}"
+RUNS="${PROTEIN_RUNS:-${MAIN}/learning_source_protein_runs/protein_sequence}"
+# The job imports molcrawl from THIS checkout (its cwd shadows the editable
+# install), so a worktree run uses the worktree's code; the interpreter is the
+# main checkout's miniconda, passed to common_functions via MOLCRAWL_PYTHON.
+MC_PYTHON="${MOLCRAWL_PYTHON:-${MAIN}/miniconda/bin/python}"
 SWEEP="workflows/eval-gpu-proteingym-sweep.sbatch"
 PG_DIR="${LSD}/eval/proteingym/official/data/DMS_ProteinGym_substitutions"
 RECORD="${SUBMIT_RECORD:-workflows/submit-records/protein-proteingym-official-fullassay-$(date +%Y%m%d).tsv}"
 
 for d in "${PG_DIR}" "${RUNS}"; do
-  [ -d "${d}" ] || { echo "ERROR: ${d} not found -- run this from the main checkout" >&2; exit 1; }
+  [ -d "${d}" ] || { echo "ERROR: ${d} not found (MAIN=${MAIN})" >&2; exit 1; }
 done
 [ -f "${SWEEP}" ] || { echo "ERROR: ${SWEEP} not found" >&2; exit 1; }
+[ -x "${MC_PYTHON}" ] || { echo "ERROR: interpreter ${MC_PYTHON} not executable -- set MOLCRAWL_PYTHON" >&2; exit 1; }
+mkdir -p workflows/slurm-logs
+echo "[official-fullassay] MAIN checkout: ${MAIN}"
+echo "[official-fullassay] code (import): ${REPO}"
+echo "[official-fullassay] interpreter:   ${MC_PYTHON}"
 
 DRY=1; [ "${SUBMIT:-0}" = "1" ] && DRY=0
 if [ "${DRY}" = "0" ]; then mkdir -p "$(dirname "${RECORD}")"; fi
@@ -57,9 +71,10 @@ JOBS=(
 
 common_env() {  # arch model_path slug scoring_method
   # MAX_EXAMPLES= (trailing empty) scores the FULL assay. No value contains a
-  # comma, so the comma-separated --export list is safe.
-  printf 'ALL,LEARNING_SOURCE_DIR=%s,MODEL_PATH=%s,MODEL_SLUG=%s,ARCH=%s,MODALITY=protein_sequence,PG_DIR=%s,SCORING_METHOD=%s,MAX_EXAMPLES=' \
-    "${LSD}" "$2" "$3" "$1" "${PG_DIR}" "$4"
+  # comma, so the comma-separated --export list is safe. MOLCRAWL_PYTHON points
+  # common_functions at the main checkout's interpreter for a worktree run.
+  printf 'ALL,LEARNING_SOURCE_DIR=%s,MODEL_PATH=%s,MODEL_SLUG=%s,ARCH=%s,MODALITY=protein_sequence,PG_DIR=%s,SCORING_METHOD=%s,MOLCRAWL_PYTHON=%s,MAX_EXAMPLES=' \
+    "${LSD}" "$2" "$3" "$1" "${PG_DIR}" "$4" "${MC_PYTHON}"
 }
 
 echo "=== protein ProteinGym OFFICIAL full-assay scoring (Issue #388, M2) ==="
