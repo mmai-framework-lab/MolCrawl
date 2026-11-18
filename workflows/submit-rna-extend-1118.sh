@@ -27,6 +27,18 @@
 #                             rewritten history kills every queued link, so pass
 #                             the full hash of a commit that will not move.
 #
+# Requeuing a chain that was withdrawn (Slurm keeps the batch script it was given
+# at submission, so a fix to bert-grid.sbatch only reaches links submitted after
+# it):
+#   BERT_SEGMENT_START=<n>    the segment number link 1 carries (default 2)
+#   BERT_PREV="tag=jobid;..." override the predecessor link 1 is told to follow,
+#                             per arm, by the tag used in the job names
+#   AFTER_CANCELLED=1         link 1 also carries RESUME_AFTER_CANCELLED for that
+#                             predecessor. bert-grid.sbatch continues from a
+#                             CANCELLED segment only when named this way, and it
+#                             authorises exactly one predecessor, so a later link
+#                             of the same chain cannot be waved through by it.
+#
 # Eight links at the 4-day limit covers xl BERT, which held 120,960 steps in
 # 30.96 days over nine segments; the smaller sizes finish sooner.
 #
@@ -119,16 +131,25 @@ if [ "${SIDE}" = "bert" ] || [ "${SIDE}" = "both" ]; then
         echo "refusing ${tag}: ${out}/checkpoint-120960 is not staged --" \
              "run scripts/prepare_rna_extension.py --scheduler rewrite first" >&2
         exit 1; }
+    if [ -n "${BERT_PREV:-}" ]; then
+      _override=$(printf '%s' "${BERT_PREV}" | tr ';' '\n' \
+                  | awk -F= -v t="${tag}" '$1==t {print $2}')
+      [ -n "${_override}" ] && prev="${_override}"
+    fi
     echo "  ${tag}: ${out}"
+    echo "    follows job ${prev}${AFTER_CANCELLED:+ (as a cancelled predecessor)}"
     dep=""
     for i in $(seq 1 "${BERT_LINKS}"); do
-      seg=$(( i + 1 ))
+      seg=$(( i + ${BERT_SEGMENT_START:-2} - 1 ))
       exp="ALL,MODALITY=rna,LEARNING_SOURCE_DIR=${LEARNING_SOURCE_DIR}"
       exp="${exp},MODEL_OUTPUT_ROOT=${BERT_ROOT},CONFIG=${cfg},SEGMENT=${seg},EXTEND=1"
       [ -n "${EXPECT_COMMIT:-}" ] && exp="${exp},EXPECT_COMMIT=${EXPECT_COMMIT}"
       # Only the first link needs to be told what it follows; later ones read
       # segments.log in the output directory.
-      [ "${i}" = "1" ] && exp="${exp},PREV_JOB=${prev}"
+      if [ "${i}" = "1" ]; then
+        exp="${exp},PREV_JOB=${prev}"
+        [ -n "${AFTER_CANCELLED:-}" ] && exp="${exp},RESUME_AFTER_CANCELLED=${prev}"
+      fi
       args=(--job-name="rna-bert-${tag}-ext-S${seg}" --account="${SLURM_ACCOUNT}" --export="${exp}")
       [ -n "${dep}" ] && args+=(--dependency=afternotok:"${dep}")
       jid=$(_submit "bert-ext-${tag}-S${seg}" "${args[@]}" workflows/bert-grid.sbatch)
