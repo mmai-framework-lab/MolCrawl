@@ -23,9 +23,16 @@
 #                             point: four compounds runs once died on a Friday and
 #                             the only record of what had been submitted was in the
 #                             session that submitted them.
-#   EXPECT_COMMIT=<sha>       pin the checkout each link runs. Optional, and a
-#                             rewritten history kills every queued link, so pass
+#   EXPECT_COMMIT=<sha>       pin the checkout each GPT-2 link runs. Optional, and
+#                             a rewritten history kills every queued link, so pass
 #                             the full hash of a commit that will not move.
+#                             rna-gpt2-grid.sbatch resolves both sides with
+#                             rev-parse before comparing, so an abbreviation works
+#                             -- but it must be an abbreviation OF the commit, not
+#                             a full-length string built around one.
+#                             bert-grid.sbatch has no such guard, so this is not
+#                             passed to the BERT links: handing it to them would
+#                             read as a pin that is not there.
 #
 # Requeuing a chain that was withdrawn (Slurm keeps the batch script it was given
 # at submission, so a fix to bert-grid.sbatch only reaches links submitted after
@@ -143,7 +150,7 @@ if [ "${SIDE}" = "bert" ] || [ "${SIDE}" = "both" ]; then
       seg=$(( i + ${BERT_SEGMENT_START:-2} - 1 ))
       exp="ALL,MODALITY=rna,LEARNING_SOURCE_DIR=${LEARNING_SOURCE_DIR}"
       exp="${exp},MODEL_OUTPUT_ROOT=${BERT_ROOT},CONFIG=${cfg},SEGMENT=${seg},EXTEND=1"
-      [ -n "${EXPECT_COMMIT:-}" ] && exp="${exp},EXPECT_COMMIT=${EXPECT_COMMIT}"
+      # No EXPECT_COMMIT here: bert-grid.sbatch does not read it.
       # Only the first link needs to be told what it follows; later ones read
       # segments.log in the output directory.
       if [ "${i}" = "1" ]; then
