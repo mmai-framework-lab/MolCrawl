@@ -98,6 +98,15 @@ download_set() {  # <name>
     unzip -tq "${zip}" >/dev/null || { echo "ERROR: corrupt ${zip}" >&2; return 1; }
     mkdir -p "${dir}"
     unzip -q -o "${zip}" -d "${dir}"
+    # Normalize nesting: some zips carry a top-level folder of the same name, which lands
+    # as ${dir}/${name}/*.csv. Lift a single such subdir up so every set is ${dir}/*.csv.
+    if [ "$(find "${dir}" -maxdepth 1 -name '*.csv' | wc -l)" -eq 0 ]; then
+        local inner
+        inner="$(find "${dir}" -mindepth 1 -maxdepth 1 -type d)"
+        if [ -n "${inner}" ] && [ "$(printf '%s\n' "${inner}" | wc -l)" -eq 1 ]; then
+            mv "${inner}"/* "${dir}/" && rmdir "${inner}"
+        fi
+    fi
     printf '%s  %s\n' "$(sha256_of "${zip}")" "${name}.zip" >> "${LOGS}/downloads.sha256"
     rm -f "${zip}"
 }
