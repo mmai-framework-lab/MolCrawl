@@ -23,16 +23,19 @@
 #                             point: four compounds runs once died on a Friday and
 #                             the only record of what had been submitted was in the
 #                             session that submitted them.
-#   EXPECT_COMMIT=<sha>       pin the checkout each GPT-2 link runs. Optional, and
-#                             a rewritten history kills every queued link, so pass
-#                             the full hash of a commit that will not move.
-#                             rna-gpt2-grid.sbatch resolves both sides with
-#                             rev-parse before comparing, so an abbreviation works
-#                             -- but it must be an abbreviation OF the commit, not
-#                             a full-length string built around one.
-#                             bert-grid.sbatch has no such guard, so this is not
-#                             passed to the BERT links: handing it to them would
-#                             read as a pin that is not there.
+#   EXPECT_COMMIT=<sha>       pin the checkout every link runs, both halves. The
+#                             batch script is captured at submission but main.py
+#                             and the config are read from the checkout when each
+#                             link starts, which for link 8 is a month out. Both
+#                             launchers resolve the two sides with rev-parse before
+#                             comparing, so an abbreviation works -- but it has to
+#                             be an abbreviation OF the commit, not a full-length
+#                             string built around one.
+#
+#                             Pinning makes a later commit to the checkout kill the
+#                             queued links instead of changing what they run. That
+#                             is the trade being made: do further work in another
+#                             worktree while a chain is in flight.
 #
 # Requeuing a chain that was withdrawn (Slurm keeps the batch script it was given
 # at submission, so a fix to bert-grid.sbatch only reaches links submitted after
@@ -150,7 +153,7 @@ if [ "${SIDE}" = "bert" ] || [ "${SIDE}" = "both" ]; then
       seg=$(( i + ${BERT_SEGMENT_START:-2} - 1 ))
       exp="ALL,MODALITY=rna,LEARNING_SOURCE_DIR=${LEARNING_SOURCE_DIR}"
       exp="${exp},MODEL_OUTPUT_ROOT=${BERT_ROOT},CONFIG=${cfg},SEGMENT=${seg},EXTEND=1"
-      # No EXPECT_COMMIT here: bert-grid.sbatch does not read it.
+      [ -n "${EXPECT_COMMIT:-}" ] && exp="${exp},EXPECT_COMMIT=${EXPECT_COMMIT}"
       # Only the first link needs to be told what it follows; later ones read
       # segments.log in the output directory.
       if [ "${i}" = "1" ]; then

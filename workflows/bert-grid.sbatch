@@ -113,6 +113,29 @@ export PYTHONUNBUFFERED=1 WANDB_MODE=offline HF_HUB_OFFLINE=1 HF_DATASETS_OFFLIN
 cd "${REPO}"; mkdir -p "${HF_DATASETS_CACHE}" workflows/slurm-logs
 [ -f "${CFG}" ] || { echo "no config at ${CFG} (relative to ${REPO})" >&2; exit 1; }
 
+# Slurm keeps the batch script it was handed at submission, but main.py and the
+# config are read out of REPO when the link actually starts -- days or weeks later,
+# from a checkout someone may have committed to or switched in between. A chain of
+# eight four-day links spans a month, and nothing here noticed. rna-gpt2-grid.sbatch
+# has had this guard; the BERT half had not, so the two halves of the same campaign
+# were pinned to different degrees.
+#
+# Resolve both sides to the full hash before comparing. The length git chooses for an
+# abbreviation comes from how many objects the repository holds, not from the commit:
+# it grew from seven characters to eight between 2026-10-22 and 2026-10-26, and twenty
+# links queued against the short form refused to start on the commit they were pinned
+# to. Optional, because a run that was never pinned must keep working.
+if [ -n "${EXPECT_COMMIT:-}" ]; then
+    ACTUAL=$(git rev-parse HEAD)
+    WANT=$(git rev-parse --verify --quiet "${EXPECT_COMMIT}^{commit}" || true)
+    [ -n "${WANT}" ] || {
+        echo "FATAL: EXPECT_COMMIT=${EXPECT_COMMIT} does not name a commit here" >&2; exit 1; }
+    [ "${ACTUAL}" = "${WANT}" ] || {
+        echo "FATAL: repo is at ${ACTUAL}, expected ${WANT} (from ${EXPECT_COMMIT})" >&2
+        exit 1; }
+    echo "commit guard: ${ACTUAL} matches ${EXPECT_COMMIT}"
+fi
+
 # The grid configs import their base rather than restating it, so the values cannot be
 # read out of the file with grep. Run it the way main.py will and read what it resolves to.
 _cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>/dev/null
