@@ -1,0 +1,32 @@
+# rna BERT medium -- the 3e-4 arm continued from 120,960 steps to 241,920.
+# rna-order-2026-11-18b §1-§2; rna-judgment-2026-11-18b 確認事項 1, 2 and §7.
+#
+# launch: workflows/bert-grid.sbatch with EXTEND=1, resuming from the COPY of
+#         checkpoint-120960 that scripts/prepare_rna_extension.py writes into this
+#         config's own output directory. Resuming from the original directory would
+#         both overwrite the 9-epoch record and ignore the two rates below.
+#
+# The rate is constant because HF has no decay length separate from max_steps: under
+# the default "linear" a larger max_steps does not add steps to the existing curve,
+# it recomputes the whole curve and continues a different run. constant_with_warmup
+# at a tenth of this arm's peak, ramped over 500 steps, is the shape igarashi
+# approved on 2026-11-18. The 9-epoch schedule ends at exactly 0.0 -- read off
+# checkpoint-120960/scheduler.pt, whose _last_lr is [0.0, 0.0] -- so without the ramp
+# the rate steps from nothing to the new value at the resume point.
+#
+# 241,920 is 18 epochs: the 9-epoch schedule divides into 13,440 steps per epoch.
+#
+# A separate output directory, so the 9-epoch run is untouched. Checkpoint retention
+# keeps the best ten by eval_loss_mask, and BestNCheckpointRetention counts a resumed
+# run's earlier steps as its own, so running in place would put this arm's reported
+# 9-epoch checkpoint (checkpoint-115300, eval_loss_mask 2.6382) on the prune list.
+
+from molcrawl.core.paths import get_bert_output_path
+from molcrawl.tasks.pretrain.configs.rna.bert_medium_lr3e4 import *  # noqa: F401,F403
+
+max_steps = 241920
+warmup_steps = 500  # the ramp at the resume point, not a fraction of max_steps
+learning_rate = 3e-5  # a tenth of this arm's peak 3e-4
+lr_scheduler_type = "constant_with_warmup"
+early_stopping = False  # the order asks for it explicitly; the base sets it too
+model_path = get_bert_output_path("rna", "medium") + "-lr3e4-ext242k"
