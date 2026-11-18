@@ -344,10 +344,16 @@ EOF
          "nothing for this segment to do." >&2
     exit 1
   fi
-  if [ "${_extend}" != "1" ]; then
+  # Branch on whether max_steps actually changed, not on whether EXTEND is set. Under
+  # EXTEND=1 the old form always said "extending from ${_prev_steps}", and a LATER
+  # segment of an extension resumes from a checkpoint this config already wrote -- so
+  # it read "121000/241920 steps done, extending from 241920", using the same number
+  # as the target and as a starting point in one line. Seen on the rna 2026-11-18
+  # extension, jobs 364479 / 364495 / 364511.
+  if [ "${_prev_steps}" = "${_cfg_steps}" ]; then
     echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
   else
-    echo "schedule check: ${_prev_done}/${_cfg_steps} steps done, extending from ${_prev_steps}"
+    echo "schedule check: ${_prev_done}/${_cfg_steps} steps done, under the raised max_steps above"
   fi
 fi
 
