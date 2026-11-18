@@ -50,7 +50,11 @@ SCORING_METHOD="${SCORING_METHOD:-}"
 FILTER="${PG_FILTER:-}"
 DRY="${DRY_RUN:-0}"
 
-PG_DIR="${LSD}/eval/proteingym/unpacked/DMS_ProteinGym_substitutions"
+# Assay CSV directory. Defaults to the unpacked DMS substitutions set; set
+# PG_DIR to score another directory of per-assay CSVs -- e.g. the official
+# release at ${LSD}/eval/proteingym/official/data/DMS_ProteinGym_substitutions
+# for a run whose scores feed the official aggregation.
+PG_DIR="${PG_DIR:-${LSD}/eval/proteingym/unpacked/DMS_ProteinGym_substitutions}"
 if [[ ! -d "$PG_DIR" ]]; then
     echo "ERROR: ProteinGym DMS dir not found at $PG_DIR" >&2
     exit 1
