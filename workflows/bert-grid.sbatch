@@ -273,7 +273,12 @@ base = st.get("base_lrs") or []
 ok = (st.get("last_epoch") == 0 and base
       and all(abs(float(b) - lr) <= abs(lr) * 1e-9 for b in base))
 print("1" if ok else "0")' \
-          "${OUT}/checkpoint-${_last_pre}/scheduler.pt" "${_cfg_lr}" 2>/dev/null)
+          "${OUT}/checkpoint-${_last_pre}/scheduler.pt" "${_cfg_lr}" 2>/dev/null) \
+          || _rewritten=0  # set -eo pipefail: a bare assignment from a failing command
+                           # substitution aborts the script, and with stderr discarded
+                           # it aborts SILENTLY -- rc=1, nothing said, the refusal below
+                           # never reached. An unreadable or corrupt scheduler.pt has to
+                           # land on the refusal, not on an empty exit.
         if [ "${_rewritten}" = "1" ]; then
           _sched_rewritten=1
         fi

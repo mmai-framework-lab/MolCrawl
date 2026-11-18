@@ -188,4 +188,9 @@ def test_extend_refuses_an_inherited_scheduler_state(world):
     assert r.returncode != 0
     assert "scheduler.pt exists" in r.stderr
     assert "base_lrs" in r.stderr
-    assert "keep optimizer.pt" in r.stderr
+    # The refusal names both ways out and the cost of each. Removing the file
+    # fixes the rate and loses the Adam moments, because transformers guards
+    # both loads with one condition (measured 2026-11-18, job 363888), so the
+    # message now points at re-pointing it first.
+    assert "--scheduler rewrite" in r.stderr
+    assert "moments" in r.stderr
