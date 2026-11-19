@@ -119,6 +119,18 @@ Spearman and Pearson over the aligned arrays.</p></div>
 <pre><code class="python">def correlation_metrics(
     y_true: np.ndarray, y_score: np.ndarray
 ) -&gt; Dict[str, float]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_score = np.asarray(y_score, dtype=float)
+    m = _finite_mask(y_true, y_score)
+    n_dropped = int((~m).sum())
+    if n_dropped:
+        logger.warning(
+            &#34;correlation_metrics: dropping %d of %d rows with non-finite &#34;
+            &#34;score before correlation&#34;, n_dropped, len(m),
+        )
+    y_true, y_score = y_true[m], y_score[m]
+    if len(y_true) &lt; 2:
+        return {&#34;spearman&#34;: float(&#34;nan&#34;), &#34;pearson&#34;: float(&#34;nan&#34;)}
     return {
         &#34;spearman&#34;: float(default_registry.compute(&#34;spearman&#34;, y_true, y_score)),
         &#34;pearson&#34;: float(default_registry.compute(&#34;pearson&#34;, y_true, y_score)),
@@ -137,6 +149,10 @@ Spearman and Pearson over the aligned arrays.</p></div>
 <pre><code class="python">def optional_binary_metrics(
     y_true_binary: np.ndarray, y_score: np.ndarray
 ) -&gt; Dict[str, float]:
+    y_true_binary = np.asarray(y_true_binary)
+    y_score = np.asarray(y_score, dtype=float)
+    m = _finite_mask(y_score)
+    y_true_binary, y_score = y_true_binary[m], y_score[m]
     if len(np.unique(y_true_binary)) &lt; 2:
         return {}
     return {
