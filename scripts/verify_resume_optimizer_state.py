@@ -12,9 +12,12 @@ Adam's own per-parameter step counter says which happened. A checkpoint written 
 after a resume carries a step count near the steps since the resume if the moments were
 reset, and near the global step if they were restored.
 
-    python scripts/verify_resume_optimizer_state.py <checkpoint dir>...
+    python scripts/verify_resume_optimizer_state.py <checkpoint dir or state file>...
 
-Reads optimizer.pt with mmap, so the tensors stay on disk.
+Reads with mmap, so the tensors stay on disk. Both layouts are handled: an HF checkpoint
+keeps the optimizer in its own optimizer.pt, and a nanoGPT checkpoint keeps it under the
+"optimizer" key of training_state.bin -- which matters here, because nanoGPT loads that
+state unconditionally on resume and so is not subject to the HF behaviour above.
 """
 
 from __future__ import annotations
@@ -29,11 +32,20 @@ def main(argv):
     if not argv:
         raise SystemExit(__doc__)
     for arg in argv:
-        path = arg if arg.endswith(".pt") else os.path.join(arg, "optimizer.pt")
-        if not os.path.exists(path):
+        path = arg
+        if os.path.isdir(arg):
+            for name in ("optimizer.pt", "training_state.bin", "ckpt.pt"):
+                if os.path.isfile(os.path.join(arg, name)):
+                    path = os.path.join(arg, name)
+                    break
+        if not os.path.isfile(path):
             print(f"{path}: missing")
             continue
         blob = torch.load(path, map_location="cpu", mmap=True, weights_only=False)
+        # HF writes the optimizer state dict as the whole file; nanoGPT puts it under
+        # "optimizer" inside the training state.
+        if "state" not in blob and isinstance(blob.get("optimizer"), dict):
+            blob = blob["optimizer"]
         state = blob.get("state", {})
         steps = []
         zeros = 0
