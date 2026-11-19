@@ -57,8 +57,9 @@ warmup_iters = 58  # 2 % of max_iters (§4)
 learning_rate = 0.00101
 
 # 292 evaluation points, at the same column positions as every other batch
-# in the grid (§2). The training loss is logged 8 times per evaluation
-# window, so every validation point has a training point at the same column.
+# in the grid (§2). The training loss is logged every 1 iteration(s), which
+# divides the evaluation window, so every validation point has a training point at the
+# same column.
 eval_interval = 10
 log_interval = 1
 # Fix the number of val *sequences* rather than batches, so sizes whose batch_size

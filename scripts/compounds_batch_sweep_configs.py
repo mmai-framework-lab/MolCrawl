@@ -47,8 +47,9 @@ BERT_DEGENERATE_THRESHOLD = 2.395
 #: GPT-2 constants carried over from the existing compounds arms.
 GPT2_WEIGHT_DECAY = 0.1
 GPT2_EVAL_SEQUENCES = 3200
-#: Training loss is logged eight times per evaluation window, so every validation
-#: point has a training point at the same column at every batch.
+#: Training loss is logged at least this many times per evaluation window, and the
+#: interval it gives divides that window at every batch, so every validation point has
+#: a training point at the same column.
 GPT2_LOG_DIVISOR = 8
 #: Checkpoint opportunities every five evaluation windows, which lands them at the
 #: same column positions across the four batches (400 x 512 = 200 x 1024 = ...).
@@ -213,8 +214,9 @@ warmup_iters = {warmup}  # {warmup_pct} of max_iters (§4)
 learning_rate = {lr_literal}
 
 # {eval_points:,} evaluation points, at the same column positions as every other batch
-# in the grid (§2). The training loss is logged {log_divisor} times per evaluation
-# window, so every validation point has a training point at the same column.
+# in the grid (§2). The training loss is logged every {log_interval} iteration(s), which
+# divides the evaluation window, so every validation point has a training point at the
+# same column.
 eval_interval = {eval_interval}
 log_interval = {log_interval}
 # Fix the number of val *sequences* rather than batches, so sizes whose batch_size
@@ -325,8 +327,7 @@ def fields(row, siblings):
         base.update({
             "lr_decay_iters": int(row["lr_decay_iters"]),
             "min_lr_literal": repr(float(row["min_lr"])),
-            "log_interval": eval_interval // GPT2_LOG_DIVISOR,
-            "log_divisor": GPT2_LOG_DIVISOR,
+            "log_interval": max(1, eval_interval // GPT2_LOG_DIVISOR),
             "save_checkpoint_steps": eval_interval * GPT2_SAVE_MULTIPLE,
             "max_checkpoints": GPT2_MAX_CHECKPOINTS,
             "eval_sequences": GPT2_EVAL_SEQUENCES,
