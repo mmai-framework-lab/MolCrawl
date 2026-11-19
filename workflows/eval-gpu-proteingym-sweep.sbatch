@@ -30,7 +30,15 @@ export ARCH="${ARCH:-gpt2}"
 export MODALITY="${MODALITY:-protein_sequence}"
 export DEVICE="${DEVICE:-cuda}"
 export BOOTSTRAP="${BOOTSTRAP:-100}"
-export MAX_EXAMPLES="${MAX_EXAMPLES:-200}"
+# ``-`` (no colon) so an explicitly-empty MAX_EXAMPLES (passed as
+# --export=...,MAX_EXAMPLES= for a FULL-assay run) stays empty instead of
+# falling back to the 200-variant subsample. Unset still defaults to 200.
+export MAX_EXAMPLES="${MAX_EXAMPLES-200}"
+# Forward the official-run knobs when set (empty = evaluator/sweep defaults):
+# PG_DIR selects the assay CSV directory (official vs unpacked); SCORING_METHOD
+# picks pll_delta vs masked_marginals.
+export PG_DIR="${PG_DIR:-}"
+export SCORING_METHOD="${SCORING_METHOD:-}"
 
 echo "[pg-sweep-gpu] node:        $(hostname)"
 echo "[pg-sweep-gpu] LSD:         ${LEARNING_SOURCE_DIR}"

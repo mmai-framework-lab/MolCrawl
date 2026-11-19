@@ -277,57 +277,86 @@ class GPT2Adapter(ModelAdapter):
         window (e.g. ±32 nt around the centre) without changing what the
         autoregressive model actually conditions on. Positions outside
         ``[0, num_tokens)`` are silently dropped.
+
+        Sequences of equal token length are scored in one forward pass
+        (bucketed by length, sub-batched by ``extras['gpt2_ll_batch']``,
+        default 64). Because same-length sequences need no padding, the
+        batched result is numerically identical to scoring them one at a
+        time -- this is a throughput optimisation, not a scoring change.
+        ProteinGym substitution assays benefit directly: every variant of
+        an assay shares the wildtype's length, so a whole assay scores in
+        ceil(n_variants / batch) forwards instead of n_variants.
         """
         if self.model is None:
             raise RuntimeError("GPT2Adapter.load() must be called first")
         torch = self._torch
         import torch.nn.functional as F
 
-        likelihoods: List[float] = []
-        num_tokens: List[int] = []
+        batch_size = int(self.handle.extras.get("gpt2_ll_batch", 64))
+        n = len(inputs)
+        likelihoods: List[float] = [0.0] * n
+        num_tokens: List[int] = [0] * n
+
+        # Encode once, then bucket the non-trivial sequences by length so
+        # each bucket batches without padding.
+        encoded: List[List[int]] = []
+        buckets: dict = {}
+        for i, sequence in enumerate(inputs):
+            tokens = self._encode(sequence, max_length=context_length)
+            encoded.append(tokens)
+            if len(tokens) == 0:
+                num_tokens[i] = 0  # likelihood stays 0.0
+            elif len(tokens) == 1:
+                num_tokens[i] = 1  # single token: no autoregressive pair
+            else:
+                buckets.setdefault(len(tokens), []).append(i)
+
         with torch.no_grad():
-            for sequence in inputs:
-                tokens = self._encode(sequence, max_length=context_length)
-                if len(tokens) == 0:
-                    likelihoods.append(0.0)
-                    num_tokens.append(0)
-                    continue
-                ids = torch.tensor(tokens, dtype=torch.long, device=self.device).unsqueeze(0)
-                dummy_targets = torch.zeros_like(ids)
-                logits, _ = self.model(ids, targets=dummy_targets)
-                if ids.size(1) <= 1:
-                    likelihoods.append(0.0)
-                    num_tokens.append(len(tokens))
-                    continue
-                log_probs = F.log_softmax(logits, dim=-1)
-                # Autoregressive shift: log_probs[..., t, :] predicts ids[..., t+1].
-                # token_log_probs[i] is log p(ids[i+1] | ids[:i+1]) for i in [0, L-2].
-                target_tokens = ids[:, 1:]
-                pred_log_probs = log_probs[:, :-1, :]
-                token_log_probs = pred_log_probs.gather(
-                    2, target_tokens.unsqueeze(2)
-                ).squeeze(2).squeeze(0)  # (L-1,)
-                if eval_position_indices is None:
-                    likelihoods.append(float(token_log_probs.mean().item()))
-                    num_tokens.append(len(tokens))
-                else:
-                    # The score at token_log_probs[i] explains ids[i+1].
-                    # If the caller's "interesting" positions are
-                    # absolute token indices p (e.g. variant locus), the
-                    # autoregressive score that explains ids[p] is at
-                    # index p-1. Clip to [0, L-2] and de-duplicate.
-                    n_pairs = token_log_probs.size(0)
-                    chosen_idx = sorted({
-                        int(p) - 1 for p in eval_position_indices
-                        if 0 < int(p) <= n_pairs
-                    })
-                    if not chosen_idx:
-                        likelihoods.append(0.0)
-                        num_tokens.append(0)
-                        continue
-                    sel = token_log_probs[torch.tensor(chosen_idx, device=self.device)]
-                    likelihoods.append(float(sel.mean().item()))
-                    num_tokens.append(len(chosen_idx))
+            for length, idxs in buckets.items():
+                for start in range(0, len(idxs), batch_size):
+                    chunk = idxs[start : start + batch_size]
+                    ids = torch.tensor(
+                        [encoded[i] for i in chunk],
+                        dtype=torch.long,
+                        device=self.device,
+                    )  # (B, L)
+                    dummy_targets = torch.zeros_like(ids)
+                    logits, _ = self.model(ids, targets=dummy_targets)
+                    log_probs = F.log_softmax(logits, dim=-1)
+                    # log_probs[:, t, :] predicts ids[:, t+1]; token_log_probs[:, i]
+                    # is log p(ids[i+1] | ids[:i+1]) for i in [0, L-2].
+                    target_tokens = ids[:, 1:]
+                    pred_log_probs = log_probs[:, :-1, :]
+                    token_log_probs = pred_log_probs.gather(
+                        2, target_tokens.unsqueeze(2)
+                    ).squeeze(2)  # (B, L-1)
+
+                    if eval_position_indices is None:
+                        means = token_log_probs.mean(dim=1)  # (B,)
+                        for row, i in enumerate(chunk):
+                            likelihoods[i] = float(means[row].item())
+                            num_tokens[i] = length
+                    else:
+                        # token_log_probs[:, i] explains ids[i+1]; an absolute
+                        # locus p maps to index p-1. Same length across the
+                        # bucket, so the selection is shared.
+                        n_pairs = token_log_probs.size(1)
+                        chosen_idx = sorted({
+                            int(p) - 1 for p in eval_position_indices
+                            if 0 < int(p) <= n_pairs
+                        })
+                        if not chosen_idx:
+                            for i in chunk:
+                                likelihoods[i] = 0.0
+                                num_tokens[i] = 0
+                            continue
+                        sel = token_log_probs[
+                            :, torch.tensor(chosen_idx, device=self.device)
+                        ]  # (B, k)
+                        means = sel.mean(dim=1)
+                        for row, i in enumerate(chunk):
+                            likelihoods[i] = float(means[row].item())
+                            num_tokens[i] = len(chosen_idx)
 
         return LikelihoodOutput(log_likelihood=likelihoods, num_tokens=num_tokens)
 

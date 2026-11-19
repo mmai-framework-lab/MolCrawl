@@ -102,6 +102,18 @@ class ProteinGymEvaluator(BaseEvaluator):
                 f"Adapter {type(adapter).__name__} cannot score likelihoods, "
                 "which ProteinGym requires."
             )
+
+        method = str(self.config.get("scoring_method", "pll_delta"))
+        self._scoring_method = method
+        if method == "masked_marginals":
+            return self._run_masked_marginals(dataset)
+        if method != "pll_delta":
+            raise ValueError(
+                f"Unknown scoring_method={method!r}; choose 'pll_delta' "
+                "(default, whole-sequence PLL / causal mean LL) or "
+                "'masked_marginals' (BERT substitutions, official protocol)."
+            )
+
         ref_out = adapter.score_likelihood(
             dataset["wildtype_sequence"].astype(str).tolist(),
             context_length=self.context_length,
@@ -116,6 +128,51 @@ class ProteinGymEvaluator(BaseEvaluator):
             "scores": mut_ll - ref_ll,
             "reference_ll": ref_ll,
             "mutated_ll": mut_ll,
+        }
+
+    def _run_masked_marginals(self, dataset: pd.DataFrame) -> Dict[str, np.ndarray]:
+        """Official masked-marginals scoring for BERT substitution assays.
+
+        The masked log-prob rows are built once per reference (wildtype) and
+        reused across its variants, so cost is ~ O(seq_len) per assay rather
+        than O(n_variants x seq_len). A variant identical to its reference
+        scores 0.0; an indel (tokenised length change) scores NaN.
+        """
+        adapter = self.adapter
+        if not hasattr(adapter, "masked_marginal_logprobs"):
+            raise RuntimeError(
+                "scoring_method='masked_marginals' needs an MLM adapter exposing "
+                f"masked_marginal_logprobs; {type(adapter).__name__} has none. "
+                "GPT-2 is causal -- use scoring_method='pll_delta'."
+            )
+        from .masked_marginals import score_substitutions_masked_marginals
+
+        refs = dataset["wildtype_sequence"].astype(str).tolist()
+        muts = dataset["mutated_sequence"].astype(str).tolist()
+        scores = np.full(len(muts), np.nan, dtype=float)
+
+        # All variants in one ProteinGym assay share a wildtype, but group
+        # defensively so a mixed frame still scores each reference's rows once.
+        groups: Dict[str, list] = {}
+        for idx, ref in enumerate(refs):
+            groups.setdefault(ref, []).append(idx)
+        for ref, idxs in groups.items():
+            sub = score_substitutions_masked_marginals(
+                adapter,
+                ref,
+                [muts[i] for i in idxs],
+                context_length=self.context_length,
+            )
+            for j, i in enumerate(idxs):
+                scores[i] = sub[j]
+
+        # Masked marginals yield the effect delta directly; expose it as both
+        # the score and the "mutated_ll" (reference_ll = 0) so the downstream
+        # distribution diagnostics and predictions dump keep working.
+        return {
+            "scores": scores,
+            "reference_ll": np.zeros_like(scores),
+            "mutated_ll": scores,
         }
 
     def compute_metrics(
@@ -190,6 +247,7 @@ class ProteinGymEvaluator(BaseEvaluator):
             {
                 "num_variants": int(len(dataset)),
                 "context_length": self.context_length,
+                "scoring_method": getattr(self, "_scoring_method", "pll_delta"),
                 "sampling": sampling,
                 "assay_csv": str(self.proteingym_path),
                 "dms_summary": {
@@ -202,13 +260,22 @@ class ProteinGymEvaluator(BaseEvaluator):
                 "bootstrap_ci_95": bootstrap_payload,
                 "artefacts": prediction_paths,
                 "notes": (
-                    "Score is LL(mutant) − LL(wildtype); positive Spearman "
-                    "with DMS_score means the model's ranking of variants "
-                    "agrees with the experimental fitness order. ProteinGym "
-                    "reports are per-assay; running across the full 217-assay "
-                    "set requires an outer workflow that iterates this "
-                    "evaluator over each CSV and aggregates the per-assay "
-                    "Spearman values."
+                    (
+                        "Score is the masked-marginal effect "
+                        "sum_i logP(mut_i|ref, i masked) - logP(wt_i|ref, i "
+                        "masked) over substituted positions (official "
+                        "ProteinGym BERT protocol); reference_ll is 0 and "
+                        "mutated_ll carries the delta. "
+                        if getattr(self, "_scoring_method", "pll_delta")
+                        == "masked_marginals"
+                        else "Score is LL(mutant) − LL(wildtype). "
+                    )
+                    + "Positive Spearman with DMS_score means the model's "
+                    "ranking of variants agrees with the experimental fitness "
+                    "order. ProteinGym reports are per-assay; running across "
+                    "the full 217-assay set requires an outer workflow that "
+                    "iterates this evaluator over each CSV and aggregates the "
+                    "per-assay Spearman values."
                 ),
             }
         )

@@ -39,11 +39,22 @@ ARCH="${ARCH:-gpt2}"
 MODALITY="${MODALITY:-protein_sequence}"
 DEVICE="${DEVICE:-cuda}"
 BOOTSTRAP="${BOOTSTRAP:-100}"
-MAX="${MAX_EXAMPLES:-200}"
+# Per-assay variant cap. Default 200 (the historical subsample). Set
+# MAX_EXAMPLES= (explicitly empty) to score the FULL assay -- the ``-`` (no
+# colon) keeps an empty value empty instead of falling back to 200.
+MAX="${MAX_EXAMPLES-200}"
+# Scoring method passed to the evaluator: pll_delta (default) or
+# masked_marginals (official BERT substitution protocol, variant-count
+# independent cost). Empty leaves the evaluator default.
+SCORING_METHOD="${SCORING_METHOD:-}"
 FILTER="${PG_FILTER:-}"
 DRY="${DRY_RUN:-0}"
 
-PG_DIR="${LSD}/eval/proteingym/unpacked/DMS_ProteinGym_substitutions"
+# Assay CSV directory. Defaults to the unpacked DMS substitutions set; set
+# PG_DIR to score another directory of per-assay CSVs -- e.g. the official
+# release at ${LSD}/eval/proteingym/official/data/DMS_ProteinGym_substitutions
+# for a run whose scores feed the official aggregation.
+PG_DIR="${PG_DIR:-${LSD}/eval/proteingym/unpacked/DMS_ProteinGym_substitutions}"
 if [[ ! -d "$PG_DIR" ]]; then
     echo "ERROR: ProteinGym DMS dir not found at $PG_DIR" >&2
     exit 1
@@ -100,6 +111,7 @@ for csv in $ASSAYS; do
     mkdir -p "$outdir"
     OUTPUT_DIR="$outdir" RUNTAG="proteingym_${name}_sweep" \
         DEVICE="$DEVICE" BOOTSTRAP="$BOOTSTRAP" MAX_EXAMPLES="$MAX" \
+        SCORING_METHOD="$SCORING_METHOD" \
         MODEL_PATH="$MODEL_PATH" PROTEINGYM_DATA="$csv" \
         ARCH="$ARCH" MODALITY="$MODALITY" \
         bash "${REPO_ROOT}/workflows/eval-proteingym.sh" \

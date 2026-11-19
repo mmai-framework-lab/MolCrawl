@@ -59,6 +59,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="[deprecated] Legacy cap; re-interpreted as --n-examples.",
     )
     parser.add_argument(
+        "--scoring-method",
+        choices=["pll_delta", "masked_marginals"],
+        default="pll_delta",
+        help=(
+            "How to turn likelihoods into a variant score. 'pll_delta' "
+            "(default) is LL(mutant) - LL(wildtype): whole-sequence "
+            "pseudo-log-likelihood for BERT, causal mean log-likelihood for "
+            "GPT-2. 'masked_marginals' is the official ProteinGym BERT "
+            "substitution protocol -- mask each substituted position in the "
+            "reference and sum logP(mut) - logP(wt); cost is independent of "
+            "the number of variants. BERT/MLM only (GPT-2 is causal)."
+        ),
+    )
+    parser.add_argument(
         "--predictions-preview-count",
         type=int,
         default=20,
@@ -93,6 +107,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             "seed": args.seed,
             "bootstrap_samples": args.bootstrap_samples,
             "max_examples": args.max_examples,
+            "scoring_method": args.scoring_method,
             "predictions_preview_count": args.predictions_preview_count,
         },
     )

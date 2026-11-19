@@ -21,9 +21,35 @@ from molcrawl.tasks.evaluation._base import default_registry
 logger = logging.getLogger(__name__)
 
 
+def _finite_mask(*arrays: np.ndarray) -> np.ndarray:
+    """Boolean mask of rows where every given array is finite.
+
+    A model may legitimately leave a variant unscored (NaN) — e.g. a mutant
+    the diff-based scorer cannot align — and sklearn's AUROC/AUPRC raise on
+    NaN input, which would fail the whole assay. Dropping only the non-finite
+    rows keeps the assay's remaining variants scorable instead.
+    """
+    mask = np.ones(len(arrays[0]), dtype=bool) if arrays else np.zeros(0, dtype=bool)
+    for a in arrays:
+        mask &= np.isfinite(np.asarray(a, dtype=float))
+    return mask
+
+
 def correlation_metrics(
     y_true: np.ndarray, y_score: np.ndarray
 ) -> Dict[str, float]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_score = np.asarray(y_score, dtype=float)
+    m = _finite_mask(y_true, y_score)
+    n_dropped = int((~m).sum())
+    if n_dropped:
+        logger.warning(
+            "correlation_metrics: dropping %d of %d rows with non-finite "
+            "score before correlation", n_dropped, len(m),
+        )
+    y_true, y_score = y_true[m], y_score[m]
+    if len(y_true) < 2:
+        return {"spearman": float("nan"), "pearson": float("nan")}
     return {
         "spearman": float(default_registry.compute("spearman", y_true, y_score)),
         "pearson": float(default_registry.compute("pearson", y_true, y_score)),
@@ -33,6 +59,10 @@ def correlation_metrics(
 def optional_binary_metrics(
     y_true_binary: np.ndarray, y_score: np.ndarray
 ) -> Dict[str, float]:
+    y_true_binary = np.asarray(y_true_binary)
+    y_score = np.asarray(y_score, dtype=float)
+    m = _finite_mask(y_score)
+    y_true_binary, y_score = y_true_binary[m], y_score[m]
     if len(np.unique(y_true_binary)) < 2:
         return {}
     return {

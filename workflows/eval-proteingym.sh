@@ -60,4 +60,7 @@ fi
 if [[ -n "${MAX_EXAMPLES:-}" ]]; then
     cmd+=(--max-examples "$MAX_EXAMPLES")
 fi
+if [[ -n "${SCORING_METHOD:-}" ]]; then
+    cmd+=(--scoring-method "$SCORING_METHOD")
+fi
 "${cmd[@]}"
