@@ -116,7 +116,18 @@ printf '%s' "${RUNS}" | while read -r run step arch; do
   fi
   echo "    source: ${src}/checkpoint-${step}  ($(du -sh "${src}/checkpoint-${step}" | cut -f1))"
   if [ "${DRY_RUN}" = "1" ]; then
-    echo "    dry run: would copy the checkpoint$([ "${arch}" = gpt2 ] && echo " and logging_*.csv")$([ "${arch}" = bert ] && echo " and remove scheduler.pt")"
+    # Say what this run would do, not what some run would do: the scheduler hand-over
+    # is the whole difference between keeping the Adam moments and losing them.
+    if [ "${arch}" = "bert" ]; then
+      if [ "${SCHEDULER}" = "remove" ]; then
+        _what="remove scheduler.pt (moments NOT restored)"
+      else
+        _what="re-point scheduler.pt at ${CFG_DIR}/${run}${SUFFIX}.py (moments restored)"
+      fi
+    else
+      _what="copy logging_*.csv"
+    fi
+    echo "    dry run: would copy the checkpoint and ${_what}"
     continue
   fi
   mkdir -p "${dst}"
