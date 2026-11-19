@@ -241,6 +241,26 @@ class HfMlmAdapter(ModelAdapter):
             ids = ids[: max_length - 1] + [ids[-1]]
         return ids
 
+    def effective_context_length(self, context_length: int) -> int:
+        """Clamp a requested context length to the position-embedding ceiling.
+
+        The scoring methods truncate inputs to
+        ``min(context_length, max_position_embeddings - 2)`` so no position id
+        ever exceeds the embedding table. Exposed so a caller that must keep
+        *several* sequences length-aligned — e.g. a reference and its
+        substitution variants in masked-marginals scoring — can apply the
+        identical clamp to every one of them (encoding the reference with the
+        internal clamp but the variants with the raw ``context_length`` is the
+        length-mismatch bug this method exists to prevent).
+        """
+        cfg = getattr(self.model, "config", None)
+        max_pos = (
+            getattr(cfg, "max_position_embeddings", None) if cfg is not None else None
+        )
+        if max_pos is not None:
+            return min(int(context_length), max(1, int(max_pos) - 2))
+        return int(context_length)
+
     def score_likelihood(
         self,
         inputs: Sequence[Any],
@@ -278,12 +298,7 @@ class HfMlmAdapter(ModelAdapter):
             )
         special_ids = set(getattr(self.tokenizer, "all_special_ids", ()) or ())
 
-        cfg = getattr(self.model, "config", None)
-        max_pos = (
-            getattr(cfg, "max_position_embeddings", None) if cfg is not None else None
-        )
-        if max_pos is not None:
-            context_length = min(int(context_length), max(1, int(max_pos) - 2))
+        context_length = self.effective_context_length(context_length)
 
         mlm_batch_size = int(self.handle.extras.get("bert_mlm_batch", 64))
         position_filter = (
@@ -380,12 +395,7 @@ class HfMlmAdapter(ModelAdapter):
             )
         special_ids = set(getattr(self.tokenizer, "all_special_ids", ()) or ())
 
-        cfg = getattr(self.model, "config", None)
-        max_pos = (
-            getattr(cfg, "max_position_embeddings", None) if cfg is not None else None
-        )
-        if max_pos is not None:
-            context_length = min(int(context_length), max(1, int(max_pos) - 2))
+        context_length = self.effective_context_length(context_length)
 
         if isinstance(reference, (list, tuple)) and (
             not reference or isinstance(reference[0], (int, _np_integer()))

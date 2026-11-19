@@ -21,6 +21,17 @@ assumptions about residue<->token indexing beyond "a substitution preserves the
 tokenised length". A mutant whose tokenised length differs from the reference
 (an insertion/deletion, not a pure substitution) is scored ``NaN``; indels use
 the whole-sequence PLL path instead.
+
+Reference and variants are encoded with the *same* effective context length —
+``adapter.effective_context_length(context_length)``, which clamps to the
+model's position-embedding ceiling. Encoding the reference with that clamp
+(applied inside ``masked_marginal_logprobs``) but the variants with the raw
+``context_length`` is a length-mismatch bug: for any protein longer than the
+ceiling the reference truncates to ``max_pos-2`` tokens while each variant
+truncates to ``context_length``, so every variant looks like an indel and the
+whole assay scores ``NaN``. With matched truncation, a substitution whose
+mutated residue falls beyond the context window produces no in-window diff and
+scores ``0.0`` (the same window-truncation behaviour as the causal GPT-2 path).
 """
 from __future__ import annotations
 
@@ -51,8 +62,14 @@ def score_substitutions_masked_marginals(
     if n_ref == 0:
         return scores
 
+    # Encode every variant with the SAME clamp the reference used inside
+    # masked_marginal_logprobs; otherwise long proteins truncate the reference
+    # to max_pos-2 but the variant to the raw context_length, so every variant
+    # mismatches length and scores NaN (the 16-assay all-NaN bug).
+    eff_ctx = adapter.effective_context_length(context_length)
+
     for k, mut in enumerate(mutated_sequences):
-        mut_ids = adapter._encode(str(mut), max_length=context_length)
+        mut_ids = adapter._encode(str(mut), max_length=eff_ctx)
         if len(mut_ids) != n_ref:
             # Length change -> insertion/deletion, not a pure substitution.
             continue
