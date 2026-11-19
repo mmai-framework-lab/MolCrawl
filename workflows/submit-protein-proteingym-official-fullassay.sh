@@ -82,8 +82,19 @@ echo "assays:  $(ls "${PG_DIR}"/*.csv 2>/dev/null | wc -l) (official substitutio
 echo "record:  ${RECORD}"
 echo
 
+# ONLY restricts which jobs are (re)submitted, e.g. ONLY=bert to resubmit only
+# the three BERT sizes, or ONLY='bert-large' for one. Matches against
+# "<arch>" and "<arch>-<size>". Empty = all seven. The sweep skips any assay
+# whose metrics.json is already complete, so a resubmit only fills the gaps
+# (e.g. the long-protein assays a prior bug left unscored) and never touches a
+# model whose job is still running or already finished.
+ONLY="${ONLY:-}"
+
 for spec in "${JOBS[@]}"; do
   read -r arch size mpath slug method <<<"${spec}"
+  if [ -n "${ONLY}" ] && [ "${ONLY}" != "${arch}" ] && [ "${ONLY}" != "${arch}-${size}" ]; then
+    continue
+  fi
   [ -e "${mpath}" ] || { echo "ERROR: missing checkpoint ${mpath}" >&2; exit 1; }
   name="pg-official-${arch}-${size}"
   env="$(common_env "${arch}" "${mpath}" "${slug}" "${method}")"
