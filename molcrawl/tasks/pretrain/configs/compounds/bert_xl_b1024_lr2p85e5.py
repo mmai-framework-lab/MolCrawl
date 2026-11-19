@@ -72,9 +72,14 @@ fixed_eval_mask = True
 eval_mask_seed = 42
 # The compounds sets were packed in source order before the 2026-08-21 rebuild, so the
 # split's leading rows are shorter and easier than the split as a whole. Draw the eval
-# subset at random instead, with the subset seed the whole grid shares.
+# subset at random instead.
+#
+# The subset seed is deliberately NOT written here. The rows come from one constant,
+# EVAL_SUBSET_SEED in models/bert/main.py, which is already the 42 §6
+# asks for; a config that declared it would be the thing that could move one arm's
+# rows away from the others, and tests/unit/test_bert_eval_subset.py refuses any
+# config in the tree that names it.
 eval_subset_random = True
-eval_subset_seed = 42
 # Held at 32 on all 40 arms, independent of the training batch: it decides how
 # the rows are grouped, and therefore which positions are masked. 32 is the
 # largest value xl is on record as running at, so no arm needs an untried one.

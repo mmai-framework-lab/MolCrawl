@@ -132,9 +132,14 @@ fixed_eval_mask = True
 eval_mask_seed = {eval_mask_seed}
 # The compounds sets were packed in source order before the 2026-08-21 rebuild, so the
 # split's leading rows are shorter and easier than the split as a whole. Draw the eval
-# subset at random instead, with the subset seed the whole grid shares.
+# subset at random instead.
+#
+# The subset seed is deliberately NOT written here. The rows come from one constant,
+# EVAL_SUBSET_SEED in models/bert/main.py, which is already the {eval_subset_seed} §6
+# asks for; a config that declared it would be the thing that could move one arm's
+# rows away from the others, and tests/unit/test_bert_eval_subset.py refuses any
+# config in the tree that names it.
 eval_subset_random = True
-eval_subset_seed = {eval_subset_seed}
 # Held at {eval_batch} on all 40 arms, independent of the training batch: it decides how
 # the rows are grouped, and therefore which positions are masked. {eval_batch} is the
 # largest value xl is on record as running at, so no arm needs an untried one.
@@ -401,7 +406,7 @@ CHECKED = {
 CONSTANT = {
     "bert": {"seed": SEED, "early_stopping": False, "fixed_eval_mask": True,
              "eval_mask_seed": SEED, "eval_subset_random": True,
-             "eval_subset_seed": EVAL_SUBSET_SEED, "judge_on": "eval_loss",
+             "judge_on": "eval_loss",
              "metric_for_best_model": "eval_loss",
              "save_on_improve_metric": "eval_loss",
              "checkpoint_metric": "eval_loss", "save_on_improve": True,
@@ -444,6 +449,16 @@ def check_all(rows, out_dir):
             if values.get("min_lr") != want_min:
                 print(f"  ** {os.path.basename(path)}: min_lr={values.get('min_lr')!r} "
                       f"against inventory {want_min}")
+                problems += 1
+        if row["arch"] == "bert":
+            # The invariant is that no config names it at all, so this checks the text
+            # rather than the value: the value would pass while the declaration is
+            # what breaks the shared subset.
+            source = open(path, encoding="utf-8").read()
+            if any(line.startswith("eval_subset_seed")
+                   for line in source.splitlines()):
+                print(f"  ** {os.path.basename(path)}: declares eval_subset_seed; the "
+                      f"subset seed is one constant in main.py")
                 problems += 1
         suffix = f"-b{row['batch']}-lr{row['lr_slug']}"
         target = values.get("model_path") or values.get("out_dir") or ""

@@ -299,6 +299,17 @@ def test_a_tampered_config_is_caught(written, cfg_mod, capsys):
         path.write_text(original, encoding="utf-8")
 
 
+def test_no_config_declares_the_evaluation_subset_seed(written):
+    # The rows come from one constant in main.py; a config that named it is how two
+    # arms would stop sharing the subset. tests/unit/test_bert_eval_subset.py refuses
+    # any config in the tree that does, so the generator must not write one.
+    out, _ = written
+    for path in out.glob("bert_*.py"):
+        text = path.read_text(encoding="utf-8")
+        assert not any(line.startswith("eval_subset_seed")
+                       for line in text.splitlines()), path.name
+
+
 def test_configs_carry_no_absolute_path_or_account(written):
     out, _ = written
     for path in out.glob("*.py"):
