@@ -1,24 +1,32 @@
 """Derive the compounds batch-size grid's arms, and check the directive's own tables.
 
-The 2026-11-19b directive prints the step counts, the evaluation and save intervals
-and the learning rates it wants. All three are derivable from rules the same
-directive states:
+The 2026-11-19c directive prints the step counts, the evaluation and save intervals,
+the warmup lengths, the accumulation counts and the 56 learning rates it wants. All of
+them follow from rules the same directive states:
 
     a fixed number of columns, so the step count is columns / batch (§2)
     intervals that put every arm's points at the same column position (§2)
     the rate scaled by sqrt(batch / 2560) off the existing 2,560 arm (§3)
+    warmup at the framework's own fraction, truncated (§4)
+    one GPU's column count held across the four batches, so the accumulation
+    count carries the whole difference (§8)
 
 So this derives them from the rules and compares the result against the printed
 tables, which are written out below as expectations. A cell that disagrees is
 reported rather than silently preferred: either the rule or the table is wrong, and
 which one it is cannot be settled by copying one into the other.
 
-    compounds_batch_sweep_arms.py --out rt1-...tsv [--bert-micro-batch 32]
+    compounds_batch_sweep_arms.py --out rt1-...tsv [--micro-batch-set order|fastest]
 
-The micro-batch is an argument because §7 lists "BERT 8" among the things not to
-change while the four existing compounds BERT arms run at 32 (32 x 20 x 4 GPUs =
-2,560). The two readings differ in throughput, not in the global batch, so the
-inventory can be produced either way and the difference is visible in the columns.
+One GPU's column count is a choice between two sets, because §8 states the two in one
+breath and they are not the same thing. Its table names BERT small 32 and BERT
+medium / large / xl 8, and its accumulation table is built from those; its sentence
+says each size keeps its current value, and the four adopted compounds arms run at
+small 32, medium 160, large 64, xl 32. ``order`` is the table, which is what this
+writes by default. ``fastest`` is the largest shape each size was measured fastest at
+that also divides all four batches. The two differ in throughput, not in the global
+batch, so the inventory is produced either way and which one was used is written into
+every row and into the provenance.
 
 Read-only: it computes and writes one TSV.
 """
@@ -38,8 +46,9 @@ from report_tsv import check_name, stamp, write_tsv  # noqa: E402
 BATCHES = [512, 1024, 2048, 4096]
 SIZES = ["small", "medium", "large", "xl"]
 
-#: §2. The budget, in columns (sequences). BERT is the existing 45,000 x 2,560;
-#: GPT-2 is the existing 4,674 x 2,560 rounded up to a multiple of every batch.
+#: §2. The budget, in columns (packed 1,024-token blocks). BERT is the existing
+#: 45,000 x 2,560; GPT-2 is the existing 4,674 iterations rounded to a multiple of
+#: every batch.
 BUDGET_ROWS = {"bert": 115_200_000, "gpt2": 11_980_800}
 SEQUENCE_LENGTH = 1024
 
@@ -65,11 +74,46 @@ ANCHOR_INTERVALS = {
     "gpt2": {"eval": 80},
 }
 
-#: §6. warmup is 10 % of the arm's own step count.
-WARMUP_FRACTION = 0.10
+#: §4. warmup is the framework's own current fraction of its own step count, truncated.
+WARMUP_FRACTION = {"bert": 0.10, "gpt2": 0.02}
 
-#: The tables as the directive prints them, to three significant figures. Nothing
-#: below reads these except the comparison.
+#: §8. One GPU's column count. ``order`` is the directive's printed table; ``fastest``
+#: is each size's measured-fastest shape among those that divide all four batches
+#: (compounds, 4 GPUs, bf16, global batch 2,560: medium 7.21 s/step at 160 and 7.35 at
+#: 64 against 14.47 at 8; large 12.14 at 64 against 22.35 at 8; xl 23.70 at 32 against
+#: 43.72 at 8). medium's current 160 is not in either set: 160 x 4 GPUs = 640 divides
+#: none of the four batches.
+MICRO_BATCH = {
+    "order": {
+        "bert": {"small": 32, "medium": 8, "large": 8, "xl": 8},
+        "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4},
+    },
+    "fastest": {
+        "bert": {"small": 32, "medium": 64, "large": 64, "xl": 32},
+        "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4},
+    },
+}
+
+#: GPT-2 computes its global batch as micro x accumulation with no world-size factor
+#: (the existing config says 16 x 160 = 2,560); BERT multiplies by the GPU count as
+#: well (32 x 20 x 4 = 2,560). §6 fixes the GPU count at 4 for BERT.
+WORLD_SIZE = {"bert": 4, "gpt2": 1}
+
+#: §6. One evaluation micro-batch for all 40 BERT arms. 32 is the largest value xl is
+#: on record as having run at (every adopted compounds xl arm scores at 32), so it is
+#: chosen rather than a larger untried one.
+BERT_EVAL_BATCH = 32
+
+#: §7. The metric the arm is judged and kept on.
+JUDGE_METRIC = {"bert": "eval_loss", "gpt2": "val_loss"}
+
+#: §4. GPT-2's floor is a tenth of its own peak, and its decay length is its own run.
+GPT2_MIN_LR_DIVISOR = 10
+
+# ---------------------------------------------------------------------------
+# The tables as the directive prints them. Nothing below reads these except check().
+# ---------------------------------------------------------------------------
+
 EXPECTED_STEPS = {
     "bert": {512: 225_000, 1024: 112_500, 2048: 56_250, 4096: 28_125},
     "gpt2": {512: 23_400, 1024: 11_700, 2048: 5_850, 4096: 2_925},
@@ -77,6 +121,21 @@ EXPECTED_STEPS = {
 EXPECTED_INTERVALS = {
     "bert": {512: (1000, 5000), 1024: (500, 2500), 2048: (250, 1250), 4096: (125, 625)},
     "gpt2": {512: (80, None), 1024: (40, None), 2048: (20, None), 4096: (10, None)},
+}
+EXPECTED_WARMUP = {
+    "bert": {512: 22_500, 1024: 11_250, 2048: 5_625, 4096: 2_812},
+    "gpt2": {512: 468, 1024: 234, 2048: 117, 4096: 58},
+}
+#: §8's second table, keyed by the size groups it prints.
+EXPECTED_ACCUM = {
+    ("bert", "small"): {512: 4, 1024: 8, 2048: 16, 4096: 32},
+    ("bert", "medium"): {512: 16, 1024: 32, 2048: 64, 4096: 128},
+    ("bert", "large"): {512: 16, 1024: 32, 2048: 64, 4096: 128},
+    ("bert", "xl"): {512: 16, 1024: 32, 2048: 64, 4096: 128},
+    ("gpt2", "small"): {512: 32, 1024: 64, 2048: 128, 4096: 256},
+    ("gpt2", "medium"): {512: 32, 1024: 64, 2048: 128, 4096: 256},
+    ("gpt2", "large"): {512: 64, 1024: 128, 2048: 256, 4096: 512},
+    ("gpt2", "xl"): {512: 128, 1024: 256, 2048: 512, 4096: 1024},
 }
 EXPECTED_LR = {
     "bert": {
@@ -96,17 +155,14 @@ EXPECTED_LR = {
         "xl": {512: [7.16e-4], 1024: [1.01e-3], 2048: [1.43e-3], 4096: [2.02e-3]},
     },
 }
-
-#: §7. One GPU's micro-batch. GPT-2 computes its global batch as micro x accumulation
-#: with no world-size factor (the existing config says 16 x 160 = 2,560); BERT
-#: multiplies by the GPU count as well (32 x 20 x 4 = 2,560).
-GPT2_MICRO_BATCH = 16
-BERT_WORLD_SIZE = 4
+#: §1's count.
+EXPECTED_ARMS = {"bert": 40, "gpt2": 16}
 
 COLUMNS = ["arch", "size", "batch", "lr", "lr_multiplier", "lr_slug", "steps",
            "warmup_steps", "eval_interval", "save_interval", "rows", "tokens",
            "micro_batch", "grad_accum", "world_size", "expected_global_batch",
-           "config", "out_dir"]
+           "eval_batch", "min_lr", "lr_decay_iters", "judge_metric",
+           "micro_batch_set", "config", "out_dir"]
 
 
 def three_sig(value: float) -> float:
@@ -147,28 +203,30 @@ def steps_for(arch: str, batch: int) -> int:
     return rows // batch
 
 
-def accumulation(arch: str, batch: int, bert_micro: int) -> tuple[int, int, int]:
+def warmup_for(arch: str, steps: int) -> int:
+    """§4: the framework's fraction of this arm's own length, truncated."""
+    return int(WARMUP_FRACTION[arch] * steps)
+
+
+def accumulation(arch: str, size: str, batch: int, which_set: str):
     """(micro_batch, grad_accum, world_size) that multiply out to this batch."""
-    if arch == "gpt2":
-        micro, world = GPT2_MICRO_BATCH, 1
-    else:
-        micro, world = bert_micro, BERT_WORLD_SIZE
+    micro = MICRO_BATCH[which_set][arch][size]
+    world = WORLD_SIZE[arch]
     divisor = micro * world
     if batch % divisor:
-        raise SystemExit(
-            f"{arch} batch {batch} is not a multiple of micro {micro} x world {world}")
+        raise SystemExit(f"{arch} {size} batch {batch} is not a multiple of "
+                         f"micro {micro} x world {world}")
     return micro, batch // divisor, world
 
 
-def arms(bert_micro: int):
+def arms(which_set: str):
     rows = []
     for arch in ("bert", "gpt2"):
         multipliers = BERT_MULTIPLIERS if arch == "bert" else GPT2_MULTIPLIERS
         for size in SIZES:
             for batch in BATCHES:
                 steps = steps_for(arch, batch)
-                micro, accum, world = accumulation(arch, batch, bert_micro)
-                warmup = WARMUP_FRACTION * steps
+                micro, accum, world = accumulation(arch, size, batch, which_set)
                 for multiplier in multipliers[batch]:
                     lr = scaled_rate(arch, size, batch, multiplier)
                     slug = lr_slug(lr)
@@ -177,34 +235,44 @@ def arms(bert_micro: int):
                         "arch": arch, "size": size, "batch": batch, "lr": f"{lr:.2e}",
                         "lr_multiplier": f"{multiplier:.1f}", "lr_slug": slug,
                         "steps": steps,
-                        # Reported as written so a non-whole warmup is visible rather
-                        # than rounded out of sight.
-                        "warmup_steps": (int(warmup) if warmup == int(warmup)
-                                         else f"{warmup}"),
+                        "warmup_steps": warmup_for(arch, steps),
                         "eval_interval": interval(arch, batch, "eval"),
                         "save_interval": interval(arch, batch, "save"),
                         "rows": BUDGET_ROWS[arch],
                         "tokens": BUDGET_ROWS[arch] * SEQUENCE_LENGTH,
                         "micro_batch": micro, "grad_accum": accum, "world_size": world,
                         "expected_global_batch": batch,
+                        "eval_batch": BERT_EVAL_BATCH if arch == "bert" else None,
+                        "min_lr": (f"{three_sig(lr / GPT2_MIN_LR_DIVISOR):.2e}"
+                                   if arch == "gpt2" else None),
+                        "lr_decay_iters": steps if arch == "gpt2" else None,
+                        "judge_metric": JUDGE_METRIC[arch],
+                        "micro_batch_set": which_set,
                         "config": f"molcrawl/tasks/pretrain/configs/compounds/{stem}.py",
                         "out_dir": f"compounds-{size}-b{batch}-lr{slug}",
                     })
     return rows
 
 
-def check(rows) -> int:
+def check(rows, which_set: str) -> int:
     """Compare the derivation against the directive's printed tables."""
     problems = 0
+
+    for arch in ("bert", "gpt2"):
+        got = sum(1 for r in rows if r["arch"] == arch)
+        want = EXPECTED_ARMS[arch]
+        if got != want:
+            problems += 1
+            print(f"  ** {arch}: {got} arms against directive {want}")
+
     for arch in ("bert", "gpt2"):
         for batch in BATCHES:
             got = steps_for(arch, batch)
             want = EXPECTED_STEPS[arch][batch]
-            mark = "ok" if got == want else "**"
             if got != want:
                 problems += 1
-            print(f"  {mark} {arch:5s} batch {batch:5d}  steps {got:>7,} "
-                  f"(directive {want:>7,})")
+            print(f"  {'ok' if got == want else '**'} {arch:5s} batch {batch:5d}  "
+                  f"steps {got:>7,} (directive {want:>7,})")
             want_eval, want_save = EXPECTED_INTERVALS[arch][batch]
             for which, wanted in (("eval", want_eval), ("save", want_save)):
                 if wanted is None:
@@ -213,63 +281,88 @@ def check(rows) -> int:
                 if g != wanted:
                     problems += 1
                     print(f"     ** {which} interval {g} against directive {wanted}")
+            g = warmup_for(arch, got)
+            w = EXPECTED_WARMUP[arch][batch]
+            if g != w:
+                problems += 1
+                print(f"     ** warmup {g} against directive {w}")
 
     for arch in ("bert", "gpt2"):
         for size in SIZES:
             for batch in BATCHES:
-                got = sorted(float(r["lr"]) for r in rows
-                             if r["arch"] == arch and r["size"] == size
-                             and r["batch"] == batch)
+                sel = [r for r in rows if r["arch"] == arch and r["size"] == size
+                       and r["batch"] == batch]
+                got = sorted(float(r["lr"]) for r in sel)
                 want = sorted(EXPECTED_LR[arch][size][batch])
                 if [three_sig(v) for v in got] != [three_sig(v) for v in want]:
                     problems += 1
                     print(f"  ** {arch} {size} batch {batch}: derived {got} "
                           f"against directive {want}")
-    print(f"\n  rates compared: {sum(len(EXPECTED_LR[a][s][b]) for a in EXPECTED_LR for s in SIZES for b in BATCHES)}")
+                accum = {r["grad_accum"] for r in sel}
+                wanted = EXPECTED_ACCUM[(arch, size)][batch]
+                if accum != {wanted}:
+                    problems += 1
+                    print(f"  ** {arch} {size} batch {batch}: accumulation "
+                          f"{sorted(accum)} against directive {wanted}"
+                          + ("" if which_set == "order"
+                             else f" (micro-batch set '{which_set}', not the table)"))
+
+    print(f"\n  compared: {sum(len(EXPECTED_LR[a][s][b]) for a in EXPECTED_LR for s in SIZES for b in BATCHES)} rates, "
+          f"{len(EXPECTED_ACCUM) * len(BATCHES)} accumulation counts, "
+          f"{2 * len(BATCHES)} step counts, {2 * len(BATCHES)} warmup lengths")
     return problems
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--bert-micro-batch", type=int, default=32,
-                    help="one GPU's BERT micro-batch; 32 is what the existing "
-                         "compounds arms run at, 8 is what §7 names")
+    ap.add_argument("--micro-batch-set", choices=sorted(MICRO_BATCH), default="order",
+                    help="one GPU's column count: 'order' is §8's printed table, "
+                         "'fastest' is each size's measured-fastest dividing shape")
     ap.add_argument("--out", required=True,
                     help="the base name begins with rt1- (the column convention)")
     args = ap.parse_args(argv)
     check_name(args.out)
 
-    rows = arms(args.bert_micro_batch)
+    rows = arms(args.micro_batch_set)
     print(f"=== derived {len(rows)} arms "
           f"(BERT {sum(1 for r in rows if r['arch'] == 'bert')}, "
-          f"GPT-2 {sum(1 for r in rows if r['arch'] == 'gpt2')}) ===")
+          f"GPT-2 {sum(1 for r in rows if r['arch'] == 'gpt2')}), "
+          f"micro-batch set '{args.micro_batch_set}' ===")
     print("\n=== against the directive's printed tables ===")
-    problems = check(rows)
+    problems = check(rows, args.micro_batch_set)
 
-    print("\n=== per batch ===")
+    print("\n=== per size and batch ===")
     for arch in ("bert", "gpt2"):
-        for batch in BATCHES:
-            sel = [r for r in rows if r["arch"] == arch and r["batch"] == batch]
-            one = sel[0]
-            print(f"  {arch:5s} batch {batch:5d}  {len(sel):2d} arms  "
-                  f"steps {one['steps']:>7,}  warmup {one['warmup_steps']:>8}  "
-                  f"eval {one['eval_interval']:>5}  save {str(one['save_interval']):>5}  "
-                  f"{one['micro_batch']} x {one['grad_accum']} x {one['world_size']}")
+        for size in SIZES:
+            for batch in BATCHES:
+                sel = [r for r in rows if r["arch"] == arch and r["size"] == size
+                       and r["batch"] == batch]
+                one = sel[0]
+                print(f"  {arch:5s} {size:6s} batch {batch:5d}  {len(sel)} arm(s)  "
+                      f"steps {one['steps']:>7,}  warmup {one['warmup_steps']:>6,}  "
+                      f"eval {one['eval_interval']:>4}  "
+                      f"save {str(one['save_interval']):>4}  "
+                      f"{one['micro_batch']} x {one['grad_accum']} x "
+                      f"{one['world_size']} = {one['expected_global_batch']}")
 
     write_tsv(args.out, COLUMNS, rows, {
         "model": "several (columns: arch,size,batch,lr) -- the compounds batch-size "
-                 "grid planned by the 2026-11-19b directive",
-        "source": "derived from the directive's rules (budget, interval anchoring, "
-                  "sqrt scaling) and compared against its printed tables; no run has "
-                  "been launched",
+                 "grid asked for by the 2026-11-19c directive",
+        "source": "derived from the directive's rules (budget; interval anchoring; "
+                  "sqrt scaling; warmup fraction; one GPU's column count) and compared "
+                  "against its printed tables; no arm has been launched",
         "generated": stamp("scripts/compounds_batch_sweep_arms.py"),
         "note": [
             f"budget: BERT {BUDGET_ROWS['bert']:,} columns, GPT-2 "
             f"{BUDGET_ROWS['gpt2']:,} columns, sequence length {SEQUENCE_LENGTH}",
-            f"BERT micro-batch {args.bert_micro_batch} x world size {BERT_WORLD_SIZE}; "
-            f"GPT-2 micro-batch {GPT2_MICRO_BATCH} with no world-size factor",
+            f"one GPU's column count from the '{args.micro_batch_set}' set; "
+            f"BERT x {WORLD_SIZE['bert']} GPUs, GPT-2 with no world-size factor",
             "lr = the 2,560 arm's rate x sqrt(batch/2560) x the column's multiplier, "
             "to three significant figures",
+            f"warmup: BERT {WARMUP_FRACTION['bert']:.0%} and GPT-2 "
+            f"{WARMUP_FRACTION['gpt2']:.0%} of the arm's own length, truncated",
+            f"BERT evaluation micro-batch {BERT_EVAL_BATCH} on all 40 arms; judged on "
+            f"{JUDGE_METRIC['bert']}, GPT-2 on {JUDGE_METRIC['gpt2']}",
             "no arm has been launched; config and out_dir are planned names",
         ],
         "job": os.environ.get("SLURM_JOB_ID") or None,
