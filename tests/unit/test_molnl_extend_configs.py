@@ -25,8 +25,16 @@ from pathlib import Path
 CONFIGS = Path(__file__).resolve().parents[2] / "molcrawl/tasks/pretrain/configs"
 MOLNL = CONFIGS / "molecule_nat_lang"
 
+#: The ceiling each extension config carries. The first pass used 48,000 for BERT; the
+#: moment-keeping rerun uses 72,000 so that early stopping, not the ceiling, ends the run
+#: -- 48,000 did not deliver that for small, which reached it with its minimum at 43,700.
+CEILING = {"_ext": {"bert": 48000, "gpt2": 3000}, "_extm": {"bert": 72000}}
+
 #: extension config -> the config it extends
 PAIRS = {
+    "bert_small_24k_lr1e3_extm": "bert_small_24k_lr1e3",
+    "bert_medium_24k_lr3e4_extm": "bert_medium_24k_lr3e4",
+    "bert_large_24k_lr1p7e4_extm": "bert_large_24k_lr1p7e4",
     "bert_small_24k_lr1e3_ext": "bert_small_24k_lr1e3",
     "bert_medium_24k_lr3e4_ext": "bert_medium_24k_lr3e4",
     "bert_large_24k_lr1p7e4_ext": "bert_large_24k_lr1p7e4",
@@ -97,6 +105,22 @@ def read(path: Path, seen=None) -> dict:
     return values
 
 
+def test_the_rerun_configs_keep_the_moments_by_asking_for_a_re_pointed_scheduler():
+    """The staged copy decides it, and the config is where the rate comes from.
+
+    Removing scheduler.pt fixes the rate and loses the Adam moments, because transformers
+    guards both loads with one condition on that file. The rerun arms are staged with the
+    file re-pointed at the config instead, so the rate the config declares has to be the
+    one the staging writes -- which it reads from here.
+    """
+    for ext in (name for name in PAIRS if name.endswith("_extm")):
+        values = read(MOLNL / f"{ext}.py")
+        assert values["lr_scheduler_type"] == "constant_with_warmup", ext
+        assert values["warmup_steps"] == 500, ext
+        assert values["early_stopping"] is True, ext
+        assert values["early_stopping_patience"] == 90, ext
+
+
 def test_all_seven_extension_configs_exist():
     missing = [name for name in PAIRS if not (MOLNL / f"{name}.py").exists()]
     assert missing == [], missing
@@ -125,7 +149,8 @@ def test_the_bert_extensions_run_at_a_constant_tenth_of_their_peak():
         assert math.isclose(values["learning_rate"], base["learning_rate"] / 10, rel_tol=1e-9), (
             ext, values["learning_rate"], base["learning_rate"])
         assert base["max_steps"] == 24000, parent
-        assert values["max_steps"] == 48000, ext
+        ceiling = CEILING["_extm" if ext.endswith("_extm") else "_ext"]["bert"]
+        assert values["max_steps"] == ceiling, (ext, values["max_steps"], ceiling)
 
 
 def test_the_gpt2_extensions_leave_the_decay_length_where_it_was():
