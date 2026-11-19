@@ -207,7 +207,7 @@ def test_evaluator_masked_marginals_path(tmp_path: Path):
     assert details.get("scoring_method") == "masked_marginals"
 
     jl = tmp_path / "out" / "predictions.jsonl"
-    recs = [json.loads(l) for l in jl.read_text().splitlines() if l.strip()]
+    recs = [json.loads(line) for line in jl.read_text().splitlines() if line.strip()]
     assert all("score" in r for r in recs)
     # The reference-identical row (ACGT->ACGT) must score exactly 0.
     zero = [r for r in recs if r["mutated_sequence"] == "ACGT"]
