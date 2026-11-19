@@ -121,7 +121,7 @@ def test_the_rerun_configs_keep_the_moments_by_asking_for_a_re_pointed_scheduler
         assert values["early_stopping_patience"] == 90, ext
 
 
-def test_all_seven_extension_configs_exist():
+def test_every_extension_config_exists():
     missing = [name for name in PAIRS if not (MOLNL / f"{name}.py").exists()]
     assert missing == [], missing
 
