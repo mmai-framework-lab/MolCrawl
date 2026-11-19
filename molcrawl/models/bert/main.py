@@ -340,6 +340,23 @@ if __name__ == "__main__":
     # Confine attention to one document inside a packed block (see
     # models/_collators/document_masking). Declared so the configurator accepts it.
     document_masking = False
+    # Give evaluation the same masked positions every time it runs (see
+    # models/_collators/fixed_eval_mask). Read through globals() until now, which meant
+    # a launch could not turn it on from the command line -- the configurator refuses a
+    # key no default declares. Declared with the value that fallback gave, so no
+    # existing run moves.
+    fixed_eval_mask = False
+    eval_mask_seed = 42
+    # Score one checkpoint that already exists and train nothing (see
+    # models/bert/_eval_only). Off by default: it replaces the training call, so a run
+    # only takes this path when a launch asks for it by name. The checkpoint is named
+    # rather than searched for, because which point on the curve is being measured is
+    # the measurement. eval_only_out is the JSON the metrics are written to; empty
+    # puts it under model_path, which eval-only requires to be a directory separate
+    # from the run it measures.
+    eval_only = False
+    eval_only_checkpoint = ""
+    eval_only_out = ""
     # Ask for a checkpoint at every step the judged metric improves, on top of the
     # save interval (see models/bert/_save_on_improve). Declared here so the
     # configurator accepts it and so the manifest can record which runs had it:
@@ -1238,6 +1255,20 @@ if __name__ == "__main__":
                 "wrote between documents, and set boundary_token_id to it."
             )
 
+    if bool(eval_only):
+        from molcrawl.models.bert import _eval_only as _evalonly
+
+        _evalonly.guard(str(eval_only_checkpoint), model_path,
+                        bool(globals().get("fixed_eval_mask", False)))
+        # Every callback here acts on training: retention and save-on-improve write
+        # checkpoints, collapse detection and early stopping end the run, stop_at_step
+        # counts steps. An evaluation outside training would fire them against a step
+        # count of zero, and the save paths would write into this measurement's output
+        # directory as if it were a run.
+        if callbacks:
+            print(f"eval-only: {len(callbacks)} training callback(s) not installed")
+        callbacks = []
+
     trainer = _WeightDecayNoEmbedTrainer(
         model=model,
         args=training_args,
@@ -1447,6 +1478,31 @@ if __name__ == "__main__":
     # If resume_checkpoint is provided, training resumes from that checkpoint
     from molcrawl.core.utils.trainer_utils import install_tie_weights_on_resume
     install_tie_weights_on_resume(trainer)
+    if bool(eval_only):
+        # One evaluation of one checkpoint, and then out. The conditions go into the
+        # record with the number: the fixed mask only repeats while the rows are
+        # grouped the same way, so the evaluation micro-batch and the process count
+        # are part of the measurement.
+        _out = str(eval_only_out) or os.path.join(
+            model_path,
+            f"eval_only-{os.path.basename(os.path.normpath(str(eval_only_checkpoint)))}.json")
+        _where = _evalonly.conditions(
+            checkpoint=str(eval_only_checkpoint),
+            eval_batch=int(per_device_eval_batch_size),
+            world_size=int(os.environ.get("WORLD_SIZE", 1)),
+            subset_rows=EVAL_SUBSET_ROWS,
+            subset_random=bool(eval_subset_random),
+            subset_seed=int(eval_subset_seed),
+            mask_seed=int(globals().get("eval_mask_seed", 42)),
+            # Absent when a config brings its own collator, as the manifest block
+            # also assumes; the record then says so rather than raising here.
+            mask_rate=globals().get("mlm_probability_effective") or 0.0,
+            judged_on=str(globals().get("metric_for_best_model") or judge_on),
+        )
+        _evalonly.score(trainer, str(eval_only_checkpoint), _where, _out)
+        if wandb_run is not None:
+            wandb_run.finish()
+        raise SystemExit(0)
     try:
         trainer.train(resume_from_checkpoint=resume_checkpoint)
     except Exception as e:
