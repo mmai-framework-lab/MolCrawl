@@ -50,6 +50,16 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 [ -x "${PYTHON}" ] || {
   echo "no interpreter at ${PYTHON}; export PYTHON=<main checkout>/miniconda/bin/python" >&2; exit 1; }
 
+# Three large arms died in the backward pass right after an evaluation, 27 minutes in:
+# 12.26 GiB wanted, 11.14 GiB free, and 23.34 GiB held by the allocator as reserved but
+# unallocated. That is fragmentation rather than a genuine peak, and the expandable
+# segments allocator is what the error itself asks for. It changes how memory is
+# handed out, not what is computed.
+#
+# Why the §4 probe did not catch it: the probe put eval_interval past the end of its own
+# window on purpose, to measure a step time with no evaluation inside it. So the shape it
+# chose had never run with an evaluation next to it.
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${PYROOT}/tmp/hf-cache-molnl}"
 export LD_LIBRARY_PATH="${PYROOT}/miniconda/lib:${LD_LIBRARY_PATH:-}"
