@@ -117,6 +117,30 @@ def test_the_grace_window_is_the_same_block_position_on_every_arm():
         assert position == grace_blocks, row["config"]
 
 
+def test_the_approved_grace_position_divides_every_batch_and_clears_the_slowest_arm():
+    """The position approved on 2026-11-20, and why that number and not another.
+
+    Measured (job 374267): of the four adopted arms the last to fall below the 9.0
+    threshold is xl, at 6,656,000 blocks. The grace position is twice that, so a
+    healthy arm is well clear of it, and it divides all five batches exactly, so
+    every arm waits out the same share of its own schedule.
+    """
+    slowest_healthy_crossing = 6_656_000
+    assert A.GRACE_BLOCKS == 13_312_000
+    assert A.GRACE_BLOCKS >= 2 * slowest_healthy_crossing
+
+    shares = set()
+    for row in A.arms("current", A.GRACE_BLOCKS, True):
+        if row["arch"] != "bert":
+            continue
+        batch, grace, steps = (int(row["batch"]), int(row["degenerate_grace_steps"]),
+                               int(row["steps"]))
+        assert grace * batch == A.GRACE_BLOCKS, row["config"]
+        assert grace > slowest_healthy_crossing // batch, row["config"]
+        shares.add(round(grace / steps, 6))
+    assert len(shares) == 1, shares
+
+
 def test_the_detector_refuses_to_be_written_without_a_block_position():
     rows = A.arms("current", None, True)
     assert {r["degenerate_grace_steps"] for r in rows} == {""}

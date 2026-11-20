@@ -18,9 +18,11 @@
 #              a session scratchpad under /tmp is node-local and is lost)
 #              (default: beside this job's log, which outlives the job;
 #              a session scratchpad under /tmp is node-local and is lost)
-#   GRACE_BLOCKS   with DETECTOR=1, the block position a healthy arm is past the
-#                  collapse threshold by; each arm's grace window is this / its batch
-#   DETECTOR       1 to write the collapse detector's values (a proposal)
+#   GRACE_BLOCKS   the block position a healthy arm is past the threshold by;
+#                  each arm's grace window is this divided by its batch
+#                  (default: the measured 13,312,000)
+#   NO_DETECTOR    1 to leave the collapse detector out (it is written by
+#                  default: approved on 2026-11-20)
 #
 # Arithmetic only; one GPU because the partition requires one.
 
@@ -38,7 +40,7 @@ echo "=== derived:  $(date -Is) ==="
 echo
 PYTHONPATH="$PWD" "${PYTHON}" scripts/rna_batch_sweep_arms.py \
   --micro-batch-set "${MICRO_SET}" \
-  ${DETECTOR:+--collapse-detection} \
+  ${NO_DETECTOR:+--no-collapse-detection} \
   ${GRACE_BLOCKS:+--grace-blocks "${GRACE_BLOCKS}"} \
   ${OUT:+--out "${OUT}"}
 rc=$?

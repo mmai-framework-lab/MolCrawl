@@ -108,13 +108,19 @@ GPT2_MIN_LR_DIVISOR = 10
 
 #: The collapse detector, measured for rna on 2026-11-18 and approved for the four
 #: extension arms: the 14 arms that ended collapsed sit at a median of 9.3737 at the
-#: lowest, and the unigram floor is 9.3710, so 9.0 is below both. It is off unless
-#: --collapse-detection is passed, because for this grid it is a proposal: §8 does not
-#: name it. grace is in steps and is compared against the absolute step count, so it
-#: cannot be one number across batches that differ 16-fold -- it is derived from the
-#: block position a healthy arm is past the threshold by.
+#: lowest, and the unigram floor is 9.3710, so 9.0 is below both. §8 does not name it;
+#: it was put to the lead with the measurement below and approved for this grid on
+#: 2026-11-20, so it is on unless --no-collapse-detection is passed.
 DEGENERATE_THRESHOLD = 9.0
 DEGENERATE_PATIENCE = 5
+
+#: grace is in steps and is compared against the absolute step count, so it cannot be
+#: one number across batches that differ 16-fold. It is a block position divided by
+#: each arm's batch. The position: of the four adopted arms, the last to fall below
+#: 9.0 is xl, at 6,656,000 blocks -- 2.15 % of the budget (job 374267, measured off
+#: the 2026-11-17 curve TSV). Twice that leaves the same 4.30 % of the schedule on
+#: every one of the five batches, and it divides each of them exactly.
+GRACE_BLOCKS = 13_312_000
 
 COLUMNS = ["arch", "size", "batch", "lr", "lr_multiplier", "lr_slug", "rate_rank",
            "rates_at_this_batch", "steps", "warmup_steps", "eval_interval",
@@ -318,21 +324,24 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--micro-batch-set", default="current", choices=sorted(MICRO_BATCH),
                     help="which one-GPU block count table to build with")
-    ap.add_argument("--collapse-detection", action="store_true",
-                    help="write the detector's values (a proposal; §8 does not name it)")
-    ap.add_argument("--grace-blocks", type=int,
+    ap.add_argument("--no-collapse-detection", action="store_true",
+                    help="leave the detector's values out (approved on 2026-11-20,"
+                         " so it is written by default)")
+    ap.add_argument("--grace-blocks", type=int, default=GRACE_BLOCKS,
                     help="block position a healthy arm is past the threshold by;"
-                         " the grace window of each arm is this divided by its batch")
+                         " the grace window of each arm is this divided by its batch"
+                         f" (default {GRACE_BLOCKS:,}, measured)")
     ap.add_argument("--out", help="TSV to write")
     args = ap.parse_args()
 
-    if args.collapse_detection and not args.grace_blocks:
-        print("--collapse-detection needs --grace-blocks: the grace window is compared"
+    detector = not args.no_collapse_detection
+    if detector and not args.grace_blocks:
+        print("the detector needs --grace-blocks: the grace window is compared"
               " against the absolute step count, so it cannot be one number across"
               " batches that differ 16-fold", file=sys.stderr)
         return 2
 
-    rows = arms(args.micro_batch_set, args.grace_blocks, args.collapse_detection)
+    rows = arms(args.micro_batch_set, args.grace_blocks, detector)
     problems = check(rows)
 
     print(f"=== {len(rows)} arms, micro-batch set {args.micro_batch_set!r}")
