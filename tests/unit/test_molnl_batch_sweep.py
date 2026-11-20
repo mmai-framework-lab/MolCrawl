@@ -236,3 +236,68 @@ def test_configs_inherit_their_size_base(rows):
         want = (f"from molcrawl.tasks.pretrain.configs.molecule_nat_lang.{base} "
                 f"import *")
         assert want in path.read_text(encoding="utf-8"), (path.name, want)
+
+
+# --- the curve reader (§10, §12) ---------------------------------------------------
+#
+# The readers themselves need a finished run to read and are checked against one by
+# hand; what is pinned here is the collapse rule, which decides a reported column and
+# must not depend on a floor constant quoted from the wrong metric or split.
+
+
+@pytest.fixture(scope="module")
+def curves_module():
+    return _load("molnl_batch_sweep_curves")
+
+
+def test_a_descending_arm_has_not_collapsed(curves_module):
+    series = [(100, 5.80), (200, 3.61), (300, 1.20), (400, 0.42), (500, 0.06)]
+    assert curves_module.collapse_at(series, None) is None
+
+
+def test_a_non_finite_value_is_a_collapse_wherever_it_sits(curves_module):
+    series = [(100, 5.80), (200, float("nan")), (300, 1.20)]
+    assert curves_module.collapse_at(series, None) == 200
+    series = [(100, 5.80), (200, 1.20), (300, float("inf"))]
+    assert curves_module.collapse_at(series, None) == 300
+
+
+def test_coming_back_to_the_first_point_is_a_collapse(curves_module):
+    """The arm descended, then returned to where it had learned nothing."""
+    series = [(100, 5.80), (200, 1.20), (300, 0.42), (400, 3.90), (500, 5.90)]
+    assert curves_module.collapse_at(series, None) == 500
+
+
+def test_the_first_points_do_not_trigger_the_rule_themselves(curves_module):
+    """Point 1 is >= itself; only points after the minimum are tested."""
+    series = [(100, 5.80), (200, 5.79)]
+    assert curves_module.collapse_at(series, None) is None
+
+
+def test_a_given_floor_catches_a_collapse_that_stops_short_of_the_start(curves_module):
+    series = [(100, 5.80), (200, 1.20), (300, 0.42), (400, 4.70)]
+    assert curves_module.collapse_at(series, None) is None
+    assert curves_module.collapse_at(series, 4.6449) == 400
+
+
+def test_the_floor_needs_its_provenance(curves_module):
+    with pytest.raises(SystemExit):
+        curves_module.main(["--arms", "x", "--root", "y", "--curves-out", "rt1-a.tsv",
+                            "--summary-out", "rt1-b.tsv", "--floor", "4.6449"])
+
+
+def test_the_curve_and_summary_columns_are_what_the_directive_asks_for(curves_module):
+    for column in ("batch", "rows_seen", "tokens_seen", "split", "metric", "value"):
+        assert column in curves_module.CURVE_COLUMNS, column
+    for column in ("best_value", "best_rows", "best_fraction_of_budget",
+                   "final_value", "final_minus_best", "steps_reached",
+                   "collapsed", "collapse_rows"):
+        assert column in curves_module.SUMMARY_COLUMNS, column
+    # R12: a value column comes with a metric column, and the summary has neither.
+    assert "value" not in curves_module.SUMMARY_COLUMNS
+
+
+def test_bert_contributes_the_metrics_section_7_asks_to_record(curves_module):
+    names = {name for _key, _split, name in curves_module.BERT_METRICS}
+    assert {"eval_loss_mask", "eval_loss", "eval_loss_copy", "eval_loss_random",
+            "train_loss_mask"} == names
