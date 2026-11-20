@@ -12,6 +12,7 @@
 # node because compute on the login node is not allowed here.
 #
 #   sbatch --export=ALL,ARMS_OUT=<...>/rt1-...tsv[,ARMS_SET=current][,WRITE_CONFIGS=1] \
+#          [,SHAPES_TABLE_OUT=<...>.md][,PROBE_LOG_GLOB=<...>/mc-molnl-bshape-*.out] \
 #          workflows/molnl-batch-sweep-arms.sbatch
 #
 # ARMS_OUT has no default: the report directory is outside every checkout and this
@@ -19,8 +20,13 @@
 # measurement; 'current' is what molnl's configs carry today). WRITE_CONFIGS=1 writes
 # the 68 config files; unset, the configs on disk are only checked.
 #
+# SHAPES_TABLE_OUT writes §9's table -- all the arms with one GPU's block count and its
+# accumulation count, plus the measured step times PROBE_LOG_GLOB points at. Both are
+# optional: before the §4 probes have run there is nothing measured to put in it.
+#
 # A value passed through --export must not contain a comma: sbatch splits the list on
-# commas and the value is truncated there.
+# commas and the value is truncated there. A glob is passed unquoted on purpose and is
+# expanded by the generator, not by this shell.
 set -uo pipefail
 
 : "${ARMS_OUT:?set ARMS_OUT to the TSV to write}"
@@ -52,6 +58,7 @@ echo "tree:      ${REPO}  $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --s
 echo "micro set: ${SET}"
 echo "configs:   $([ "${WRITE}" = "1" ] && echo write || echo "check only")"
 echo "output:    ${ARMS_OUT}"
+echo "s9 table:  ${SHAPES_TABLE_OUT:-(not asked for)}"
 
 rc=0
 
@@ -79,6 +86,15 @@ echo "########## 3. unit tests ##########"
 "${PYTHON}" -m pytest -q tests/unit/test_molnl_batch_sweep.py \
     tests/unit/test_config_seed_42.py tests/unit/test_bert_eval_subset.py
 step=$?; echo "-- pytest rc=${step}"; [ "${step}" -eq 0 ] || rc="${step}"
+
+if [ -n "${SHAPES_TABLE_OUT:-}" ]; then
+  echo
+  echo "########## 4. the table §9 asks for, before anything is submitted ##########"
+  "${PYTHON}" scripts/molnl_batch_sweep_shapes_table.py \
+      --arms "${ARMS_OUT}" --set-name "${SET}" --out "${SHAPES_TABLE_OUT}" \
+      ${PROBE_LOG_GLOB:+--probe-logs "${PROBE_LOG_GLOB}"}
+  step=$?; echo "-- §9 table rc=${step}"; [ "${step}" -eq 0 ] || rc="${step}"
+fi
 
 echo
 echo "=== rc=${rc} @ $(date -Is) ==="
