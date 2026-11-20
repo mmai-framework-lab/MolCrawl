@@ -6,11 +6,13 @@
 #SBATCH --time=96:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
-# BERT learning-rate grid for rna, protein_sequence and compounds.
+# BERT grids for rna, protein_sequence, compounds and molecule_nat_lang.
 #
 # The same launcher as workflows/molnl-bert-ladder.sbatch, with the modality and the
-# output root passed in rather than fixed. Every guard below is that file's, unchanged;
-# molecule_nat_lang keeps using its own launcher.
+# output root passed in rather than fixed. Every guard below is that file's, unchanged.
+# molecule_nat_lang's ladder and its extensions keep their own launcher, which resolves
+# the output root from MOLNL_ARTIFACT_ROOT; its batch-size grid of 2026-11-20 comes
+# through here, because those arms name their own model_path under MODEL_OUTPUT_ROOT.
 #
 # Submit from the repository root:
 #   sbatch --export=ALL,MODALITY=rna,LEARNING_SOURCE_DIR=<input root>,\
@@ -73,7 +75,7 @@
 set -eo pipefail
 : "${CONFIG:?CONFIG=path to the config to run, e.g. molcrawl/tasks/pretrain/configs/rna/bert_small_lr3e4.py}"
 : "${SEGMENT:?SEGMENT=1 for the first, 2,3,... for each continuation}"
-: "${MODALITY:?MODALITY=rna|protein_sequence|compounds}"
+: "${MODALITY:?MODALITY=rna|protein_sequence|compounds|molecule_nat_lang}"
 : "${LEARNING_SOURCE_DIR:?export LEARNING_SOURCE_DIR to the learning_source root holding ${MODALITY}/}"
 : "${MODEL_OUTPUT_ROOT:?export MODEL_OUTPUT_ROOT to the root the grid outputs go under, outside the input tree}"
 [ -d "${LEARNING_SOURCE_DIR}/${MODALITY}" ] || {
