@@ -354,3 +354,79 @@ def test_the_output_directory_names_its_architecture(rows):
     """
     for row in rows:
         assert f"-{row['arch']}-b{row['batch']}-" in row["out_dir"], row["out_dir"]
+
+
+# --- the §4 choice ------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def choice_module():
+    return _load("molnl_batch_shape_choice")
+
+
+def _probe_log(tmp_path, lines):
+    log = tmp_path / "mc-molnl-bshape-probe.out"
+    log.write_text("".join(lines), encoding="utf-8")
+    return log
+
+
+def test_bert_is_ranked_on_its_per_step_time(choice_module, tmp_path):
+    log = _probe_log(tmp_path, [
+        "SHAPE_RESULT arch=bert label=small-8x80 per_step_s=3.851 steps=50\n",
+        "SHAPE_RESULT arch=bert label=small-16x40 per_step_s=2.897 steps=50\n",
+        "SHAPE_RESULT arch=bert label=small-64x10 per_step_s=2.517 steps=50\n",
+    ])
+    chosen, table, problems = choice_module.choose(choice_module.parse([str(log)]))
+    assert chosen["bert"]["small"] == 64
+    assert any(r.get("chosen") and r["margin_s"] == pytest.approx(0.380)
+               for r in table)
+    # Only one size of one architecture was measured, so the rest are named.
+    assert any("gpt2" in p for p in problems)
+
+
+def test_gpt2_is_ranked_on_the_median_not_the_mean(choice_module, tmp_path):
+    """The mean follows a few iterations that are not the step; the first probe had
+    mean 3.472 against median 2.634."""
+    log = _probe_log(tmp_path, [
+        "SHAPE_RESULT arch=gpt2 label=large-8x320 per_step_s=3.472 median_s=2.634 "
+        "stdev_s=2.846 iters_read=35\n",
+        "SHAPE_RESULT arch=gpt2 label=large-16x160 per_step_s=3.000 median_s=2.900 "
+        "stdev_s=0.100 iters_read=35\n",
+    ])
+    chosen, _table, _problems = choice_module.choose(choice_module.parse([str(log)]))
+    # On the mean, 16 would win; on the median, 8 does.
+    assert chosen["gpt2"]["large"] == 8
+
+
+def test_one_usable_shape_is_not_a_choice(choice_module, tmp_path):
+    log = _probe_log(tmp_path, [
+        "SHAPE_RESULT arch=bert label=xl-4x160 per_step_s=26.034 steps=20\n",
+        "SHAPE_RESULT arch=bert label=xl-8x80 per_step_s= failed=1\n",
+    ])
+    chosen, _table, problems = choice_module.choose(choice_module.parse([str(log)]))
+    assert "xl" not in chosen.get("bert", {})
+    assert any("usable shape" in p for p in problems)
+
+
+def test_a_shape_that_cannot_build_256_is_refused(choice_module, tmp_path):
+    log = _probe_log(tmp_path, [
+        "SHAPE_RESULT arch=bert label=small-24x? per_step_s=1.000 steps=50\n",
+        "SHAPE_RESULT arch=bert label=small-16x40 per_step_s=2.897 steps=50\n",
+        "SHAPE_RESULT arch=bert label=small-64x10 per_step_s=2.517 steps=50\n",
+    ])
+    chosen, _table, problems = choice_module.choose(choice_module.parse([str(log)]))
+    assert chosen["bert"]["small"] == 64
+    assert any("24" in p for p in problems)
+
+
+def test_an_incomplete_choice_file_is_not_offered_as_a_set(arms_module):
+    """The derivation registers 'measured-1120' only when all eight cells are in it."""
+    sets = sorted(arms_module.MICRO_BATCH)
+    assert "current" in sets
+    if "measured-1120" in sets:
+        measured = arms_module.MICRO_BATCH["measured-1120"]
+        for arch in ("bert", "gpt2"):
+            assert sorted(measured[arch]) == sorted(arms_module.SIZES)
+            for micro in measured[arch].values():
+                assert micro in arms_module.MICRO_CANDIDATES
+                assert 256 % (micro * 4) == 0

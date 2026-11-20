@@ -34,6 +34,7 @@ Read-only: it computes and writes one TSV.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import sys
@@ -98,6 +99,22 @@ MICRO_BATCH = {
         "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4},
     },
 }
+#: §4 fixes one GPU's block count by measurement. The chosen values are read from the
+#: file scripts/molnl_batch_shape_choice.py writes out of the probe logs, rather than
+#: retyped here: that file carries every measured shape beside the one that won, and a
+#: number typed into this module could not be checked against anything. The set appears
+#: only when all eight cells are in the file, so a half-finished measurement cannot be
+#: derived from by accident.
+CHOICE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "molnl_batch_shape_choice_20261120.json")
+if os.path.exists(CHOICE_FILE):
+    with open(CHOICE_FILE, encoding="utf-8") as _handle:
+        _choice = json.load(_handle)
+    _chosen = _choice.get("chosen", {})
+    if all(size in _chosen.get(arch, {}) for arch in ("bert", "gpt2")
+           for size in SIZES):
+        MICRO_BATCH[_choice["set"]] = _chosen
+
 #: §4's constraint on any set: one GPU's blocks times the GPU count must divide 256,
 #: the smallest batch of the grid.
 MICRO_CANDIDATES = [4, 8, 16, 32, 64]

@@ -20,6 +20,11 @@
 # measurement; 'current' is what molnl's configs carry today). WRITE_CONFIGS=1 writes
 # the 68 config files; unset, the configs on disk are only checked.
 #
+# CHOOSE_FROM_PROBES=1 with PROBE_LOG_GLOB first reads the §4 probe logs and writes the
+# chosen block count per size into scripts/molnl_batch_shape_choice_20261120.json, which
+# the derivation then loads as its 'measured-1120' set. Pass ARMS_SET=measured-1120 in
+# the same submission to derive from it.
+#
 # SHAPES_TABLE_OUT writes §9's table -- all the arms with one GPU's block count and its
 # accumulation count, plus the measured step times PROBE_LOG_GLOB points at. Both are
 # optional: before the §4 probes have run there is nothing measured to put in it.
@@ -61,6 +66,19 @@ echo "output:    ${ARMS_OUT}"
 echo "s9 table:  ${SHAPES_TABLE_OUT:-(not asked for)}"
 
 rc=0
+
+if [ "${CHOOSE_FROM_PROBES:-0}" = "1" ]; then
+  : "${PROBE_LOG_GLOB:?CHOOSE_FROM_PROBES=1 needs PROBE_LOG_GLOB}"
+  echo
+  echo "########## 0. one GPU's block count per size, out of the probes ##########"
+  "${PYTHON}" scripts/molnl_batch_shape_choice.py \
+      --probe-logs "${PROBE_LOG_GLOB}" \
+      --out scripts/molnl_batch_shape_choice_20261120.json
+  step=$?; echo "-- choice rc=${step}"
+  # A half-finished measurement must not become a grid: stop here rather than fall
+  # back to the current set under a name that says measured.
+  [ "${step}" -eq 0 ] || exit "${step}"
+fi
 
 echo
 echo "########## 1. the arm inventory, against the directive's tables ##########"
