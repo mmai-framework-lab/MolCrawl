@@ -31,6 +31,18 @@ mkdir -p "$(dirname "${SUBMIT_RECORD}")"
 JID=$(sbatch --parsable "$@") || { echo "submission failed" >&2; exit 1; }
 printf '%s\t%s\t%s\n' "${JID}" "${LABEL:-unlabelled}" "$(date -Is)" >> "${SUBMIT_RECORD}"
 
+# WATCH=0 submits without a recorder. A submitter that chains segments wants one on
+# the last segment only: a segment cut by the time limit ends TIMEOUT, and a spare
+# segment that follows a finished run is refused with a non-zero exit, so a recorder on
+# every segment writes a row for each ordinary rollover and each unused spare. The
+# molnl batch grid passed WATCH on the last segment only and this script ignored it,
+# which put about 52 such rows into the record. Unset, the recorder is chained as
+# before, so no existing caller changes.
+if [ "${WATCH:-1}" = "0" ]; then
+  echo "${JID}"
+  exit 0
+fi
+
 WATCH_LOG="${WATCH_LOG:-$(dirname "${SUBMIT_RECORD}")/job-failures.tsv}"
 WID=$(sbatch --parsable --dependency=afternotok:"${JID}" \
       --export=ALL,WATCH_JOB="${JID}",WATCH_LOG="${WATCH_LOG}",WATCH_NAME="${LABEL}" \
