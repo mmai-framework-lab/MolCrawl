@@ -48,16 +48,28 @@ def sacct(job_ids):
 
 
 def read_record(path):
-    """Job ids from a submission record: one `job_id<TAB>label` per line."""
+    """Job ids from a submission record.
+
+    The old form is one `job_id<TAB>label` per line. Newer submitters write a TSV
+    with a header, where the id is a `job_id` column and not the first one -- the
+    first is when it was submitted. Both are read here, because asking a later
+    session to remember which shape a record has defeats the point of the record.
+    """
     ids = []
     if not os.path.exists(path):
         return ids
+    column = 0
     with open(path, encoding="utf-8") as fh:
         for line in fh:
-            line = line.strip()
-            if not line or line.startswith("#"):
+            line = line.rstrip("\n")
+            if not line.strip() or line.startswith("#"):
                 continue
-            ids.append(line.split("\t")[0])
+            parts = line.split("\t")
+            if not ids and "job_id" in parts and not parts[0].isdigit():
+                column = parts.index("job_id")   # a header line
+                continue
+            if column < len(parts) and parts[column].strip().isdigit():
+                ids.append(parts[column].strip())
     return ids
 
 
