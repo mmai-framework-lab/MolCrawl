@@ -20,8 +20,8 @@ Warmup is 10 % of this arm's own length (§2), truncated: 12,000 of
 Evaluation lands every 122,880 blocks, which is 480
 steps here, giving 250 points; saves land every 614,400 blocks, the same multiple of the evaluation interval at every batch.
 
-One GPU takes 8 blocks and the accumulation count carries the rest (§4):
-8 x 8 x 4 GPUs = 256. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else; §4 fixes it per size by measurement, and the whole 68 are regenerated when that measurement lands.
+One GPU takes 64 blocks and the accumulation count carries the rest (§4):
+64 x 1 x 4 GPUs = 256. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else; §4 fixes it per size by measurement, and the whole 68 are regenerated when that measurement lands.
 
 Everything not set below comes from bert_large.py, imported rather than copied, so
 this arm cannot differ from the 2026-09-24 grid and the 24,000-step runs in the corpus,
@@ -48,9 +48,9 @@ save_steps = 2400
 # §3.
 learning_rate = 3.16e-05
 
-# §4. 8 x 8 x 4 GPUs = 256.
-batch_size = 8
-gradient_accumulation_steps = 8
+# §4. 64 x 1 x 4 GPUs = 256.
+batch_size = 64
+gradient_accumulation_steps = 1
 # §5. Declared so main.py stops a launch whose GPU count would build another batch.
 expected_global_batch = 256
 

@@ -89,6 +89,7 @@ this arm cannot differ from the 2026-09-24 grid and the 24,000-step runs in the 
 the tokenizer, the packing, the document masking, the dataloader or the precision.
 """
 
+# §4 micro-batch set: {micro_batch_set}
 from molcrawl.tasks.pretrain.configs.molecule_nat_lang.{base_module} import *  # noqa: F401,F403
 '''
 
@@ -265,6 +266,11 @@ def fields(row, siblings):
     # scripts/molnl_batch_sweep_arms.py for why this modality needs it.
     out_suffix = f"-{arch}-b{batch}-lr{row['lr_slug']}"
     base = {
+        # Which set one GPU's block count came from. Stated in the file because it is
+        # the one value of the inventory that a reader cannot recover from the numbers
+        # below, and because the check that compares these configs against the
+        # inventory has to derive the same set to compare against.
+        "micro_batch_set": row["micro_batch_set"],
         "arch_label": "BERT" if arch == "bert" else "GPT-2",
         "arch_arms": "48" if arch == "bert" else "20",
         "size": size,

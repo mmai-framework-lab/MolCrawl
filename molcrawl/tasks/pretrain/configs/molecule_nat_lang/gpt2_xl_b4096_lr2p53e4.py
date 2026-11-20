@@ -20,8 +20,8 @@ Warmup is 2 % of this arm's own length (§2), truncated: 46 of
 Evaluation lands every 40,960 blocks, which is 10
 iterations here, giving 233 points; checkpoint opportunities land every 204,800 blocks.
 
-One GPU takes 4 blocks and the accumulation count carries the rest (§4):
-4 x 1024 = 4096. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else; §4 fixes it per size by measurement, and the whole 68 are regenerated when that measurement lands.
+One GPU takes 32 blocks and the accumulation count carries the rest (§4):
+32 x 128 = 4096. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else; §4 fixes it per size by measurement, and the whole 68 are regenerated when that measurement lands.
 
 Everything not set below comes from gpt2_xl.py, imported rather than copied, so
 this arm cannot differ from the 2026-09-24 grid and the 24,000-step runs in the corpus,
@@ -50,9 +50,9 @@ learning_rate = 0.000253
 
 # §4. nanoGPT divides gradient_accumulation_steps by the DDP world size, so the
 # effective global batch is batch_size x gradient_accumulation_steps and does not move
-# with the GPU count. 4 x 1024 = 4096.
-batch_size = 4
-gradient_accumulation_steps = 1024
+# with the GPU count. 32 x 128 = 4096.
+batch_size = 32
+gradient_accumulation_steps = 128
 # §5. train.py refuses to start when micro x accumulation disagrees with this.
 expected_global_batch = 4096
 

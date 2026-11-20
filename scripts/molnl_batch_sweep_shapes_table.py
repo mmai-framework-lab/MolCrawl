@@ -76,11 +76,13 @@ def parse_shape_results(paths):
                     fields[name] = body[end:stop].strip()
                 label = fields.get("label", "")
                 size, _, shape = label.partition("-")
-                micro, _, _accum = shape.partition("x")
+                micro, _, accum = shape.partition("x")
                 if not micro.isdigit():
                     continue
+                # The accumulation count is in the label rather than in a field of its
+                # own, so it has to be taken from there or the column comes out empty.
                 out[(fields.get("arch", ""), size, int(micro))] = dict(
-                    fields, probe_log=path)
+                    fields, accum=accum, probe_log=path)
     return out
 
 

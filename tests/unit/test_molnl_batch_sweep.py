@@ -41,9 +41,33 @@ def arms_module():
     return _load("molnl_batch_sweep_arms")
 
 
+#: The generator writes this into every config; see scripts/molnl_batch_sweep_configs.py.
+SET_MARKER = "# §4 micro-batch set:"
+
+
+def _declared_set():
+    """Which block-count set the configs on disk were generated from.
+
+    Without this the comparison below would derive one set and read configs written
+    from another, which is what happened when the §4 measurement replaced the set the
+    configs had been written with: 45 tests passed and the one that compares the two
+    failed on a difference that was not a defect.
+    """
+    for path in sorted(CONFIG_DIR.glob("*_b*_lr*.py")):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith(SET_MARKER):
+                return line[len(SET_MARKER):].strip()
+    return "current"
+
+
 @pytest.fixture(scope="module")
-def rows(arms_module):
-    return arms_module.arms("current")
+def micro_set():
+    return _declared_set()
+
+
+@pytest.fixture(scope="module")
+def rows(arms_module, micro_set):
+    return arms_module.arms(micro_set)
 
 
 def test_sixty_eight_arms(arms_module, rows):
@@ -52,11 +76,28 @@ def test_sixty_eight_arms(arms_module, rows):
         assert sum(1 for r in rows if r["arch"] == arch) == want
 
 
-def test_derivation_agrees_with_the_directive(arms_module, rows, capsys):
+def test_derivation_agrees_with_the_directive(arms_module, rows, micro_set, capsys):
     """§1-§4's printed tables against the rules they follow from."""
-    problems = arms_module.check(rows, "current")
+    problems = arms_module.check(rows, micro_set)
     capsys.readouterr()
     assert problems == 0
+
+
+def test_every_registered_set_derives_cleanly(arms_module, capsys):
+    """Not only the one the configs happen to carry."""
+    for name in sorted(arms_module.MICRO_BATCH):
+        problems = arms_module.check(arms_module.arms(name), name)
+        capsys.readouterr()
+        assert problems == 0, name
+
+
+def test_the_configs_name_the_set_they_were_written_from(rows):
+    """The marker is what the comparison above relies on, so it has to be there."""
+    for row, path in _config_paths(rows):
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert f"{SET_MARKER} {row['micro_batch_set']}" in text, path.name
 
 
 def test_the_three_numbers_multiply_out_to_the_batch(rows):
