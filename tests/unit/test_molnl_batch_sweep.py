@@ -301,3 +301,45 @@ def test_bert_contributes_the_metrics_section_7_asks_to_record(curves_module):
     names = {name for _key, _split, name in curves_module.BERT_METRICS}
     assert {"eval_loss_mask", "eval_loss", "eval_loss_copy", "eval_loss_random",
             "train_loss_mask"} == names
+
+
+# --- the §9 table -------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def shapes_table_module():
+    return _load("molnl_batch_sweep_shapes_table")
+
+
+def test_a_shape_result_line_with_spaces_in_its_last_value_parses(shapes_table_module,
+                                                                  tmp_path):
+    """The timing script's `source=` value holds spaces; splitting on them loses it."""
+    log = tmp_path / "probe.out"
+    log.write_text(
+        "SHAPE_RESULT arch=bert label=medium-16x40 per_step_s=7.612 median_s=7.600 "
+        "stdev_s=0.110 steps_read=26 accum=40 source=train_runtime minus the "
+        "evaluation time, over the steps\n"
+        "SHAPE_RESULT arch=gpt2 label=xl-4x640 per_step_s= failed=1\n",
+        encoding="utf-8")
+    got = shapes_table_module.parse_shape_results([str(log)])
+    assert got[("bert", "medium", 16)]["per_step_s"] == "7.612"
+    assert got[("bert", "medium", 16)]["source"].startswith("train_runtime minus")
+    assert got[("gpt2", "xl", 4)]["failed"] == "1"
+
+
+def test_todays_shapes_are_read_from_the_derivation(shapes_table_module, arms_module):
+    assert shapes_table_module.todays_shapes() == arms_module.MICRO_BATCH["current"]
+
+
+def test_the_table_refuses_an_inventory_whose_size_has_two_shapes(shapes_table_module,
+                                                                  tmp_path):
+    header = ("arch\tsize\tbatch\tlr\tlr_multiplier\tmicro_batch\tgrad_accum\t"
+              "world_size\texpected_global_batch\tsteps\teval_interval\tsave_interval\n")
+    arms = tmp_path / "rt1-two-shapes.tsv"
+    arms.write_text(
+        header
+        + "bert\tsmall\t256\t0.000316\t1.0\t16\t4\t4\t256\t120000\t480\t2400\n"
+        + "bert\tsmall\t512\t0.000447\t1.0\t8\t16\t4\t512\t60000\t240\t1200\n",
+        encoding="utf-8")
+    with pytest.raises(SystemExit):
+        shapes_table_module.main(["--arms", str(arms)])
