@@ -190,3 +190,75 @@ def test_the_rendered_rate_is_the_rate_in_the_inventory():
     for row in A.arms("current", None, False):
         text = C.render(row)
         assert f"learning_rate = {float(row['lr']):.6g}\n" in text
+
+
+# --- the measured block counts, which arrive from the probe rather than from source ---
+
+PROBE_COLUMNS = ["arch", "size", "micro", "global", "accum", "job_id", "status",
+                 "s_per_step", "s_per_step_at_2560", "log"]
+
+
+def _probe_table(tmp_path, measurements):
+    """A table in the shape scripts/rna_microbatch_probe_table.py writes."""
+    import csv as _csv
+
+    path = tmp_path / "probe-table.tsv"
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write("#! report-tsv 1\n")
+        writer = _csv.DictWriter(handle, fieldnames=PROBE_COLUMNS, delimiter="\t")
+        writer.writeheader()
+        for arch, size, micro, rate in measurements:
+            writer.writerow({
+                "arch": arch, "size": size, "micro": micro, "global": 256,
+                "accum": 256 // (micro * 4), "job_id": "0",
+                "status": "OK" if rate else "FAILED (OOM)",
+                "s_per_step": f"{rate / 10:.3f}" if rate else "",
+                "s_per_step_at_2560": f"{rate:.3f}" if rate else "",
+                "log": "x.out"})
+    return str(path)
+
+
+def test_the_fastest_shape_is_chosen_and_a_shape_that_did_not_fit_is_not(tmp_path):
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    path = _probe_table(tmp_path, [
+        ("bert", "small", 8, 4.48), ("bert", "small", 16, 3.10),
+        ("bert", "small", 32, 2.95), ("bert", "small", 64, 0.0),
+    ])
+    chosen = probe.fastest_micro(probe.read_table(path))
+    assert chosen["bert"]["small"] == 32
+
+
+def test_a_tie_takes_the_smaller_block_count(tmp_path):
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    path = _probe_table(tmp_path, [
+        ("gpt2", "xl", 4, 12.77), ("gpt2", "xl", 8, 12.77),
+    ])
+    assert probe.fastest_micro(probe.read_table(path))["gpt2"]["xl"] == 4
+
+
+def test_the_measured_set_builds_arms_with_the_measured_shape(tmp_path):
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    rows = [(arch, size, micro, 10.0 - micro / 100)
+            for arch in ("bert", "gpt2")
+            for size in A.SIZES
+            for micro in (8, 16)]
+    measured = probe.fastest_micro(probe.read_table(_probe_table(tmp_path, rows)))
+    assert all(measured[a][s] == 16 for a in ("bert", "gpt2") for s in A.SIZES)
+
+    A.MICRO_BATCH["measured"] = measured
+    try:
+        arms = A.arms("measured", A.GRACE_BLOCKS, True)
+        assert len(arms) == 68
+        for row in arms:
+            assert int(row["micro_batch"]) == 16, row["config"]
+            product = (int(row["micro_batch"]) * int(row["grad_accum"])
+                       * int(row["world_size"]))
+            assert product == int(row["batch"]), row["config"]
+    finally:
+        del A.MICRO_BATCH["measured"]

@@ -321,9 +321,18 @@ def check(rows):
 
 
 def main() -> int:
+    # The probe table module sits beside this file, which is not the
+    # working directory when this runs from the repository root.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--micro-batch-set", default="current", choices=sorted(MICRO_BATCH),
-                    help="which one-GPU block count table to build with")
+    ap.add_argument("--micro-batch-set", default="current",
+                    choices=sorted(set(MICRO_BATCH) | {"measured"}),
+                    help="which one-GPU block count table to build with;"
+                         " 'measured' reads it from --measured-from")
+    ap.add_argument("--measured-from",
+                    help="the probe table TSV to take the 'measured' set from"
+                         " (scripts/rna_microbatch_probe_table.py --out)")
     ap.add_argument("--no-collapse-detection", action="store_true",
                     help="leave the detector's values out (approved on 2026-11-20,"
                          " so it is written by default)")
@@ -333,6 +342,24 @@ def main() -> int:
                          f" (default {GRACE_BLOCKS:,}, measured)")
     ap.add_argument("--out", help="TSV to write")
     args = ap.parse_args()
+
+    if (args.micro_batch_set == "measured") != bool(args.measured_from):
+        print("--micro-batch-set measured and --measured-from go together: the"
+              " measured block counts are not in this source, they are read from"
+              " the probe's table", file=sys.stderr)
+        return 2
+    if args.measured_from:
+        import rna_microbatch_probe_table as probe
+
+        measured = probe.fastest_micro(probe.read_table(args.measured_from))
+        thin = {arch: sorted(set(SIZES) - set(sizes))
+                for arch, sizes in measured.items()}
+        if sorted(measured) != sorted(ARCHES) or any(thin.values()):
+            print(f"the table does not measure every size: {thin or measured}",
+                  file=sys.stderr)
+            return 2
+        MICRO_BATCH["measured"] = measured
+        print(f"=== measured set from {args.measured_from}: {measured}")
 
     detector = not args.no_collapse_detection
     if detector and not args.grace_blocks:

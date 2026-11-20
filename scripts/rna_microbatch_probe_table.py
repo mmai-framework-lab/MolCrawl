@@ -69,6 +69,33 @@ def rate_from(text: str, arch: str) -> tuple[float | None, str]:
     return None, "no verdict in the log"
 
 
+def read_table(path: str) -> list[dict]:
+    """Rows of a table this script wrote earlier."""
+    with open(path, encoding="utf-8") as handle:
+        return list(csv.DictReader(
+            (ln for ln in handle if not ln.startswith("#")), delimiter="\t"))
+
+
+def fastest_micro(rows: list[dict]) -> dict[str, dict[str, int]]:
+    """The one-GPU block count to run, per framework and size: the fastest measured.
+
+    Ties go to the smaller block count, which needs less memory for the same speed.
+    A size with no measured arm is left out rather than guessed, so a caller that
+    needs all four finds out instead of quietly running a value nobody measured.
+    """
+    best: dict[str, dict[str, int]] = {}
+    for row in rows:
+        rate = row.get("s_per_step_at_2560") or ""
+        if not rate:
+            continue
+        arch, size, micro = row["arch"], row["size"], int(row["micro"])
+        seat = best.setdefault(arch, {})
+        if size not in seat or (float(rate), micro) < seat[size][0]:
+            seat[size] = ((float(rate), micro), micro)
+    return {arch: {size: pick for size, (_, pick) in sizes.items()}
+            for arch, sizes in best.items()}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--record", required=True, help="the probe's submit record TSV")
@@ -103,7 +130,8 @@ def main() -> int:
             print(f"    {r['arch']} {r['size']} micro {r['micro']}:"
                   f" {r['status']} (job {r['job_id']})")
 
-    chosen: dict[str, dict[str, int]] = {}
+    # One rule for the choice, used here and by the arms script.
+    chosen = fastest_micro(rows)
     for arch in ("bert", "gpt2"):
         print(f"\n== {arch}: s/step at global 2,560 (measured at the probe's batch)")
         header = f"   {'size':<8}" + "".join(f"{f'micro {m}':>12}"
@@ -127,10 +155,9 @@ def main() -> int:
             if not by_micro:
                 print(f"   {size:<8}" + "".join(cells) + f"{'-':>10}{'-':>9}")
                 continue
-            best = min(by_micro, key=lambda m: by_micro[m])
+            best = chosen[arch][size]
             now = CURRENT[arch][size]
             ratio = (by_micro[now] / by_micro[best]) if now in by_micro else None
-            chosen.setdefault(arch, {})[size] = best
             print(f"   {size:<8}" + "".join(cells)
                   + f"{f'micro {best}':>10}"
                   + (f"{ratio:>8.2f}x" if ratio else f"{'-':>9}"))
