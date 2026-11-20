@@ -15,12 +15,15 @@
 #   CURVES     the rt1 rna curve TSV (long form, one row per point)
 #   SUMMARY    the rna BERT grid summary TSV (carries collapsed and turned_step)
 #   TRAIN_BIN  the train split's .bin, for the block count
-#   OUT        optional TSV to write the threshold crossings to
+#   OUT        TSV to write the threshold crossings to
+#              (default: beside this job's log, which outlives the job;
+#              a session scratchpad under /tmp is node-local and is lost)
 #
 # Reads finished files only. One GPU because the partition requires one; this
 # parses two TSVs and stats one file.
 
 set -u
+OUT="${OUT:-workflows/slurm-logs/${SLURM_JOB_NAME:-local}-${SLURM_JOB_ID:-0}.tsv}"
 : "${CURVES:?export CURVES to the rt1 rna curve TSV}"
 : "${SUMMARY:?export SUMMARY to the rna BERT grid summary TSV}"
 : "${TRAIN_BIN:?export TRAIN_BIN to the train split bin file}"

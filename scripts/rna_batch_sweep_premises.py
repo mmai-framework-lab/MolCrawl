@@ -196,7 +196,8 @@ def main() -> int:
         print("      " + "\n      ".join(line))
 
     if args.out and out_rows:
-        with open(args.out, "w", encoding="utf-8", newline="") as handle:
+        os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+        with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
             writer = csv.DictWriter(handle, fieldnames=list(out_rows[0]), delimiter="\t")
             writer.writeheader()
             writer.writerows(out_rows)

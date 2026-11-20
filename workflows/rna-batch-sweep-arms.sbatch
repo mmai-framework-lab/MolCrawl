@@ -13,7 +13,11 @@
 #
 # Env:
 #   MICRO_SET      which one-GPU block count table to build with (default current)
-#   OUT            optional TSV to write
+#   OUT        TSV to write the arm inventory to
+#              (default: beside this job's log, which outlives the job;
+#              a session scratchpad under /tmp is node-local and is lost)
+#              (default: beside this job's log, which outlives the job;
+#              a session scratchpad under /tmp is node-local and is lost)
 #   GRACE_BLOCKS   with DETECTOR=1, the block position a healthy arm is past the
 #                  collapse threshold by; each arm's grace window is this / its batch
 #   DETECTOR       1 to write the collapse detector's values (a proposal)
@@ -21,6 +25,7 @@
 # Arithmetic only; one GPU because the partition requires one.
 
 set -u
+OUT="${OUT:-workflows/slurm-logs/${SLURM_JOB_NAME:-local}-${SLURM_JOB_ID:-0}.tsv}"
 MICRO_SET="${MICRO_SET:-current}"
 
 if [ -x "./miniconda/bin/python" ]; then PYROOT="$PWD"; else
