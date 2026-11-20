@@ -113,7 +113,10 @@ echo "outputs: ${OUT}   (MODEL_OUTPUT_ROOT=${MODEL_OUTPUT_ROOT})"
 echo "data : ${LEARNING_SOURCE_DIR}  (config resolves dataset_dir; see \"Loading dataset\" below)"
 echo "--- config values as resolved ---"
 printf '%s\n' "${_cfg_dump}" | sed 's/^/    /'
-nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1
+# -i 0 rather than a pipe into head: under `set -eo pipefail` the pipe makes the
+# job exit 141 whenever head closes the pipe before nvidia-smi is done writing,
+# which killed one probe of eight two seconds in (job 374112).
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader -i 0
 
 rc=0
 "${TORCHRUN}" --standalone --nproc_per_node=4 \

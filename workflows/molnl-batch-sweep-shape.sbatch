@@ -101,7 +101,10 @@ echo "config : ${CFG}"
 echo "shapes : ${SHAPES}   (one GPU block count; x 4 GPUs must divide 256)"
 echo "steps  : ${STEPS} per shape, global batch ${GLOBAL} throughout"
 echo "probes : ${PROBE_ROOT}"
-nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1
+# -i 0 rather than a pipe into head: under `set -eo pipefail` the pipe makes the
+# job exit 141 whenever head closes the pipe before nvidia-smi is done writing,
+# which killed one probe of eight two seconds in (job 374112).
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader -i 0
 
 rc=0
 for micro in ${SHAPES}; do
