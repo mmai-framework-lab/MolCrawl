@@ -117,7 +117,7 @@ def main():
     curve_rows = []
     arm_rows = []
     summary = []
-    for size, lrtag, dirname, adopted in ARMS:
+    for size, _lrtag, dirname, adopted in ARMS:
         run_dir = os.path.join(a.bert_root, dirname)
         man = json.load(open(os.path.join(run_dir, "run_manifest.json")))
         ts = newest_trainer_state(run_dir)
