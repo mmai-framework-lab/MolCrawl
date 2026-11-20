@@ -47,7 +47,8 @@ CURVE_COLUMNS = ["arch", "size", "batch", "lr", "seed", "step", "metric", "value
                  "rows_seen", "tokens_seen", "source"]
 SUMMARY_COLUMNS = ["arch", "size", "batch", "lr", "steps_planned", "steps_reached",
                    "eval_points", "judged_metric", "best_value", "best_step",
-                   "best_rows", "best_tokens", "final_value", "final_step",
+                   "best_rows", "best_tokens", "best_fraction_of_budget",
+                   "final_value", "final_step", "final_minus_best",
                    "collapsed", "source"]
 
 
@@ -111,7 +112,13 @@ def rows_for(arms, log_dir):
             "best_value": f"{best_val:.6f}", "best_step": best_step,
             "best_rows": best_step * batch,
             "best_tokens": best_step * batch * SEQUENCE_LENGTH,
+            # 2026-11-20 §5: where the minimum sits as a fraction of the budget, and
+            # how far the arm has come back up by the time the budget runs out. Both
+            # are read off the same series as the two values above, so neither can
+            # disagree with them.
+            "best_fraction_of_budget": f"{best_step / int(arm['steps']):.4f}",
             "final_value": f"{final_val:.6f}", "final_step": final_step,
+            "final_minus_best": f"{final_val - best_val:+.6f}",
             "collapsed": "yes" if final_val >= DEGENERATE_FLOOR else "no",
             "source": source,
         })
@@ -139,12 +146,14 @@ def main(argv=None) -> int:
               f"lr {arm['lr']}")
 
     print(f"\n{'size':8s} {'batch':>5s} {'lr':>9s} {'reached':>8s} {'points':>6s} "
-          f"{'best':>9s} {'at step':>8s} {'at tokens':>14s} {'final':>9s}")
+          f"{'best':>9s} {'at step':>8s} {'of budget':>9s} {'final':>9s} "
+          f"{'final-best':>10s}")
     for row in summary:
         print(f"{row['size']:8s} {row['batch']:>5d} {row['lr']:>9s} "
               f"{row['steps_reached']:>8,} {row['eval_points']:>6d} "
               f"{row['best_value']:>9s} {row['best_step']:>8,} "
-              f"{row['best_tokens']:>14,} {row['final_value']:>9s}"
+              f"{float(row['best_fraction_of_budget']) * 100:>8.1f}% "
+              f"{row['final_value']:>9s} {row['final_minus_best']:>10s}"
               + ("   COLLAPSED" if row["collapsed"] == "yes" else ""))
 
     print("\n=== lowest batch per size, with the gap to the runner-up ===")
@@ -181,6 +190,8 @@ def main(argv=None) -> int:
             "best_value is the lowest value of the judged metric over the arm's own "
             "evaluation points; best_rows and best_tokens are where it sits",
             "final_value is the value at the budget, which every arm here reached",
+            "best_fraction_of_budget = best_step / steps_planned, and "
+            "final_minus_best = final_value - best_value (2026-11-20 §5)",
             f"collapsed = yes when the final value is at or above {DEGENERATE_FLOOR}, "
             "the degenerate floor measured for this corpus",
         ],

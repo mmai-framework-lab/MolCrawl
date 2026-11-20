@@ -1,14 +1,18 @@
-"""The compounds batch-size grid: the arms it derives and the 56 configs it writes.
+"""The compounds batch-size grid: the arms it derives and the 68 configs it writes.
 
-The grid's whole point is that four batches cover the same data and are compared at
+The grid's whole point is that every batch covers the same data and is compared at
 the same column, so what is tested here is the arithmetic that makes that true --
 the budget, the interval anchoring, the warmup fraction, the accumulation -- and then
 that each written config actually carries the numbers the inventory says it does.
 
-The directive's own printed tables are the expectations inside
+The directives' own printed tables are the expectations inside
 compounds_batch_sweep_arms.py; one case here asserts that the derivation disagrees
 with none of them, so a change to either side shows up as a failure rather than as a
 quiet difference between the report and the configs.
+
+Counts are read off the module rather than written in twice wherever that works, so
+adding a batch -- which is what the 2026-11-20 directive did -- moves one table and
+not a dozen assertions.
 """
 
 from __future__ import annotations
@@ -50,13 +54,30 @@ def rows(arms_mod):
 
 # --- the grid's shape (§1) -------------------------------------------------------
 
-def test_fifty_six_arms(rows):
-    assert len(rows) == 56
+def test_sixty_eight_arms(rows):
+    # 19c's 56 plus the 12 the 2026-11-20 directive adds at batch 256.
+    assert len(rows) == 68
 
 
-def test_forty_bert_and_sixteen_gpt2(rows, arms_mod):
+def test_forty_eight_bert_and_twenty_gpt2(rows, arms_mod):
+    assert arms_mod.EXPECTED_ARMS == {"bert": 48, "gpt2": 20}
     for arch, want in arms_mod.EXPECTED_ARMS.items():
         assert sum(1 for r in rows if r["arch"] == arch) == want
+
+
+def test_batch_256_is_in_the_grid_and_128_is_not(arms_mod):
+    # 256 comes from the 2026-11-20 directive; 128 is refused there because medium and
+    # large take 64 columns on one GPU, so 4 GPUs cannot build a batch below 256.
+    assert 256 in arms_mod.BATCHES
+    assert 128 not in arms_mod.BATCHES
+
+
+def test_the_smallest_batch_is_the_one_with_the_most_steps(rows):
+    for arch in ("bert", "gpt2"):
+        sel = [r for r in rows if r["arch"] == arch]
+        smallest = min(r["batch"] for r in sel)
+        most = max(r["steps"] for r in sel)
+        assert all(r["steps"] == most for r in sel if r["batch"] == smallest)
 
 
 def test_every_size_and_batch_is_present(rows, arms_mod):
@@ -137,15 +158,15 @@ def test_rate_scales_as_the_square_root_of_the_batch(arms_mod):
 
 def test_bert_runs_two_rates_below_2048_and_three_at_or_above(rows):
     for size in ("small", "medium", "large", "xl"):
-        for batch, want in ((512, 2), (1024, 2), (2048, 3), (4096, 3)):
+        for batch, want in ((256, 2), (512, 2), (1024, 2), (2048, 3), (4096, 3)):
             sel = [r for r in rows if r["arch"] == "bert" and r["size"] == size
                    and r["batch"] == batch]
             assert len(sel) == want
 
 
-def test_gpt2_runs_one_rate_per_batch(rows):
+def test_gpt2_runs_one_rate_per_batch(rows, arms_mod):
     for size in ("small", "medium", "large", "xl"):
-        for batch in (512, 1024, 2048, 4096):
+        for batch in arms_mod.BATCHES:
             sel = [r for r in rows if r["arch"] == "gpt2" and r["size"] == size
                    and r["batch"] == batch]
             assert len(sel) == 1
@@ -209,7 +230,7 @@ def test_bert_runs_on_four_gpus_and_gpt2_has_no_world_factor(rows):
         assert row["world_size"] == (4 if row["arch"] == "bert" else 1)
 
 
-def test_one_gpus_count_is_held_across_the_four_batches(rows):
+def test_one_gpus_count_is_held_across_every_batch(rows):
     for arch in ("bert", "gpt2"):
         for size in ("small", "medium", "large", "xl"):
             micro = {r["micro_batch"] for r in rows
@@ -217,7 +238,7 @@ def test_one_gpus_count_is_held_across_the_four_batches(rows):
             assert len(micro) == 1
 
 
-def test_both_micro_batch_sets_divide_every_batch(arms_mod):
+def test_both_micro_batch_sets_divide_every_batch_including_256(arms_mod):
     for which in arms_mod.MICRO_BATCH:
         for arch in ("bert", "gpt2"):
             for size in arms_mod.SIZES:
@@ -227,7 +248,7 @@ def test_both_micro_batch_sets_divide_every_batch(arms_mod):
 
 
 def test_a_shape_that_does_not_divide_the_batch_is_refused(arms_mod):
-    # medium's current 160 x 4 GPUs = 640, which divides none of the four batches.
+    # medium's current 160 x 4 GPUs = 640, which divides none of the five batches.
     arms_mod.MICRO_BATCH["_probe"] = {"bert": {"medium": 160}, "gpt2": {}}
     try:
         with pytest.raises(SystemExit):
@@ -249,10 +270,40 @@ def test_the_evaluation_micro_batch_does_not_follow_the_training_batch(rows):
             assert row["eval_batch"] == 32  # whatever the training batch is
 
 
-def test_judged_metric_is_eval_loss_for_bert_and_val_loss_for_gpt2(rows):
+def test_judged_metric_is_the_mask_loss_for_bert_and_val_loss_for_gpt2(rows):
+    # 2026-11-20 §2 moved BERT off eval_loss; GPT-2 stays where 19c §7 put it.
     for row in rows:
-        assert row["judge_metric"] == ("eval_loss" if row["arch"] == "bert"
+        assert row["judge_metric"] == ("eval_loss_mask" if row["arch"] == "bert"
                                        else "val_loss")
+
+
+def test_the_judged_metric_is_one_the_bert_path_computes(arms_mod):
+    # A name nothing logs would leave the save callback waiting for a key that never
+    # arrives. These four are what models/bert/_mlm_diagnostics puts in the metrics.
+    assert arms_mod.JUDGE_METRIC["bert"] in {
+        "eval_loss", "eval_loss_mask", "eval_loss_copy", "eval_loss_random"}
+
+
+def test_the_bert_judge_keys_move_together(cfg_mod):
+    # The four names are one constant in the generator, so a config cannot be written
+    # with retention following a different metric from the judgement.
+    for name in ("judge_on", "metric_for_best_model", "save_on_improve_metric",
+                 "checkpoint_metric"):
+        assert cfg_mod.CONSTANT["bert"][name] == cfg_mod.BERT_JUDGE_METRIC
+    assert cfg_mod.BERT_JUDGE_METRIC == "eval_loss_mask"
+
+
+def test_every_bert_config_names_the_judged_metric_four_times(written):
+    out, _ = written
+    for path in out.glob("bert_*.py"):
+        text = path.read_text(encoding="utf-8")
+        declared = [line.split("=", 1)[0].strip() for line in text.splitlines()
+                    if line.startswith(("judge_on", "metric_for_best_model",
+                                        "save_on_improve_metric", "checkpoint_metric"))]
+        assert sorted(declared) == ["checkpoint_metric", "judge_on",
+                                    "metric_for_best_model", "save_on_improve_metric"]
+        assert text.count('= "eval_loss_mask"') == 4
+        assert '= "eval_loss"' not in text
 
 
 # --- the configs ----------------------------------------------------------------

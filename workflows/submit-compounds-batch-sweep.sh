@@ -25,6 +25,13 @@
 # the end of a run is refused by the launcher in seconds, so a spare costs a few
 # seconds of allocation and covers a slower node.
 #
+# Those figures are per arm, not per batch: the budget is fixed in columns, so every
+# batch of a size moves the same data and the training time above is the same at 256 as
+# at 4096. What is not the same is the number of optimizer steps the time is spread
+# over -- 450,000 at batch 256 against 28,125 at 4096 -- and the per-step overhead
+# outside the forward and backward passes rides on that count. It has not been
+# measured at this shape, so the arms at batch 256 get one further spare segment.
+#
 # The chain is --dependency=afterany, not afterok: a segment cut by the time limit ends
 # TIMEOUT and afterok would never start the next one. The launcher continues only from
 # TIMEOUT, so a segment that crashed stops the chain rather than resuming into the same
@@ -55,6 +62,8 @@ esac
 # directive of 2026-11-19 on that one question replaced 19c §8 and settled it, and the
 # configs were regenerated from it, so bert is submitted like gpt2 now.
 declare -A SEGMENTS=([small]=2 [medium]=3 [large]=3 [xl]=5)
+# The batches whose step count is far above the rest get one more spare (see above).
+EXTRA_SEGMENT_BATCHES=" 256 "
 
 submitted=0
 # The fields are pulled out by name rather than by position, so a new column in the
@@ -86,6 +95,7 @@ while read -r size batch slug cfg; do
   fi
 
   segments="${SEGMENTS[$size]}"
+  case "${EXTRA_SEGMENT_BATCHES}" in *" ${batch} "*) segments=$((segments + 1)) ;; esac
   prev=""
   for seg in $(seq 1 "${segments}"); do
     name="mc-cmp-bert-${size}-b${batch}-lr${slug}-s${seg}"

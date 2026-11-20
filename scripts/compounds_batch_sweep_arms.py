@@ -1,16 +1,25 @@
 """Derive the compounds batch-size grid's arms, and check the directive's own tables.
 
 The 2026-11-19c directive prints the step counts, the evaluation and save intervals,
-the warmup lengths, the accumulation counts and the 56 learning rates it wants. All of
-them follow from rules the same directive states:
+the warmup lengths, the accumulation counts and the learning rates it wants, and the
+2026-11-20 directive adds a fifth batch and 12 more arms. All of them follow from
+rules the same directives state:
 
     a fixed number of columns, so the step count is columns / batch (§2)
     intervals that put every arm's points at the same column position (§2)
     the rate scaled by sqrt(batch / 2560) off the existing 2,560 arm (§3)
     warmup at the framework's own fraction, truncated (§4)
-    one GPU's column count held across the four batches of a size, so the
+    one GPU's column count held across the batches of a size, so the
     accumulation count carries the whole difference (the micro-batch directive
     of 2026-11-19, which replaces 19c §8)
+
+The 2026-11-20 directive changes two things and leaves the rest standing. §1 adds
+batch 256 -- BERT 8 arms and GPT-2 4, so 68 in all -- because 512 is the lowest batch
+tried and came out best at three of the four sizes, which leaves it undecided whether
+512 sits inside a flat range or at its edge. §2 moves what BERT is judged and kept on
+from eval_loss to eval_loss_mask; eval_loss goes on being recorded and reported. 128
+is deliberately not added: medium and large take 64 columns on one GPU, so 4 GPUs move
+256 at a time and cannot build 128.
 
 So this derives them from the rules and compares the result against the printed
 tables, which are written out below as expectations. A cell that disagrees is
@@ -24,7 +33,8 @@ same way: its tables named BERT medium / large / xl 8 while its sentence said ea
 size keeps its current value, and the adopted arms run at medium 160, large 64, xl 32
 -- a value that divides none of the four batches at 4 GPUs. The directive of
 2026-11-19 on this one question replaces §8 and settles it on the fastest shape that
-does divide them. That is what this writes; the superseded table is kept as
+does divide them, and the 2026-11-20 directive repeats that shape for batch 256. That
+is what this writes; the superseded table is kept as
 ``--micro-batch-set 19c-s8`` so a run started under it could be reproduced. The two
 differ in throughput, not in the global batch, and which one was used is written into
 every row and into the provenance.
@@ -43,8 +53,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from report_tsv import check_name, stamp, write_tsv  # noqa: E402
 
-#: §1. Four batches, four sizes, both frameworks.
-BATCHES = [512, 1024, 2048, 4096]
+#: §1. Five batches, four sizes, both frameworks. 256 comes from the 2026-11-20
+#: directive; the four above it from 19c.
+BATCHES = [256, 512, 1024, 2048, 4096]
 SIZES = ["small", "medium", "large", "xl"]
 
 #: §2. The budget, in columns (packed 1,024-token blocks). BERT is the existing
@@ -63,7 +74,7 @@ BASE_BATCH = 2560
 #: §3. BERT runs several rates per batch and keeps the lowest; GPT-2 runs one.
 #: The multipliers are read off the printed table: 0.7 and 1.0 where there are two,
 #: 0.7, 1.0 and 1.4 where there are three.
-BERT_MULTIPLIERS = {512: [0.7, 1.0], 1024: [0.7, 1.0],
+BERT_MULTIPLIERS = {256: [0.7, 1.0], 512: [0.7, 1.0], 1024: [0.7, 1.0],
                     2048: [0.7, 1.0, 1.4], 4096: [0.7, 1.0, 1.4]}
 GPT2_MULTIPLIERS = {b: [1.0] for b in BATCHES}
 
@@ -80,7 +91,7 @@ WARMUP_FRACTION = {"bert": 0.10, "gpt2": 0.02}
 
 #: One GPU's column count. ``micro-order`` is the directive of 2026-11-19 on this one
 #: question (compounds-batch-micro-order-2026-11-19.md §1), which replaces §8 of the
-#: 19c directive: the fastest shape that divides all four batches, measured on
+#: 19c directive: the fastest shape that divides all five batches, measured on
 #: compounds at 4 GPUs, bf16, global batch 2,560 -- small 3.13 s/step at 32, medium
 #: 7.35 at 64 (7.21 at 160, which divides none of the four batches), large 12.14 at 64,
 #: xl 23.70 at 32. ``19c-s8`` is the superseded table, kept so a run started under it
@@ -102,13 +113,16 @@ MICRO_BATCH = {
 #: well (32 x 20 x 4 = 2,560). §6 fixes the GPU count at 4 for BERT.
 WORLD_SIZE = {"bert": 4, "gpt2": 1}
 
-#: 19c §6. One evaluation micro-batch for all 40 BERT arms. 32 is the largest value xl is
+#: 19c §6. One evaluation micro-batch for all 48 BERT arms. 32 is the largest value xl is
 #: on record as having run at (every adopted compounds xl arm scores at 32), so it is
 #: chosen rather than a larger untried one.
 BERT_EVAL_BATCH = 32
 
-#: §7. The metric the arm is judged and kept on.
-JUDGE_METRIC = {"bert": "eval_loss", "gpt2": "val_loss"}
+#: The metric the arm is judged and kept on. 19c §7 named eval_loss for BERT; the
+#: 2026-11-20 directive §2 moves it to eval_loss_mask and holds retention to the same
+#: name. eval_loss is still computed, still logged and still reported beside it. GPT-2
+#: stays on val_loss, and its completed arms are not re-run.
+JUDGE_METRIC = {"bert": "eval_loss_mask", "gpt2": "val_loss"}
 
 #: §4. GPT-2's floor is a tenth of its own peak, and its decay length is its own run.
 GPT2_MIN_LR_DIVISOR = 10
@@ -118,49 +132,59 @@ GPT2_MIN_LR_DIVISOR = 10
 # ---------------------------------------------------------------------------
 
 EXPECTED_STEPS = {
-    "bert": {512: 225_000, 1024: 112_500, 2048: 56_250, 4096: 28_125},
-    "gpt2": {512: 23_400, 1024: 11_700, 2048: 5_850, 4096: 2_925},
+    "bert": {256: 450_000, 512: 225_000, 1024: 112_500, 2048: 56_250, 4096: 28_125},
+    "gpt2": {256: 46_800, 512: 23_400, 1024: 11_700, 2048: 5_850, 4096: 2_925},
 }
 EXPECTED_INTERVALS = {
-    "bert": {512: (1000, 5000), 1024: (500, 2500), 2048: (250, 1250), 4096: (125, 625)},
-    "gpt2": {512: (80, None), 1024: (40, None), 2048: (20, None), 4096: (10, None)},
+    "bert": {256: (2000, 10000), 512: (1000, 5000), 1024: (500, 2500),
+             2048: (250, 1250), 4096: (125, 625)},
+    "gpt2": {256: (160, None), 512: (80, None), 1024: (40, None), 2048: (20, None),
+             4096: (10, None)},
 }
 EXPECTED_WARMUP = {
-    "bert": {512: 22_500, 1024: 11_250, 2048: 5_625, 4096: 2_812},
-    "gpt2": {512: 468, 1024: 234, 2048: 117, 4096: 58},
+    "bert": {256: 45_000, 512: 22_500, 1024: 11_250, 2048: 5_625, 4096: 2_812},
+    "gpt2": {256: 936, 512: 468, 1024: 234, 2048: 117, 4096: 58},
 }
 #: The micro-batch directive's second table (§1), and GPT-2's from 19c §8, which that
 #: directive leaves standing ("GPT-2 の 16 本は変更しない").
 EXPECTED_ACCUM = {
-    ("bert", "small"): {512: 4, 1024: 8, 2048: 16, 4096: 32},
-    ("bert", "medium"): {512: 2, 1024: 4, 2048: 8, 4096: 16},
-    ("bert", "large"): {512: 2, 1024: 4, 2048: 8, 4096: 16},
-    ("bert", "xl"): {512: 4, 1024: 8, 2048: 16, 4096: 32},
-    ("gpt2", "small"): {512: 32, 1024: 64, 2048: 128, 4096: 256},
-    ("gpt2", "medium"): {512: 32, 1024: 64, 2048: 128, 4096: 256},
-    ("gpt2", "large"): {512: 64, 1024: 128, 2048: 256, 4096: 512},
-    ("gpt2", "xl"): {512: 128, 1024: 256, 2048: 512, 4096: 1024},
+    ("bert", "small"): {256: 2, 512: 4, 1024: 8, 2048: 16, 4096: 32},
+    ("bert", "medium"): {256: 1, 512: 2, 1024: 4, 2048: 8, 4096: 16},
+    ("bert", "large"): {256: 1, 512: 2, 1024: 4, 2048: 8, 4096: 16},
+    ("bert", "xl"): {256: 2, 512: 4, 1024: 8, 2048: 16, 4096: 32},
+    ("gpt2", "small"): {256: 16, 512: 32, 1024: 64, 2048: 128, 4096: 256},
+    ("gpt2", "medium"): {256: 16, 512: 32, 1024: 64, 2048: 128, 4096: 256},
+    ("gpt2", "large"): {256: 32, 512: 64, 1024: 128, 2048: 256, 4096: 512},
+    ("gpt2", "xl"): {256: 64, 512: 128, 1024: 256, 2048: 512, 4096: 1024},
 }
 EXPECTED_LR = {
     "bert": {
-        "small": {512: [3.13e-4, 4.47e-4], 1024: [4.43e-4, 6.32e-4],
+        "small": {256: [2.21e-4, 3.16e-4],
+                  512: [3.13e-4, 4.47e-4], 1024: [4.43e-4, 6.32e-4],
                   2048: [6.26e-4, 8.94e-4, 1.25e-3], 4096: [8.85e-4, 1.26e-3, 1.77e-3]},
-        "medium": {512: [8.77e-5, 1.25e-4], 1024: [1.24e-4, 1.77e-4],
+        "medium": {256: [6.20e-5, 8.85e-5],
+                   512: [8.77e-5, 1.25e-4], 1024: [1.24e-4, 1.77e-4],
                    2048: [1.75e-4, 2.50e-4, 3.51e-4], 4096: [2.48e-4, 3.54e-4, 4.96e-4]},
-        "large": {512: [4.70e-5, 6.71e-5], 1024: [6.64e-5, 9.49e-5],
+        "large": {256: [3.32e-5, 4.74e-5],
+                  512: [4.70e-5, 6.71e-5], 1024: [6.64e-5, 9.49e-5],
                   2048: [9.39e-5, 1.34e-4, 1.88e-4], 4096: [1.33e-4, 1.90e-4, 2.66e-4]},
-        "xl": {512: [1.41e-5, 2.01e-5], 1024: [1.99e-5, 2.85e-5],
+        "xl": {256: [9.96e-6, 1.42e-5],
+               512: [1.41e-5, 2.01e-5], 1024: [1.99e-5, 2.85e-5],
                2048: [2.82e-5, 4.02e-5, 5.63e-5], 4096: [3.98e-5, 5.69e-5, 7.97e-5]},
     },
     "gpt2": {
-        "small": {512: [3.58e-4], 1024: [5.06e-4], 2048: [7.16e-4], 4096: [1.01e-3]},
-        "medium": {512: [3.58e-4], 1024: [5.06e-4], 2048: [7.16e-4], 4096: [1.01e-3]},
-        "large": {512: [7.16e-4], 1024: [1.01e-3], 2048: [1.43e-3], 4096: [2.02e-3]},
-        "xl": {512: [7.16e-4], 1024: [1.01e-3], 2048: [1.43e-3], 4096: [2.02e-3]},
+        "small": {256: [2.53e-4], 512: [3.58e-4], 1024: [5.06e-4], 2048: [7.16e-4],
+                  4096: [1.01e-3]},
+        "medium": {256: [2.53e-4], 512: [3.58e-4], 1024: [5.06e-4], 2048: [7.16e-4],
+                   4096: [1.01e-3]},
+        "large": {256: [5.06e-4], 512: [7.16e-4], 1024: [1.01e-3], 2048: [1.43e-3],
+                  4096: [2.02e-3]},
+        "xl": {256: [5.06e-4], 512: [7.16e-4], 1024: [1.01e-3], 2048: [1.43e-3],
+               4096: [2.02e-3]},
     },
 }
-#: §1's count.
-EXPECTED_ARMS = {"bert": 40, "gpt2": 16}
+#: §1's count: 19c's 40 BERT and 16 GPT-2, plus the 2026-11-20 directive's 8 and 4.
+EXPECTED_ARMS = {"bert": 48, "gpt2": 20}
 
 COLUMNS = ["arch", "size", "batch", "lr", "lr_multiplier", "lr_slug", "steps",
            "warmup_steps", "eval_interval", "save_interval", "rows", "tokens",
@@ -352,10 +376,11 @@ def main(argv=None) -> int:
 
     write_tsv(args.out, COLUMNS, rows, {
         "model": "several (columns: arch,size,batch,lr) -- the compounds batch-size "
-                 "grid asked for by the 2026-11-19c directive",
-        "source": "derived from the directive's rules (budget; interval anchoring; "
+                 "grid asked for by the 2026-11-19c directive and extended by the "
+                 "2026-11-20 directive (batch 256; BERT judged on eval_loss_mask)",
+        "source": "derived from the directives' rules (budget; interval anchoring; "
                   "sqrt scaling; warmup fraction; one GPU's column count) and compared "
-                  "against its printed tables; no arm has been launched",
+                  "against their printed tables",
         "generated": stamp("scripts/compounds_batch_sweep_arms.py"),
         "note": [
             f"budget: BERT {BUDGET_ROWS['bert']:,} columns, GPT-2 "
@@ -366,9 +391,11 @@ def main(argv=None) -> int:
             "to three significant figures",
             f"warmup: BERT {WARMUP_FRACTION['bert']:.0%} and GPT-2 "
             f"{WARMUP_FRACTION['gpt2']:.0%} of the arm's own length, truncated",
-            f"BERT evaluation micro-batch {BERT_EVAL_BATCH} on all 40 arms; judged on "
-            f"{JUDGE_METRIC['bert']}, GPT-2 on {JUDGE_METRIC['gpt2']}",
-            "no arm has been launched; config and out_dir are planned names",
+            f"BERT evaluation micro-batch {BERT_EVAL_BATCH} on all 48 arms; judged on "
+            f"{JUDGE_METRIC['bert']} (2026-11-20 §2), GPT-2 on {JUDGE_METRIC['gpt2']}",
+            "the 16 GPT-2 arms at batch 512-4096 have run; the BERT arms are the "
+            "relaunch the 2026-11-20 directive asks for, and the 4 GPT-2 arms at "
+            "batch 256 are new",
         ],
         "job": os.environ.get("SLURM_JOB_ID") or None,
     })
