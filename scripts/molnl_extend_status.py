@@ -29,7 +29,12 @@ import os
 import subprocess
 
 #: run slug -> (arch, size, job, the value and step it resumed from, the constant rate)
+#: The _extm arms are the 2026-11-19 reruns, resumed with the optimizer's moments kept;
+#: the _ext arms are the 2026-11-16 pass, which lost them. --suffix picks one set.
 RUNS = (
+    ("bert_small_24k_lr1e3_extm", "bert", "small", 367683, 0.059050, 24000, 1e-4),
+    ("bert_medium_24k_lr3e4_extm", "bert", "medium", 367685, 0.056791, 24000, 3e-5),
+    ("bert_large_24k_lr1p7e4_extm", "bert", "large", 367687, 0.057246, 23800, 1.7e-5),
     ("bert_small_24k_lr1e3_ext", "bert", "small", 356041, 0.059050, 24000, 1e-4),
     ("bert_medium_24k_lr3e4_ext", "bert", "medium", 356043, 0.056791, 24000, 3e-5),
     ("bert_large_24k_lr1p7e4_ext", "bert", "large", 356045, 0.057246, 23800, 1.7e-5),
@@ -96,10 +101,15 @@ def main():
     ap.add_argument("--bert-root", required=True)
     ap.add_argument("--gpt2-root", required=True)
     ap.add_argument("--markdown", action="store_true")
+    ap.add_argument("--suffix", action="append",
+                    help="only runs whose directory ends with this (e.g. _extm). Repeatable; "
+                         "the default is every run in the table")
     args = ap.parse_args()
 
     out = []
     for slug, arch, size, job, baseline, baseline_step, lr in RUNS:
+        if args.suffix and not any(slug.endswith(s) for s in args.suffix):
+            continue
         root = args.bert_root if arch == "bert" else args.gpt2_root
         run_dir = os.path.join(root, slug)
         info = bert(run_dir) if arch == "bert" else gpt2(run_dir)
@@ -133,11 +143,12 @@ def main():
         return 0
     for arch, title in (("gpt2", "GPT-2"), ("bert", "BERT")):
         print(f"\n### {title}\n")
-        print("| size | job | state | step | resumed from | best after the resume | adopted | "
-              "no-improve | projected stop |")
-        print("|---|---|---|---:|---:|---:|---:|---:|---:|")
+        print("| size | run | job | state | step | resumed from | best after the resume | "
+              "adopted | no-improve | projected stop |")
+        print("|---|---|---|---|---:|---:|---:|---:|---:|---:|")
         for r in (x for x in out if x["arch"] == arch):
-            print("| {size} | {job} | {state} | {step} | {baseline:.6f} @{baseline_step} | "
+            # the run name distinguishes the two passes of the same arm
+            print("| {size} | {run} | {job} | {state} | {step} | {baseline:.6f} @{baseline_step} | "
                   "{b} @{bs} | {adopted_value:.6f} @{adopted_step} | {c} | {p} |".format(
                       b=f"{r['best_after_resume']:.6f}", bs=r["best_after_resume_step"],
                       c=(f"{r['counter']}/{r['patience']}" if r["counter"] is not None else "-"),
