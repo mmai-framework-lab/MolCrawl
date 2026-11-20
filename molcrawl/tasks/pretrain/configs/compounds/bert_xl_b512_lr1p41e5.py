@@ -15,8 +15,9 @@
 # Warmup is 10 % of this arm's own length (§4), truncated: 22,500 of
 # 225,000. The decay shape is the one the existing ladder uses.
 #
-# One GPU takes 8 columns and the accumulation count carries the rest (§8):
-# 8 x 16 x 4 GPUs = 512. Held across the four batches, so what differs between them is the accumulation count and nothing else.
+# One GPU takes 32 columns and the accumulation count carries the rest (the
+# micro-batch directive of 2026-11-19, which replaces 19c §8):
+# 32 x 4 x 4 GPUs = 512. Held across the four batches, so what differs between them is the accumulation count and nothing else.
 #
 # Evaluation is fixed, not redrawn (§6): the same 10,000 rows, the same masked
 # positions, the same grouping into batches on all 40 BERT arms. fixed_eval_mask
@@ -94,9 +95,9 @@ degenerate_loss_threshold = 2.395
 # attends across document boundaries.
 document_masking = True
 
-# 8 x 16 x 4 GPUs = 512 (§8).
-batch_size = 8
-gradient_accumulation_steps = 16
+# 32 x 4 x 4 GPUs = 512 (micro-batch directive §1).
+batch_size = 32
+gradient_accumulation_steps = 4
 # Declared so main.py stops a launch whose GPU count would build another batch (§5).
 expected_global_batch = 512
 

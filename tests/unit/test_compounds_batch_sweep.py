@@ -45,7 +45,7 @@ def cfg_mod():
 
 @pytest.fixture(scope="module")
 def rows(arms_mod):
-    return arms_mod.arms("order")
+    return arms_mod.arms("micro-order")
 
 
 # --- the grid's shape (§1) -------------------------------------------------------
@@ -82,7 +82,7 @@ def test_output_directory_carries_lr_so_bert_grid_accepts_it(rows):
 # --- the directive's own tables --------------------------------------------------
 
 def test_derivation_matches_every_printed_table(rows, arms_mod, capsys):
-    problems = arms_mod.check(rows, "order")
+    problems = arms_mod.check(rows, "micro-order")
     capsys.readouterr()
     assert problems == 0
 

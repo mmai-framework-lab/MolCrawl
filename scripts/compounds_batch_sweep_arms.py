@@ -8,24 +8,25 @@ them follow from rules the same directive states:
     intervals that put every arm's points at the same column position (§2)
     the rate scaled by sqrt(batch / 2560) off the existing 2,560 arm (§3)
     warmup at the framework's own fraction, truncated (§4)
-    one GPU's column count held across the four batches, so the accumulation
-    count carries the whole difference (§8)
+    one GPU's column count held across the four batches of a size, so the
+    accumulation count carries the whole difference (the micro-batch directive
+    of 2026-11-19, which replaces 19c §8)
 
 So this derives them from the rules and compares the result against the printed
 tables, which are written out below as expectations. A cell that disagrees is
 reported rather than silently preferred: either the rule or the table is wrong, and
 which one it is cannot be settled by copying one into the other.
 
-    compounds_batch_sweep_arms.py --out rt1-...tsv [--micro-batch-set order|fastest]
+    compounds_batch_sweep_arms.py --out rt1-...tsv [--micro-batch-set micro-order]
 
-One GPU's column count is a choice between two sets, because §8 states the two in one
-breath and they are not the same thing. Its table names BERT small 32 and BERT
-medium / large / xl 8, and its accumulation table is built from those; its sentence
-says each size keeps its current value, and the four adopted compounds arms run at
-small 32, medium 160, large 64, xl 32. ``order`` is the table, which is what this
-writes by default. ``fastest`` is the largest shape each size was measured fastest at
-that also divides all four batches. The two differ in throughput, not in the global
-batch, so the inventory is produced either way and which one was used is written into
+One GPU's column count went through a correction. 19c §8 stated it twice and not the
+same way: its tables named BERT medium / large / xl 8 while its sentence said each
+size keeps its current value, and the adopted arms run at medium 160, large 64, xl 32
+-- a value that divides none of the four batches at 4 GPUs. The directive of
+2026-11-19 on this one question replaces §8 and settles it on the fastest shape that
+does divide them. That is what this writes; the superseded table is kept as
+``--micro-batch-set 19c-s8`` so a run started under it could be reproduced. The two
+differ in throughput, not in the global batch, and which one was used is written into
 every row and into the provenance.
 
 Read-only: it computes and writes one TSV.
@@ -77,19 +78,21 @@ ANCHOR_INTERVALS = {
 #: §4. warmup is the framework's own current fraction of its own step count, truncated.
 WARMUP_FRACTION = {"bert": 0.10, "gpt2": 0.02}
 
-#: §8. One GPU's column count. ``order`` is the directive's printed table; ``fastest``
-#: is each size's measured-fastest shape among those that divide all four batches
-#: (compounds, 4 GPUs, bf16, global batch 2,560: medium 7.21 s/step at 160 and 7.35 at
-#: 64 against 14.47 at 8; large 12.14 at 64 against 22.35 at 8; xl 23.70 at 32 against
-#: 43.72 at 8). medium's current 160 is not in either set: 160 x 4 GPUs = 640 divides
-#: none of the four batches.
+#: One GPU's column count. ``micro-order`` is the directive of 2026-11-19 on this one
+#: question (compounds-batch-micro-order-2026-11-19.md §1), which replaces §8 of the
+#: 19c directive: the fastest shape that divides all four batches, measured on
+#: compounds at 4 GPUs, bf16, global batch 2,560 -- small 3.13 s/step at 32, medium
+#: 7.35 at 64 (7.21 at 160, which divides none of the four batches), large 12.14 at 64,
+#: xl 23.70 at 32. ``19c-s8`` is the superseded table, kept so a run started under it
+#: can still be reproduced; it named 8 for medium, large and xl, which is 1.84 to 1.97
+#: times slower (14.47, 22.35 and 43.72 s/step).
 MICRO_BATCH = {
-    "order": {
-        "bert": {"small": 32, "medium": 8, "large": 8, "xl": 8},
+    "micro-order": {
+        "bert": {"small": 32, "medium": 64, "large": 64, "xl": 32},
         "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4},
     },
-    "fastest": {
-        "bert": {"small": 32, "medium": 64, "large": 64, "xl": 32},
+    "19c-s8": {
+        "bert": {"small": 32, "medium": 8, "large": 8, "xl": 8},
         "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4},
     },
 }
@@ -99,7 +102,7 @@ MICRO_BATCH = {
 #: well (32 x 20 x 4 = 2,560). §6 fixes the GPU count at 4 for BERT.
 WORLD_SIZE = {"bert": 4, "gpt2": 1}
 
-#: §6. One evaluation micro-batch for all 40 BERT arms. 32 is the largest value xl is
+#: 19c §6. One evaluation micro-batch for all 40 BERT arms. 32 is the largest value xl is
 #: on record as having run at (every adopted compounds xl arm scores at 32), so it is
 #: chosen rather than a larger untried one.
 BERT_EVAL_BATCH = 32
@@ -126,12 +129,13 @@ EXPECTED_WARMUP = {
     "bert": {512: 22_500, 1024: 11_250, 2048: 5_625, 4096: 2_812},
     "gpt2": {512: 468, 1024: 234, 2048: 117, 4096: 58},
 }
-#: §8's second table, keyed by the size groups it prints.
+#: The micro-batch directive's second table (§1), and GPT-2's from 19c §8, which that
+#: directive leaves standing ("GPT-2 の 16 本は変更しない").
 EXPECTED_ACCUM = {
     ("bert", "small"): {512: 4, 1024: 8, 2048: 16, 4096: 32},
-    ("bert", "medium"): {512: 16, 1024: 32, 2048: 64, 4096: 128},
-    ("bert", "large"): {512: 16, 1024: 32, 2048: 64, 4096: 128},
-    ("bert", "xl"): {512: 16, 1024: 32, 2048: 64, 4096: 128},
+    ("bert", "medium"): {512: 2, 1024: 4, 2048: 8, 4096: 16},
+    ("bert", "large"): {512: 2, 1024: 4, 2048: 8, 4096: 16},
+    ("bert", "xl"): {512: 4, 1024: 8, 2048: 16, 4096: 32},
     ("gpt2", "small"): {512: 32, 1024: 64, 2048: 128, 4096: 256},
     ("gpt2", "medium"): {512: 32, 1024: 64, 2048: 128, 4096: 256},
     ("gpt2", "large"): {512: 64, 1024: 128, 2048: 256, 4096: 512},
@@ -304,7 +308,7 @@ def check(rows, which_set: str) -> int:
                     problems += 1
                     print(f"  ** {arch} {size} batch {batch}: accumulation "
                           f"{sorted(accum)} against directive {wanted}"
-                          + ("" if which_set == "order"
+                          + ("" if which_set == "micro-order"
                              else f" (micro-batch set '{which_set}', not the table)"))
 
     print(f"\n  compared: {sum(len(EXPECTED_LR[a][s][b]) for a in EXPECTED_LR for s in SIZES for b in BATCHES)} rates, "
@@ -315,9 +319,10 @@ def check(rows, which_set: str) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--micro-batch-set", choices=sorted(MICRO_BATCH), default="order",
-                    help="one GPU's column count: 'order' is §8's printed table, "
-                         "'fastest' is each size's measured-fastest dividing shape")
+    ap.add_argument("--micro-batch-set", choices=sorted(MICRO_BATCH),
+                    default="micro-order",
+                    help="one GPU's column count: 'micro-order' is the 2026-11-19 "
+                         "micro-batch directive, '19c-s8' the table it replaced")
     ap.add_argument("--out", required=True,
                     help="the base name begins with rt1- (the column convention)")
     args = ap.parse_args(argv)

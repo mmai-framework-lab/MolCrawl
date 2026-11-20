@@ -15,7 +15,8 @@
 # Warmup is 2 % of this arm's own length (§4), truncated: 468 of
 # 23,400. The decay shape is the one the existing ladder uses.
 #
-# One GPU takes 4 columns and the accumulation count carries the rest (§8):
+# One GPU takes 4 columns and the accumulation count carries the rest (the
+# micro-batch directive of 2026-11-19, which replaces 19c §8):
 # 4 x 128 = 512. Held across the four batches, so what differs between them is the accumulation count and nothing else.
 #
 # The validation set is deterministic already (§6), so nothing about the evaluation
@@ -40,7 +41,8 @@ eos_token_id = tokenizer.eos_token_id  # 13 ([SEP]) — the molecule separator
 
 # nanoGPT divides gradient_accumulation_steps by the DDP world size, so the effective
 # global batch = batch_size * gradient_accumulation_steps and is GPU-count-independent.
-# 4 * 128 = 512 (§8).
+# 4 * 128 = 512 (19c §8; left unchanged by the
+# micro-batch directive of 2026-11-19).
 batch_size = 4
 block_size = 1024
 gradient_accumulation_steps = 128

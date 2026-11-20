@@ -15,7 +15,8 @@
 # Warmup is 10 % of this arm's own length (§4), truncated: 11,250 of
 # 112,500. The decay shape is the one the existing ladder uses.
 #
-# One GPU takes 32 columns and the accumulation count carries the rest (§8):
+# One GPU takes 32 columns and the accumulation count carries the rest (the
+# micro-batch directive of 2026-11-19, which replaces 19c §8):
 # 32 x 8 x 4 GPUs = 1024. Held across the four batches, so what differs between them is the accumulation count and nothing else.
 #
 # Evaluation is fixed, not redrawn (§6): the same 10,000 rows, the same masked
@@ -94,7 +95,7 @@ degenerate_loss_threshold = 2.395
 # attends across document boundaries.
 document_masking = True
 
-# 32 x 8 x 4 GPUs = 1024 (§8).
+# 32 x 8 x 4 GPUs = 1024 (micro-batch directive §1).
 batch_size = 32
 gradient_accumulation_steps = 8
 # Declared so main.py stops a launch whose GPU count would build another batch (§5).

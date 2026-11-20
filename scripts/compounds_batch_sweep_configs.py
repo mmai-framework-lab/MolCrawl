@@ -73,7 +73,8 @@ HEADER = '''# compounds {arch_label} {size} — batch {batch}, lr {lr}
 # Warmup is {warmup_pct} of this arm's own length (§4), truncated: {warmup:,} of
 # {steps:,}. The decay shape is the one the existing ladder uses.
 #
-# One GPU takes {micro} columns and the accumulation count carries the rest (§8):
+# One GPU takes {micro} columns and the accumulation count carries the rest (the
+# micro-batch directive of 2026-11-19, which replaces 19c §8):
 # {micro} x {grad_accum}{world_term} = {batch}. {micro_note}
 '''
 
@@ -154,7 +155,7 @@ degenerate_loss_threshold = {degenerate}
 # attends across document boundaries.
 document_masking = True
 
-# {micro} x {grad_accum} x {world_size} GPUs = {batch} (§8).
+# {micro} x {grad_accum} x {world_size} GPUs = {batch} (micro-batch directive §1).
 batch_size = {micro}
 gradient_accumulation_steps = {grad_accum}
 # Declared so main.py stops a launch whose GPU count would build another batch (§5).
@@ -202,7 +203,8 @@ eos_token_id = tokenizer.eos_token_id  # 13 ([SEP]) — the molecule separator
 
 # nanoGPT divides gradient_accumulation_steps by the DDP world size, so the effective
 # global batch = batch_size * gradient_accumulation_steps and is GPU-count-independent.
-# {micro} * {grad_accum} = {batch} (§8).
+# {micro} * {grad_accum} = {batch} (19c §8; left unchanged by the
+# micro-batch directive of 2026-11-19).
 batch_size = {micro}
 block_size = {block_size}
 gradient_accumulation_steps = {grad_accum}
