@@ -88,7 +88,16 @@ if [ -n "${SUBMIT_RECORD:-}" ] && [ -z "${DRY_RUN:-}" ]; then
 fi
 
 while IFS=$'\t' read -r arch size batch slug cfg links hours out; do
-  [ -f "${cfg}" ] || { echo "missing config: ${cfg}" >&2; exit 1; }
+  # A real submission needs the config on disk. A dry run is most useful before the
+  # configs are written -- it is how the plan gets read before anything is generated
+  # -- so there a missing file is said out loud and the plan carries on.
+  if [ ! -f "${cfg}" ]; then
+    if [ -n "${DRY_RUN:-}" ]; then
+      echo "    (not written yet: ${cfg})"
+    else
+      echo "missing config: ${cfg}" >&2; exit 1
+    fi
+  fi
   tag="${size}-b${batch}-lr${slug}"
   echo "  ${arch} ${tag}: ${links} link(s), ~${hours} h -> ${out}"
   dep=""
