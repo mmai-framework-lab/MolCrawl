@@ -107,6 +107,19 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 # is asked below before the allocation is put to work.
 CFG_NAME="$(basename "${CFG}" .py)"
 
+# molecule_nat_lang's tokenizer reads GPT2_TOKENIZER_DIR and, without it, asks
+# AutoTokenizer for the model id with local_files_only -- which raises under
+# TRANSFORMERS_OFFLINE=1. Its BERT configs build that tokenizer at import time, so the
+# config read below raised and all 112 jobs of the 2026-11-20 batch grid ended at
+# "could not read" in 26 seconds each. molnl-bert-ladder.sbatch has always exported it;
+# this launcher had not needed to, because no modality that uses it did.
+# Set for this modality only, so no other modality's environment changes by one byte.
+if [ "${MODALITY}" = "molecule_nat_lang" ]; then
+  export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
+  [ -d "${GPT2_TOKENIZER_DIR}" ] || {
+    echo "GPT2_TOKENIZER_DIR=${GPT2_TOKENIZER_DIR} is not a directory; molecule_nat_lang" \
+         "configs cannot build their tokenizer without it" >&2; exit 1; }
+fi
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${PYROOT}/tmp/hf-cache-${MODALITY}}"
 export LD_LIBRARY_PATH="${PYROOT}/miniconda/lib:${LD_LIBRARY_PATH:-}"
 export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
@@ -117,7 +130,11 @@ cd "${REPO}"; mkdir -p "${HF_DATASETS_CACHE}" workflows/slurm-logs
 
 # The grid configs import their base rather than restating it, so the values cannot be
 # read out of the file with grep. Run it the way main.py will and read what it resolves to.
-_cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>/dev/null
+# Its stderr goes to a file rather than to /dev/null: a config that cannot be read is
+# reported with the reason it could not be read. Swallowing it is what turned a missing
+# environment variable into 112 jobs whose whole log was one line.
+_cfg_err="$(mktemp)"
+_cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>"${_cfg_err}"
 import runpy, sys
 g = runpy.run_path(sys.argv[1])
 keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
@@ -128,7 +145,9 @@ keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
 for k in keys:
     print(f"{k}={g.get(k)}")
 PYEOF
-) || { echo "could not read ${CFG}" >&2; exit 1; }
+) || { echo "could not read ${CFG}; it raised:" >&2
+        sed 's/^/    /' "${_cfg_err}" >&2; rm -f "${_cfg_err}"; exit 1; }
+rm -f "${_cfg_err}"
 _cfg_steps=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^max_steps=//p')
 [ -n "${_cfg_steps}" ] || { echo "no max_steps in ${CFG}" >&2; exit 1; }
 OUT=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^model_path=//p')
