@@ -2,8 +2,15 @@
 # Submit the compounds batch-size grid's arms, one job per arm, from the inventory.
 #
 #   LEARNING_SOURCE_DIR=<input root> MODEL_OUTPUT_ROOT=<output root> \
-#   ARMS=<rt1-...arms.tsv> SUBMIT_RECORD=<record file> [ARCH=gpt2] [DRY=1] \
+#   ARMS=<rt1-...arms.tsv> SUBMIT_RECORD=<record file> [ARCH=gpt2] \
+#   [ONLY_BATCHES="256 512"] [DRY=1] \
 #       workflows/submit-compounds-batch-sweep.sh
+#
+# ONLY_BATCHES submits just the arms at those global batches. The inventory holds
+# every arm of the grid, including ones that have already run: the 2026-11-20
+# directive added batch 256 to a GPT-2 column whose other 16 arms were finished and
+# are explicitly not to be re-run, so submitting by architecture alone would start
+# them again. Unset, every arm of the architecture is submitted.
 #
 # ARCH=gpt2 submits one job per arm; ARCH=bert submits a chain of segments per arm,
 # because a BERT arm of this grid outruns the 96-hour limit at three of the four sizes.
@@ -70,12 +77,14 @@ submitted=0
 # inventory does not shift what is read. awk rather than `read -a`: IFS=tab treats a
 # tab as whitespace, so a run of tabs -- which is what the empty cells of the other
 # framework's columns are -- would collapse and shift every later field.
-rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" '
+only=""
+[ -n "${ONLY_BATCHES:-}" ] && only=" ${ONLY_BATCHES} "
+rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v only="${only}" '
   NR == 1 { for (i = 1; i <= NF; i++) at[$i] = i; next }
-  $at["arch"] == want {
+  $at["arch"] == want && (only == "" || index(only, " " $at["batch"] " ") > 0) {
     print $at["size"], $at["batch"], $at["lr_slug"], $at["config"]
   }')
-[ -n "${rows}" ] || { echo "no ${ARCH} arm in ${ARMS}" >&2; exit 1; }
+[ -n "${rows}" ] || { echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}" >&2; exit 1; }
 
 while read -r size batch slug cfg; do
   [ -f "${cfg}" ] || { echo "no config at ${cfg}" >&2; exit 1; }
