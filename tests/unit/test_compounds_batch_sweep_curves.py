@@ -114,13 +114,24 @@ def test_a_running_arm_reports_the_loop_ahead_of_its_last_evaluation(tmp_path):
     assert summary[0]["steps_planned"] == 450000
 
 
-def test_no_masked_token_floor_is_claimed(tmp_path):
+def test_the_masked_token_floor_is_the_unigram_not_the_blended_figure(tmp_path):
+    # eval_loss_mask is scored at the [MASK] positions alone, so its floor is the
+    # unigram cross-entropy there (2.4733), not the blended figure (2.2242) that
+    # belongs beside eval_loss, and not the arms' configured trip line (2.395).
+    assert curves.BERT_FLOOR == 2.4733
     runs = str(tmp_path)
-    # Above the GPT-2 floor of 2.395, which says nothing about a masked-token loss.
-    write_state(runs, ARM["out_dir"], 2000, pair(2000, 2.60, 2.60))
+    write_state(runs, ARM["out_dir"], 2000, pair(2000, 2.50, 2.30))
     _curve, summary, _ = curves.rows_for_bert([ARM], runs)
-    assert curves.BERT_FLOOR is None
-    assert summary[0]["collapsed"] == ""
+    assert summary[0]["collapsed"] == "yes"
+
+
+def test_an_arm_below_the_floor_is_not_called_collapsed(tmp_path):
+    runs = str(tmp_path)
+    # Where the xl arms sit: above the configured trip line's neighbourhood but
+    # clearly below the unigram floor, which is learning, not collapse.
+    write_state(runs, ARM["out_dir"], 2000, pair(2000, 1.95, 2.03))
+    _curve, summary, _ = curves.rows_for_bert([ARM], runs)
+    assert summary[0]["collapsed"] == "no"
 
 
 def test_an_arm_with_no_checkpoint_is_named_not_skipped(tmp_path):
@@ -187,7 +198,8 @@ def test_the_summary_tsv_holds_the_new_columns(tmp_path):
             [line for line in handle if not line.startswith("#")], delimiter="\t"))
     assert rows[0]["beside_metric"] == "eval_loss"
     assert rows[0]["judged_metric"] == "eval_loss_mask"
-    assert rows[0]["collapsed"] == ""
+    # The arm ends at 0.20, far under the unigram floor at the [MASK] positions.
+    assert rows[0]["collapsed"] == "no"
 
 
 def test_bert_without_runs_is_refused(tmp_path):

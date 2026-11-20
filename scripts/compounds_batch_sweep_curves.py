@@ -60,11 +60,19 @@ DEGENERATE_FLOOR = 2.395
 BERT_JUDGED = "eval_loss_mask"
 BERT_BESIDE = "eval_loss"
 
-#: No masked-token floor has been measured for this corpus. The unigram floor over the
-#: masked positions of the fixed evaluation set is the figure that would go here; until
-#: it is measured, a BERT arm's `collapsed` cell stays empty instead of carrying a
-#: comparison against a number that describes a different objective.
-BERT_FLOOR = None
+#: The masked-token floor: the unigram cross-entropy at the [MASK] positions, which is
+#: what eval_loss_mask reads when a run has learned nothing beyond the token marginal.
+#: 2.4733, measured on this packed build on 2026-11-02 by scripts/mlm_lookup_baselines.py
+#: (`report/mlm-baselines-20261102/full/compounds.json`: valid split, 10,000 rows,
+#: 1,595,521 masked positions, tables fitted on 200,000 train rows, mlm_probability 0.2)
+#: -- the same split, row count and masking probability the grid's arms evaluate on.
+#: The companion blended figure 2.2242 belongs beside eval_loss, which is scored over
+#: the copyable positions too, and is not the line for the judged metric.
+#:
+#: The 2.395 in the arms' configs is the August derivation of that blended figure. It
+#: sits just under this floor, so an arm that collapses to the unigram solution lands
+#: above it and the collapse detector stops the run.
+BERT_FLOOR = 2.4733
 
 CURVE_COLUMNS = ["arch", "size", "batch", "lr", "seed", "step", "metric", "value",
                  "rows_seen", "tokens_seen", "source"]
@@ -239,8 +247,6 @@ def rows_for_bert(arms, runs_dir):
             "beside_metric": BERT_BESIDE,
             "beside_at_best": "" if beside is None else f"{beside:.6f}",
             "beside_final": "" if beside_final is None else f"{beside_final:.6f}",
-            # Empty on purpose: no masked-token floor has been measured for this
-            # corpus, and the GPT-2 floor describes another objective.
             "collapsed": "" if BERT_FLOOR is None else
                          ("yes" if final_val >= BERT_FLOOR else "no"),
             "source": source,
@@ -353,8 +359,9 @@ def main(argv=None) -> int:
             (f"collapsed = yes when the final value is at or above "
              f"{DEGENERATE_FLOOR}, the degenerate floor measured for this corpus"
              if args.arch == "gpt2" else
-             "collapsed is empty: no masked-token floor has been measured for this "
-             "corpus, and the GPT-2 floor describes another objective"),
+             f"collapsed = yes when the judged metric's last value is at or above "
+             f"{BERT_FLOOR}, the unigram cross-entropy at the [MASK] positions "
+             "measured on this build (2026-11-02, mlm_lookup_baselines.py)"),
             ("beside_metric is the series reported next to the judged one "
              f"({BERT_BESIDE} beside {BERT_JUDGED}, 2026-11-20 §2); beside_at_best "
              "and beside_final are its values at best_step and final_step"
