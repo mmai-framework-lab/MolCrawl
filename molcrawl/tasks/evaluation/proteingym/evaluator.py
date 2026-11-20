@@ -65,7 +65,10 @@ class ProteinGymEvaluator(BaseEvaluator):
         return "variant_effect"
 
     def load_dataset(self) -> pd.DataFrame:
-        df = load_proteingym(self.proteingym_path)
+        df = load_proteingym(
+            self.proteingym_path,
+            wildtype_sequence=self.config.get("wildtype_sequence"),
+        )
 
         n_examples = self.config.get("n_examples")
         max_examples = self.config.get("max_examples")

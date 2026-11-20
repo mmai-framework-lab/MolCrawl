@@ -39,6 +39,8 @@ export MAX_EXAMPLES="${MAX_EXAMPLES-200}"
 # picks pll_delta vs masked_marginals.
 export PG_DIR="${PG_DIR:-}"
 export SCORING_METHOD="${SCORING_METHOD:-}"
+# PG_REFERENCE supplies per-assay wildtype (target_seq) for indel runs.
+export PG_REFERENCE="${PG_REFERENCE:-}"
 
 echo "[pg-sweep-gpu] node:        $(hostname)"
 echo "[pg-sweep-gpu] LSD:         ${LEARNING_SOURCE_DIR}"
