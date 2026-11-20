@@ -261,7 +261,9 @@ def fields(row, siblings):
     world = int(row["world_size"])
     size = row["size"]
     out_size = "ex-large" if (arch == "gpt2" and size == "xl") else size
-    out_suffix = f"-b{batch}-lr{row['lr_slug']}"
+    # Carries the architecture; see the comment on out_dir in
+    # scripts/molnl_batch_sweep_arms.py for why this modality needs it.
+    out_suffix = f"-{arch}-b{batch}-lr{row['lr_slug']}"
     base = {
         "arch_label": "BERT" if arch == "bert" else "GPT-2",
         "arch_arms": "48" if arch == "bert" else "20",

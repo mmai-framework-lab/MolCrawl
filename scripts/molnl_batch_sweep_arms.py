@@ -288,7 +288,16 @@ def arms(which_set: str):
                         "micro_batch_set": which_set,
                         "config": "molcrawl/tasks/pretrain/configs/molecule_nat_lang/"
                                   f"{stem}.py",
-                        "out_dir": f"molecule_nat_lang-{out_size}-b{batch}-lr{slug}",
+                        # The architecture is in the name because on this modality
+                        # the two of them collide without it: BERT medium and GPT-2
+                        # medium share the 2,560 rate 3e-4, so their x1.0 arms scale
+                        # to the same rate and the same slug at all five batches.
+                        # bert-output/ and gpt2-output/ keep them apart on disk, but a
+                        # directory name that does not name one arm is read as if it
+                        # did. compounds has the same template and got away with it
+                        # because its two sets of rates happen never to meet.
+                        "out_dir": f"molecule_nat_lang-{out_size}-{arch}"
+                                   f"-b{batch}-lr{slug}",
                     })
     return rows
 

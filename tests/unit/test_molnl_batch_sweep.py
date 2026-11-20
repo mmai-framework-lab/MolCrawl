@@ -343,3 +343,14 @@ def test_the_table_refuses_an_inventory_whose_size_has_two_shapes(shapes_table_m
         encoding="utf-8")
     with pytest.raises(SystemExit):
         shapes_table_module.main(["--arms", str(arms)])
+
+
+def test_the_output_directory_names_its_architecture(rows):
+    """BERT medium and GPT-2 medium scale the same 2,560 rate to the same slug.
+
+    Without the architecture in the name, five pairs of arms carry one name between
+    them. The parent directory keeps them apart on disk; the name has to keep them
+    apart everywhere else.
+    """
+    for row in rows:
+        assert f"-{row['arch']}-b{row['batch']}-" in row["out_dir"], row["out_dir"]
