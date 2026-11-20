@@ -28,6 +28,7 @@ this arm cannot differ from the 2026-09-24 grid and the 24,000-step runs in the 
 the tokenizer, the packing, the document masking, the dataloader or the precision.
 """
 
+# §4 micro-batch set: measured-1120
 from molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_large import *  # noqa: F401,F403
 from molcrawl.core.paths import get_bert_output_path  # noqa: E402
 
