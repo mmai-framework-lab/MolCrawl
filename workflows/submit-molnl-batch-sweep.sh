@@ -13,27 +13,36 @@
 # in parts without the inventory being edited. Unset, every arm of the architecture is
 # submitted.
 #
-# The segment counts come from the measured bf16 rates of the 24,000-step runs at
-# global batch 2,560 (small 1.11, medium 2.11, large 3.33 hours per 1,000 steps) times
-# this grid's 12,000-step-equivalent budget, plus 250 evaluation points over the whole
-# 1,631-block validation split, divided by 96 hours and rounded up, plus one spare:
+# The segment counts come from the §4 probes of 2026-11-20 (jobs 374100-374292), which
+# measured every size at the shape this grid now uses -- so xl has a rate of its own
+# rather than one scaled from large. Per-step times at global batch 2,560: small 2.517,
+# medium 5.795, large 9.878, xl 19.085 seconds, each at one GPU times 4, and the
+# evaluation at 1.7 / 2.8 / 3.9 / 6.8 seconds a point. Times the budget of 12,000
+# steps-at-2,560 and 250 evaluation points, divided by 96 hours and rounded up, plus
+# one spare:
 #
-#   small   13.3 h training + 0.5 h eval =  13.8 h -> 1 + 1
-#   medium  25.3 h training + 0.9 h eval =  26.2 h -> 1 + 1
-#   large   40.0 h training + 1.8 h eval =  41.8 h -> 1 + 1
-#   xl     102   h training + 4.5 h eval = 107   h -> 2 + 1
+#   small    8.4 h training + 0.1 h eval =   8.5 h -> 1 + 1
+#   medium  19.3 h training + 0.2 h eval =  19.5 h -> 1 + 1
+#   large   32.9 h training + 0.3 h eval =  33.2 h -> 1 + 1
+#   xl      63.6 h training + 0.5 h eval =  64.1 h -> 1 + 1
 #
-# xl has no measured rate of its own on molnl -- its 24,000-step arms diverged early --
-# so its figure is large scaled by the 2.56 parameter ratio, and it is the one most
-# likely to be wrong. A segment beyond the end of a run is refused by the launcher in
-# seconds, because it continues only from TIMEOUT, so a spare costs a few seconds of
-# allocation and covers a slower node.
+# The whole grid is 6,015 GPU-hours for the 48 BERT arms on these numbers, against
+# 7,395 at the 8 blocks every molnl config carried before the measurement.
+#
+# A segment beyond the end of a run is refused by the launcher in seconds, because it
+# continues only from TIMEOUT, so a spare costs a few seconds of allocation and covers
+# a slower node. xl now fits one segment on paper at 64.1 h of 96; it keeps its spare,
+# and that is what the spare is for.
 #
 # Those figures are per arm, not per batch: the budget is fixed in blocks, so every
 # batch of a size moves the same data. What is not the same is the number of optimizer
 # steps it is spread over -- 120,000 at batch 256 against 7,500 at 4,096 -- and
-# everything outside the forward and backward passes rides on that count. It has not
-# been measured at these shapes, so the two smallest batches get one further spare.
+# everything outside the forward and backward passes rides on that count. The probes
+# ran at global 2,560, where one optimizer step covers 10 micro-steps at the chosen
+# shape; at batch 256 the accumulation is 1, so the all-reduce and the update happen
+# ten times as often for the same blocks. That increment is not in the figures above,
+# which are therefore a lower bound, and it is why the two smallest batches get one
+# further spare.
 #
 # The chain is --dependency=afterany, not afterok: a segment cut by the time limit ends
 # TIMEOUT and afterok would never start the next one. The launcher continues only from
@@ -60,7 +69,12 @@ case "${ARCH}" in
   *) echo "ARCH must be gpt2 or bert, got ${ARCH}" >&2; exit 1 ;;
 esac
 
-declare -A SEGMENTS=([small]=2 [medium]=2 [large]=2 [xl]=3)
+# One segment per arm plus one spare. xl was 3 while its rate was large scaled by the
+# parameter ratio and its estimate was 107 hours; the §4 probes measured xl itself at
+# 64.1 hours, inside one 96-hour segment, so it is 2 like the rest. The batch-256 and
+# batch-512 arms still get a further one below, because what the probes did not measure
+# is the ten-times-more-frequent optimizer step at those batches.
+declare -A SEGMENTS=([small]=2 [medium]=2 [large]=2 [xl]=2)
 # The batches whose optimizer-step count is far above the rest get one more spare.
 EXTRA_SEGMENT_BATCHES=" 256 512 "
 
