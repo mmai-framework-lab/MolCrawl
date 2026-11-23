@@ -20,6 +20,7 @@
 #
 # Env:
 #   TABLE            the probe table TSV the block counts come from
+#   ONLY_ARCH        write only this framework's configs and compare the rest
 #   TABLE2           a second table, when the two frameworks were measured apart
 #                    (BERT on 2026-11-20, GPT-2 on 2026-11-23); it wins on overlap
 #   ARMS_OUT         where to write the arm inventory (default: beside this log)
@@ -55,9 +56,13 @@ echo "--- 1/5 the arm inventory, at the measured block counts"
   --out "${ARMS_OUT}" || rc=$?
 
 echo
-echo "--- 2/5 the 68 configs"
+echo "--- 2/5 the configs"
+# ONLY_ARCH writes one framework and compares the other. The BERT arms of this grid
+# are running: a segment that hands over reads the config file as it is at that
+# moment, so a pass meant for GPT-2 must not touch them, and a BERT config that no
+# longer matches the inventory is an error to report rather than a file to fix.
 [ "${rc}" -eq 0 ] && { "${PYTHON}" scripts/rna_batch_sweep_configs.py \
-  --arms "${ARMS_OUT}" || rc=$?; }
+  --arms "${ARMS_OUT}" ${ONLY_ARCH:+--only-arch "${ONLY_ARCH}"} || rc=$?; }
 
 echo
 echo "--- 3/5 disk against the inventory"

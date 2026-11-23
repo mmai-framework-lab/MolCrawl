@@ -224,6 +224,12 @@ def main() -> int:
     ap.add_argument("--configs-dir", default="molcrawl/tasks/pretrain/configs/rna")
     ap.add_argument("--check", action="store_true",
                     help="compare what is on disk against the inventory and write nothing")
+    ap.add_argument("--only-arch", choices=["bert", "gpt2"],
+                    help="write only this framework's configs; the others are compared"
+                         " and a difference is an error. The BERT arms are running from"
+                         " these files, and a segment that hands over picks up whatever"
+                         " the file says at the time, so a second pass for the other"
+                         " framework must not rewrite them")
     args = ap.parse_args()
 
     with open(args.arms, encoding="utf-8") as handle:
@@ -234,9 +240,19 @@ def main() -> int:
         return 2
 
     written, same, differ, missing = 0, 0, [], []
+    held = []
     for row in rows:
         path = os.path.join(args.configs_dir, os.path.basename(row["config"]))
         text = render(row)
+        if args.only_arch and row["arch"] != args.only_arch:
+            # Compare, never write: these may be running right now.
+            if not os.path.exists(path):
+                missing.append(path)
+            elif open(path, encoding="utf-8").read() == text:
+                same += 1
+            else:
+                held.append(path)
+            continue
         if args.check:
             if not os.path.exists(path):
                 missing.append(path)
@@ -257,6 +273,12 @@ def main() -> int:
             print(f"    - {path}")
         return 1 if differ or missing else 0
 
+    if held:
+        print(f"=== {len(held)} config(s) of the other framework would have changed"
+              f" and were left alone:", file=sys.stderr)
+        for path in held:
+            print(f"    {path}", file=sys.stderr)
+        return 3
     print(f"=== wrote {written} configs under {args.configs_dir}")
     return 0
 
