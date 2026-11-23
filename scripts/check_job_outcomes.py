@@ -28,23 +28,32 @@ ACTIONABLE = {"FAILED", "NODE_FAIL", "OUT_OF_MEMORY", "BOOT_FAIL", "DEADLINE"}
 BENIGN = {"COMPLETED", "RUNNING", "PENDING", "COMPLETING", "TIMEOUT"}
 
 #: A spare segment that follows a finished run ends FAILED with exit 1, because the
-#: continuation guard refuses anything but TIMEOUT. That is the spare doing its job, not
-#: a run that broke, and a grid of 48 arms with one spare each puts about 50 such rows
-#: in front of whatever actually went wrong. The refusal is recognised by the sentence
-#: the launcher prints, so nothing else is reclassified: --logs turns it on.
-SPARE_SEGMENT = "it finished the run, so there is nothing to continue"
+#: launcher refuses it. That is the spare doing its job, not a run that broke, and the
+#: molnl batch grid put 60 such rows in front of whatever actually went wrong.
+#:
+#: There are two refusals and both have to be here. bert-grid.sbatch checks the step
+#: count first ("the run already reached step N of N, so there is nothing for this
+#: segment to do") and the previous segment's state second ("it finished the run, so
+#: there is nothing to continue"). The first version of this list held only the second
+#: sentence, so the daily check reported 60 jobs to act on for three days running and
+#: every one of them was a spare.
+SPARE_SEGMENT = (
+    "so there is nothing for this segment to do",
+    "it finished the run, so there is nothing to continue",
+)
 
 
 def refused_as_a_spare(job_id, log_dirs):
-    """True when this job's log holds the continuation guard's refusal sentence."""
+    """True when this job's log holds one of the launcher's refusal sentences."""
     for directory in log_dirs:
         for path in glob.glob(os.path.join(directory, f"*-{job_id}.out")):
             try:
                 with open(path, encoding="utf-8", errors="replace") as handle:
-                    if SPARE_SEGMENT in handle.read():
-                        return True
+                    text = handle.read()
             except OSError:
                 continue
+            if any(sentence in text for sentence in SPARE_SEGMENT):
+                return True
     return False
 
 
