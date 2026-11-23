@@ -25,7 +25,6 @@ from __future__ import annotations
 import argparse
 import csv
 import os
-import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)

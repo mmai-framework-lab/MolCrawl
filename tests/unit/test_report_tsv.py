@@ -40,8 +40,8 @@ def prov(mod):
 
 def body(path: Path):
     """The lines below the provenance block."""
-    return [l for l in path.read_text(encoding="utf-8").split("\n")
-            if l and not l.startswith("#")]
+    return [line for line in path.read_text(encoding="utf-8").split("\n")
+            if line and not line.startswith("#")]
 
 
 def test_the_name_declares_the_convention(mod, tmp_path, prov):
@@ -141,7 +141,8 @@ def test_no_bom_and_lf_endings(mod, tmp_path, prov):
 def test_the_block_is_written_in_the_conventions_order(mod, prov):
     prov["job"] = "123456"
     prov["note"] = "something"
-    keys = [l[2:].split(":")[0] for l in mod.provenance_block(prov) if l.startswith("# ")]
+    keys = [line[2:].split(":")[0] for line in mod.provenance_block(prov)
+            if line.startswith("# ")]
     assert keys == ["model", "source", "job", "generated", "note"]
 
 
@@ -155,7 +156,8 @@ def test_two_notes_become_two_lines(mod, prov):
 def test_an_optional_key_with_nothing_in_it_is_left_out(mod, prov):
     """Outside a Slurm job there is no job id, and `# job: None` would claim one."""
     prov["job"] = None
-    assert not [l for l in mod.provenance_block(prov) if l.startswith("# job:")]
+    assert not [line for line in mod.provenance_block(prov)
+                if line.startswith("# job:")]
 
 
 def test_the_stamp_names_the_script_and_the_offset(mod):
