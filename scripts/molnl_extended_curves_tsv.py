@@ -42,19 +42,28 @@ import glob
 import json
 import math
 import os
+import re
 from datetime import datetime
 
 COLUMNS = ("arch", "size", "seed", "step", "segment", "split", "value", "metric", "lr", "source")
-#: arch, size, the run being continued, the continuation, the step it resumed from
+#: arch, size, the run being continued, the step it resumed from. The continuation's
+#: directory is the run's name with a suffix: always ``_ext`` for GPT-2, and for BERT
+#: whichever pass --bert-pass names.
 RUNS = (
-    ("bert", "small", "bert_small_24k_lr1e3", "bert_small_24k_lr1e3_ext", 24000),
-    ("bert", "medium", "bert_medium_24k_lr3e4", "bert_medium_24k_lr3e4_ext", 24000),
-    ("bert", "large", "bert_large_24k_lr1p7e4", "bert_large_24k_lr1p7e4_ext", 24000),
-    ("gpt2", "small", "gpt2_small_1500_lr1p2e3", "gpt2_small_1500_lr1p2e3_ext", 1500),
-    ("gpt2", "medium", "gpt2_medium_1500_lr6e4", "gpt2_medium_1500_lr6e4_ext", 1500),
-    ("gpt2", "large", "gpt2_large_1500_lr3e4", "gpt2_large_1500_lr3e4_ext", 1500),
-    ("gpt2", "xl", "gpt2_xl_1500_lr3e4", "gpt2_xl_1500_lr3e4_ext", 1500),
+    ("bert", "small", "bert_small_24k_lr1e3", 24000),
+    ("bert", "medium", "bert_medium_24k_lr3e4", 24000),
+    ("bert", "large", "bert_large_24k_lr1p7e4", 24000),
+    ("gpt2", "small", "gpt2_small_1500_lr1p2e3", 1500),
+    ("gpt2", "medium", "gpt2_medium_1500_lr6e4", 1500),
+    ("gpt2", "large", "gpt2_large_1500_lr3e4", 1500),
+    ("gpt2", "xl", "gpt2_xl_1500_lr3e4", 1500),
 )
+#: The three BERT arms were continued twice from the same checkpoint-24000. The
+#: 2026-11-19 pass (_extm) re-pointed scheduler.pt at the extension config and so
+#: restored the optimizer's moments; the 2026-11-16 pass (_ext) removed that file, and
+#: transformers guards the optimizer load on it, so that pass ran on a fresh Adam. _extm
+#: is the continuation; _ext is kept readable because it is what was measured first.
+BERT_PASSES = {"extm": "_extm", "ext": "_ext"}
 SIZE_ORDER = {"small": 0, "medium": 1, "large": 2, "xl": 3}
 ARCH_ORDER = {"bert": 0, "gpt2": 1}
 SPLIT_ORDER = {"train": 0, "valid": 1}
@@ -120,6 +129,46 @@ def bert_rows(root, size, original, extension, resume, cross_check):
     if best_path and os.path.basename(os.path.dirname(best_path)) != extension:
         best = f"{os.path.basename(os.path.dirname(best_path))}/{best}"
     return rows, best, state["global_step"], state["max_steps"], problems
+
+
+def ending_from_logs(run_dir, log_dirs):
+    """How a BERT run ended, read from the log of the job that wrote the directory.
+
+    A BERT run records no marker of its own when early stopping fires (the GPT-2 launcher
+    writes EARLY_STOPPED; molnl-bert-ladder.sbatch does not), and the stopping evaluation
+    can fall after the newest checkpoint, which is where this file's rows come from. So
+    the ending is read from the log, matched to the run through the launcher's "outputs:"
+    banner, and reported next to the step the rows actually end at.
+
+    Returns (step the run stopped at or None, job id, how it ended) for the LAST job that
+    wrote the directory, or None when no log for this run was found.
+    """
+    want = os.path.abspath(run_dir).rstrip("/")
+    matches = []
+    for log_dir in log_dirs:
+        for path in sorted(glob.glob(os.path.join(log_dir, "*.out"))):
+            job = os.path.basename(path).rsplit("-", 1)[-1].removesuffix(".out")
+            if not job.isdigit():
+                continue
+            try:
+                with open(path, errors="ignore") as fh:
+                    head = [fh.readline() for _ in range(40)]
+            except OSError:
+                continue
+            if any(line.startswith("outputs:") and
+                   line.split()[1].rstrip("/") == want for line in head):
+                matches.append((int(job), path))
+    if not matches:
+        return None
+    # Several jobs can have written one directory: a crashed first attempt and the
+    # resubmission, or a run carried over several segments. The ending is the last one's.
+    job, path = max(matches)
+    with open(path, errors="ignore") as fh:
+        body = fh.read()
+    hit = re.findall(r"Early stopping at step (\d+)", body)
+    if hit:
+        return int(hit[0]), str(job), "early stopping"
+    return None, str(job), "no early stopping line in the log"
 
 
 def get_lr(step, warmup, decay_iters, peak, floor):
@@ -199,13 +248,23 @@ def main():
                     help="write only these architectures. The order asks for one file "
                          "holding all seven, so a filtered file is an interim one and "
                          "says so in its provenance")
+    ap.add_argument("--log-dirs", nargs="+", default=(),
+                    help="directories holding the launchers' .out files. With them, each "
+                         "BERT run's provenance line says the step it stopped at, which "
+                         "can be one evaluation past the newest checkpoint the rows come "
+                         "from")
+    ap.add_argument("--bert-pass", choices=tuple(BERT_PASSES), default="extm",
+                    help="which of the two BERT continuations to read: extm (default, the "
+                         "2026-11-19 pass that kept the optimizer's moments) or ext (the "
+                         "2026-11-16 pass that lost them)")
     args = ap.parse_args()
     wanted = tuple(args.arch) if args.arch else ("bert", "gpt2")
 
     rows, provenance, problems = [], [], []
-    for arch, size, original, extension, resume in RUNS:
+    for arch, size, original, resume in RUNS:
         if arch not in wanted:
             continue
+        extension = original + (BERT_PASSES[args.bert_pass] if arch == "bert" else "_ext")
         root = args.bert_root if arch == "bert" else args.gpt2_root
         reader = bert_rows if arch == "bert" else gpt2_rows
         got, best, reached, ceiling, trouble = reader(root, size, original, extension,
@@ -218,7 +277,26 @@ def main():
         note = f"{arch} {size}: {extension} reached {reached}"
         if ceiling:
             note += f" of {ceiling}"
-        provenance.append(f"# checkpoint: {note}, adopted {best}")
+        note += f", adopted {best}"
+        if arch == "bert" and args.log_dirs:
+            ending = ending_from_logs(os.path.join(root, extension), args.log_dirs)
+            if ending is None:
+                problems.append(f"{extension}: no launcher log found under "
+                                f"{' '.join(args.log_dirs)}, so how it ended cannot be stated")
+            else:
+                stop, job, how = ending
+                if stop is None:
+                    note += f". Job {job} ended with {how}"
+                elif stop == reached:
+                    note += f". Job {job} stopped there on early stopping"
+                elif stop > reached:
+                    note += (f". Job {job} stopped on early stopping at step {stop}; the rows "
+                             f"end at {reached} because they come from the newest checkpoint "
+                             f"and no checkpoint was written at {stop}")
+                else:
+                    problems.append(f"{extension}: job {job} logged a stop at step {stop}, "
+                                    f"before the newest checkpoint's step {reached}")
+        provenance.append(f"# checkpoint: {note}")
     if problems:
         for p in problems:
             print("DISAGREEMENT:", p)
@@ -232,7 +310,13 @@ def main():
         fh.write("# model: several (columns: arch,size)\n")
         if wanted == ("bert", "gpt2"):
             fh.write("# run: molecule_nat_lang, the seven adopted runs continued past their "
-                     "schedule (2026-11-17 order, item 2)\n")
+                     "schedule (2026-11-16 order item 4, 2026-11-17 order item 2)\n")
+        elif args.bert_pass == "ext" and wanted == ("bert",):
+            fh.write("# run: molecule_nat_lang, the three BERT arms continued past their "
+                     "schedule in the 2026-11-16 pass, which lost the optimizer's moments. "
+                     "SUPERSEDED by the extm pass of the same three arms, which is in the "
+                     "file holding all seven; this one is kept because it is what was "
+                     "measured first and the two ended in different places\n")
         else:
             fh.write("# run: molecule_nat_lang, the {} runs of the seven adopted runs continued "
                      "past their schedule. INTERIM: the 2026-11-17 order's item 2 asks for one "
@@ -245,6 +329,13 @@ def main():
         # (docs/07-reports/report_tsv_columns.md).
         stamp = datetime.now().astimezone().isoformat(timespec="seconds")
         fh.write(f"# generated: {stamp} by scripts/{os.path.basename(__file__)}\n")
+        if "bert" in wanted:
+            fh.write("# note: the BERT rows are the {} pass of the continuation -- {}\n".format(
+                BERT_PASSES[args.bert_pass].lstrip("_"),
+                "scheduler.pt re-pointed at the extension config, so the optimizer's moments "
+                "carried across the resume" if args.bert_pass == "extm" else
+                "scheduler.pt removed, which also skipped the optimizer load, so this pass ran "
+                "on a fresh Adam. It is superseded by the extm pass"))
         for line in provenance:
             fh.write(line + "\n")
         fh.write("# note: lr is the rate in effect at that step, not the arm's peak. BERT's is "
