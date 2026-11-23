@@ -58,11 +58,13 @@ def make_checkpoint(root: Path, step: int, max_steps: int, last_lr: float | None
 
 
 def run_guard(guard_block: str, out: Path, step: int, cfg_steps: int,
-              cfg_lr: float, tmp_path: Path) -> subprocess.CompletedProcess:
+              cfg_lr: float, tmp_path: Path,
+              strict: bool = False) -> subprocess.CompletedProcess:
+    """``strict`` runs it under the job script's own flags, ``set -eo pipefail``."""
     script = tmp_path / "guard.sh"
     script.write_text(
-        "set -u\n"
-        f'OUT={out}\n'
+        ("set -eo pipefail\n" if strict else "set -u\n")
+        + f'OUT={out}\n'
         f'_last_pre={step}\n'
         f'_cfg_steps={cfg_steps}\n'
         f'CFG=some-config.py\n'
@@ -114,7 +116,12 @@ def test_new_extension_still_refused(guard_block, tmp_path, name,
     r = run_guard(guard_block, out, 30000, cfg_steps, cfg_lr, tmp_path)
     assert r.returncode == 1, f"allowed a resume it cannot vouch for: {r.stdout}"
     assert "REFUSING" in r.stderr
-    assert "keep optimizer.pt" in r.stderr
+    # The refusal names both ways out and the cost of each. Removing the file
+    # fixes the rate and loses the Adam moments, because transformers guards
+    # both loads with one condition (measured 2026-11-18, job 363888), so the
+    # message now points at re-pointing it first.
+    assert "--scheduler rewrite" in r.stderr
+    assert "moments" in r.stderr
 
 
 def test_unreadable_state_is_refused(guard_block, tmp_path):
@@ -150,3 +157,66 @@ def test_no_scheduler_file_is_not_the_guards_business(guard_block, tmp_path):
     r = run_guard(guard_block, out, 30000, 45000, 1.5e-05, tmp_path)
     assert r.returncode == 0
     assert r.stdout == ""
+
+
+def write_repointed_scheduler(ck: Path, lr: float) -> None:
+    """A scheduler.pt prepared the way scripts/prepare_rna_extension.py writes it."""
+    torch = pytest.importorskip("torch")
+    torch.save(
+        {
+            "base_lrs": [lr, lr],
+            "last_epoch": 0,
+            "_step_count": 1,
+            "_is_initial": True,
+            "_get_lr_called_within_step": False,
+            "_last_lr": [0.0, 0.0],
+            "lr_lambdas": [{}, {}],
+        },
+        ck / "scheduler.pt",
+    )
+
+
+def test_a_repointed_scheduler_is_accepted(guard_block, tmp_path):
+    """Prepared rather than amputated: the file stays, so optimizer.pt still loads.
+
+    Removing scheduler.pt fixes the rate and loses the Adam moments, because
+    transformers 4.45.1 guards both loads with one condition on its existence
+    (trainer.py:3204) -- 42 optimizer state entries with the file present against 0
+    without, measured 2026-11-18, job 363888. Re-pointing it keeps both.
+
+    The checkpoint here was written under the OLD max_steps, so this is not the
+    segment-continuation case and must not borrow its message.
+    """
+    out = tmp_path / "run"
+    ck = make_checkpoint(out, 30000, 30000, 1.5e-05)
+    write_repointed_scheduler(ck, 1.5e-06)
+    r = run_guard(guard_block, out, 30000, 45000, 1.5e-06, tmp_path)
+    assert r.returncode == 0, f"refused a prepared copy: {r.stderr}"
+    assert "re-pointed at this config" in r.stdout
+    assert "segment continuation" not in r.stdout, "printed both cases' messages"
+    assert "REFUSING" not in r.stderr
+
+
+def test_a_scheduler_left_at_the_old_peak_is_still_refused(guard_block, tmp_path):
+    """last_epoch 0 is not enough; base_lrs has to be this config's rate."""
+    out = tmp_path / "run"
+    ck = make_checkpoint(out, 30000, 30000, 1.5e-05)
+    write_repointed_scheduler(ck, 1.5e-05)
+    r = run_guard(guard_block, out, 30000, 45000, 1.5e-06, tmp_path)
+    assert r.returncode == 1, f"accepted the original peak: {r.stdout}"
+    assert "REFUSING" in r.stderr
+
+
+def test_an_unreadable_scheduler_refuses_rather_than_exiting_silently(guard_block, tmp_path):
+    """Under set -e a bare assignment from a failing command substitution aborts.
+
+    The rewrite check reads scheduler.pt with python and discards its stderr, so an
+    unreadable file made the whole script exit 1 saying nothing at all and the
+    refusal was never reached. Seen 2026-11-18 as an empty stderr in the extension
+    gate's own test, after 64 links had already been queued on that code.
+    """
+    out = tmp_path / "run"
+    make_checkpoint(out, 30000, 30000, 1.5e-05)  # scheduler.pt is written empty
+    r = run_guard(guard_block, out, 30000, 45000, 1.5e-06, tmp_path, strict=True)
+    assert r.returncode == 1
+    assert "REFUSING" in r.stderr, f"exited without saying why: {r.stderr!r}"

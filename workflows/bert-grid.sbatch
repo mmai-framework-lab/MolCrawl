@@ -113,6 +113,29 @@ export PYTHONUNBUFFERED=1 WANDB_MODE=offline HF_HUB_OFFLINE=1 HF_DATASETS_OFFLIN
 cd "${REPO}"; mkdir -p "${HF_DATASETS_CACHE}" workflows/slurm-logs
 [ -f "${CFG}" ] || { echo "no config at ${CFG} (relative to ${REPO})" >&2; exit 1; }
 
+# Slurm keeps the batch script it was handed at submission, but main.py and the
+# config are read out of REPO when the link actually starts -- days or weeks later,
+# from a checkout someone may have committed to or switched in between. A chain of
+# eight four-day links spans a month, and nothing here noticed. rna-gpt2-grid.sbatch
+# has had this guard; the BERT half had not, so the two halves of the same campaign
+# were pinned to different degrees.
+#
+# Resolve both sides to the full hash before comparing. The length git chooses for an
+# abbreviation comes from how many objects the repository holds, not from the commit:
+# it grew from seven characters to eight between 2026-10-22 and 2026-10-26, and twenty
+# links queued against the short form refused to start on the commit they were pinned
+# to. Optional, because a run that was never pinned must keep working.
+if [ -n "${EXPECT_COMMIT:-}" ]; then
+    ACTUAL=$(git rev-parse HEAD)
+    WANT=$(git rev-parse --verify --quiet "${EXPECT_COMMIT}^{commit}" || true)
+    [ -n "${WANT}" ] || {
+        echo "FATAL: EXPECT_COMMIT=${EXPECT_COMMIT} does not name a commit here" >&2; exit 1; }
+    [ "${ACTUAL}" = "${WANT}" ] || {
+        echo "FATAL: repo is at ${ACTUAL}, expected ${WANT} (from ${EXPECT_COMMIT})" >&2
+        exit 1; }
+    echo "commit guard: ${ACTUAL} matches ${EXPECT_COMMIT}"
+fi
+
 # The grid configs import their base rather than restating it, so the values cannot be
 # read out of the file with grep. Run it the way main.py will and read what it resolves to.
 _cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>/dev/null
@@ -225,11 +248,57 @@ ck, cfg = float(sys.argv[1]), float(sys.argv[2])
 sys.exit(0 if ck <= cfg * (1.0 + 1e-9) else 1)' "${_ck_lr}" "${_cfg_lr}" 2>/dev/null \
           && _same_schedule=1
       fi
+      # A STAGED REWRITE is the third case, and it is the one that keeps the moments.
+      #
+      # The instruction below -- remove scheduler.pt, keep optimizer.pt -- does not do
+      # the second half. transformers 4.45.1 guards BOTH loads with one `if` on
+      # scheduler.pt's existence (trainer.py:3204), so removing the file leaves the
+      # Adam moments unloaded. Measured on 2026-11-18, job 363888, with
+      # scripts/probe_extend_resume_scheduler.py: optimizer state entries at train
+      # begin were 42 with the file present and 0 with it removed.
+      #
+      # So prepare the copy instead of amputating it: re-point scheduler.pt at this
+      # config, base_lrs to its learning_rate and last_epoch to 0. Restoring that is
+      # not merely safe but correct -- it is this config's own schedule read from its
+      # first step, warmup included -- and optimizer.pt loads because the file is
+      # there. scripts/prepare_rna_extension.py --scheduler rewrite writes it.
+      #
+      # The check is on the file's contents, so a checkpoint that was not prepared
+      # this way still falls through to the refusal below.
+      if [ "${_same_schedule}" != "1" ]; then
+        _rewritten=$("${PYTHON}" -c 'import sys, torch
+st = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+lr = float(sys.argv[2])
+base = st.get("base_lrs") or []
+ok = (st.get("last_epoch") == 0 and base
+      and all(abs(float(b) - lr) <= abs(lr) * 1e-9 for b in base))
+print("1" if ok else "0")' \
+          "${OUT}/checkpoint-${_last_pre}/scheduler.pt" "${_cfg_lr}" 2>/dev/null) \
+          || _rewritten=0  # set -eo pipefail: a bare assignment from a failing command
+                           # substitution aborts the script, and with stderr discarded
+                           # it aborts SILENTLY -- rc=1, nothing said, the refusal below
+                           # never reached. An unreadable or corrupt scheduler.pt has to
+                           # land on the refusal, not on an empty exit.
+        if [ "${_rewritten}" = "1" ]; then
+          _sched_rewritten=1
+        fi
+      fi
       if [ "${_same_schedule}" = "1" ]; then
         echo "extension: checkpoint-${_last_pre} was written by this same schedule" \
              "(its max_steps ${_ck_steps} = the config's, last rate ${_ck_lr} <=" \
              "${_cfg_lr}), so its scheduler.pt holds this config's own rate and is" \
              "kept -- a segment continuation, not a new extension"
+      elif [ "${_sched_rewritten:-0}" = "1" ]; then
+        # Said here rather than inside the check above, so exactly one of these three
+        # lines is printed. The first version set _same_schedule and fell into the
+        # message above as well, which then stated "its max_steps ${_ck_steps} = the
+        # config's" about a checkpoint whose max_steps is the OLD one -- the whole
+        # reason this case exists. Every BERT link of the rna 2026-11-18 extension
+        # carries that contradictory pair; the runs were right and the log was not.
+        echo "extension: checkpoint-${_last_pre}/scheduler.pt was re-pointed at this" \
+             "config (base_lrs ${_cfg_lr}, last_epoch 0) while the checkpoint itself" \
+             "was written under max_steps ${_ck_steps}, so restoring it applies this" \
+             "config's schedule from its first step and optimizer.pt still loads"
       else
         echo "REFUSING: EXTEND=1 but ${OUT}/checkpoint-${_last_pre}/scheduler.pt exists" \
              "and that checkpoint was not written by this schedule (its max_steps" \
@@ -237,8 +306,11 @@ sys.exit(0 if ck <= cfg * (1.0 + 1e-9) else 1)' "${_ck_lr}" "${_cfg_lr}" 2>/dev/
              "${_ck_lr:-unreadable} against the config's ${_cfg_lr})." \
              "HF restores base_lrs and last_epoch from it, so ${CFG}'s learning_rate and" \
              "warmup_steps would both be ignored and the run would continue at the" \
-             "original peak with no warmup. Remove scheduler.pt from the checkpoint this" \
-             "extension resumes from -- keep optimizer.pt." >&2
+             "original peak with no warmup. Re-point scheduler.pt at this config" \
+             "(base_lrs = its learning_rate, last_epoch = 0) with" \
+             "scripts/prepare_rna_extension.py --scheduler rewrite, or equivalent." \
+             "Removing the file also works for the rate but leaves the Adam moments" \
+             "unloaded, because transformers guards both loads with one condition." >&2
         exit 1
       fi
     fi
@@ -300,10 +372,16 @@ EOF
          "nothing for this segment to do." >&2
     exit 1
   fi
-  if [ "${_extend}" != "1" ]; then
+  # Branch on whether max_steps actually changed, not on whether EXTEND is set. Under
+  # EXTEND=1 the old form always said "extending from ${_prev_steps}", and a LATER
+  # segment of an extension resumes from a checkpoint this config already wrote -- so
+  # it read "121000/241920 steps done, extending from 241920", using the same number
+  # as the target and as a starting point in one line. Seen on the rna 2026-11-18
+  # extension, jobs 364479 / 364495 / 364511.
+  if [ "${_prev_steps}" = "${_cfg_steps}" ]; then
     echo "schedule check: max_steps ${_prev_steps} matches the config, ${_prev_done}/${_cfg_steps} steps done"
   else
-    echo "schedule check: ${_prev_done}/${_cfg_steps} steps done, extending from ${_prev_steps}"
+    echo "schedule check: ${_prev_done}/${_cfg_steps} steps done, under the raised max_steps above"
   fi
 fi
 
