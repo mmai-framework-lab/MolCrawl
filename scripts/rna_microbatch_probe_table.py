@@ -35,9 +35,14 @@ NO_SAMPLES = re.compile(r"no usable timing samples")
 
 #: The grid's five batches, for the accumulation table of §9.
 BATCHES = [256, 512, 1024, 2048, 4096]
-#: BERT multiplies by world_size, nanoGPT divides the accumulation across the ranks,
-#: so both need micro x 4 to divide the batch. Same asymmetry as the arms script.
+#: Both frameworks need micro x 4 to divide the batch, but they do not reach the batch
+#: the same way: BERT's is micro x accumulation x world_size, while nanoGPT divides the
+#: accumulation across the ranks, so its is micro x accumulation. The accumulation of a
+#: given shape therefore differs by a factor of the rank count between the two, and
+#: using one rule for both understates GPT-2's by 4. Same asymmetry as the arms script,
+#: which is where the configs come from.
 GPU_COUNT = 4
+ACCUMULATION_DIVISOR = {"bert": GPU_COUNT, "gpt2": 1}
 #: What the arms run today, so the table can say what staying put costs.
 CURRENT = {"bert": {"small": 8, "medium": 8, "large": 8, "xl": 8},
            "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4}}
@@ -183,8 +188,9 @@ def main() -> int:
                     continue
                 cells = []
                 for batch in BATCHES:
-                    unit = micro * GPU_COUNT
-                    cells.append(f"{batch // unit:>9,}" if batch % unit == 0
+                    unit = micro * ACCUMULATION_DIVISOR[arch]
+                    shape = micro * GPU_COUNT
+                    cells.append(f"{batch // unit:>9,}" if batch % shape == 0
                                  else f"{'不可':>9}")
                 print(f"   {arch:<6}{size:<8}{micro:>7}" + "".join(cells))
 

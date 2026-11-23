@@ -124,8 +124,14 @@ def test_a_filter_narrows_the_plan(tmp_path):
 
 
 def test_a_dry_run_says_which_configs_are_not_written_yet(tmp_path):
-    """The plan is read before the configs exist; that is what it is for."""
-    rows = [r for r in A.arms("current", A.GRACE_BLOCKS, True)
+    """The plan is read before the configs exist; that is what it is for.
+
+    The config column is pointed at a name nothing writes, because the real ones are
+    on disk once the grid has been generated -- this test read "the configs do not
+    exist yet" as the state of the repository and started failing the day they did.
+    """
+    rows = [dict(r, config="molcrawl/tasks/pretrain/configs/rna/_absent_probe_arm.py")
+            for r in A.arms("current", A.GRACE_BLOCKS, True)
             if r["arch"] == "gpt2" and r["size"] == "small"]
     arms_tsv = _write(tmp_path / "arms.tsv", list(rows[0]), rows)
     probe_rows = [{"arch": "gpt2", "size": "small",
@@ -157,3 +163,23 @@ def test_an_arm_with_no_measured_rate_stops_the_plan(tmp_path):
              "SLURM_ACCOUNT": "test", "DRY_RUN": "1"})
     assert out.returncode != 0
     assert "NO RATE" in out.stderr
+
+
+def test_the_probe_table_and_the_arms_agree_on_the_accumulation():
+    """§9 is printed twice, by two scripts, and the two must not disagree.
+
+    They did: the probe table applied BERT's rule to both frameworks. BERT reaches its
+    batch as micro x accumulation x world_size and nanoGPT as micro x accumulation,
+    because it divides the accumulation across the ranks, so one rule understates
+    GPT-2's accumulation by the rank count. The configs come from the arms script, so
+    the table was the wrong one -- and a reader comparing a config against that table
+    would have found a fourfold difference and no way to tell which was right.
+    """
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    for row in A.arms("current", A.GRACE_BLOCKS, True):
+        arch, micro, batch = row["arch"], int(row["micro_batch"]), int(row["batch"])
+        assert batch % (micro * probe.GPU_COUNT) == 0, row["config"]
+        assert batch // (micro * probe.ACCUMULATION_DIVISOR[arch]) \
+            == int(row["grad_accum"]), row["config"]
