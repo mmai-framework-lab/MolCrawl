@@ -36,6 +36,7 @@ EVAL_MASK_SEED = 42
 BERT_JUDGE = "eval_loss_mask"
 BERT_WEIGHT_DECAY = 0.01
 BERT_ADAM_BETA2 = 0.999
+BERT_PREPROCESS_NUM_PROC = 16  # parallelise the startup attention_mask map (operational)
 GPT2_WEIGHT_DECAY = 0.1
 GPT2_DROPOUT = 0.0
 GPT2_EVAL_SEQUENCES = 3200
@@ -137,6 +138,12 @@ dataloader_num_workers = 4
 dataloader_pin_memory = True
 bf16 = True
 
+# Parallelise the one-time attention_mask .map over the 9.5M-row train split
+# (main.py applies preprocess_function at startup). Operational only: the mask is
+# deterministic (1 for non-pad, 0 for pad), so num_proc changes startup time, not the
+# data. The base configs leave it at 1, which is ~80 min single-process per run.
+preprocess_num_proc = {preprocess_num_proc}
+
 meta_vocab_size = len(tokenizer.get_vocab())
 seed = {seed}
 '''
@@ -227,7 +234,8 @@ def fields(row):
     if arch == "bert":
         base.update({"weight_decay": BERT_WEIGHT_DECAY, "adam_beta2": BERT_ADAM_BETA2,
                      "judge": BERT_JUDGE, "eval_mask_seed": EVAL_MASK_SEED,
-                     "eval_batch": int(row["eval_batch"])})
+                     "eval_batch": int(row["eval_batch"]),
+                     "preprocess_num_proc": BERT_PREPROCESS_NUM_PROC})
     else:
         base.update({"lr_decay_iters": int(row["lr_decay_iters"]),
                      "min_lr_literal": repr(float(row["min_lr"])),
@@ -284,7 +292,8 @@ CONSTANT = {
              "metric_for_best_model": BERT_JUDGE, "save_on_improve_metric": BERT_JUDGE,
              "checkpoint_metric": BERT_JUDGE, "save_on_improve": True, "document_masking": True,
              "bf16": True, "max_length": BLOCK_SIZE, "adam_beta2": BERT_ADAM_BETA2,
-             "degenerate_loss_threshold": None, "weight_decay": BERT_WEIGHT_DECAY},
+             "degenerate_loss_threshold": None, "weight_decay": BERT_WEIGHT_DECAY,
+             "preprocess_num_proc": BERT_PREPROCESS_NUM_PROC},
     "gpt2": {"seed": SEED, "early_stopping": False, "block_size": BLOCK_SIZE,
              "eval_sequences": GPT2_EVAL_SEQUENCES, "always_save_checkpoint": False,
              "init_from": "scratch", "dtype": "bfloat16", "dropout": GPT2_DROPOUT,

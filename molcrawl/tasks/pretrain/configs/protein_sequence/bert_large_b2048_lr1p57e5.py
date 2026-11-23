@@ -92,5 +92,11 @@ dataloader_num_workers = 4
 dataloader_pin_memory = True
 bf16 = True
 
+# Parallelise the one-time attention_mask .map over the 9.5M-row train split
+# (main.py applies preprocess_function at startup). Operational only: the mask is
+# deterministic (1 for non-pad, 0 for pad), so num_proc changes startup time, not the
+# data. The base configs leave it at 1, which is ~80 min single-process per run.
+preprocess_num_proc = 16
+
 meta_vocab_size = len(tokenizer.get_vocab())
 seed = 42
