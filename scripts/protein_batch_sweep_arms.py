@@ -64,7 +64,10 @@ GPT2_MULTIPLIERS = {b: [1.0] for b in BATCHES}
 MICRO_BATCH = {
     "measured": {
         "bert": {"small": 32, "medium": 32, "large": 32, "xl": 32},
-        "gpt2": {"small": None, "medium": None, "large": None, "xl": None},
+        # GPT-2 measured 2026-11-23 (jobs 384796/384802/384803/384804, bf16, 4 GPUs):
+        # fastest tok/s at small 32, medium 64, large 32, xl 32 (micro 64 OOMs at xl and
+        # is anomalously slow at small/large). Differs from the adopted 16/16/8/4.
+        "gpt2": {"small": 32, "medium": 64, "large": 32, "xl": 32},
     },
     "adopted": {
         "bert": {"small": 32, "medium": 32, "large": 32, "xl": 32},
