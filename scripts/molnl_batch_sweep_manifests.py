@@ -48,10 +48,6 @@ EVAL_ROWS = 1631
 EVAL_SUBSET_RANDOM = False
 GPUS = 4
 
-#: The size's name in the output tree: nanoGPT writes xl as "ex-large".
-GPT2_DIR_SIZE = {"small": "small", "medium": "medium", "large": "large",
-                 "xl": "ex-large"}
-
 #: (column, manifest path, inventory column or literal, note). A literal that is None
 #: means the value is read out and reported without an expectation, because §11 asks to
 #: see it but fixes no value.
@@ -118,6 +114,11 @@ PLACE_COLUMNS = ["config_path", "manifest_path", "out_dir", "job_id", "submit_re
 VALUE_COLUMNS = [k[0] for k in BERT_KEYS]
 #: GPT-2 adds two the BERT rows leave empty.
 VALUE_COLUMNS += [k[0] for k in GPT2_KEYS if k[0] not in VALUE_COLUMNS]
+#: The one value with no manifest path of its own, so it is in neither key table: the
+#: BERT manifest does not record the evaluation micro-batch and it is read from the
+#: config instead. It still needs a column, or the row carries a field the header does
+#: not and nothing is written.
+VALUE_COLUMNS += ["per_device_eval_batch_size"]
 COLUMNS = (["arch", "size", "batch", "lr", "arm"] + VALUE_COLUMNS
            + ["disagreements", "value_sources"] + PLACE_COLUMNS)
 
@@ -169,12 +170,25 @@ def read_arms(path):
 
 
 def run_dir(arm, runs_root):
-    slug = f"-b{arm['batch']}-lr{arm['lr_slug']}"
-    if arm["arch"] == "bert":
-        return os.path.join(runs_root, "molecule_nat_lang", "bert-output",
-                            f"molecule_nat_lang-{arm['size']}{slug}")
-    return os.path.join(runs_root, "molecule_nat_lang", "gpt2-output",
-                        f"molecule_nat_lang-{GPT2_DIR_SIZE[arm['size']]}{slug}")
+    """Where the arm wrote, taken from the inventory rather than composed again here.
+
+    This spelled the directory itself once -- size, batch and rate -- and so missed the
+    architecture, which was added to the name after molnl's BERT medium and GPT-2 medium
+    turned out to share a rate and to produce one name for two arms. Composing the name
+    in a second place is how that happens: every arm then read as "not started yet" and
+    §11 reported 0 arms with 0 disagreements, which looks like a pass. The inventory's
+    out_dir is what the configs were generated from, so it is the only spelling.
+    """
+    try:
+        name = arm["out_dir"]
+    except KeyError:
+        raise SystemExit("the arm inventory has no out_dir column; regenerate it with "
+                         "scripts/molnl_batch_sweep_arms.py") from None
+    if not name:
+        raise SystemExit(f"{arm['arch']} {arm['size']} batch {arm['batch']}: "
+                         f"the inventory's out_dir is empty")
+    tree = "bert-output" if arm["arch"] == "bert" else "gpt2-output"
+    return os.path.join(runs_root, "molecule_nat_lang", tree, name)
 
 
 def eval_batch_from_config(arm, configs_dir):
@@ -189,16 +203,25 @@ def eval_batch_from_config(arm, configs_dir):
 
 
 def expectation(spec, arm):
-    """A literal, or the inventory column named by '@column'."""
+    """A literal, or the inventory column named by '@column'.
+
+    A column is read as a number when it reads as one and left as text otherwise. Not
+    every expectation is numeric: the three selection keys are compared against
+    judge_metric, which is the name eval_loss_mask, and forcing that through float()
+    raised on the first arm that had a manifest to read. ``same`` already compares
+    non-numbers as strings.
+    """
     if not isinstance(spec, str) or not spec.startswith("@"):
         return spec
     raw = arm[spec[1:]]
     if raw in ("", None):
         return None
-    try:
-        return int(raw)
-    except ValueError:
-        return float(raw)
+    for cast in (int, float):
+        try:
+            return cast(raw)
+        except (TypeError, ValueError):
+            continue
+    return raw
 
 
 def row_for(arm, runs_root, configs_dir, submit_record):

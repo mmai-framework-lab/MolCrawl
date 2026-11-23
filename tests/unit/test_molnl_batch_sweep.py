@@ -471,3 +471,49 @@ def test_an_incomplete_choice_file_is_not_offered_as_a_set(arms_module):
             for micro in measured[arch].values():
                 assert micro in arms_module.MICRO_CANDIDATES
                 assert 256 % (micro * 4) == 0
+
+
+def test_the_manifest_reader_takes_the_output_directory_from_the_inventory(rows):
+    """One spelling of the output directory, not two.
+
+    The reader composed the name itself from size, batch and rate, which left out the
+    architecture that was added to it after BERT medium and GPT-2 medium turned out to
+    share a rate. Nothing errored: every arm read as not started, and §11 reported 0
+    arms with 0 disagreements, which is indistinguishable from a pass. So the name has
+    to come from the inventory the configs were generated from.
+    """
+    manifests = _load("molnl_batch_sweep_manifests")
+    for arm in rows:
+        where = manifests.run_dir({k: str(v) for k, v in arm.items()}, "/root")
+        assert where == f"/root/molecule_nat_lang/{'bert-output' if arm['arch'] == 'bert' else 'gpt2-output'}/{arm['out_dir']}", arm
+        assert f"-{arm['arch']}-" in where, (arm["arch"], where)
+
+
+def test_a_non_numeric_expectation_stays_text(rows):
+    """§7's three selection keys are compared against a metric name, not a number.
+
+    ``expectation`` cast every inventory column through int then float, so the first arm
+    with a manifest to read raised on 'eval_loss_mask'. The reader had therefore never
+    been run against a real run.
+    """
+    manifests = _load("molnl_batch_sweep_manifests")
+    arm = {k: str(v) for k, v in rows[0].items()}
+    assert manifests.expectation("@judge_metric", arm) == arm["judge_metric"]
+    assert manifests.expectation("@batch", arm) == int(arm["batch"])
+    assert manifests.expectation("@lr", arm) == pytest.approx(float(arm["lr"]))
+    assert manifests.same(arm["judge_metric"], arm["judge_metric"])
+
+
+def test_every_field_the_manifest_row_sets_has_a_column():
+    """The writer refuses a row with a field the header does not have (convention R2).
+
+    per_device_eval_batch_size is in neither key table, because it has no manifest path:
+    the BERT manifest does not record it and it is read from the config. It was set on
+    the row and left out of the header, so the whole table went unwritten after 1,424
+    values had been compared.
+    """
+    manifests = _load("molnl_batch_sweep_manifests")
+    for name, keys in (("bert", manifests.BERT_KEYS), ("gpt2", manifests.GPT2_KEYS)):
+        for key in keys:
+            assert key[0] in manifests.COLUMNS, (name, key[0])
+    assert "per_device_eval_batch_size" in manifests.COLUMNS
