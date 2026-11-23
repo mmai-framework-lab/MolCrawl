@@ -3,7 +3,7 @@
 The rule is the 2026-09-30 directive; on 2026-11-10 it was applied to the whole
 tree, which is what makes a test possible: before that, grids kept their own seed
 and the only way to tell right from wrong was to know the grid. Now the tree has
-one value and 32 named exceptions, so a config that drifts off 42 -- a copy of an
+one value and 34 named exceptions, so a config that drifts off 42 -- a copy of an
 old file, a hand-edited number -- fails here instead of being found in a
 ``run_manifest.json`` after the run.
 
@@ -40,9 +40,13 @@ def test_every_config_resolves_to_42_or_is_a_named_variance_arm():
 
 
 def test_the_variance_arms_are_still_1_and_17():
+    """The census. 32 arms on 2026-11-11, plus the 2 added on 2026-11-20 for the
+    compounds GPT-2 large spread at batch 2,560 (the 2026-11-20 directive's §4). The
+    count is written down so an arm that appears without a decision behind it fails
+    here; raising it is part of deciding to measure a new spread, not a formality."""
     arms = {f"{c.parent.name}/{c.stem}": read(c).get("seed")
             for c in configs() if VARIANCE.search(c.stem)}
-    assert len(arms) == 32, arms
+    assert len(arms) == 34, arms
     assert sorted(set(arms.values())) == [1, 17], arms
     for name, seed in arms.items():
         assert seed == (1 if name.endswith(("_s1", "_seed1")) else 17), (name, seed)

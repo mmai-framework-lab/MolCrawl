@@ -31,6 +31,16 @@ mkdir -p "$(dirname "${SUBMIT_RECORD}")"
 JID=$(sbatch --parsable "$@") || { echo "submission failed" >&2; exit 1; }
 printf '%s\t%s\t%s\n' "${JID}" "${LABEL:-unlabelled}" "$(date -Is)" >> "${SUBMIT_RECORD}"
 
+# WATCH=0 submits and records without chaining a failure recorder. The one case that
+# needs it is a segment of a chained run that is expected to end TIMEOUT: afternotok
+# fires on TIMEOUT as readily as on a crash, so a recorder on every segment would fill
+# the shared failure log with ordinary rollovers. Put the recorder on the last segment,
+# where a bad ending is a bad ending.
+if [ "${WATCH:-1}" = "0" ]; then
+  echo "${JID}"
+  exit 0
+fi
+
 WATCH_LOG="${WATCH_LOG:-$(dirname "${SUBMIT_RECORD}")/job-failures.tsv}"
 WID=$(sbatch --parsable --dependency=afternotok:"${JID}" \
       --export=ALL,WATCH_JOB="${JID}",WATCH_LOG="${WATCH_LOG}",WATCH_NAME="${LABEL}" \
