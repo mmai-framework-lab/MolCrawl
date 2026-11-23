@@ -42,3 +42,93 @@ def test_comments_and_blank_lines_are_skipped(tmp_path):
 
 def test_a_missing_record_is_empty_rather_than_an_error(tmp_path):
     assert K.read_record(str(tmp_path / "nothing.tsv")) == []
+
+
+# --- the handled list: the count at the top has to mean what it says ---
+
+def test_handled_reads_ids_and_reasons(tmp_path):
+    path = tmp_path / "handled.tsv"
+    path.write_text("job_id\twhy\n"
+                    "384933\tresubmitted as 385354\n"
+                    "384997\tresubmitted as 385358\n"
+                    "# a comment\n"
+                    "\n", encoding="utf-8")
+    assert K.read_handled(str(path)) == {"384933": "resubmitted as 385354",
+                                        "384997": "resubmitted as 385358"}
+
+
+def test_handled_tolerates_no_reason_and_no_file(tmp_path):
+    path = tmp_path / "bare.tsv"
+    path.write_text("384933\n", encoding="utf-8")
+    assert K.read_handled(str(path)) == {"384933": "(理由なし)"}
+    assert K.read_handled(str(tmp_path / "absent.tsv")) == {}
+    assert K.read_handled(None) == {}
+
+
+def test_a_handled_job_is_not_counted_among_the_ones_needing_action(tmp_path, capsys,
+                                                                    monkeypatch):
+    """The defect this closes: the rows were filtered but the headline still said 9."""
+    rows = {
+        "384933": {"job_id": "384933", "name": "dead-arm-L1", "state": "FAILED",
+                   "elapsed": "00:00:29", "end": "2026-11-23T12:46:21"},
+        "385999": {"job_id": "385999", "name": "fresh-trouble", "state": "FAILED",
+                   "elapsed": "00:01:00", "end": "2026-11-23T14:00:00"},
+    }
+    monkeypatch.setattr(K, "sacct", lambda ids: rows)
+    handled = tmp_path / "handled.tsv"
+    handled.write_text("job_id\twhy\n384933\tresubmitted as 385354\n", encoding="utf-8")
+
+    K.main(["--job", "384933", "--job", "385999", "--handled", str(handled)])
+    out = capsys.readouterr().out
+    assert "★対処が要る: 1 件" in out
+    assert "既に対処済み: 1 件" in out
+    assert "resubmitted as 385354" in out
+    # the real one is still there, and not buried in a standing list
+    assert "385999" in out.split("既に対処済み")[0]
+
+
+def test_without_a_handled_list_nothing_changes(capsys, monkeypatch):
+    rows = {"384933": {"job_id": "384933", "name": "dead-arm-L1", "state": "FAILED",
+                       "elapsed": "00:00:29", "end": "2026-11-23T12:46:21"}}
+    monkeypatch.setattr(K, "sacct", lambda ids: rows)
+    K.main(["--job", "384933"])
+    out = capsys.readouterr().out
+    assert "★対処が要る: 1 件" in out
+    assert "既に対処済み" not in out
+
+
+def test_a_spare_that_is_also_handled_is_counted_once(tmp_path, capsys, monkeypatch):
+    """--logs and --handled answer different questions and can name the same job.
+
+    A spare segment is a job that never needed doing anything about; a handled job is
+    one somebody has already answered for. Counting a row under both would make the
+    totals add up to more than the jobs that exist, so it is taken out as a spare,
+    which is the stronger statement.
+    """
+    rows = {
+        "400001": {"job_id": "400001", "name": "arm-L5", "state": "FAILED",
+                   "elapsed": "00:00:06", "end": "2026-11-24T09:00:00"},
+        "400002": {"job_id": "400002", "name": "arm-L1", "state": "FAILED",
+                   "elapsed": "00:00:29", "end": "2026-11-24T09:01:00"},
+        "400003": {"job_id": "400003", "name": "arm-L2", "state": "FAILED",
+                   "elapsed": "00:05:00", "end": "2026-11-24T09:02:00"},
+    }
+    monkeypatch.setattr(K, "sacct", lambda ids: rows)
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    # 400001 is a spare and also listed as handled; 400002 is only handled.
+    (logs / "arm-L5-400001.out").write_text(
+        "it finished the run, so there is nothing to continue\n", encoding="utf-8")
+    handled = tmp_path / "handled.tsv"
+    handled.write_text("job_id\twhy\n400001\tlisted by mistake\n"
+                       "400002\tresubmitted as 400009\n", encoding="utf-8")
+
+    K.main(["--job", "400001", "--job", "400002", "--job", "400003",
+            "--logs", str(logs), "--handled", str(handled)])
+    out = capsys.readouterr().out
+    assert "★対処が要る: 1 件" in out        # only 400003
+    assert "既に対処済み: 1 件" in out        # only 400002
+    assert "断った: 1 件" in out              # only 400001
+    spare_block = out.split("断った")[1]
+    assert "400001" in out.split("既に対処済み")[0] or "400001" in spare_block
+    assert "400001" not in out.split("既に対処済み")[1].split("断った")[0]

@@ -20,6 +20,11 @@
 #   GPT2_ROOT    runs root the extension's GPT-2 configs resolve against
 #   GRID_ROOT    runs root the batch-size grid writes under
 #   RECORDS      space-separated submission record TSVs to check outcomes against
+#   HANDLED      TSV of job ids already dealt with: `job_id<TAB>why`. They are
+#                counted and named separately instead of being listed as needing
+#                action every day. The molnl grid lost three days to this: its
+#                daily check said "60 to deal with" each morning and the two
+#                genuine failures were sitting at the top of that list.
 #
 # Nothing here cancels, resubmits or deletes. It reads finished files, squeue and
 # sacct. If something needs doing, it says so and a person does it.
@@ -46,8 +51,11 @@ PYTHON="${PYROOT}/miniconda/bin/python"
   args=()
   for rec in ${RECORDS:-}; do [ -f "${rec}" ] && args+=(--record "${rec}"); done
   if [ "${#args[@]}" -gt 0 ] && [ -x "${PYTHON}" ]; then
+    # The handled list goes to the checker, not through a filter here: filtering the
+    # rows out left the count above them saying nine when one needed an answer.
+    [ -n "${HANDLED:-}" ] && [ -f "${HANDLED}" ] && args+=(--handled "${HANDLED}")
     PYTHONPATH="$PWD" "${PYTHON}" scripts/check_job_outcomes.py "${args[@]}" 2>&1 \
-      | grep -vE "^\s*$" | head -40
+      | grep -vE "^\s*$" | head -60
   else
     echo "   no record to check (set RECORDS)"
   fi

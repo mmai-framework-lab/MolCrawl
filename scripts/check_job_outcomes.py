@@ -103,11 +103,43 @@ def read_record(path):
     return ids
 
 
+def read_handled(path):
+    """{job id: why} from a `job_id<TAB>why` TSV, header optional.
+
+    A job named here is one somebody has already answered for -- resubmitted,
+    superseded, or known to be a spare. It is still reported, with the reason, but
+    away from the jobs that need an answer, so the count at the top of the report
+    means what it says.
+    """
+    handled = {}
+    if not path or not os.path.exists(path):
+        return handled
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line.strip() or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if not parts[0].strip().isdigit():
+                continue          # a header, or a line that names no job
+            handled[parts[0].strip()] = parts[1].strip() if len(parts) > 1 else "(理由なし)"
+    return handled
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--record", action="append", default=[],
                     help="a submission record; repeat for several")
     ap.add_argument("--job", action="append", default=[], help="a job id; repeat")
+    ap.add_argument("--handled",
+                    help="a TSV of job ids already dealt with: `job_id<TAB>why`."
+                         " They are reported as handled, with the reason, instead of"
+                         " being counted among the ones that need action. Without"
+                         " this, a job that was resubmitted days ago keeps heading"
+                         " the list every morning, and a real failure arriving later"
+                         " joins the bottom of it: the molnl grid lost three days"
+                         " that way, with two genuine failures sitting inside a"
+                         " standing list of sixty")
     ap.add_argument("--out", help="TSV to write")
     ap.add_argument("--logs", action="append", default=[],
                     help="a directory of slurm logs; a FAILED job whose log holds the "
@@ -125,12 +157,21 @@ def main(argv=None) -> int:
 
     rows = sacct(ids)
     missing = [i for i in ids if i not in rows]
+    # Two ways a FAILED row needs no action, and they answer different questions.
+    # --logs recognises a spare segment from the launcher's own refusal, which is the
+    # job doing what it was queued to do. --handled names a job a person has already
+    # answered for -- resubmitted, superseded -- and carries their reason. A row can
+    # be both; it is taken out once, as a spare, because that is the stronger
+    # statement: nothing ever needed doing about it.
     actionable = [r for r in rows.values() if r["state"] in ACTIONABLE]
     spares = []
     if args.logs:
         spares = [r for r in actionable if refused_as_a_spare(r["job_id"], args.logs)]
         spare_ids = {r["job_id"] for r in spares}
         actionable = [r for r in actionable if r["job_id"] not in spare_ids]
+    handled = read_handled(args.handled) if args.handled else {}
+    set_aside = [r for r in actionable if r["job_id"] in handled]
+    actionable = [r for r in actionable if r["job_id"] not in handled]
     unknown = [r for r in rows.values() if r["state"] not in BENIGN | ACTIONABLE]
 
     print(f"  照会 {len(ids)} 件 / Slurm が返した {len(rows)} 件")
@@ -140,6 +181,11 @@ def main(argv=None) -> int:
             for r in sorted(group, key=lambda x: x["job_id"]):
                 print(f"    {r['job_id']:>10s} {r['name'][:38]:38s} {r['state']:14s} "
                       f"{r['elapsed']:>11s} {r['end']}")
+    if set_aside:
+        print(f"\n  既に対処済み: {len(set_aside)} 件")
+        for r in sorted(set_aside, key=lambda x: x["job_id"]):
+            print(f"    {r['job_id']:>10s} {r['name'][:38]:38s} {r['state']:14s} "
+                  f"{handled[r['job_id']]}")
     if spares:
         print(f"\n  予備区間が「走り切ったので継ぐものが無い」と断った: {len(spares)} 件"
               f"（対処は要らない）")
