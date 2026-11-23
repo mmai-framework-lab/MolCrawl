@@ -82,4 +82,10 @@ degenerate_grace_steps = 13000
 # LEARNING_SOURCE_DIR -- the tree rna's input and output already share -- and
 # main.py's output guard stops the run before its first step. The launch points the
 # root away from the trees the 18-epoch extension writes.
+#
+# Imported by name even though the parent config's star import already carries it:
+# `ruff check .` is what the CI runs, and a name that arrives only through a star
+# import is F405 there. The compounds grid's configs import it the same way.
+from molcrawl.core.paths import get_bert_output_path  # noqa: E402
+
 model_path = get_bert_output_path("rna", "small") + "-b1024-lr1p9e4"

@@ -135,6 +135,12 @@ BERT_TAIL = """
 # LEARNING_SOURCE_DIR -- the tree rna's input and output already share -- and
 # main.py's output guard stops the run before its first step. The launch points the
 # root away from the trees the 18-epoch extension writes.
+#
+# Imported by name even though the parent config's star import already carries it:
+# `ruff check .` is what the CI runs, and a name that arrives only through a star
+# import is F405 there. The compounds grid's configs import it the same way.
+from molcrawl.core.paths import get_bert_output_path  # noqa: E402
+
 model_path = get_bert_output_path("rna", "{size}") + "-b{batch}-lr{slug}"
 """
 
@@ -261,9 +267,14 @@ def main() -> int:
             else:
                 differ.append(path)
             continue
+        # Written through a temporary file in the same directory and moved into
+        # place: 48 of these are being imported by running arms, a link starting
+        # mid-write would read half a config, and the move is one step.
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        with open(path, "w", encoding="utf-8", newline="\n") as out:
+        tmp = f"{path}.tmp-{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8", newline="\n") as out:
             out.write(text)
+        os.replace(tmp, path)
         written += 1
 
     if args.check:

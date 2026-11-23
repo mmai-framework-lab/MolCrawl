@@ -30,6 +30,9 @@
 #   ONLY_ARCH      bert or gpt2, to queue one framework
 #   ONLY_SIZES     space-separated sizes, e.g. "small medium"
 #   ONLY_BATCHES   space-separated batches, e.g. "256 4096"
+#   ONLY_LRS       space-separated rate slugs, e.g. "9p49e5" -- a lost arm is named
+#                  by size, batch and rate together, and resubmitting it must not
+#                  queue its neighbours a second time
 #   SPARE_LINKS    extra links per arm beyond the measured need (default 1)
 #   DRY_RUN        1 to print the plan and submit nothing
 #
@@ -56,7 +59,8 @@ BLOCKS_AT_2560=120960     # 309,657,600 blocks / 2,560: steps an arm of batch 2,
 PLAN="$(mktemp)"; trap 'rm -f "${PLAN}"' EXIT
 awk -v FS='\t' -v OFS='\t' \
     -v only_arch="${ONLY_ARCH:-}" -v only_sizes="${ONLY_SIZES:-}" \
-    -v only_batches="${ONLY_BATCHES:-}" -v spare="${SPARE_LINKS}" \
+    -v only_batches="${ONLY_BATCHES:-}" -v only_lrs="${ONLY_LRS:-}" \
+    -v spare="${SPARE_LINKS}" \
     -v seg_hours="${SEGMENT_HOURS}" -v ref_steps="${BLOCKS_AT_2560}" '
   function wanted(list, value) { return list == "" || index(" " list " ", " " value " ") }
   FILENAME == probe && /^#/ { next }
@@ -70,7 +74,8 @@ awk -v FS='\t' -v OFS='\t' \
   !arm_head { for (i = 1; i <= NF; i++) a[$i] = i; arm_head = 1; next }
   {
     arch = $a["arch"]; size = $a["size"]; batch = $a["batch"]
-    if (!wanted(only_arch, arch) || !wanted(only_sizes, size) || !wanted(only_batches, batch))
+    if (!wanted(only_arch, arch) || !wanted(only_sizes, size) \
+        || !wanted(only_batches, batch) || !wanted(only_lrs, $a["lr_slug"]))
       next
     key = arch " " size " " $a["micro_batch"]
     if (!(key in rate)) { print "NO RATE", key > "/dev/stderr"; bad = 1; next }
