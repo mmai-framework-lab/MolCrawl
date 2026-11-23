@@ -330,9 +330,12 @@ def main() -> int:
                     choices=sorted(set(MICRO_BATCH) | {"measured"}),
                     help="which one-GPU block count table to build with;"
                          " 'measured' reads it from --measured-from")
-    ap.add_argument("--measured-from",
-                    help="the probe table TSV to take the 'measured' set from"
-                         " (scripts/rna_microbatch_probe_table.py --out)")
+    ap.add_argument("--measured-from", action="append", default=[],
+                    help="a probe table TSV to take the 'measured' set from"
+                         " (scripts/rna_microbatch_probe_table.py --out); repeat it"
+                         " when the two frameworks were measured separately, as they"
+                         " were here -- BERT on 2026-11-20 and GPT-2 on 2026-11-23."
+                         " A later file wins where they overlap")
     ap.add_argument("--no-collapse-detection", action="store_true",
                     help="leave the detector's values out (approved on 2026-11-20,"
                          " so it is written by default)")
@@ -351,15 +354,23 @@ def main() -> int:
     if args.measured_from:
         import rna_microbatch_probe_table as probe
 
-        measured = probe.fastest_micro(probe.read_table(args.measured_from))
-        thin = {arch: sorted(set(SIZES) - set(sizes))
-                for arch, sizes in measured.items()}
-        if sorted(measured) != sorted(ARCHES) or any(thin.values()):
-            print(f"the table does not measure every size: {thin or measured}",
+        measured: dict[str, dict[str, int]] = {}
+        for path in args.measured_from:
+            table = probe.read_table(path)
+            if any(int(r.get("repeat", 1) or 1) > 1 for r in table):
+                table = probe.collapse_repeats(table)
+            part = probe.fastest_micro(table)
+            for arch, sizes in part.items():
+                measured.setdefault(arch, {}).update(sizes)
+            print(f"=== {path}: {part}")
+        thin = {arch: sorted(set(SIZES) - set(measured.get(arch, {})))
+                for arch in ARCHES}
+        if any(thin.values()):
+            print(f"no block count measured for {thin}: pass another --measured-from",
                   file=sys.stderr)
             return 2
         MICRO_BATCH["measured"] = measured
-        print(f"=== measured set from {args.measured_from}: {measured}")
+        print(f"=== measured set: {measured}")
 
     detector = not args.no_collapse_detection
     if detector and not args.grace_blocks:

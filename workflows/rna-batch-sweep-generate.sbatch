@@ -20,6 +20,8 @@
 #
 # Env:
 #   TABLE            the probe table TSV the block counts come from
+#   TABLE2           a second table, when the two frameworks were measured apart
+#                    (BERT on 2026-11-20, GPT-2 on 2026-11-23); it wins on overlap
 #   ARMS_OUT         where to write the arm inventory (default: beside this log)
 #   LEARNING_SOURCE_DIR, MODEL_OUTPUT_ROOT, SLURM_ACCOUNT
 #                    passed through to the dry run of the submitter, which needs
@@ -49,7 +51,8 @@ rc=0
 echo
 echo "--- 1/5 the arm inventory, at the measured block counts"
 "${PYTHON}" scripts/rna_batch_sweep_arms.py --micro-batch-set measured \
-  --measured-from "${TABLE}" --out "${ARMS_OUT}" || rc=$?
+  --measured-from "${TABLE}" ${TABLE2:+--measured-from "${TABLE2}"} \
+  --out "${ARMS_OUT}" || rc=$?
 
 echo
 echo "--- 2/5 the 68 configs"

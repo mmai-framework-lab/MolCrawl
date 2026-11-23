@@ -18,7 +18,15 @@
 #   LEARNING_SOURCE_DIR  the learning_source root holding rna/
 #   MODEL_OUTPUT_ROOT    runs root, outside every input tree
 #   SLURM_ACCOUNT  the account to charge
-#   SUBMIT_RECORD  TSV of what was submitted; also routes through sbatch-watched.sh
+#   SUBMIT_RECORD  TSV of what was submitted
+#   WATCH          1 to route through sbatch-watched.sh. Off by default here: it
+#                  chains a recorder on --dependency=afternotok, and every link of
+#                  a segmented arm but the last ends TIMEOUT by design, so each
+#                  handover would be written down as a failure and the record of
+#                  real ones would be buried. The chain itself is the watcher --
+#                  bert-grid.sbatch continues from a TIMEOUT and refuses a
+#                  CANCELLED predecessor -- and check_job_outcomes.py reads the
+#                  record below, where TIMEOUT is not counted as a failure.
 #   ONLY_ARCH      bert or gpt2, to queue one framework
 #   ONLY_SIZES     space-separated sizes, e.g. "small medium"
 #   ONLY_BATCHES   space-separated batches, e.g. "256 4096"
@@ -117,7 +125,7 @@ while IFS=$'\t' read -r arch size batch slug cfg links hours out; do
       dep="<${name}>"
       continue
     fi
-    if [ -n "${SUBMIT_RECORD:-}" ]; then
+    if [ "${WATCH:-0}" = "1" ]; then
       jid=$(workflows/sbatch-watched.sh "${name}" -- "${args[@]}" "${script}")
     else
       jid=$(sbatch --parsable "${args[@]}" "${script}")

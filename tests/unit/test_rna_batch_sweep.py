@@ -17,6 +17,7 @@
    one constant in main.py and would move an arm's rows if a config named it.
 """
 
+import csv
 import os
 import sys
 
@@ -262,3 +263,51 @@ def test_the_measured_set_builds_arms_with_the_measured_shape(tmp_path):
             assert product == int(row["batch"]), row["config"]
     finally:
         del A.MICRO_BATCH["measured"]
+
+
+def test_two_tables_merge_with_the_later_one_winning(tmp_path):
+    """BERT was measured on 2026-11-20 and GPT-2 on 2026-11-23, so the set is two files.
+
+    The GPT-2 rows of the first table are the contaminated ones; passing the newer
+    table second has to replace them rather than race with them.
+    """
+    import subprocess
+
+    for sub in ("a", "b"):
+        (tmp_path / sub).mkdir()
+    first = _probe_table(tmp_path / "a", [
+        (arch, size, micro, 10.0 - micro / 100)
+        for arch in ("bert", "gpt2") for size in A.SIZES for micro in (8, 16)])
+    second = _probe_table(tmp_path / "b", [
+        ("gpt2", size, micro, 10.0 - micro / 1000)
+        for size in A.SIZES for micro in (32, 64)])
+    out = tmp_path / "arms.tsv"
+    repo = os.path.join(os.path.dirname(__file__), "..", "..")
+    done = subprocess.run(
+        [sys.executable, os.path.join(repo, "scripts", "rna_batch_sweep_arms.py"),
+         "--micro-batch-set", "measured", "--measured-from", first,
+         "--measured-from", second, "--out", str(out)],
+        cwd=repo, capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
+    rows = list(csv.DictReader(
+        (ln for ln in open(out, encoding="utf-8") if not ln.startswith("#")),
+        delimiter="\t"))
+    assert len(rows) == 68
+    by_arch = {r["arch"]: int(r["micro_batch"]) for r in rows}
+    assert by_arch["bert"] == 16     # only the first table measured BERT
+    assert by_arch["gpt2"] == 64     # the second table replaced its rows
+
+
+def test_a_framework_no_table_measured_is_refused(tmp_path):
+    import subprocess
+
+    (tmp_path / "c").mkdir()
+    only_bert = _probe_table(tmp_path / "c", [
+        ("bert", size, micro, 5.0) for size in A.SIZES for micro in (8, 16)])
+    repo = os.path.join(os.path.dirname(__file__), "..", "..")
+    done = subprocess.run(
+        [sys.executable, os.path.join(repo, "scripts", "rna_batch_sweep_arms.py"),
+         "--micro-batch-set", "measured", "--measured-from", only_bert],
+        cwd=repo, capture_output=True, text=True)
+    assert done.returncode == 2
+    assert "gpt2" in done.stderr
