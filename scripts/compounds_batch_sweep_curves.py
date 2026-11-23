@@ -74,6 +74,15 @@ BERT_BESIDE = "eval_loss"
 #: above it and the collapse detector stops the run.
 BERT_FLOOR = 2.4733
 
+#: The line the collapse detector prints when it ends a run, and the warning that
+#: carries the value it ended on. A collapsed arm stops improving, so nothing is saved
+#: after it turns: the newest checkpoint's history can end before the collapse, and
+#: reading only that file reports the arm as healthy. The log is the record of how the
+#: run ended, so it is what decides.
+COLLAPSE_STOP = "STOPPING: the run has collapsed"
+ABOVE_THRESHOLD = re.compile(
+    r"eval_loss_mask=([\d.]+) is above the degenerate threshold ([\d.]+) \((\d+)/(\d+)\)")
+
 CURVE_COLUMNS = ["arch", "size", "batch", "lr", "seed", "step", "metric", "value",
                  "rows_seen", "tokens_seen", "source"]
 SUMMARY_COLUMNS = ["arch", "size", "batch", "lr", "steps_planned", "steps_reached",
@@ -81,7 +90,7 @@ SUMMARY_COLUMNS = ["arch", "size", "batch", "lr", "steps_planned", "steps_reache
                    "best_rows", "best_tokens", "best_fraction_of_budget",
                    "final_value", "final_step", "final_minus_best",
                    "beside_metric", "beside_at_best", "beside_final",
-                   "collapsed", "source"]
+                   "collapsed", "ended", "stopped_at_value", "source"]
 
 
 def read_arms(path, arch):
@@ -155,6 +164,8 @@ def rows_for(arms, log_dir):
             # here, and a missing value is an empty cell (column convention R10).
             "beside_metric": "", "beside_at_best": "", "beside_final": "",
             "collapsed": "yes" if final_val >= DEGENERATE_FLOOR else "no",
+            "ended": "budget" if final_step >= int(arm["steps"]) else "running",
+            "stopped_at_value": "",
             "source": source,
         })
     return curves, summary, missing
@@ -199,7 +210,35 @@ def bert_series(state_path):
     return state, points
 
 
-def rows_for_bert(arms, runs_dir):
+def collapse_stop(log_dir, arm):
+    """Did the collapse detector end this arm, and on what value?
+
+    Returns ``None`` when no log of this arm carries the stop line, otherwise the
+    value of the last warning before it. The newest checkpoint cannot answer this:
+    save-on-improve writes nothing once a run turns, so the history in that file can
+    end before the collapse it was stopped for.
+    """
+    if not log_dir:
+        return None
+    stop = None
+    for path in sorted(glob.glob(os.path.join(log_dir, f"{job_stem(arm)}-s*.out"))):
+        with open(path, errors="ignore") as handle:
+            text = handle.read()
+        if COLLAPSE_STOP not in text:
+            continue
+        hits = ABOVE_THRESHOLD.findall(text)
+        stop = {"log": os.path.basename(path),
+                "value": float(hits[-1][0]) if hits else None,
+                "threshold": float(hits[-1][1]) if hits else None}
+    return stop
+
+
+def job_stem(arm):
+    """The job name the submitter built out of the inventory's own columns."""
+    return f"mc-cmp-{arm['arch']}-{arm['size']}-b{arm['batch']}-lr{arm['lr_slug']}"
+
+
+def rows_for_bert(arms, runs_dir, log_dir=None):
     """One curve row per step and metric, and one summary row per arm."""
     curves, summary, missing = [], [], []
     for arm in arms:
@@ -230,6 +269,7 @@ def rows_for_bert(arms, runs_dir):
         final_val = judged[final_step]
         beside = points.get(best_step, {}).get(BERT_BESIDE)
         beside_final = points.get(final_step, {}).get(BERT_BESIDE)
+        stopped = collapse_stop(log_dir, arm)
         summary.append({
             "arch": arm["arch"], "size": arm["size"], "batch": batch, "lr": arm["lr"],
             "steps_planned": int(arm["steps"]),
@@ -247,9 +287,18 @@ def rows_for_bert(arms, runs_dir):
             "beside_metric": BERT_BESIDE,
             "beside_at_best": "" if beside is None else f"{beside:.6f}",
             "beside_final": "" if beside_final is None else f"{beside_final:.6f}",
-            "collapsed": "" if BERT_FLOOR is None else
-                         ("yes" if final_val >= BERT_FLOOR else "no"),
-            "source": source,
+            # Either the arm's own last value is at or above the floor, or the
+            # detector already ended it for staying above the configured line. The
+            # second is the case the checkpoint history cannot show.
+            "collapsed": ("yes" if (stopped or (BERT_FLOOR is not None
+                                                and final_val >= BERT_FLOOR))
+                          else ("" if BERT_FLOOR is None else "no")),
+            "ended": ("collapse-stop" if stopped else
+                      ("budget" if int(state.get("global_step") or final_step)
+                       >= int(arm["steps"]) else "running")),
+            "stopped_at_value": ("" if not stopped or stopped["value"] is None
+                                 else f"{stopped['value']:.6f}"),
+            "source": source if not stopped else f"{source}; {stopped['log']}",
         })
     return curves, summary, missing
 
@@ -273,10 +322,16 @@ def main(argv=None) -> int:
         ap.error("--logs is required for gpt2")
     if args.arch == "bert" and not args.runs:
         ap.error("--runs is required for bert")
+    # For BERT the logs are optional but wanted: without them an arm the collapse
+    # detector ended cannot be told from one still running, so say so rather than
+    # report the weaker reading silently.
+    if args.arch == "bert" and not args.logs:
+        print("** no --logs: a collapse-stop will not be visible, only the last "
+              "value the newest checkpoint happens to carry")
 
     arms = read_arms(args.arms, args.arch)
     if args.arch == "bert":
-        curves, summary, missing = rows_for_bert(arms, args.runs)
+        curves, summary, missing = rows_for_bert(arms, args.runs, args.logs)
         where = "without a checkpoint to read"
     else:
         curves, summary, missing = rows_for(arms, args.logs)
@@ -298,7 +353,10 @@ def main(argv=None) -> int:
               f"{float(row['best_fraction_of_budget']) * 100:>8.1f}% "
               f"{row['final_value']:>9s} {row['final_minus_best']:>10s}"
               + (f" {row['beside_at_best']:>10s}" if args.arch == "bert" else "")
-              + ("   COLLAPSED" if row["collapsed"] == "yes" else ""))
+              + ("   COLLAPSED" if row["collapsed"] == "yes" else "")
+              + ("  (collapse-stop at "
+                 f"{row['stopped_at_value'] or '?'})" if row.get("ended") ==
+                 "collapse-stop" else ""))
 
     # While arms are still running they are at different fractions of their budget,
     # and the lowest value so far is then a statement about who has run longest.

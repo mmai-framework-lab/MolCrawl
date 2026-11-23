@@ -125,6 +125,39 @@ def test_the_masked_token_floor_is_the_unigram_not_the_blended_figure(tmp_path):
     assert summary[0]["collapsed"] == "yes"
 
 
+def test_a_detector_stop_is_collapsed_even_when_the_history_looks_healthy(tmp_path):
+    """The case the newest checkpoint cannot show.
+
+    A collapsed arm stops improving, so save-on-improve writes nothing after it
+    turns and the newest checkpoint's history ends before the collapse. Reading only
+    that file reported the arm the detector had stopped as healthy.
+    """
+    runs = tmp_path / "runs"
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    write_state(str(runs), ARM["out_dir"], 5375, pair(5375, 0.4998, 0.5158))
+    (logs / f"{curves.job_stem(ARM)}-s1-373138.out").write_text(
+        "WARNING: eval_loss_mask=2.4026 is above the degenerate threshold 2.395 (1/5)\n"
+        "WARNING: eval_loss_mask=2.6643 is above the degenerate threshold 2.395 (5/5)\n"
+        "STOPPING: the run has collapsed into the degenerate solution.\n")
+    _curve, summary, _ = curves.rows_for_bert([ARM], str(runs), str(logs))
+    row = summary[0]
+    assert float(row["best_value"]) == 0.4998      # it had learned, then turned
+    assert row["collapsed"] == "yes"
+    assert row["ended"] == "collapse-stop"
+    assert row["stopped_at_value"] == "2.664300"
+    # Without the logs the same run reads as healthy -- which is why they are passed.
+    _c2, summary2, _ = curves.rows_for_bert([ARM], str(runs))
+    assert summary2[0]["collapsed"] == "no"
+
+
+def test_a_running_arm_is_not_called_finished(tmp_path):
+    runs = tmp_path / "runs"
+    write_state(str(runs), ARM["out_dir"], 10000, pair(10000, 0.10, 0.09))
+    _curve, summary, _ = curves.rows_for_bert([ARM], str(runs))
+    assert summary[0]["ended"] == "running"
+
+
 def test_an_arm_below_the_floor_is_not_called_collapsed(tmp_path):
     runs = str(tmp_path)
     # Where the xl arms sit: above the configured trip line's neighbourhood but

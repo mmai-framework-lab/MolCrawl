@@ -24,9 +24,22 @@ set -uo pipefail
 : "${CURVES_OUT:?set CURVES_OUT to the curve TSV to write}"
 : "${SUMMARY_OUT:?set SUMMARY_OUT to the per-arm summary TSV to write}"
 ARCH="${ARCH:-gpt2}"
+
+# A pass queued behind a run does not know what day it will be when it fires, and a
+# report file is named for the day its contents are from. The literal string DATE in
+# either output path is replaced with today's date here, where today is the day the
+# pass actually ran.
+_today="$(date +%Y-%m-%d)"
+CURVES_OUT="${CURVES_OUT//DATE/${_today}}"
+SUMMARY_OUT="${SUMMARY_OUT//DATE/${_today}}"
+
 if [ "${ARCH}" = "bert" ]; then
   : "${RUNS:?ARCH=bert reads trainer_state.json; set RUNS to the run output root}"
   READ_FROM=(--runs "${RUNS}")
+  # The logs are how a collapse-stop is seen: a collapsed arm saves nothing after it
+  # turns, so the newest checkpoint's history can end before the collapse. Optional,
+  # because an arm's series is readable without them, but passed whenever LOGS is set.
+  [ -n "${LOGS:-}" ] && READ_FROM+=(--logs "${LOGS}")
 else
   : "${LOGS:?ARCH=gpt2 reads the run logs; set LOGS to the log directory}"
   READ_FROM=(--logs "${LOGS}")
