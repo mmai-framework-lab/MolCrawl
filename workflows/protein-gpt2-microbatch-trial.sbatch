@@ -26,7 +26,9 @@
 # probe is micro x 4; the step time at a grid global batch G is iter_s x G/(micro x 4).
 #
 # Measurement discipline: real config + real train.py, one node, candidates sequential,
-# eval disabled (eval_interval past max_iters, eval_iters tiny), no checkpoint
+# eval all but disabled (eval_interval past max_iters; init_from=scratch; the one
+# start-of-run eval is held tiny with eval_sequences=64, since the config's 3,200
+# forbids setting eval_iters directly), no checkpoint
 # (always_save_checkpoint False), and the first iterations are dropped so dataset open
 # and the first-step overhead are excluded from the timing.
 set -uo pipefail
@@ -83,8 +85,9 @@ for BS in ${CANDIDATES}; do
         --gradient_accumulation_steps=4 \
         --expected_global_batch=$(( BS * 4 )) \
         --max_iters="${ITERS}" \
+        --init_from=scratch \
         --eval_interval=$(( ITERS + 1000 )) \
-        --eval_iters=2 \
+        --eval_sequences=64 \
         --log_interval=1 \
         --always_save_checkpoint=False \
         > "${LOG}" 2>&1
