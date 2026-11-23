@@ -41,7 +41,11 @@ eval_interval = 93
 log_interval = 11
 eval_sequences = 3200  # fix the val *sequence* count, GPU-count-independent
 
-init_from = "scratch"
+# "resume", not "scratch": an arm runs as an afterany chain of segments (the budget
+# outruns the limit at xl, and leaves the others close), and nanoGPT's resume starts
+# fresh when out_dir is empty (link 1) and continues from the latest checkpoint after
+# (link N). pretrain_dir is left unset, so an empty dir means scratch, not an error.
+init_from = "resume"
 always_save_checkpoint = False
 save_checkpoint_steps = 465
 max_checkpoints = 10

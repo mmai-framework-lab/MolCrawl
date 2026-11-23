@@ -44,13 +44,22 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${HERE}"
 [ -f "${ARMS}" ] || { echo "no inventory at ${ARMS}" >&2; exit 1; }
 case "${ARCH}" in
-  bert) ;;
-  gpt2) echo "ARCH=gpt2 not wired yet (GPT-2 micro-batch pending); submit BERT first" >&2; exit 1 ;;
+  bert|gpt2) ;;
   *) echo "ARCH must be bert or gpt2, got ${ARCH}" >&2; exit 1 ;;
 esac
 
-declare -A SEGMENTS=([small]=2 [medium]=2 [large]=3 [xl]=4)
-EXTRA_SEGMENT_BATCHES=" 256 "
+# Segment counts from the measured step time, wall = budget/(micro x 4) x step, which
+# is the same at every batch. BERT: small 31h/medium 74h/large 121h/xl 226h. GPT-2 is
+# faster (small 10h/medium 22h/large 45h/xl 83h), all under 96h but xl is close, so one
+# real link plus one spare. Only BERT batch-256 arms (far more optimizer steps, overhead
+# unmeasured) get an extra spare.
+if [ "${ARCH}" = "bert" ]; then
+  declare -A SEGMENTS=([small]=2 [medium]=2 [large]=3 [xl]=4)
+  EXTRA_SEGMENT_BATCHES=" 256 "
+else
+  declare -A SEGMENTS=([small]=2 [medium]=2 [large]=2 [xl]=2)
+  EXTRA_SEGMENT_BATCHES=" "
+fi
 
 only=""
 [ -n "${ONLY_BATCHES:-}" ] && only=" ${ONLY_BATCHES} "
@@ -70,11 +79,19 @@ while read -r size batch slug cfg; do
   case "${EXTRA_SEGMENT_BATCHES}" in *" ${batch} "*) segments=$((segments + 1)) ;; esac
   prev=""
   for seg in $(seq 1 "${segments}"); do
-    name="mc-prot-bert-${size}-b${batch}-lr${slug}-s${seg}"
+    name="mc-prot-${ARCH}-${size}-b${batch}-lr${slug}-s${seg}"
     dep=(); [ -n "${prev}" ] && dep=(--dependency="afterany:${prev}")
-    args=(--job-name="${name}" "${dep[@]}"
-          --export=ALL,MODALITY=protein_sequence,CONFIG="${cfg}",SEGMENT="${seg}",LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR}",MODEL_OUTPUT_ROOT="${MODEL_OUTPUT_ROOT}"
-          workflows/bert-grid.sbatch)
+    if [ "${ARCH}" = "bert" ]; then
+      args=(--job-name="${name}" "${dep[@]}"
+            --export=ALL,MODALITY=protein_sequence,CONFIG="${cfg}",SEGMENT="${seg}",LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR}",MODEL_OUTPUT_ROOT="${MODEL_OUTPUT_ROOT}"
+            workflows/bert-grid.sbatch)
+    else
+      # GPT-2: nanoGPT resumes from out_dir itself (init_from=resume), so no SEGMENT arg;
+      # the config carries out_dir and the rate. GRID_CONFIG, not CONFIG.
+      args=(--job-name="${name}" "${dep[@]}"
+            --export=ALL,GRID_CONFIG="${cfg}",LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR}",MODEL_OUTPUT_ROOT="${MODEL_OUTPUT_ROOT}"
+            workflows/protein-gpt2-grid.sbatch)
+    fi
     if [ "${seg}" = "${segments}" ]; then watch=1; else watch=0; fi
     if [ "${DRY}" = "1" ]; then
       echo "would submit ${name}  <- ${cfg}  segment ${seg}/${segments}${prev:+ after ${prev}}$([ "${watch}" = 1 ] && echo '  [recorder]')"

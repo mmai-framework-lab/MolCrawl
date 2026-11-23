@@ -177,7 +177,11 @@ eval_interval = {eval_interval}
 log_interval = {log_interval}
 eval_sequences = {eval_sequences}  # fix the val *sequence* count, GPU-count-independent
 
-init_from = "scratch"
+# "resume", not "scratch": an arm runs as an afterany chain of segments (the budget
+# outruns the limit at xl, and leaves the others close), and nanoGPT's resume starts
+# fresh when out_dir is empty (link 1) and continues from the latest checkpoint after
+# (link N). pretrain_dir is left unset, so an empty dir means scratch, not an error.
+init_from = "resume"
 always_save_checkpoint = False
 save_checkpoint_steps = {save_interval}
 max_checkpoints = 10
@@ -296,7 +300,7 @@ CONSTANT = {
              "preprocess_num_proc": BERT_PREPROCESS_NUM_PROC},
     "gpt2": {"seed": SEED, "early_stopping": False, "block_size": BLOCK_SIZE,
              "eval_sequences": GPT2_EVAL_SEQUENCES, "always_save_checkpoint": False,
-             "init_from": "scratch", "dtype": "bfloat16", "dropout": GPT2_DROPOUT,
+             "init_from": "resume", "dtype": "bfloat16", "dropout": GPT2_DROPOUT,
              "weight_decay": GPT2_WEIGHT_DECAY},
 }
 
