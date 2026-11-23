@@ -81,6 +81,59 @@ def read_table(path: str) -> list[dict]:
             (ln for ln in handle if not ln.startswith("#")), delimiter="\t"))
 
 
+def collapse_repeats(rows: list[dict]) -> list[dict]:
+    """One row per shape: the fastest of its repeats.
+
+    Reading from the shared filesystem can only make a run slower, so across repeats
+    of the same shape the smallest figure is the one least mixed with whatever else
+    was reading at the time. The count of repeats and the spread between them are
+    carried, because a shape whose repeats disagree widely was never measured
+    quietly and its figure is still an upper bound.
+    """
+    best: dict[tuple, dict] = {}
+    seen: dict[tuple, list[float]] = {}
+    for row in rows:
+        rate = row.get("s_per_step_at_2560") or ""
+        if not rate:
+            continue
+        key = (row["arch"], row["size"], int(row["micro"]))
+        seen.setdefault(key, []).append(float(rate))
+        if key not in best or float(rate) < float(best[key]["s_per_step_at_2560"]):
+            best[key] = dict(row)
+    out = []
+    for key, row in best.items():
+        values = sorted(seen[key])
+        row["repeats"] = len(values)
+        row["spread"] = f"{values[-1] / values[0]:.2f}" if values[0] else ""
+        out.append(row)
+    return out
+
+
+def size_order_holds(chosen: dict[str, dict[str, int]],
+                     rows: list[dict]) -> list[str]:
+    """A bigger model cannot be faster at the same global batch.
+
+    This is the check the 2026-11-20 probe failed: it chose shapes that made the 328M
+    model 2.3 times faster than the 104M one. It is not a property of the block count
+    being measured, so it catches a measurement contaminated by whatever else was
+    running without needing to know what that was.
+    """
+    rate = {(r["arch"], r["size"], int(r["micro"])): float(r["s_per_step_at_2560"])
+            for r in rows if r.get("s_per_step_at_2560")}
+    problems = []
+    for arch, sizes in chosen.items():
+        ordered = [s for s in SIZES if s in sizes]
+        for smaller, bigger in zip(ordered, ordered[1:]):
+            a = rate.get((arch, smaller, sizes[smaller]))
+            b = rate.get((arch, bigger, sizes[bigger]))
+            if a is not None and b is not None and b < a:
+                problems.append(
+                    f"{arch}: {bigger} at micro {sizes[bigger]} is {a / b:.2f}x faster"
+                    f" than {smaller} at micro {sizes[smaller]}"
+                    f" ({b:.2f} against {a:.2f} s/step) -- no block count does that")
+    return problems
+
+
 def fastest_micro(rows: list[dict]) -> dict[str, dict[str, int]]:
     """The one-GPU block count to run, per framework and size: the fastest measured.
 
@@ -119,6 +172,7 @@ def main() -> int:
         glob_batch = int(arm["global"])
         rows.append({
             "arch": arm["arch"], "size": arm["size"], "micro": int(arm["micro"]),
+            "repeat": arm.get("repeat", "1"),
             "global": glob_batch, "accum": int(arm["accum"]), "job_id": arm["job_id"],
             "status": status,
             "s_per_step": f"{rate:.3f}" if rate else "",
@@ -136,6 +190,14 @@ def main() -> int:
                   f" {r['status']} (job {r['job_id']})")
 
     # One rule for the choice, used here and by the arms script.
+    repeated = any(int(r.get("repeat", 1) or 1) > 1 for r in rows)
+    if repeated:
+        rows = collapse_repeats(rows)
+        print(f"=== repeats collapsed to {len(rows)} shapes, each the fastest of its runs")
+        wide = [r for r in rows if r.get("spread") and float(r["spread"]) > 1.5]
+        for r in wide:
+            print(f"    {r['arch']} {r['size']} micro {r['micro']}:"
+                  f" repeats differ by {r['spread']}x -- never measured quietly")
     chosen = fastest_micro(rows)
     for arch in ("bert", "gpt2"):
         print(f"\n== {arch}: s/step at global 2,560 (measured at the probe's batch)")
@@ -208,8 +270,13 @@ def main() -> int:
             writer.writerows(rows)
         print(f"\nwrote {args.out}")
 
+    broken = size_order_holds(chosen, rows)
+    print(f"\n== サイズ順の整合 {'OK' if not broken else str(len(broken)) + ' 件の違反'}")
+    for item in broken:
+        print(f"   - {item}")
+
     missing = [r for r in rows if not r["s_per_step"] and "FAILED" not in r["status"]]
-    return 1 if missing else 0
+    return 1 if (missing or broken) else 0
 
 
 if __name__ == "__main__":

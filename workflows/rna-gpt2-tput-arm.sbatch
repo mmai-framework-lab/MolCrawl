@@ -67,7 +67,7 @@ TORCHRUN="${PYROOT}/miniconda/bin/torchrun"
 PYBIN="${PYROOT}/miniconda/bin/python"
 [ -x "${TORCHRUN}" ] || { echo "no torchrun under ${PYROOT}/miniconda" >&2; exit 1; }
 
-LABEL="gpt2-${SIZE}-mb${MB}-g${GLOBAL}"
+LABEL="gpt2-${SIZE}-mb${MB}-g${GLOBAL}${REPEAT:+-r${REPEAT}}"
 OUT="${PROBE_OUT}/${LABEL}-${SLURM_JOB_ID:-0}"
 LOG="${PROBE_OUT}/${LABEL}-${SLURM_JOB_ID:-0}.log"
 mkdir -p "${OUT}" "${PROBE_OUT}" workflows/slurm-logs
@@ -91,7 +91,7 @@ rc=0
   --batch_size="${MB}" --gradient_accumulation_steps="${GA}" \
   --expected_global_batch="${GLOBAL}" \
   --max_iters="${STEPS}" --lr_decay_iters="${STEPS}" --warmup_iters=1 \
-  --eval_interval="$((STEPS + 10))" \
+  --eval_interval="$((STEPS + 10))" --log_interval=1 \
   > "${LOG}" 2>&1 || rc=$?
 
 if [ "${rc}" -ne 0 ]; then
@@ -101,10 +101,18 @@ if [ "${rc}" -ne 0 ]; then
   rm -rf "${OUT}"; exit 0   # a shape that does not fit is an answer, not a failure
 fi
 
-# nanoGPT prints one line per iteration with its own millisecond figure. The first
-# iterations carry the allocator warming up, so the window starts at 50 and the
-# median is taken rather than the mean -- one slow iteration from a checkpoint or a
-# page fault should not move the figure.
+# nanoGPT prints one line per iteration with its own millisecond figure. The window
+# starts at 50, past the allocator warming up.
+#
+# **The figure is the smallest sample, not the median.** Reading from a shared
+# filesystem can only make an iteration slower, so the fastest one is the closest
+# this run came to the shape's own cost, while the median is the cost of the shape
+# plus however busy the filesystem happened to be. The 2026-11-20 probe took the
+# median and came out with a 328M model ahead of a 104M one, which no choice of
+# block count does -- the arms that happened to run quietly looked like the fast
+# shapes. The whole distribution is printed so that reading can be seen when it
+# happens: a run whose minimum and median are far apart was measured against
+# competition.
 "${PYBIN}" - "${LOG}" "${LABEL}" "${MB}" "${GLOBAL}" "${RUN_STEPS:-0}" <<'PYTPUT'
 import re
 import statistics
@@ -114,13 +122,24 @@ path, label, mb, global_batch, run_steps = sys.argv[1:6]
 mb, global_batch, run_steps = int(mb), int(global_batch), int(run_steps)
 times = [(int(i), float(ms)) for i, ms in
          re.findall(r"iter (\d+): loss [\d.]+, time ([\d.]+)ms", open(path, errors="ignore").read())]
-window = [ms for i, ms in times if i >= 50]
+window = sorted(ms for i, ms in times if i >= 50)
 if len(window) < 3:
     print(f"VERDICT {label}: no usable timing samples ({len(times)} iteration lines)")
     raise SystemExit
-sper = statistics.median(window) / 1000.0
+sper = window[0] / 1000.0
+
+
+def pct(share):
+    return window[min(len(window) - 1, int(len(window) * share))] / 1000.0
+
+
 tokens = global_batch * 1024
 print(f"VERDICT {label}: OK  {sper:.3f} s/iter  ({len(window)} samples from iter 50)")
+print(f"  distribution  min {sper:.3f}  p10 {pct(0.10):.3f}"
+      f"  median {statistics.median(window) / 1000:.3f}  p90 {pct(0.90):.3f}"
+      f"  max {window[-1] / 1000:.3f} s")
+print(f"  min/median {sper / (statistics.median(window) / 1000):.2f}"
+      f"  (far below 1 means this run was measured against competition)")
 print(f"  {tokens / sper / 1e6:.3f} M tokens/s at global {global_batch}")
 print(f"  equivalent at global 2,560: {sper * 2560 / global_batch:.3f} s/iter")
 if run_steps:

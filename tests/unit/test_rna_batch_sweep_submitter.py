@@ -183,3 +183,60 @@ def test_the_probe_table_and_the_arms_agree_on_the_accumulation():
         assert batch % (micro * probe.GPU_COUNT) == 0, row["config"]
         assert batch // (micro * probe.ACCUMULATION_DIVISOR[arch]) \
             == int(row["grad_accum"]), row["config"]
+
+
+# --- the re-measurement: repeats, and the check the first probe failed ---
+
+def _probe_rows(measurements):
+    """Rows in the shape the probe table writes, one per (shape, repeat)."""
+    return [{"arch": arch, "size": size, "micro": str(micro), "global": "256",
+             "accum": "0", "job_id": "0", "status": "OK", "repeat": str(rep),
+             "s_per_step": f"{rate / 10:.3f}", "s_per_step_at_2560": f"{rate:.3f}",
+             "log": "x.out"}
+            for arch, size, micro, rep, rate in measurements]
+
+
+def test_repeats_collapse_to_the_fastest_run_of_each_shape():
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    rows = probe.collapse_repeats(_probe_rows([
+        ("gpt2", "small", 32, 1, 9.10),   # measured against competition
+        ("gpt2", "small", 32, 2, 4.97),
+        ("gpt2", "small", 32, 3, 5.20),
+        ("gpt2", "small", 64, 1, 5.50),
+    ]))
+    by = {(r["size"], int(r["micro"])): r for r in rows}
+    assert len(rows) == 2
+    assert float(by[("small", 32)]["s_per_step_at_2560"]) == 4.97
+    assert by[("small", 32)]["repeats"] == 3
+    assert by[("small", 32)]["spread"] == "1.83"   # flagged: never measured quietly
+    assert by[("small", 64)]["repeats"] == 1
+
+
+def test_a_bigger_model_cannot_be_faster_than_a_smaller_one():
+    """The 2026-11-20 probe put the 328M model 2.3x ahead of the 104M one."""
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    rows = _probe_rows([("gpt2", "small", 32, 1, 6.29),
+                        ("gpt2", "medium", 64, 1, 2.73)])
+    problems = probe.size_order_holds({"gpt2": {"small": 32, "medium": 64}}, rows)
+    assert len(problems) == 1
+    assert "medium" in problems[0] and "2.30x" in problems[0]
+
+    ok = _probe_rows([("gpt2", "small", 32, 1, 4.97),
+                      ("gpt2", "medium", 64, 1, 5.80)])
+    assert probe.size_order_holds({"gpt2": {"small": 32, "medium": 64}}, ok) == []
+
+
+def test_the_size_order_gate_reads_the_chosen_shape_not_the_fastest_row():
+    """A size is judged on the block count it will run, not its best measurement."""
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    rows = _probe_rows([("gpt2", "small", 32, 1, 4.97),
+                        ("gpt2", "medium", 8, 1, 9.00),
+                        ("gpt2", "medium", 64, 1, 2.00)])
+    assert probe.size_order_holds({"gpt2": {"small": 32, "medium": 8}}, rows) == []
+    assert probe.size_order_holds({"gpt2": {"small": 32, "medium": 64}}, rows) != []
