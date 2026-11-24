@@ -22,8 +22,9 @@
 #
 # CHOOSE_FROM_PROBES=1 with PROBE_LOG_GLOB first reads the §4 probe logs and writes the
 # chosen block count per size into scripts/molnl_batch_shape_choice_20261120.json, which
-# the derivation then loads as its 'measured-1120' set. Pass ARMS_SET=measured-1120 in
-# the same submission to derive from it.
+# the derivation cross-checks its 'measured-1120' literal against. 'adopted-1124' is
+# that measurement with the gpt2 xl column at the runner-up shape, which is what the
+# grid runs; pass ARMS_SET to derive from either.
 #
 # SHAPES_TABLE_OUT writes §9's table -- all the arms with one GPU's block count and its
 # accumulation count, plus the measured step times PROBE_LOG_GLOB points at. Both are

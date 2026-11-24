@@ -3,7 +3,7 @@
 #
 #   LEARNING_SOURCE_DIR=<input root> MODEL_OUTPUT_ROOT=<output root> \
 #   ARMS=<rt1-...arms.tsv> SUBMIT_RECORD=<record file> ARCH=bert|gpt2 \
-#   [ONLY_BATCHES="256 512"] [ONLY_SIZES="small medium"] [DRY=1] \
+#   [ONLY_BATCHES="256 512"] [ONLY_SIZES="small medium"] [DEPEND=<job id>] [DRY=1] \
 #       workflows/submit-molnl-batch-sweep.sh
 #
 # ARCH=gpt2 submits one job per arm. ARCH=bert submits a chain of segments per arm,
@@ -12,6 +12,13 @@
 # ONLY_BATCHES and ONLY_SIZES narrow what goes in, which is how a grid of 68 is started
 # in parts without the inventory being edited. Unset, every arm of the architecture is
 # submitted.
+
+# DEPEND holds every arm of this submission behind one job that has to end well first,
+# which is how the rest of a column is queued behind the one arm that is proving a
+# change. It goes on the first job of each arm only -- a BERT segment chain already
+# depends on the segment before it -- so the chain is not held up twice. Without it a
+# staged launch needs a session to be awake at the moment the first arm is far enough
+# along, and this one is not awake for fourteen hours.
 #
 # The segment counts come from the §4 probes of 2026-11-20 (jobs 374100-374292), which
 # measured every size at the shape this grid now uses -- so xl has a rate of its own
@@ -60,6 +67,11 @@ set -uo pipefail
 : "${SUBMIT_RECORD:?export SUBMIT_RECORD to the file to append job ids to}"
 ARCH="${ARCH:-bert}"
 DRY="${DRY:-0}"
+DEPEND="${DEPEND:-}"
+case "${DEPEND}" in
+  ""|[0-9]*) ;;
+  *) echo "DEPEND must be a job id, got ${DEPEND}" >&2; exit 1 ;;
+esac
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${HERE}"
@@ -101,11 +113,12 @@ while read -r size batch slug cfg; do
   [ -f "${cfg}" ] || { echo "no config at ${cfg}" >&2; exit 1; }
   if [ "${ARCH}" = "gpt2" ]; then
     name="mc-molnl-gpt2-b${batch}-${size}-lr${slug}"
-    args=(--job-name="${name}"
+    gate=(); [ -n "${DEPEND}" ] && gate=(--dependency="afterok:${DEPEND}")
+    args=(--job-name="${name}" "${gate[@]}"
           --export=ALL,CONFIG="${cfg}",LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR}",MODEL_OUTPUT_ROOT="${MODEL_OUTPUT_ROOT}"
           workflows/molnl-batch-sweep-gpt2.sbatch)
     if [ "${DRY}" = "1" ]; then
-      echo "would submit ${name}  <- ${cfg}"
+      echo "would submit ${name}  <- ${cfg}${DEPEND:+  after ${DEPEND}}"
     else
       jid=$(SUBMIT_RECORD="${SUBMIT_RECORD}" workflows/sbatch-watched.sh "${name}" -- "${args[@]}")
       echo "${jid}  ${name}"
@@ -119,7 +132,12 @@ while read -r size batch slug cfg; do
   prev=""
   for seg in $(seq 1 "${segments}"); do
     name="mc-molnl-bert-b${batch}-${size}-lr${slug}-s${seg}"
-    dep=(); [ -n "${prev}" ] && dep=(--dependency="afterany:${prev}")
+    dep=()
+    if [ -n "${prev}" ]; then
+      dep=(--dependency="afterany:${prev}")
+    elif [ -n "${DEPEND}" ]; then
+      dep=(--dependency="afterok:${DEPEND}")
+    fi
     args=(--job-name="${name}" "${dep[@]}"
           --export=ALL,MODALITY=molecule_nat_lang,CONFIG="${cfg}",SEGMENT="${seg}",LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR}",MODEL_OUTPUT_ROOT="${MODEL_OUTPUT_ROOT}"
           workflows/bert-grid.sbatch)

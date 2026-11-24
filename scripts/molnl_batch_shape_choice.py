@@ -6,9 +6,11 @@ grid's smallest batch, one per size, held across the five batches -- measured, n
 assumed, and reported with the measured numbers beside the chosen one.
 
 This reads the SHAPE_RESULT lines the probe jobs printed and writes the choice as a
-JSON file that scripts/molnl_batch_sweep_arms.py loads as its 'measured-1120' set. The
-eight numbers are therefore never retyped: the file carries every measurement, which
-one won, by how much, and which job and log it came from.
+JSON file that scripts/molnl_batch_sweep_arms.py cross-checks its 'measured-1120' set
+against at import. That set is a literal there -- loading it from here made the whole
+derivation work only on the node that had run the probes -- and this file is its
+provenance: it carries every measurement, which one won, by how much, and which job and
+log it came from, and a disagreement with the literal stops the derivation.
 
 Which number decides it:
 
