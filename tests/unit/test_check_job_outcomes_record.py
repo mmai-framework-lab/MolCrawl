@@ -129,6 +129,13 @@ def test_a_spare_that_is_also_handled_is_counted_once(tmp_path, capsys, monkeypa
     assert "★対処が要る: 1 件" in out        # only 400003
     assert "既に対処済み: 1 件" in out        # only 400002
     assert "断った: 1 件" in out              # only 400001
-    spare_block = out.split("断った")[1]
-    assert "400001" in out.split("既に対処済み")[0] or "400001" in spare_block
-    assert "400001" not in out.split("既に対処済み")[1].split("断った")[0]
+
+    # The spare heading carries a count and no rows, so the job is identified by
+    # where it does NOT appear: neither among the ones to act on nor among the
+    # handled, which is what "counted once" means here.
+    actionable_block = out.split("★対処が要る")[1].split("既に対処済み")[0]
+    handled_block = out.split("既に対処済み")[1].split("断った")[0]
+    assert "400001" not in actionable_block
+    assert "400001" not in handled_block
+    assert "400002" in handled_block and "400002" not in actionable_block
+    assert "400003" in actionable_block and "400003" not in handled_block
