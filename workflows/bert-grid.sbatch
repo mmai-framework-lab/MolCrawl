@@ -6,11 +6,13 @@
 #SBATCH --time=96:00:00
 #SBATCH --output=workflows/slurm-logs/%x-%j.out
 #SBATCH --error=workflows/slurm-logs/%x-%j.out
-# BERT learning-rate grid for rna, protein_sequence and compounds.
+# BERT grids for rna, protein_sequence, compounds and molecule_nat_lang.
 #
 # The same launcher as workflows/molnl-bert-ladder.sbatch, with the modality and the
-# output root passed in rather than fixed. Every guard below is that file's, unchanged;
-# molecule_nat_lang keeps using its own launcher.
+# output root passed in rather than fixed. Every guard below is that file's, unchanged.
+# molecule_nat_lang's ladder and its extensions keep their own launcher, which resolves
+# the output root from MOLNL_ARTIFACT_ROOT; its batch-size grid of 2026-11-20 comes
+# through here, because those arms name their own model_path under MODEL_OUTPUT_ROOT.
 #
 # Submit from the repository root:
 #   sbatch --export=ALL,MODALITY=rna,LEARNING_SOURCE_DIR=<input root>,\
@@ -73,7 +75,7 @@
 set -eo pipefail
 : "${CONFIG:?CONFIG=path to the config to run, e.g. molcrawl/tasks/pretrain/configs/rna/bert_small_lr3e4.py}"
 : "${SEGMENT:?SEGMENT=1 for the first, 2,3,... for each continuation}"
-: "${MODALITY:?MODALITY=rna|protein_sequence|compounds}"
+: "${MODALITY:?MODALITY=rna|protein_sequence|compounds|molecule_nat_lang}"
 : "${LEARNING_SOURCE_DIR:?export LEARNING_SOURCE_DIR to the learning_source root holding ${MODALITY}/}"
 : "${MODEL_OUTPUT_ROOT:?export MODEL_OUTPUT_ROOT to the root the grid outputs go under, outside the input tree}"
 [ -d "${LEARNING_SOURCE_DIR}/${MODALITY}" ] || {
@@ -105,6 +107,19 @@ PYTHON="${PYTHON:-${PYROOT}/miniconda/bin/python}"
 # is asked below before the allocation is put to work.
 CFG_NAME="$(basename "${CFG}" .py)"
 
+# molecule_nat_lang's tokenizer reads GPT2_TOKENIZER_DIR and, without it, asks
+# AutoTokenizer for the model id with local_files_only -- which raises under
+# TRANSFORMERS_OFFLINE=1. Its BERT configs build that tokenizer at import time, so the
+# config read below raised and all 112 jobs of the 2026-11-20 batch grid ended at
+# "could not read" in 26 seconds each. molnl-bert-ladder.sbatch has always exported it;
+# this launcher had not needed to, because no modality that uses it did.
+# Set for this modality only, so no other modality's environment changes by one byte.
+if [ "${MODALITY}" = "molecule_nat_lang" ]; then
+  export GPT2_TOKENIZER_DIR="${GPT2_TOKENIZER_DIR:-${PYROOT}/assets/tokenizers/gpt2}"
+  [ -d "${GPT2_TOKENIZER_DIR}" ] || {
+    echo "GPT2_TOKENIZER_DIR=${GPT2_TOKENIZER_DIR} is not a directory; molecule_nat_lang" \
+         "configs cannot build their tokenizer without it" >&2; exit 1; }
+fi
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${PYROOT}/tmp/hf-cache-${MODALITY}}"
 export LD_LIBRARY_PATH="${PYROOT}/miniconda/lib:${LD_LIBRARY_PATH:-}"
 export PYTHONPATH="${REPO}:${PYTHONPATH:-}"
@@ -138,7 +153,11 @@ fi
 
 # The grid configs import their base rather than restating it, so the values cannot be
 # read out of the file with grep. Run it the way main.py will and read what it resolves to.
-_cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>/dev/null
+# Its stderr goes to a file rather than to /dev/null: a config that cannot be read is
+# reported with the reason it could not be read. Swallowing it is what turned a missing
+# environment variable into 112 jobs whose whole log was one line.
+_cfg_err="$(mktemp)"
+_cfg_dump=$("${PYTHON}" - "${CFG}" <<'PYEOF' 2>"${_cfg_err}"
 import runpy, sys
 g = runpy.run_path(sys.argv[1])
 keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
@@ -149,7 +168,9 @@ keys = ("max_steps", "warmup_steps", "learning_rate", "seed", "batch_size",
 for k in keys:
     print(f"{k}={g.get(k)}")
 PYEOF
-) || { echo "could not read ${CFG}" >&2; exit 1; }
+) || { echo "could not read ${CFG}; it raised:" >&2
+        sed 's/^/    /' "${_cfg_err}" >&2; rm -f "${_cfg_err}"; exit 1; }
+rm -f "${_cfg_err}"
 _cfg_steps=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^max_steps=//p')
 [ -n "${_cfg_steps}" ] || { echo "no max_steps in ${CFG}" >&2; exit 1; }
 OUT=$(printf '%s\n' "${_cfg_dump}" | sed -n 's/^model_path=//p')

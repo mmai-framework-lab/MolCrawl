@@ -20,11 +20,41 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import os
 import subprocess
 
 ACTIONABLE = {"FAILED", "NODE_FAIL", "OUT_OF_MEMORY", "BOOT_FAIL", "DEADLINE"}
 BENIGN = {"COMPLETED", "RUNNING", "PENDING", "COMPLETING", "TIMEOUT"}
+
+#: A spare segment that follows a finished run ends FAILED with exit 1, because the
+#: launcher refuses it. That is the spare doing its job, not a run that broke, and the
+#: molnl batch grid put 60 such rows in front of whatever actually went wrong.
+#:
+#: There are two refusals and both have to be here. bert-grid.sbatch checks the step
+#: count first ("the run already reached step N of N, so there is nothing for this
+#: segment to do") and the previous segment's state second ("it finished the run, so
+#: there is nothing to continue"). The first version of this list held only the second
+#: sentence, so the daily check reported 60 jobs to act on for three days running and
+#: every one of them was a spare.
+SPARE_SEGMENT = (
+    "so there is nothing for this segment to do",
+    "it finished the run, so there is nothing to continue",
+)
+
+
+def refused_as_a_spare(job_id, log_dirs):
+    """True when this job's log holds one of the launcher's refusal sentences."""
+    for directory in log_dirs:
+        for path in glob.glob(os.path.join(directory, f"*-{job_id}.out")):
+            try:
+                with open(path, encoding="utf-8", errors="replace") as handle:
+                    text = handle.read()
+            except OSError:
+                continue
+            if any(sentence in text for sentence in SPARE_SEGMENT):
+                return True
+    return False
 
 
 def sacct(job_ids):
@@ -79,6 +109,10 @@ def main(argv=None) -> int:
                     help="a submission record; repeat for several")
     ap.add_argument("--job", action="append", default=[], help="a job id; repeat")
     ap.add_argument("--out", help="TSV to write")
+    ap.add_argument("--logs", action="append", default=[],
+                    help="a directory of slurm logs; a FAILED job whose log holds the "
+                         "continuation guard's refusal is counted as a spare segment "
+                         "rather than something to act on. Repeat for several")
     args = ap.parse_args(argv)
 
     ids = list(args.job)
@@ -92,6 +126,11 @@ def main(argv=None) -> int:
     rows = sacct(ids)
     missing = [i for i in ids if i not in rows]
     actionable = [r for r in rows.values() if r["state"] in ACTIONABLE]
+    spares = []
+    if args.logs:
+        spares = [r for r in actionable if refused_as_a_spare(r["job_id"], args.logs)]
+        spare_ids = {r["job_id"] for r in spares}
+        actionable = [r for r in actionable if r["job_id"] not in spare_ids]
     unknown = [r for r in rows.values() if r["state"] not in BENIGN | ACTIONABLE]
 
     print(f"  照会 {len(ids)} 件 / Slurm が返した {len(rows)} 件")
@@ -101,6 +140,9 @@ def main(argv=None) -> int:
             for r in sorted(group, key=lambda x: x["job_id"]):
                 print(f"    {r['job_id']:>10s} {r['name'][:38]:38s} {r['state']:14s} "
                       f"{r['elapsed']:>11s} {r['end']}")
+    if spares:
+        print(f"\n  予備区間が「走り切ったので継ぐものが無い」と断った: {len(spares)} 件"
+              f"（対処は要らない）")
     if missing:
         print(f"\n  Slurm に記録が無い（古すぎる）: {len(missing)} 件 {missing[:8]}")
     if not actionable and not unknown:
