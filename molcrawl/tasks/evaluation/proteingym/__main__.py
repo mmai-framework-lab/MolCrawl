@@ -73,6 +73,16 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--wildtype-sequence",
+        default=None,
+        help=(
+            "Reference (wildtype) sequence to use when the assay CSV carries "
+            "neither a wildtype_sequence column nor a mutant notation -- i.e. "
+            "indel assays, whose reference comes from the release DMS reference "
+            "file (target_seq). Ignored when the CSV already provides one."
+        ),
+    )
+    parser.add_argument(
         "--predictions-preview-count",
         type=int,
         default=20,
@@ -108,6 +118,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             "bootstrap_samples": args.bootstrap_samples,
             "max_examples": args.max_examples,
             "scoring_method": args.scoring_method,
+            "wildtype_sequence": args.wildtype_sequence,
             "predictions_preview_count": args.predictions_preview_count,
         },
     )

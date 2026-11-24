@@ -49,6 +49,15 @@ MAX="${MAX_EXAMPLES-200}"
 SCORING_METHOD="${SCORING_METHOD:-}"
 FILTER="${PG_FILTER:-}"
 DRY="${DRY_RUN:-0}"
+# Optional DMS reference file (e.g. .../refs/DMS_indels.csv). When set, each
+# assay's wildtype (target_seq) is looked up by DMS_id and passed to the
+# evaluator as --wildtype-sequence. Indel assays require it: their CSVs carry
+# no wildtype_sequence column and no mutant notation to reconstruct one from.
+PG_REFERENCE="${PG_REFERENCE:-}"
+if [[ -n "${PG_REFERENCE}" && ! -f "${PG_REFERENCE}" ]]; then
+    echo "ERROR: PG_REFERENCE not found at ${PG_REFERENCE}" >&2
+    exit 1
+fi
 
 # Assay CSV directory. Defaults to the unpacked DMS substitutions set; set
 # PG_DIR to score another directory of per-assay CSVs -- e.g. the official
@@ -109,9 +118,26 @@ for csv in $ASSAYS; do
 
     echo "[pg-sweep] RUN:  ${name}"
     mkdir -p "$outdir"
+    WT=""
+    if [[ -n "${PG_REFERENCE}" ]]; then
+        WT="$("$PYTHON" - "$PG_REFERENCE" "$name" <<'PYWT'
+import csv, sys
+ref, dms_id = sys.argv[1], sys.argv[2]
+with open(ref, newline="") as fh:
+    for r in csv.DictReader(fh):
+        if r.get("DMS_id") == dms_id:
+            sys.stdout.write(r.get("target_seq", "") or "")
+            break
+PYWT
+)"
+        if [[ -z "${WT}" ]]; then
+            echo "[pg-sweep] FAIL: ${name} (no target_seq in reference)" >&2
+            FAIL=$((FAIL+1)); continue
+        fi
+    fi
     OUTPUT_DIR="$outdir" RUNTAG="proteingym_${name}_sweep" \
         DEVICE="$DEVICE" BOOTSTRAP="$BOOTSTRAP" MAX_EXAMPLES="$MAX" \
-        SCORING_METHOD="$SCORING_METHOD" \
+        SCORING_METHOD="$SCORING_METHOD" WILDTYPE_SEQUENCE="$WT" \
         MODEL_PATH="$MODEL_PATH" PROTEINGYM_DATA="$csv" \
         ARCH="$ARCH" MODALITY="$MODALITY" \
         bash "${REPO_ROOT}/workflows/eval-proteingym.sh" \

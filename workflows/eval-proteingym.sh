@@ -63,4 +63,7 @@ fi
 if [[ -n "${SCORING_METHOD:-}" ]]; then
     cmd+=(--scoring-method "$SCORING_METHOD")
 fi
+if [[ -n "${WILDTYPE_SEQUENCE:-}" ]]; then
+    cmd+=(--wildtype-sequence "$WILDTYPE_SEQUENCE")
+fi
 "${cmd[@]}"
