@@ -67,14 +67,16 @@ surfaced as <code>DMS_bin_score</code> when either is present.</li>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="molcrawl.tasks.evaluation.proteingym.data_preparation.load_proteingym"><code class="name flex">
-<span>def <span class="ident">load_proteingym</span></span>(<span>path: Path) ‑> pandas.DataFrame</span>
+<span>def <span class="ident">load_proteingym</span></span>(<span>path: Path, wildtype_sequence: Optional[str] = None) ‑> pandas.DataFrame</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_proteingym(path: Path) -&gt; pd.DataFrame:
+<pre><code class="python">def load_proteingym(
+    path: Path, wildtype_sequence: Optional[str] = None
+) -&gt; pd.DataFrame:
     csv_path = Path(path)
     if not csv_path.exists():
         raise FileNotFoundError(csv_path)
@@ -86,25 +88,40 @@ surfaced as <code>DMS_bin_score</code> when either is present.</li>
         )
 
     if &#34;wildtype_sequence&#34; not in df.columns:
-        if &#34;mutant&#34; not in df.columns:
-            raise ValueError(
-                f&#34;ProteinGym file {csv_path} has neither wildtype_sequence nor &#34;
-                &#34;a mutant column; cannot reconstruct the wildtype. Available: &#34;
-                f&#34;{list(df.columns)}&#34;
+        if wildtype_sequence:
+            # Indel assays carry neither a wildtype_sequence column nor a mutant
+            # notation to reconstruct it from (the CSV is just
+            # mutated_sequence/DMS_score/DMS_score_bin); the reference sequence
+            # comes from the release&#39;s DMS reference file (target_seq) and is
+            # passed in explicitly.
+            df = df.copy()
+            df[&#34;wildtype_sequence&#34;] = str(wildtype_sequence)
+            logger.info(
+                &#34;Using supplied wildtype for %s (length %d)&#34;,
+                csv_path.name,
+                len(str(wildtype_sequence)),
             )
-        wildtype = _reconstruct_wildtype(df)
-        if wildtype is None:
-            raise ValueError(
-                f&#34;Could not reconstruct wildtype from any row in {csv_path}. &#34;
-                &#34;mutant strings may use an unsupported format.&#34;
+        elif &#34;mutant&#34; in df.columns:
+            wildtype = _reconstruct_wildtype(df)
+            if wildtype is None:
+                raise ValueError(
+                    f&#34;Could not reconstruct wildtype from any row in {csv_path}. &#34;
+                    &#34;mutant strings may use an unsupported format.&#34;
+                )
+            df = df.copy()
+            df[&#34;wildtype_sequence&#34;] = wildtype
+            logger.info(
+                &#34;Reconstructed wildtype for %s (length %d)&#34;,
+                csv_path.name,
+                len(wildtype),
             )
-        df = df.copy()
-        df[&#34;wildtype_sequence&#34;] = wildtype
-        logger.info(
-            &#34;Reconstructed wildtype for %s (length %d)&#34;,
-            csv_path.name,
-            len(wildtype),
-        )
+        else:
+            raise ValueError(
+                f&#34;ProteinGym file {csv_path} has no wildtype_sequence column, no &#34;
+                &#34;mutant column to reconstruct it from, and no wildtype_sequence &#34;
+                &#34;was supplied (indel assays need the reference target_seq passed &#34;
+                f&#34;in). Available: {list(df.columns)}&#34;
+            )
 
     if &#34;DMS_bin_score&#34; not in df.columns and &#34;DMS_score_bin&#34; in df.columns:
         df = df.rename(columns={&#34;DMS_score_bin&#34;: &#34;DMS_bin_score&#34;})

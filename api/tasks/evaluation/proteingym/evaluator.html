@@ -92,7 +92,10 @@ re-running.</p>
         return &#34;variant_effect&#34;
 
     def load_dataset(self) -&gt; pd.DataFrame:
-        df = load_proteingym(self.proteingym_path)
+        df = load_proteingym(
+            self.proteingym_path,
+            wildtype_sequence=self.config.get(&#34;wildtype_sequence&#34;),
+        )
 
         n_examples = self.config.get(&#34;n_examples&#34;)
         max_examples = self.config.get(&#34;max_examples&#34;)
@@ -475,7 +478,10 @@ distribution summaries, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def load_dataset(self) -&gt; pd.DataFrame:
-    df = load_proteingym(self.proteingym_path)
+    df = load_proteingym(
+        self.proteingym_path,
+        wildtype_sequence=self.config.get(&#34;wildtype_sequence&#34;),
+    )
 
     n_examples = self.config.get(&#34;n_examples&#34;)
     max_examples = self.config.get(&#34;max_examples&#34;)
