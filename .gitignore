@@ -37,6 +37,9 @@ slurm_logs/
 !.vscode/launch.json
 !molcrawl-web/frontend/public/manifest.json
 !molcrawl-web/src/i18n/locales/*.json
+# The batch-grid shape measurements: the provenance of the micro-batch literals
+# in scripts/molnl_batch_sweep_arms.py, so they are not reproducible without it.
+!scripts/molnl_batch_shape_choice_*.json
 !src/compounds/dataset/prepare_gpt2_organix13.py
 
 wandb

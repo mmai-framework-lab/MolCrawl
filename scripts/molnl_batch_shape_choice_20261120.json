@@ -1,0 +1,470 @@
+{
+  "candidates": [
+    4,
+    8,
+    16,
+    32,
+    64
+  ],
+  "chosen": {
+    "bert": {
+      "large": 64,
+      "medium": 64,
+      "small": 64,
+      "xl": 32
+    },
+    "gpt2": {
+      "large": 64,
+      "medium": 64,
+      "small": 64,
+      "xl": 32
+    }
+  },
+  "directive": "2026-11-20 \u00a74",
+  "generated": "2026-11-20T18:10:14+09:00",
+  "gpus": 4,
+  "logs": [
+    "mc-molnl-bshape-bert-large-374104.out",
+    "mc-molnl-bshape-bert-medium-374102.out",
+    "mc-molnl-bshape-bert-small-374100.out",
+    "mc-molnl-bshape-bert-xl-374106.out",
+    "mc-molnl-bshape-bert-xl64-374290.out",
+    "mc-molnl-bshape-gpt2-large-374112.out",
+    "mc-molnl-bshape-gpt2-large-374286.out",
+    "mc-molnl-bshape-gpt2-medium-374110.out",
+    "mc-molnl-bshape-gpt2-small-374108.out",
+    "mc-molnl-bshape-gpt2-xl-374114.out",
+    "mc-molnl-bshape-gpt2-xl64-374292.out"
+  ],
+  "measurements": [
+    {
+      "accum": "80",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-small-374100.out",
+      "micro": 8,
+      "per_step_s": 3.851,
+      "size": "small"
+    },
+    {
+      "accum": "40",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-small-374100.out",
+      "micro": 16,
+      "per_step_s": 2.897,
+      "size": "small"
+    },
+    {
+      "accum": "20",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-small-374100.out",
+      "micro": 32,
+      "per_step_s": 2.725,
+      "size": "small"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-small-374100.out",
+      "micro": 64,
+      "per_step_s": 2.517,
+      "size": "small"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-small-374100.out",
+      "margin_s": 0.208,
+      "micro": 64,
+      "per_step_s": 2.517,
+      "ranked_by": "per_step_s",
+      "runner_up_micro": 32,
+      "size": "small",
+      "why": "HF train_runtime less the evaluation time inside it, over the steps"
+    },
+    {
+      "accum": "80",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-medium-374102.out",
+      "micro": 8,
+      "per_step_s": 7.822,
+      "size": "medium"
+    },
+    {
+      "accum": "40",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-medium-374102.out",
+      "micro": 16,
+      "per_step_s": 6.506,
+      "size": "medium"
+    },
+    {
+      "accum": "20",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-medium-374102.out",
+      "micro": 32,
+      "per_step_s": 6.146,
+      "size": "medium"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-medium-374102.out",
+      "micro": 64,
+      "per_step_s": 5.795,
+      "size": "medium"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-medium-374102.out",
+      "margin_s": 0.351,
+      "micro": 64,
+      "per_step_s": 5.795,
+      "ranked_by": "per_step_s",
+      "runner_up_micro": 32,
+      "size": "medium",
+      "why": "HF train_runtime less the evaluation time inside it, over the steps"
+    },
+    {
+      "accum": "80",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-large-374104.out",
+      "micro": 8,
+      "per_step_s": 12.375,
+      "size": "large"
+    },
+    {
+      "accum": "40",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-large-374104.out",
+      "micro": 16,
+      "per_step_s": 10.881,
+      "size": "large"
+    },
+    {
+      "accum": "20",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-large-374104.out",
+      "micro": 32,
+      "per_step_s": 10.244,
+      "size": "large"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-large-374104.out",
+      "micro": 64,
+      "per_step_s": 9.878,
+      "size": "large"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-large-374104.out",
+      "margin_s": 0.366,
+      "micro": 64,
+      "per_step_s": 9.878,
+      "ranked_by": "per_step_s",
+      "runner_up_micro": 32,
+      "size": "large",
+      "why": "HF train_runtime less the evaluation time inside it, over the steps"
+    },
+    {
+      "accum": "160",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-xl-374106.out",
+      "micro": 4,
+      "per_step_s": 26.034,
+      "size": "xl"
+    },
+    {
+      "accum": "80",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-xl-374106.out",
+      "micro": 8,
+      "per_step_s": 21.852,
+      "size": "xl"
+    },
+    {
+      "accum": "40",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-xl-374106.out",
+      "micro": 16,
+      "per_step_s": 19.963,
+      "size": "xl"
+    },
+    {
+      "accum": "20",
+      "arch": "bert",
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-xl-374106.out",
+      "micro": 32,
+      "per_step_s": 19.085,
+      "size": "xl"
+    },
+    {
+      "accum": "10",
+      "arch": "bert",
+      "failed": "1",
+      "log": "mc-molnl-bshape-bert-xl64-374290.out",
+      "micro": 64,
+      "per_step_s": null,
+      "size": "xl"
+    },
+    {
+      "accum": "20",
+      "arch": "bert",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-bert-xl-374106.out",
+      "margin_s": 0.878,
+      "micro": 32,
+      "per_step_s": 19.085,
+      "ranked_by": "per_step_s",
+      "runner_up_micro": 16,
+      "size": "xl",
+      "why": "HF train_runtime less the evaluation time inside it, over the steps"
+    },
+    {
+      "accum": "320",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-small-374108.out",
+      "median_s": 2.634,
+      "micro": 8,
+      "size": "small"
+    },
+    {
+      "accum": "160",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-small-374108.out",
+      "median_s": 2.213,
+      "micro": 16,
+      "size": "small"
+    },
+    {
+      "accum": "80",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-small-374108.out",
+      "median_s": 2.134,
+      "micro": 32,
+      "size": "small"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-small-374108.out",
+      "median_s": 2.071,
+      "micro": 64,
+      "size": "small"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-small-374108.out",
+      "margin_s": 0.063,
+      "median_s": 2.071,
+      "micro": 64,
+      "ranked_by": "median_s",
+      "runner_up_micro": 32,
+      "size": "small",
+      "why": "median of the per-iteration times past the warmup; the mean follows a few iterations that are not the step"
+    },
+    {
+      "accum": "320",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-medium-374110.out",
+      "median_s": 4.956,
+      "micro": 8,
+      "size": "medium"
+    },
+    {
+      "accum": "160",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-medium-374110.out",
+      "median_s": 4.062,
+      "micro": 16,
+      "size": "medium"
+    },
+    {
+      "accum": "80",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-medium-374110.out",
+      "median_s": 3.868,
+      "micro": 32,
+      "size": "medium"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-medium-374110.out",
+      "median_s": 3.736,
+      "micro": 64,
+      "size": "medium"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-medium-374110.out",
+      "margin_s": 0.132,
+      "median_s": 3.736,
+      "micro": 64,
+      "ranked_by": "median_s",
+      "runner_up_micro": 32,
+      "size": "medium",
+      "why": "median of the per-iteration times past the warmup; the mean follows a few iterations that are not the step"
+    },
+    {
+      "accum": "320",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-large-374286.out",
+      "median_s": 7.206,
+      "micro": 8,
+      "size": "large"
+    },
+    {
+      "accum": "160",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-large-374286.out",
+      "median_s": 6.64,
+      "micro": 16,
+      "size": "large"
+    },
+    {
+      "accum": "80",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-large-374286.out",
+      "median_s": 6.36,
+      "micro": 32,
+      "size": "large"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-large-374286.out",
+      "median_s": 6.17,
+      "micro": 64,
+      "size": "large"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-large-374286.out",
+      "margin_s": 0.19,
+      "median_s": 6.17,
+      "micro": 64,
+      "ranked_by": "median_s",
+      "runner_up_micro": 32,
+      "size": "large",
+      "why": "median of the per-iteration times past the warmup; the mean follows a few iterations that are not the step"
+    },
+    {
+      "accum": "640",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-xl-374114.out",
+      "median_s": 13.262,
+      "micro": 4,
+      "size": "xl"
+    },
+    {
+      "accum": "320",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-xl-374114.out",
+      "median_s": 11.561,
+      "micro": 8,
+      "size": "xl"
+    },
+    {
+      "accum": "160",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-xl-374114.out",
+      "median_s": 10.851,
+      "micro": 16,
+      "size": "xl"
+    },
+    {
+      "accum": "80",
+      "arch": "gpt2",
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-xl-374114.out",
+      "median_s": 10.586,
+      "micro": 32,
+      "size": "xl"
+    },
+    {
+      "accum": "40",
+      "arch": "gpt2",
+      "failed": "1",
+      "log": "mc-molnl-bshape-gpt2-xl64-374292.out",
+      "median_s": null,
+      "micro": 64,
+      "size": "xl"
+    },
+    {
+      "accum": "80",
+      "arch": "gpt2",
+      "chosen": true,
+      "failed": "",
+      "log": "mc-molnl-bshape-gpt2-xl-374114.out",
+      "margin_s": 0.265,
+      "median_s": 10.586,
+      "micro": 32,
+      "ranked_by": "median_s",
+      "runner_up_micro": 16,
+      "size": "xl",
+      "why": "median of the per-iteration times past the warmup; the mean follows a few iterations that are not the step"
+    }
+  ],
+  "ranked_by": {
+    "bert": {
+      "field": "per_step_s",
+      "why": "HF train_runtime less the evaluation time inside it, over the steps"
+    },
+    "gpt2": {
+      "field": "median_s",
+      "why": "median of the per-iteration times past the warmup; the mean follows a few iterations that are not the step"
+    }
+  },
+  "set": "measured-1120"
+}

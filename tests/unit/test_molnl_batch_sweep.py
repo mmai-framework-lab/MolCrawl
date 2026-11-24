@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -517,3 +518,40 @@ def test_every_field_the_manifest_row_sets_has_a_column():
         for key in keys:
             assert key[0] in manifests.COLUMNS, (name, key[0])
     assert "per_device_eval_batch_size" in manifests.COLUMNS
+
+
+def test_every_set_a_config_declares_is_in_the_module(arms_module):
+    """A config's §4 set has to be derivable from the repository alone.
+
+    The measured set was loaded from scripts/molnl_batch_shape_choice_20261120.json,
+    which matches .gitignore's ``*.json`` and so had never been committed. The 68 configs
+    name that set, the module only had it where the probes had run, and eighteen tests
+    raised KeyError('measured-1120') in CI while passing on one node. The set is a
+    literal now; this asserts the configs cannot get ahead of the module again.
+    """
+    declared = set()
+    for path in sorted(CONFIG_DIR.glob("*_b[0-9]*.py")):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith(SET_MARKER):
+                declared.add(line[len(SET_MARKER):].strip())
+                break
+    assert declared, f"no config under {CONFIG_DIR} carries a {SET_MARKER!r} line"
+    missing = sorted(declared - set(arms_module.MICRO_BATCH))
+    assert missing == [], missing
+
+
+def test_the_measured_set_matches_the_probe_output_it_came_from(arms_module):
+    """The literal and its provenance file agree, wherever the file is present.
+
+    The file is committed, so this runs everywhere rather than only where the probes
+    ran. The module raises on a disagreement at import; this says so in a test as well,
+    because the import-time check is easy to read past.
+    """
+    path = Path(arms_module.CHOICE_FILE)
+    if not path.exists():
+        pytest.skip(f"{path} is not in this checkout")
+    choice = json.loads(path.read_text(encoding="utf-8"))
+    typed = arms_module.MICRO_BATCH[choice["set"]]
+    for arch in ("bert", "gpt2"):
+        for size in arms_module.SIZES:
+            assert typed[arch][size] == choice["chosen"][arch][size], (arch, size)

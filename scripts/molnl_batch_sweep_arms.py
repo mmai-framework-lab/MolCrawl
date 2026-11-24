@@ -98,22 +98,51 @@ MICRO_BATCH = {
         "bert": {"small": 8, "medium": 8, "large": 8, "xl": 8},
         "gpt2": {"small": 16, "medium": 16, "large": 8, "xl": 4},
     },
+    #: §4's measurement, 2026-11-20. Written here as a literal, the way the rna and
+    #: compounds grids write theirs, so that a checkout can derive the 68 arms with
+    #: nothing but the repository. It was read out of CHOICE_FILE before, and that made
+    #: the derivation -- and so eighteen tests -- work only on the machine that had run
+    #: the probes: the file matches .gitignore's *.json and had never been committed.
+    "measured-1120": {
+        "bert": {"small": 64, "medium": 64, "large": 64, "xl": 32},
+        "gpt2": {"small": 64, "medium": 64, "large": 64, "xl": 32},
+    },
 }
-#: §4 fixes one GPU's block count by measurement. The chosen values are read from the
-#: file scripts/molnl_batch_shape_choice.py writes out of the probe logs, rather than
-#: retyped here: that file carries every measured shape beside the one that won, and a
-#: number typed into this module could not be checked against anything. The set appears
-#: only when all eight cells are in the file, so a half-finished measurement cannot be
-#: derived from by accident.
+#: The probe output the literal above was taken from. It carries every measured shape
+#: beside the one that won, and the probe logs each came from, so it is the provenance
+#: of those eight numbers and is committed with them. When it is present it is read and
+#: compared, and a disagreement raises rather than being resolved one way or the other:
+#: a typed number that no longer matches its measurement is the thing worth stopping on.
 CHOICE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "molnl_batch_shape_choice_20261120.json")
-if os.path.exists(CHOICE_FILE):
-    with open(CHOICE_FILE, encoding="utf-8") as _handle:
-        _choice = json.load(_handle)
-    _chosen = _choice.get("chosen", {})
-    if all(size in _chosen.get(arch, {}) for arch in ("bert", "gpt2")
-           for size in SIZES):
-        MICRO_BATCH[_choice["set"]] = _chosen
+
+
+def _cross_check_choice_file():
+    if not os.path.exists(CHOICE_FILE):
+        return
+    with open(CHOICE_FILE, encoding="utf-8") as handle:
+        choice = json.load(handle)
+    name = choice.get("set")
+    chosen = choice.get("chosen", {})
+    # A half-finished measurement is not compared against: all eight cells or nothing.
+    if not all(size in chosen.get(arch, {}) for arch in ("bert", "gpt2")
+               for size in SIZES):
+        return
+    typed = MICRO_BATCH.get(name)
+    if typed is None:
+        raise SystemExit(
+            f"{CHOICE_FILE} names the set {name!r}, which MICRO_BATCH does not have. "
+            f"Add it as a literal rather than loading it, or the derivation works only "
+            f"where this file is.")
+    differ = [f"{arch} {size}: module {typed[arch][size]} vs file {chosen[arch][size]}"
+              for arch in ("bert", "gpt2") for size in SIZES
+              if typed[arch][size] != chosen[arch][size]]
+    if differ:
+        raise SystemExit(f"MICRO_BATCH[{name!r}] disagrees with {CHOICE_FILE}: "
+                         + "; ".join(differ))
+
+
+_cross_check_choice_file()
 
 #: §4's constraint on any set: one GPU's blocks times the GPU count must divide 256,
 #: the smallest batch of the grid.
