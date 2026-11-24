@@ -21,14 +21,14 @@ Evaluation lands every 122,880 blocks, which is 120
 steps here, giving 250 points; saves land every 614,400 blocks, the same multiple of the evaluation interval at every batch.
 
 One GPU takes 32 blocks and the accumulation count carries the rest (§4):
-32 x 8 x 4 GPUs = 1024. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else; §4 fixes it per size by measurement, and the whole 68 are regenerated when that measurement lands.
+32 x 8 x 4 GPUs = 1024. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else. §4 fixes it per size, by the 2026-11-20 probes, except where a probed shape did not hold for a whole arm: see the set named above and the directory this arm writes to.
 
 Everything not set below comes from bert_xl.py, imported rather than copied, so
 this arm cannot differ from the 2026-09-24 grid and the 24,000-step runs in the corpus,
 the tokenizer, the packing, the document masking, the dataloader or the precision.
 """
 
-# §4 micro-batch set: measured-1120
+# §4 micro-batch set: adopted-1124
 from molcrawl.tasks.pretrain.configs.molecule_nat_lang.bert_xl import *  # noqa: F401,F403
 from molcrawl.core.paths import get_bert_output_path  # noqa: E402
 

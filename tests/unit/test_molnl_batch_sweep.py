@@ -260,11 +260,19 @@ def test_configs_do_not_declare_an_eval_subset(rows):
 
 
 def test_configs_name_their_own_output_directory(rows):
+    """The whole tail of the inventory's name, not just the batch and the rate.
+
+    A size re-run under a different shape adds to that name (§4), and the earlier form
+    of this test -- the batch and the rate followed by the closing quote -- passed for a
+    config still pointing at the finished pass's directory.
+    """
     for row, path in _config_paths(rows):
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
-        suffix = f'-b{row["batch"]}-lr{row["lr_slug"]}"'
+        out_size = ("ex-large" if (row["arch"] == "gpt2" and row["size"] == "xl")
+                    else row["size"])
+        suffix = row["out_dir"][len(f"molecule_nat_lang-{out_size}"):] + '"'
         assert suffix in text, (path.name, suffix)
         assert "get_bert_output_path(" in text or "get_gpt2_output_path(" in text
 
@@ -555,3 +563,52 @@ def test_the_measured_set_matches_the_probe_output_it_came_from(arms_module):
     for arch in ("bert", "gpt2"):
         for size in arms_module.SIZES:
             assert typed[arch][size] == choice["chosen"][arch][size], (arch, size)
+
+
+def test_the_adopted_set_is_the_measurement_plus_what_is_written_down(arms_module):
+    """'adopted-1124' may differ from the measurement only at the cells it names.
+
+    It is derived from 'measured-1120' rather than retyped, so this is what the two
+    cannot drift apart by: a cell that moves without an entry in ADOPTED_OVERRIDES.
+    """
+    measured = arms_module.MICRO_BATCH["measured-1120"]
+    adopted = arms_module.MICRO_BATCH["adopted-1124"]
+    moved = {(arch, size) for arch in ("bert", "gpt2") for size in arms_module.SIZES
+             if adopted[arch][size] != measured[arch][size]}
+    assert moved == set(arms_module.ADOPTED_OVERRIDES)
+    for (arch, size), micro in arms_module.ADOPTED_OVERRIDES.items():
+        assert adopted[arch][size] == micro
+        assert micro in arms_module.MICRO_CANDIDATES
+        assert 256 % (micro * 4) == 0
+
+
+def test_a_size_whose_shape_moved_writes_somewhere_new(arms_module):
+    """A re-run at a different shape must not land in the finished pass's directory.
+
+    nanoGPT's ``init_from = "scratch"`` does not refuse a directory that already holds
+    a run: it overwrites the checkpoint. Four of the five gpt2 xl arms had finished at
+    the measured shape when the column moved, so the shape has to reach the directory
+    name, and an arm whose shape did not move has to keep the name it ran under.
+    """
+    before = {r["config"]: r for r in arms_module.arms("measured-1120")}
+    for row in arms_module.arms("adopted-1124"):
+        was = before[row["config"]]
+        if row["micro_batch"] == was["micro_batch"]:
+            assert row["out_dir"] == was["out_dir"], row["config"]
+        else:
+            assert row["out_dir"] != was["out_dir"], row["config"]
+
+
+def test_a_suffix_is_only_offered_where_the_shape_moved(arms_module):
+    """The other direction: a suffix on a size that still runs the measured shape.
+
+    That would send an arm to a directory with nothing in it and leave its finished run
+    unread, which no test above would notice.
+    """
+    measured = arms_module.MICRO_BATCH["measured-1120"]
+    for which_set, by_size in arms_module.OUT_SUFFIX.items():
+        for (arch, size), suffix in by_size.items():
+            assert suffix, (which_set, arch, size)
+            assert arms_module.MICRO_BATCH[which_set][arch][size] \
+                != measured[arch][size], (which_set, arch, size)
+

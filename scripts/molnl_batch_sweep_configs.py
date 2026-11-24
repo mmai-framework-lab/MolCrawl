@@ -262,9 +262,17 @@ def fields(row, siblings):
     world = int(row["world_size"])
     size = row["size"]
     out_size = "ex-large" if (arch == "gpt2" and size == "xl") else size
+    # Taken from the inventory rather than rebuilt here. The inventory is what decides
+    # the directory, and it is not always the batch and the rate: a size re-run under a
+    # different shape adds to the name there (§4, the gpt2 xl column), so a generator
+    # that rebuilt the name would write a config pointing into the pass it replaces.
     # Carries the architecture; see the comment on out_dir in
     # scripts/molnl_batch_sweep_arms.py for why this modality needs it.
-    out_suffix = f"-{arch}-b{batch}-lr{row['lr_slug']}"
+    out_stem = f"molecule_nat_lang-{out_size}"
+    if not row["out_dir"].startswith(out_stem + "-"):
+        raise SystemExit(f"{row['config']}: the inventory's out_dir {row['out_dir']!r} "
+                         f"does not start {out_stem + '-'!r}")
+    out_suffix = row["out_dir"][len(out_stem):]
     base = {
         # Which set one GPU's block count came from. Stated in the file because it is
         # the one value of the inventory that a reader cannot recover from the numbers
@@ -296,9 +304,10 @@ def fields(row, siblings):
         "world_size": world,
         "world_term": f" x {world} GPUs" if world != 1 else "",
         "micro_note": ("Held across the five batches of this size, so what differs "
-                       "between them is the accumulation count and nothing else; §4 "
-                       "fixes it per size by measurement, and the whole 68 are "
-                       "regenerated when that measurement lands."),
+                       "between them is the accumulation count and nothing else. §4 "
+                       "fixes it per size, by the 2026-11-20 probes, except where a "
+                       "probed shape did not hold for a whole arm: see the set named "
+                       "above and the directory this arm writes to."),
         "eval_interval": eval_interval,
         "save_interval": save_interval,
         "save_multiple": save_interval // eval_interval,
@@ -461,11 +470,16 @@ def check_all(rows, out_dir):
                 print(f"  ** {name}: preprocess_function did not come through the "
                       f"import; the input would be prepared differently")
                 problems += 1
-        suffix = f"-b{row['batch']}-lr{row['lr_slug']}"
+        # The whole directory name against the inventory's, not just its tail: the tail
+        # is the batch and the rate for 63 of the 68 arms and carries the shape for the
+        # other five, and a config that kept a name the inventory has moved on from
+        # would write into a finished run's directory.
         target = values.get("model_path") or values.get("out_dir") or ""
         compared += 1
-        if not str(target).endswith(suffix):
-            print(f"  ** {name}: output {target!r} does not end {suffix!r}")
+        if os.path.basename(str(target)) != row["out_dir"]:
+            print(f"  ** {name}: output directory "
+                  f"{os.path.basename(str(target))!r} is not the inventory's "
+                  f"{row['out_dir']!r}")
             problems += 1
         if row["arch"] == "gpt2":
             compared += 1

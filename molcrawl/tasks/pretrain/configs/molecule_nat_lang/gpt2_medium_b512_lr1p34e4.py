@@ -21,14 +21,14 @@ Evaluation lands every 40,960 blocks, which is 80
 iterations here, giving 233 points; checkpoint opportunities land every 204,800 blocks.
 
 One GPU takes 64 blocks and the accumulation count carries the rest (§4):
-64 x 8 = 512. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else; §4 fixes it per size by measurement, and the whole 68 are regenerated when that measurement lands.
+64 x 8 = 512. Held across the five batches of this size, so what differs between them is the accumulation count and nothing else. §4 fixes it per size, by the 2026-11-20 probes, except where a probed shape did not hold for a whole arm: see the set named above and the directory this arm writes to.
 
 Everything not set below comes from gpt2_medium.py, imported rather than copied, so
 this arm cannot differ from the 2026-09-24 grid and the 24,000-step runs in the corpus,
 the tokenizer, the packing, the document masking, the dataloader or the precision.
 """
 
-# §4 micro-batch set: measured-1120
+# §4 micro-batch set: adopted-1124
 from molcrawl.tasks.pretrain.configs.molecule_nat_lang.gpt2_medium import *  # noqa: F401,F403
 from molcrawl.core.paths import get_gpt2_output_path  # noqa: E402
 

@@ -144,6 +144,43 @@ def _cross_check_choice_file():
 
 _cross_check_choice_file()
 
+#: §4's shape as it is actually run, 2026-11-24. The set above is the measurement, and
+#: it is derived from it rather than retyped, so the two cannot drift apart: the only
+#: cells that may differ are the ones named here. It is placed after the cross-check so
+#: that nothing is derived from the measurement before the measurement has been checked
+#: against the probe output it came from.
+#:
+#: The probe ranks the shapes by speed. It cannot rank them by whether a whole arm fits
+#: in memory, and for one column it did not. GPT-2 xl ran the measured 32 blocks per GPU
+#: and died of CUDA out of memory at batch 1,024 twice -- job 374933 at step 1,520 and
+#: job 384760 at step 1,760, both in model.py's cross_entropy, on the first training
+#: micro-step after a checkpoint was written. The allocation it failed on is 6.13 GiB:
+#: one GPU's blocks x 1,024 positions x the vocabulary in fp32, so it halves with the
+#: shape. Its four siblings at the same shape finished, so the shape is not wrong by
+#: itself -- it is at the edge of a 184 GiB card, and at batch 1,024 it goes over.
+#:
+#: §4 fixes one shape per size, so the whole gpt2 xl column moves rather than the one
+#: arm: four finished runs are re-run so that the five can be read against each other.
+#: 16 blocks is the probe's runner-up, 10.851 s/step against 10.586 -- a 2.5 % cost.
+ADOPTED_OVERRIDES = {("gpt2", "xl"): 16}
+MICRO_BATCH["adopted-1124"] = {
+    arch: {size: ADOPTED_OVERRIDES.get((arch, size), micro)
+           for size, micro in by_size.items()}
+    for arch, by_size in MICRO_BATCH["measured-1120"].items()
+}
+
+#: A size re-run under a different shape must not write into the directories of the
+#: pass it replaces: those hold finished runs, and nanoGPT's ``init_from = "scratch"``
+#: would overwrite the checkpoint rather than refuse. The suffix names the shape rather
+#: than the pass, so a directory says what it is -- the unsuffixed gpt2 xl directories
+#: are the 32-block pass. Only a size whose shape actually moved may carry one, which
+#: is asserted in tests/unit/test_molnl_batch_sweep.py rather than left to reading.
+OUT_SUFFIX = {"adopted-1124": {("gpt2", "xl"): "-m16"}}
+for _set in OUT_SUFFIX:
+    if _set not in MICRO_BATCH:
+        raise SystemExit(f"OUT_SUFFIX names the set {_set!r}, which MICRO_BATCH "
+                         f"does not have")
+
 #: §4's constraint on any set: one GPU's blocks times the GPU count must divide 256,
 #: the smallest batch of the grid.
 MICRO_CANDIDATES = [4, 8, 16, 32, 64]
@@ -310,6 +347,7 @@ def arms(which_set: str):
                     slug = lr_slug(lr)
                     stem = f"{arch}_{size}_b{batch}_lr{slug}"
                     out_size = "ex-large" if (arch == "gpt2" and size == "xl") else size
+                    out_suffix = OUT_SUFFIX.get(which_set, {}).get((arch, size), "")
                     rows.append({
                         "arch": arch, "size": size, "batch": batch, "lr": f"{lr:.2e}",
                         "lr_multiplier": f"{multiplier:.1f}", "lr_slug": slug,
@@ -343,7 +381,7 @@ def arms(which_set: str):
                         # did. compounds has the same template and got away with it
                         # because its two sets of rates happen never to meet.
                         "out_dir": f"molecule_nat_lang-{out_size}-{arch}"
-                                   f"-b{batch}-lr{slug}",
+                                   f"-b{batch}-lr{slug}{out_suffix}",
                     })
     return rows
 
