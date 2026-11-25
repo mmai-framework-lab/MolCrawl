@@ -16,8 +16,8 @@
 # Warmup is 2 % of this arm's own length (§2), truncated: 12,096 of
 # 604,800.
 #
-# One GPU takes 32 blocks and the accumulation count carries the rest (§4):
-# 32 x 16 = 512. Held across the five batches of this size, so what differs between
+# One GPU takes 64 blocks and the accumulation count carries the rest (§4):
+# 64 x 8 = 512. Held across the five batches of this size, so what differs between
 # them is the accumulation count and nothing else.
 #
 # The adopted arm fixes its validation rows (deterministic_val_eval), and §6 leaves GPT-2's evaluation alone, so that carries through the import.
@@ -44,10 +44,10 @@ eval_interval = 2688
 # the reported minimum's weights (§4 of the extension directive); there is no save
 # interval to set.
 
-# 32 x 16 = 512 (§4). nanoGPT divides the accumulation count across the four ranks, so the
+# 64 x 8 = 512 (§4). nanoGPT divides the accumulation count across the four ranks, so the
 # global batch is micro x accumulation with no GPU factor.
-batch_size = 32
-gradient_accumulation_steps = 16
+batch_size = 64
+gradient_accumulation_steps = 8
 # Declared so train.py stops a launch whose shape would build another batch (§5).
 expected_global_batch = 512
 

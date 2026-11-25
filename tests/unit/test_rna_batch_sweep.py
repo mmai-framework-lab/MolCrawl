@@ -311,3 +311,56 @@ def test_a_framework_no_table_measured_is_refused(tmp_path):
         cwd=repo, capture_output=True, text=True)
     assert done.returncode == 2
     assert "gpt2" in done.stderr
+
+
+def _probe_runs(shapes):
+    """Rows in the shape main() builds, before the repeats are collapsed."""
+    return [{"arch": arch, "size": size, "micro": micro, "repeat": str(repeat),
+             "global": 256, "accum": 256 // (micro * 4), "job_id": "0",
+             "status": "OK", "s_per_step": f"{rate / 10:.3f}",
+             "s_per_step_at_2560": f"{rate:.3f}", "log": "x.out"}
+            for arch, size, micro, repeat, rate in shapes]
+
+
+def test_the_printed_rate_is_the_shape_s_own_and_not_the_first_run_s():
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    # Every shape has one quiet run, but never the first one listed.
+    runs = _probe_runs([
+        ("gpt2", "xl", 4, 1, 11.85), ("gpt2", "xl", 4, 2, 13.76),
+        ("gpt2", "xl", 8, 1, 10.31), ("gpt2", "xl", 8, 2, 10.23),
+        ("gpt2", "xl", 16, 1, 11.20), ("gpt2", "xl", 16, 2, 9.61),
+    ])
+    shapes = probe.collapse_repeats(runs)
+    cells = probe.rates_by_micro(shapes, "gpt2", "xl")
+
+    assert cells == {4: 11.85, 8: 10.23, 16: 9.61}
+    # The choice and the cell it is read off have to be the same figure.
+    chosen = probe.fastest_micro(shapes)["gpt2"]["xl"]
+    assert chosen == 16
+    assert cells[chosen] == min(cells.values())
+
+
+def test_a_block_count_that_did_not_fit_is_told_apart_from_one_never_measured():
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    runs = _probe_runs([("bert", "small", 16, 1, 3.10)])
+    oom = dict(runs[0], micro=64, s_per_step="", s_per_step_at_2560="",
+               status="FAILED (OOM)")
+    shapes = probe.collapse_repeats(runs + [oom])
+
+    # Collapsing drops the arm with no rate, so it must not show up as a figure,
+    # and the whole record is what says it was measured at all.
+    assert probe.rates_by_micro(shapes, "bert", "small") == {16: 3.10}
+    assert [r for r in runs + [oom] if r["micro"] == 64]
+
+
+def test_a_missing_figure_says_which_kind_of_missing_it_is():
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    assert probe.why_no_rate([]) == "-"
+    assert probe.why_no_rate([{"status": "FAILED (OOM)"}]) == "OOM"
+    assert probe.why_no_rate([{"status": "no log (did the arm run?)"}]) == "no rate"
