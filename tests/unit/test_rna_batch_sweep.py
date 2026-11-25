@@ -355,3 +355,12 @@ def test_a_block_count_that_did_not_fit_is_told_apart_from_one_never_measured():
     # and the whole record is what says it was measured at all.
     assert probe.rates_by_micro(shapes, "bert", "small") == {16: 3.10}
     assert [r for r in runs + [oom] if r["micro"] == 64]
+
+
+def test_a_missing_figure_says_which_kind_of_missing_it_is():
+    import importlib
+
+    probe = importlib.import_module("rna_microbatch_probe_table")
+    assert probe.why_no_rate([]) == "-"
+    assert probe.why_no_rate([{"status": "FAILED (OOM)"}]) == "OOM"
+    assert probe.why_no_rate([{"status": "no log (did the arm run?)"}]) == "no rate"

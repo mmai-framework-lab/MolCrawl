@@ -109,6 +109,21 @@ def collapse_repeats(rows: list[dict]) -> list[dict]:
     return out
 
 
+def why_no_rate(runs: list[dict]) -> str:
+    """What to print where a figure is missing: not every gap is a shape that OOM'd.
+
+    A shape absent from the record was never asked for; one whose runs report
+    running out of memory is an answer about that shape; one whose log could not
+    be read or parsed is neither, and saying OOM there sends the reader looking
+    for a memory problem that nobody measured.
+    """
+    if not runs:
+        return "-"
+    if any("OOM" in (r.get("status") or "") for r in runs):
+        return "OOM"
+    return "no rate"
+
+
 def rates_by_micro(shapes: list[dict], arch: str, size: str) -> dict[int, float]:
     """The figure each block count is judged by, one per shape rather than per run.
 
@@ -236,7 +251,7 @@ def main() -> int:
                 bad = [r for r in every
                        if r["arch"] == arch and r["size"] == size
                        and r["micro"] == micro]
-                cells.append(f"{'OOM' if bad else '-':>12}")
+                cells.append(f"{why_no_rate(bad):>12}")
             if not by_micro:
                 print(f"   {size:<8}" + "".join(cells) + f"{'-':>10}{'-':>9}")
                 continue
