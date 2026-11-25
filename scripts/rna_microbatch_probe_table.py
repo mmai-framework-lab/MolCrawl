@@ -109,6 +109,24 @@ def collapse_repeats(rows: list[dict]) -> list[dict]:
     return out
 
 
+def rates_by_micro(shapes: list[dict], arch: str, size: str) -> dict[int, float]:
+    """The figure each block count is judged by, one per shape rather than per run.
+
+    The cells of the printed table and the chosen column have to come from this
+    same list. Reading the cells from the uncollapsed runs instead prints
+    whichever repeat the record happens to list first, so the fastest block
+    count can appear slower than one it beat.
+    """
+    out: dict[int, float] = {}
+    for row in shapes:
+        if row["arch"] != arch or row["size"] != size:
+            continue
+        rate = row.get("s_per_step_at_2560") or ""
+        if rate:
+            out[int(row["micro"])] = float(rate)
+    return out
+
+
 def size_order_holds(chosen: dict[str, dict[str, int]],
                      rows: list[dict]) -> list[str]:
     """A bigger model cannot be faster at the same global batch.
@@ -189,6 +207,10 @@ def main() -> int:
             print(f"    {r['arch']} {r['size']} micro {r['micro']}:"
                   f" {r['status']} (job {r['job_id']})")
 
+    # An arm that OOM'd reports no rate and is dropped by collapsing, so the
+    # whole record is kept to tell "OOM" apart from "never measured".
+    every = list(rows)
+
     # One rule for the choice, used here and by the arms script.
     repeated = any(int(r.get("repeat", 1) or 1) > 1 for r in rows)
     if repeated:
@@ -205,20 +227,16 @@ def main() -> int:
                                              for m in (4, 8, 16, 32, 64))
         print(header + f"{'fastest':>10}{'現行比':>9}")
         for size in SIZES:
-            cells, by_micro = [], {}
+            by_micro = rates_by_micro(rows, arch, size)
+            cells = []
             for micro in (4, 8, 16, 32, 64):
-                hit = [r for r in done
+                if micro in by_micro:
+                    cells.append(f"{by_micro[micro]:>12.2f}")
+                    continue
+                bad = [r for r in every
                        if r["arch"] == arch and r["size"] == size
                        and r["micro"] == micro]
-                if not hit:
-                    bad = [r for r in rows
-                           if r["arch"] == arch and r["size"] == size
-                           and r["micro"] == micro]
-                    cells.append(f"{'OOM' if bad else '-':>12}")
-                    continue
-                value = float(hit[0]["s_per_step_at_2560"])
-                by_micro[micro] = value
-                cells.append(f"{value:>12.2f}")
+                cells.append(f"{'OOM' if bad else '-':>12}")
             if not by_micro:
                 print(f"   {size:<8}" + "".join(cells) + f"{'-':>10}{'-':>9}")
                 continue
