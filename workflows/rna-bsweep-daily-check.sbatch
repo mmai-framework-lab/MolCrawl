@@ -41,7 +41,7 @@ PYTHON="${PYROOT}/miniconda/bin/python"
   echo "================ $(date -Is)  job ${SLURM_JOB_ID:-none}  $(git rev-parse --short HEAD) ================"
 
   echo "-- queue, by group --"
-  for pat in 'rna-bert-.*-b[0-9]+' 'mc-rna-tput2' 'ext-(S|C)[0-9]+'; do
+  for pat in 'rna-bert-.*-b[0-9]+' 'rna-gpt2-.*-b[0-9]+' 'mc-rna-tput2' 'ext-(S|C)[0-9]+'; do
     r=$(squeue -u "$USER" -h -t R -o "%j" 2>/dev/null | grep -cE "${pat}")
     p=$(squeue -u "$USER" -h -t PD -o "%j" 2>/dev/null | grep -cE "${pat}")
     printf '   %-26s running %3d  pending %4d\n' "${pat}" "${r}" "${p}"
