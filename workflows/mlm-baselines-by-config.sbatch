@@ -17,7 +17,15 @@
 # the baseline is fitted and scored where the run was.
 #
 # Each entry is label|config|LEARNING_SOURCE_DIR|extra env, the last field a
-# comma-separated list of NAME=VALUE. Every modality resolves its tokenizer and
+# comma-separated list of NAME=VALUE.
+#
+# BASELINE_SPLIT names which split is scored, and BASELINE_EVAL_ROWS how many of its
+# rows. Both default to what a run would do -- the config's own evaluation split at the
+# evaluation cap -- and both are needed to say what a quoted floor is: the 2026-11-26
+# data order's item 5 puts 3.8638 against 3.8562, which are one quantity on 8,000 and
+# on 10,000 train rows. BASELINE_SPLIT was carried only on feat/divergence-guard until
+# now, so the train-split numbers already in the reports could not be reproduced from
+# main at all. Every modality resolves its tokenizer and
 # its dataset under its own learning_source root, and genome needs the subset
 # named as well, so one shared environment cannot drive all four.
 #
@@ -57,6 +65,8 @@ for ENTRY in ${BASELINE_CONFIGS}; do
         "${PYTHON}" scripts/mlm_lookup_baselines.py \
             --config "${CONFIG}" --label "${LABEL}" \
             ${BASELINE_FIT_ROWS:+--fit-rows "${BASELINE_FIT_ROWS}"} \
+            ${BASELINE_SPLIT:+--split "${BASELINE_SPLIT}"} \
+            ${BASELINE_EVAL_ROWS:+--eval-rows "${BASELINE_EVAL_ROWS}"} \
             ${BASELINE_UNIGRAM_ONLY:+--unigram-only} \
             --output "${BASELINE_OUT_DIR}/${LABEL}.json"
     ) || { rc=$?; echo "!!! ${LABEL} failed rc=${rc}"; }
