@@ -78,6 +78,20 @@ echo "large:   ${LARGE} rows"
 
 rc=0
 
+# FLOOR_TABLE_ONLY=1 rebuilds the table from JSONs already in FLOOR_OUT_DIR and
+# measures nothing. The measurement is the expensive half and does not change when
+# the way it is read back does.
+if [ "${FLOOR_TABLE_ONLY:-0}" = "1" ]; then
+  echo
+  echo "########## the table alone, from what is already measured ##########"
+  "${PYTHON}" scripts/molnl_floor_provenance.py --results "${FLOOR_OUT_DIR}" \
+      --out "${FLOOR_OUT_DIR}/molnl-floor-provenance.md"
+  rc=$?
+  echo
+  echo "=== rc=${rc} @ $(date -Is) ==="
+  exit "${rc}"
+fi
+
 run_mlm() {  # label split rows
   local label="$1" split="$2" rows="$3"
   echo

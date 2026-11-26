@@ -70,13 +70,22 @@ QUOTED = [
     },
 ]
 
-#: The two metrics the grid judges on, and the floor each one is read against.
+#: The two metrics the grid judges on, and which measurement answers each. The value
+#: is read out of the re-measurement rather than written here: a generated table that
+#: carries a conclusion of its own can disagree with the numbers above it, which is
+#: what the first pass of this file did.
 ANSWERS = [
-    ("BERT の eval_loss_mask（valid）", "valid の [MASK] 位置のユニグラム", 4.6449),
-    ("GPT-2 の val_loss（valid）", "valid の全トークンのユニグラム", 4.6514),
+    ("BERT の eval_loss_mask（valid）", "valid の [MASK] 位置のユニグラム",
+     "molnl-valid-whole"),
+    ("GPT-2 の val_loss（valid）", "valid の全トークンのユニグラム",
+     "molnl-valid-all-tokens"),
     ("訓練バッチを読む判定（差し戻し guard）", "train の [MASK] 位置のユニグラム",
-     None),
+     "TRAIN_LARGEST"),
 ]
+
+#: What the 2026-08-12 probe excluded from masking and the current pipeline does not.
+#: Named as a suspect, not as a finding: it has not been measured either way.
+PROBE_EXCLUSION = "[50256, 50258]"
 
 TOLERANCE = 0.0005
 
@@ -94,10 +103,21 @@ def read_results(directory: str):
 
 
 def unigram_of(payload):
-    """The unigram floor out of either script's output."""
+    """The unigram floor out of either script's output.
+
+    The two scripts name it differently and nest it differently: the MLM baseline
+    writes ``unigram`` at the top level, and the all-token baseline writes
+    ``baselines["unigram (degenerate solution)"]``. Reading only the first is why the
+    all-token rows came back empty on the first pass.
+    """
     for key in ("unigram", "unigram_floor_train_frequencies", "unigram_floor"):
         if key in payload:
             return float(payload[key])
+    nested = payload.get("baselines")
+    if isinstance(nested, dict):
+        for key, value in nested.items():
+            if key.startswith("unigram"):
+                return float(value)
     return None
 
 
@@ -151,29 +171,85 @@ def render(results):
             payload = results[label]
             got = unigram_of(payload)
             lines.append(
-                f"| `{label}` | {payload.get('split', '')} | "
+                f"| `{label}` | {payload.get('split') or 'valid（全トークン）'} | "
                 f"{payload.get('eval_rows', '')} | {payload.get('split_rows', '')} | "
                 f"{got:.4f} |" if got is not None else
                 f"| `{label}` | | | | 値が読めない |")
         lines.append("")
+
+    # The train samples, smallest first: the row count is what the two quoted train
+    # numbers were said to differ by, so the trend across them is what settles it.
+    train = []
+    for label, payload in results.items():
+        if payload.get("split") != "train":
+            continue
+        got = unigram_of(payload)
+        if got is None:
+            continue
+        train.append((int(payload.get("eval_rows") or 0), label, got))
+    train.sort()
 
     lines.append("## 3. どちらが正しいか")
     lines.append("")
     lines.append("**metric ごとに別の値が正しい。**床は metric と同じ量・同じ分割で"
                  "測ったものでなければ、下回ったかどうかの判定が成り立たない。")
     lines.append("")
-    lines.append("| 読み合わせる metric | 正しい床 | 値 |")
-    lines.append("|---|---|---:|")
-    for metric, floor, value in ANSWERS:
-        shown = f"{value}" if value is not None else "§2 の train 行（下記）"
-        lines.append(f"| {metric} | {floor} | {shown} |")
+    lines.append("| 読み合わせる metric | 正しい床 | 値 | 出どころ |")
+    lines.append("|---|---|---:|---|")
+    for metric, floor, source in ANSWERS:
+        if source == "TRAIN_LARGEST":
+            if train:
+                rows, label, got = train[-1]
+                lines.append(f"| {metric} | {floor} | {got:.4f} | "
+                             f"`{label}`（{rows:,} 行） |")
+            else:
+                lines.append(f"| {metric} | {floor} | 未測定 | |")
+            continue
+        payload = results.get(source)
+        got = unigram_of(payload) if payload else None
+        shown = f"{got:.4f}" if got is not None else "未測定"
+        lines.append(f"| {metric} | {floor} | {shown} | `{source}` |")
     lines.append("")
-    lines.append("- **4.6449 と 4.6514 はどちらも正しい。**別の量であり、"
-                 "読み合わせる metric が違う。同じ分割の 2 値として並べると誤る。")
-    lines.append("- **3.8562 と 3.8638 は同じ量の 2 つの見積り**であり、"
-                 "違いは採点した行数（10,000 と 8,000）である。"
-                 "分割の全 318,118 行に対する推定値なので、"
-                 "§2 の大きい標本の行が最も確からしい。")
+
+    valid_mlm = unigram_of(results.get("molnl-valid-whole") or {})
+    valid_all = unigram_of(results.get("molnl-valid-all-tokens") or {})
+    if valid_mlm is not None and valid_all is not None:
+        lines.append(f"- **{valid_mlm:.4f} と {valid_all:.4f} はどちらも正しい。**"
+                     "別の量であり、読み合わせる metric が違う。"
+                     "同じ分割の 2 値として並べると誤る。")
+
+    # Whether the two train numbers differ by the sample is a question the samples
+    # answer. It is asserted either way only from them.
+    quoted_8000 = next((i for i in QUOTED if i["expect"] == "molnl-train-8000"), None)
+    got_8000 = unigram_of(results.get("molnl-train-8000") or {})
+    if quoted_8000 and got_8000 is not None and train:
+        spread = ", ".join(f"{rows:,} 行 {got:.4f}" for rows, _, got in train)
+        if abs(got_8000 - quoted_8000["value"]) <= TOLERANCE:
+            lines.append(f"- **{quoted_8000['value']} と "
+                         f"{[i['value'] for i in QUOTED if i['expect'] == 'molnl-train-10000'][0]}"
+                         f" は同じ量の 2 つの見積り**であり、違いは採点した行数である"
+                         f"（{spread}）。分割の全行に対する推定値なので、"
+                         f"最も大きい標本の値を採る。")
+        else:
+            largest_rows, _, largest = train[-1]
+            lines.append(f"- **{quoted_8000['value']} は再現しない。**"
+                         f"同じ 8,000 行で測ると {got_8000:.4f} である。"
+                         f"行数を変えても {spread} で、"
+                         f"{quoted_8000['value']} は最も大きい標本"
+                         f"（{largest_rows:,} 行 {largest:.4f}）より "
+                         f"{quoted_8000['value'] - largest:+.4f} 高く、"
+                         f"この動きの外にある。**標本の大きさでは説明できず、"
+                         f"測った量が違う。**")
+            lines.append(f"- {quoted_8000['value']} のログは"
+                         f"「マスク対象から除外する special ids = {PROBE_EXCLUSION}」"
+                         f"と印字しており、現行のパイプラインはこの除外を行わない。"
+                         f"除外すれば床は上がる向きなので符号は合うが、"
+                         f"**これは容疑であり、まだ測っていない。**")
+            lines.append(f"- したがって train の床として引くのは "
+                         f"{largest:.4f}（{largest_rows:,} 行）とし、"
+                         f"{quoted_8000['value']} は退役させるのが妥当である。"
+                         f"ただしこの値で床線を描いた図表があるため、"
+                         f"差し替えるかは判断を要する。")
     lines.append("- train の床を valid の metric の隣に置くことはしない"
                  "（2026-11-10 に全資料で直した件）。")
     return "\n".join(lines) + "\n"
