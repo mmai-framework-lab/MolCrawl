@@ -612,3 +612,158 @@ def test_a_suffix_is_only_offered_where_the_shape_moved(arms_module):
             assert arms_module.MICRO_BATCH[which_set][arch][size] \
                 != measured[arch][size], (which_set, arch, size)
 
+
+
+# ---------------------------------------------------------------------------
+# The 2026-11-26 answer to the 2026-11-24 report: three rates above every cell whose
+# top rate won (§8.2), and one arm at two further block counts (§15).
+# ---------------------------------------------------------------------------
+
+
+def test_the_extension_is_off_unless_asked_for(arms_module, micro_set):
+    """The 68 arms that ran must keep deriving exactly as they did.
+
+    Everything downstream -- the configs on disk, the three tables, the figures the
+    report is read from -- was built from the derivation without the extension. If
+    asking for the extension moved any of those rows, the grid's own numbers would
+    change retroactively.
+    """
+    plain = arms_module.arms(micro_set)
+    assert len(plain) == 68
+    assert {r["origin"] for r in plain} == {"grid-1120"}
+
+    extended = arms_module.arms(micro_set, extension=True)
+    base = [r for r in extended if r["origin"] == "grid-1120"]
+    assert base == plain
+
+
+def test_the_extension_adds_rates_only_where_the_top_rate_won(arms_module):
+    cells = arms_module.extension_cells()
+    assert len(cells) == arms_module.EXPECTED_EXTENSION["cells"] == 12
+    added = 0
+    for cell in cells:
+        tried = cell["tried"]
+        assert cell["won"] == max(tried), cell
+        assert cell["added"] == arms_module.EXTENSION_MULTIPLIERS[len(tried)]
+        # Every cell is carried to 4.0, whatever it had already tried.
+        assert max(cell["added"]) == 4.0, cell
+        added += len(cell["added"])
+    assert added == arms_module.EXPECTED_EXTENSION["arms"] == 45
+    # small's top rate lost at every batch, so it contributes nothing.
+    assert {c["size"] for c in cells} == {"medium", "large", "xl"}
+    # GPT-2 runs one rate a cell, so it is not in scope at all (§8.2's last line).
+    assert {c["arch"] for c in cells} == {"bert"}
+
+
+def test_a_cell_whose_top_rate_lost_is_left_alone(arms_module, micro_set):
+    added = {(r["size"], r["batch"]) for r in arms_module.arms(micro_set, extension=True)
+             if r["origin"] == "extend-1126-lr"}
+    for (_arch, size), by_batch in arms_module.WINNING_MULTIPLIER_1125.items():
+        for batch, won in by_batch.items():
+            tried = arms_module.BERT_MULTIPLIERS[batch]
+            if won != max(tried):
+                assert (size, batch) not in added, (size, batch, won)
+
+
+def test_every_added_rate_is_above_the_cell_it_extends(arms_module):
+    """An 'extension' that lands inside the range already tried measures nothing new."""
+    for cell in arms_module.extension_cells():
+        top = max(arms_module.scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+                  for m in cell["tried"])
+        rates = [arms_module.scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+                 for m in cell["added"]]
+        assert rates == sorted(rates)
+        assert rates[0] > top, cell
+
+
+def test_the_shape_replicates_change_nothing_but_the_block_count(arms_module,
+                                                                 micro_set):
+    """§15: the three arms differ in one value, and write to three directories."""
+    extended = arms_module.arms(micro_set, extension=True)
+    shaped = [r for r in extended if r["origin"] == "extend-1126-shape"]
+    assert len(shaped) == arms_module.EXPECTED_EXTENSION["shape_replicates"] == 2
+
+    want = arms_module.SHAPE_REPLICATE_ARM
+    sibling = next(r for r in extended if r["origin"] == "grid-1120"
+                   and r["arch"] == want["arch"] and r["size"] == want["size"]
+                   and r["batch"] == want["batch"]
+                   and float(r["lr_multiplier"]) == want["multiplier"])
+    for row in shaped:
+        for field in ("arch", "size", "batch", "lr", "lr_multiplier", "steps",
+                      "warmup_steps", "eval_interval", "save_interval", "blocks",
+                      "expected_global_batch", "eval_batch", "eval_blocks",
+                      "judge_metric"):
+            assert row[field] == sibling[field], field
+        assert row["micro_batch"] != sibling["micro_batch"]
+        assert row["micro_batch"] in arms_module.SHAPE_REPLICATE_MICRO
+        assert row["micro_batch"] * row["grad_accum"] * row["world_size"] \
+            == row["expected_global_batch"]
+        assert row["out_dir"] != sibling["out_dir"]
+        assert row["config"] != sibling["config"]
+        assert row["out_dir"].endswith(f"-m{row['micro_batch']}")
+
+
+def test_no_two_arms_share_a_directory_or_a_config(arms_module, micro_set):
+    """With the extension on, two arms can reach the same name by two routes.
+
+    A §8.2 rate can round to a slug another batch of the same size already uses, and a
+    §15 replicate shares its rate with the arm it is compared against. Either collision
+    would have one run overwrite the other's output.
+    """
+    rows = arms_module.arms(micro_set, extension=True)
+    assert len(rows) == 68 + arms_module.EXPECTED_EXTENSION["arms"] \
+        + arms_module.EXPECTED_EXTENSION["shape_replicates"] == 115
+    for field in ("out_dir", "config"):
+        seen = {}
+        for row in rows:
+            assert row[field] not in seen, (field, row[field])
+            seen[row[field]] = row
+
+
+def test_the_winners_literal_covers_every_bert_cell(arms_module):
+    cells = {(size, batch) for (arch, size), by_batch
+             in arms_module.WINNING_MULTIPLIER_1125.items() for batch in by_batch
+             if arch == "bert"}
+    assert cells == {(size, batch) for size in arms_module.SIZES
+                     for batch in arms_module.BATCHES}
+    for (arch, size), by_batch in arms_module.WINNING_MULTIPLIER_1125.items():
+        assert arch == "bert", (arch, size)
+        for batch, won in by_batch.items():
+            assert won in arms_module.BERT_MULTIPLIERS[batch], (size, batch, won)
+
+
+def test_the_winners_literal_matches_the_reading_it_came_from(arms_module):
+    path = Path(arms_module.WINNERS_FILE)
+    if not path.exists():
+        pytest.skip(f"{path} is not in this checkout")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    read = {(c["arch"], c["size"], int(c["batch"])): float(c["winning_multiplier"])
+            for c in payload["cells"]}
+    typed = {(arch, size, batch): won
+             for (arch, size), by_batch in arms_module.WINNING_MULTIPLIER_1125.items()
+             for batch, won in by_batch.items()}
+    assert read == typed
+    assert payload["cells_in_scope"] == arms_module.EXPECTED_EXTENSION["cells"]
+
+
+def test_the_added_rates_are_the_ones_the_answer_printed(arms_module):
+    """§8.2 (b) prints all 45 rates; the derivation is held against them.
+
+    The multipliers are a rule and the rates are three significant figures of it, so
+    the two can part company at the rounding -- which is how a cell comes to be
+    submitted at a rate the answer does not name.
+    """
+    printed = arms_module.EXPECTED_EXTENSION_LR
+    cells = arms_module.extension_cells()
+    assert sum(len(v) for by_batch in printed.values()
+               for v in by_batch.values()) == 45
+    seen = set()
+    for cell in cells:
+        want = printed[(cell["arch"], cell["size"])][cell["batch"]]
+        got = [arms_module.scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+               for m in cell["added"]]
+        assert [arms_module.three_sig(v) for v in got] == \
+            [arms_module.three_sig(v) for v in want], cell
+        seen.add((cell["arch"], cell["size"], cell["batch"]))
+    assert seen == {(arch, size, batch) for (arch, size), by_batch in printed.items()
+                    for batch in by_batch}

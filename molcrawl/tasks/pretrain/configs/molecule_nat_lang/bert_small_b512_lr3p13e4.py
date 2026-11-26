@@ -8,7 +8,7 @@ This arm's place in the grid. BERT runs 2 rates at this size and batch and keeps
 
 The budget is fixed in blocks, not in steps (§2): 30,720,000 blocks of 1,024
 tokens = 31,457,280,000 tokens = 96.57 epochs of the 318,118-block train split,
-the same for all 48 BERT arms. At batch 512 that is 60,000
+the same for all 95 BERT arms. At batch 512 that is 60,000
 steps, so the five batches cover the same data and their curves can be read at
 the same block position.
 

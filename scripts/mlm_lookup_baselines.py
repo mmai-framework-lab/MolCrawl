@@ -123,6 +123,21 @@ def main() -> int:
             "than the full run can hold."
         ),
     )
+    parser.add_argument(
+        "--eval-rows",
+        type=int,
+        default=None,
+        help=(
+            "how many rows of the scored split to score, in place of the run's own "
+            "evaluation cap. The cap is what a run can afford at every eval point; a "
+            "baseline is measured once, so it can afford more. Two molnl train-split "
+            "numbers have been quoted against each other -- 3.8638 on 8,000 rows "
+            "(job 22503, 2026-08-12) and 3.8562 on the 10,000-row cap (2026-11-06) -- "
+            "and without this the larger sample that tells them apart cannot be taken. "
+            "The sample is drawn with the same seed, so a larger one contains the "
+            "smaller only when the helper's draw is nested; it is reported either way."
+        ),
+    )
     parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--mlm-probability", type=float, default=0.2)
     parser.add_argument("--vocab", default="assets/molecules/vocab.txt")
@@ -177,7 +192,11 @@ def main() -> int:
 
     dataset = load_from_disk(dataset_dir)
     split = args.split or resolve_eval_split(dataset.keys())
-    eval_rows = subsample_eval_split(dataset[split], random_sample=True)
+    if args.eval_rows:
+        eval_rows = subsample_eval_split(dataset[split], random_sample=True,
+                                         rows=args.eval_rows)
+    else:
+        eval_rows = subsample_eval_split(dataset[split], random_sample=True)
 
     actual = getattr(tokenizer, "tokenizer", tokenizer)
     vocab_size = len(actual)
@@ -247,6 +266,8 @@ def main() -> int:
         "ambiguous_tokens": list(ambiguous),
         "split": split,
         "eval_rows": len(eval_rows),
+        "eval_rows_asked_for": args.eval_rows,
+        "split_rows": len(dataset[split]),
         "fit_rows": n_fit,
         "masked_positions": count,
         "scored_positions": blended_count,

@@ -185,6 +185,133 @@ for _set in OUT_SUFFIX:
 #: the smallest batch of the grid.
 MICRO_CANDIDATES = [4, 8, 16, 32, 64]
 
+# ---------------------------------------------------------------------------
+# The 2026-11-26 answer to the 2026-11-24 report. Opted into with --extension; with
+# nothing passed, this module derives the original 68 arms and nothing else.
+# ---------------------------------------------------------------------------
+
+#: §8.2. Which multiplier won each BERT cell of the finished grid. This is a
+#: measurement, not a rule: it is the lowest ``best_value`` in the cell, read off
+#: rt1-molnl-bsweep-arm-summary-20261125.tsv. It is a literal here for the same reason
+#: MICRO_BATCH is -- so a checkout derives the arms with nothing but the repository --
+#: and scripts/molnl_grid_winners_20261125.json carries the reading it came from, which
+#: is compared against this at import.
+WINNING_MULTIPLIER_1125 = {
+    ("bert", "small"): {256: 0.7, 512: 0.7, 1024: 0.7, 2048: 1.0, 4096: 1.0},
+    ("bert", "medium"): {256: 1.0, 512: 1.0, 1024: 1.0, 2048: 1.4, 4096: 1.0},
+    ("bert", "large"): {256: 1.0, 512: 1.0, 1024: 1.0, 2048: 1.4, 4096: 1.0},
+    ("bert", "xl"): {256: 1.0, 512: 1.0, 1024: 1.0, 2048: 1.4, 4096: 0.7},
+}
+WINNERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "molnl_grid_winners_20261125.json")
+
+#: §8.2. More rates above the cell's top, keyed by how many the cell already tried.
+#: The step is the existing 1.4x, continued up to 4.0 in every cell: a cell that ran
+#: two rates gets 1.4, 2.0, 2.8 and 4.0, and one that ran three gets 2.0, 2.8 and 4.0.
+#: The centre does not move, so the rate is still the 2,560 value times
+#: sqrt(batch / 2560).
+#:
+#: The 2026-11-26 answer's revision (b) carried it to 4.0 everywhere and gave the
+#: reason: at batch 4,096 medium's lowest is at 3.79e-4 and large's at 1.26e-4, and at
+#: batch 2,048 they are at 3.76e-4 and 1.25e-4 -- nearly the same rate rather than one
+#: that moved with the batch. If the best rate does not move with the batch, the
+#: multiplier batch 256 needs to reach it is 4.0.
+EXTENSION_MULTIPLIERS = {2: [1.4, 2.0, 2.8, 4.0], 3: [2.0, 2.8, 4.0]}
+
+#: §15. One BERT arm run again with nothing changed but how many blocks one GPU takes
+#: at a time, to measure on the BERT side the spread the gpt2 xl pairs showed. The
+#: directive names the arm: small, batch 2,048, 8.94e-4 -- the x1.0 column. The grid
+#: ran it at 64 blocks; these are the other two. 32 and 16 are the probe's next two
+#: measured shapes for bert small (2.725 and 2.897 s/step against 64's 2.517, so
+#: +8.3 % and +15.1 %), which keeps all three on measured ground and spaces them by
+#: a factor of two.
+SHAPE_REPLICATE_ARM = {"arch": "bert", "size": "small", "batch": 2048,
+                       "multiplier": 1.0}
+SHAPE_REPLICATE_MICRO = [32, 16]
+
+
+def _cross_check_winners_file():
+    """The literal above against the reading it was taken from."""
+    if not os.path.exists(WINNERS_FILE):
+        return
+    with open(WINNERS_FILE, encoding="utf-8") as handle:
+        payload = json.load(handle)
+    differ = []
+    seen = set()
+    for cell in payload.get("cells", []):
+        key = (cell["arch"], cell["size"])
+        batch = int(cell["batch"])
+        if key not in WINNING_MULTIPLIER_1125:
+            differ.append(f"{key} is in the file and not in the module")
+            continue
+        seen.add((key, batch))
+        typed = WINNING_MULTIPLIER_1125[key].get(batch)
+        read = float(cell["winning_multiplier"])
+        if typed is None:
+            differ.append(f"{key[0]} {key[1]} batch {batch}: missing from the module")
+        elif abs(typed - read) > 1e-9:
+            differ.append(f"{key[0]} {key[1]} batch {batch}: module x{typed} vs "
+                          f"file x{read}")
+    for key, by_batch in WINNING_MULTIPLIER_1125.items():
+        for batch in by_batch:
+            if (key, batch) not in seen:
+                differ.append(f"{key[0]} {key[1]} batch {batch}: in the module and "
+                              f"not in {os.path.basename(WINNERS_FILE)}")
+    if differ:
+        raise SystemExit(f"WINNING_MULTIPLIER_1125 disagrees with {WINNERS_FILE}: "
+                         + "; ".join(differ))
+
+
+_cross_check_winners_file()
+
+
+def extension_cells():
+    """§8.2's cells: the ones whose winning rate was the largest the cell tried."""
+    cells = []
+    for (arch, size), by_batch in WINNING_MULTIPLIER_1125.items():
+        for batch in BATCHES:
+            tried = BERT_MULTIPLIERS[batch] if arch == "bert" else GPT2_MULTIPLIERS[batch]
+            won = by_batch[batch]
+            if abs(won - max(tried)) > 1e-9:
+                continue
+            added = EXTENSION_MULTIPLIERS.get(len(tried))
+            if added is None:
+                raise SystemExit(f"{arch} {size} batch {batch} tried {len(tried)} "
+                                 f"rates, and EXTENSION_MULTIPLIERS has no row for "
+                                 f"that count")
+            cells.append({"arch": arch, "size": size, "batch": batch,
+                          "tried": list(tried), "won": won, "added": list(added)})
+    cells.sort(key=lambda c: (c["arch"], SIZES.index(c["size"]), c["batch"]))
+    return cells
+
+
+#: §8.2's own counts, to be compared against rather than derived from.
+EXPECTED_EXTENSION = {"cells": 12, "arms": 45, "shape_replicates": 2}
+
+#: §8.2's printed rates, as the 2026-11-26 answer (b) lists them. The derivation is
+#: compared against these the way it is against the 2026-11-20 directive's own tables:
+#: a cell that disagrees is reported rather than silently preferred.
+EXPECTED_EXTENSION_LR = {
+    ("bert", "medium"): {
+        256: [1.33e-4, 1.90e-4, 2.66e-4, 3.79e-4],
+        512: [1.88e-4, 2.68e-4, 3.76e-4, 5.37e-4],
+        1024: [2.66e-4, 3.79e-4, 5.31e-4, 7.59e-4],
+        2048: [5.37e-4, 7.51e-4, 1.07e-3],
+    },
+    ("bert", "large"): {
+        256: [4.43e-5, 6.32e-5, 8.85e-5, 1.26e-4],
+        512: [6.26e-5, 8.94e-5, 1.25e-4, 1.79e-4],
+        1024: [8.85e-5, 1.26e-4, 1.77e-4, 2.53e-4],
+        2048: [1.79e-4, 2.50e-4, 3.58e-4],
+    },
+    ("bert", "xl"): {
+        256: [1.40e-5, 2.00e-5, 2.80e-5, 4.00e-5],
+        512: [1.98e-5, 2.83e-5, 3.96e-5, 5.65e-5],
+        1024: [2.80e-5, 4.00e-5, 5.60e-5, 7.99e-5],
+        2048: [5.65e-5, 7.91e-5, 1.13e-4],
+    },
+}
+
 #: nanoGPT divides gradient_accumulation_steps by the DDP world size, so GPT-2's global
 #: batch is micro x accumulation with no world-size factor (molnl's config says
 #: 16 x 160 = 2,560). BERT multiplies by the GPU count as well (8 x 80 x 4 = 2,560).
@@ -268,7 +395,8 @@ COLUMNS = ["arch", "size", "batch", "lr", "lr_multiplier", "lr_slug", "steps",
            "warmup_steps", "eval_interval", "save_interval", "blocks", "tokens",
            "epochs", "eval_points", "micro_batch", "grad_accum", "world_size",
            "expected_global_batch", "eval_batch", "eval_blocks", "min_lr",
-           "lr_decay_iters", "judge_metric", "micro_batch_set", "config", "out_dir"]
+           "lr_decay_iters", "judge_metric", "micro_batch_set", "origin", "config",
+           "out_dir"]
 
 
 def three_sig(value: float) -> float:
@@ -332,8 +460,37 @@ def accumulation(arch: str, size: str, batch: int, which_set: str):
     return micro, batch // divisor, world
 
 
-def arms(which_set: str):
+def accumulation_with_micro(arch: str, batch: int, micro: int):
+    """(micro_batch, grad_accum, world_size) for one named shape, not a set.
+
+    §15 varies one GPU's block count on purpose, so the shape comes from the arm
+    rather than from the size's entry in MICRO_BATCH. The constraints are the same.
+    """
+    world = WORLD_SIZE[arch]
+    if micro not in MICRO_CANDIDATES:
+        raise SystemExit(f"{arch}: one GPU's {micro} blocks is not one of "
+                         f"{MICRO_CANDIDATES} (§4)")
+    divisor = micro * world
+    if batch % divisor:
+        raise SystemExit(f"{arch} batch {batch} is not a multiple of micro {micro} "
+                         f"x world {world}")
+    return micro, batch // divisor, world
+
+
+def arms(which_set: str, extension: bool = False):
     rows = []
+    #: §8.2's three rates per in-scope cell, and §15's two shapes of one existing arm.
+    #: Both are empty unless the extension is asked for, so the 68 arms the grid ran
+    #: are derived exactly as they were.
+    added_rates = {}
+    added_shapes = {}
+    if extension:
+        for cell in extension_cells():
+            added_rates[(cell["arch"], cell["size"], cell["batch"])] = cell["added"]
+        key = (SHAPE_REPLICATE_ARM["arch"], SHAPE_REPLICATE_ARM["size"],
+               SHAPE_REPLICATE_ARM["batch"])
+        added_shapes[key] = (SHAPE_REPLICATE_ARM["multiplier"], SHAPE_REPLICATE_MICRO)
+
     for arch in ("bert", "gpt2"):
         multipliers = BERT_MULTIPLIERS if arch == "bert" else GPT2_MULTIPLIERS
         blocks = BUDGET_BLOCKS[arch]
@@ -342,12 +499,28 @@ def arms(which_set: str):
                 steps = steps_for(arch, batch)
                 micro, accum, world = accumulation(arch, size, batch, which_set)
                 eval_interval = interval(arch, batch, "eval")
-                for multiplier in multipliers[batch]:
+                plan = [(m, "grid-1120", None) for m in multipliers[batch]]
+                plan += [(m, "extend-1126-lr", None)
+                         for m in added_rates.get((arch, size, batch), [])]
+                shape = added_shapes.get((arch, size, batch))
+                if shape is not None:
+                    plan += [(shape[0], "extend-1126-shape", m) for m in shape[1]]
+                for multiplier, origin, micro_override in plan:
                     lr = scaled_rate(arch, size, batch, multiplier)
                     slug = lr_slug(lr)
                     stem = f"{arch}_{size}_b{batch}_lr{slug}"
                     out_size = "ex-large" if (arch == "gpt2" and size == "xl") else size
                     out_suffix = OUT_SUFFIX.get(which_set, {}).get((arch, size), "")
+                    if micro_override is not None:
+                        # The same arm at another shape: same batch, same rate, same
+                        # name but for the shape. Without the suffix it would be given
+                        # the directory of the 64-block run it is being compared with.
+                        micro, accum, world = accumulation_with_micro(
+                            arch, batch, micro_override)
+                        stem = f"{stem}_m{micro_override}"
+                        out_suffix = f"{out_suffix}-m{micro_override}"
+                    else:
+                        micro, accum, world = accumulation(arch, size, batch, which_set)
                     rows.append({
                         "arch": arch, "size": size, "batch": batch, "lr": f"{lr:.2e}",
                         "lr_multiplier": f"{multiplier:.1f}", "lr_slug": slug,
@@ -370,6 +543,7 @@ def arms(which_set: str):
                         "lr_decay_iters": steps if arch == "gpt2" else None,
                         "judge_metric": JUDGE_METRIC[arch],
                         "micro_batch_set": which_set,
+                        "origin": origin,
                         "config": "molcrawl/tasks/pretrain/configs/molecule_nat_lang/"
                                   f"{stem}.py",
                         # The architecture is in the name because on this modality
@@ -390,8 +564,9 @@ def check(rows, which_set: str) -> int:
     """Compare the derivation against the directive's printed tables."""
     problems = 0
 
+    base = [r for r in rows if r["origin"] == "grid-1120"]
     for arch in ("bert", "gpt2"):
-        got = sum(1 for r in rows if r["arch"] == arch)
+        got = sum(1 for r in base if r["arch"] == arch)
         want = EXPECTED_ARMS[arch]
         if got != want:
             problems += 1
@@ -437,7 +612,7 @@ def check(rows, which_set: str) -> int:
     for arch in ("bert", "gpt2"):
         for size in SIZES:
             for batch in BATCHES:
-                sel = [r for r in rows if r["arch"] == arch and r["size"] == size
+                sel = [r for r in base if r["arch"] == arch and r["size"] == size
                        and r["batch"] == batch]
                 got = sorted(float(r["lr"]) for r in sel)
                 want = sorted(EXPECTED_LR[arch][size][batch])
@@ -446,6 +621,62 @@ def check(rows, which_set: str) -> int:
                     print(f"  ** {arch} {size} batch {batch}: derived "
                           f"{[f'{v:.2e}' for v in got]} against directive "
                           f"{[f'{v:.2e}' for v in want]}")
+
+    added = [r for r in rows if r["origin"] == "extend-1126-lr"]
+    shaped = [r for r in rows if r["origin"] == "extend-1126-shape"]
+    if added or shaped:
+        print("\n  --- the 2026-11-26 answer's extension ---")
+        cells = extension_cells()
+        for label, got, want in (
+                ("cells in scope", len(cells), EXPECTED_EXTENSION["cells"]),
+                ("rates added", len(added), EXPECTED_EXTENSION["arms"]),
+                ("shape replicates", len(shaped),
+                 EXPECTED_EXTENSION["shape_replicates"])):
+            ok = got == want
+            if not ok:
+                problems += 1
+            print(f"  {'ok' if ok else '**'} {label:18s} {got} (answer {want})")
+        # The answer prints the 45 rates; the derivation is compared against them.
+        printed = sum(len(v) for by_batch in EXPECTED_EXTENSION_LR.values()
+                      for v in by_batch.values())
+        for cell in cells:
+            want = EXPECTED_EXTENSION_LR.get((cell["arch"], cell["size"]), {}).get(
+                cell["batch"])
+            got = [scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+                   for m in cell["added"]]
+            if want is None:
+                problems += 1
+                print(f"  ** {cell['arch']} {cell['size']} batch {cell['batch']}: "
+                      f"the answer prints no rates for this cell")
+            elif [three_sig(v) for v in sorted(got)] != [three_sig(v)
+                                                         for v in sorted(want)]:
+                problems += 1
+                print(f"  ** {cell['arch']} {cell['size']} batch {cell['batch']}: "
+                      f"derived {[f'{v:.2e}' for v in got]} against answer "
+                      f"{[f'{v:.2e}' for v in want]}")
+        print(f"  ok added rates compared against the answer's printed {printed}")
+
+        # Every added rate is the cell's centre times its multiplier, and is above
+        # every rate the cell already ran: an extension that lands inside the tried
+        # range is not an extension.
+        for cell in cells:
+            top = max(scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+                      for m in cell["tried"])
+            for multiplier in cell["added"]:
+                lr = scaled_rate(cell["arch"], cell["size"], cell["batch"], multiplier)
+                if not lr > top:
+                    problems += 1
+                    print(f"  ** {cell['arch']} {cell['size']} batch {cell['batch']}: "
+                          f"added {lr:.2e} (x{multiplier}) is not above the cell's "
+                          f"top {top:.2e}")
+        for row in shaped:
+            if int(row["micro_batch"]) == MICRO_BATCH[which_set][row["arch"]][
+                    row["size"]]:
+                problems += 1
+                print(f"  ** {row['out_dir']}: the shape replicate carries the set's "
+                      f"own block count, so it repeats an existing arm")
+        print("  cells: " + ", ".join(
+            f"{c['size']} b{c['batch']} x{c['won']}->{c['added']}" for c in cells))
 
     rates = sum(len(EXPECTED_LR[a][s][b])
                 for a in EXPECTED_LR for s in SIZES for b in BATCHES)
@@ -465,14 +696,23 @@ def main(argv=None) -> int:
                          "configs carry today")
     ap.add_argument("--out", required=True,
                     help="the base name begins with rt1- (the column convention)")
+    ap.add_argument("--extension", action="store_true",
+                    help="also derive the 2026-11-26 answer's arms: three rates above "
+                         "the top of every cell whose top rate won (§8.2), and one "
+                         "arm at two more block counts (§15). Without it, the 68 arms "
+                         "the grid ran are derived and nothing else")
     args = ap.parse_args(argv)
     check_name(args.out)
 
-    rows = arms(args.micro_batch_set)
+    rows = arms(args.micro_batch_set, extension=args.extension)
+    by_origin = {}
+    for row in rows:
+        by_origin[row["origin"]] = by_origin.get(row["origin"], 0) + 1
     print(f"=== derived {len(rows)} arms "
           f"(BERT {sum(1 for r in rows if r['arch'] == 'bert')}, "
           f"GPT-2 {sum(1 for r in rows if r['arch'] == 'gpt2')}), "
           f"one GPU's blocks from '{args.micro_batch_set}' ===")
+    print("  " + ", ".join(f"{k}: {v}" for k, v in sorted(by_origin.items())))
     print("\n=== against the directive's printed tables ===")
     problems = check(rows, args.micro_batch_set)
 
@@ -517,7 +757,13 @@ def main(argv=None) -> int:
             f"{JUDGE_METRIC['gpt2']}",
             f"one GPU's block count from the '{args.micro_batch_set}' set; BERT x "
             f"{WORLD_SIZE['bert']} GPUs, GPT-2 with no world-size factor",
-            "nothing in this grid has run yet",
+            "the 68 arms with origin grid-1120 ran 2026-11-20 to 11-25 and are "
+            "reported in rt1-molnl-bsweep-arm-summary-20261125.tsv; rows with "
+            "origin extend-1126-lr or extend-1126-shape have not run",
+            "extension (2026-11-26 answer): three rates above the top of every cell "
+            "whose top rate won (§8.2, BERT only), and one arm at two more block "
+            "counts (§15)" if args.extension else
+            "extension: not asked for, so only the grid's own 68 arms are here",
         ],
         "job": os.environ.get("SLURM_JOB_ID") or None,
     })

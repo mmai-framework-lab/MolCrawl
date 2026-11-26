@@ -3,7 +3,9 @@
 #
 #   LEARNING_SOURCE_DIR=<input root> MODEL_OUTPUT_ROOT=<output root> \
 #   ARMS=<rt1-...arms.tsv> SUBMIT_RECORD=<record file> ARCH=bert|gpt2 \
-#   [ONLY_BATCHES="256 512"] [ONLY_SIZES="small medium"] [DEPEND=<job id>] [DRY=1] \
+#   [ONLY_BATCHES="256 512"] [ONLY_SIZES="small medium"] [ONLY_ORIGIN="extend-1126-lr"] \
+#   [ONLY_MULTIPLIERS="4.0"] \
+#   [DEPEND=<job id>] [DRY=1] \
 #       workflows/submit-molnl-batch-sweep.sh
 #
 # ARCH=gpt2 submits one job per arm. ARCH=bert submits a chain of segments per arm,
@@ -12,6 +14,14 @@
 # ONLY_BATCHES and ONLY_SIZES narrow what goes in, which is how a grid of 68 is started
 # in parts without the inventory being edited. Unset, every arm of the architecture is
 # submitted.
+#
+# ONLY_ORIGIN narrows by the inventory's origin column, and after 2026-11-26 the
+# inventory holds arms that have already run: grid-1120 is the 68 of the original grid,
+# extend-1126-lr the rates added above the cells whose top rate won, extend-1126-shape
+# the one arm repeated at other block counts. Submitting without it would hand the
+# launcher every finished arm again. A BERT segment of a finished run refuses in
+# seconds rather than overwriting it, so that is noise rather than loss -- but it is
+# 86 jobs of noise, and the record would no longer say what was started.
 
 # DEPEND holds every arm of this submission behind one job that has to end well first,
 # which is how the rest of a column is queued behind the one arm that is proving a
@@ -92,27 +102,50 @@ EXTRA_SEGMENT_BATCHES=" 256 512 "
 
 only_b=""; [ -n "${ONLY_BATCHES:-}" ] && only_b=" ${ONLY_BATCHES} "
 only_s=""; [ -n "${ONLY_SIZES:-}" ] && only_s=" ${ONLY_SIZES} "
+only_o=""; [ -n "${ONLY_ORIGIN:-}" ] && only_o=" ${ONLY_ORIGIN} "
+# ONLY_MULTIPLIERS narrows by the rate column's multiplier, which is the lever a
+# staged launch needs: the top of the range answers whether the range is now wide
+# enough, and the rates inside it are only worth running where it is not. The value
+# is matched as the inventory writes it, to one decimal (0.7 1.0 1.4 2.0 2.8 4.0).
+only_m=""; [ -n "${ONLY_MULTIPLIERS:-}" ] && only_m=" ${ONLY_MULTIPLIERS} "
+# A misspelled origin would match nothing and submit nothing, which reads the same as
+# "that part is already running". Names are checked against the ones the inventory uses.
+KNOWN_ORIGINS=" grid-1120 extend-1126-lr extend-1126-shape "
+for o in ${ONLY_ORIGIN:-}; do
+  case "${KNOWN_ORIGINS}" in
+    *" ${o} "*) ;;
+    *) echo "ONLY_ORIGIN has ${o}, which is not one of${KNOWN_ORIGINS}" >&2; exit 1 ;;
+  esac
+done
 
 # The fields are pulled out by name rather than by position, so a new column in the
 # inventory does not shift what is read. awk rather than `read -a`: with IFS=tab a run
 # of tabs -- which is what the empty cells of the other framework's columns are --
 # collapses and shifts every later field.
-rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v ob="${only_b}" -v os="${only_s}" '
-  NR == 1 { for (i = 1; i <= NF; i++) at[$i] = i; next }
+rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v ob="${only_b}" -v os="${only_s}" -v oo="${only_o}" -v om="${only_m}" '
+  NR == 1 { for (i = 1; i <= NF; i++) at[$i] = i;
+            if (!("origin" in at)) { print "no origin column" > "/dev/stderr"; exit 1 }
+            next }
   $at["arch"] == want \
     && (ob == "" || index(ob, " " $at["batch"] " ") > 0) \
-    && (os == "" || index(os, " " $at["size"] " ") > 0) {
-    print $at["size"], $at["batch"], $at["lr_slug"], $at["config"]
+    && (os == "" || index(os, " " $at["size"] " ") > 0) \
+    && (oo == "" || index(oo, " " $at["origin"] " ") > 0) \
+    && (om == "" || index(om, " " $at["lr_multiplier"] " ") > 0) {
+    print $at["size"], $at["batch"], $at["lr_slug"], $at["config"], $at["origin"], $at["micro_batch"]
   }')
 [ -n "${rows}" ] || {
-  echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}${ONLY_SIZES:+ at size ${ONLY_SIZES}}" >&2
+  echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}${ONLY_SIZES:+ at size ${ONLY_SIZES}}${ONLY_ORIGIN:+ origin ${ONLY_ORIGIN}}${ONLY_MULTIPLIERS:+ multiplier ${ONLY_MULTIPLIERS}}" >&2
   exit 1; }
 
 submitted=0
-while read -r size batch slug cfg; do
+while read -r size batch slug cfg origin micro; do
   [ -f "${cfg}" ] || { echo "no config at ${cfg}" >&2; exit 1; }
+  # The §15 replicates share size, batch and rate with the arm they are compared
+  # against, so without the block count in the name three jobs would carry one name and
+  # the record would not say which ran.
+  tag=""; [ "${origin}" = "extend-1126-shape" ] && tag="-m${micro}"
   if [ "${ARCH}" = "gpt2" ]; then
-    name="mc-molnl-gpt2-b${batch}-${size}-lr${slug}"
+    name="mc-molnl-gpt2-b${batch}-${size}-lr${slug}${tag}"
     gate=(); [ -n "${DEPEND}" ] && gate=(--dependency="afterok:${DEPEND}")
     args=(--job-name="${name}" "${gate[@]}"
           --export=ALL,CONFIG="${cfg}",LEARNING_SOURCE_DIR="${LEARNING_SOURCE_DIR}",MODEL_OUTPUT_ROOT="${MODEL_OUTPUT_ROOT}"
@@ -131,7 +164,7 @@ while read -r size batch slug cfg; do
   case "${EXTRA_SEGMENT_BATCHES}" in *" ${batch} "*) segments=$((segments + 1)) ;; esac
   prev=""
   for seg in $(seq 1 "${segments}"); do
-    name="mc-molnl-bert-b${batch}-${size}-lr${slug}-s${seg}"
+    name="mc-molnl-bert-b${batch}-${size}-lr${slug}${tag}-s${seg}"
     dep=()
     if [ -n "${prev}" ]; then
       dep=(--dependency="afterany:${prev}")
