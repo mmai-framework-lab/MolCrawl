@@ -4,6 +4,7 @@
 #   LEARNING_SOURCE_DIR=<input root> MODEL_OUTPUT_ROOT=<output root> \
 #   ARMS=<rt1-...arms.tsv> SUBMIT_RECORD=<record file> ARCH=bert|gpt2 \
 #   [ONLY_BATCHES="256 512"] [ONLY_SIZES="small medium"] [ONLY_ORIGIN="extend-1126-lr"] \
+#   [ONLY_MULTIPLIERS="4.0"] \
 #   [DEPEND=<job id>] [DRY=1] \
 #       workflows/submit-molnl-batch-sweep.sh
 #
@@ -102,6 +103,11 @@ EXTRA_SEGMENT_BATCHES=" 256 512 "
 only_b=""; [ -n "${ONLY_BATCHES:-}" ] && only_b=" ${ONLY_BATCHES} "
 only_s=""; [ -n "${ONLY_SIZES:-}" ] && only_s=" ${ONLY_SIZES} "
 only_o=""; [ -n "${ONLY_ORIGIN:-}" ] && only_o=" ${ONLY_ORIGIN} "
+# ONLY_MULTIPLIERS narrows by the rate column's multiplier, which is the lever a
+# staged launch needs: the top of the range answers whether the range is now wide
+# enough, and the rates inside it are only worth running where it is not. The value
+# is matched as the inventory writes it, to one decimal (0.7 1.0 1.4 2.0 2.8 4.0).
+only_m=""; [ -n "${ONLY_MULTIPLIERS:-}" ] && only_m=" ${ONLY_MULTIPLIERS} "
 # A misspelled origin would match nothing and submit nothing, which reads the same as
 # "that part is already running". Names are checked against the ones the inventory uses.
 KNOWN_ORIGINS=" grid-1120 extend-1126-lr extend-1126-shape "
@@ -116,18 +122,19 @@ done
 # inventory does not shift what is read. awk rather than `read -a`: with IFS=tab a run
 # of tabs -- which is what the empty cells of the other framework's columns are --
 # collapses and shifts every later field.
-rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v ob="${only_b}" -v os="${only_s}" -v oo="${only_o}" '
+rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v ob="${only_b}" -v os="${only_s}" -v oo="${only_o}" -v om="${only_m}" '
   NR == 1 { for (i = 1; i <= NF; i++) at[$i] = i;
             if (!("origin" in at)) { print "no origin column" > "/dev/stderr"; exit 1 }
             next }
   $at["arch"] == want \
     && (ob == "" || index(ob, " " $at["batch"] " ") > 0) \
     && (os == "" || index(os, " " $at["size"] " ") > 0) \
-    && (oo == "" || index(oo, " " $at["origin"] " ") > 0) {
+    && (oo == "" || index(oo, " " $at["origin"] " ") > 0) \
+    && (om == "" || index(om, " " $at["lr_multiplier"] " ") > 0) {
     print $at["size"], $at["batch"], $at["lr_slug"], $at["config"], $at["origin"], $at["micro_batch"]
   }')
 [ -n "${rows}" ] || {
-  echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}${ONLY_SIZES:+ at size ${ONLY_SIZES}}" >&2
+  echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}${ONLY_SIZES:+ at size ${ONLY_SIZES}}${ONLY_ORIGIN:+ origin ${ONLY_ORIGIN}}${ONLY_MULTIPLIERS:+ multiplier ${ONLY_MULTIPLIERS}}" >&2
   exit 1; }
 
 submitted=0

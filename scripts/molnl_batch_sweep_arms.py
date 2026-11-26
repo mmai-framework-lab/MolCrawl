@@ -205,11 +205,18 @@ WINNING_MULTIPLIER_1125 = {
 WINNERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "molnl_grid_winners_20261125.json")
 
-#: §8.2. Three more rates above the cell's top, keyed by how many the cell already
-#: tried. The step is the existing 1.4x, continued: 1.0 -> 1.4, 2.0, 2.8 for a cell
-#: that ran two, and 1.4 -> 2.0, 2.8, 4.0 for one that ran three. The centre does not
-#: move, so the rate is still the 2,560 value times sqrt(batch / 2560).
-EXTENSION_MULTIPLIERS = {2: [1.4, 2.0, 2.8], 3: [2.0, 2.8, 4.0]}
+#: §8.2. More rates above the cell's top, keyed by how many the cell already tried.
+#: The step is the existing 1.4x, continued up to 4.0 in every cell: a cell that ran
+#: two rates gets 1.4, 2.0, 2.8 and 4.0, and one that ran three gets 2.0, 2.8 and 4.0.
+#: The centre does not move, so the rate is still the 2,560 value times
+#: sqrt(batch / 2560).
+#:
+#: The 2026-11-26 answer's revision (b) carried it to 4.0 everywhere and gave the
+#: reason: at batch 4,096 medium's lowest is at 3.79e-4 and large's at 1.26e-4, and at
+#: batch 2,048 they are at 3.76e-4 and 1.25e-4 -- nearly the same rate rather than one
+#: that moved with the batch. If the best rate does not move with the batch, the
+#: multiplier batch 256 needs to reach it is 4.0.
+EXTENSION_MULTIPLIERS = {2: [1.4, 2.0, 2.8, 4.0], 3: [2.0, 2.8, 4.0]}
 
 #: §15. One BERT arm run again with nothing changed but how many blocks one GPU takes
 #: at a time, to measure on the BERT side the spread the gpt2 xl pairs showed. The
@@ -279,7 +286,31 @@ def extension_cells():
 
 
 #: §8.2's own counts, to be compared against rather than derived from.
-EXPECTED_EXTENSION = {"cells": 12, "arms": 36, "shape_replicates": 2}
+EXPECTED_EXTENSION = {"cells": 12, "arms": 45, "shape_replicates": 2}
+
+#: §8.2's printed rates, as the 2026-11-26 answer (b) lists them. The derivation is
+#: compared against these the way it is against the 2026-11-20 directive's own tables:
+#: a cell that disagrees is reported rather than silently preferred.
+EXPECTED_EXTENSION_LR = {
+    ("bert", "medium"): {
+        256: [1.33e-4, 1.90e-4, 2.66e-4, 3.79e-4],
+        512: [1.88e-4, 2.68e-4, 3.76e-4, 5.37e-4],
+        1024: [2.66e-4, 3.79e-4, 5.31e-4, 7.59e-4],
+        2048: [5.37e-4, 7.51e-4, 1.07e-3],
+    },
+    ("bert", "large"): {
+        256: [4.43e-5, 6.32e-5, 8.85e-5, 1.26e-4],
+        512: [6.26e-5, 8.94e-5, 1.25e-4, 1.79e-4],
+        1024: [8.85e-5, 1.26e-4, 1.77e-4, 2.53e-4],
+        2048: [1.79e-4, 2.50e-4, 3.58e-4],
+    },
+    ("bert", "xl"): {
+        256: [1.40e-5, 2.00e-5, 2.80e-5, 4.00e-5],
+        512: [1.98e-5, 2.83e-5, 3.96e-5, 5.65e-5],
+        1024: [2.80e-5, 4.00e-5, 5.60e-5, 7.99e-5],
+        2048: [5.65e-5, 7.91e-5, 1.13e-4],
+    },
+}
 
 #: nanoGPT divides gradient_accumulation_steps by the DDP world size, so GPT-2's global
 #: batch is micro x accumulation with no world-size factor (molnl's config says
@@ -605,6 +636,26 @@ def check(rows, which_set: str) -> int:
             if not ok:
                 problems += 1
             print(f"  {'ok' if ok else '**'} {label:18s} {got} (answer {want})")
+        # The answer prints the 45 rates; the derivation is compared against them.
+        printed = sum(len(v) for by_batch in EXPECTED_EXTENSION_LR.values()
+                      for v in by_batch.values())
+        for cell in cells:
+            want = EXPECTED_EXTENSION_LR.get((cell["arch"], cell["size"]), {}).get(
+                cell["batch"])
+            got = [scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+                   for m in cell["added"]]
+            if want is None:
+                problems += 1
+                print(f"  ** {cell['arch']} {cell['size']} batch {cell['batch']}: "
+                      f"the answer prints no rates for this cell")
+            elif [three_sig(v) for v in sorted(got)] != [three_sig(v)
+                                                         for v in sorted(want)]:
+                problems += 1
+                print(f"  ** {cell['arch']} {cell['size']} batch {cell['batch']}: "
+                      f"derived {[f'{v:.2e}' for v in got]} against answer "
+                      f"{[f'{v:.2e}' for v in want]}")
+        print(f"  ok added rates compared against the answer's printed {printed}")
+
         # Every added rate is the cell's centre times its multiplier, and is above
         # every rate the cell already ran: an extension that lands inside the tried
         # range is not an extension.

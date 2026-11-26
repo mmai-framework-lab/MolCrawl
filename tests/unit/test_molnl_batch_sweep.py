@@ -640,10 +640,15 @@ def test_the_extension_is_off_unless_asked_for(arms_module, micro_set):
 def test_the_extension_adds_rates_only_where_the_top_rate_won(arms_module):
     cells = arms_module.extension_cells()
     assert len(cells) == arms_module.EXPECTED_EXTENSION["cells"] == 12
+    added = 0
     for cell in cells:
         tried = cell["tried"]
         assert cell["won"] == max(tried), cell
         assert cell["added"] == arms_module.EXTENSION_MULTIPLIERS[len(tried)]
+        # Every cell is carried to 4.0, whatever it had already tried.
+        assert max(cell["added"]) == 4.0, cell
+        added += len(cell["added"])
+    assert added == arms_module.EXPECTED_EXTENSION["arms"] == 45
     # small's top rate lost at every batch, so it contributes nothing.
     assert {c["size"] for c in cells} == {"medium", "large", "xl"}
     # GPT-2 runs one rate a cell, so it is not in scope at all (§8.2's last line).
@@ -707,7 +712,7 @@ def test_no_two_arms_share_a_directory_or_a_config(arms_module, micro_set):
     """
     rows = arms_module.arms(micro_set, extension=True)
     assert len(rows) == 68 + arms_module.EXPECTED_EXTENSION["arms"] \
-        + arms_module.EXPECTED_EXTENSION["shape_replicates"] == 106
+        + arms_module.EXPECTED_EXTENSION["shape_replicates"] == 115
     for field in ("out_dir", "config"):
         seen = {}
         for row in rows:
@@ -739,3 +744,26 @@ def test_the_winners_literal_matches_the_reading_it_came_from(arms_module):
              for batch, won in by_batch.items()}
     assert read == typed
     assert payload["cells_in_scope"] == arms_module.EXPECTED_EXTENSION["cells"]
+
+
+def test_the_added_rates_are_the_ones_the_answer_printed(arms_module):
+    """§8.2 (b) prints all 45 rates; the derivation is held against them.
+
+    The multipliers are a rule and the rates are three significant figures of it, so
+    the two can part company at the rounding -- which is how a cell comes to be
+    submitted at a rate the answer does not name.
+    """
+    printed = arms_module.EXPECTED_EXTENSION_LR
+    cells = arms_module.extension_cells()
+    assert sum(len(v) for by_batch in printed.values()
+               for v in by_batch.values()) == 45
+    seen = set()
+    for cell in cells:
+        want = printed[(cell["arch"], cell["size"])][cell["batch"]]
+        got = [arms_module.scaled_rate(cell["arch"], cell["size"], cell["batch"], m)
+               for m in cell["added"]]
+        assert [arms_module.three_sig(v) for v in got] == \
+            [arms_module.three_sig(v) for v in want], cell
+        seen.add((cell["arch"], cell["size"], cell["batch"]))
+    assert seen == {(arch, size, batch) for (arch, size), by_batch in printed.items()
+                    for batch in by_batch}
