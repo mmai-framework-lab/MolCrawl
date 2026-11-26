@@ -13,6 +13,7 @@
 #
 #   sbatch --export=ALL,ARMS_OUT=<...>/rt1-...tsv[,ARMS_SET=current][,WRITE_CONFIGS=1] \
 #          [,SHAPES_TABLE_OUT=<...>.md][,PROBE_LOG_GLOB=<...>/mc-molnl-bshape-*.out] \
+#          [,ARMS_EXTENSION=1][,WINNERS_FROM_SUMMARY=<...>/rt1-...arm-summary-*.tsv] \
 #          workflows/molnl-batch-sweep-arms.sbatch
 #
 # ARMS_OUT has no default: the report directory is outside every checkout and this
@@ -29,6 +30,14 @@
 # SHAPES_TABLE_OUT writes §9's table -- all the arms with one GPU's block count and its
 # accumulation count, plus the measured step times PROBE_LOG_GLOB points at. Both are
 # optional: before the §4 probes have run there is nothing measured to put in it.
+#
+# ARMS_EXTENSION=1 adds the 2026-11-26 answer's arms: three rates above the top of
+# every cell whose top rate won (§8.2) and one arm at two further block counts (§15).
+# Which rate won is a measurement, so WINNERS_FROM_SUMMARY first reads it off the
+# finished grid's own per-arm summary into scripts/molnl_grid_winners_20261125.json,
+# which the derivation cross-checks its literal against -- the same arrangement as the
+# §4 probe output above. Deriving the extension without that file is allowed, and then
+# the literal stands alone; deriving it against a file that disagrees is not.
 #
 # A value passed through --export must not contain a comma: sbatch splits the list on
 # commas and the value is truncated there. A glob is passed unquoted on purpose and is
@@ -62,6 +71,7 @@ cd "${REPO}"; mkdir -p workflows/slurm-logs
 echo "=== molnl batch-sweep arms on ${SLURMD_NODENAME} @ $(date -Is) ==="
 echo "tree:      ${REPO}  $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD)"
 echo "micro set: ${SET}"
+echo "extension: $([ "${ARMS_EXTENSION:-0}" = "1" ] && echo "on (2026-11-26 answer)" || echo off)"
 echo "configs:   $([ "${WRITE}" = "1" ] && echo write || echo "check only")"
 echo "output:    ${ARMS_OUT}"
 echo "s9 table:  ${SHAPES_TABLE_OUT:-(not asked for)}"
@@ -81,14 +91,29 @@ if [ "${CHOOSE_FROM_PROBES:-0}" = "1" ]; then
   [ "${step}" -eq 0 ] || exit "${step}"
 fi
 
+if [ -n "${WINNERS_FROM_SUMMARY:-}" ]; then
+  echo
+  echo "########## 0b. which rate won each cell, out of the finished grid ##########"
+  [ -f "${WINNERS_FROM_SUMMARY}" ] || {
+    echo "no summary at ${WINNERS_FROM_SUMMARY}" >&2; exit 1; }
+  "${PYTHON}" scripts/molnl_grid_winners.py \
+      --summary "${WINNERS_FROM_SUMMARY}" \
+      --out scripts/molnl_grid_winners_20261125.json
+  step=$?; echo "-- winners rc=${step}"
+  # A half-read grid must not become the scope of an extension.
+  [ "${step}" -eq 0 ] || exit "${step}"
+fi
+
 echo
 echo "########## 1. the arm inventory, against the directive's tables ##########"
+ext=()
+[ "${ARMS_EXTENSION:-0}" = "1" ] && ext=(--extension)
 "${PYTHON}" scripts/molnl_batch_sweep_arms.py \
-    --micro-batch-set "${SET}" --out "${ARMS_OUT}"
+    --micro-batch-set "${SET}" --out "${ARMS_OUT}" "${ext[@]}"
 step=$?; echo "-- arms rc=${step}"; [ "${step}" -eq 0 ] || rc="${step}"
 
 echo
-echo "########## 2. the 68 configs, against the inventory ##########"
+echo "########## 2. the configs, against the inventory ##########"
 if [ "${WRITE}" = "1" ]; then
   "${PYTHON}" scripts/molnl_batch_sweep_configs.py --arms "${ARMS_OUT}"
 else

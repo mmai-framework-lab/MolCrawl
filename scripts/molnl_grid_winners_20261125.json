@@ -1,0 +1,297 @@
+{
+  "judged_metric": "eval_loss_mask",
+  "rule": "the cell's lowest best_value; a cell is in scope for the 2026-11-26 answer's item 8.2 when that arm's multiplier is the largest the cell tried",
+  "source_basename": "rt1-molnl-bsweep-arm-summary-20261125.tsv",
+  "arms_read": 48,
+  "cells": [
+    {
+      "arch": "bert",
+      "size": "large",
+      "batch": 256,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "3.16e-05",
+      "winning_value": "0.109789",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "large",
+      "batch": 512,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "4.47e-05",
+      "winning_value": "0.104708",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "large",
+      "batch": 1024,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "6.32e-05",
+      "winning_value": "0.102348",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "large",
+      "batch": 2048,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.4,
+      "winning_lr": "1.25e-04",
+      "winning_value": "0.082773",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "large",
+      "batch": 4096,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "1.26e-04",
+      "winning_value": "0.123433",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "medium",
+      "batch": 256,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "9.49e-05",
+      "winning_value": "0.083859",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "medium",
+      "batch": 512,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "1.34e-04",
+      "winning_value": "0.075289",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "medium",
+      "batch": 1024,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "1.90e-04",
+      "winning_value": "0.068765",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "medium",
+      "batch": 2048,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.4,
+      "winning_lr": "3.76e-04",
+      "winning_value": "0.062980",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "medium",
+      "batch": 4096,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "3.79e-04",
+      "winning_value": "0.066150",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "small",
+      "batch": 256,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 0.7,
+      "winning_lr": "2.21e-04",
+      "winning_value": "0.089603",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "small",
+      "batch": 512,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 0.7,
+      "winning_lr": "3.13e-04",
+      "winning_value": "0.079673",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "small",
+      "batch": 1024,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 0.7,
+      "winning_lr": "4.43e-04",
+      "winning_value": "0.075041",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "small",
+      "batch": 2048,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "8.94e-04",
+      "winning_value": "0.070566",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "small",
+      "batch": 4096,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "1.26e-03",
+      "winning_value": "0.071354",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "xl",
+      "batch": 256,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "9.99e-06",
+      "winning_value": "2.922389",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "xl",
+      "batch": 512,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "1.41e-05",
+      "winning_value": "2.961243",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "xl",
+      "batch": 1024,
+      "multipliers_tried": [
+        0.7,
+        1.0
+      ],
+      "winning_multiplier": 1.0,
+      "winning_lr": "2.00e-05",
+      "winning_value": "3.048613",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "xl",
+      "batch": 2048,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 1.4,
+      "winning_lr": "3.96e-05",
+      "winning_value": "3.135472",
+      "winner_is_the_largest_tried": true,
+      "collapsed": "no"
+    },
+    {
+      "arch": "bert",
+      "size": "xl",
+      "batch": 4096,
+      "multipliers_tried": [
+        0.7,
+        1.0,
+        1.4
+      ],
+      "winning_multiplier": 0.7,
+      "winning_lr": "2.80e-05",
+      "winning_value": "3.369594",
+      "winner_is_the_largest_tried": false,
+      "collapsed": "no"
+    }
+  ],
+  "cells_in_scope": 12
+}

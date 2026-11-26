@@ -241,17 +241,30 @@ def read_arms(path):
 
 def arm_place(row, siblings):
     """One sentence on what else shares this arm's size and batch."""
-    rates = sorted(float(r["lr"]) for r in siblings)
+    if row.get("origin") == "extend-1126-shape":
+        others = sorted({int(r["micro_batch"]) for r in siblings
+                         if float(r["lr"]) == float(row["lr"])
+                         and int(r["micro_batch"]) != int(row["micro_batch"])})
+        return (f"§15 of the 2026-11-26 answer: the same arm at one GPU's "
+                f"{row['micro_batch']} blocks, against {others} at the same global "
+                f"batch, rate and seed, so that what the shape alone moves can be "
+                f"read off the three.")
+    rates = sorted({float(r["lr"]) for r in siblings})
     if len(rates) == 1:
         return (f"GPT-2 runs one rate per batch (§1), so this is the whole of "
                 f"{row['size']} at batch {row['batch']}.")
     place = rates.index(float(row["lr"])) + 1
     others = ", ".join(f"{r:.2e}" for r in rates if r != float(row["lr"]))
+    added = len({float(r["lr"]) for r in siblings
+                 if r.get("origin") == "extend-1126-lr"})
+    tail = (f" {added} of them sit above the top the cell first tried, added because "
+            f"that top rate won (2026-11-26 answer §8.2)." if added else "")
     return (f"BERT runs {len(rates)} rates at this size and batch and keeps the lowest "
-            f"(§1, §10); this is number {place} of {len(rates)}, against {others}.")
+            f"(§1, §10); this is number {place} of {len(rates)}, against "
+            f"{others}.{tail}")
 
 
-def fields(row, siblings):
+def fields(row, siblings, arch_count=None):
     arch = row["arch"]
     batch = int(row["batch"])
     steps = int(row["steps"])
@@ -280,7 +293,11 @@ def fields(row, siblings):
         # inventory has to derive the same set to compare against.
         "micro_batch_set": row["micro_batch_set"],
         "arch_label": "BERT" if arch == "bert" else "GPT-2",
-        "arch_arms": "48" if arch == "bert" else "20",
+        # The inventory's own count, not a literal: the 2026-11-26 answer adds arms to
+        # the BERT half, and a sentence that still said 48 would be read as the budget
+        # having changed with it. The budget is per arm and did not move.
+        "arch_arms": str(arch_count if arch_count is not None
+                         else (48 if arch == "bert" else 20)),
         "size": size,
         "base_module": f"{'bert' if arch == 'bert' else 'gpt2'}_{size}",
         "batch": batch,
@@ -303,11 +320,17 @@ def fields(row, siblings):
         "grad_accum": int(row["grad_accum"]),
         "world_size": world,
         "world_term": f" x {world} GPUs" if world != 1 else "",
-        "micro_note": ("Held across the five batches of this size, so what differs "
-                       "between them is the accumulation count and nothing else. §4 "
-                       "fixes it per size, by the 2026-11-20 probes, except where a "
-                       "probed shape did not hold for a whole arm: see the set named "
-                       "above and the directory this arm writes to."),
+        "micro_note": (
+            ("Varied on purpose here: this arm exists to measure what the block count "
+             "alone moves, so it is the one value that differs from its siblings "
+             "(2026-11-26 answer §15). Everything else, the global batch included, is "
+             "theirs.")
+            if row.get("origin") == "extend-1126-shape" else
+            ("Held across the five batches of this size, so what differs "
+             "between them is the accumulation count and nothing else. §4 "
+             "fixes it per size, by the 2026-11-20 probes, except where a "
+             "probed shape did not hold for a whole arm: see the set named "
+             "above and the directory this arm writes to.")),
         "eval_interval": eval_interval,
         "save_interval": save_interval,
         "save_multiple": save_interval // eval_interval,
@@ -341,8 +364,8 @@ def fields(row, siblings):
     return base
 
 
-def render(row, siblings):
-    values = fields(row, siblings)
+def render(row, siblings, arch_count=None):
+    values = fields(row, siblings, arch_count)
     values["header"] = HEADER.format(**values)
     body = BERT_BODY if row["arch"] == "bert" else GPT2_BODY
     return body.format(**values)
@@ -354,10 +377,19 @@ def siblings_of(rows, row):
             and r["batch"] == row["batch"]]
 
 
+def arch_counts(rows):
+    """How many arms the inventory holds per architecture."""
+    counts = {}
+    for row in rows:
+        counts[row["arch"]] = counts.get(row["arch"], 0) + 1
+    return counts
+
+
 def write_all(rows, out_dir):
     written = []
+    counts = arch_counts(rows)
     for row in rows:
-        text = render(row, siblings_of(rows, row))
+        text = render(row, siblings_of(rows, row), counts.get(row["arch"]))
         path = os.path.join(out_dir, os.path.basename(row["config"]))
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
