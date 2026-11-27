@@ -3,8 +3,15 @@
 #
 #   LEARNING_SOURCE_DIR=<input root> MODEL_OUTPUT_ROOT=<output root> \
 #   ARMS=<rt1-...arms.tsv> SUBMIT_RECORD=<record file> [ARCH=gpt2] \
-#   [ONLY_BATCHES="256 512"] [DRY=1] \
+#   [ONLY_BATCHES="256 512"] [ONLY_STAGES=1] [DRY=1] \
 #       workflows/submit-compounds-batch-sweep.sh
+#
+# ONLY_STAGES submits just the arms whose inventory row carries one of those values in
+# a ``stage`` column. The 2026-11-27b additions are launched a stage at a time -- the
+# rate nearest each cell's swept range first, because a stage-1 arm that does not beat
+# the cell's existing best brackets the optimum and the other two rates are not needed.
+# An inventory with no stage column is one stage, and ONLY_STAGES must not be set for
+# it: it would match nothing and the run would look submitted when it was not.
 #
 # ONLY_BATCHES submits just the arms at those global batches. The inventory holds
 # every arm of the grid, including ones that have already run: the 2026-11-20
@@ -79,12 +86,26 @@ submitted=0
 # framework's columns are -- would collapse and shift every later field.
 only=""
 [ -n "${ONLY_BATCHES:-}" ] && only=" ${ONLY_BATCHES} "
-rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v only="${only}" '
+stages=""
+if [ -n "${ONLY_STAGES:-}" ]; then
+  # sed -n '1p' rather than head -1: head closes the pipe as soon as it has the line,
+  # grep is killed by SIGPIPE, and under pipefail the pipeline then reports 141 even
+  # though the column is there. sed reads to the end, so the status is grep's own.
+  _header=$(grep -v '^#' "${ARMS}" | sed -n '1p')
+  case "${_header}" in
+    *$'\tstage'*) ;;
+    *) echo "ONLY_STAGES=${ONLY_STAGES} but ${ARMS} has no stage column" >&2; exit 1 ;;
+  esac
+  stages=" ${ONLY_STAGES} "
+fi
+rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v only="${only}" \
+  -v stages="${stages}" '
   NR == 1 { for (i = 1; i <= NF; i++) at[$i] = i; next }
-  $at["arch"] == want && (only == "" || index(only, " " $at["batch"] " ") > 0) {
+  $at["arch"] == want && (only == "" || index(only, " " $at["batch"] " ") > 0) &&
+  (stages == "" || index(stages, " " $at["stage"] " ") > 0) {
     print $at["size"], $at["batch"], $at["lr_slug"], $at["config"]
   }')
-[ -n "${rows}" ] || { echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}" >&2; exit 1; }
+[ -n "${rows}" ] || { echo "no ${ARCH} arm in ${ARMS}${ONLY_BATCHES:+ at batch ${ONLY_BATCHES}}${ONLY_STAGES:+ at stage ${ONLY_STAGES}}" >&2; exit 1; }
 
 while read -r size batch slug cfg; do
   [ -f "${cfg}" ] || { echo "no config at ${cfg}" >&2; exit 1; }
