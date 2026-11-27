@@ -124,7 +124,16 @@ EXPECTED_ARMS = 42
 
 #: The columns of the 68-arm inventory, plus what only an added arm carries.
 ADDED_COLUMNS = COLUMNS + ["direction", "degenerate_threshold",
-                           "degenerate_grace_steps", "arch_arms", "directives"]
+                           "degenerate_grace_steps", "arch_arms", "directives",
+                           "stage"]
+
+#: Which round of launching an added arm belongs to. 1 is the rate nearest the range
+#: the cell already swept, and it is the one that decides whether the cell's optimum is
+#: outside that range at all: if the stage-1 rate does not beat the cell's existing
+#: best, the best is bracketed and stages 2 and 3 are not needed. The staging is in the
+#: inventory rather than in the submitter so that what was launched together can be
+#: read back from the file the configs were written from.
+STAGE_NEAREST = 1
 
 #: What the added configs say they come from. The 68 that ran say the two directives
 #: they were launched under and nothing else.
@@ -191,7 +200,7 @@ def added_arms(cells):
         # The shape the grid runs on; the check below proves it is the same one the
         # cell's existing arms were derived with.
         micro, accum, world = accumulation(ARCH, size, batch, "micro-order")
-        for multiplier in multipliers_for(cell, direction):
+        for stage, multiplier in enumerate(multipliers_for(cell, direction), start=1):
             lr = scaled_rate(ARCH, size, batch, multiplier)
             slug = lr_slug(lr)
             stem = f"{ARCH}_{size}_b{batch}_lr{slug}"
@@ -217,6 +226,7 @@ def added_arms(cells):
                 "degenerate_grace_steps": grace_for(batch),
                 "arch_arms": BERT_ARMS_AFTER,
                 "directives": DIRECTIVES,
+                "stage": stage,
             })
     return rows
 
@@ -273,6 +283,26 @@ def check(rows, cells, existing) -> int:
             problems += 1
             print(f"  ** {row['size']} b{row['batch']} {row['lr']}: already ran")
 
+    # One arm of each cell is the nearest rate, and it is the first of the three.
+    stage_one = [r for r in rows if r["stage"] == STAGE_NEAREST]
+    if len(stage_one) != len(EXPECTED_ADDED_LR):
+        problems += 1
+        print(f"  ** {len(stage_one)} arms at stage {STAGE_NEAREST} against "
+              f"{len(EXPECTED_ADDED_LR)} cells")
+    for row in stage_one:
+        key = (row["size"], int(row["batch"]))
+        others = [float(r["lr"]) for r in by_cell.get(key, []) if r is not row]
+        if not others:
+            continue
+        rate = float(row["lr"])
+        # Down: the nearest is the highest of the three. Up: the lowest.
+        nearest = max(others + [rate]) if row["direction"] == "down" else min(
+            others + [rate])
+        if rate != nearest:
+            problems += 1
+            print(f"  ** {key}: stage {STAGE_NEAREST} is {row['lr']}, which is not the "
+                  f"rate nearest the range the cell swept")
+
     # The grace period, in steps.
     for batch, want in EXPECTED_GRACE.items():
         got = grace_for(batch)
@@ -315,13 +345,16 @@ def main(argv=None) -> int:
     rows = added_arms(cells)
 
     print(f"=== {len(rows)} added arms from {args.cells} ===")
-    print(f"{'size':<7}{'batch':>6}{'dir':>6}{'mult':>7}{'lr':>11}"
+    print(f"{'size':<7}{'batch':>6}{'dir':>6}{'stage':>6}{'mult':>7}{'lr':>11}"
           f"{'steps':>9}{'warmup':>8}{'grace':>8}{'threshold':>11}")
     for row in rows:
         print(f"{row['size']:<7}{row['batch']:>6}{row['direction']:>6}"
-              f"{row['lr_multiplier']:>7}{row['lr']:>11}{row['steps']:>9}"
-              f"{row['warmup_steps']:>8}{row['degenerate_grace_steps']:>8}"
-              f"{row['degenerate_threshold']:>11}")
+              f"{row['stage']:>6}{row['lr_multiplier']:>7}{row['lr']:>11}"
+              f"{row['steps']:>9}{row['warmup_steps']:>8}"
+              f"{row['degenerate_grace_steps']:>8}{row['degenerate_threshold']:>11}")
+    for stage in sorted({r["stage"] for r in rows}):
+        n = sum(1 for r in rows if r["stage"] == stage)
+        print(f"stage {stage}: {n} arm(s)")
 
     print("\n=== against the directive's tables and the running arms ===")
     problems = check(rows, cells, existing)

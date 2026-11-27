@@ -99,6 +99,27 @@ def test_an_added_arm_differs_from_its_cell_only_in_the_rate():
         assert float(row["lr"]) != float(sibling["lr"])
 
 
+def test_stage_one_is_one_arm_per_cell_at_the_rate_nearest_what_it_swept():
+    # Stage 1 is what decides whether a cell's optimum is outside the swept range at
+    # all. If it were not the nearest rate, a stage-1 arm that came out worse would
+    # leave the rates between it and the existing best untried, and the cell would be
+    # no better bracketed than before.
+    rows = added_arms(cells())
+    stage_one = [r for r in rows if r["stage"] == 1]
+    assert len(stage_one) == 14
+    assert len({(r["size"], r["batch"]) for r in stage_one}) == 14
+    for row in stage_one:
+        siblings = [float(r["lr"]) for r in rows
+                    if (r["size"], r["batch"]) == (row["size"], row["batch"])]
+        if row["direction"] == "down":
+            assert float(row["lr"]) == max(siblings)
+        else:
+            assert float(row["lr"]) == min(siblings)
+    # and the three stages hold 14 arms each
+    for stage in (1, 2, 3):
+        assert sum(1 for r in rows if r["stage"] == stage) == 14
+
+
 def test_a_direction_the_directive_does_not_list_is_reported():
     # large b2048's best sat in the middle. If a later reading moved it to an end, the
     # cell would be extended without the directive having asked for it, so the
