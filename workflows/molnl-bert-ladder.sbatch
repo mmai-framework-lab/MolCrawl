@@ -421,10 +421,15 @@ printf '%s\n' "${_cfg_dump}" | sed 's/^/    /'
 # mask rate 0.2, fit on 200,000 train rows).
 #
 # The four numbers this line used to print -- unigram 3.8638 / degenerate 3.4774 /
-# left 2.2533 / both 1.2804, job 22503 -- are the same measurement on the TRAIN split.
+# left 2.2533 / both 1.2804, job 22503 -- were the same measurement on the TRAIN split.
 # The floor differs by split, so printing them next to a validation metric invited the
-# comparison that 2026-11-10 corrected everywhere else.
-echo "baselines (mol_nl, valid split, report/mlm-baselines-20261102): unigram 4.6449 / blended degenerate 4.1780   [train split, job 22503: unigram 3.8638 / degenerate 3.4774]"
+# comparison that 2026-11-10 corrected everywhere else. Until 2026-11-27 the first two
+# were still printed in brackets beside the validation pair; the 2026-11-27 directive
+# retired 3.8638 and asked for the bracket to go rather than to be corrected, because
+# a train-split value does not belong beside a validation curve at all. The train floor
+# is 3.8582 on the largest sample measured, and it is read against a judgement that
+# reads training batches -- not against this run's eval_loss_mask.
+echo "baselines (mol_nl, valid split, report/mlm-baselines-20261102): unigram 4.6449 / blended degenerate 4.1780"
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1
 
 rc=0
