@@ -132,6 +132,8 @@ def test_an_added_config_carries_the_new_threshold_and_grace_and_nothing_else_ne
     assert f"degenerate_loss_threshold = {DEGENERATE_THRESHOLD}" in text
     assert "degenerate_grace_steps = 22500" in text
     assert "11,520,000 blocks" in text
+    assert "2026-11-27b directives" in text
+    assert "all 90 BERT arms" in text
     assert "seed = 42" in text
     assert "judge_on = \"eval_loss_mask\"" in text
     assert "eval_subset_seed" not in text
@@ -141,3 +143,5 @@ def test_an_added_config_carries_the_new_threshold_and_grace_and_nothing_else_ne
     old_text = configs.render(old, configs.siblings_of(grid_arms("micro-order"), old))
     assert "degenerate_grace_steps" not in old_text
     assert "degenerate_loss_threshold = 2.395" in old_text
+    assert "the 2026-11-19c and 2026-11-20 directives" in old_text
+    assert "all 48 BERT arms" in old_text

@@ -124,7 +124,11 @@ EXPECTED_ARMS = 42
 
 #: The columns of the 68-arm inventory, plus what only an added arm carries.
 ADDED_COLUMNS = COLUMNS + ["direction", "degenerate_threshold",
-                           "degenerate_grace_steps", "arch_arms"]
+                           "degenerate_grace_steps", "arch_arms", "directives"]
+
+#: What the added configs say they come from. The 68 that ran say the two directives
+#: they were launched under and nothing else.
+DIRECTIVES = "the 2026-11-19c, 2026-11-20 and 2026-11-27b directives"
 
 #: BERT arms in the grid once these are added: the 48 that ran plus these 42. It goes
 #: into the inventory because the configs quote it when they say what the fixed
@@ -212,6 +216,7 @@ def added_arms(cells):
                 "degenerate_threshold": DEGENERATE_THRESHOLD,
                 "degenerate_grace_steps": grace_for(batch),
                 "arch_arms": BERT_ARMS_AFTER,
+                "directives": DIRECTIVES,
             })
     return rows
 

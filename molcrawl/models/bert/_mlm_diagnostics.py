@@ -189,6 +189,21 @@ class CollapseDetectionCallback(TrainerCallback):
     the maskable tokens scaled by the non-copy fraction; 2.395 for compounds
     packed. Stopping is disabled when it is not set.
 
+    **A collapsed run can settle below that floor.** Compounds xl at batch 4,096 and
+    rate 7.97e-5 collapsed and settled at 2.4663 to 2.4725, which is below the
+    [MASK]-position unigram loss 2.4733 measured on the same corpus
+    (report/mlm-baselines-20261102/full/compounds.json: valid split, 10,000 rows,
+    1,595,521 masked positions, mlm_probability 0.2). The comparison below is strict
+    and any evaluation at or under the threshold resets the count, so a threshold set
+    at that floor reaches 2 of the 5 consecutive evaluations it needs and the run is
+    not stopped. The three compounds small collapses settled at 2.53 to 3.42 and are
+    stopped at the same evaluation by either value. The floor is the loss of a model
+    that has learned nothing about context, not the level a collapsed run settles at,
+    and the two are not ordered: a threshold placed on the floor is not a threshold
+    that catches every collapse. The compounds arms added by the 2026-11-27b directive
+    run at 2.4733 with that consequence accepted — an arm that settles under it
+    spends its whole budget — and the 48 arms launched before it keep 2.395.
+
     **Why the grace period.** MLM does not descend from the start: it sits at the
     degenerate level and then breaks out. Measured plateaus are 1,500-2,000 steps
     (compounds seq 128, mol_nl) and 2,750 steps (compounds packed with document
