@@ -3,7 +3,7 @@
 # scripts/rna_batch_sweep_configs.py from the derived arm inventory; edit the
 # inventory and regenerate rather than editing this file.
 #
-# This arm's place in the grid. BERT runs 2 rates at this size and batch and keeps the lowest (§3); this is number 1 of 2.
+# This arm's place in the grid. BERT runs 3 rates at this size and batch and keeps the lowest (§3); this is number 2 of 3.
 #
 # The budget is fixed in blocks, not in steps (§2): 309,657,600 packed blocks of
 # 1,024 tokens = 317,089,382,400 tokens, the same for all 68 arms and the same as the

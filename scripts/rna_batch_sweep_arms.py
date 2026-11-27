@@ -63,6 +63,17 @@ BERT_MULTIPLIERS = {256: [0.7, 1.0], 512: [0.7, 1.0], 1024: [0.7, 1.0],
                     2048: [0.7, 1.0, 1.4], 4096: [0.7, 1.0, 1.4]}
 GPT2_MULTIPLIERS = {batch: [1.0] for batch in BATCHES}
 
+#: Item 3 of the judgment of 2026-11-27. The multiplier-1.0 arm of two cells collapsed
+#: and is not being rerun, which leaves 0.7 as the lowest rate ever tried there, so each
+#: cell's best would be read off its smallest candidate and could be sitting below it.
+#: One 0.5 arm each: the step between the grid's rates is 1.4x, and 0.7 / 1.4 = 0.5.
+#: Keyed by cell, not by batch -- the other three sizes keep two rates at these two
+#: batches, and widening BERT_MULTIPLIERS would queue eight arms where two were asked for.
+EXTRA_MULTIPLIERS: dict[tuple[str, str, int], list[float]] = {
+    ("bert", "small", 256): [0.5],
+    ("bert", "small", 512): [0.5],
+}
+
 #: §2. Each framework's own current fraction, truncated.
 WARMUP_FRACTION = {"bert": 0.10, "gpt2": 0.02}
 
@@ -144,7 +155,9 @@ EXPECTED_WARMUP = {
 }
 EXPECTED_LR = {
     "bert": {
-        "small": {256: [6.64e-5, 9.49e-5], 512: [9.39e-5, 1.34e-4],
+        # 4.74e-5 and 6.71e-5 are the two rates item 3 of the judgment of 2026-11-27
+        # prints; the rest are the 2026-11-20 directive's. Smallest first, as derived.
+        "small": {256: [4.74e-5, 6.64e-5, 9.49e-5], 512: [6.71e-5, 9.39e-5, 1.34e-4],
                   1024: [1.33e-4, 1.90e-4], 2048: [1.88e-4, 2.68e-4, 3.76e-4],
                   4096: [2.66e-4, 3.79e-4, 5.31e-4]},
         "medium": {256: [6.64e-5, 9.49e-5], 512: [9.39e-5, 1.34e-4],
@@ -169,7 +182,9 @@ EXPECTED_LR = {
     },
 }
 #: §1's count.
-EXPECTED_ARMS = {"bert": 48, "gpt2": 20}
+#: 48 BERT arms from §1 of the 2026-11-20 directive, plus the two of item 3 of the
+#: judgment of 2026-11-27.
+EXPECTED_ARMS = {"bert": 48 + len(EXTRA_MULTIPLIERS), "gpt2": 20}
 #: §2's own statement about the point count.
 EXPECTED_EVAL_POINTS = 225
 
@@ -186,6 +201,16 @@ def lr_slug(value: float) -> str:
     mantissa, _, exponent = f"{value:.2e}".partition("e")
     mantissa = mantissa.rstrip("0").rstrip(".")
     return f"{mantissa.replace('.', 'p')}e{abs(int(exponent))}"
+
+
+def multipliers_for(arch: str, size: str, batch: int) -> list[float]:
+    """Every rate this cell runs, smallest first.
+
+    Sorted rather than appended, so a rate added later still reads as the first
+    candidate of its cell and rate_rank keeps meaning "how far up the candidates".
+    """
+    table = BERT_MULTIPLIERS if arch == "bert" else GPT2_MULTIPLIERS
+    return sorted(table[batch] + EXTRA_MULTIPLIERS.get((arch, size, batch), []))
 
 
 def scaled_rate(arch: str, size: str, batch: int, multiplier: float) -> float:
@@ -234,13 +259,13 @@ def grace_steps(batch: int, grace_blocks: int) -> int:
 def arms(which_set: str, grace_blocks: int | None, detector: bool):
     rows = []
     for arch in ARCHES:
-        multipliers = BERT_MULTIPLIERS if arch == "bert" else GPT2_MULTIPLIERS
         for size in SIZES:
             for batch in BATCHES:
                 steps = steps_for(batch)
                 micro, accum, world = accumulation(arch, size, batch, which_set)
-                rates = [scaled_rate(arch, size, batch, m) for m in multipliers[batch]]
-                for rank, (multiplier, lr) in enumerate(zip(multipliers[batch], rates), 1):
+                mults = multipliers_for(arch, size, batch)
+                rates = [scaled_rate(arch, size, batch, m) for m in mults]
+                for rank, (multiplier, lr) in enumerate(zip(mults, rates), 1):
                     slug = lr_slug(lr)
                     name = f"{arch}_{size}_b{batch}_lr{slug}"
                     out = (f"rna-{size}-b{batch}-lr{slug}" if arch == "bert"

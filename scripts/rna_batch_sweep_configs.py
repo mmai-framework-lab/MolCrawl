@@ -1,9 +1,16 @@
-"""Write the rna batch-size grid's 68 configs from the derived arm inventory.
+"""Write the rna batch-size grid's configs from the derived arm inventory.
 
 Generated rather than hand-written: the grid differs between arms in eight values
-that all follow from the batch, and 68 files edited by hand is 68 chances to put one
+that all follow from the batch, and one file edited by hand per arm is one chance per
+arm to put one
 of them in the wrong row. Regenerate from the inventory instead of editing a file
 here; --check says whether what is on disk still matches it.
+
+The arm count each config's header quotes is the 2026-11-20 directive's 68. Item 3 of
+the judgment of 2026-11-27 added two arms, and that line is deliberately left alone
+while the grid runs: rewriting a comment in 68 configs of a campaign in flight would
+bury the arms that changed. It is refreshed when every config is regenerated together,
+which the same judgment schedules for after the 68 complete.
 
 Each arm sits on the adopted 2,560 arm of its own size and overrides only what the
 directive moves. Importing that config rather than copying it keeps the corpus, the

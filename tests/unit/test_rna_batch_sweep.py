@@ -1,7 +1,7 @@
 """What the rna batch-size grid of 2026-11-20 must not get wrong.
 
 1. The arms derived from the directive's rules match the tables the same directive
-   prints. A grid of 68 arms is built from a handful of numbers, and a rate or a
+   prints. A grid of 70 arms is built from a handful of numbers, and a rate or a
    step count copied into the wrong row is invisible once the runs start.
 2. The budget is spent in blocks, so every batch runs the same data and every arm
    carries 225 evaluation points at the same block positions.
@@ -43,10 +43,12 @@ def test_the_derived_arms_match_the_printed_tables(inventory):
     assert problems == [], f"micro-batch set {which}: " + "; ".join(problems)
 
 
-def test_there_are_sixty_eight_arms(inventory):
+def test_there_are_seventy_arms(inventory):
     _, rows = inventory
-    assert len(rows) == 68
-    assert sum(1 for r in rows if r["arch"] == "bert") == 48
+    assert len(rows) == 70
+    # 48 from the 2026-11-20 directive, plus the two of item 3 of the 2026-11-27
+    # judgment. Spelled as a sum so the two halves stay readable apart.
+    assert sum(1 for r in rows if r["arch"] == "bert") == 48 + 2
     assert sum(1 for r in rows if r["arch"] == "gpt2") == 20
 
 
@@ -255,7 +257,7 @@ def test_the_measured_set_builds_arms_with_the_measured_shape(tmp_path):
     A.MICRO_BATCH["measured"] = measured
     try:
         arms = A.arms("measured", A.GRACE_BLOCKS, True)
-        assert len(arms) == 68
+        assert len(arms) == 70
         for row in arms:
             assert int(row["micro_batch"]) == 16, row["config"]
             product = (int(row["micro_batch"]) * int(row["grad_accum"])
@@ -292,7 +294,7 @@ def test_two_tables_merge_with_the_later_one_winning(tmp_path):
     rows = list(csv.DictReader(
         (ln for ln in open(out, encoding="utf-8") if not ln.startswith("#")),
         delimiter="\t"))
-    assert len(rows) == 68
+    assert len(rows) == 70
     by_arch = {r["arch"]: int(r["micro_batch"]) for r in rows}
     assert by_arch["bert"] == 16     # only the first table measured BERT
     assert by_arch["gpt2"] == 64     # the second table replaced its rows
@@ -364,3 +366,61 @@ def test_a_missing_figure_says_which_kind_of_missing_it_is():
     assert probe.why_no_rate([]) == "-"
     assert probe.why_no_rate([{"status": "FAILED (OOM)"}]) == "OOM"
     assert probe.why_no_rate([{"status": "no log (did the arm run?)"}]) == "no rate"
+
+
+# --- item 3 of the judgment of 2026-11-27: one more rate in two cells ---
+
+
+def test_the_two_named_cells_gain_a_rate_and_no_other_cell_changes():
+    cells = {}
+    for arch in A.ARCHES:
+        for size in A.SIZES:
+            for batch in A.BATCHES:
+                cells[(arch, size, batch)] = A.multipliers_for(arch, size, batch)
+
+    assert cells[("bert", "small", 256)] == [0.5, 0.7, 1.0]
+    assert cells[("bert", "small", 512)] == [0.5, 0.7, 1.0]
+
+    # Every other cell keeps the 2026-11-20 directive's rates. Asserted over all of
+    # them rather than a sample: adding 0.5 to BERT_MULTIPLIERS instead of to the two
+    # cells would have passed the two assertions above and queued six arms too many.
+    for (arch, size, batch), got in cells.items():
+        if (arch, size, batch) in A.EXTRA_MULTIPLIERS:
+            continue
+        table = A.BERT_MULTIPLIERS if arch == "bert" else A.GPT2_MULTIPLIERS
+        assert got == sorted(table[batch]), (arch, size, batch)
+
+
+def test_the_added_rates_are_the_ones_the_judgment_prints():
+    rows = A.arms("current", A.GRACE_BLOCKS, True)
+    assert len(rows) == 70
+
+    added = {(r["size"], r["batch"]): r for r in rows
+             if r["arch"] == "bert" and r["lr_multiplier"] == "0.5"}
+    assert sorted(added) == [("small", 256), ("small", 512)]
+    assert added[("small", 256)]["lr"] == "4.74e-05"
+    assert added[("small", 512)]["lr"] == "6.71e-05"
+
+    # The new rate is the cell's first candidate, and its neighbours renumber behind it.
+    for batch, slugs in ((256, ["4p74e5", "6p64e5", "9p49e5"]),
+                         (512, ["6p71e5", "9p39e5", "1p34e4"])):
+        cell = [r for r in rows if r["arch"] == "bert" and r["size"] == "small"
+                and r["batch"] == batch]
+        assert [r["lr_slug"] for r in sorted(cell, key=lambda r: r["rate_rank"])] == slugs
+        assert [r["rate_rank"] for r in cell] == [1, 2, 3]
+        assert {r["rates_at_this_batch"] for r in cell} == {3}
+
+
+def test_the_added_arms_carry_the_grid_s_own_schedule_and_detector():
+    rows = {(r["size"], r["batch"]): r for r in A.arms("current", A.GRACE_BLOCKS, True)
+            if r["arch"] == "bert" and r["lr_multiplier"] == "0.5"}
+
+    for batch, steps, grace in ((256, 1_209_600, 52_000), (512, 604_800, 26_000)):
+        row = rows[("small", batch)]
+        assert row["steps"] == steps
+        assert row["warmup_steps"] == steps // 10
+        assert row["degenerate_grace_steps"] == grace
+        assert row["degenerate_loss_threshold"] == 9.0
+        # The same global batch as the cell's other arms, by the BERT rule.
+        assert (int(row["micro_batch"]) * int(row["grad_accum"])
+                * int(row["gpu_count"])) == batch
