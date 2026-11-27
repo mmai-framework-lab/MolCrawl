@@ -71,6 +71,25 @@
 # DRY=1 prints what would be submitted and starts nothing.
 set -uo pipefail
 
+# The dry-run flag is DRY, and a near miss of that name is refused rather than ignored.
+# On 2026-11-27 DRY_RUN=1 was typed in front of this script: the shell set a variable
+# nothing reads, the submission went out as a real one, and twelve arms were started by
+# a command meant to print them. Every other mistake here is recoverable by not running
+# the output; this one is not. So anything that begins with DRY and is not DRY stops the
+# script before a single sbatch is issued.
+#
+# The name is worth refusing loudly rather than aliasing, because the repository holds
+# both. Counted over workflows/submit-*.sh: seventeen read DRY_RUN (fifteen rna, two
+# genome) and six read DRY (three compounds, one each of genome, molnl, protein).
+# Whichever name a reader carries over from the script they used last, one of the two
+# is silent. Here it is not.
+for _dry_like in $(compgen -v | grep '^DRY' || true); do
+  [ "${_dry_like}" = "DRY" ] && continue
+  echo "${_dry_like} is set, and this script reads only DRY." >&2
+  echo "A dry run is DRY=1. Unset ${_dry_like} and say what was meant." >&2
+  exit 1
+done
+
 : "${LEARNING_SOURCE_DIR:?export LEARNING_SOURCE_DIR to the molnl input root}"
 : "${MODEL_OUTPUT_ROOT:?export MODEL_OUTPUT_ROOT to the output root for this grid, outside the input tree}"
 : "${ARMS:?set ARMS to the derived arm inventory TSV}"
