@@ -1,7 +1,7 @@
 """The launch plan of workflows/submit-rna-batch-sweep.sh, checked without queueing.
 
 The submitter runs days after the probe, with nobody watching the step that joins the
-two files. A mistake in that join is a wrong link count on 68 chains, which shows up
+two files. A mistake in that join is a wrong link count on 70 chains, which shows up
 as arms that stop short of the budget. So the plan is exercised here against a
 synthetic table, with DRY_RUN set, and the link counts are checked against the
 arithmetic the directive fixes.
@@ -65,10 +65,10 @@ def plan(tmp_path):
     return rates, out.stdout
 
 
-def test_the_plan_covers_all_sixty_eight_arms(plan):
+def test_the_plan_covers_all_seventy_arms(plan):
     _, text = plan
-    assert re.search(r"=== rna batch-size grid: 68 arms,", text), text[:400]
-    assert len(re.findall(r"^  (bert|gpt2) ", text, re.M)) == 68
+    assert re.search(r"=== rna batch-size grid: 70 arms,", text), text[:400]
+    assert len(re.findall(r"^  (bert|gpt2) ", text, re.M)) == 70
 
 
 def test_each_arm_gets_the_links_its_measured_rate_needs(plan):
@@ -86,7 +86,7 @@ def test_each_arm_gets_the_links_its_measured_rate_needs(plan):
         need = -(-want_hours // SEGMENT_HOURS)        # ceiling
         assert links == need + 1, f"{line}: expected {need:.0f} + 1 spare"
         seen += 1
-    assert seen == 68
+    assert seen == 70
 
 
 def test_the_wall_clock_does_not_depend_on_the_batch(plan):
