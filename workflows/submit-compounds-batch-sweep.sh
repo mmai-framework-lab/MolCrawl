@@ -88,8 +88,14 @@ only=""
 [ -n "${ONLY_BATCHES:-}" ] && only=" ${ONLY_BATCHES} "
 stages=""
 if [ -n "${ONLY_STAGES:-}" ]; then
-  grep -v '^#' "${ARMS}" | head -1 | grep -q $'\tstage' || {
-    echo "ONLY_STAGES=${ONLY_STAGES} but ${ARMS} has no stage column" >&2; exit 1; }
+  # sed -n '1p' rather than head -1: head closes the pipe as soon as it has the line,
+  # grep is killed by SIGPIPE, and under pipefail the pipeline then reports 141 even
+  # though the column is there. sed reads to the end, so the status is grep's own.
+  _header=$(grep -v '^#' "${ARMS}" | sed -n '1p')
+  case "${_header}" in
+    *$'\tstage'*) ;;
+    *) echo "ONLY_STAGES=${ONLY_STAGES} but ${ARMS} has no stage column" >&2; exit 1 ;;
+  esac
   stages=" ${ONLY_STAGES} "
 fi
 rows=$(grep -v '^#' "${ARMS}" | awk -F'\t' -v want="${ARCH}" -v only="${only}" \
